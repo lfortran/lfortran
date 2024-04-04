@@ -217,21 +217,28 @@ class Simplifier: public ASR::CallReplacerOnExpressionsVisitor<Simplifier>
         current_body = current_body_copy;
     }
 
+    ASR::expr_t* create_and_allocate_temporary_variable_for_array(
+        ASR::expr_t* array_expr, const std::string& name_hint) {
+        const Location& loc = array_expr->base.loc;
+        ASR::expr_t* array_var_temporary = create_temporary_variable_for_array(
+            al, array_expr, current_scope, name_hint);
+        insert_allocate_stmt(al, array_var_temporary, array_expr, current_body);
+        current_body->push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(
+            al, loc, array_var_temporary, array_expr, nullptr)));
+        return array_var_temporary;
+    }
+
     template <typename T>
     void visit_IO(const T& x, const std::string& name_hint) {
-        const Location& loc = x.base.base.loc;
         Vec<ASR::expr_t*> x_m_values; x_m_values.reserve(al, x.n_values);
         /* For frontends like LC, we will need to traverse the print statement arguments
            in reverse order. */
         for( size_t i = 0; i < x.n_values; i++ ) {
             if( ASRUtils::is_array(ASRUtils::expr_type(x.m_values[i])) &&
-                !ASR::is_a<ASR::Var_t>(x.m_values[i]) ) {
+                !ASR::is_a<ASR::Var_t>(*x.m_values[i]) ) {
                 visit_expr(*x.m_values[i]);
-                ASR::expr_t* array_var_temporary = create_temporary_variable_for_array(
-                    al, x.m_values[i], current_scope, name_hint);
-                insert_allocate_stmt(al, array_var_temporary, x.m_values[i], current_body);
-                current_body->push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(
-                    al, loc, array_var_temporary, x.m_values[i], nullptr)));
+                ASR::expr_t* array_var_temporary = create_and_allocate_temporary_variable_for_array(
+                    x.m_values[i], name_hint);
                 x_m_values.push_back(al, array_var_temporary);
             } else {
                 x_m_values.push_back(al, x.m_values[i]);
@@ -252,21 +259,16 @@ class Simplifier: public ASR::CallReplacerOnExpressionsVisitor<Simplifier>
     }
 
     void visit_IntrinsicImpureSubroutine(const ASR::IntrinsicImpureSubroutine_t& x) {
-        const Location& loc = x.base.base.loc;
         Vec<ASR::expr_t*> x_m_args; x_m_args.reserve(al, x.n_args);
         /* For other frontends, we might need to traverse the arguments
            in reverse order. */
         for( size_t i = 0; i < x.n_args; i++ ) {
             if( ASRUtils::is_array(ASRUtils::expr_type(x.m_args[i])) &&
-                !ASR::is_a<ASR::Var_t>(x.m_args[i]) ) {
+                !ASR::is_a<ASR::Var_t>(*x.m_args[i]) ) {
                 visit_expr(*x.m_args[i]);
-                ASR::expr_t* array_var_temporary = create_temporary_variable_for_array(
-                    al, x.m_args[i], current_scope, "_intrinsic_impure_subroutine_" +
-                        ASRUtils::get_impure_intrinsic_name(x.m_intrinsic_id));
-                insert_allocate_stmt(al, array_var_temporary, x.m_args[i], current_body);
-                current_body->push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(al, loc,
-                    array_var_temporary, ASRUtils::get_past_array_physical_cast(x.m_args[i]),
-                    nullptr)));
+                ASR::expr_t* array_var_temporary = create_and_allocate_temporary_variable_for_array(
+                    x.m_args[i], "_intrinsic_impure_subroutine_" + ASRUtils::get_impure_intrinsic_name(
+                        x.m_intrinsic_id));
                 x_m_args.push_back(al, array_var_temporary);
             } else {
                 x_m_args.push_back(al, x.m_args[i]);
@@ -280,20 +282,15 @@ class Simplifier: public ASR::CallReplacerOnExpressionsVisitor<Simplifier>
 
     void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
         LCOMPILERS_ASSERT(!x.m_dt || !ASRUtils::is_array(ASRUtils::expr_type(x.m_dt)));
-        const Location& loc = x.base.base.loc;
         Vec<ASR::call_arg_t> x_m_args; x_m_args.reserve(al, x.n_args);
         /* For other frontends, we might need to traverse the arguments
            in reverse order. */
         for( size_t i = 0; i < x.n_args; i++ ) {
             if( ASRUtils::is_array(ASRUtils::expr_type(x.m_args[i].m_value)) &&
-                !ASR::is_a<ASR::Var_t>(x.m_args[i].m_value) ) {
+                !ASR::is_a<ASR::Var_t>(*x.m_args[i].m_value) ) {
                 visit_call_arg(x.m_args[i]);
-                ASR::expr_t* array_var_temporary = create_temporary_variable_for_array(
-                    al, x.m_args[i].m_value, current_scope, "_subroutine_call");
-                insert_allocate_stmt(al, array_var_temporary, x.m_args[i].m_value, current_body);
-                current_body->push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(al, loc,
-                    array_var_temporary, ASRUtils::get_past_array_physical_cast(x.m_args[i].m_value),
-                    nullptr)));
+                ASR::expr_t* array_var_temporary = create_and_allocate_temporary_variable_for_array(
+                    x.m_args[i].m_value, std::string("_subroutine_call_") + ASRUtils::symbol_name(x.m_name));
                 ASR::call_arg_t call_arg;
                 call_arg.loc = array_var_temporary->base.loc;
                 call_arg.m_value = array_var_temporary;
@@ -306,6 +303,20 @@ class Simplifier: public ASR::CallReplacerOnExpressionsVisitor<Simplifier>
         ASR::SubroutineCall_t& xx = const_cast<ASR::SubroutineCall_t&>(x);
         xx.m_args = x_m_args.p;
         xx.n_args = x_m_args.size();
+    }
+
+    void visit_ComplexConstructor(const ASR::ComplexConstructor_t& x) {
+        ASR::ComplexConstructor_t& xx = const_cast<ASR::ComplexConstructor_t&>(x);
+
+        visit_expr(*x.m_re);
+        ASR::expr_t* array_var_temporary_re = create_and_allocate_temporary_variable_for_array(
+            x.m_re, "_complex_constructor_re");
+        xx.m_re = array_var_temporary_re;
+
+        visit_expr(*x.m_im);
+        ASR::expr_t* array_var_temporary_im = create_and_allocate_temporary_variable_for_array(
+            x.m_im, "_complex_constructor_im");
+        xx.m_im = array_var_temporary_im;
     }
 
 };
