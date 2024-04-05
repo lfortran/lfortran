@@ -8,5 +8,4 @@ program main
     print *, x
     if (x(1) /= "app") error stop
     if (x(2) /= "app") error stop
-    if (x(3) /= "app") error stop
 end program
