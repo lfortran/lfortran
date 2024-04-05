@@ -4,6 +4,7 @@
 #include <libasr/pass/simplifier.h>
 #include <libasr/pass/pass_utils.h>
 #include <libasr/pass/intrinsic_function_registry.h>
+#include <libasr/pass/intrinsic_array_function_registry.h>
 
 #include <vector>
 #include <utility>
@@ -288,6 +289,11 @@ class Simplifier: public ASR::CallReplacerOnExpressionsVisitor<Simplifier>
     void visit_IntrinsicElementalFunction(const ASR::IntrinsicElementalFunction_t& x) {
         visit_IntrinsicCall(x, "_intrinsic_elemental_function_" +
             ASRUtils::get_intrinsic_name(x.m_intrinsic_id));
+    }
+
+    void visit_IntrinsicArrayFunction(const ASR::IntrinsicArrayFunction_t& x) {
+        visit_IntrinsicCall(x, "_intrinsic_array_function_" +
+            ASRUtils::get_array_intrinsic_name(x.m_arr_intrinsic_id));
     }
 
     template <typename T>
