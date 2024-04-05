@@ -229,7 +229,7 @@ class Simplifier: public ASR::CallReplacerOnExpressionsVisitor<Simplifier>
         return array_var_temporary;
     }
 
-    #define BEGIN_VAR_CHECK(expr) if( ASR::is_a<ASR::Var_t>(*expr) ) {
+    #define BEGIN_VAR_CHECK(expr) if( !ASR::is_a<ASR::Var_t>(*expr) ) {
     #define END_VAR_CHECK }
 
     template <typename T>
@@ -383,44 +383,56 @@ class Simplifier: public ASR::CallReplacerOnExpressionsVisitor<Simplifier>
     void visit_ComplexConstructor(const ASR::ComplexConstructor_t& x) {
         ASR::ComplexConstructor_t& xx = const_cast<ASR::ComplexConstructor_t&>(x);
 
+        BEGIN_VAR_CHECK(x.m_re)
         visit_expr(*x.m_re);
         ASR::expr_t* array_var_temporary_re = create_and_allocate_temporary_variable_for_array(
             x.m_re, "_complex_constructor_re");
         xx.m_re = array_var_temporary_re;
+        END_VAR_CHECK
 
+        BEGIN_VAR_CHECK(x.m_im)
         visit_expr(*x.m_im);
         ASR::expr_t* array_var_temporary_im = create_and_allocate_temporary_variable_for_array(
             x.m_im, "_complex_constructor_im");
         xx.m_im = array_var_temporary_im;
+        END_VAR_CHECK
     }
 
     void visit_ArrayTranspose(const ASR::ArrayTranspose_t& x) {
         ASR::ArrayTranspose_t& xx = const_cast<ASR::ArrayTranspose_t&>(x);
 
+        BEGIN_VAR_CHECK(x.m_matrix)
         visit_expr(*x.m_matrix);
         ASR::expr_t* array_var_temporary = create_and_allocate_temporary_variable_for_array(
             x.m_matrix, "_array_transpose_matrix_");
         xx.m_matrix = array_var_temporary;
+        END_VAR_CHECK
     }
 
     void visit_ArrayPack(const ASR::ArrayPack_t& x) {
         ASR::ArrayPack_t& xx = const_cast<ASR::ArrayPack_t&>(x);
 
+        BEGIN_VAR_CHECK(x.m_array)
         visit_expr(*x.m_array);
         ASR::expr_t* array_var_temporary_array = create_and_allocate_temporary_variable_for_array(
             x.m_array, "_array_pack_array_");
         xx.m_array = array_var_temporary_array;
+        END_VAR_CHECK
 
+        BEGIN_VAR_CHECK(x.m_mask)
         visit_expr(*x.m_mask);
         ASR::expr_t* array_var_temporary_mask = create_and_allocate_temporary_variable_for_array(
             x.m_mask, "_array_pack_mask_");
         xx.m_mask = array_var_temporary_mask;
+        END_VAR_CHECK
 
         if( x.m_vector ) {
+            BEGIN_VAR_CHECK(x.m_vector)
             visit_expr(*x.m_vector);
             ASR::expr_t* array_var_temporary_vector = create_and_allocate_temporary_variable_for_array(
                 x.m_vector, "_array_pack_vector_");
             xx.m_vector = array_var_temporary_vector;
+            END_VAR_CHECK
         }
     }
 
