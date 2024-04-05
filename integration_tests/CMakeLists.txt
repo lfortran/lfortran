@@ -1322,6 +1322,9 @@ RUN(NAME allocate_07 LABELS gfortran llvm
 RUN(NAME allocate_08 LABELS gfortran llvm)
 RUN(NAME allocate_09 LABELS gfortran llvm)
 
+RUN(NAME dealloc_01 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs)
+RUN(NAME dealloc_02 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs)
+
 RUN(NAME double_complex_01 LABELS gfortran llvm)
 
 RUN(NAME common_02 LABELS gfortran llvm)
