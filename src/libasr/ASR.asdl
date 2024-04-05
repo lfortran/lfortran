@@ -137,7 +137,7 @@ expr
     | SymbolicCompare(expr left, cmpop op, expr right, ttype type, expr? value)
     | DictConstant(expr* keys, expr* values, ttype type) -- temporary needed
     | DictLen(expr arg, ttype type, expr? value)
-    | Var(symbol v)
+    | Var(symbol v) -- replace those variables which are parameter and owned by module directly
     | FunctionParam(int param_number, ttype type, expr? value)
     | ArrayConstructor(expr* args, ttype type, expr? value, arraystorage storage_format) -- temporary needed, contains array
     | ArrayConstant(int n_data, void data, ttype type, arraystorage storage_format) -- temporary needed
