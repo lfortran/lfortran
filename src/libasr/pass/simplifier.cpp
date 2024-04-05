@@ -259,23 +259,47 @@ class Simplifier: public ASR::CallReplacerOnExpressionsVisitor<Simplifier>
         visit_IO(x, "file_write");
     }
 
+    void traverse_args(Vec<ASR::expr_t*>& x_m_args_vec, ASR::expr_t** x_m_args,
+        size_t x_n_args, const std::string& name_hint) {
+        /* For other frontends, we might need to traverse the arguments
+           in reverse order. */
+        for( size_t i = 0; i < x_n_args; i++ ) {
+            if( ASRUtils::is_array(ASRUtils::expr_type(x_m_args[i])) &&
+                !ASR::is_a<ASR::Var_t>(*x_m_args[i]) ) {
+                visit_expr(*x_m_args[i]);
+                ASR::expr_t* array_var_temporary = create_and_allocate_temporary_variable_for_array(
+                    x_m_args[i], name_hint);
+                x_m_args_vec.push_back(al, array_var_temporary);
+            } else {
+                x_m_args_vec.push_back(al, x_m_args[i]);
+            }
+        }
+    }
+
+    template <typename T>
+    void visit_TypeConstructor(const T& x, const std::string& name_hint) {
+        Vec<ASR::expr_t*> x_m_args; x_m_args.reserve(al, x.n_args);
+        traverse_args(x_m_args, x.m_args, x.n_args,
+            std::string("_enum_type_constructor_") + ASRUtils::symbol_name(x.m_dt_sym));
+        T& xx = const_cast<T&>(x);
+        xx.m_args = x_m_args.p;
+        xx.n_args = x_m_args.size();
+    }
+
+    void visit_EnumTypeConstructor(const ASR::EnumTypeConstructor_t& x) {
+        visit_TypeConstructor(x, std::string("_enum_type_constructor_") +
+            ASRUtils::symbol_name(x.m_dt_sym));
+    }
+
+    void visit_UnionTypeConstructor(const ASR::UnionTypeConstructor_t& x) {
+        visit_TypeConstructor(x, std::string("_union_type_constructor_") +
+            ASRUtils::symbol_name(x.m_dt_sym));
+    }
+
     template <typename T>
     void visit_IntrinsicCall(const T& x, const std::string& name_hint) {
         Vec<ASR::expr_t*> x_m_args; x_m_args.reserve(al, x.n_args);
-        /* For other frontends, we might need to traverse the arguments
-           in reverse order. */
-        for( size_t i = 0; i < x.n_args; i++ ) {
-            if( ASRUtils::is_array(ASRUtils::expr_type(x.m_args[i])) &&
-                !ASR::is_a<ASR::Var_t>(*x.m_args[i]) ) {
-                visit_expr(*x.m_args[i]);
-                ASR::expr_t* array_var_temporary = create_and_allocate_temporary_variable_for_array(
-                    x.m_args[i], name_hint);
-                x_m_args.push_back(al, array_var_temporary);
-            } else {
-                x_m_args.push_back(al, x.m_args[i]);
-            }
-        }
-
+        traverse_args(x_m_args, x.m_args, x.n_args, name_hint);
         T& xx = const_cast<T&>(x);
         xx.m_args = x_m_args.p;
         xx.n_args = x_m_args.size();
