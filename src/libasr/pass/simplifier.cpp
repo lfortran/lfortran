@@ -229,6 +229,9 @@ class Simplifier: public ASR::CallReplacerOnExpressionsVisitor<Simplifier>
         return array_var_temporary;
     }
 
+    #define BEGIN_VAR_CHECK(expr) if( ASR::is_a<ASR::Var_t>(*expr) ) {
+    #define END_VAR_CHECK }
+
     template <typename T>
     void visit_IO(const T& x, const std::string& name_hint) {
         Vec<ASR::expr_t*> x_m_values; x_m_values.reserve(al, x.n_values);
@@ -398,6 +401,27 @@ class Simplifier: public ASR::CallReplacerOnExpressionsVisitor<Simplifier>
         ASR::expr_t* array_var_temporary = create_and_allocate_temporary_variable_for_array(
             x.m_matrix, "_array_transpose_matrix_");
         xx.m_matrix = array_var_temporary;
+    }
+
+    void visit_ArrayPack(const ASR::ArrayPack_t& x) {
+        ASR::ArrayPack_t& xx = const_cast<ASR::ArrayPack_t&>(x);
+
+        visit_expr(*x.m_array);
+        ASR::expr_t* array_var_temporary_array = create_and_allocate_temporary_variable_for_array(
+            x.m_array, "_array_pack_array_");
+        xx.m_array = array_var_temporary_array;
+
+        visit_expr(*x.m_mask);
+        ASR::expr_t* array_var_temporary_mask = create_and_allocate_temporary_variable_for_array(
+            x.m_mask, "_array_pack_mask_");
+        xx.m_mask = array_var_temporary_mask;
+
+        if( x.m_vector ) {
+            visit_expr(*x.m_vector);
+            ASR::expr_t* array_var_temporary_vector = create_and_allocate_temporary_variable_for_array(
+                x.m_vector, "_array_pack_vector_");
+            xx.m_vector = array_var_temporary_vector;
+        }
     }
 
 };
