@@ -279,8 +279,7 @@ class Simplifier: public ASR::CallReplacerOnExpressionsVisitor<Simplifier>
     template <typename T>
     void visit_TypeConstructor(const T& x, const std::string& name_hint) {
         Vec<ASR::expr_t*> x_m_args; x_m_args.reserve(al, x.n_args);
-        traverse_args(x_m_args, x.m_args, x.n_args,
-            std::string("_enum_type_constructor_") + ASRUtils::symbol_name(x.m_dt_sym));
+        traverse_args(x_m_args, x.m_args, x.n_args, name_hint);
         T& xx = const_cast<T&>(x);
         xx.m_args = x_m_args.p;
         xx.n_args = x_m_args.size();
@@ -294,6 +293,11 @@ class Simplifier: public ASR::CallReplacerOnExpressionsVisitor<Simplifier>
     void visit_UnionTypeConstructor(const ASR::UnionTypeConstructor_t& x) {
         visit_TypeConstructor(x, std::string("_union_type_constructor_") +
             ASRUtils::symbol_name(x.m_dt_sym));
+    }
+
+    void visit_ArrayConstructor(const ASR::ArrayConstructor_t& x) {
+        Vec<ASR::expr_t*> x_m_args; x_m_args.reserve(al, x.n_args);
+        traverse_args(x_m_args, x.m_args, x.n_args, std::string("_array_constructor_"));
     }
 
     template <typename T>
