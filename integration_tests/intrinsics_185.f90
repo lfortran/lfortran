@@ -8,7 +8,7 @@ program intrinsics_185
     character(1) :: n = "N"
     integer :: arr2(2)
     character(len=5) :: string = "hello"
-	character(len=1) :: set(2) = ["l", "h"]
+    character(len=1) :: set(2) = ["l", "h"]
   
     print*, verify("FORTRAN", "AF", .true., 4)    
     if ( verify("FORTRAN", "AF", .true., 4) /= 7 ) error stop   
