@@ -391,6 +391,15 @@ class Simplifier: public ASR::CallReplacerOnExpressionsVisitor<Simplifier>
         xx.m_im = array_var_temporary_im;
     }
 
+    void visit_ArrayTranspose(const ASR::ArrayTranspose_t& x) {
+        ASR::ArrayTranspose_t& xx = const_cast<ASR::ArrayTranspose_t&>(x);
+
+        visit_expr(*x.m_matrix);
+        ASR::expr_t* array_var_temporary = create_and_allocate_temporary_variable_for_array(
+            x.m_matrix, "_array_transpose_matrix_");
+        xx.m_matrix = array_var_temporary;
+    }
+
 };
 
 void pass_simplifier(Allocator &al, ASR::TranslationUnit_t &unit,
