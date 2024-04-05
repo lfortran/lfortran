@@ -1360,7 +1360,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         bool result_var_created = false;
         if( result_var == nullptr ) {
             if (x->m_type && !ASRUtils::is_array(x->m_type)) {
-                ASR::ttype_t* sibling_type = ASRUtils::expr_type(operand);
+                ASR::ttype_t* sibling_type = ASRUtils::expr_type(first_array_operand);
                 ASR::dimension_t* m_dims; int ndims;
                 PassUtils::get_dim_rank(sibling_type, m_dims, ndims);
                 ASR::ttype_t* arr_type = ASRUtils::make_Array_t_util(

@@ -7,6 +7,8 @@ program intrinsics_185
     character(6) :: fortr = "FORTR"
     character(1) :: n = "N"
     integer :: arr2(2)
+    character(len=5) :: string = "hello"
+    character(len=1) :: set(2) = ["l", "h"]
   
     print*, verify("FORTRAN", "AF", .true., 4)    
     if ( verify("FORTRAN", "AF", .true., 4) /= 7 ) error stop   
@@ -37,5 +39,15 @@ program intrinsics_185
 
     arr2 = verify(["FORTRAN", "GORTRAN"], ["FN", "NA"], .TRUE.)
     if (arr2(1) /= 6) error stop
+    if (arr2(2) /= 5) error stop
+
+    arr2 = verify(string, set)
+    print*, arr2
+    if (arr2(1) /= 1) error stop
+    if (arr2(2) /= 2) error stop
+
+    arr2 = verify(string, set, .TRUE., 4)
+    print*, arr2
+    if (arr2(1) /= 5) error stop
     if (arr2(2) /= 5) error stop
 end program
