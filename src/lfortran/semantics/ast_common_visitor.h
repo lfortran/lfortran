@@ -2573,9 +2573,9 @@ public:
                     }
                     init_expr = ASRUtils::EXPR(tmp);
                     if (!is_compile_time && ASR::is_a<ASR::Array_t>(*type)
-                        && ASRUtils::type_get_past_array(ASRUtils::type_get_past_pointer(type))->type != ASR::ttypeType::Character
                         && (ASR::is_a<ASR::IntegerConstant_t>(*init_expr) || ASR::is_a<ASR::RealConstant_t>(*init_expr)
-                            || ASR::is_a<ASR::RealUnaryMinus_t>(*init_expr) || ASR::is_a<ASR::IntegerUnaryMinus_t>(*init_expr))) {
+                            || ASR::is_a<ASR::RealUnaryMinus_t>(*init_expr) || ASR::is_a<ASR::IntegerUnaryMinus_t>(*init_expr)
+                            || ASR::is_a<ASR::StringConstant_t>(*init_expr))) {
                         /*
                             Case: integer :: x(2) = 1
                             which is equivalent to x(2) = [1,1]
