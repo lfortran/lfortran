@@ -296,6 +296,11 @@ class Simplifier: public ASR::CallReplacerOnExpressionsVisitor<Simplifier>
             ASRUtils::get_array_intrinsic_name(x.m_arr_intrinsic_id));
     }
 
+    void visit_IntrinsicImpureFunction(const ASR::IntrinsicImpureFunction_t& x) {
+        visit_IntrinsicCall(x, "_intrinsic_array_function_" +
+            ASRUtils::get_impure_intrinsic_name(x.m_impure_intrinsic_id));
+    }
+
     template <typename T>
     void visit_Call(const T& x, const std::string& name_hint) {
         LCOMPILERS_ASSERT(!x.m_dt || !ASRUtils::is_array(ASRUtils::expr_type(x.m_dt)));
