@@ -15,7 +15,7 @@ LFortran is a modern interactive Fortran compiler based on LLVM.
 - `-h, --help`: Print this help message and exit
 - `-S`: Emit assembly, do not assemble or link
 - `-c`: Compile and assemble, do not link
-- `-o TEXT`: Specify the file to place the output into
+- `-o TEXT`: Specify the file to place the compiler's output into
 - `-v`: Be more verbose
 - `-E`: Preprocess only; do not compile, assemble, or link
 - `-l TEXT ...`: Link library option

@@ -1971,7 +1971,7 @@ int main_app(int argc, char *argv[]) {
     app.add_option("files", arg_files, "Source files");
     app.add_flag("-S", arg_S, "Emit assembly, do not assemble or link");
     app.add_flag("-c", arg_c, "Compile and assemble, do not link");
-    app.add_option("-o", compiler_options.arg_o, "Specify the file to place the output into");
+    app.add_option("-o", compiler_options.arg_o, "Specify the file to place the compiler's output into");
     app.add_flag("-v", arg_v, "Be more verbose");
     app.add_flag("-E", arg_E, "Preprocess only; do not compile, assemble or link");
     app.add_option("-l", arg_l, "Link library option")->allow_extra_args(false);
