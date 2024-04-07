@@ -396,115 +396,66 @@ class Simplifier: public ASR::CallReplacerOnExpressionsVisitor<Simplifier>
         visit_Call(x, "_function_call_");
     }
 
+    #define replace_expr_with_temporary_variable(member, name_hint) BEGIN_VAR_CHECK(x.m_##member) \
+        visit_expr(*x.m_##member); \
+        xx.m_##member = create_and_allocate_temporary_variable_for_array( \
+            x.m_##member, name_hint); \
+        END_VAR_CHECK
+
     void visit_ComplexConstructor(const ASR::ComplexConstructor_t& x) {
         ASR::ComplexConstructor_t& xx = const_cast<ASR::ComplexConstructor_t&>(x);
 
-        BEGIN_VAR_CHECK(x.m_re)
-        visit_expr(*x.m_re);
-        ASR::expr_t* array_var_temporary_re = create_and_allocate_temporary_variable_for_array(
-            x.m_re, "_complex_constructor_re");
-        xx.m_re = array_var_temporary_re;
-        END_VAR_CHECK
+        replace_expr_with_temporary_variable(re, "_complex_constructor_re")
 
-        BEGIN_VAR_CHECK(x.m_im)
-        visit_expr(*x.m_im);
-        ASR::expr_t* array_var_temporary_im = create_and_allocate_temporary_variable_for_array(
-            x.m_im, "_complex_constructor_im");
-        xx.m_im = array_var_temporary_im;
-        END_VAR_CHECK
+        replace_expr_with_temporary_variable(im, "_complex_constructor_im")
     }
 
     void visit_ArrayTranspose(const ASR::ArrayTranspose_t& x) {
         ASR::ArrayTranspose_t& xx = const_cast<ASR::ArrayTranspose_t&>(x);
 
-        BEGIN_VAR_CHECK(x.m_matrix)
-        visit_expr(*x.m_matrix);
-        ASR::expr_t* array_var_temporary = create_and_allocate_temporary_variable_for_array(
-            x.m_matrix, "_array_transpose_matrix_");
-        xx.m_matrix = array_var_temporary;
-        END_VAR_CHECK
+        replace_expr_with_temporary_variable(matrix, "_array_transpose_matrix_")
     }
 
     void visit_ArrayPack(const ASR::ArrayPack_t& x) {
         ASR::ArrayPack_t& xx = const_cast<ASR::ArrayPack_t&>(x);
 
-        BEGIN_VAR_CHECK(x.m_array)
-        visit_expr(*x.m_array);
-        ASR::expr_t* array_var_temporary_array = create_and_allocate_temporary_variable_for_array(
-            x.m_array, "_array_pack_array_");
-        xx.m_array = array_var_temporary_array;
-        END_VAR_CHECK
+        replace_expr_with_temporary_variable(array, "_array_pack_array_")
 
-        BEGIN_VAR_CHECK(x.m_mask)
-        visit_expr(*x.m_mask);
-        ASR::expr_t* array_var_temporary_mask = create_and_allocate_temporary_variable_for_array(
-            x.m_mask, "_array_pack_mask_");
-        xx.m_mask = array_var_temporary_mask;
-        END_VAR_CHECK
+        replace_expr_with_temporary_variable(mask, "_array_pack_mask_")
 
         if( x.m_vector ) {
-            BEGIN_VAR_CHECK(x.m_vector)
-            visit_expr(*x.m_vector);
-            ASR::expr_t* array_var_temporary_vector = create_and_allocate_temporary_variable_for_array(
-                x.m_vector, "_array_pack_vector_");
-            xx.m_vector = array_var_temporary_vector;
-            END_VAR_CHECK
+            replace_expr_with_temporary_variable(vector, "_array_pack_vector_")
         }
     }
 
     void visit_ArrayAll(const ASR::ArrayAll_t& x) {
         ASR::ArrayAll_t& xx = const_cast<ASR::ArrayAll_t&>(x);
 
-        BEGIN_VAR_CHECK(x.m_mask)
-        visit_expr(*x.m_mask);
-        ASR::expr_t* array_var_temporary_mask = create_and_allocate_temporary_variable_for_array(
-            x.m_mask, "_array_all_mask_");
-        xx.m_mask = array_var_temporary_mask;
-        END_VAR_CHECK
+        replace_expr_with_temporary_variable(mask, "_array_all_mask_")
     }
 
     void visit_Cast(const ASR::Cast_t& x) {
         ASR::Cast_t& xx = const_cast<ASR::Cast_t&>(x);
 
-        BEGIN_VAR_CHECK(x.m_arg)
-        visit_expr(*x.m_arg);
-        ASR::expr_t* array_var_temporary = create_and_allocate_temporary_variable_for_array(
-            x.m_arg, "_cast_");
-        xx.m_arg = array_var_temporary;
-        END_VAR_CHECK
+        replace_expr_with_temporary_variable(arg, "_cast_")
     }
 
     void visit_ComplexRe(const ASR::ComplexRe_t& x) {
         ASR::ComplexRe_t& xx = const_cast<ASR::ComplexRe_t&>(x);
 
-        BEGIN_VAR_CHECK(x.m_arg)
-        visit_expr(*x.m_arg);
-        ASR::expr_t* array_var_temporary = create_and_allocate_temporary_variable_for_array(
-            x.m_arg, "_complex_re_");
-        xx.m_arg = array_var_temporary;
-        END_VAR_CHECK
+        replace_expr_with_temporary_variable(arg, "_complex_re_")
     }
 
     void visit_ComplexIm(const ASR::ComplexIm_t& x) {
         ASR::ComplexIm_t& xx = const_cast<ASR::ComplexIm_t&>(x);
 
-        BEGIN_VAR_CHECK(x.m_arg)
-        visit_expr(*x.m_arg);
-        ASR::expr_t* array_var_temporary = create_and_allocate_temporary_variable_for_array(
-            x.m_arg, "_complex_im_");
-        xx.m_arg = array_var_temporary;
-        END_VAR_CHECK
+        replace_expr_with_temporary_variable(arg, "_complex_im_")
     }
 
     void visit_RealSqrt(const ASR::RealSqrt_t& x) {
         ASR::RealSqrt_t& xx = const_cast<ASR::RealSqrt_t&>(x);
 
-        BEGIN_VAR_CHECK(x.m_arg);
-        visit_expr(*x.m_arg);
-        ASR::expr_t* array_var_temporary = create_and_allocate_temporary_variable_for_array(
-            x.m_arg, "_real_sqrt_");
-        xx.m_arg = array_var_temporary;
-        END_VAR_CHECK
+        replace_expr_with_temporary_variable(arg, "_real_sqrt_")
     }
 };
 
