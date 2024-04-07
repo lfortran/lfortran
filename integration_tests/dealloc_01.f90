@@ -1,4 +1,4 @@
-module testdrive
+module dealloc_01_testdrive
   use, intrinsic :: iso_fortran_env, only : error_unit
   implicit none
   private
@@ -150,10 +150,10 @@ contains
     error%stat = skipped
   end subroutine skip_test
 
-end module testdrive
+end module
 
-module test_linalg
-use testdrive, only : new_unittest, unittest_type, error_type, skip_test
+module dealloc_01_linalg
+use dealloc_01_testdrive, only : new_unittest, unittest_type, error_type, skip_test
 implicit none
 
 contains
@@ -173,10 +173,10 @@ contains
 end module
 
 
-program tester
+program dealloc_01
 use, intrinsic :: iso_fortran_env, only : error_unit
-use testdrive, only : run_testsuite, testsuite_type
-use test_linalg, only : collect_linalg
+use dealloc_01_testdrive, only : run_testsuite, testsuite_type
+use dealloc_01_linalg, only : collect_linalg
 implicit none
 integer :: stat
 type(testsuite_type), allocatable :: testsuites(:)
