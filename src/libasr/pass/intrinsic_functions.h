@@ -2969,7 +2969,7 @@ namespace BesselJ0 {
         fill_func_arg("x", arg_types[0]);
         auto result = declare(new_name, return_type, ReturnVar);
         {
-            ASR::symbol_t *s = b.create_c_func(b, c_func_name, fn_symtab, return_type, 1, arg_types);
+            ASR::symbol_t *s = b.create_c_func(c_func_name, fn_symtab, return_type, 1, arg_types);
             fn_symtab->add_symbol(c_func_name, s);
             dep.push_back(al, s2c(al, c_func_name));
             body.push_back(al, b.Assignment(result, b.Call(s, args, return_type)));
@@ -3010,7 +3010,7 @@ namespace BesselJ1 {
         fill_func_arg("x", arg_types[0]);
         auto result = declare(new_name, return_type, ReturnVar);
         {
-            ASR::symbol_t *s = b.create_c_func(b, c_func_name, fn_symtab, return_type, 1, arg_types);
+            ASR::symbol_t *s = b.create_c_func(c_func_name, fn_symtab, return_type, 1, arg_types);
             fn_symtab->add_symbol(c_func_name, s);
             dep.push_back(al, s2c(al, c_func_name));
             body.push_back(al, b.Assignment(result, b.Call(s, args, return_type)));
@@ -3051,7 +3051,7 @@ namespace BesselY0 {
         fill_func_arg("x", arg_types[0]);
         auto result = declare(new_name, return_type, ReturnVar);
         {
-            ASR::symbol_t *s = b.create_c_func(b, c_func_name, fn_symtab, return_type, 1, arg_types);
+            ASR::symbol_t *s = b.create_c_func(c_func_name, fn_symtab, return_type, 1, arg_types);
             fn_symtab->add_symbol(c_func_name, s);
             dep.push_back(al, s2c(al, c_func_name));
             body.push_back(al, b.Assignment(result, b.Call(s, args, return_type)));
@@ -3092,7 +3092,7 @@ namespace BesselY1 {
         fill_func_arg("x", arg_types[0]);
         auto result = declare(new_name, return_type, ReturnVar);
         {
-            ASR::symbol_t *s = b.create_c_func(b, c_func_name, fn_symtab, return_type, 1, arg_types);
+            ASR::symbol_t *s = b.create_c_func(c_func_name, fn_symtab, return_type, 1, arg_types);
             fn_symtab->add_symbol(c_func_name, s);
             dep.push_back(al, s2c(al, c_func_name));
             body.push_back(al, b.Assignment(result, b.Call(s, args, return_type)));
@@ -3133,7 +3133,7 @@ namespace Asind {
         fill_func_arg("x", arg_types[0]);
         auto result = declare(new_name, return_type, ReturnVar);
         {
-            ASR::symbol_t *s = b.create_c_func(b, c_func_name, fn_symtab, return_type, 1, arg_types);
+            ASR::symbol_t *s = b.create_c_func(c_func_name, fn_symtab, return_type, 1, arg_types);
             fn_symtab->add_symbol(c_func_name, s);
             dep.push_back(al, s2c(al, c_func_name));
             body.push_back(al, b.Assignment(result, b.Call(s, args, return_type)));
