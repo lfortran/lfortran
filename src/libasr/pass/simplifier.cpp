@@ -462,6 +462,17 @@ class Simplifier: public ASR::CallReplacerOnExpressionsVisitor<Simplifier>
         xx.m_mask = array_var_temporary_mask;
         END_VAR_CHECK
     }
+
+    void visit_Cast(const ASR::Cast_t& x) {
+        ASR::Cast_t& xx = const_cast<ASR::Cast_t&>(x);
+
+        BEGIN_VAR_CHECK(x.m_arg)
+        visit_expr(*x.m_arg);
+        ASR::expr_t* array_var_temporary = create_and_allocate_temporary_variable_for_array(
+            x.m_arg, "_cast_");
+        xx.m_arg = array_var_temporary;
+        END_VAR_CHECK
+    }
 };
 
 void pass_simplifier(Allocator &al, ASR::TranslationUnit_t &unit,
