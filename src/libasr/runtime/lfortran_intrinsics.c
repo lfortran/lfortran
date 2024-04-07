@@ -1232,6 +1232,22 @@ LFORTRAN_API double_complex_t _lfortran_zacos(double_complex_t x)
     return cacos(x);
 }
 
+LFORTRAN_API float _lfortran_sacosd(float x)
+{
+    float PI = 3.14159265358979323846;
+    float result = acos(x);
+    result = (result*180)/PI;
+    return result;
+}
+
+LFORTRAN_API double _lfortran_dacosd(double x)
+{
+    double PI = 3.14159265358979323846;
+    double result = acos(x);
+    result = (result*180)/PI;
+    return result;
+}
+
 // atan ------------------------------------------------------------------------
 
 LFORTRAN_API float _lfortran_satan(float x)

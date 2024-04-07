@@ -33,6 +33,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     Atan2,
     Asinh,
     Asind,
+    Acosd,
     Acosh,
     Atanh,
     Erf,
@@ -3128,6 +3129,47 @@ namespace Asind {
     }
 
 } // namespace Asind
+
+namespace Acosd {
+
+    static ASR::expr_t *eval_Acosd(Allocator &/*al*/, const Location &/*loc*/,
+            ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& /*diag*/) {
+        return nullptr;
+    }
+
+    static inline ASR::expr_t* instantiate_Acosd(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        std::string c_func_name;
+        if (ASRUtils::extract_kind_from_ttype_t(arg_types[0]) == 4) {
+            c_func_name = "_lfortran_sacosd";
+        } else {
+            c_func_name = "_lfortran_dacosd";
+        }
+        std::string new_name = "_lcompilers_acosd_"+ type_to_str_python(arg_types[0]);
+
+        declare_basic_variables(new_name);
+        if (scope->get_symbol(new_name)) {
+            ASR::symbol_t *s = scope->get_symbol(new_name);
+            ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(s);
+            return b.Call(s, new_args, expr_type(f->m_return_var));
+        }
+        fill_func_arg("x", arg_types[0]);
+        auto result = declare(new_name, return_type, ReturnVar);
+        {
+            ASR::symbol_t *s = b.create_c_func(c_func_name, fn_symtab, return_type, 1, arg_types);
+            fn_symtab->add_symbol(c_func_name, s);
+            dep.push_back(al, s2c(al, c_func_name));
+            body.push_back(al, b.Assignment(result, b.Call(s, args, return_type)));
+        }
+
+        ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, new_symbol);
+        return b.Call(new_symbol, new_args, return_type);
+    }
+
+} // namespace Acosd
 
 namespace Poppar {
 
