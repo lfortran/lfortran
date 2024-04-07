@@ -1407,7 +1407,9 @@ LFORTRAN_API void _lfortran_strcpy(char** x, char *y, int8_t free_target)
 {
     if (free_target) {
         if (*x) {
-            free((void *)*x);
+            // We should free `x` here, but cannot due to:
+            // https://github.com/lfortran/lfortran/issues/3787
+            //free((void *)*x);
         }
         *x = (char*) malloc((strlen(y) + 1) * sizeof(char));
         _lfortran_string_init(strlen(y) + 1, *x);
