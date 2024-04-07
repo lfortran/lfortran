@@ -495,6 +495,17 @@ class Simplifier: public ASR::CallReplacerOnExpressionsVisitor<Simplifier>
         xx.m_arg = array_var_temporary;
         END_VAR_CHECK
     }
+
+    void visit_RealSqrt(const ASR::RealSqrt_t& x) {
+        ASR::RealSqrt_t& xx = const_cast<ASR::RealSqrt_t&>(x);
+
+        BEGIN_VAR_CHECK(x.m_arg);
+        visit_expr(*x.m_arg);
+        ASR::expr_t* array_var_temporary = create_and_allocate_temporary_variable_for_array(
+            x.m_arg, "_real_sqrt_");
+        xx.m_arg = array_var_temporary;
+        END_VAR_CHECK
+    }
 };
 
 void pass_simplifier(Allocator &al, ASR::TranslationUnit_t &unit,
