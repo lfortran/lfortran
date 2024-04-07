@@ -8,6 +8,7 @@
 
 #include <vector>
 #include <utility>
+#include <set>
 
 namespace LCompilers {
 
@@ -193,41 +194,48 @@ void insert_allocate_stmt(Allocator& al, ASR::expr_t* temporary_var,
         nullptr, nullptr, nullptr)));
 }
 
-class Simplifier: public ASR::CallReplacerOnExpressionsVisitor<Simplifier>
+#define transform_stmts_impl Vec<ASR::stmt_t*>* current_body_copy = current_body; \
+    Vec<ASR::stmt_t*> current_body_vec; current_body_vec.reserve(al, 1); \
+    current_body_vec.reserve(al, n_body); \
+    current_body = &current_body_vec; \
+    for (size_t i = 0; i < n_body; i++) { \
+        visit_stmt(*m_body[i]); \
+        current_body->push_back(al, m_body[i]); \
+    } \
+    m_body = current_body_vec.p; n_body = current_body_vec.size(); \
+    current_body = current_body_copy;
+
+ASR::expr_t* create_and_allocate_temporary_variable_for_array(
+    ASR::expr_t* array_expr, const std::string& name_hint, Allocator& al,
+    Vec<ASR::stmt_t*>*& current_body, SymbolTable* current_scope,
+    std::set<ASR::expr_t*>& exprs_with_target) {
+    const Location& loc = array_expr->base.loc;
+    ASR::expr_t* array_var_temporary = create_temporary_variable_for_array(
+        al, array_expr, current_scope, name_hint);
+    insert_allocate_stmt(al, array_var_temporary, array_expr, current_body);
+    array_expr = ASRUtils::get_past_array_physical_cast(array_expr);
+    exprs_with_target.insert(array_expr);
+    current_body->push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(
+        al, loc, array_var_temporary, array_expr, nullptr)));
+    return array_var_temporary;
+}
+
+class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
 {
 
     private:
 
     Allocator& al;
     Vec<ASR::stmt_t*>* current_body;
+    std::set<ASR::expr_t*>& exprs_with_target;
 
     public:
 
-    Simplifier(Allocator& al_) : al(al_), current_body(nullptr) {}
+    ArgSimplifier(Allocator& al_, std::set<ASR::expr_t*>& exprs_with_target_) :
+        al(al_), current_body(nullptr), exprs_with_target(exprs_with_target_) {}
 
     void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
-        Vec<ASR::stmt_t*>* current_body_copy = current_body;
-        Vec<ASR::stmt_t*> current_body_vec; current_body_vec.reserve(al, 1);
-        current_body_vec.reserve(al, n_body);
-        current_body = &current_body_vec;
-        for (size_t i = 0; i < n_body; i++) {
-            visit_stmt(*m_body[i]);
-            current_body->push_back(al, m_body[i]);
-        }
-        m_body = current_body_vec.p; n_body = current_body_vec.size();
-        current_body = current_body_copy;
-    }
-
-    ASR::expr_t* create_and_allocate_temporary_variable_for_array(
-        ASR::expr_t* array_expr, const std::string& name_hint) {
-        const Location& loc = array_expr->base.loc;
-        ASR::expr_t* array_var_temporary = create_temporary_variable_for_array(
-            al, array_expr, current_scope, name_hint);
-        insert_allocate_stmt(al, array_var_temporary, array_expr, current_body);
-        array_expr = ASRUtils::get_past_array_physical_cast(array_expr);
-        current_body->push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(
-            al, loc, array_var_temporary, array_expr, nullptr)));
-        return array_var_temporary;
+        transform_stmts_impl
     }
 
     #define BEGIN_VAR_CHECK(expr) if( !ASR::is_a<ASR::Var_t>(*expr) ) {
@@ -243,7 +251,7 @@ class Simplifier: public ASR::CallReplacerOnExpressionsVisitor<Simplifier>
                 !ASR::is_a<ASR::Var_t>(*x.m_values[i]) ) {
                 visit_expr(*x.m_values[i]);
                 ASR::expr_t* array_var_temporary = create_and_allocate_temporary_variable_for_array(
-                    x.m_values[i], name_hint);
+                    x.m_values[i], name_hint, al, current_body, current_scope, exprs_with_target);
                 x_m_values.push_back(al, array_var_temporary);
             } else {
                 x_m_values.push_back(al, x.m_values[i]);
@@ -272,7 +280,7 @@ class Simplifier: public ASR::CallReplacerOnExpressionsVisitor<Simplifier>
                 !ASR::is_a<ASR::Var_t>(*x_m_args[i]) ) {
                 visit_expr(*x_m_args[i]);
                 ASR::expr_t* array_var_temporary = create_and_allocate_temporary_variable_for_array(
-                    x_m_args[i], name_hint);
+                    x_m_args[i], name_hint, al, current_body, current_scope, exprs_with_target);
                 if( ASR::is_a<ASR::ArrayPhysicalCast_t>(*x_m_args[i]) ) {
                     ASR::ArrayPhysicalCast_t* x_m_args_i = ASR::down_cast<ASR::ArrayPhysicalCast_t>(x_m_args[i]);
                     array_var_temporary = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
@@ -350,7 +358,7 @@ class Simplifier: public ASR::CallReplacerOnExpressionsVisitor<Simplifier>
                 !ASR::is_a<ASR::Var_t>(*x_m_args[i].m_value) ) {
                 visit_call_arg(x_m_args[i]);
                 ASR::expr_t* array_var_temporary = create_and_allocate_temporary_variable_for_array(
-                    x_m_args[i].m_value, name_hint);
+                    x_m_args[i].m_value, name_hint, al, current_body, current_scope, exprs_with_target);
                 if( ASR::is_a<ASR::ArrayPhysicalCast_t>(*x_m_args[i].m_value) ) {
                     ASR::ArrayPhysicalCast_t* x_m_args_i = ASR::down_cast<ASR::ArrayPhysicalCast_t>(x_m_args[i].m_value);
                     array_var_temporary = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
@@ -399,7 +407,7 @@ class Simplifier: public ASR::CallReplacerOnExpressionsVisitor<Simplifier>
     #define replace_expr_with_temporary_variable(member, name_hint) BEGIN_VAR_CHECK(x.m_##member) \
         visit_expr(*x.m_##member); \
         xx.m_##member = create_and_allocate_temporary_variable_for_array( \
-            x.m_##member, name_hint); \
+            x.m_##member, name_hint, al, current_body, current_scope, exprs_with_target); \
         END_VAR_CHECK
 
     void visit_ComplexConstructor(const ASR::ComplexConstructor_t& x) {
@@ -459,9 +467,69 @@ class Simplifier: public ASR::CallReplacerOnExpressionsVisitor<Simplifier>
     }
 };
 
+class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemporary> {
+
+    private:
+
+    Allocator& al;
+    std::set<ASR::expr_t*>& exprs_with_target;
+
+    public:
+
+    Vec<ASR::stmt_t*>* current_body;
+    SymbolTable* current_scope;
+
+    ReplaceExprWithTemporary(Allocator& al_, std::set<ASR::expr_t*>& exprs_with_target_) :
+        al(al_), exprs_with_target(exprs_with_target_), current_scope(nullptr) {}
+
+    #define is_current_expr_linked_to_target_then_return if( exprs_with_target.find(*current_expr) != exprs_with_target.end() ) { \
+            return ; \
+        }
+
+    void replace_ComplexConstructor(ASR::ComplexConstructor_t* x) {
+        is_current_expr_linked_to_target_then_return
+
+        if( ASRUtils::is_array(x->m_type) ) {
+            *current_expr = create_and_allocate_temporary_variable_for_array(
+                *current_expr, "_complex_constructor_", al, current_body,
+                current_scope, exprs_with_target);
+        }
+    }
+
+};
+
+class ReplaceExprWithTemporaryVisitor:
+    public ASR::CallReplacerOnExpressionsVisitor<ReplaceExprWithTemporaryVisitor> {
+
+    private:
+
+    Allocator& al;
+    std::set<ASR::expr_t*>& exprs_with_target;
+    Vec<ASR::stmt_t*>* current_body;
+    ReplaceExprWithTemporary replacer;
+
+    public:
+
+    ReplaceExprWithTemporaryVisitor(Allocator& al_, std::set<ASR::expr_t*>& exprs_with_target_):
+        al(al_), exprs_with_target(exprs_with_target_), replacer(al, exprs_with_target) {}
+
+    void call_replacer() {
+        replacer.current_expr = current_expr;
+        replacer.current_body = current_body;
+        replacer.current_scope = current_scope;
+        replacer.replace_expr(*current_expr);
+    }
+
+    void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
+        transform_stmts_impl
+    }
+
+};
+
 void pass_simplifier(Allocator &al, ASR::TranslationUnit_t &unit,
                      const PassOptions &/*pass_options*/) {
-    Simplifier v(al);
+    std::set<ASR::expr_t*> exprs_with_target;
+    ArgSimplifier v(al, exprs_with_target);
     v.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor u(al);
     u.visit_TranslationUnit(unit);
