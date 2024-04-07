@@ -473,6 +473,28 @@ class Simplifier: public ASR::CallReplacerOnExpressionsVisitor<Simplifier>
         xx.m_arg = array_var_temporary;
         END_VAR_CHECK
     }
+
+    void visit_ComplexRe(const ASR::ComplexRe_t& x) {
+        ASR::ComplexRe_t& xx = const_cast<ASR::ComplexRe_t&>(x);
+
+        BEGIN_VAR_CHECK(x.m_arg)
+        visit_expr(*x.m_arg);
+        ASR::expr_t* array_var_temporary = create_and_allocate_temporary_variable_for_array(
+            x.m_arg, "_complex_re_");
+        xx.m_arg = array_var_temporary;
+        END_VAR_CHECK
+    }
+
+    void visit_ComplexIm(const ASR::ComplexIm_t& x) {
+        ASR::ComplexIm_t& xx = const_cast<ASR::ComplexIm_t&>(x);
+
+        BEGIN_VAR_CHECK(x.m_arg)
+        visit_expr(*x.m_arg);
+        ASR::expr_t* array_var_temporary = create_and_allocate_temporary_variable_for_array(
+            x.m_arg, "_complex_im_");
+        xx.m_arg = array_var_temporary;
+        END_VAR_CHECK
+    }
 };
 
 void pass_simplifier(Allocator &al, ASR::TranslationUnit_t &unit,
