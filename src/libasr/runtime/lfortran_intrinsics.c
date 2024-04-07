@@ -1784,9 +1784,7 @@ LFORTRAN_API int8_t* _lfortran_calloc(int32_t count, int32_t size) {
 }
 
 LFORTRAN_API void _lfortran_free(char* ptr) {
-    // We should free `ptr` here, but cannot due to:
-    // https://github.com/lfortran/lfortran/issues/3787
-    //free((void*)ptr);
+    free((void*)ptr);
 }
 
 LFORTRAN_API void _lfortran_alloc(char** ptr, int32_t size) {
