@@ -89,7 +89,7 @@ compilation options, output options, link options and so on.
 * `-c`, Compile and assemble, do not link
 * `--generate-object-code`, Generate object code into .o files
 * `-J <value>`, Where to save mod files
-* `-o <value>`, Specify the file to place the output into
+* `-o <value>`, Specify the file to place the compiler's output into
 * `--static`, Create a static executable
 
 ### Compiler debugging
