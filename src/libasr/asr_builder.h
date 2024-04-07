@@ -403,6 +403,10 @@ class ASRBuilder {
         return EXPR(ASR::make_RealBinOp_t(al, loc, left, ASR::binopType::Mul, right, t, nullptr));
     }
 
+    inline ASR::expr_t* r_tDiv(ASR::expr_t* left, ASR::expr_t* right, ASR::ttype_t* t) {
+        return EXPR(ASR::make_RealBinOp_t(al, loc, left, ASR::binopType::Div, right, t, nullptr));
+    }
+
     inline ASR::expr_t* iPow(ASR::expr_t* left, ASR::expr_t* right, ASR::ttype_t* t) {
         return EXPR(ASR::make_IntegerBinOp_t(al, loc, left, ASR::binopType::Pow, right, t, nullptr));
     }
