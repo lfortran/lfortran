@@ -436,6 +436,16 @@ class Simplifier: public ASR::CallReplacerOnExpressionsVisitor<Simplifier>
         }
     }
 
+    void visit_ArrayAll(const ASR::ArrayAll_t& x) {
+        ASR::ArrayAll_t& xx = const_cast<ASR::ArrayAll_t&>(x);
+
+        BEGIN_VAR_CHECK(x.m_mask)
+        visit_expr(*x.m_mask);
+        ASR::expr_t* array_var_temporary_mask = create_and_allocate_temporary_variable_for_array(
+            x.m_mask, "_array_all_mask_");
+        xx.m_mask = array_var_temporary_mask;
+        END_VAR_CHECK
+    }
 };
 
 void pass_simplifier(Allocator &al, ASR::TranslationUnit_t &unit,
