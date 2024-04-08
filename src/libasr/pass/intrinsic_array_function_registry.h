@@ -2279,7 +2279,7 @@ namespace Pack {
             ASR::expr_t* count = EXPR(Count::create_Count(al, loc, args_count, diag));
             result_dims.push_back(al, b.set_dim(array_dims[0].m_start, count));
             ret_type = ASRUtils::duplicate_type(al, ret_type, &result_dims, ASR::array_physical_typeType::DescriptorArray, true);
-            // is_type_allocatable = true;
+            is_type_allocatable = true;
         }
         if (is_type_allocatable) {
             ret_type = TYPE(ASR::make_Allocatable_t(al, loc, ret_type));
