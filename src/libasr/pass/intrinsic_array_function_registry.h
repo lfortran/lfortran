@@ -1810,9 +1810,34 @@ namespace Count {
             "cannot be nullptr", x.base.base.loc, diagnostics);
     }
 
-    static inline ASR::expr_t *eval_Count(Allocator &/*al*/,
-        const Location &/*loc*/, ASR::ttype_t */*return_type*/, Vec<ASR::expr_t*>& /*args*/, diag::Diagnostics& /*diag*/) {
-        // TODO
+    static inline ASR::expr_t *eval_Count(Allocator &al,
+        const Location &loc, ASR::ttype_t *return_type, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
+        if (!args[0]) {
+            return nullptr;
+        }
+        ASR::expr_t* array = ASRUtils::expr_value(args[0]);
+        ASR::expr_t* dim = { args.size() > 1 ? ASRUtils::expr_value(args[1]) : nullptr };
+        if (dim) {
+            LCOMPILERS_ASSERT(ASR::is_a<ASR::IntegerConstant_t>(*dim))
+        }
+        ASR::expr_t* kind = { args.size() > 2 ? ASRUtils::expr_value(args[2]) : nullptr };
+        if (kind) {
+            LCOMPILERS_ASSERT(ASR::is_a<ASR::IntegerConstant_t>(*kind))
+        }
+        if (ASR::is_a<ASR::ArrayConstant_t>(*array)) {
+            ASR::ArrayConstant_t* arr = ASR::down_cast<ASR::ArrayConstant_t>(array);
+            int val_count { 0 };
+            for (size_t i=0; i < arr->n_args; i++) {
+                ASR::expr_t* arr_i = arr->m_args[i];
+                ASR::LogicalConstant_t* log_arr_i = ASR::down_cast<ASR::LogicalConstant_t>(arr_i);
+                if (log_arr_i->m_value) {
+                    val_count += 1;
+                }
+            }
+            const int kind { ASRUtils::extract_kind_from_ttype_t(return_type) };
+            ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, kind));
+            return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, val_count, int_type));
+        }
         return nullptr;
     }
 
@@ -1859,10 +1884,6 @@ namespace Count {
         Vec<ASR::expr_t*> arg_values; arg_values.reserve(al, 2);
         ASR::expr_t *mask_value = ASRUtils::expr_value(mask);
         arg_values.push_back(al, mask_value);
-        if( mask ) {
-            ASR::expr_t *mask_value = ASRUtils::expr_value(mask);
-            arg_values.push_back(al, mask_value);
-        }
 
         ASR::ttype_t* return_type = nullptr;
         if( overload_id == id_mask ) {
@@ -1885,8 +1906,7 @@ namespace Count {
             int kind_value = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(kind))->m_n;
             return_type = TYPE(ASR::make_Integer_t(al, loc, kind_value));
         }
-        // value = eval_Count(al, loc, return_type, arg_values, diag);
-        value = nullptr;
+        value = eval_Count(al, loc, return_type, arg_values, diag);
 
         Vec<ASR::expr_t*> arr_intrinsic_args; arr_intrinsic_args.reserve(al, 1);
         arr_intrinsic_args.push_back(al, mask);
@@ -2064,21 +2084,25 @@ namespace Pack {
 
     static inline ASR::expr_t *eval_Pack(Allocator & al,
         const Location & loc, ASR::ttype_t *return_type, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
-        ASR::expr_t *array = args[0], *mask = args[1], *vector = args[2];
+        ASR::expr_t *array = ASRUtils::expr_value(args[0]);
+        ASR::expr_t *mask = { args[1] ? ASRUtils::expr_value(args[1]) : args[1] };
+        ASR::expr_t *vector = { args[2] ? ASRUtils::expr_value(args[2]) : args[2] };
         ASR::ttype_t *type_array = ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(expr_type(array)));
-        ASR::ttype_t *type_vector = ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(expr_type(vector)));
-        ASR::ttype_t* type_a = ASRUtils::type_get_past_array(type_array);
-
-        int kind = ASRUtils::extract_kind_from_ttype_t(type_a);
-        int dim_array = ASRUtils::get_fixed_size_of_array(type_array);
-        int dim_vector = 0;
-
-        bool is_vector_present = false;
-        if (vector) is_vector_present = true;
-        if (is_vector_present) dim_vector = ASRUtils::get_fixed_size_of_array(type_vector);
+        ASR::ttype_t* type_vector { nullptr };
+        if (vector) {
+            type_vector = ASRUtils::type_get_past_pointer(
+                            ASRUtils::type_get_past_allocatable(
+                                expr_type(vector)));
+        }
+        ASR::ttype_t* type_a { ASRUtils::type_get_past_array(type_array) };
+        const int kind { ASRUtils::extract_kind_from_ttype_t(type_a) };
+        const int64_t dim_array { ASRUtils::get_fixed_size_of_array(type_array) };
+        const int64_t dim_vector { vector ? ASRUtils::get_fixed_size_of_array(type_vector) : 0 };
 
         std::vector<bool> b(dim_array);
-        populate_vector(b, mask, dim_array);
+        if (mask) {
+            populate_vector(b, mask, dim_array);
+        }
 
         if (ASRUtils::is_real(*type_a)) {
             if (kind == 4) {
@@ -2255,7 +2279,7 @@ namespace Pack {
             ASR::expr_t* count = EXPR(Count::create_Count(al, loc, args_count, diag));
             result_dims.push_back(al, b.set_dim(array_dims[0].m_start, count));
             ret_type = ASRUtils::duplicate_type(al, ret_type, &result_dims, ASR::array_physical_typeType::DescriptorArray, true);
-            is_type_allocatable = true;
+            // is_type_allocatable = true;
         }
         if (is_type_allocatable) {
             ret_type = TYPE(ASR::make_Allocatable_t(al, loc, ret_type));
