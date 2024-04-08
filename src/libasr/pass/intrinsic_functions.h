@@ -1940,6 +1940,9 @@ namespace Floor {
         return b.Call(f_sym, new_args, return_type, nullptr);
 
     }
+    static inline ASR::expr_t* FLOOR(ASRBuilder &b, ASR::expr_t* x, ASR::ttype_t* t, SymbolTable* scope) {
+        return b.CallIntrinsic(scope, {expr_type(x)}, {x}, t, 0, Floor::instantiate_Floor);
+    }
 
 } // namespace Floor
 
@@ -2886,19 +2889,11 @@ namespace Modulo {
         if (is_integer(*ASRUtils::expr_type(args[0])) && is_integer(*ASRUtils::expr_type(args[1]))) {
             int64_t a = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
             int64_t b = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
-            if ( a*b >= 0 ) {
-                return make_ConstantWithType(make_IntegerConstant_t, a % b, t1, loc);
-            } else {
-                return make_ConstantWithType(make_IntegerConstant_t, a % b + b, t1, loc);
-            }
+            return make_ConstantWithType(make_IntegerConstant_t, a - b * std::floor(a/b), t1, loc);
         } else if (is_real(*ASRUtils::expr_type(args[0])) && is_real(*ASRUtils::expr_type(args[1]))) {
             double a = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
             double b = ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r;
-            if ( a*b > 0 ) {
-                return make_ConstantWithType(make_RealConstant_t, std::fmod(a, b), t1, loc);
-            } else {
-                return make_ConstantWithType(make_RealConstant_t, std::fmod(a, b) + b, t1, loc);
-            }
+            return make_ConstantWithType(make_RealConstant_t, a - b * std::floor(a/b), t1, loc);
         }
         return nullptr;
     }
@@ -2912,26 +2907,13 @@ namespace Modulo {
         auto result = declare(fn_name, return_type, ReturnVar);
         /*
         function modulo(a, p) result(d)
-            if ( a*p >= 0 ) then
-                d = mod(a, p)
-            else
-                d = mod(a, p) + p
-            end if
+            d = a - p * floor(a/p)
         end function
         */
-
-        if (is_real(*arg_types[0])) {
-            body.push_back(al, b.If(b.fGtE(b.r_tMul(args[0], args[1], arg_types[0]), b.f(0.0, arg_types[0])), {
-                b.Assignment(result, Mod::MOD(b, args[0], args[1], scope))
-            }, {
-                b.Assignment(result, b.r_tAdd(Mod::MOD(b, args[0], args[1], scope), args[1], arg_types[0]))
-            }));
+        if (is_real(*arg_types[0])) {                
+            body.push_back(al, b.Assignment(result, b.r_tSub(args[0], b.r_tMul(args[1], b.i2r(Floor::FLOOR(b, b.r_tDiv(args[0], args[1], return_type), int32, scope), arg_types[1]), return_type), return_type)));
         } else {
-            body.push_back(al, b.If(b.iGtE(b.i_tMul(args[0], args[1], arg_types[0]), b.i(0, arg_types[0])), {
-                b.Assignment(result, Mod::MOD(b, args[0], args[1], scope))
-            }, {
-                b.Assignment(result, b.i_tAdd(Mod::MOD(b, args[0], args[1], scope), args[1], arg_types[0]))
-            }));
+            body.push_back(al, b.Assignment(result, b.i_tSub(args[0], b.i_tMul(args[1], Floor::FLOOR(b, b.r32Div(b.i2r32(args[0]), b.i2r32(args[1])), int32, scope), return_type), return_type)));
         }
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
