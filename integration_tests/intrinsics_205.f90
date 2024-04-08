@@ -73,4 +73,68 @@ program intrinsics_203
     print *, acosd(k)
     if (acosd(k) - 136.718987997582900_dp > 1e-12) error stop
 
+    i = -1.0_dp
+    j = -0.9995004995004995_dp
+    k = -0.999000999000999_dp
+
+    print *, acosd(i)
+    if (acosd(i) - 180.0_dp > 1e-12) error stop
+
+    print *, acosd(j)
+    if (acosd(j) - 178.18897822198568_dp > 1e-12) error stop
+
+    print *, acosd(k)
+    if (acosd(k) - 177.43872179938884_dp > 1e-12) error stop
+
+    i = -0.9985014985014985_dp
+    j = -0.998001998001998_dp
+    k = -0.9975024975024975_dp
+
+    print *, acosd(i)
+    if (acosd(i) - 176.86295702294953_dp > 1e-12) error stop
+
+    print *, acosd(j)
+    if (acosd(j) - 176.377503905344_dp > 1e-12) error stop
+
+    print *, acosd(k)
+    if (acosd(k) - 175.94975751498464_dp > 1e-12) error stop
+
+    i = -0.997002997002997_dp
+    j = -0.9965034965034965_dp
+    k = -0.996003996003996_dp
+
+    print *, acosd(i)
+    if (acosd(i) - 175.5629967823349_dp > 1e-12) error stop
+
+    print *, acosd(j)
+    if (acosd(j) - 175.20728904760477_dp > 1e-12) error stop
+
+    print *, acosd(k)
+    if (acosd(k) - 174.87616290603896_dp > 1e-12) error stop
+
+    i = -0.9955044955044955_dp
+    j = -0.995004995004995_dp
+    k = -0.9945054945054945_dp
+
+    print *, acosd(i)
+    if (acosd(i) - 174.5651234927047_dp > 1e-12) error stop
+
+    print *, acosd(j)
+    if (acosd(j) - 174.27089826020691_dp > 1e-12) error stop
+
+    print *, acosd(k)
+    if (acosd(k) - 173.99101680223387_dp > 1e-12) error stop
+
+    i = -0.994005994005994_dp
+
+    print *, acosd(i)
+    if (acosd(i) - 173.72355993833804_dp > 1e-12) error stop
+
+    print *, acosd(0.123)
+    if (acosd(0.123) - 97.0652695 > 1e-5) error stop
+
 end program
+
+
+
+
