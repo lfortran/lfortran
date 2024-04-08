@@ -114,7 +114,7 @@ expr
     | LogicalBinOp(expr left, logicalbinop op, expr right, ttype type, expr? value)
     | ListConstant(expr* args, ttype type) -- temporary needed
     | ListLen(expr arg, ttype type, expr? value)
-    | ListConcat(expr left, expr right, ttype type, expr? value) -- temporary needed
+    | ListConcat(expr left, expr right, ttype type, expr? value)
     | ListCompare(expr left, cmpop op, expr right, ttype type, expr? value)
     | ListCount(expr arg, expr ele, ttype type, expr? value)
     | SetConstant(expr* elements, ttype type) -- temporary needed

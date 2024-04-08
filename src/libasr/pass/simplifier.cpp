@@ -528,6 +528,30 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         replace_current_expr("_union_type_constructor_")
     }
 
+    void replace_ImpliedDoLoop(ASR::ImpliedDoLoop_t* x) {
+        replace_current_expr("_implied_do_loop_")
+    }
+
+    void replace_ListConstant(ASR::ListConstant_t* x) {
+        replace_current_expr("_list_constant_")
+    }
+
+    void replace_SetConstant(ASR::SetConstant_t* x) {
+        replace_current_expr("_set_constant_")
+    }
+
+    void replace_TupleConstant(ASR::TupleConstant_t* x) {
+        replace_current_expr("_tuple_constant_")
+    }
+
+    void replace_StringSection(ASR::StringSection_t* x) {
+        replace_current_expr("_string_section_")
+    }
+
+    void replace_DictConstant(ASR::DictConstant_t* x) {
+        replace_current_expr("_dict_constant_")
+    }
+
 };
 
 class ReplaceExprWithTemporaryVisitor:
