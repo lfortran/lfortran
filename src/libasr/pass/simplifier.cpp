@@ -486,50 +486,34 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
             return ; \
         }
 
-    void replace_ComplexConstructor(ASR::ComplexConstructor_t* x) {
-        is_current_expr_linked_to_target_then_return
-
-        if( ASRUtils::is_array(x->m_type) ) {
-            *current_expr = create_and_allocate_temporary_variable_for_array(
-                *current_expr, "_complex_constructor_", al, current_body,
-                current_scope, exprs_with_target);
+    #define replace_current_expr(name_hint) is_current_expr_linked_to_target_then_return \
+        if( ASRUtils::is_array(x->m_type) ) { \
+            *current_expr = create_and_allocate_temporary_variable_for_array( \
+                *current_expr, name_hint, al, current_body, \
+                current_scope, exprs_with_target); \
         }
+
+    void replace_ComplexConstructor(ASR::ComplexConstructor_t* x) {
+        replace_current_expr("_complex_constructor_")
     }
 
     void replace_FunctionCall(ASR::FunctionCall_t* x) {
-        is_current_expr_linked_to_target_then_return
-
         if( PassUtils::is_elemental(x->m_name) ) {
             return ;
         }
 
-        if( ASRUtils::is_array(x->m_type) ) {
-            *current_expr = create_and_allocate_temporary_variable_for_array(
-                *current_expr, std::string("_function_call_") + ASRUtils::symbol_name(x->m_name),
-                al, current_body, current_scope, exprs_with_target);
-        }
+        replace_current_expr(std::string("_function_call_") +
+            ASRUtils::symbol_name(x->m_name))
     }
 
     void replace_IntrinsicArrayFunction(ASR::IntrinsicArrayFunction_t* x) {
-        is_current_expr_linked_to_target_then_return
-
-        if( ASRUtils::is_array(x->m_type) ) {
-            *current_expr = create_and_allocate_temporary_variable_for_array(
-                *current_expr, std::string("_intrinsic_array_function_") +
-                ASRUtils::get_array_intrinsic_name(x->m_arr_intrinsic_id),
-                al, current_body, current_scope, exprs_with_target);
-        }
+        replace_current_expr(std::string("_intrinsic_array_function_") +
+            ASRUtils::get_array_intrinsic_name(x->m_arr_intrinsic_id))
     }
 
     void replace_IntrinsicImpureFunction(ASR::IntrinsicImpureFunction_t* x) {
-        is_current_expr_linked_to_target_then_return
-
-        if( ASRUtils::is_array(x->m_type) ) {
-            *current_expr = create_and_allocate_temporary_variable_for_array(
-                *current_expr, std::string("_intrinsic_impure_function_") +
-                ASRUtils::get_impure_intrinsic_name(x->m_impure_intrinsic_id),
-                al, current_body, current_scope, exprs_with_target);
-        }
+        replace_current_expr(std::string("_intrinsic_impure_function_") +
+            ASRUtils::get_impure_intrinsic_name(x->m_impure_intrinsic_id))
     }
 
 };
