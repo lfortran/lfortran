@@ -3,6 +3,7 @@
 
 #include <libasr/asr_builder.h>
 #include <libasr/casting_utils.h>
+#include <math.h>
 
 namespace LCompilers::ASRUtils {
 
@@ -3132,9 +3133,12 @@ namespace Asind {
 
 namespace Acosd {
 
-    static ASR::expr_t *eval_Acosd(Allocator &/*al*/, const Location &/*loc*/,
-            ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& /*diag*/) {
-        return nullptr;
+    static ASR::expr_t* eval_Acosd(Allocator& al, const Location& loc,
+            ASR::ttype_t* t1, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
+        double i = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
+        double PI = 3.14159265358979323846;
+        double result = acos(i) * 180.0 / PI;
+        return make_ConstantWithType(make_RealConstant_t, result, t1, loc);
     }
 
     static inline ASR::expr_t* instantiate_Acosd(Allocator &al, const Location &loc,
