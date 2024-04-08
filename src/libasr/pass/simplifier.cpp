@@ -496,6 +496,20 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         }
     }
 
+    void replace_FunctionCall(ASR::FunctionCall_t* x) {
+        is_current_expr_linked_to_target_then_return
+
+        if( PassUtils::is_elemental(x->m_name) ) {
+            return ;
+        }
+
+        if( ASRUtils::is_array(x->m_type) ) {
+            *current_expr = create_and_allocate_temporary_variable_for_array(
+                *current_expr, std::string("_function_call_") + ASRUtils::symbol_name(x->m_name),
+                al, current_body, current_scope, exprs_with_target);
+        }
+    }
+
 };
 
 class ReplaceExprWithTemporaryVisitor:
