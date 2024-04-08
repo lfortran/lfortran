@@ -516,6 +516,18 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
             ASRUtils::get_impure_intrinsic_name(x->m_impure_intrinsic_id))
     }
 
+    void replace_StructTypeConstructor(ASR::StructTypeConstructor_t* x) {
+        replace_current_expr("_struct_type_constructor_")
+    }
+
+    void replace_EnumTypeConstructor(ASR::EnumTypeConstructor_t* x) {
+        replace_current_expr("_enum_type_constructor_")
+    }
+
+    void replace_UnionTypeConstructor(ASR::UnionTypeConstructor_t* x) {
+        replace_current_expr("_union_type_constructor_")
+    }
+
 };
 
 class ReplaceExprWithTemporaryVisitor:
