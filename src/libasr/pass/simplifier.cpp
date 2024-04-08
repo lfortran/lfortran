@@ -511,10 +511,23 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     }
 
     void replace_IntrinsicArrayFunction(ASR::IntrinsicArrayFunction_t* x) {
+        is_current_expr_linked_to_target_then_return
+
         if( ASRUtils::is_array(x->m_type) ) {
             *current_expr = create_and_allocate_temporary_variable_for_array(
                 *current_expr, std::string("_intrinsic_array_function_") +
                 ASRUtils::get_array_intrinsic_name(x->m_arr_intrinsic_id),
+                al, current_body, current_scope, exprs_with_target);
+        }
+    }
+
+    void replace_IntrinsicImpureFunction(ASR::IntrinsicImpureFunction_t* x) {
+        is_current_expr_linked_to_target_then_return
+
+        if( ASRUtils::is_array(x->m_type) ) {
+            *current_expr = create_and_allocate_temporary_variable_for_array(
+                *current_expr, std::string("_intrinsic_impure_function_") +
+                ASRUtils::get_impure_intrinsic_name(x->m_impure_intrinsic_id),
                 al, current_body, current_scope, exprs_with_target);
         }
     }
