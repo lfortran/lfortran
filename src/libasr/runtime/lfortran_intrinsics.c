@@ -41,6 +41,10 @@ extern int dl_iterate_phdr (int (*__callback) (struct dl_phdr_info *,
 #  include <unwind.h>
 #endif
 
+#ifdef COMPILE_TO_WASM
+    #undef HAVE_LFORTRAN_MACHO
+#endif
+
 #ifdef HAVE_LFORTRAN_MACHO
 #  include <mach-o/dyld.h>
 #endif
