@@ -1560,6 +1560,16 @@ int link_executable(const std::vector<std::string> &infiles,
             }
             compile_cmd += runtime_library_dir + "\\lfortran_runtime_static.lib";
             run_cmd = outfile;
+        } else if (LCompilers::startswith(t, "wasm")) {
+            std::string wasi_sdk_path = std::getenv("WASI_SDK_PATH");
+            std::string CC = wasi_sdk_path + "/bin/clang";
+            std::string options = " --target=wasm32-wasi -nostartfiles -Wl,--entry=_start -Wl,-lwasi-emulated-process-clocks";
+            std::string runtime_lib = "lfortran_runtime_wasm.o";
+            compile_cmd = CC + options + " -o " + outfile + " ";
+            for (auto &s : infiles) {
+                compile_cmd += s + " ";
+            }
+            compile_cmd += runtime_library_dir + "/" + runtime_lib;
         } else {
             std::string CC;
             std::string base_path = "\"" + runtime_library_dir + "\"";
@@ -1741,6 +1751,8 @@ int link_executable(const std::vector<std::string> &infiles,
         run_cmd = "node --experimental-wasi-unstable-preview1 " + outfile + ".js";
     } else if (t == "x86_64-pc-windows-msvc") {
         run_cmd = outfile;
+    } else if (LCompilers::startswith(t, "wasm")) {
+        run_cmd = "wasmtime " + outfile + " --dir=.";
     } else {
         run_cmd = "./" + outfile;
     }
