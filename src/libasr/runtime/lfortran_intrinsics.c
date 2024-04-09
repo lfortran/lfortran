@@ -10,6 +10,7 @@
 #include <limits.h>
 #include <ctype.h>
 
+#define PI 3.14159265358979323846
 #if defined(_WIN32)
 #  include <winsock2.h>
 #  include <io.h>
@@ -1196,18 +1197,12 @@ LFORTRAN_API double_complex_t _lfortran_zasin(double_complex_t x)
 
 LFORTRAN_API float _lfortran_sasind(float x)
 {
-    float PI = 3.14159265358979323846;
-    float result = asin(x);
-    result = (result*180)/PI;
-    return result;
+    return (asin(x)*180)/PI;
 }
 
 LFORTRAN_API double _lfortran_dasind(double x)
 {
-    double PI = 3.14159265358979323846;
-    double result = asin(x);
-    result = (result*180)/PI;
-    return result;
+    return (asin(x)*180)/PI;
 }
 
 // acos ------------------------------------------------------------------------
@@ -1230,6 +1225,16 @@ LFORTRAN_API float_complex_t _lfortran_cacos(float_complex_t x)
 LFORTRAN_API double_complex_t _lfortran_zacos(double_complex_t x)
 {
     return cacos(x);
+}
+
+LFORTRAN_API float _lfortran_sacosd(float x)
+{
+    return (acos(x)*180)/PI;
+}
+
+LFORTRAN_API double _lfortran_dacosd(double x)
+{
+    return (acos(x)*180)/PI;
 }
 
 // atan ------------------------------------------------------------------------
