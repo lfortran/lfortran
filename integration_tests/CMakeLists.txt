@@ -220,6 +220,9 @@ endmacro(COMPILE)
 RUN(NAME program_cmake_01 LABELS gfortran llvm cpp x86 wasm c fortran)
 RUN(NAME program_cmake_02 LABELS gfortran llvm cpp x86 wasm c fortran)
 
+RUN(NAME test_linalg LABELS gfortran llvm
+    EXTRA_ARGS --realloc-lhs)
+
 RUN(NAME error_stop_01 FAIL LABELS gfortran llvm cpp x86 wasm llvm2 fortran)
 RUN(NAME error_stop_02 FAIL LABELS llvm wasm llvm2 fortran)
 RUN(NAME error_stop_03 LABELS gfortran llvm)
