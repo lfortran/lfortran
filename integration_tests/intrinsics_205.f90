@@ -30,7 +30,7 @@ program intrinsics_205
                   174.5651234927047_dp, 174.27089826020691_dp, 173.99101680223387_dp, &
                   173.72355993833804_dp]
 
-    do i = 1, size(w_comp)
+    do i = 1, size(res)
         print *, res(i)
         if (abs(res(i) - expected_w(i)) > 1e-12_dp) error stop
     end do
