@@ -14,7 +14,7 @@ namespace LCompilers {
                 llvm::FunctionType *function_type = llvm::FunctionType::get(
                         llvm::Type::getInt8PtrTy(context), {
                             llvm::Type::getInt32Ty(context)
-                        }, true);
+                        }, false);
                 fn = llvm::Function::Create(function_type,
                         llvm::Function::ExternalLinkage, func_name, module);
             }
@@ -31,7 +31,7 @@ namespace LCompilers {
                         llvm::Type::getInt8PtrTy(context), {
                             llvm::Type::getInt8PtrTy(context),
                             llvm::Type::getInt32Ty(context)
-                        }, true);
+                        }, false);
                 fn = llvm::Function::Create(function_type,
                         llvm::Function::ExternalLinkage, func_name, module);
             }

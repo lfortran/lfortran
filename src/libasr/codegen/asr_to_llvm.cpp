@@ -74,7 +74,7 @@ void string_init(llvm::LLVMContext &context, llvm::Module &module,
                 llvm::Type::getVoidTy(context), {
                     llvm::Type::getInt32Ty(context),
                     llvm::Type::getInt8PtrTy(context)
-                }, true);
+                }, false);
         fn = llvm::Function::Create(function_type,
                 llvm::Function::ExternalLinkage, func_name, module);
     }
@@ -543,7 +543,7 @@ public:
                         complex_type->getPointerTo(),
                         complex_type->getPointerTo(),
                         complex_type->getPointerTo()
-                    }, true);
+                    }, false);
             fn = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, runtime_func_name, *module);
         }
@@ -1076,7 +1076,7 @@ public:
             llvm::FunctionType *function_type = llvm::FunctionType::get(
                     llvm::Type::getVoidTy(context), {
                         character_type
-                    }, true);
+                    }, false);
             free_fn = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, func_name, *module);
         }
@@ -1104,7 +1104,7 @@ public:
                     llvm::Type::getVoidTy(context), {
                         character_type->getPointerTo(),
                         llvm::Type::getInt32Ty(context)
-                    }, true);
+                    }, false);
             alloc_fun = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, func_name, *module);
         }
@@ -6871,7 +6871,7 @@ public:
                     llvm::Type::getVoidTy(context), {
                         complex_type->getPointerTo(),
                         ret_type->getPointerTo(),
-                    }, true);
+                    }, false);
             fn = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, runtime_func_name, *module);
         }
