@@ -541,7 +541,7 @@ define i32 @main(i32 %0, i8** %1) {
   %44 = mul i32 %41, 1
   store i32 %44, i32* %43, align 4
   %45 = load i32, i32* %43, align 4
-  %46 = call i8* (i32, ...) @_lfortran_malloc(i32 %45)
+  %46 = call i8* @_lfortran_malloc(i32 %45)
   %47 = bitcast i8* %46 to i1*
   store i1* %47, i1** %42, align 8
   %48 = load i32, i32* @array_op_3.dim1, align 4
@@ -581,7 +581,7 @@ define i32 @main(i32 %0, i8** %1) {
   %72 = mul i32 %69, 1
   store i32 %72, i32* %71, align 4
   %73 = load i32, i32* %71, align 4
-  %74 = call i8* (i32, ...) @_lfortran_malloc(i32 %73)
+  %74 = call i8* @_lfortran_malloc(i32 %73)
   %75 = bitcast i8* %74 to i1*
   store i1* %75, i1** %70, align 8
   %76 = load i32, i32* @array_op_3.dim1, align 4
@@ -621,7 +621,7 @@ define i32 @main(i32 %0, i8** %1) {
   %100 = mul i32 %97, 1
   store i32 %100, i32* %99, align 4
   %101 = load i32, i32* %99, align 4
-  %102 = call i8* (i32, ...) @_lfortran_malloc(i32 %101)
+  %102 = call i8* @_lfortran_malloc(i32 %101)
   %103 = bitcast i8* %102 to i1*
   store i1* %103, i1** %98, align 8
   store i32 0, i32* %i, align 4
@@ -1880,7 +1880,7 @@ then:                                             ; preds = %loop.end48
   %1125 = bitcast i1* %1123 to i8*
   store i8* %1125, i8** %1124, align 8
   %1126 = load i8*, i8** %1124, align 8
-  call void (i8*, ...) @_lfortran_free(i8* %1126)
+  call void @_lfortran_free(i8* %1126)
   %1127 = getelementptr %array, %array* %1117, i32 0, i32 0
   store i1* null, i1** %1127, align 8
   br label %ifcont
@@ -1903,7 +1903,7 @@ then50:                                           ; preds = %ifcont
   %1136 = bitcast i1* %1134 to i8*
   store i8* %1136, i8** %1135, align 8
   %1137 = load i8*, i8** %1135, align 8
-  call void (i8*, ...) @_lfortran_free(i8* %1137)
+  call void @_lfortran_free(i8* %1137)
   %1138 = getelementptr %array, %array* %1128, i32 0, i32 0
   store i1* null, i1** %1138, align 8
   br label %ifcont52
@@ -1926,7 +1926,7 @@ then53:                                           ; preds = %ifcont52
   %1147 = bitcast i1* %1145 to i8*
   store i8* %1147, i8** %1146, align 8
   %1148 = load i8*, i8** %1146, align 8
-  call void (i8*, ...) @_lfortran_free(i8* %1148)
+  call void @_lfortran_free(i8* %1148)
   %1149 = getelementptr %array, %array* %1139, i32 0, i32 0
   store i1* null, i1** %1149, align 8
   br label %ifcont55
@@ -1949,7 +1949,7 @@ then56:                                           ; preds = %ifcont55
   %1158 = bitcast i1* %1156 to i8*
   store i8* %1158, i8** %1157, align 8
   %1159 = load i8*, i8** %1157, align 8
-  call void (i8*, ...) @_lfortran_free(i8* %1159)
+  call void @_lfortran_free(i8* %1159)
   %1160 = getelementptr %array, %array* %1150, i32 0, i32 0
   store i1* null, i1** %1160, align 8
   br label %ifcont58
@@ -1972,7 +1972,7 @@ then59:                                           ; preds = %ifcont58
   %1169 = bitcast i1* %1167 to i8*
   store i8* %1169, i8** %1168, align 8
   %1170 = load i8*, i8** %1168, align 8
-  call void (i8*, ...) @_lfortran_free(i8* %1170)
+  call void @_lfortran_free(i8* %1170)
   %1171 = getelementptr %array, %array* %1161, i32 0, i32 0
   store i1* null, i1** %1171, align 8
   br label %ifcont61
@@ -1995,7 +1995,7 @@ then62:                                           ; preds = %ifcont61
   %1180 = bitcast i1* %1178 to i8*
   store i8* %1180, i8** %1179, align 8
   %1181 = load i8*, i8** %1179, align 8
-  call void (i8*, ...) @_lfortran_free(i8* %1181)
+  call void @_lfortran_free(i8* %1181)
   %1182 = getelementptr %array, %array* %1172, i32 0, i32 0
   store i1* null, i1** %1182, align 8
   br label %ifcont64
@@ -2009,6 +2009,6 @@ ifcont64:                                         ; preds = %else63, %then62
 
 declare void @_lpython_call_initial_functions(i32, i8**)
 
-declare i8* @_lfortran_malloc(i32, ...)
+declare i8* @_lfortran_malloc(i32)
 
-declare void @_lfortran_free(i8*, ...)
+declare void @_lfortran_free(i8*)

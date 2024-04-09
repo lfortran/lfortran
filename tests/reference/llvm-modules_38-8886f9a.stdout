@@ -91,8 +91,8 @@ loop.body:                                        ; preds = %loop.head
 
 loop.end:                                         ; preds = %loop.head
   %prefix_arg = alloca i8*, align 8
-  %16 = call i8* (i32, ...) @_lfortran_malloc(i32 4)
-  call void (i32, i8*, ...) @_lfortran_string_init(i32 4, i8* %16)
+  %16 = call i8* @_lfortran_malloc(i32 4)
+  call void @_lfortran_string_init(i32 4, i8* %16)
   store i8* %16, i8** %prefix_arg, align 8
   %17 = load i8*, i8** %prefix_arg, align 8
   %18 = alloca %compiler_t_polymorphic, align 8
@@ -125,8 +125,8 @@ loop.end:                                         ; preds = %loop.head
 
 declare void @_lpython_call_initial_functions(i32, i8**)
 
-declare i8* @_lfortran_malloc(i32, ...)
+declare i8* @_lfortran_malloc(i32)
 
-declare void @_lfortran_string_init(i32, i8*, ...)
+declare void @_lfortran_string_init(i32, i8*)
 
 declare void @_lfortran_printf(i8*, ...)

@@ -83,8 +83,8 @@ define i8* @__module_lfortran_intrinsic_string_trim(i8** %x) {
   %r = alloca i8*, align 8
   %0 = call i32 @__module_lfortran_intrinsic_string_len_trim(i8** %x)
   %1 = add i32 %0, 1
-  %2 = call i8* (i32, ...) @_lfortran_malloc(i32 %1)
-  call void (i32, i8*, ...) @_lfortran_string_init(i32 %1, i8* %2)
+  %2 = call i8* @_lfortran_malloc(i32 %1)
+  call void @_lfortran_string_init(i32 %1, i8* %2)
   store i8* %2, i8** %r, align 8
   store i32 0, i32* %i, align 4
   br label %loop.head
@@ -128,15 +128,15 @@ declare i8* @_lfortran_str_item(i8*, i32)
 
 declare i1 @_lpython_str_compare_eq(i8**, i8**)
 
-declare i8* @_lfortran_malloc(i32, ...)
+declare i8* @_lfortran_malloc(i32)
 
-declare void @_lfortran_string_init(i32, i8*, ...)
+declare void @_lfortran_string_init(i32, i8*)
 
 define i8* @__module_testdrive_derived_types_32_real_dp_to_string(double* %val) {
 .entry:
   %buffer = alloca i8*, align 8
-  %0 = call i8* (i32, ...) @_lfortran_malloc(i32 129)
-  call void (i32, i8*, ...) @_lfortran_string_init(i32 129, i8* %0)
+  %0 = call i8* @_lfortran_malloc(i32 129)
+  call void @_lfortran_string_init(i32 129, i8* %0)
   store i8* %0, i8** %buffer, align 8
   %1 = load i8*, i8** %buffer, align 8
   %buffer_len = alloca i32, align 4
