@@ -713,7 +713,7 @@ RUN(NAME intrinsics_189 LABELS gfortran llvm) # scan
 RUN(NAME intrinsics_190 LABELS gfortran llvm) # kind
 RUN(NAME intrinsics_191 LABELS gfortran llvm) # kind
 RUN(NAME intrinsics_192 LABELS gfortran llvm) # besselj0
-RUN(NAME intrinsics_193 LABELS gfortran llvm) # poppar
+RUN(NAME intrinsics_193 LABELS gfortran llvm fortran) # poppar
 RUN(NAME intrinsics_194 LABELS gfortran llvm) # min
 RUN(NAME intrinsics_195 LABELS gfortran llvm) # max
 RUN(NAME intrinsics_196 LABELS gfortran llvm) # besselj1
