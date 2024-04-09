@@ -3007,6 +3007,22 @@ public:
         current_scope = current_scope_copy;
     }
 
+#ifdef HAVE_TARGET_WASM
+    void add_wasm_start_function() {
+        llvm::FunctionType *function_type = llvm::FunctionType::get(
+            llvm::Type::getVoidTy(context), {}, false);
+        llvm::Function *F = llvm::Function::Create(function_type,
+                llvm::Function::ExternalLinkage, "_start", module.get());
+        llvm::BasicBlock *BB = llvm::BasicBlock::Create(context, ".entry", F);
+        builder->SetInsertPoint(BB);
+        std::vector<llvm::Value *> args;
+        args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, 0)));
+        args.push_back(builder->CreateAlloca(character_type, nullptr));
+        builder->CreateCall(module->getFunction("main"), args);
+        builder->CreateRet(nullptr);
+    }
+#endif
+
     void visit_Program(const ASR::Program_t &x) {
         loop_head.clear();
         loop_head_names.clear();
@@ -3106,6 +3122,12 @@ public:
         loop_or_block_end_names.clear();
         heap_arrays.clear();
         strings_to_be_deallocated.reserve(al, 1);
+
+#ifdef HAVE_TARGET_WASM
+        if (startswith(compiler_options.target, "wasm")) {
+            add_wasm_start_function();
+        }
+#endif
     }
 
     /*
