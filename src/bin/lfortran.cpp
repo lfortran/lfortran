@@ -1561,8 +1561,12 @@ int link_executable(const std::vector<std::string> &infiles,
             compile_cmd += runtime_library_dir + "\\lfortran_runtime_static.lib";
             run_cmd = outfile;
         } else if (LCompilers::startswith(t, "wasm")) {
-            std::string wasi_sdk_path = std::getenv("WASI_SDK_PATH");
-            std::string CC = wasi_sdk_path + "/bin/clang";
+            char* wasi_sdk_path = std::getenv("WASI_SDK_PATH");
+            if (wasi_sdk_path == nullptr) {
+                std::cerr << "WASI_SDK_PATH must be defined to use llvm->wasm\n";
+                return 11;
+            }
+            std::string CC = std::string(wasi_sdk_path) + "/bin/clang";
             std::string options = " --target=wasm32-wasi -nostartfiles -Wl,--entry=_start -Wl,-lwasi-emulated-process-clocks";
             std::string runtime_lib = "lfortran_runtime_wasm.o";
             compile_cmd = CC + options + " -o " + outfile + " ";
