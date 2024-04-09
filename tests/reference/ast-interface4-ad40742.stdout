@@ -36,6 +36,7 @@
             [(MATRIX_ERROR
             []
             []
+            ()
             (Logical .false.)
             Equal
             ())]
@@ -96,6 +97,7 @@
                 DimensionExpr)]
                 []
                 ()
+                ()
                 None
                 ())
                 (B
@@ -103,6 +105,7 @@
                 ()
                 DimensionExpr)]
                 []
+                ()
                 ()
                 None
                 ())]
@@ -121,6 +124,7 @@
                 []
                 []
                 ()
+                ()
                 None
                 ())]
                 ()
@@ -137,6 +141,7 @@
                 [(OVERFLOW
                 []
                 []
+                ()
                 ()
                 None
                 ())]

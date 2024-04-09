@@ -24,6 +24,7 @@
             DimensionExpr)]
             []
             ()
+            ()
             None
             ())
             (b
@@ -34,6 +35,7 @@
             ()
             DimensionExpr)]
             []
+            ()
             ()
             None
             ())
@@ -48,6 +50,7 @@
             ()
             DimensionExpr)]
             []
+            ()
             ()
             None
             ())]
@@ -70,6 +73,7 @@
             DimensionExpr)]
             []
             ()
+            ()
             None
             ())
             (y
@@ -83,6 +87,7 @@
             ()
             DimensionExpr)]
             []
+            ()
             ()
             None
             ())]
@@ -101,17 +106,20 @@
             []
             []
             ()
+            ()
             None
             ())
             (c_234
             []
             []
             ()
+            ()
             None
             ())
             (c_121
             []
             []
+            ()
             ()
             None
             ())]
@@ -129,6 +137,7 @@
             [(n
             []
             []
+            ()
             ()
             None
             ())]
@@ -216,18 +225,21 @@
             [(x
             []
             []
+            ()
             a
             Arrow
             ())
             (y
             []
             []
+            ()
             c
             Arrow
             ())
             (z
             []
             []
+            ()
             (FuncCallOrArray
                 c
                 []

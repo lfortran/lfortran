@@ -22,11 +22,13 @@
             []
             []
             ()
+            ()
             None
             ())
             (y
             []
             []
+            ()
             ()
             None
             ())
@@ -34,17 +36,20 @@
             []
             []
             ()
+            ()
             None
             ())
             (()
             []
             []
             ()
+            ()
             None
             (AttrAssignment))
             (()
             []
             []
+            ()
             ()
             None
             (AttrIntrinsicOperator
@@ -54,6 +59,7 @@
             []
             []
             ()
+            ()
             None
             (AttrIntrinsicOperator
                 AND
@@ -61,6 +67,7 @@
             (()
             []
             []
+            ()
             ()
             None
             (AttrDefinedOperator
@@ -77,6 +84,7 @@
             []
             []
             ()
+            ()
             None
             (AttrIntrinsicOperator
                 STAR
@@ -92,20 +100,6 @@
             []
             []
             ()
-            None
-            (AttrIntrinsicOperator
-                DIV
-            ))]
-            ()
-        )
-        (Declaration
-            ()
-            [(SimpleAttribute
-                AttrPublic
-            )]
-            [(()
-            []
-            []
             ()
             None
             (AttrIntrinsicOperator
@@ -121,6 +115,23 @@
             [(()
             []
             []
+            ()
+            ()
+            None
+            (AttrIntrinsicOperator
+                DIV
+            ))]
+            ()
+        )
+        (Declaration
+            ()
+            [(SimpleAttribute
+                AttrPublic
+            )]
+            [(()
+            []
+            []
+            ()
             ()
             None
             (AttrIntrinsicOperator
@@ -197,6 +208,7 @@
                         []
                         []
                         ()
+                        ()
                         None
                         ())]
                         ()
@@ -215,6 +227,7 @@
                         [(B
                         []
                         []
+                        ()
                         ()
                         None
                         ())]
@@ -391,6 +404,7 @@
             []
             []
             ()
+            ()
             None
             (AttrIntrinsicOperator
                 CONCAT
@@ -512,6 +526,7 @@
                 [(()
                 []
                 []
+                ()
                 ()
                 None
                 (AttrIntrinsicOperator

@@ -1507,12 +1507,15 @@ var_sym_decl
     | id "=" expr { $$ = VAR_SYM_DIM_INIT($1, nullptr, 0, $3, Equal, @$); }
     | id "=>" expr { $$ = VAR_SYM_DIM_INIT($1, nullptr, 0, $3, Arrow, @$); }
     | id "*" expr { $$ = VAR_SYM_DIM_INIT($1, nullptr, 0, $3, Asterisk, @$); }
+    | id "*" expr "=" expr { $$ = VAR_SYM_DIM_MUL_INIT($1, nullptr, 0, $3, $5, Equal, @$); }
     | id "*" "(" "*" ")" { $$ = VAR_SYM_NAME($1, DoubleAsterisk, @$); }
     | id "(" array_comp_decl_list ")" %dprec 1 { $$ = VAR_SYM_DIM($1, $3.p, $3.n, None, @$); }
     | id "(" array_comp_decl_list ")" "*" TK_INTEGER %dprec 1 {
             $$ = VAR_SYM_DIM_INIT($1, $3.p, $3.n, INTEGER($6, @$), Asterisk, @$); }
     | id "(" array_comp_decl_list ")" "=" expr {
             $$ = VAR_SYM_DIM_INIT($1, $3.p, $3.n, $6, Equal, @$); }
+    | id "(" array_comp_decl_list ")" "*" expr "=" expr {
+            $$ = VAR_SYM_DIM_MUL_INIT($1, $3.p, $3.n, $6, $8, Equal, @$); }
     | id "(" array_comp_decl_list ")" "=>" expr {
             $$ = VAR_SYM_DIM_INIT($1, $3.p, $3.n, $6, Arrow, @$); }
     | id "[" coarray_comp_decl_list "]" {

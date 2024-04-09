@@ -28,6 +28,7 @@
             DimensionExpr)]
             []
             ()
+            ()
             None
             ())
             (b
@@ -36,11 +37,13 @@
             DimensionExpr)]
             []
             ()
+            ()
             None
             ())
             (scalar
             []
             []
+            ()
             ()
             None
             ())]
@@ -63,6 +66,7 @@
             DimensionExpr)]
             []
             ()
+            ()
             None
             ())]
             ()
@@ -80,11 +84,13 @@
             []
             []
             ()
+            ()
             None
             ())
             (i
             []
             []
+            ()
             ()
             None
             ())]

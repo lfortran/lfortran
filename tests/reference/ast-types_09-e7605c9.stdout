@@ -30,6 +30,7 @@
             [(ucs4
             []
             []
+            ()
             (FuncCallOrArray
                 selected_char_kind
                 []
@@ -66,6 +67,7 @@
             [(nen
             []
             []
+            ()
             (FuncCallOrArray
                 char
                 []
@@ -139,6 +141,7 @@
                 []
                 []
                 ()
+                ()
                 None
                 ())]
                 ()
@@ -163,6 +166,7 @@
                 []
                 []
                 ()
+                ()
                 None
                 ())]
                 ()
@@ -186,6 +190,7 @@
                 [(lowercase
                 []
                 []
+                ()
                 (String
                     "abcdefghijklmnopqrstuvwxyz"
                 )
@@ -235,6 +240,7 @@
                 [(x
                 []
                 []
+                ()
                 1
                 Equal
                 ())]
