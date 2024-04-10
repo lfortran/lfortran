@@ -839,6 +839,8 @@ public:
 
         {"dmin1", "min"},
         {"dmax1", "max"},
+
+        {"dcmplx", "cmplx"}
     };
 
     ASR::asr_t *tmp;
@@ -4857,40 +4859,6 @@ public:
         return ASR::make_PointerAssociated_t(al, x.base.base.loc, ptr_, tgt_, associated_type_, nullptr);
     }
 
-    ASR::asr_t* create_DCmplx(const AST::FuncCallOrArray_t& x) {
-        Vec<ASR::expr_t*> args;
-        std::vector<std::string> kwarg_names = {"x", "y"};
-        handle_intrinsic_node_args(x, args, kwarg_names, 1, 2, "dcmplx");
-        ASR::expr_t *x_ = args[0], *y_ = args[1];
-        if( ASR::is_a<ASR::Complex_t>(*ASRUtils::expr_type(x_)) ) {
-            if( y_ != nullptr ) {
-                throw SemanticError("The first argument of `dcmplx` intrinsic"
-                                    " is of complex type, the second argument "
-                                    "in this case must be absent",
-                                    x.base.base.loc);
-            }
-            return (ASR::asr_t*) x_;
-        }
-        int64_t kind_value = 8;
-        if( y_ == nullptr ) {
-            ASR::ttype_t* real_type = ASRUtils::TYPE(ASR::make_Real_t(al,
-                                        x.base.base.loc, kind_value));
-            y_ = ASRUtils::EXPR(ASR::make_RealConstant_t(al, x.base.base.loc,
-                                                         0.0, real_type));
-        }
-        ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Complex_t(al, x.base.base.loc, kind_value));
-        ASR::expr_t* x_value = ASRUtils::expr_value(x_);
-        ASR::expr_t* y_value = ASRUtils::expr_value(y_);
-        ASR::expr_t* cc_expr = nullptr;
-        double x_value_ = 0.0;
-        double y_value_ = 0.0;
-        if (x_value && y_value && ASRUtils::extract_value(x_value, x_value_) && ASRUtils::extract_value(y_value, y_value_)) {
-            cc_expr = ASRUtils::EXPR(ASR::make_ComplexConstant_t(al, x.base.base.loc,
-                                                                 x_value_, y_value_, type));
-        }
-        return ASR::make_ComplexConstructor_t(al, x.base.base.loc, x_, y_, type, cc_expr);
-    }
-
     ASR::asr_t* create_Ichar(const AST::FuncCallOrArray_t& x) {
         Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"C", "kind"};
@@ -5313,8 +5281,6 @@ public:
                 tmp = create_BitCast(x);
             } else if( var_name == "cmplx" ) {
                 tmp = create_Cmplx(x);
-            } else if( var_name == "dcmplx" ) {
-                tmp = create_DCmplx(x);
             } else if( var_name == "reshape" ) {
                 tmp = create_ArrayReshape(x);
             } else if( var_name == "ichar" ) {
