@@ -4932,17 +4932,417 @@ static inline ASR::asr_t* make_ArrayPhysicalCast_t_util(Allocator &al, const Loc
     return ASR::make_ArrayPhysicalCast_t(al, a_loc, a_arg, a_old, a_new, a_type, a_value);
 }
 
-inline void flatten_ArrayConstant(Allocator& al, ASR::expr_t** a_args, size_t n_args, Vec<ASR::expr_t*> &new_args) {
-    for (size_t i = 0; i < n_args; i++) {
-        if (ASR::is_a<ASR::ArrayConstant_t>(*a_args[i])) {
-            ASR::ArrayConstant_t* a_arg = ASR::down_cast<ASR::ArrayConstant_t>(a_args[i]);
-            flatten_ArrayConstant(al, a_arg->m_args, a_arg->n_args, new_args);
-        } else if (ASR::is_a<ASR::ArrayConstant_t>(*ASRUtils::expr_value(a_args[i]))) {
-            ASR::ArrayConstant_t* a_arg = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(a_args[i]));
-            flatten_ArrayConstant(al, a_arg->m_args, a_arg->n_args, new_args);
-        } else {
-            new_args.push_back(al, ASRUtils::expr_value(a_args[i]));
+// inline void flatten_ArrayConstant(Allocator& al, void* data, size_t n_args, Vec<ASR::expr_t*> &new_args) {
+//     for (size_t i = 0; i < n_args; i++) {
+//         if (ASR::is_a<ASR::ArrayConstant_t>(*a_args[i])) {
+//             ASR::ArrayConstant_t* a_arg = ASR::down_cast<ASR::ArrayConstant_t>(a_args[i]);
+//             flatten_ArrayConstant(al, a_arg->m_args, a_arg->n_args, new_args);
+//         } else if (ASR::is_a<ASR::ArrayConstant_t>(*ASRUtils::expr_value(a_args[i]))) {
+//             ASR::ArrayConstant_t* a_arg = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(a_args[i]));
+//             flatten_ArrayConstant(al, a_arg->m_args, a_arg->n_args, new_args);
+//         } else {
+//             new_args.push_back(al, ASRUtils::expr_value(a_args[i]));
+//         }
+//     }
+// }
+
+// Assigns "x->m_data[i] = value", casting the internal data pointer correctly using the type of "value"
+inline void set_ArrayConstant_value(ASR::ArrayConstant_t* x, ASR::expr_t* value, int i) {
+    value = ASRUtils::expr_value(value);
+
+    ASR::ttype_t* type = ASRUtils::type_get_past_array(ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(value)));
+    int kind = ASRUtils::extract_kind_from_ttype_t(type);
+
+    switch (type->type) {
+        case ASR::ttypeType::Integer: {
+            ASR::IntegerConstant_t* value_int = ASR::down_cast<ASR::IntegerConstant_t>(value);
+            if (kind == 1) {
+                *(((int8_t*)x->m_data) + i) = value_int->m_n;
+            } else if (kind == 2) {
+                *(((int16_t*)x->m_data) + i) = value_int->m_n;
+            } else if (kind == 4) {
+                *(((int32_t*)x->m_data) + i) = value_int->m_n;
+            } else if (kind == 8) {
+                *(((int64_t*)x->m_data) + i) = value_int->m_n;
+            } else {
+                throw LCompilersException("Unsupported kind for integer array constant.");
+            }
+            break;
         }
+        case ASR::ttypeType::Real: {
+            ASR::RealConstant_t* value_real = ASR::down_cast<ASR::RealConstant_t>(value);
+            if (kind == 4) {
+                *(((float*)x->m_data) + i) = value_real->m_r;
+            } else if (kind == 8) {
+                *(((double*)x->m_data) + i) = value_real->m_r;
+            } else {
+                throw LCompilersException("Unsupported kind for real array constant.");
+            }
+            break;
+        }
+        case ASR::ttypeType::UnsignedInteger: {
+            ASR::IntegerConstant_t* value_int = ASR::down_cast<ASR::IntegerConstant_t>(value);
+            if (kind == 1) {
+                *(((uint8_t*)x->m_data) + i) = value_int->m_n;
+            } else if (kind == 2) {
+                *(((uint16_t*)x->m_data) + i) = value_int->m_n;
+            } else if (kind == 4) {
+                *(((uint32_t*)x->m_data) + i) = value_int->m_n;
+            } else if (kind == 8) {
+                *(((uint64_t*)x->m_data) + i) = value_int->m_n;
+            } else {
+                throw LCompilersException("Unsupported kind for unsigned integer array constant.");
+            }
+            break;
+        }
+        case ASR::ttypeType::Complex: {
+            ASR::ComplexConstant_t* value_complex = ASR::down_cast<ASR::ComplexConstant_t>(value);
+            if (kind == 4) {
+                *(((float*)x->m_data) + i) = value_complex->m_re;
+                *(((float*)x->m_data) + i + 1) = value_complex->m_im;
+            } else if (kind == 8) {
+                *(((double*)x->m_data) + i) = value_complex->m_re;
+                *(((double*)x->m_data) + i + 1) = value_complex->m_im;
+            } else {
+                throw LCompilersException("Unsupported kind for complex array constant.");
+            }
+            break;
+        }
+        case ASR::ttypeType::Logical: {
+            ASR::LogicalConstant_t* value_logical = ASR::down_cast<ASR::LogicalConstant_t>(value);
+            *(((bool*)x->m_data) + i) = value_logical->m_value;
+            break;
+        }
+        case ASR::ttypeType::Character: {
+            ASR::Character_t* char_type = ASR::down_cast<ASR::Character_t>(type);
+            int len = char_type->m_len;
+            ASR::StringConstant_t* value_str = ASR::down_cast<ASR::StringConstant_t>(value);
+            char* data = value_str->m_s;
+            for (int j = 0; j < len; j++) {
+                *(((char*)x->m_data) + i*len + j) = data[j];
+            }
+            break;
+        }
+        default:
+            throw LCompilersException("Unsupported type for array constant.");
+    }
+}
+
+inline std::string fetch_ArrayConstant_value(void *data, ASR::ttype_t* type, int i) {
+   int kind = ASRUtils::extract_kind_from_ttype_t(type);
+
+    switch (type->type) {
+        case ASR::ttypeType::Integer: {
+            if (kind == 1) return std::to_string(*(((int8_t*)data) + i));
+            else if (kind == 2) return std::to_string(*(((int16_t*)data) + i));
+            else if (kind == 4) return std::to_string(*(((int32_t*)data) + i));
+            else if (kind == 8) return std::to_string(*(((int64_t*)data) + i));
+            else throw LCompilersException("Unsupported kind for integer array constant.");
+        }
+        case ASR::ttypeType::Real: {
+            if (kind == 4) return std::to_string(*(((float*)data) + i));
+            else if (kind == 8) return std::to_string(*(((double*)data) + i));
+            else throw LCompilersException("Unsupported kind for real array constant.");
+        }
+        case ASR::ttypeType::UnsignedInteger: {
+            if (kind == 1) return std::to_string(*(((uint8_t*)data) + i));
+            else if (kind == 2) return std::to_string(*(((uint16_t*)data) + i));
+            else if (kind == 4) return std::to_string(*(((uint32_t*)data) + i));
+            else if (kind == 8) return std::to_string(*(((uint64_t*)data) + i));
+            else throw LCompilersException("Unsupported kind for unsigned integer array constant.");
+        }
+        case ASR::ttypeType::Complex: {
+            if (kind == 4) return "("+(std::to_string(*(((float*)data) + 2*i)))+", "+ (std::to_string(*(((float*)data) + 2*i + 1))) + ")";
+            else if (kind == 8) return "("+(std::to_string(*(((double*)data) + 2*i)))+", "+ (std::to_string(*(((double*)data) + 2*i + 1))) + ")";
+            else throw LCompilersException("Unsupported kind for complex array constant.");
+        }
+        case ASR::ttypeType::Logical: {
+            return std::to_string(*(((bool*)data) + i));
+        }
+        case ASR::ttypeType::Character: {
+            ASR::Character_t* char_type = ASR::down_cast<ASR::Character_t>(type);
+            int len = char_type->m_len;
+            char* data_char = (char*)data;
+            return std::string(data_char + i*len);
+        }
+        default:
+            throw LCompilersException("Unsupported type for array constant.");
+    }
+}
+
+inline std::string fetch_ArrayConstant_value(ASR::ArrayConstant_t* x, int i) {
+    ASR::ttype_t* type = ASRUtils::type_get_past_array(ASRUtils::type_get_past_allocatable(x->m_type));
+    return fetch_ArrayConstant_value(x->m_data, type, i);
+}
+
+inline std::string fetch_ArrayConstant_value(ASR::ArrayConstant_t &x, int i) {
+    ASR::ttype_t* type = ASRUtils::type_get_past_array(ASRUtils::type_get_past_allocatable(x.m_type));
+    return fetch_ArrayConstant_value(x.m_data, type, i);
+}
+
+inline std::string fetch_ArrayConstant_value(const ASR::ArrayConstant_t &x, int i) {
+    ASR::ttype_t* type = ASRUtils::type_get_past_array(ASRUtils::type_get_past_allocatable(x.m_type));
+    return fetch_ArrayConstant_value(x.m_data, type, i);
+}
+
+inline ASR::expr_t* fetch_ArrayConstant_value_helper(Allocator &al, const Location& loc, void *data, ASR::ttype_t* type, int i) {
+    int kind = ASRUtils::extract_kind_from_ttype_t(type);
+
+    switch (type->type) {
+        case ASR::ttypeType::Integer : {
+            if (kind == 1) {
+                ASR::expr_t* value = EXPR(ASR::make_IntegerConstant_t(al, loc, 
+                                    *(((int8_t*)data) + i), type));
+                return value;
+            } else if (kind == 2) {
+                ASR::expr_t* value = EXPR(ASR::make_IntegerConstant_t(al, loc, 
+                                    *(((int16_t*)data) + i), type));
+                return value;
+            } else if (kind == 4) {
+                ASR::expr_t* value = EXPR(ASR::make_IntegerConstant_t(al, loc, 
+                                    *(((int32_t*)data) + i), type));
+                return value;
+            } else if (kind == 8) {
+                ASR::expr_t* value = EXPR(ASR::make_IntegerConstant_t(al, loc, 
+                                    *(((int64_t*)data) + i), type));
+                return value;
+            } else {
+                throw LCompilersException("Unsupported kind for integer array constant.");
+            }
+        }
+        case ASR::ttypeType::Real: {
+            if (kind == 4) {
+                ASR::expr_t* value = EXPR(ASR::make_RealConstant_t(al, loc, 
+                                    *(((float*)data) + i), type));
+                return value;
+            } else if (kind == 8) {
+                ASR::expr_t* value = EXPR(ASR::make_RealConstant_t(al, loc, 
+                                    *(((double*)data) + i), type));
+                return value;
+            } else {
+                throw LCompilersException("Unsupported kind for real array constant.");
+            }
+        }
+        case ASR::ttypeType::UnsignedInteger: {
+            if (kind == 1) {
+                ASR::expr_t* value = EXPR(ASR::make_IntegerConstant_t(al, loc, 
+                                    *(((uint8_t*)data) + i), type));
+                return value;
+            } else if (kind == 2) {
+                ASR::expr_t* value = EXPR(ASR::make_IntegerConstant_t(al, loc, 
+                                    *(((uint16_t*)data) + i), type));
+                return value;
+            } else if (kind == 4) {
+                ASR::expr_t* value = EXPR(ASR::make_IntegerConstant_t(al, loc, 
+                                    *(((uint32_t*)data) + i), type));
+                return value;
+            } else if (kind == 8) {
+                ASR::expr_t* value = EXPR(ASR::make_IntegerConstant_t(al, loc, 
+                                    *(((uint64_t*)data) + i), type));
+                return value;
+            } else {
+                throw LCompilersException("Unsupported kind for unsigned integer array constant.");
+            }
+        }
+        case ASR::ttypeType::Complex: {
+            if (kind == 4) {
+                ASR::expr_t* value = EXPR(ASR::make_ComplexConstant_t(al, loc,
+                                    *(((float*)data) + 2*i), *(((float*)data) + 2*i + 1), type));
+                return value;
+            } else if (kind == 8) {
+                ASR::expr_t* value = EXPR(ASR::make_ComplexConstant_t(al, loc,
+                                    *(((double*)data) + 2*i), *(((double*)data) + 2*i + 1), type));
+                return value;
+            } else {
+                throw LCompilersException("Unsupported kind for complex array constant.");
+            }
+        }
+        case ASR::ttypeType::Logical: {
+            ASR::expr_t* value = EXPR(ASR::make_LogicalConstant_t(al, loc, 
+                                *(((bool*)data) + i), type));
+            return value;
+        }
+        case ASR::ttypeType::Character: {
+            ASR::Character_t* char_type = ASR::down_cast<ASR::Character_t>(type);
+            int len = char_type->m_len;
+            char* data_char = (char*)data;
+            std::string str = std::string(data_char + i*len, len);
+            ASR::expr_t* value = EXPR(ASR::make_StringConstant_t(al, loc, 
+                                s2c(al, str), type));
+            return value;
+        }
+        default:
+            throw LCompilersException("Unsupported type for array constant.");
+    }
+}
+
+inline ASR::expr_t* fetch_ArrayConstant_value(Allocator &al, ASR::ArrayConstant_t* x, int i) {
+    ASR::ttype_t* type = ASRUtils::type_get_past_array(ASRUtils::type_get_past_allocatable(x->m_type));
+    return fetch_ArrayConstant_value_helper(al, x->base.base.loc, x->m_data, type, i);
+}
+
+inline ASR::expr_t* fetch_ArrayConstant_value(Allocator &al, ASR::ArrayConstant_t &x, int i) {
+    ASR::ttype_t* type = ASRUtils::type_get_past_array(ASRUtils::type_get_past_allocatable(x.m_type));
+    return fetch_ArrayConstant_value_helper(al, x.base.base.loc, x.m_data, type, i);
+}
+
+inline ASR::expr_t* fetch_ArrayConstant_value(Allocator &al, const ASR::ArrayConstant_t &x, int i) {
+    ASR::ttype_t* type = ASRUtils::type_get_past_array(ASRUtils::type_get_past_allocatable(x.m_type));
+    return fetch_ArrayConstant_value_helper(al, x.base.base.loc, x.m_data, type, i);
+}
+
+inline void* set_ArrayConstant_data(ASR::expr_t** a_args, size_t n_args, ASR::ttype_t* a_type) {
+    int kind = ASRUtils::extract_kind_from_ttype_t(a_type);
+    switch (a_type->type) {
+        case ASR::ttypeType::Integer: {
+            if (kind == 1) {
+                int8_t* data = new int8_t[n_args];
+                for (size_t i = 0; i < n_args; i++) {
+                    data[i] = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(a_args[i]))->m_n;
+                }
+                return (void*) data;
+            } else if (kind == 2) {
+                int16_t* data = new int16_t[n_args];
+                for (size_t i = 0; i < n_args; i++) {
+                    data[i] = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(a_args[i]))->m_n;
+                }
+                return (void*) data;
+            } else if (kind == 4) {
+                int32_t* data = new int32_t[n_args];
+                for (size_t i = 0; i < n_args; i++) {
+                    data[i] = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(a_args[i]))->m_n;
+                }
+                return (void*) data;
+            } else if (kind == 8) {
+                int64_t* data = new int64_t[n_args];
+                for (size_t i = 0; i < n_args; i++) {
+                    data[i] = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(a_args[i]))->m_n;
+                }
+                return (void*) data;
+            } else {
+                throw LCompilersException("Unsupported kind for integer array constant.");
+            }
+        }
+        case ASR::ttypeType::Real: {
+            if (kind == 4) {
+                float* data = new float[n_args];
+                for (size_t i = 0; i < n_args; i++) {
+                    data[i] = ASR::down_cast<ASR::RealConstant_t>(ASRUtils::expr_value(a_args[i]))->m_r;
+                }
+                return (void*) data;
+            } else if (kind == 8) {
+                double* data = new double[n_args];
+                for (size_t i = 0; i < n_args; i++) {
+                    data[i] = ASR::down_cast<ASR::RealConstant_t>(ASRUtils::expr_value(a_args[i]))->m_r;
+                }
+                return (void*) data;
+            } else {
+                throw LCompilersException("Unsupported kind for real array constant.");
+            }
+        }
+        case ASR::ttypeType::UnsignedInteger: {
+            if (kind == 1) {
+                uint8_t* data = new uint8_t[n_args];
+                for (size_t i = 0; i < n_args; i++) {
+                    data[i] = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(a_args[i]))->m_n;
+                }
+                return (void*) data;
+            } else if (kind == 2) {
+                uint16_t* data = new uint16_t[n_args];
+                for (size_t i = 0; i < n_args; i++) {
+                    data[i] = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(a_args[i]))->m_n;
+                }
+                return (void*) data;
+            } else if (kind == 4) {
+                uint32_t* data = new uint32_t[n_args];
+                for (size_t i = 0; i < n_args; i++) {
+                    data[i] = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(a_args[i]))->m_n;
+                }
+                return (void*) data;
+            } else if (kind == 8) {
+                uint64_t* data = new uint64_t[n_args];
+                for (size_t i = 0; i < n_args; i++) {
+                    data[i] = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(a_args[i]))->m_n;
+                }
+                return (void*) data;
+            } else {
+                throw LCompilersException("Unsupported kind for unsigned integer array constant.");
+            }
+        }
+        case ASR::ttypeType::Complex: {
+            if (kind == 4) {
+                float* data = new float[2*n_args];
+                for (size_t i = 0; i < n_args; i++) {
+                    data[2*i] = ASR::down_cast<ASR::ComplexConstant_t>(ASRUtils::expr_value(a_args[i]))->m_re;
+                    data[2*i + 1] = ASR::down_cast<ASR::ComplexConstant_t>(ASRUtils::expr_value(a_args[i]))->m_im;
+                }
+                return (void*) data;
+            } else if (kind == 8) {
+                double* data = new double[2*n_args];
+                for (size_t i = 0; i < n_args; i++) {
+                    data[2*i] = ASR::down_cast<ASR::ComplexConstant_t>(ASRUtils::expr_value(a_args[i]))->m_re;
+                    data[2*i + 1] = ASR::down_cast<ASR::ComplexConstant_t>(ASRUtils::expr_value(a_args[i]))->m_im;
+                }
+                return (void*) data;
+            } else {
+                throw LCompilersException("Unsupported kind for complex array constant.");
+            }
+        }
+        case ASR::ttypeType::Logical: {
+            bool* data = new bool[n_args];
+            for (size_t i = 0; i < n_args; i++) {
+                data[i] = ASR::down_cast<ASR::LogicalConstant_t>(ASRUtils::expr_value(a_args[i]))->m_value;
+            }
+            return (void*) data;
+        }
+        case ASR::ttypeType::Character: {
+            int len = ASR::down_cast<ASR::Character_t>(a_type)->m_len;
+            char* data = new char[len*n_args];
+            for (size_t i = 0; i < n_args; i++) {
+                char* value = ASR::down_cast<ASR::StringConstant_t>(ASRUtils::expr_value(a_args[i]))->m_s;
+                for (int j = 0; j < len; j++) {
+                    data[i*len + j] = value[j];
+                }
+            }
+            return (void*) data;
+        }
+        default: {
+            throw LCompilersException("Unsupported type for array constant.");
+        }
+    }
+}
+
+inline void flatten_ArrayConstant_data(Allocator &al, Vec<ASR::expr_t*> &data, ASR::expr_t** a_args, size_t n_args, ASR::ttype_t* a_type, int &curr_idx, ASR::ArrayConstant_t* x = nullptr) {
+    if (x != nullptr) {
+        // this is array constant, we have it's data available
+        void* x_data = x->m_data;
+        for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(x->m_type); i++) {
+            ASR::expr_t* value = fetch_ArrayConstant_value_helper(al, x->base.base.loc, x_data, a_type, i);
+            if (ASR::is_a<ASR::ArrayConstant_t>(*value)) {
+                ASR::ArrayConstant_t* value_ = ASR::down_cast<ASR::ArrayConstant_t>(value);
+                flatten_ArrayConstant_data(al, data, a_args, n_args, a_type, curr_idx, value_);
+            } else {
+                data.push_back(al, value);
+                curr_idx++;
+            }
+        }
+        return;
+    }
+    for (size_t i = 0; i < n_args; i++) {
+        ASR::expr_t* a_value = ASRUtils::expr_value(a_args[i]);
+        if (ASR::is_a<ASR::ArrayConstant_t>(*a_value)) {
+            ASR::ArrayConstant_t* a_value_ = ASR::down_cast<ASR::ArrayConstant_t>(a_value);
+            flatten_ArrayConstant_data(al, data, a_args, n_args, a_type, curr_idx, a_value_);
+        } else {
+            data.push_back(al, a_value);
+            curr_idx++;
+        }
+    }
+}
+
+inline void print_ArrayConstant(void *data, ASR::ttype_t* type, int n_args) {
+    for (int i = 0; i < n_args; i++) {
+        std::cout<<"i = "<<i<<", value = "<<fetch_ArrayConstant_value(data, type, i)<<"\n";
     }
 }
 
@@ -4979,17 +5379,19 @@ inline ASR::asr_t* make_ArrayConstructor_t_util(Allocator &al, const Location &a
     }
     if (all_expr_evaluated) {
         Vec<ASR::expr_t*> a_args_values; a_args_values.reserve(al, n_args);
-        flatten_ArrayConstant(al, a_args, n_args, a_args_values);
+        int curr_idx = 0;
         ASR::Array_t* a_type_ = ASR::down_cast<ASR::Array_t>(a_type);
+        flatten_ArrayConstant_data(al, a_args_values, a_args, n_args, a_type_->m_type, curr_idx, nullptr);
         Vec<ASR::dimension_t> dims; dims.reserve(al, 1);
         ASR::dimension_t dim; dim.loc = a_type_->m_dims[0].loc; dim.m_start = a_type_->m_dims[0].m_start;
         dim.m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, a_type_->m_dims[0].m_length->base.loc,
-                        a_args_values.n,
+                        curr_idx,
                         ASRUtils::TYPE(ASR::make_Integer_t(al, a_loc, 4))));
         dims.push_back(al, dim);
         ASR::ttype_t* new_type = ASRUtils::TYPE(ASR::make_Array_t(al, a_type->base.loc, a_type_->m_type,
             dims.p, dims.n, a_type_->m_physical_type));
-        return ASR::make_ArrayConstant_t(al, a_loc, a_args_values.p, a_args_values.n, new_type, a_storage_format);
+        void *data = set_ArrayConstant_data(a_args_values.p, curr_idx, a_type_->m_type);
+        return ASR::make_ArrayConstant_t(al, a_loc, data, new_type, a_storage_format);
     } else {
         return ASR::make_ArrayConstructor_t(al, a_loc, a_args, n_args, a_type, nullptr, a_storage_format);
     }
