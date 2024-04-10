@@ -1156,8 +1156,8 @@ namespace LCompilers {
             bool perform_cast, ASR::cast_kindType cast_kind, ASR::ttype_t* casted_type) {
             const Location& loc = arr_var->base.loc;
             ASRUtils::ASRBuilder builder(al, loc);
-            for( size_t k = 0; k < x->n_args; k++ ) {
-                ASR::expr_t* curr_init = x->m_args[k];
+            for( size_t k = 0; k < (size_t) ASRUtils::get_fixed_size_of_array(x->m_type); k++ ) {
+                ASR::expr_t* curr_init = ASRUtils::fetch_ArrayConstant_value(al, x, k);
                 ASR::expr_t* res = PassUtils::create_array_ref(arr_var, idx_var,
                     al, current_scope);
                 if( perform_cast && !ASRUtils::types_equal(ASRUtils::expr_type(curr_init), casted_type) ) {

@@ -1435,10 +1435,9 @@ public:
     {
         std::string indent(indentation_level * indentation_spaces, ' ');
         std::string out = "[";
-        for (size_t i = 0; i < x.n_args; i++) {
-            visit_expr(*x.m_args[i]);
-            out += src;
-            if (i < x.n_args - 1)
+        for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(x.m_type); i++) {
+            out += ASRUtils::fetch_ArrayConstant_value(x, i);
+            if (i < (size_t) ASRUtils::get_fixed_size_of_array(x.m_type) - 1)
                 out += ", ";
         }
         out += "]";

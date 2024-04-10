@@ -90,7 +90,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
     }
 
     size_t get_constant_ArrayConstant_size(ASR::ArrayConstant_t* x) {
-        return x->n_args;
+        return ASRUtils::get_fixed_size_of_array(x->m_type);
     }
 
     ASR::expr_t* get_ArrayConstructor_size(ASR::ArrayConstructor_t* x, bool& is_allocatable) {

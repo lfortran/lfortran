@@ -820,7 +820,7 @@ namespace LCompilers {
             ASR::cast_kindType cast_kind=ASR::cast_kindType::IntegerToInteger,
             ASR::ttype_t* casted_type=nullptr) {
             LCOMPILERS_ASSERT(replacer->result_var != nullptr);
-            if( x->n_args == 0 ) {
+            if( ASRUtils::get_fixed_size_of_array(x->m_type) == 0 ) {
                 remove_original_statement = true;
                 return ;
             }
@@ -868,7 +868,7 @@ namespace LCompilers {
                 ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(replacer->al,
                                                 target_section->base.base.loc, idx_var, lb, nullptr));
                 result_vec->push_back(replacer->al, assign_stmt);
-                for( size_t k = 0; k < x->n_args; k++ ) {
+                for( size_t k = 0; k < (size_t) ASRUtils::get_fixed_size_of_array(x->m_type); k++ ) {
                     Vec<ASR::array_index_t> args;
                     args.reserve(replacer->al, target_section->n_args);
                     for( size_t i = 0; i < target_section->n_args; i++ ) {
@@ -896,7 +896,7 @@ namespace LCompilers {
                                                     ASRUtils::type_get_past_pointer(
                                                         ASRUtils::type_get_past_allocatable(array_ref_type)),
                                                     ASR::arraystorageType::RowMajor, nullptr));
-                    ASR::expr_t* x_m_args_k = x->m_args[k];
+                    ASR::expr_t* x_m_args_k = ASRUtils::fetch_ArrayConstant_value(replacer->al, x, k);
                     if( perform_cast ) {
                         LCOMPILERS_ASSERT(casted_type != nullptr);
                         x_m_args_k = ASRUtils::EXPR(ASR::make_Cast_t(replacer->al, array_ref->base.loc,

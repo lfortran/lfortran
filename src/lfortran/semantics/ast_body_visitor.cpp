@@ -661,7 +661,7 @@ public:
                 ASR::array_physical_typeType::FixedSizeArray));
             Vec<ASR::expr_t*> arr_args;
             arr_args.reserve(al, 0);
-            overload_args.push_back(al, ASRUtils::EXPR(ASR::make_ArrayConstant_t(
+            overload_args.push_back(al, ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(
                     al, loc, arr_args.p, arr_args.n, arr_type, ASR::arraystorageType::ColMajor)));
         }
         overload_args.push_back(al, a_iostat);
@@ -2442,19 +2442,27 @@ public:
                 !ASRUtils::check_equal_type(target_type, value_type)) {
                 if (value->type == ASR::exprType::ArrayConstant) {
                     ASR::ArrayConstant_t *ac = ASR::down_cast<ASR::ArrayConstant_t>(value);
-                    for (size_t i = 0; i < ac->n_args; i++) {
-                        ImplicitCastRules::set_converted_value(al, x.base.base.loc, &ac->m_args[i],
-                                                ASRUtils::expr_type(ac->m_args[i]),
+                    int size = ASRUtils::get_fixed_size_of_array(ac->m_type);
+                    Vec<ASR::expr_t*> args; args.reserve(al, size);
+                    ac->m_type = ASRUtils::type_get_past_allocatable(target_type);
+                    for (size_t i = 0; i < (size_t) size; i++) {
+                        ASR::expr_t* arg = ASRUtils::fetch_ArrayConstant_value(al, ac, i);
+                        ImplicitCastRules::set_converted_value(al, x.base.base.loc, &arg,
+                                                ASRUtils::expr_type(arg),
                                                 ASRUtils::type_get_past_allocatable(target_type));
-                        ac->m_args[i] = ASRUtils::expr_value(ac->m_args[i]);
+                        // ASRUtils::set_ArrayConstant_value(ac, arg, i);
+                        args.push_back(al, arg);
                     }
+                    ac = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, ac->base.base.loc,
+                            args.p, args.n, ac->m_type, ac->m_storage_format)));
+                    value = ASRUtils::EXPR((ASR::asr_t*) ac);
                     LCOMPILERS_ASSERT(ASRUtils::is_array(ac->m_type));
                     if( ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_pointer(
                             ASRUtils::type_get_past_allocatable(ac->m_type))) ) {
                         ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(
                             ASRUtils::type_get_past_pointer(
                                 ASRUtils::type_get_past_allocatable(ac->m_type)));
-                        array_t->m_type = ASRUtils::expr_type(ac->m_args[0]);
+                        array_t->m_type = ASRUtils::expr_type(ASRUtils::fetch_ArrayConstant_value(al, ac, 0));
                     }
                 } else {
                     ImplicitCastRules::set_converted_value(al, x.base.base.loc, &value,
@@ -2467,8 +2475,8 @@ public:
                 std::string rtype = ASRUtils::type_to_str(ASRUtils::expr_type(value));
                 if(value->type == ASR::exprType::ArrayConstant) {
                     ASR::ArrayConstant_t *ac = ASR::down_cast<ASR::ArrayConstant_t>(value);
-                    for (size_t i = 0; i < ac->n_args; i++) {
-                        if(!ASRUtils::check_equal_type(ASRUtils::expr_type(ac->m_args[i]), ASRUtils::expr_type(target))) {
+                    for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(ac->m_type); i++) {
+                        if(!ASRUtils::check_equal_type(ASRUtils::expr_type(ASRUtils::fetch_ArrayConstant_value(al, ac, i)), ASRUtils::expr_type(target))) {
                             diag.semantic_error_label(
                                 "Type mismatch in assignment, the types must be compatible",
                                 {target->base.loc, value->base.loc},

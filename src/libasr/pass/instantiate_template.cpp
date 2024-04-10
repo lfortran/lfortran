@@ -467,12 +467,12 @@ public:
 
     ASR::asr_t* duplicate_ArrayConstant(ASR::ArrayConstant_t *x) {
         Vec<ASR::expr_t*> m_args;
-        m_args.reserve(al, x->n_args);
-        for (size_t i = 0; i < x->n_args; i++) {
-            m_args.push_back(al, self().duplicate_expr(x->m_args[i]));
+        m_args.reserve(al, ASRUtils::get_fixed_size_of_array(x->m_type));
+        for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(x->m_type); i++) {
+            m_args.push_back(al, self().duplicate_expr(ASRUtils::fetch_ArrayConstant_value(al, x, i)));
         }
         ASR::ttype_t* m_type = substitute_type(x->m_type);
-        return make_ArrayConstant_t(al, x->base.base.loc, m_args.p, x->n_args, m_type, x->m_storage_format);
+        return ASRUtils::make_ArrayConstructor_t_util(al, x->base.base.loc, m_args.p, ASRUtils::get_fixed_size_of_array(x->m_type), m_type, x->m_storage_format);
     }
 
     ASR::asr_t* duplicate_ArrayConstructor(ASR::ArrayConstructor_t *x) {
@@ -1681,12 +1681,12 @@ public:
 
     ASR::asr_t* duplicate_ArrayConstant(ASR::ArrayConstant_t *x) {
         Vec<ASR::expr_t*> m_args;
-        m_args.reserve(al, x->n_args);
-        for (size_t i = 0; i < x->n_args; i++) {
-            m_args.push_back(al, self().duplicate_expr(x->m_args[i]));
+        m_args.reserve(al,ASRUtils::get_fixed_size_of_array(x->m_type));
+        for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(x->m_type); i++) {
+            m_args.push_back(al, self().duplicate_expr(ASRUtils::fetch_ArrayConstant_value(al, x, i)));
         }
         ASR::ttype_t* m_type = substitute_type(x->m_type);
-        return make_ArrayConstant_t(al, x->base.base.loc, m_args.p, x->n_args, m_type, x->m_storage_format);
+        return ASRUtils::make_ArrayConstructor_t_util(al, x->base.base.loc, m_args.p, ASRUtils::get_fixed_size_of_array(x->m_type), m_type, x->m_storage_format);
     }
 
     ASR::asr_t* duplicate_ArrayPhysicalCast(ASR::ArrayPhysicalCast_t *x) {
