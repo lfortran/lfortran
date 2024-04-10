@@ -1221,6 +1221,7 @@ public:
             SET_INTRINSIC_NAME(Range,     "range"    );
             SET_INTRINSIC_NAME(Rank,      "rank"     );
             SET_INTRINSIC_NAME(Tiny,      "tiny"     );
+            SET_INTRINSIC_NAME(BitSize,   "bit_size" );
             default : {
                 throw LCompilersException("TypeInquiry: `"
                     + ASRUtils::get_intrinsic_name(x.m_inquiry_id)
