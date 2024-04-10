@@ -3879,5 +3879,5 @@ filename = "warnings/doloop_01.f90"
 asr = true
 
 [[test]]
-filename = "../integration_tests/char_array_01.f90"
+filename = "char_arr_assignment.f90"
 asr = true

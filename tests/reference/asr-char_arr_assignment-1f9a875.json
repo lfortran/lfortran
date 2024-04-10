@@ -1,0 +1,13 @@
+{
+    "basename": "asr-char_arr_assignment-1f9a875",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/char_arr_assignment.f90",
+    "infile_hash": "637e9e1637e9afbc3bcbf797c587b2b064dcf67eb215ce9f22fe5ade",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-char_arr_assignment-1f9a875.stdout",
+    "stdout_hash": "01c825571cf24ccf578a1b141d4011489b6d181538decd236d78aad5",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

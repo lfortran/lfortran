@@ -1,0 +1,114 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            char_arr_assignment:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            char_arr:
+                                (Variable
+                                    2
+                                    char_arr
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Character 1 1 ())
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 4 (Integer 4)))]
+                                        CharacterArraySinglePointer
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    char_arr_assignment
+                    []
+                    [(Assignment
+                        (ArraySection
+                            (Var 2 char_arr)
+                            [((ArrayBound
+                                (Var 2 char_arr)
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
+                                LBound
+                                (IntegerConstant 1 (Integer 4))
+                            )
+                            (ArrayBound
+                                (Var 2 char_arr)
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
+                                UBound
+                                (IntegerConstant 4 (Integer 4))
+                            )
+                            (IntegerConstant 1 (Integer 4)))]
+                            (Array
+                                (Character 1 1 ())
+                                [(()
+                                ())]
+                                DescriptorArray
+                            )
+                            ()
+                        )
+                        (ArrayBroadcast
+                            (StringConstant
+                                "A"
+                                (Character 1 1 ())
+                            )
+                            (IntrinsicArrayFunction
+                                Shape
+                                [(ArraySection
+                                    (Var 2 char_arr)
+                                    [((ArrayBound
+                                        (Var 2 char_arr)
+                                        (IntegerConstant 1 (Integer 4))
+                                        (Integer 4)
+                                        LBound
+                                        (IntegerConstant 1 (Integer 4))
+                                    )
+                                    (ArrayBound
+                                        (Var 2 char_arr)
+                                        (IntegerConstant 1 (Integer 4))
+                                        (Integer 4)
+                                        UBound
+                                        (IntegerConstant 4 (Integer 4))
+                                    )
+                                    (IntegerConstant 1 (Integer 4)))]
+                                    (Array
+                                        (Character 1 1 ())
+                                        [(()
+                                        ())]
+                                        DescriptorArray
+                                    )
+                                    ()
+                                )]
+                                0
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4)))]
+                                    CharacterArraySinglePointer
+                                )
+                                ()
+                            )
+                            (Array
+                                (Character 1 1 ())
+                                [(()
+                                ())]
+                                DescriptorArray
+                            )
+                            ()
+                        )
+                        ()
+                    )]
+                )
+        })
+    []
+)
