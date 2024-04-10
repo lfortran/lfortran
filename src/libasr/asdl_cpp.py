@@ -112,6 +112,9 @@ def convert_type(asdl_type, seq, opt, mod_name):
     elif asdl_type == "int":
         type_ = "int64_t"
         assert not seq
+    elif asdl_type == "void":
+        type_ = "void *"
+        assert not seq
     else:
         type_ = asdl_type + "_t"
         if asdl_type in products:
@@ -1489,7 +1492,7 @@ class PickleVisitorVisitor(ASDLVisitor):
         self.used = False
         for n, field in enumerate(fields):
             self.visitField(field, cons)
-            if n < len(fields) - 1:
+            if n < len(fields) - 1 and field.type != "void":
                 if name not in symbol:
                     self.emit(    'if(indent) s.append("\\n" + indented);', 2)
                     self.emit(    'else s.append(" ");', 2)
@@ -1690,6 +1693,9 @@ class PickleVisitorVisitor(ASDLVisitor):
                 else:
                     self.emit('visit_%sType(x.m_%s);' \
                             % (field.type, field.name), 2)
+            elif field.type == "void":
+                # just skip void fields
+                pass
             else:
                 self.emit('s.append("Unimplemented' + field.type + '");', 2)
 
@@ -2139,6 +2145,8 @@ class SerializationVisitorVisitor(ASDLVisitor):
                 self.emit("}", 2)
             elif field.type == "float" and not field.seq and not field.opt:
                 self.emit('self().write_float64(x.m_%s);' % field.name, 2)
+            elif field.type == "void":
+                assert True
             elif field.type in self.data.simple_types:
                 if field.opt:
                     raise Exception("Unimplemented opt for field type: " + field.type);
@@ -2402,6 +2410,9 @@ class DeserializationVisitorVisitor(ASDLVisitor):
                             lines.append("        self().symtab_insert_symbol(*m_%s, name, sym);" % f.name)
                             lines.append("    }")
                             lines.append("}")
+                    elif f.type == "void":
+                        lines.append("void *m_%s = nullptr;" % (f.name))
+                        args.append("m_%s" % (f.name))
                     else:
                         print(f.type)
                         assert False
