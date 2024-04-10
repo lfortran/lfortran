@@ -844,7 +844,7 @@ public:
         {"dmin1", "min"},
         {"dmax1", "max"},
 
-        {"dcmplx", "cmplx"}
+        {"dcmplx", "cmplx"},
         {"dacos", "acos"},
         {"dacosh", "acosh"},
 
@@ -867,7 +867,6 @@ public:
 
         {"amod", "mod"},
         {"dmod", "mod"},
-        
     };
 
     ASR::asr_t *tmp;
