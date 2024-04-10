@@ -5340,12 +5340,6 @@ inline void flatten_ArrayConstant_data(Allocator &al, Vec<ASR::expr_t*> &data, A
     }
 }
 
-inline void print_ArrayConstant(void *data, ASR::ttype_t* type, int n_args) {
-    for (int i = 0; i < n_args; i++) {
-        std::cout<<"i = "<<i<<", value = "<<fetch_ArrayConstant_value(data, type, i)<<"\n";
-    }
-}
-
 inline ASR::asr_t* make_ArrayConstructor_t_util(Allocator &al, const Location &a_loc,
     ASR::expr_t** a_args, size_t n_args, ASR::ttype_t* a_type, ASR::arraystorageType a_storage_format) {
     if( !ASRUtils::is_array(a_type) ) {
