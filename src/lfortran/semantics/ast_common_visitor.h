@@ -2877,7 +2877,11 @@ public:
                                 ASRUtils::type_get_past_array(type));
                             ASR::Character_t *rhs_type = ASR::down_cast<ASR::Character_t>(
                                 ASRUtils::type_get_past_array(ASRUtils::expr_type(value)));
-                            int lhs_len = lhs_type->m_len;
+                            AST::expr_t* multiplier { x.m_syms[i].m_multiplier };
+                            // in case when length is specified as:
+                            // character(len=4) :: x*3 = "ape", we assign "3" as the length, and ignore "4"
+                            // (that's what GFortran does)
+                            int64_t lhs_len { multiplier ? AST::down_cast<AST::Num_t>(multiplier)->m_n : lhs_type->m_len };
                             int rhs_len = rhs_type->m_len;
                             if (rhs_len >= 0) {
                                 if (lhs_len == -1) {
