@@ -1303,9 +1303,9 @@ int compile_to_object_file_cpp(const std::string &infile,
         }
         options += " -I" + rtlib_header_dir;
         std::string cmd = CXX + " " + options + " -o " + outfile + " -c " + cppfile;
-	if (verbose) {
+        if (verbose) {
             std::cout << cmd << std::endl;
-	}
+        }
         int err = system(cmd.c_str());
         if (err) {
             std::cout << "The command '" + cmd + "' failed." << std::endl;
@@ -1406,9 +1406,9 @@ int compile_to_object_file_c(const std::string &infile,
         std::string CXX = "gcc";
         std::string options = " -I" + rtlib_header_dir;
         std::string cmd = CXX + " " + options + " -o " + outfile + " -c " + cfile;
-	if (verbose) {
+        if (verbose) {
             std::cout << cmd << std::endl;
-	}
+        }
         int err = system(cmd.c_str());
         if (err) {
             std::cout << "The command '" + cmd + "' failed." << std::endl;
@@ -1561,8 +1561,12 @@ int link_executable(const std::vector<std::string> &infiles,
             compile_cmd += runtime_library_dir + "\\lfortran_runtime_static.lib";
             run_cmd = outfile;
         } else if (LCompilers::startswith(t, "wasm")) {
-            std::string wasi_sdk_path = std::getenv("WASI_SDK_PATH");
-            std::string CC = wasi_sdk_path + "/bin/clang";
+            char* wasi_sdk_path = std::getenv("WASI_SDK_PATH");
+            if (wasi_sdk_path == nullptr) {
+                std::cerr << "WASI_SDK_PATH must be defined to use llvm->wasm\n";
+                return 11;
+            }
+            std::string CC = std::string(wasi_sdk_path) + "/bin/clang";
             std::string options = " --target=wasm32-wasi -nostartfiles -Wl,--entry=_start -Wl,-lwasi-emulated-process-clocks";
             std::string runtime_lib = "lfortran_runtime_wasm.o";
             compile_cmd = CC + options + " -o " + outfile + " ";
@@ -1603,9 +1607,9 @@ int link_executable(const std::vector<std::string> &infiles,
             for (auto &s : infiles) {
                 compile_cmd += s + " ";
             }
-	    if(!extra_library_flags.empty()) {
-	        compile_cmd += extra_library_flags + " ";
-	    }
+            if(!extra_library_flags.empty()) {
+                compile_cmd += extra_library_flags + " ";
+            }
             compile_cmd += + " -L"
                 + base_path + " -Wl,-rpath," + base_path;
             if (!extra_linker_flags.empty()) {
@@ -1656,18 +1660,18 @@ int link_executable(const std::vector<std::string> &infiles,
         for (auto &s : infiles) {
             cmd += s + " ";
         }
-	if(!extra_library_flags.empty()) {
-	    cmd += extra_library_flags + " ";
-	}
+        if(!extra_library_flags.empty()) {
+            cmd += extra_library_flags + " ";
+        }
         cmd += " -L" + base_path
             + " -Wl,-rpath," + base_path;
         if (!extra_linker_flags.empty()) {
             cmd += extra_linker_flags;
         }
         cmd += " -l" + runtime_lib + " -lm";
-	if (verbose) {
+        if (verbose) {
             std::cout << cmd << std::endl;
-	}
+        }
         int err = system(cmd.c_str());
         if (err) {
             std::cout << "The command '" + cmd + "' failed." << std::endl;
@@ -1694,13 +1698,13 @@ int link_executable(const std::vector<std::string> &infiles,
         for (auto &s : infiles) {
             cmd += s + " ";
         }
-	if(!extra_library_flags.empty()) {
-	    cmd += extra_library_flags + " ";
-	}
+        if(!extra_library_flags.empty()) {
+            cmd += extra_library_flags + " ";
+        }
         cmd += " " + post_options + " -lm";
-	if (verbose) {
+        if (verbose) {
             std::cout << cmd << std::endl;
-	}
+        }
         int err = system(cmd.c_str());
         if (err) {
             std::cout << "The command '" + cmd + "' failed." << std::endl;
@@ -1722,15 +1726,15 @@ int link_executable(const std::vector<std::string> &infiles,
         for (auto &s : infiles) {
             cmd += s + " ";
         }
-	if(!extra_library_flags.empty()) {
-	    cmd += extra_library_flags + " ";
-	}
+        if(!extra_library_flags.empty()) {
+            cmd += extra_library_flags + " ";
+        }
         cmd += " -L" + base_path
             + " -Wl,-rpath," + base_path;
         cmd += " -l" + runtime_lib + " -lm";
-	if (verbose) {
+        if (verbose) {
             std::cout << cmd << std::endl;
-	}
+        }
         int err = system(cmd.c_str());
         if (err) {
             std::cout << "The command '" + cmd + "' failed." << std::endl;
