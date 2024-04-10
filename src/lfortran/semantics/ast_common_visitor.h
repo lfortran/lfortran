@@ -829,18 +829,44 @@ public:
 
         {"dimag", "aimag"},
         {"imag" , "aimag"},
+        {"imagpart" , "aimag"},
 
+        {"isign", "sign"},
         {"dsign", "sign"},
         {"dsqrt", "sqrt"},
 
+        {"alog", "log"},
         {"dlog", "log"},
         {"dlog10", "log10"},
+        {"alog10", "log10"},
         {"dexp", "exp"},
 
         {"dmin1", "min"},
         {"dmax1", "max"},
 
-        {"dcmplx", "cmplx"}
+        {"dcmplx", "cmplx"},
+        {"dacos", "acos"},
+        {"dacosh", "acosh"},
+
+        {"dint", "aint"},
+        {"dnint", "anint"},
+
+        {"dasin", "asin"},
+        {"dasinh", "asinh"},
+        {"datanh", "atanh"},
+
+        {"dbesj0", "bessel_j0"},
+        {"dbesj1", "bessel_j1"},
+        {"dbesy0", "bessel_y0"},
+        {"dbesy1", "bessel_y1"},
+
+        {"dconjg", "conjg"},
+
+        {"idim", "dim"},
+        {"ddim", "dim"},
+
+        {"amod", "mod"},
+        {"dmod", "mod"},
     };
 
     ASR::asr_t *tmp;

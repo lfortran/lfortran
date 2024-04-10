@@ -727,7 +727,7 @@ RUN(NAME intrinsics_203 LABELS gfortran llvm) # asind
 RUN(NAME intrinsics_204 LABELS gfortran llvm) # bessely1
 RUN(NAME intrinsics_205 LABELS gfortran llvm) # acosd
 RUN(NAME intrinsics_206 LABELS gfortran llvm fortran) # poppar
-
+RUN(NAME intrinsics_207 LABELS gfortran llvm) # double precision intrinsics 
 
 RUN(NAME parameter_01 LABELS gfortran)
 RUN(NAME parameter_02 LABELS gfortran)
