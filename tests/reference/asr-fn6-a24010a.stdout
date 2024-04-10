@@ -486,7 +486,7 @@
                                                 (ExternalSymbol
                                                     3
                                                     len_trim
-                                                    33 len_trim
+                                                    23 len_trim
                                                     lfortran_intrinsic_string
                                                     []
                                                     len_trim
@@ -563,7 +563,7 @@
                                                                 (ExternalSymbol
                                                                     5
                                                                     len_trim
-                                                                    33 len_trim
+                                                                    23 len_trim
                                                                     lfortran_intrinsic_string
                                                                     []
                                                                     len_trim
@@ -572,7 +572,7 @@
                                                             ~select_type_block_:
                                                                 (Block
                                                                     (SymbolTable
-                                                                        40
+                                                                        30
                                                                         {
                                                                             
                                                                         })
@@ -619,7 +619,7 @@
                                                             ~select_type_block_1:
                                                                 (Block
                                                                     (SymbolTable
-                                                                        41
+                                                                        31
                                                                         {
                                                                             
                                                                         })
@@ -666,7 +666,7 @@
                                                             ~select_type_block_2:
                                                                 (Block
                                                                     (SymbolTable
-                                                                        42
+                                                                        32
                                                                         {
                                                                             
                                                                         })
@@ -713,7 +713,7 @@
                                                             ~select_type_block_3:
                                                                 (Block
                                                                     (SymbolTable
-                                                                        43
+                                                                        33
                                                                         {
                                                                             
                                                                         })
@@ -755,7 +755,7 @@
                                                             ~select_type_block_4:
                                                                 (Block
                                                                     (SymbolTable
-                                                                        44
+                                                                        34
                                                                         {
                                                                             
                                                                         })
@@ -797,7 +797,7 @@
                                                             ~select_type_block_5:
                                                                 (Block
                                                                     (SymbolTable
-                                                                        45
+                                                                        35
                                                                         {
                                                                             
                                                                         })
@@ -839,7 +839,7 @@
                                                             ~select_type_block_6:
                                                                 (Block
                                                                     (SymbolTable
-                                                                        46
+                                                                        36
                                                                         {
                                                                             
                                                                         })
@@ -881,13 +881,13 @@
                                                             ~select_type_block_7:
                                                                 (Block
                                                                     (SymbolTable
-                                                                        47
+                                                                        37
                                                                         {
                                                                             len_trim:
                                                                                 (ExternalSymbol
-                                                                                    47
+                                                                                    37
                                                                                     len_trim
-                                                                                    33 len_trim
+                                                                                    23 len_trim
                                                                                     lfortran_intrinsic_string
                                                                                     []
                                                                                     len_trim
@@ -924,7 +924,7 @@
                                                                                 ()
                                                                                 [((Var 5 generic))]
                                                                                 (Character 1 -3 (FunctionCall
-                                                                                    47 len_trim
+                                                                                    37 len_trim
                                                                                     ()
                                                                                     [((Var 5 generic))]
                                                                                     (Integer 4)
@@ -946,7 +946,7 @@
                                                             ~select_type_block_8:
                                                                 (Block
                                                                     (SymbolTable
-                                                                        48
+                                                                        38
                                                                         {
                                                                             
                                                                         })
@@ -1158,7 +1158,7 @@
                                                 (ExternalSymbol
                                                     3
                                                     trim
-                                                    33 trim
+                                                    23 trim
                                                     lfortran_intrinsic_string
                                                     []
                                                     trim
