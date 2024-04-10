@@ -39,4 +39,8 @@ program intrinsic_139
     print *, modulo(-f,-r2)
     if ( abs(modulo(-f,-r2) + 1.00000000) > 1e-5 ) error stop
 
+    print *, modulo(17,-3)
+    if ( modulo(17,-3) /= -1 ) error stop
+    print*, modulo(-17, 3)
+    if ( modulo(-17,3) /= 1 ) error stop
 end program

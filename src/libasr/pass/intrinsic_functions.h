@@ -2891,7 +2891,7 @@ namespace Modulo {
         if (is_integer(*ASRUtils::expr_type(args[0])) && is_integer(*ASRUtils::expr_type(args[1]))) {
             int64_t a = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
             int64_t b = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
-            return make_ConstantWithType(make_IntegerConstant_t, a - b * std::floor(a/b), t1, loc);
+            return make_ConstantWithType(make_IntegerConstant_t, a - b * std::floor(std::real(a)/b), t1, loc);
         } else if (is_real(*ASRUtils::expr_type(args[0])) && is_real(*ASRUtils::expr_type(args[1]))) {
             double a = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
             double b = ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r;
