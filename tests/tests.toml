@@ -3877,3 +3877,7 @@ asr = true
 [[test]]
 filename = "warnings/doloop_01.f90"
 asr = true
+
+[[test]]
+filename = "char_arr_assignment.f90"
+asr = true

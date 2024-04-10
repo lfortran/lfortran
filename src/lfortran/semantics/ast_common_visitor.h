@@ -3328,9 +3328,13 @@ public:
                                         ASRUtils::TYPE(ASR::make_Integer_t(al, loc, compiler_options.po.default_integer_kind))));
                         }
                     } else {
-                        m_end = ASRUtils::EXPR(ASR::make_StringLen_t(al, loc,
-                                    v_Var, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, compiler_options.po.default_integer_kind)),
-                                    nullptr));
+                        if (ASR::is_a<ASR::Array_t>(*root_v_type)) {
+                            m_end = ASRUtils::get_bound<SemanticError>(v_Var, i + 1, "ubound", al);
+                        } else {
+                            m_end = ASRUtils::EXPR(ASR::make_StringLen_t(al, loc,
+                                        v_Var, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, compiler_options.po.default_integer_kind)),
+                                        nullptr));
+                        }
                     }
                 } else {
                     m_end = ASRUtils::get_bound<SemanticError>(v_Var, i + 1, "ubound", al);

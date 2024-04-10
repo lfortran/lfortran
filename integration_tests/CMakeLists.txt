@@ -1379,6 +1379,7 @@ RUN(NAME character_01 LABELS gfortran llvm)
 RUN(NAME character_02 LABELS gfortran llvm)
 RUN(NAME character_03 LABELS gfortran llvm)
 RUN(NAME character_04 LABELS gfortran llvm)
+RUN(NAME char_array_01 LABELS gfortran llvm)
 
 RUN(NAME c_ptr_01 LABELS gfortran llvm)
 RUN(NAME c_ptr_02 LABELS gfortran llvm)
