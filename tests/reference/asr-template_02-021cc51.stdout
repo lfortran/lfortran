@@ -906,13 +906,6 @@
                             ()
                             [((ArrayPhysicalCast
                                 (ArrayConstant
-                                    [(IntegerConstant 3 (Integer 4))
-                                    (IntegerConstant 3 (Integer 4))
-                                    (IntegerConstant 6 (Integer 4))
-                                    (IntegerConstant 2 (Integer 4))
-                                    (IntegerConstant 2 (Integer 4))
-                                    (IntegerConstant 2 (Integer 4))
-                                    (IntegerConstant 1 (Integer 4))]
                                     (Array
                                         (Integer 4)
                                         [((IntegerConstant 1 (Integer 4))
@@ -951,34 +944,6 @@
                             ()
                             [((ArrayPhysicalCast
                                 (ArrayConstant
-                                    [(StringConstant
-                                        "a"
-                                        (Character 1 1 ())
-                                    )
-                                    (StringConstant
-                                        "a"
-                                        (Character 1 1 ())
-                                    )
-                                    (StringConstant
-                                        "b"
-                                        (Character 1 1 ())
-                                    )
-                                    (StringConstant
-                                        "p"
-                                        (Character 1 1 ())
-                                    )
-                                    (StringConstant
-                                        "p"
-                                        (Character 1 1 ())
-                                    )
-                                    (StringConstant
-                                        "p"
-                                        (Character 1 1 ())
-                                    )
-                                    (StringConstant
-                                        "o"
-                                        (Character 1 1 ())
-                                    )]
                                     (Array
                                         (Character 1 1 ())
                                         [((IntegerConstant 1 (Integer 4))

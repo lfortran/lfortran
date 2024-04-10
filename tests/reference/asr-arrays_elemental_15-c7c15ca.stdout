@@ -193,8 +193,6 @@
                                                     )
                                                 )
                                                 (ArrayConstant
-                                                    [(IntegerConstant 256 (Integer 4))
-                                                    (IntegerConstant 64 (Integer 4))]
                                                     (Array
                                                         (Integer 4)
                                                         [((IntegerConstant 1 (Integer 4))
@@ -641,9 +639,6 @@
                                                     )
                                                 )
                                                 (ArrayConstant
-                                                    [(IntegerConstant 256 (Integer 4))
-                                                    (IntegerConstant 64 (Integer 4))
-                                                    (IntegerConstant 16 (Integer 4))]
                                                     (Array
                                                         (Integer 4)
                                                         [((IntegerConstant 1 (Integer 4))
@@ -1067,10 +1062,6 @@
                                                         )
                                                     )
                                                     (ArrayConstant
-                                                        [(IntegerConstant 64 (Integer 4))
-                                                        (IntegerConstant 32 (Integer 4))
-                                                        (IntegerConstant 8 (Integer 4))
-                                                        (IntegerConstant 4 (Integer 4))]
                                                         (Array
                                                             (Integer 4)
                                                             [((IntegerConstant 1 (Integer 4))
@@ -1156,10 +1147,6 @@
                                                         )
                                                     )
                                                     (ArrayConstant
-                                                        [(IntegerConstant 64 (Integer 4))
-                                                        (IntegerConstant 32 (Integer 4))
-                                                        (IntegerConstant 8 (Integer 4))
-                                                        (IntegerConstant 4 (Integer 4))]
                                                         (Array
                                                             (Integer 4)
                                                             [((IntegerConstant 1 (Integer 4))

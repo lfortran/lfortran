@@ -405,18 +405,6 @@
                     (Assignment
                         (Var 2 e)
                         (ArrayConstant
-                            [(StringConstant
-                                "a"
-                                (Character 1 1 ())
-                            )
-                            (StringConstant
-                                "b"
-                                (Character 1 1 ())
-                            )
-                            (StringConstant
-                                "c"
-                                (Character 1 1 ())
-                            )]
                             (Array
                                 (Character 1 1 ())
                                 [((IntegerConstant 1 (Integer 4))
@@ -430,9 +418,6 @@
                     (Assignment
                         (Var 2 x)
                         (ArrayConstant
-                            [(IntegerConstant 97 (Integer 4))
-                            (IntegerConstant 98 (Integer 4))
-                            (IntegerConstant 99 (Integer 4))]
                             (Array
                                 (Integer 4)
                                 [((IntegerConstant 1 (Integer 4))
@@ -544,10 +529,6 @@
                     (Assignment
                         (Var 2 int_res)
                         (ArrayConstant
-                            [(IntegerConstant 32 (Integer 8))
-                            (IntegerConstant 99 (Integer 8))
-                            (IntegerConstant 100 (Integer 8))
-                            (IntegerConstant 101 (Integer 8))]
                             (Array
                                 (Integer 8)
                                 [((IntegerConstant 1 (Integer 4))

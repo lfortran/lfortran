@@ -98,7 +98,6 @@
                                                                 )
                                                             )
                                                             (ArrayConstant
-                                                                [(IntegerConstant 10 (Integer 4))]
                                                                 (Array
                                                                     (Integer 4)
                                                                     [((IntegerConstant 1 (Integer 4))
@@ -114,46 +113,6 @@
                                                                 FixedSizeArray
                                                             )
                                                             (ArrayConstant
-                                                                [(RealConstant
-                                                                    2.000000
-                                                                    (Real 4)
-                                                                )
-                                                                (RealConstant
-                                                                    2.000000
-                                                                    (Real 4)
-                                                                )
-                                                                (RealConstant
-                                                                    2.000000
-                                                                    (Real 4)
-                                                                )
-                                                                (RealConstant
-                                                                    2.000000
-                                                                    (Real 4)
-                                                                )
-                                                                (RealConstant
-                                                                    2.000000
-                                                                    (Real 4)
-                                                                )
-                                                                (RealConstant
-                                                                    2.000000
-                                                                    (Real 4)
-                                                                )
-                                                                (RealConstant
-                                                                    2.000000
-                                                                    (Real 4)
-                                                                )
-                                                                (RealConstant
-                                                                    2.000000
-                                                                    (Real 4)
-                                                                )
-                                                                (RealConstant
-                                                                    2.000000
-                                                                    (Real 4)
-                                                                )
-                                                                (RealConstant
-                                                                    2.000000
-                                                                    (Real 4)
-                                                                )]
                                                                 (Array
                                                                     (Real 4)
                                                                     [((IntegerConstant 1 (Integer 4))
@@ -186,7 +145,6 @@
                                                                 )
                                                             )
                                                             (ArrayConstant
-                                                                [(IntegerConstant 10 (Integer 4))]
                                                                 (Array
                                                                     (Integer 4)
                                                                     [((IntegerConstant 1 (Integer 4))
@@ -202,46 +160,6 @@
                                                                 FixedSizeArray
                                                             )
                                                             (ArrayConstant
-                                                                [(RealConstant
-                                                                    2.000000
-                                                                    (Real 4)
-                                                                )
-                                                                (RealConstant
-                                                                    2.000000
-                                                                    (Real 4)
-                                                                )
-                                                                (RealConstant
-                                                                    2.000000
-                                                                    (Real 4)
-                                                                )
-                                                                (RealConstant
-                                                                    2.000000
-                                                                    (Real 4)
-                                                                )
-                                                                (RealConstant
-                                                                    2.000000
-                                                                    (Real 4)
-                                                                )
-                                                                (RealConstant
-                                                                    2.000000
-                                                                    (Real 4)
-                                                                )
-                                                                (RealConstant
-                                                                    2.000000
-                                                                    (Real 4)
-                                                                )
-                                                                (RealConstant
-                                                                    2.000000
-                                                                    (Real 4)
-                                                                )
-                                                                (RealConstant
-                                                                    2.000000
-                                                                    (Real 4)
-                                                                )
-                                                                (RealConstant
-                                                                    2.000000
-                                                                    (Real 4)
-                                                                )]
                                                                 (Array
                                                                     (Real 4)
                                                                     [((IntegerConstant 1 (Integer 4))
@@ -573,7 +491,6 @@
                                 (Real 4)
                             )
                             (ArrayConstant
-                                [(IntegerConstant 10 (Integer 4))]
                                 (Array
                                     (Integer 4)
                                     [((IntegerConstant 1 (Integer 4))
@@ -589,46 +506,6 @@
                                 FixedSizeArray
                             )
                             (ArrayConstant
-                                [(RealConstant
-                                    0.420000
-                                    (Real 4)
-                                )
-                                (RealConstant
-                                    0.420000
-                                    (Real 4)
-                                )
-                                (RealConstant
-                                    0.420000
-                                    (Real 4)
-                                )
-                                (RealConstant
-                                    0.420000
-                                    (Real 4)
-                                )
-                                (RealConstant
-                                    0.420000
-                                    (Real 4)
-                                )
-                                (RealConstant
-                                    0.420000
-                                    (Real 4)
-                                )
-                                (RealConstant
-                                    0.420000
-                                    (Real 4)
-                                )
-                                (RealConstant
-                                    0.420000
-                                    (Real 4)
-                                )
-                                (RealConstant
-                                    0.420000
-                                    (Real 4)
-                                )
-                                (RealConstant
-                                    0.420000
-                                    (Real 4)
-                                )]
                                 (Array
                                     (Real 4)
                                     [((IntegerConstant 1 (Integer 4))
@@ -648,7 +525,6 @@
                                 (Real 4)
                             )
                             (ArrayConstant
-                                [(IntegerConstant 10 (Integer 4))]
                                 (Array
                                     (Integer 4)
                                     [((IntegerConstant 1 (Integer 4))
@@ -664,46 +540,6 @@
                                 FixedSizeArray
                             )
                             (ArrayConstant
-                                [(RealConstant
-                                    0.350000
-                                    (Real 4)
-                                )
-                                (RealConstant
-                                    0.350000
-                                    (Real 4)
-                                )
-                                (RealConstant
-                                    0.350000
-                                    (Real 4)
-                                )
-                                (RealConstant
-                                    0.350000
-                                    (Real 4)
-                                )
-                                (RealConstant
-                                    0.350000
-                                    (Real 4)
-                                )
-                                (RealConstant
-                                    0.350000
-                                    (Real 4)
-                                )
-                                (RealConstant
-                                    0.350000
-                                    (Real 4)
-                                )
-                                (RealConstant
-                                    0.350000
-                                    (Real 4)
-                                )
-                                (RealConstant
-                                    0.350000
-                                    (Real 4)
-                                )
-                                (RealConstant
-                                    0.350000
-                                    (Real 4)
-                                )]
                                 (Array
                                     (Real 4)
                                     [((IntegerConstant 1 (Integer 4))
@@ -754,7 +590,6 @@
                                 (Real 4)
                             )
                             (ArrayConstant
-                                [(IntegerConstant 10 (Integer 4))]
                                 (Array
                                     (Integer 4)
                                     [((IntegerConstant 1 (Integer 4))
@@ -770,46 +605,6 @@
                                 FixedSizeArray
                             )
                             (ArrayConstant
-                                [(RealConstant
-                                    1.500000
-                                    (Real 4)
-                                )
-                                (RealConstant
-                                    1.500000
-                                    (Real 4)
-                                )
-                                (RealConstant
-                                    1.500000
-                                    (Real 4)
-                                )
-                                (RealConstant
-                                    1.500000
-                                    (Real 4)
-                                )
-                                (RealConstant
-                                    1.500000
-                                    (Real 4)
-                                )
-                                (RealConstant
-                                    1.500000
-                                    (Real 4)
-                                )
-                                (RealConstant
-                                    1.500000
-                                    (Real 4)
-                                )
-                                (RealConstant
-                                    1.500000
-                                    (Real 4)
-                                )
-                                (RealConstant
-                                    1.500000
-                                    (Real 4)
-                                )
-                                (RealConstant
-                                    1.500000
-                                    (Real 4)
-                                )]
                                 (Array
                                     (Real 4)
                                     [((IntegerConstant 1 (Integer 4))
@@ -829,7 +624,6 @@
                                 (Real 4)
                             )
                             (ArrayConstant
-                                [(IntegerConstant 10 (Integer 4))]
                                 (Array
                                     (Integer 4)
                                     [((IntegerConstant 1 (Integer 4))
@@ -845,46 +639,6 @@
                                 FixedSizeArray
                             )
                             (ArrayConstant
-                                [(RealConstant
-                                    0.400000
-                                    (Real 4)
-                                )
-                                (RealConstant
-                                    0.400000
-                                    (Real 4)
-                                )
-                                (RealConstant
-                                    0.400000
-                                    (Real 4)
-                                )
-                                (RealConstant
-                                    0.400000
-                                    (Real 4)
-                                )
-                                (RealConstant
-                                    0.400000
-                                    (Real 4)
-                                )
-                                (RealConstant
-                                    0.400000
-                                    (Real 4)
-                                )
-                                (RealConstant
-                                    0.400000
-                                    (Real 4)
-                                )
-                                (RealConstant
-                                    0.400000
-                                    (Real 4)
-                                )
-                                (RealConstant
-                                    0.400000
-                                    (Real 4)
-                                )
-                                (RealConstant
-                                    0.400000
-                                    (Real 4)
-                                )]
                                 (Array
                                     (Real 4)
                                     [((IntegerConstant 1 (Integer 4))

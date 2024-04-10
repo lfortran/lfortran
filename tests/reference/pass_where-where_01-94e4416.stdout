@@ -93,7 +93,6 @@
                                 (IntegerConstant -2 (Integer 4))
                             )
                             (ArrayConstant
-                                [(IntegerConstant 10 (Integer 4))]
                                 (Array
                                     (Integer 4)
                                     [((IntegerConstant 1 (Integer 4))
@@ -109,16 +108,6 @@
                                 FixedSizeArray
                             )
                             (ArrayConstant
-                                [(IntegerConstant -2 (Integer 4))
-                                (IntegerConstant -2 (Integer 4))
-                                (IntegerConstant -2 (Integer 4))
-                                (IntegerConstant -2 (Integer 4))
-                                (IntegerConstant -2 (Integer 4))
-                                (IntegerConstant -2 (Integer 4))
-                                (IntegerConstant -2 (Integer 4))
-                                (IntegerConstant -2 (Integer 4))
-                                (IntegerConstant -2 (Integer 4))
-                                (IntegerConstant -2 (Integer 4))]
                                 (Array
                                     (Integer 4)
                                     [((IntegerConstant 1 (Integer 4))
@@ -165,7 +154,6 @@
                                 (IntegerConstant -3 (Integer 4))
                             )
                             (ArrayConstant
-                                [(IntegerConstant 10 (Integer 4))]
                                 (Array
                                     (Integer 4)
                                     [((IntegerConstant 1 (Integer 4))
@@ -181,16 +169,6 @@
                                 FixedSizeArray
                             )
                             (ArrayConstant
-                                [(IntegerConstant -3 (Integer 4))
-                                (IntegerConstant -3 (Integer 4))
-                                (IntegerConstant -3 (Integer 4))
-                                (IntegerConstant -3 (Integer 4))
-                                (IntegerConstant -3 (Integer 4))
-                                (IntegerConstant -3 (Integer 4))
-                                (IntegerConstant -3 (Integer 4))
-                                (IntegerConstant -3 (Integer 4))
-                                (IntegerConstant -3 (Integer 4))
-                                (IntegerConstant -3 (Integer 4))]
                                 (Array
                                     (Integer 4)
                                     [((IntegerConstant 1 (Integer 4))

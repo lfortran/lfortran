@@ -237,14 +237,6 @@
                                     [(Assignment
                                         (Var 4 x)
                                         (ArrayConstant
-                                            [(RealConstant
-                                                1.000000
-                                                (Real 4)
-                                            )
-                                            (RealConstant
-                                                1.000000
-                                                (Real 4)
-                                            )]
                                             (Array
                                                 (Real 4)
                                                 [((IntegerConstant 1 (Integer 4))

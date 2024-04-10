@@ -2282,7 +2282,6 @@
                                                         ()
                                                     )
                                                     (ArrayConstant
-                                                        [(IntegerConstant 8 (Integer 4))]
                                                         (Array
                                                             (Integer 4)
                                                             [((IntegerConstant 1 (Integer 4))
@@ -2436,7 +2435,6 @@
                                                         ()
                                                     )
                                                     (ArrayConstant
-                                                        [(IntegerConstant 8 (Integer 4))]
                                                         (Array
                                                             (Integer 4)
                                                             [((IntegerConstant 1 (Integer 4))
@@ -2590,7 +2588,6 @@
                                                         ()
                                                     )
                                                     (ArrayConstant
-                                                        [(IntegerConstant 8 (Integer 4))]
                                                         (Array
                                                             (Integer 4)
                                                             [((IntegerConstant 1 (Integer 4))
@@ -2744,7 +2741,6 @@
                                                         ()
                                                     )
                                                     (ArrayConstant
-                                                        [(IntegerConstant 8 (Integer 4))]
                                                         (Array
                                                             (Integer 4)
                                                             [((IntegerConstant 1 (Integer 4))
@@ -2898,7 +2894,6 @@
                                                         ()
                                                     )
                                                     (ArrayConstant
-                                                        [(IntegerConstant 8 (Integer 4))]
                                                         (Array
                                                             (Integer 4)
                                                             [((IntegerConstant 1 (Integer 4))
@@ -3052,7 +3047,6 @@
                                                         ()
                                                     )
                                                     (ArrayConstant
-                                                        [(IntegerConstant 8 (Integer 4))]
                                                         (Array
                                                             (Integer 4)
                                                             [((IntegerConstant 1 (Integer 4))
