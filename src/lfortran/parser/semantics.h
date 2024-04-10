@@ -462,6 +462,9 @@ static inline var_sym_t* VARSYM(Allocator &al, Location &l,
 #define VAR_SYM_DIM_INIT(name, dim, n_dim, init, sym, loc) VARSYM(p.m_a, loc, \
         name2char(name), dim, n_dim, nullptr, 0, nullptr, \
         down_cast<expr_t>(init), sym, nullptr)
+#define VAR_SYM_DIM_MUL(name, dim, n_dim, mul, sym, loc) VARSYM(p.m_a, loc, \
+        name2char(name), dim, n_dim, nullptr, 0, down_cast<expr_t>(mul), \
+        nullptr, sym, nullptr)
 #define VAR_SYM_DIM_MUL_INIT(name, dim, n_dim, mul, init, sym, loc) VARSYM(p.m_a, loc, \
         name2char(name), dim, n_dim, nullptr, 0, down_cast<expr_t>(mul), \
         down_cast<expr_t>(init), sym, nullptr)
