@@ -26,10 +26,6 @@ interface
     integer, optional, intent(in) :: x
     end function
 
-    integer function bit_size(x)
-    integer, intent(in) :: x
-    end function
-
     character(len=1) function achar(i, kind)
     integer, intent(in) :: i
     integer, optional :: kind
