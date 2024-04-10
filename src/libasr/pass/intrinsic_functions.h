@@ -2928,9 +2928,11 @@ namespace Modulo {
 
 namespace BesselJ0 {
 
-    static ASR::expr_t *eval_BesselJ0(Allocator &/*al*/, const Location &/*loc*/,
-            ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& /*diag*/) {
-        return nullptr;
+    static ASR::expr_t *eval_BesselJ0(Allocator& al, const Location& loc,
+            ASR::ttype_t* t1, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
+        double i = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
+        double result = j0(i);
+        return make_ConstantWithType(make_RealConstant_t, result, t1, loc);
     }
 
     static inline ASR::expr_t* instantiate_BesselJ0(Allocator &al, const Location &loc,
@@ -2969,9 +2971,11 @@ namespace BesselJ0 {
 
 namespace BesselJ1 {
 
-    static ASR::expr_t *eval_BesselJ1(Allocator &/*al*/, const Location &/*loc*/,
-            ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& /*diag*/) {
-        return nullptr;
+    static ASR::expr_t *eval_BesselJ1(Allocator& al, const Location& loc,
+            ASR::ttype_t* t1, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
+        double i = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
+        double result = j1(i);
+        return make_ConstantWithType(make_RealConstant_t, result, t1, loc);
     }
 
     static inline ASR::expr_t* instantiate_BesselJ1(Allocator &al, const Location &loc,
@@ -3010,9 +3014,11 @@ namespace BesselJ1 {
 
 namespace BesselY0 {
 
-    static ASR::expr_t *eval_BesselY0(Allocator &/*al*/, const Location &/*loc*/,
-            ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& /*diag*/) {
-        return nullptr;
+    static ASR::expr_t *eval_BesselY0(Allocator& al, const Location& loc,
+            ASR::ttype_t* t1, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
+        double i = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
+        double result = y0(i);
+        return make_ConstantWithType(make_RealConstant_t, result, t1, loc);
     }
 
     static inline ASR::expr_t* instantiate_BesselY0(Allocator &al, const Location &loc,
@@ -3051,9 +3057,11 @@ namespace BesselY0 {
 
 namespace BesselY1 {
 
-    static ASR::expr_t *eval_BesselY1(Allocator &/*al*/, const Location &/*loc*/,
-            ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& /*diag*/) {
-        return nullptr;
+    static ASR::expr_t *eval_BesselY1(Allocator& al, const Location& loc,
+            ASR::ttype_t* t1, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
+        double i = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
+        double result = y1(i);
+        return make_ConstantWithType(make_RealConstant_t, result, t1, loc);
     }
 
     static inline ASR::expr_t* instantiate_BesselY1(Allocator &al, const Location &loc,
@@ -3092,9 +3100,12 @@ namespace BesselY1 {
 
 namespace Asind {
 
-    static ASR::expr_t *eval_Asind(Allocator &/*al*/, const Location &/*loc*/,
-            ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& /*diag*/) {
-        return nullptr;
+    static ASR::expr_t *eval_Asind(Allocator& al, const Location& loc,
+            ASR::ttype_t* t1, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
+        double i = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
+        double PI = 3.14159265358979323846;
+        double result = asin(i) * 180.0 / PI;
+        return make_ConstantWithType(make_RealConstant_t, result, t1, loc);
     }
 
     static inline ASR::expr_t* instantiate_Asind(Allocator &al, const Location &loc,
