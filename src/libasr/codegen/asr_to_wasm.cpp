@@ -2402,13 +2402,14 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         // Todo: Add a check here if there is memory available to store the
         // given string
         uint32_t cur_mem_loc = avail_mem_loc;
-        for (size_t i = 0; i < x.n_args; i++) {
+        for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(x.m_type); i++) {
             // emit memory location to store array element
             m_wa.emit_i32_const(avail_mem_loc);
 
-            this->visit_expr(*x.m_args[i]);
-            int element_size_in_bytes = emit_memory_store(x.m_args[i]);
-            avail_mem_loc += element_size_in_bytes;
+            // ASR::expr_t* arg = ASRUtils::fetch_ArrayConstant_value(al, x, i);
+            // this->visit_expr(*arg);
+            // int element_size_in_bytes = emit_memory_store(arg);
+            // avail_mem_loc += element_size_in_bytes;
         }
         // leave array location in memory on the stack
         m_wa.emit_i32_const(cur_mem_loc);

@@ -537,10 +537,9 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
         std::string indent(indentation_level * indentation_spaces, ' ');
         from_std_vector_helper = indent + "Kokkos::View<float*> r;\n";
         std::string out = "from_std_vector<float>({";
-        for (size_t i=0; i<x.n_args; i++) {
-            this->visit_expr(*x.m_args[i]);
-            out += src;
-            if (i < x.n_args-1) out += ", ";
+        for (size_t i=0; i<(size_t) ASRUtils::get_fixed_size_of_array(x.m_type); i++) {
+            out += ASRUtils::fetch_ArrayConstant_value(x, i);
+            if (i < (size_t) ASRUtils::get_fixed_size_of_array(x.m_type)-1) out += ", ";
         }
         out += "})";
         from_std_vector_helper += indent + "r = " + out + ";\n";

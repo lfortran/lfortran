@@ -1150,15 +1150,7 @@ public:
         require(ASRUtils::is_array(x.m_type),
             "Type of ArrayConstant must be an array");
 
-        for (size_t i = 0; i < x.n_args; i++) {
-            require(!ASR::is_a<ASR::ArrayConstant_t>(*x.m_args[i]),
-                "ArrayConstant cannot have ArrayConstant as its elements");
-            ASR::expr_t* arg_value = ASRUtils::expr_value(x.m_args[i]);
-            require(
-                ASRUtils::is_value_constant(arg_value),
-                "ArrayConstant must have constant values");
-        }
-
+        // require(x.m_data != nullptr, "ArrayConstant::m_data cannot be nullptr");
         visit_ttype(*x.m_type);
     }
 

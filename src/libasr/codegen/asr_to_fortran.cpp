@@ -1617,10 +1617,9 @@ public:
 
     void visit_ArrayConstant(const ASR::ArrayConstant_t &x) {
         std::string r = "[";
-        for(size_t i = 0; i < x.n_args; i++) {
-            visit_expr(*x.m_args[i]);
-            r += src;
-            if (i < x.n_args-1) r += ", ";
+        for(size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(x.m_type); i++) {
+            r += ASRUtils::fetch_ArrayConstant_value(x, i);
+            if (i < (size_t) ASRUtils::get_fixed_size_of_array(x.m_type)-1) r += ", ";
         }
         r += "]";
         src = r;

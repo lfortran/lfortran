@@ -246,24 +246,24 @@ static inline ASR::expr_t* evaluate_compiletime_values(Allocator &al, std::vecto
     }
 }
 
-static inline void populate_compiletime_values(std::vector<std::pair<ASR::expr_t*, ASR::expr_t*>> &compiletime_values,
+static inline void populate_compiletime_values(Allocator &al, std::vector<std::pair<ASR::expr_t*, ASR::expr_t*>> &compiletime_values,
                                     ASR::expr_t* left, ASR::expr_t* right) {
     int fixed_size_left_array = ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(ASRUtils::expr_value(left))); //0
     int fixed_size_right_array = ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(ASRUtils::expr_value(right))); //0
 
     if (ASR::is_a<ASR::ArrayConstant_t>(*ASRUtils::expr_value(left))) {
         ASR::ArrayConstant_t* array = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(left));
-        for (size_t i=0; i<array->n_args; i++) {
-            compiletime_values.push_back({array->m_args[i], nullptr});
+        for (size_t i=0; i<(size_t) ASRUtils::get_fixed_size_of_array(array->m_type); i++) {
+            compiletime_values.push_back({ASRUtils::fetch_ArrayConstant_value(al, array, i), nullptr});
         }
     }
     if (ASR::is_a<ASR::ArrayConstant_t>(*ASRUtils::expr_value(right))) {
         ASR::ArrayConstant_t* array = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(right));
-        for (size_t i=0; i<array->n_args; i++) {
+        for (size_t i=0; i<(size_t) ASRUtils::get_fixed_size_of_array(array->m_type); i++) {
             if(compiletime_values.size() > i) {
-                compiletime_values[i].second = array->m_args[i];
+                compiletime_values[i].second = ASRUtils::fetch_ArrayConstant_value(al, array, i);
             } else {
-                compiletime_values.push_back({nullptr, array->m_args[i]});
+                compiletime_values.push_back({nullptr, ASRUtils::fetch_ArrayConstant_value(al, array, i)});
             }
         }
     }
@@ -397,7 +397,7 @@ inline static void visit_Compare(Allocator &al, const AST::Compare_t &x,
     ASR::expr_t *value = nullptr;
     if (ASRUtils::expr_value(left) != nullptr && ASRUtils::expr_value(right) != nullptr) {
         std::vector<std::pair<ASR::expr_t*, ASR::expr_t*>> comptime_values;
-        populate_compiletime_values(comptime_values, left, right);
+        populate_compiletime_values(al, comptime_values, left, right);
         value = evaluate_compiletime_values(al, comptime_values, left, right, asr_op, type, x.base.base.loc);
     }
     if (ASRUtils::is_integer(*dest_type)) {
@@ -2612,9 +2612,9 @@ public:
                                             ASR::ArrayConstant_t *a = ASR::down_cast<ASR::ArrayConstant_t>(cast->m_arg);
                                             ASR::ttype_t* real_type = cast->m_type;
                                             Vec<ASR::expr_t*> body;
-                                            body.reserve(al, a->n_args);
-                                            for (size_t i = 0; i < a->n_args; i++) {
-                                                ASR::expr_t *e = a->m_args[i];
+                                            body.reserve(al, ASRUtils::get_fixed_size_of_array(a->m_type));
+                                            for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(a->m_type); i++) {
+                                                ASR::expr_t *e = ASRUtils::fetch_ArrayConstant_value(al, a, i);
                                                 // it will be IntegerConstant_t convert it to RealConstant_t
                                                 if (ASR::is_a<ASR::IntegerConstant_t>(*e)) {
                                                     ASR::IntegerConstant_t *int_const = ASR::down_cast<ASR::IntegerConstant_t>(e);
@@ -2637,9 +2637,9 @@ public:
                                             ASR::ArrayConstant_t *a = ASR::down_cast<ASR::ArrayConstant_t>(cast->m_arg);
                                             ASR::ttype_t* int_type = cast->m_type;
                                             Vec<ASR::expr_t*> body;
-                                            body.reserve(al, a->n_args);
-                                            for (size_t i = 0; i < a->n_args; i++) {
-                                                ASR::expr_t *e = a->m_args[i];
+                                            body.reserve(al, ASRUtils::get_fixed_size_of_array(a->m_type));
+                                            for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(a->m_type); i++) {
+                                                ASR::expr_t *e = ASRUtils::fetch_ArrayConstant_value(al, a, i);
                                                 // it will be RealConstant_t convert it to IntegerConstant_t
                                                 if (ASR::is_a<ASR::RealConstant_t>(*e)) {
                                                     ASR::RealConstant_t *real_const = ASR::down_cast<ASR::RealConstant_t>(e);
@@ -2662,9 +2662,9 @@ public:
                                             ASR::ArrayConstant_t *a = ASR::down_cast<ASR::ArrayConstant_t>(cast->m_arg);
                                             ASR::ttype_t* real_type = cast->m_type;
                                             Vec<ASR::expr_t*> body;
-                                            body.reserve(al, a->n_args);
-                                            for (size_t i = 0; i < a->n_args; i++) {
-                                                ASR::expr_t *e = a->m_args[i];
+                                            body.reserve(al, ASRUtils::get_fixed_size_of_array(a->m_type));
+                                            for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(a->m_type); i++) {
+                                                ASR::expr_t *e = ASRUtils::fetch_ArrayConstant_value(al, a, i);
                                                 if (ASR::is_a<ASR::RealConstant_t>(*e)) {
                                                     ASR::RealConstant_t *real_const = ASR::down_cast<ASR::RealConstant_t>(e);
                                                     int64_t val = real_const->m_r;
@@ -2686,9 +2686,9 @@ public:
                                             ASR::ArrayConstant_t *a = ASR::down_cast<ASR::ArrayConstant_t>(cast->m_arg);
                                             ASR::ttype_t* integer_type = cast->m_type;
                                             Vec<ASR::expr_t*> body;
-                                            body.reserve(al, a->n_args);
-                                            for (size_t i = 0; i < a->n_args; i++) {
-                                                ASR::expr_t *e = a->m_args[i];
+                                            body.reserve(al, ASRUtils::get_fixed_size_of_array(a->m_type));
+                                            for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(a->m_type); i++) {
+                                                ASR::expr_t *e = ASRUtils::fetch_ArrayConstant_value(al, a, i);
                                                 // it will be ComplexConstant_t convert it to IntegerConstant_t
                                                 if (ASR::is_a<ASR::ComplexConstant_t>(*e)) {
                                                     ASR::ComplexConstant_t *complex_const = ASR::down_cast<ASR::ComplexConstant_t>(e);
@@ -2711,9 +2711,9 @@ public:
                                             ASR::ArrayConstant_t *a = ASR::down_cast<ASR::ArrayConstant_t>(cast->m_arg);
                                             ASR::ttype_t* complex_type = cast->m_type;
                                             Vec<ASR::expr_t*> body;
-                                            body.reserve(al, a->n_args);
-                                            for (size_t i = 0; i < a->n_args; i++) {
-                                                ASR::expr_t *e = a->m_args[i];
+                                            body.reserve(al, ASRUtils::get_fixed_size_of_array(a->m_type));
+                                            for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(a->m_type); i++) {
+                                                ASR::expr_t *e = ASRUtils::fetch_ArrayConstant_value(al, a, i);
                                                 // it will be IntegerConstant_t convert it to ComplexConstant_t
                                                 if (ASR::is_a<ASR::IntegerConstant_t>(*e)) {
                                                     ASR::IntegerConstant_t *integer_const = ASR::down_cast<ASR::IntegerConstant_t>(e);
@@ -2737,9 +2737,9 @@ public:
                                             ASR::ArrayConstant_t *a = ASR::down_cast<ASR::ArrayConstant_t>(cast->m_arg);
                                             ASR::ttype_t* real_type = cast->m_type;
                                             Vec<ASR::expr_t*> body;
-                                            body.reserve(al, a->n_args);
-                                            for (size_t i = 0; i < a->n_args; i++) {
-                                                ASR::expr_t *e = a->m_args[i];
+                                            body.reserve(al, ASRUtils::get_fixed_size_of_array(a->m_type));
+                                            for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(a->m_type); i++) {
+                                                ASR::expr_t *e = ASRUtils::fetch_ArrayConstant_value(al, a, i);
                                                 // it will be ComplexConstant_t convert it to RealConstant_t
                                                 if (ASR::is_a<ASR::ComplexConstant_t>(*e)) {
                                                     ASR::ComplexConstant_t *complex_const = ASR::down_cast<ASR::ComplexConstant_t>(e);
@@ -2762,9 +2762,9 @@ public:
                                             ASR::ArrayConstant_t *a = ASR::down_cast<ASR::ArrayConstant_t>(cast->m_arg);
                                             ASR::ttype_t* complex_type = cast->m_type;
                                             Vec<ASR::expr_t*> body;
-                                            body.reserve(al, a->n_args);
-                                            for (size_t i = 0; i < a->n_args; i++) {
-                                                ASR::expr_t *e = a->m_args[i];
+                                            body.reserve(al, ASRUtils::get_fixed_size_of_array(a->m_type));
+                                            for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(a->m_type); i++) {
+                                                ASR::expr_t *e = ASRUtils::fetch_ArrayConstant_value(al, a, i);
                                                 // it will be ComplexConstant_t convert it to ComplexConstant_t
                                                 if (ASR::is_a<ASR::ComplexConstant_t>(*e)) {
                                                     ASR::ComplexConstant_t *complex_const = ASR::down_cast<ASR::ComplexConstant_t>(e);
@@ -2809,12 +2809,12 @@ public:
                             // and copy over the value
                             ASR::ArrayConstant_t *a = ASR::down_cast<ASR::ArrayConstant_t>(value);
                             Vec<ASR::expr_t*> body;
-                            body.reserve(al, a->n_args);
-                            for (size_t i=0; i < a->n_args; i++) {
-                                ASR::expr_t* a_m_args = ASRUtils::expr_value(a->m_args[i]);
-                                if( a_m_args == nullptr ) {
-                                    a_m_args = a->m_args[i];
-                                }
+                            body.reserve(al, ASRUtils::get_fixed_size_of_array(a->m_type));
+                            for (size_t i=0; i < (size_t) ASRUtils::get_fixed_size_of_array(a->m_type); i++) {
+                                ASR::expr_t* a_m_args = ASRUtils::fetch_ArrayConstant_value(al, a, i);
+                                // if( a_m_args == nullptr ) {
+                                //     a_m_args = a->m_args[i];
+                                // }
                                 body.push_back(al, a_m_args);
                             }
                             value = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al,
@@ -3450,11 +3450,11 @@ public:
                             int based_indexing = get_based_indexing(v);
                             int64_t index3 = index2->m_n-based_indexing;
                             size_t index4 = index3;
-                            if (index3 < 0 || index4 >= val2->n_args) {
+                            if (index3 < 0 || index4 >= (size_t) ASRUtils::get_fixed_size_of_array(val2->m_type)) {
                                 throw SemanticError("The index is out of bounds",
                                     index2->base.base.loc);
                             }
-                            arr_ref_val = val2->m_args[index4];
+                            arr_ref_val = ASRUtils::fetch_ArrayConstant_value(al, val2, index4);
                         }
                     }
                 }
@@ -5026,11 +5026,11 @@ public:
             bool result = true;
             value = ASRUtils::EXPR(ASR::make_LogicalConstant_t(al,
                 array->base.base.loc, result, type));
-            for (size_t i = 0; i < array->n_args; i++) {
-                if (ASR::is_a<ASR::LogicalConstant_t>(*array->m_args[i])) {
+            for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(array->m_type); i++) {
+                if (ASR::is_a<ASR::LogicalConstant_t>(*ASRUtils::fetch_ArrayConstant_value(al, array, i))) {
                     if (result) {
                         result = ASR::down_cast<ASR::LogicalConstant_t>(
-                            array->m_args[i])->m_value;
+                            ASRUtils::fetch_ArrayConstant_value(al, array, i))->m_value;
                     }
                 } else {
                     // TODO: Handle other expressions
@@ -5176,14 +5176,16 @@ public:
     */
     void compiletime_broadcast_elemental_intrinsic(
         Vec<ASR::expr_t*> args,
-        ASR::ArrayConstant_t* result_array,
+        ASR::ArrayConstant_t** result_array,
         std::vector<int> array_indices_in_args,
         ASRUtils::create_intrinsic_function create_func,
         const Location& loc,
         Allocator& al)
     {
         ASR::expr_t* first_arg_ = ASRUtils::expr_value(args[array_indices_in_args[0]]);
-        size_t max_array_size = ASR::down_cast<ASR::ArrayConstant_t>(first_arg_)->n_args;
+        size_t max_array_size = ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(first_arg_));
+        ASR::ttype_t* array_type = ASRUtils::expr_type(first_arg_);
+        Vec<ASR::expr_t*> new_expr; new_expr.reserve(al, max_array_size);
 
         for (size_t i = 0; i < max_array_size; i++) {
             Vec<ASR::expr_t*> intrinsic_args;
@@ -5195,24 +5197,30 @@ public:
 
                     ASR::expr_t* arg_ = ASRUtils::expr_value(args[j]);
                     ASR::ArrayConstant_t* array_arg = ASR::down_cast<ASR::ArrayConstant_t>(arg_);
-                    if (max_array_size != array_arg->n_args) {
+                    if (max_array_size != (size_t) ASRUtils::get_fixed_size_of_array(array_arg->m_type)) {
                         throw SemanticError("Different shape of arguments for broadcasting " +
-                            std::to_string(max_array_size) + " and " + std::to_string(array_arg->n_args), loc);
+                            std::to_string(max_array_size) + " and " + std::to_string(ASRUtils::get_fixed_size_of_array(array_arg->m_type)), loc);
                     }
-                    intrinsic_args.push_back(al, array_arg->m_args[i]);
+                    intrinsic_args.push_back(al, ASRUtils::fetch_ArrayConstant_value(al, array_arg, i));
                 } else {
                     // Current argument is a scalar, use as is
                     intrinsic_args.push_back(al, args[j]);
                 }
             }
             // Call the intrinsic function for the current combination of arguments
-            result_array->m_args[i] = ASRUtils::expr_value(ASRUtils::EXPR(create_func(al, loc, intrinsic_args, diag)));
+            // result_array->m_args[i] = ASRUtils::expr_value(ASRUtils::EXPR(create_func(al, loc, intrinsic_args, diag)));
+            ASR::expr_t* result = ASRUtils::expr_value(ASRUtils::EXPR(create_func(al, loc, intrinsic_args, diag)));
+            array_type = ASRUtils::expr_type(result);
+            new_expr.push_back(al, result);
+            // ASRUtils::set_ArrayConstant_value(result_array, result, i);
         }
-        ASR::Array_t* result_arr_type = ASR::down_cast<ASR::Array_t>(result_array->m_type);
-        result_array->m_type = ASRUtils::make_Array_t_util(al, result_arr_type->base.base.loc,
-                                    ASRUtils::expr_type(result_array->m_args[0]), result_arr_type->m_dims,
+        ASR::Array_t* result_arr_type = ASR::down_cast<ASR::Array_t>((*result_array)->m_type);
+        (*result_array)->m_type = ASRUtils::make_Array_t_util(al, result_arr_type->base.base.loc,
+                                    array_type, result_arr_type->m_dims,
                                     result_arr_type->n_dims, ASR::abiType::Source, false,
                                     result_arr_type->m_physical_type);
+        (*result_array) = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, (*result_array)->base.base.loc,
+                                    new_expr.p, new_expr.n, (*result_array)->m_type, (*result_array)->m_storage_format)));
     }
 
     std::vector<int> find_array_indices_in_args(const Vec<ASR::expr_t*>& args) {
@@ -5281,7 +5289,7 @@ public:
                         ASR::expr_t* arg_ = expr_duplicator.duplicate_expr(arg);
                         ASR::ArrayConstant_t* result_array = ASR::down_cast<ASR::ArrayConstant_t>(arg_);
 
-                        compiletime_broadcast_elemental_intrinsic(args, result_array, array_indices_in_args, create_func, x.base.base.loc, al);;
+                        compiletime_broadcast_elemental_intrinsic(args, &result_array, array_indices_in_args, create_func, x.base.base.loc, al);;
                         tmp = (ASR::asr_t*) result_array;
                     } else {
                         tmp = create_func(al, x.base.base.loc, args, diag);
@@ -6168,14 +6176,14 @@ public:
             ASR::ArrayConstant_t* left_array = ASR::down_cast<ASR::ArrayConstant_t>(left_value);
             ASR::ArrayConstant_t* right_array = ASR::down_cast<ASR::ArrayConstant_t>(right_value);
 
-            Vec<ASR::expr_t*> values; values.reserve(al, left_array->n_args);
+            Vec<ASR::expr_t*> values; values.reserve(al, ASRUtils::get_fixed_size_of_array(left_array->m_type));
 
-            for (size_t i = 0; i < left_array->n_args; i++) {
-                values.push_back(al, visit_BinOp_helper(ASRUtils::expr_value(left_array->m_args[i]),
-                                ASRUtils::expr_value(right_array->m_args[i]), op, loc, ASRUtils::expr_type(left_array->m_args[i])));
+            for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(left_array->m_type); i++) {
+                values.push_back(al, visit_BinOp_helper(ASRUtils::fetch_ArrayConstant_value(al, left_array, i),
+                                ASRUtils::fetch_ArrayConstant_value(al, right_array, i), op, loc, ASRUtils::expr_type(ASRUtils::fetch_ArrayConstant_value(al, left_array, i))));
             }
 
-            return ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, loc,
+            return ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, loc,
                                     values.p, values.size(), dest_type,
                                     ASR::arraystorageType::ColMajor));
         }
