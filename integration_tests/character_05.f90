@@ -1,6 +1,7 @@
 program character_05
     implicit none
-    CHARACTER, parameter :: char_param*3 = "App"
+    !> we can specify character length as an expression "2 + 1"
+    CHARACTER, parameter :: char_param*(2 + 1) = "App"
     CHARACTER :: char1*4 = "Goat"
     CHARACTER :: char2*4
 

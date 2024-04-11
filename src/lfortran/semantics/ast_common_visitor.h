@@ -2491,18 +2491,25 @@ public:
                 current_variable_type_ = type;
 
                 ASR::expr_t* init_expr = nullptr;
+                ASR::expr_t* char_length { nullptr };
                 ASR::expr_t* value = nullptr;
+
                 // set the character (or character array) length correctly
                 // e.g. character :: x*3   !> set char length to 3
                 // OR character(len=4)     !> set char length to 4
                 // OR character :: x(2)*3  !> set char length to 3
-                if (is_char_type && ASR::is_a<ASR::Character_t>(*ASRUtils::type_get_past_array(type))) {
+                if (is_char_type && ASR::is_a<ASR::Character_t>(*ASRUtils::type_get_past_array(type)) &&
+                    s.m_length) {
+                    this->visit_expr(*s.m_length);
                     ASR::Character_t *lhs_type = ASR::down_cast<ASR::Character_t>(
                         ASRUtils::type_get_past_array(type));
-                    AST::expr_t* length { s.m_length };
-                    int64_t lhs_len { length ? AST::down_cast<AST::Num_t>(length)->m_n : lhs_type->m_len };
+                    char_length = ASRUtils::EXPR(tmp);
+                    ASR::expr_t* c_length = ASRUtils::expr_value(char_length);
+                    LCOMPILERS_ASSERT(ASR::is_a<ASR::IntegerConstant_t>(*c_length))
+                    int64_t lhs_len = ASR::down_cast<ASR::IntegerConstant_t>(c_length)->m_n;
                     lhs_type->m_len = lhs_len;
                 }
+
                 if (s.m_initializer != nullptr &&
                     sym_type->m_type == AST::decl_typeType::TypeType) {
                     if (AST::is_a<AST::FuncCallOrArray_t>(*s.m_initializer)) {
@@ -2888,11 +2895,10 @@ public:
                                 ASRUtils::type_get_past_array(type));
                             ASR::Character_t *rhs_type = ASR::down_cast<ASR::Character_t>(
                                 ASRUtils::type_get_past_array(ASRUtils::expr_type(value)));
-                            AST::expr_t* multiplier { x.m_syms[i].m_length };
                             // in case when length is specified as:
                             // character(len=4) :: x*3 = "ape", we assign "3" as the length, and ignore "4"
                             // (that's what GFortran does)
-                            int64_t lhs_len { multiplier ? AST::down_cast<AST::Num_t>(multiplier)->m_n : lhs_type->m_len };
+                            int64_t lhs_len { lhs_type->m_len };
                             int rhs_len = rhs_type->m_len;
                             if (rhs_len >= 0) {
                                 if (lhs_len == -1) {
