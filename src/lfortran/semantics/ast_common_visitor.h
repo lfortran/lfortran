@@ -2498,8 +2498,7 @@ public:
                 // e.g. character :: x*3   !> set char length to 3
                 // OR character(len=4)     !> set char length to 4
                 // OR character :: x(2)*3  !> set char length to 3
-                if (is_char_type && ASR::is_a<ASR::Character_t>(*ASRUtils::type_get_past_array(type)) &&
-                    s.m_length) {
+                if (is_char_type && s.m_length) {
                     this->visit_expr(*s.m_length);
                     ASR::Character_t *lhs_type = ASR::down_cast<ASR::Character_t>(
                         ASRUtils::type_get_past_array(type));
