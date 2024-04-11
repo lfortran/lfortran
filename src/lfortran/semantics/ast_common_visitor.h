@@ -2492,6 +2492,10 @@ public:
 
                 ASR::expr_t* init_expr = nullptr;
                 ASR::expr_t* value = nullptr;
+                // set the character (or character array) length correctly
+                // e.g. character :: x*3   !> set char length to 3
+                // OR character(len=4)     !> set char length to 4
+                // OR character :: x(2)*3  !> set char length to 3
                 if (is_char_type && ASR::is_a<ASR::Character_t>(*ASRUtils::type_get_past_array(type))) {
                     ASR::Character_t *lhs_type = ASR::down_cast<ASR::Character_t>(
                         ASRUtils::type_get_past_array(type));
