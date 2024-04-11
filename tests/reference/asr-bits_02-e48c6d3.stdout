@@ -45,16 +45,6 @@
                                     Required
                                     .false.
                                 ),
-                            bit_size:
-                                (ExternalSymbol
-                                    2
-                                    bit_size
-                                    6 bit_size
-                                    lfortran_intrinsic_builtin
-                                    []
-                                    bit_size
-                                    Private
-                                ),
                             bits_kind:
                                 (ExternalSymbol
                                     2
@@ -81,13 +71,12 @@
                                     block_size
                                     []
                                     Local
-                                    (FunctionCall
-                                        2 bit_size
-                                        ()
-                                        [((IntegerConstant 0 (Integer 8)))]
+                                    (TypeInquiry
+                                        BitSize
+                                        (Integer 8)
+                                        (IntegerConstant 0 (Integer 8))
                                         (Integer 4)
                                         (IntegerConstant 64 (Integer 4))
-                                        ()
                                     )
                                     (IntegerConstant 64 (Integer 4))
                                     Parameter
@@ -100,8 +89,7 @@
                                 )
                         })
                     bits_02
-                    [iso_fortran_env
-                    lfortran_intrinsic_builtin]
+                    [iso_fortran_env]
                     [(Print
                         [(Var 2 block_size)]
                         ()
@@ -119,9 +107,7 @@
                     )]
                 ),
             iso_fortran_env:
-                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin)
+                (IntrinsicModule lfortran_intrinsic_iso_fortran_env)
         })
     []
 )

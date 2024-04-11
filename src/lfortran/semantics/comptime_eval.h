@@ -90,7 +90,6 @@ struct IntrinsicProcedures {
 
             // Subroutines
             {"cpu_time", {m_math, &not_implemented, false}},
-            {"bit_size", {m_builtin, &eval_bit_size, false}},
             {"achar", {m_builtin, &eval_achar, true}},
             {"move_alloc", {m_builtin, &not_implemented, false}},
             {"present", {m_builtin, &not_implemented, false}},
@@ -153,26 +152,6 @@ struct IntrinsicProcedures {
                 + "' compile time evaluation is not implemented yet",
                 loc);
         }
-    }
-
-    static ASR::expr_t *eval_bit_size(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &compiler_options) {
-        LCOMPILERS_ASSERT(args.size() >= 1);
-        ASR::expr_t* arg = args[0];
-        ASR::ttype_t* arg_type = ASRUtils::expr_type(arg);
-        int64_t bit_size_val = 0;
-        switch( arg_type->type ) {
-            case ASR::ttypeType::Integer: {
-                ASR::Integer_t* arg_int = ASR::down_cast<ASR::Integer_t>(arg_type);
-                bit_size_val = arg_int->m_kind * 8;
-                break;
-            }
-            default: {
-                LCOMPILERS_ASSERT(false);
-                break;
-            }
-        }
-        ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, compiler_options.po.default_integer_kind));
-        return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, bit_size_val, int_type));
     }
 
     typedef double (*trig_eval_callback_double)(double);

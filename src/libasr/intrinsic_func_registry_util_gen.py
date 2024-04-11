@@ -404,6 +404,12 @@ intrinsic_funcs_args = {
             "return": "int32"
         }
     ],
+    "BitSize": [
+        {
+            "args": [("int",)],
+            "return": "int32"
+        }
+    ],
     "Range": [
         {
             "args": [("int",), ("real",), ("complex",)],
@@ -546,6 +552,7 @@ compile_time_only_fn = [
     "Rank",
     "Tiny",
     "Huge",
+    "BitSize",
 ]
 
 type_to_asr_type_check = {
