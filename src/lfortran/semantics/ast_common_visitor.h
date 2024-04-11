@@ -2499,8 +2499,8 @@ public:
                 if (is_char_type && ASR::is_a<ASR::Character_t>(*ASRUtils::type_get_past_array(type))) {
                     ASR::Character_t *lhs_type = ASR::down_cast<ASR::Character_t>(
                         ASRUtils::type_get_past_array(type));
-                    AST::expr_t* multiplier { s.m_multiplier };
-                    int64_t lhs_len { multiplier ? AST::down_cast<AST::Num_t>(multiplier)->m_n : lhs_type->m_len };
+                    AST::expr_t* length { s.m_length };
+                    int64_t lhs_len { length ? AST::down_cast<AST::Num_t>(length)->m_n : lhs_type->m_len };
                     lhs_type->m_len = lhs_len;
                 }
                 if (s.m_initializer != nullptr &&
@@ -2888,7 +2888,7 @@ public:
                                 ASRUtils::type_get_past_array(type));
                             ASR::Character_t *rhs_type = ASR::down_cast<ASR::Character_t>(
                                 ASRUtils::type_get_past_array(ASRUtils::expr_type(value)));
-                            AST::expr_t* multiplier { x.m_syms[i].m_multiplier };
+                            AST::expr_t* multiplier { x.m_syms[i].m_length };
                             // in case when length is specified as:
                             // character(len=4) :: x*3 = "ape", we assign "3" as the length, and ignore "4"
                             // (that's what GFortran does)
