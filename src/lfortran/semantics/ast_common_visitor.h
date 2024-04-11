@@ -2492,6 +2492,13 @@ public:
 
                 ASR::expr_t* init_expr = nullptr;
                 ASR::expr_t* value = nullptr;
+                if (is_char_type && ASR::is_a<ASR::Character_t>(*ASRUtils::type_get_past_array(type))) {
+                    ASR::Character_t *lhs_type = ASR::down_cast<ASR::Character_t>(
+                        ASRUtils::type_get_past_array(type));
+                    AST::expr_t* multiplier { s.m_multiplier };
+                    int64_t lhs_len { multiplier ? AST::down_cast<AST::Num_t>(multiplier)->m_n : lhs_type->m_len };
+                    lhs_type->m_len = lhs_len;
+                }
                 if (s.m_initializer != nullptr &&
                     sym_type->m_type == AST::decl_typeType::TypeType) {
                     if (AST::is_a<AST::FuncCallOrArray_t>(*s.m_initializer)) {

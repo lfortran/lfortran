@@ -1506,7 +1506,7 @@ var_sym_decl
     | "/" id "/" { $$ = VAR_SYM_NAME($2, Slash, @$); }
     | id "=" expr { $$ = VAR_SYM_DIM_INIT($1, nullptr, 0, $3, Equal, @$); }
     | id "=>" expr { $$ = VAR_SYM_DIM_INIT($1, nullptr, 0, $3, Arrow, @$); }
-    | id "*" expr { $$ = VAR_SYM_DIM_INIT($1, nullptr, 0, $3, Asterisk, @$); }
+    | id "*" expr { $$ = VAR_SYM_DIM_MUL($1, nullptr, 0, $3, Asterisk, @$); }
     | id "*" expr "=" expr { $$ = VAR_SYM_DIM_MUL_INIT($1, nullptr, 0, $3, $5, Equal, @$); }
     | id "*" "(" "*" ")" { $$ = VAR_SYM_NAME($1, DoubleAsterisk, @$); }
     | id "(" array_comp_decl_list ")" %dprec 1 { $$ = VAR_SYM_DIM($1, $3.p, $3.n, None, @$); }
