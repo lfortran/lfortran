@@ -241,6 +241,12 @@ intrinsic_funcs_args = {
             "ret_type_arg_idx": 0
         }
     ],
+    "Atand": [
+        {
+            "args": [("real",)],
+            "ret_type_arg_idx": 0
+        }
+    ],
     "Sqrt": [
         {
             "args": [("real",), ("complex",)],

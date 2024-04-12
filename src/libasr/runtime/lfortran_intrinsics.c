@@ -1260,6 +1260,16 @@ LFORTRAN_API double_complex_t _lfortran_zatan(double_complex_t x)
     return catan(x);
 }
 
+LFORTRAN_API float _lfortran_satand(float x)
+{
+    return (atan(x)*180)/PI;
+}
+
+LFORTRAN_API double _lfortran_datand(double x)
+{
+    return (atan(x)*180)/PI;
+}
+
 // atan2 -----------------------------------------------------------------------
 
 LFORTRAN_API float _lfortran_satan2(float y, float x)

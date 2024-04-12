@@ -27,6 +27,7 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Asin)
         INTRINSIC_NAME_CASE(Asind)
         INTRINSIC_NAME_CASE(Acosd)
+        INTRINSIC_NAME_CASE(Atand)
         INTRINSIC_NAME_CASE(Acos)
         INTRINSIC_NAME_CASE(Atan)
         INTRINSIC_NAME_CASE(Sinh)
@@ -235,6 +236,8 @@ namespace IntrinsicElementalFunctionRegistry {
             {&Asind::instantiate_Asind, &Asind::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Acosd),
             {&Acosd::instantiate_Acosd, &Acosd::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Atand),
+            {&Atand::instantiate_Atand, &Atand::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Trailz),
             {&Trailz::instantiate_Trailz, &Trailz::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Modulo),
@@ -530,6 +533,8 @@ namespace IntrinsicElementalFunctionRegistry {
             "asind"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Acosd),
             "acosd"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Atand),
+            "atand"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Trailz),
             "trailz"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Modulo),
@@ -790,6 +795,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"mod", {&Mod::create_Mod, &Mod::eval_Mod}},
                 {"asind", {&Asind::create_Asind, &Asind::eval_Asind}},
                 {"acosd", {&Acosd::create_Acosd, &Acosd::eval_Acosd}},
+                {"atand", {&Atand::create_Atand, &Atand::eval_Atand}},
                 {"trailz", {&Trailz::create_Trailz, &Trailz::eval_Trailz}},
                 {"modulo", {&Modulo::create_Modulo, &Modulo::eval_Modulo}},
                 {"bessel_j0", {&BesselJ0::create_BesselJ0, &BesselJ0::eval_BesselJ0}},
