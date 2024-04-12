@@ -26,12 +26,6 @@ function trim(x) result(r)
     end do
 end function
 
-function new_line(c) result(r)
-    character(len=1), intent(in) :: c
-    character(len=1) :: r
-    r = '\n'
-end function
-
 subroutine date_and_time(date, time, zone, values)
     character(len=*), intent(out), optional :: date, time, zone
     integer, intent(out), optional :: values(8)
