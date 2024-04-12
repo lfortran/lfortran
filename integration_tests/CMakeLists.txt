@@ -712,33 +712,34 @@ RUN(NAME intrinsics_178 LABELS gfortran llvm llvm_wasm) # rrspacing
 RUN(NAME intrinsics_179 LABELS gfortran llvm llvm_wasm) # sum
 RUN(NAME intrinsics_180 LABELS gfortran llvm llvm_wasm) # scan
 RUN(NAME intrinsics_181 LABELS gfortran llvm) # repeat
-RUN(NAME intrinsics_182 LABELS gfortran llvm llvm_wasm) # dshiftl
-RUN(NAME intrinsics_183 LABELS gfortran llvm llvm_wasm) # ibits
-RUN(NAME intrinsics_184 LABELS gfortran llvm llvm_wasm) # selected_char_kind
-RUN(NAME intrinsics_185 LABELS gfortran llvm llvm_wasm) # verify
-RUN(NAME intrinsics_186 LABELS gfortran llvm llvm_wasm) # verify
-RUN(NAME intrinsics_187 LABELS gfortran llvm llvm_wasm) # popcnt
-RUN(NAME intrinsics_188 LABELS gfortran llvm llvm_wasm) # lgt, lge, lle, llt
-RUN(NAME intrinsics_189 LABELS gfortran llvm llvm_wasm) # scan
-RUN(NAME intrinsics_190 LABELS gfortran llvm llvm_wasm) # kind
-RUN(NAME intrinsics_191 LABELS gfortran llvm llvm_wasm) # kind
-RUN(NAME intrinsics_192 LABELS gfortran llvm llvm_wasm) # besselj0
-RUN(NAME intrinsics_193 LABELS gfortran llvm llvm_wasm) # poppar
-RUN(NAME intrinsics_194 LABELS gfortran llvm llvm_wasm) # min
-RUN(NAME intrinsics_195 LABELS gfortran llvm llvm_wasm) # max
-RUN(NAME intrinsics_196 LABELS gfortran llvm llvm_wasm) # besselj1
-RUN(NAME intrinsics_197 LABELS gfortran llvm llvm_wasm) # bessely0
-RUN(NAME intrinsics_198 LABELS gfortran llvm llvm_wasm) # sum
-RUN(NAME intrinsics_199 LABELS gfortran llvm llvm_wasm) # count
-RUN(NAME intrinsics_200 LABELS gfortran llvm llvm_wasm) # pack
-RUN(NAME intrinsics_201 LABELS gfortran llvm llvm_wasm) # any
-RUN(NAME intrinsics_202 LABELS gfortran llvm llvm_wasm)
-RUN(NAME intrinsics_203 LABELS gfortran llvm llvm_wasm) # asind
-RUN(NAME intrinsics_204 LABELS gfortran llvm llvm_wasm) # bessely1
-RUN(NAME intrinsics_205 LABELS gfortran llvm llvm_wasm) # acosd
-RUN(NAME intrinsics_206 LABELS gfortran llvm llvm_wasm fortran) # poppar
-RUN(NAME intrinsics_207 LABELS gfortran llvm llvm_wasm) # double precision intrinsics
-RUN(NAME intrinsics_208 LABELS gfortran llvm llvm_wasm) # bit_size
+RUN(NAME intrinsics_182 LABELS gfortran llvm) # dshiftl
+RUN(NAME intrinsics_183 LABELS gfortran llvm) # ibits
+RUN(NAME intrinsics_184 LABELS gfortran llvm) # selected_char_kind
+RUN(NAME intrinsics_185 LABELS gfortran llvm) # verify
+RUN(NAME intrinsics_186 LABELS gfortran llvm) # verify
+RUN(NAME intrinsics_187 LABELS gfortran llvm) # popcnt
+RUN(NAME intrinsics_188 LABELS gfortran llvm) # lgt, lge, lle, llt
+RUN(NAME intrinsics_189 LABELS gfortran llvm) # scan
+RUN(NAME intrinsics_190 LABELS gfortran llvm) # kind
+RUN(NAME intrinsics_191 LABELS gfortran llvm) # kind
+RUN(NAME intrinsics_192 LABELS gfortran llvm) # besselj0
+RUN(NAME intrinsics_193 LABELS gfortran llvm) # poppar
+RUN(NAME intrinsics_194 LABELS gfortran llvm) # min
+RUN(NAME intrinsics_195 LABELS gfortran llvm) # max
+RUN(NAME intrinsics_196 LABELS gfortran llvm) # besselj1
+RUN(NAME intrinsics_197 LABELS gfortran llvm) # bessely0
+RUN(NAME intrinsics_198 LABELS gfortran llvm) # sum
+RUN(NAME intrinsics_199 LABELS gfortran llvm) # count
+RUN(NAME intrinsics_200 LABELS gfortran llvm) # pack
+RUN(NAME intrinsics_201 LABELS gfortran llvm) # any
+RUN(NAME intrinsics_202 LABELS gfortran llvm)
+RUN(NAME intrinsics_203 LABELS gfortran llvm) # asind
+RUN(NAME intrinsics_204 LABELS gfortran llvm) # bessely1
+RUN(NAME intrinsics_205 LABELS gfortran llvm) # acosd
+RUN(NAME intrinsics_206 LABELS gfortran llvm fortran) # poppar
+RUN(NAME intrinsics_207 LABELS gfortran llvm) # double precision intrinsics 
+RUN(NAME intrinsics_208 LABELS gfortran llvm) # bit_size
+RUN(NAME intrinsics_209 LABELS gfortran llvm) # atand
 
 RUN(NAME parameter_01 LABELS gfortran)
 RUN(NAME parameter_02 LABELS gfortran)
