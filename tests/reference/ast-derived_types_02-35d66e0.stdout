@@ -25,6 +25,7 @@
             [(r8
             []
             []
+            ()
             (FuncCallOrArray
                 kind
                 []
@@ -105,6 +106,7 @@
                 []
                 []
                 ()
+                ()
                 None
                 ())]
                 (TriviaNode
@@ -127,6 +129,7 @@
                 [(cc
                 []
                 []
+                ()
                 (FuncCallOrArray
                     null
                     []
@@ -157,6 +160,7 @@
                 ()
                 DimensionExpr)]
                 []
+                ()
                 (FuncCallOrArray
                     null
                     []
@@ -172,6 +176,7 @@
                 ()
                 DimensionExpr)]
                 []
+                ()
                 (FuncCallOrArray
                     null
                     []
@@ -339,6 +344,7 @@
                 [(k
                 []
                 []
+                ()
                 4
                 Equal
                 ())]
@@ -360,6 +366,7 @@
                 [(b
                 []
                 []
+                ()
                 ()
                 None
                 ())]
@@ -384,6 +391,7 @@
                 b
                 DimensionExpr)]
                 []
+                ()
                 ()
                 None
                 ())]
@@ -418,6 +426,7 @@
                 [(this
                 []
                 []
+                ()
                 ()
                 None
                 ())]
@@ -455,6 +464,7 @@
                 [(this
                 []
                 []
+                ()
                 ()
                 None
                 ())]

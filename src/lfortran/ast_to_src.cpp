@@ -1345,6 +1345,10 @@ public:
             }
             r.append("]");
         }
+        if (x.m_length) {
+            visit_expr(*x.m_length);
+            r += symbol2str(x.m_sym) + s;
+        }
         if (x.m_initializer) {
             visit_expr(*x.m_initializer);
             r += symbol2str(x.m_sym) + s;

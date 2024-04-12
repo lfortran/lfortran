@@ -3881,3 +3881,7 @@ asr = true
 [[test]]
 filename = "char_arr_assignment.f90"
 asr = true
+
+[[test]]
+filename = "character2.f90"
+asr = true

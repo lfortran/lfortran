@@ -21,6 +21,7 @@
             [(dp
             []
             []
+            ()
             (FuncCallOrArray
                 kind
                 []
@@ -53,11 +54,13 @@
             DimensionExpr)]
             []
             ()
+            ()
             None
             ())
             (b
             []
             []
+            ()
             ()
             None
             ())]

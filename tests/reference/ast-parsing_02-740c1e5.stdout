@@ -23,6 +23,7 @@
             [(complex
             []
             []
+            ()
             1
             Equal
             ())]
@@ -40,6 +41,7 @@
             [(true
             []
             []
+            ()
             (Logical .true.)
             Equal
             ())]
@@ -57,6 +59,7 @@
             [(false
             []
             []
+            ()
             (Logical .false.)
             Equal
             ())]
@@ -91,6 +94,7 @@
                 ()
                 DimensionExpr)]
                 []
+                ()
                 ()
                 None
                 ())]
@@ -129,6 +133,7 @@
                         []
                         []
                         ()
+                        ()
                         None
                         ())]
                         ()
@@ -147,6 +152,7 @@
                         [(real
                         []
                         []
+                        ()
                         ()
                         None
                         ())]
@@ -246,11 +252,13 @@
             []
             []
             ()
+            ()
             None
             ())
             (real
             []
             []
+            ()
             ()
             None
             ())]
@@ -268,6 +276,7 @@
             [(types
             []
             []
+            ()
             ()
             None
             ())]
@@ -373,6 +382,7 @@
                 []
                 []
                 ()
+                ()
                 None
                 ())]
                 ()
@@ -438,12 +448,14 @@
             [(logical
             []
             []
+            ()
             character
             Arrow
             ())
             (complex
             []
             []
+            ()
             real
             Arrow
             ())]
