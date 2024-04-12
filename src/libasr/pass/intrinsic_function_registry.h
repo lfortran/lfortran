@@ -142,6 +142,7 @@ inline std::string get_intrinsic_name(int64_t x) {
         INTRINSIC_NAME_CASE(Precision)
         INTRINSIC_NAME_CASE(Tiny)
         INTRINSIC_NAME_CASE(BitSize)
+        INTRINSIC_NAME_CASE(NewLine)
         INTRINSIC_NAME_CASE(Conjg)
         INTRINSIC_NAME_CASE(Huge)
         INTRINSIC_NAME_CASE(Dprod)
@@ -426,6 +427,8 @@ namespace IntrinsicElementalFunctionRegistry {
         {static_cast<int64_t>(IntrinsicElementalFunctions::Tiny),
             {nullptr, &UnaryIntrinsicFunction::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::BitSize),
+            {nullptr, &UnaryIntrinsicFunction::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::NewLine),
             {nullptr, &UnaryIntrinsicFunction::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Huge),
             {nullptr, &UnaryIntrinsicFunction::verify_args}},
@@ -736,6 +739,8 @@ namespace IntrinsicElementalFunctionRegistry {
             "tiny"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::BitSize),
             "bit_size"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::NewLine),
+            "new_line"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Huge),
             "huge"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::SymbolicSymbol),
@@ -916,6 +921,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"precision", {&Precision::create_Precision, &Precision::eval_Precision}},
                 {"tiny", {&Tiny::create_Tiny, &Tiny::eval_Tiny}},
                 {"bit_size", {&BitSize::create_BitSize, &BitSize::eval_BitSize}},
+                {"new_line", {&NewLine::create_NewLine, &NewLine::eval_NewLine}},
                 {"conjg", {&Conjg::create_Conjg, &Conjg::eval_Conjg}},
                 {"huge", {&Huge::create_Huge, &Huge::eval_Huge}},
                 {"Symbol", {&SymbolicSymbol::create_SymbolicSymbol, &SymbolicSymbol::eval_SymbolicSymbol}},
