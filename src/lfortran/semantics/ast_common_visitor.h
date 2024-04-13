@@ -812,61 +812,50 @@ public:
         {"modulo", {IntrinsicSignature({"a", "p"}, 2, 2)}},
     };
 
-    std::map<std::string, std::string> intrinsic_mapping = {
-        {"iabs", "abs"},
-        {"dabs", "abs"},
-
-        {"dsinh", "sinh"},
-        {"dcosh", "cosh"},
-        {"dtanh", "tanh"},
-
-        {"dsin", "sin"},
-        {"dcos", "cos"},
-        {"dtan", "tan"},
-
-        {"datan", "atan"},
-        {"datan2", "atan2"},
-
-        {"dimag", "aimag"},
-        {"imag" , "aimag"},
-        {"imagpart" , "aimag"},
-
-        {"isign", "sign"},
-        {"dsign", "sign"},
-        {"dsqrt", "sqrt"},
-
-        {"alog", "log"},
-        {"dlog", "log"},
-        {"dlog10", "log10"},
-        {"alog10", "log10"},
-        {"dexp", "exp"},
-
-        {"dmin1", "min"},
-        {"dmax1", "max"},
-
-        {"dcmplx", "cmplx"},
-        {"dacos", "acos"},
-        {"dacosh", "acosh"},
-
-        {"dint", "aint"},
-        {"dnint", "anint"},
-
-        {"dasin", "asin"},
-        {"dasinh", "asinh"},
-        {"datanh", "atanh"},
-
-        {"dbesj0", "bessel_j0"},
-        {"dbesj1", "bessel_j1"},
-        {"dbesy0", "bessel_y0"},
-        {"dbesy1", "bessel_y1"},
-
-        {"dconjg", "conjg"},
-
-        {"idim", "dim"},
-        {"ddim", "dim"},
-
-        {"amod", "mod"},
-        {"dmod", "mod"},
+    std::map<std::string, std::pair<std::string, std::string>> intrinsic_mapping = {
+        {"iabs", {"abs", "int4"}},
+        {"dabs", {"abs", "real8"}},
+        {"zabs", {"abs", "complex8"}},
+        {"dsinh", {"sinh", "real8"}},
+        {"dcosh", {"cosh", "real8"}},
+        {"dtanh", {"tanh", "real8"}},
+        {"dsin", {"sin", "real8"}},
+        {"dcos", {"cos", "real8"}},
+        {"dtan", {"tan", "real8"}},
+        {"datan", {"atan", "real8"}},
+        {"datan2", {"atan2", "real8"}},
+        {"dimag", {"aimag", "complex8"}},
+        {"imag", {"aimag", "complex"}},
+        {"imagpart", {"aimag", "complex"}},
+        {"isign", {"sign", "int4"}},
+        {"dsign", {"sign", "real8"}},
+        {"dsqrt", {"sqrt", "real8"}},
+        {"alog", {"log", "real4"}},
+        {"dlog", {"log", "real8"}},
+        {"alog10", {"log10", "real4"}},
+        {"dlog10", {"log10", "real8"}},
+        {"dexp", {"exp", "real8"}},
+        {"dmin1", {"min", "real"}},
+        {"dmax1", {"max", "real"}},
+        {"dcmplx", {"cmplx", "any"}},
+        {"dacos", {"acos", "real8"}},
+        {"dacosh", {"acosh", "real8"}},
+        {"dint", {"aint", "real8"}},
+        {"dnint", {"anint", "real8"}},
+        {"dasin", {"asin", "real8"}},
+        {"dasinh", {"asinh", "real8"}},
+        {"datanh", {"atanh", "real8"}},
+        {"dbesj0", {"bessel_j0", "real8"}},
+        {"dbesj1", {"bessel_j1", "real8"}},
+        {"dbesy0", {"bessel_y0", "real8"}},
+        {"dbesy1", {"bessel_y1", "real8"}},
+        {"dconjg", {"conjg", "complex"}},
+        {"idim", {"dim", "int4"}},
+        {"ddim", {"dim", "real8"}},
+        {"amod", {"mod", "real4"}},
+        {"dmod", {"mod", "real8"}},
+        {"and", {"iand", "any"}},
+        {"or", {"ior", "any"}},
     };
 
     ASR::asr_t *tmp;
@@ -5122,13 +5111,13 @@ public:
     }
 
     bool is_intrinsic_registry_function(std::string var_name) {
-        bool is_double_precision_intrinsic = intrinsic_mapping.count(var_name);
+        bool is_specific_type_intrinsic = intrinsic_mapping.count(var_name);
         if (intrinsic_procedures_as_asr_nodes.is_intrinsic_present_in_ASR(var_name) ||
             intrinsic_procedures_as_asr_nodes.is_kind_based_selection_required(var_name) ||
             ASRUtils::IntrinsicElementalFunctionRegistry::is_intrinsic_function(var_name) ||
             ASRUtils::IntrinsicArrayFunctionRegistry::is_intrinsic_function(var_name) ||
             ASRUtils::IntrinsicImpureFunctionRegistry::is_intrinsic_function(var_name) ||
-            is_double_precision_intrinsic) {
+            is_specific_type_intrinsic) {
             return true;
         }
         return false;
@@ -5186,6 +5175,143 @@ public:
             }
             if (args[3] == nullptr) {
                 args.p[3] = four;
+            }
+        }
+    }
+
+    void type_check_helper(std::string intrinsic_name, std::string str, ASR::ttype_t* type, const Location &loc, Vec<ASR::expr_t*> &args) {
+        if (intrinsic_mapping[intrinsic_name].second == str) {
+            for (size_t i = 0; i < args.size(); i++) {
+                if (args[i] != nullptr) {
+                    ASR::ttype_t *arg_type = ASRUtils::expr_type(args[i]);
+                    if (arg_type != type) {
+                        throw SemanticError("Argument " + std::to_string(i + 1) + " of " + intrinsic_name +
+                                            " must be of " + ASRUtils::type_to_str(type) +" type", loc);
+                    }
+                }
+            }
+        }
+    }
+
+    void check_argument_type(const std::string& intrinsic_name, Vec<ASR::expr_t*>& args, const Location& loc, ASR::ttype_t* required_type, int required_kind = -1) {
+        for (size_t i = 0; i < args.size(); i++) {
+            if (args[i] != nullptr) {
+                ASR::ttype_t* arg_type = ASRUtils::expr_type(args[i]);
+                if (required_kind != -1) {
+                    int kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
+                    if (arg_type != required_type || kind != required_kind) {
+                        throw SemanticError("Argument " + std::to_string(i + 1) + " of " + intrinsic_name +
+                                            " must be of " + ASRUtils::type_to_str(required_type) + " type with kind " + std::to_string(required_kind), loc);
+                    }
+                } else {
+                    if (arg_type != required_type) {
+                        throw SemanticError("Argument " + std::to_string(i + 1) + " of " + intrinsic_name +
+                                            " must be of " + ASRUtils::type_to_str(required_type) + " type", loc);
+                    }
+                }
+            }
+        }
+    }
+
+    void check_specific_type_intrinsics(Allocator& al, std::string intrinsic_name, Vec<ASR::expr_t*>& args, const Location& loc) {
+        if (intrinsic_mapping.find(intrinsic_name) == intrinsic_mapping.end()) {
+            return;
+        }
+        std::string required_type = intrinsic_mapping[intrinsic_name].second;
+        if (required_type == "int4") {
+            check_argument_type(intrinsic_name, args, loc, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)));
+        } else if (required_type == "real") {
+            check_argument_type(intrinsic_name, args, loc, ASRUtils::TYPE(ASR::make_Real_t(al, loc, 4)));
+        } else if (required_type == "real4") {
+            check_argument_type(intrinsic_name, args, loc, ASRUtils::TYPE(ASR::make_Real_t(al, loc, 4)), 4);
+        } else if (required_type == "real8") {
+            check_argument_type(intrinsic_name, args, loc, ASRUtils::TYPE(ASR::make_Real_t(al, loc, 8)), 8);
+        } else if (required_type == "complex") {
+            check_argument_type(intrinsic_name, args, loc,  ASRUtils::TYPE(ASR::make_Complex_t(al, loc, 4)));
+        } else if (required_type == "complex4") {
+            check_argument_type(intrinsic_name, args, loc, ASRUtils::TYPE(ASR::make_Complex_t(al, loc, 4)), 4);
+        } else if (required_type == "complex8") {
+            check_argument_type(intrinsic_name, args, loc, ASRUtils::TYPE(ASR::make_Complex_t(al, loc, 8)), 8);
+        }
+    }
+
+    void check_specific_type_intrinsics(std::string intrinsic_name, Vec<ASR::expr_t*> &args, const Location &loc) {
+        if (intrinsic_mapping.find(intrinsic_name) == intrinsic_mapping.end()) {
+            return;
+        }
+        if (intrinsic_mapping[intrinsic_name].second == "int4") {
+            for (size_t i = 0; i < args.size(); i++) {
+                if (args[i] != nullptr) {
+                    ASR::ttype_t *arg_type = ASRUtils::expr_type(args[i]);
+                    if (!is_integer(*arg_type)) {
+                        throw SemanticError("Argument " + std::to_string(i + 1) + " of " + intrinsic_name +
+                                            " must be of integer type", loc);
+                    }
+                }
+            }
+        } else if (intrinsic_mapping[intrinsic_name].second == "real") {
+            for (size_t i = 0; i < args.size(); i++) {
+                if (args[i] != nullptr) {
+                    ASR::ttype_t *arg_type = ASRUtils::expr_type(args[i]);
+                    if (!is_real(*arg_type)) {
+                        throw SemanticError("Argument " + std::to_string(i + 1) + " of " + intrinsic_name +
+                                            " must be of real type", loc);
+                    }
+                }
+            }
+        } else if (intrinsic_mapping[intrinsic_name].second == "real4") {
+            for (size_t i = 0; i < args.size(); i++) {
+                if (args[i] != nullptr) {
+                    ASR::ttype_t *arg_type = ASRUtils::expr_type(args[i]);
+                    int kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
+                    if (!is_real(*arg_type) || kind != 4) {
+                        throw SemanticError("Argument " + std::to_string(i + 1) + " of " + intrinsic_name +
+                                            " must be of single precision real type", loc);
+                    }
+                }
+            }
+        } else if (intrinsic_mapping[intrinsic_name].second == "real8") {
+            for (size_t i = 0; i < args.size(); i++) {
+                if (args[i] != nullptr) {
+                    ASR::ttype_t *arg_type = ASRUtils::expr_type(args[i]);
+                    int kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
+                    if (!is_real(*arg_type) || kind != 8) {
+                        throw SemanticError("Argument " + std::to_string(i + 1) + " of " + intrinsic_name +
+                                            " must be of double precision real type", loc);
+                    }
+                }
+            }
+        } else if (intrinsic_mapping[intrinsic_name].second == "complex") {
+            for (size_t i = 0; i < args.size(); i++) {
+                if (args[i] != nullptr) {
+                    ASR::ttype_t *arg_type = ASRUtils::expr_type(args[i]);
+                    if (!is_complex(*arg_type)) {
+                        throw SemanticError("Argument " + std::to_string(i + 1) + " of " + intrinsic_name +
+                                            " must be of complex type", loc);
+                    }
+                }
+            }
+        } else if (intrinsic_mapping[intrinsic_name].second == "complex4") {
+            for (size_t i = 0; i < args.size(); i++) {
+                if (args[i] != nullptr) {
+                    ASR::ttype_t *arg_type = ASRUtils::expr_type(args[i]);
+                    int kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
+                    if (!is_complex(*arg_type) || kind != 4) {
+                        throw SemanticError("Argument " + std::to_string(i + 1) + " of " + intrinsic_name +
+                                            " must be of single precision complex type", loc);
+                    }
+                }
+            }
+        } else if (intrinsic_mapping[intrinsic_name].second == "complex8") {
+            for (size_t i = 0; i < args.size(); i++) {
+                if (args[i] != nullptr) {
+                    ASR::ttype_t *arg_type = ASRUtils::expr_type(args[i]);
+                    int kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
+                    if (!is_complex(*arg_type) || kind != 8) {
+                        throw SemanticError("Argument " + std::to_string(i + 1) + " of " + intrinsic_name +
+                                            " must be of double precision complex type", loc);
+                    }
+                }
             }
         }
     }
@@ -5264,11 +5390,13 @@ public:
     ASR::symbol_t* intrinsic_as_node(const AST::FuncCallOrArray_t &x,
                                      bool& is_function) {
         std::string var_name = to_lower(x.m_func);
-        bool is_double_precision_intrinsic = intrinsic_mapping.count(var_name);
+        std::string specific_var_name = var_name;
+        bool is_specific_type_intrinsic = intrinsic_mapping.count(var_name);
         if( is_intrinsic_registry_function(var_name)) {
             is_function = false;
-            if (is_double_precision_intrinsic) {
-                var_name = intrinsic_mapping[var_name];
+            if (is_specific_type_intrinsic) {
+                specific_var_name = var_name;
+                var_name = intrinsic_mapping[var_name].first;
             }
             if( ASRUtils::IntrinsicElementalFunctionRegistry::is_intrinsic_function(var_name) ||
                     ASRUtils::IntrinsicArrayFunctionRegistry::is_intrinsic_function(var_name) ) {
@@ -5285,6 +5413,7 @@ public:
                     }
                     args.n = 0;
                 }
+                check_specific_type_intrinsics(specific_var_name, args, x.base.base.loc);
                 if( !signature_matched ) {
                     throw SemanticError("No matching signature found for intrinsic " + var_name,
                                         x.base.base.loc);
@@ -5316,6 +5445,7 @@ public:
                         ASRUtils::IntrinsicArrayFunctionRegistry::get_create_function(var_name);
                     tmp = create_func(al, x.base.base.loc, args, diag);
                 }
+                
             } else if( ASRUtils::IntrinsicImpureFunctionRegistry::is_intrinsic_function(var_name) ) {
                 Vec<ASR::expr_t*> args;
                 args.reserve(al, 1);
@@ -6114,6 +6244,10 @@ public:
 
     bool is_real(ASR::ttype_t &t) {
         return ASR::is_a<ASR::Real_t>(*ASRUtils::type_get_past_pointer(&t));
+    }
+
+    bool is_complex(ASR::ttype_t &t) {
+        return ASR::is_a<ASR::Complex_t>(*ASRUtils::type_get_past_pointer(&t));
     }
 
     bool assignment_types_agree(ASR::ttype_t *target, ASR::ttype_t *value) {
