@@ -5179,20 +5179,6 @@ public:
         }
     }
 
-    void type_check_helper(std::string intrinsic_name, std::string str, ASR::ttype_t* type, const Location &loc, Vec<ASR::expr_t*> &args) {
-        if (intrinsic_mapping[intrinsic_name].second == str) {
-            for (size_t i = 0; i < args.size(); i++) {
-                if (args[i] != nullptr) {
-                    ASR::ttype_t *arg_type = ASRUtils::expr_type(args[i]);
-                    if (arg_type != type) {
-                        throw SemanticError("Argument " + std::to_string(i + 1) + " of " + intrinsic_name +
-                                            " must be of " + ASRUtils::type_to_str(type) +" type", loc);
-                    }
-                }
-            }
-        }
-    }
-
     void check_argument_type(const std::string& intrinsic_name, Vec<ASR::expr_t*>& args, const Location& loc, ASR::ttype_t* required_type, int required_kind = -1) {
         for (size_t i = 0; i < args.size(); i++) {
             if (args[i] != nullptr) {
@@ -5210,28 +5196,6 @@ public:
                     }
                 }
             }
-        }
-    }
-
-    void check_specific_type_intrinsics(Allocator& al, std::string intrinsic_name, Vec<ASR::expr_t*>& args, const Location& loc) {
-        if (intrinsic_mapping.find(intrinsic_name) == intrinsic_mapping.end()) {
-            return;
-        }
-        std::string required_type = intrinsic_mapping[intrinsic_name].second;
-        if (required_type == "int4") {
-            check_argument_type(intrinsic_name, args, loc, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)));
-        } else if (required_type == "real") {
-            check_argument_type(intrinsic_name, args, loc, ASRUtils::TYPE(ASR::make_Real_t(al, loc, 4)));
-        } else if (required_type == "real4") {
-            check_argument_type(intrinsic_name, args, loc, ASRUtils::TYPE(ASR::make_Real_t(al, loc, 4)), 4);
-        } else if (required_type == "real8") {
-            check_argument_type(intrinsic_name, args, loc, ASRUtils::TYPE(ASR::make_Real_t(al, loc, 8)), 8);
-        } else if (required_type == "complex") {
-            check_argument_type(intrinsic_name, args, loc,  ASRUtils::TYPE(ASR::make_Complex_t(al, loc, 4)));
-        } else if (required_type == "complex4") {
-            check_argument_type(intrinsic_name, args, loc, ASRUtils::TYPE(ASR::make_Complex_t(al, loc, 4)), 4);
-        } else if (required_type == "complex8") {
-            check_argument_type(intrinsic_name, args, loc, ASRUtils::TYPE(ASR::make_Complex_t(al, loc, 8)), 8);
         }
     }
 
