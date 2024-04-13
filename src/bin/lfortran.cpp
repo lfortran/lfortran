@@ -1574,6 +1574,7 @@ int link_executable(const std::vector<std::string> &infiles,
                 compile_cmd += s + " ";
             }
             compile_cmd += runtime_library_dir + "/" + runtime_lib;
+            compile_cmd +=  extra_linker_flags;
         } else {
             std::string CC;
             std::string base_path = "\"" + runtime_library_dir + "\"";
