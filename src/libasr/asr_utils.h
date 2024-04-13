@@ -5340,12 +5340,6 @@ inline void flatten_ArrayConstant_data(Allocator &al, Vec<ASR::expr_t*> &data, A
     }
 }
 
-inline void print_ArrayConstant(void *data, ASR::ttype_t* type, int n_args) {
-    for (int i = 0; i < n_args; i++) {
-        std::cout<<"i = "<<i<<", value = "<<fetch_ArrayConstant_value(data, type, i)<<"\n";
-    }
-}
-
 inline ASR::asr_t* make_ArrayConstructor_t_util(Allocator &al, const Location &a_loc,
     ASR::expr_t** a_args, size_t n_args, ASR::ttype_t* a_type, ASR::arraystorageType a_storage_format) {
     if( !ASRUtils::is_array(a_type) ) {
@@ -5391,7 +5385,9 @@ inline ASR::asr_t* make_ArrayConstructor_t_util(Allocator &al, const Location &a
         ASR::ttype_t* new_type = ASRUtils::TYPE(ASR::make_Array_t(al, a_type->base.loc, a_type_->m_type,
             dims.p, dims.n, a_type_->m_physical_type));
         void *data = set_ArrayConstant_data(a_args_values.p, curr_idx, a_type_->m_type);
-        return ASR::make_ArrayConstant_t(al, a_loc, data, new_type, a_storage_format);
+        // data is always allocated to n_data bytes
+        int64_t n_data = curr_idx * sizeof(data);
+        return ASR::make_ArrayConstant_t(al, a_loc, n_data, new_type, data, a_storage_format);
     } else {
         return ASR::make_ArrayConstructor_t(al, a_loc, a_args, n_args, a_type, nullptr, a_storage_format);
     }
