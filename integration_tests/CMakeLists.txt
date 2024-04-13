@@ -83,6 +83,16 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
             endif()
             set(WASM_EXEC_FLAGS ${WASM_EXEC_FLAGS} "--experimental-wasi-unstable-preview1")
             add_test(${name} ${WASM_EXEC_RUNTIME} ${WASM_EXEC_FLAGS} ${CURRENT_BINARY_DIR}/${name}.js)
+        elseif (LFORTRAN_BACKEND STREQUAL "llvm_wasm")
+            find_program(WASM_EXEC_RUNTIME wasmtime)
+            execute_process(COMMAND "${WASM_EXEC_RUNTIME}" --version
+                            OUTPUT_VARIABLE WASM_EXEC_VERSION
+                            OUTPUT_STRIP_TRAILING_WHITESPACE)
+            add_executable(${name} ${file_name}.f90 ${extra_files})
+            target_compile_options(${name} PUBLIC ${extra_args} --backend=llvm --target=wasm32-wasi)
+            target_link_options(${name} PUBLIC --backend=llvm --target=wasm32-wasi
+                -Wl,-zstack-size=52428800 -Wl,--initial-memory=268435456 -Wl,--max-memory=268435456)
+            add_test(${name} ${WASM_EXEC_RUNTIME} ${CURRENT_BINARY_DIR}/${name} --dir=.)
         elseif (LFORTRAN_BACKEND STREQUAL "llvm2")
             add_executable(${name} ${file_name}.f90 ${extra_files})
             target_compile_options(${name} PUBLIC --generate-object-code ${extra_args})
@@ -144,7 +154,7 @@ macro(RUN)
                         "${multiValueArgs}" ${ARGN} )
 
     foreach(b ${RUN_LABELS})
-        if (NOT (b MATCHES "^(llvm|llvm2|llvm_rtlib|c|cpp|x86|wasm|gfortran|llvmImplicit|llvmStackArray|fortran|c_nopragma|llvm_nopragma)$"))
+        if (NOT (b MATCHES "^(llvm|llvm2|llvm_rtlib|c|cpp|x86|wasm|gfortran|llvmImplicit|llvmStackArray|fortran|c_nopragma|llvm_nopragma|llvm_wasm)$"))
             message(FATAL_ERROR "Unsupported backend: ${b}")
         endif()
     endforeach()
