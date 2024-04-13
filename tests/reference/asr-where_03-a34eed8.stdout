@@ -86,22 +86,7 @@
                     [(Assignment
                         (Var 2 a)
                         (ArrayConstant
-                            [(RealConstant
-                                1.000000
-                                (Real 4)
-                            )
-                            (RealConstant
-                                2.000000
-                                (Real 4)
-                            )
-                            (RealConstant
-                                3.000000
-                                (Real 4)
-                            )
-                            (RealConstant
-                                4.000000
-                                (Real 4)
-                            )]
+                            32
                             (Array
                                 (Real 4)
                                 [((IntegerConstant 1 (Integer 4))
@@ -115,22 +100,7 @@
                     (Assignment
                         (Var 2 b)
                         (ArrayConstant
-                            [(RealConstant
-                                -1.000000
-                                (Real 4)
-                            )
-                            (RealConstant
-                                -2.000000
-                                (Real 4)
-                            )
-                            (RealConstant
-                                5.000000
-                                (Real 4)
-                            )
-                            (RealConstant
-                                7.000000
-                                (Real 4)
-                            )]
+                            32
                             (Array
                                 (Real 4)
                                 [((IntegerConstant 1 (Integer 4))
@@ -162,7 +132,7 @@
                                     (Real 4)
                                 )
                                 (ArrayConstant
-                                    [(IntegerConstant 4 (Integer 4))]
+                                    8
                                     (Array
                                         (Integer 4)
                                         [((IntegerConstant 1 (Integer 4))
@@ -178,22 +148,7 @@
                                     FixedSizeArray
                                 )
                                 (ArrayConstant
-                                    [(RealConstant
-                                        1.000000
-                                        (Real 4)
-                                    )
-                                    (RealConstant
-                                        1.000000
-                                        (Real 4)
-                                    )
-                                    (RealConstant
-                                        1.000000
-                                        (Real 4)
-                                    )
-                                    (RealConstant
-                                        1.000000
-                                        (Real 4)
-                                    )]
+                                    32
                                     (Array
                                         (Real 4)
                                         [((IntegerConstant 1 (Integer 4))
@@ -231,7 +186,7 @@
                                     (Real 4)
                                 )
                                 (ArrayConstant
-                                    [(IntegerConstant 4 (Integer 4))]
+                                    8
                                     (Array
                                         (Integer 4)
                                         [((IntegerConstant 1 (Integer 4))
@@ -247,22 +202,7 @@
                                     FixedSizeArray
                                 )
                                 (ArrayConstant
-                                    [(RealConstant
-                                        2.000000
-                                        (Real 4)
-                                    )
-                                    (RealConstant
-                                        2.000000
-                                        (Real 4)
-                                    )
-                                    (RealConstant
-                                        2.000000
-                                        (Real 4)
-                                    )
-                                    (RealConstant
-                                        2.000000
-                                        (Real 4)
-                                    )]
+                                    32
                                     (Array
                                         (Real 4)
                                         [((IntegerConstant 1 (Integer 4))
@@ -298,7 +238,7 @@
                                         (Real 4)
                                     )
                                     (ArrayConstant
-                                        [(IntegerConstant 4 (Integer 4))]
+                                        8
                                         (Array
                                             (Integer 4)
                                             [((IntegerConstant 1 (Integer 4))
@@ -314,22 +254,7 @@
                                         FixedSizeArray
                                     )
                                     (ArrayConstant
-                                        [(RealConstant
-                                            3.000000
-                                            (Real 4)
-                                        )
-                                        (RealConstant
-                                            3.000000
-                                            (Real 4)
-                                        )
-                                        (RealConstant
-                                            3.000000
-                                            (Real 4)
-                                        )
-                                        (RealConstant
-                                            3.000000
-                                            (Real 4)
-                                        )]
+                                        32
                                         (Array
                                             (Real 4)
                                             [((IntegerConstant 1 (Integer 4))
@@ -354,7 +279,7 @@
                                                     (Real 4)
                                                 )
                                                 (ArrayConstant
-                                                    [(IntegerConstant 4 (Integer 4))]
+                                                    8
                                                     (Array
                                                         (Integer 4)
                                                         [((IntegerConstant 1 (Integer 4))
@@ -370,22 +295,7 @@
                                                     FixedSizeArray
                                                 )
                                                 (ArrayConstant
-                                                    [(RealConstant
-                                                        2.000000
-                                                        (Real 4)
-                                                    )
-                                                    (RealConstant
-                                                        2.000000
-                                                        (Real 4)
-                                                    )
-                                                    (RealConstant
-                                                        2.000000
-                                                        (Real 4)
-                                                    )
-                                                    (RealConstant
-                                                        2.000000
-                                                        (Real 4)
-                                                    )]
+                                                    32
                                                     (Array
                                                         (Real 4)
                                                         [((IntegerConstant 1 (Integer 4))
@@ -420,7 +330,7 @@
                                             (Real 4)
                                         )
                                         (ArrayConstant
-                                            [(IntegerConstant 4 (Integer 4))]
+                                            8
                                             (Array
                                                 (Integer 4)
                                                 [((IntegerConstant 1 (Integer 4))
@@ -436,22 +346,7 @@
                                             FixedSizeArray
                                         )
                                         (ArrayConstant
-                                            [(RealConstant
-                                                3.000000
-                                                (Real 4)
-                                            )
-                                            (RealConstant
-                                                3.000000
-                                                (Real 4)
-                                            )
-                                            (RealConstant
-                                                3.000000
-                                                (Real 4)
-                                            )
-                                            (RealConstant
-                                                3.000000
-                                                (Real 4)
-                                            )]
+                                            32
                                             (Array
                                                 (Real 4)
                                                 [((IntegerConstant 1 (Integer 4))

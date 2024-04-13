@@ -159,14 +159,7 @@
                                     [(Assignment
                                         (Var 8 littlefile)
                                         (ArrayConstant
-                                            [(StringConstant
-                                                "# "
-                                                (Character 1 2 ())
-                                            )
-                                            (StringConstant
-                                                "My cool new project!"
-                                                (Character 1 20 ())
-                                            )]
+                                            16
                                             (Array
                                                 (Character 1 80 ())
                                                 [((IntegerConstant 1 (Integer 4))

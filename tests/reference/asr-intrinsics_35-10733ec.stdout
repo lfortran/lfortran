@@ -97,8 +97,7 @@
                                         (ArrayBroadcast
                                             (IntegerConstant 1 (Integer 4))
                                             (ArrayConstant
-                                                [(IntegerConstant 2 (Integer 4))
-                                                (IntegerConstant 3 (Integer 4))]
+                                                16
                                                 (Array
                                                     (Integer 4)
                                                     [((IntegerConstant 1 (Integer 4))
@@ -114,12 +113,7 @@
                                                 FixedSizeArray
                                             )
                                             (ArrayConstant
-                                                [(IntegerConstant 1 (Integer 4))
-                                                (IntegerConstant 1 (Integer 4))
-                                                (IntegerConstant 1 (Integer 4))
-                                                (IntegerConstant 1 (Integer 4))
-                                                (IntegerConstant 1 (Integer 4))
-                                                (IntegerConstant 1 (Integer 4))]
+                                                48
                                                 (Array
                                                     (Integer 4)
                                                     [((IntegerConstant 1 (Integer 4))
@@ -136,8 +130,7 @@
                                         (ArrayBroadcast
                                             (IntegerConstant 1 (Integer 4))
                                             (ArrayConstant
-                                                [(IntegerConstant 2 (Integer 4))
-                                                (IntegerConstant 3 (Integer 4))]
+                                                16
                                                 (Array
                                                     (Integer 4)
                                                     [((IntegerConstant 1 (Integer 4))
@@ -153,12 +146,7 @@
                                                 FixedSizeArray
                                             )
                                             (ArrayConstant
-                                                [(IntegerConstant 1 (Integer 4))
-                                                (IntegerConstant 1 (Integer 4))
-                                                (IntegerConstant 1 (Integer 4))
-                                                (IntegerConstant 1 (Integer 4))
-                                                (IntegerConstant 1 (Integer 4))
-                                                (IntegerConstant 1 (Integer 4))]
+                                                48
                                                 (Array
                                                     (Integer 4)
                                                     [((IntegerConstant 1 (Integer 4))
@@ -287,18 +275,7 @@
                             Any
                             [(ArrayPhysicalCast
                                 (ArrayConstant
-                                    [(LogicalConstant
-                                        .true.
-                                        (Logical 4)
-                                    )
-                                    (LogicalConstant
-                                        .true.
-                                        (Logical 4)
-                                    )
-                                    (LogicalConstant
-                                        .true.
-                                        (Logical 4)
-                                    )]
+                                    24
                                     (Array
                                         (Logical 4)
                                         [((IntegerConstant 1 (Integer 4))

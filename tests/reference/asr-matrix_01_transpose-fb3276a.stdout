@@ -288,18 +288,7 @@
                         (Var 2 a)
                         (ArrayReshape
                             (ArrayConstant
-                                [(IntegerConstant 1 (Integer 4))
-                                (IntegerConstant 2 (Integer 4))
-                                (IntegerConstant 3 (Integer 4))
-                                (IntegerConstant 4 (Integer 4))
-                                (IntegerConstant 5 (Integer 4))
-                                (IntegerConstant 6 (Integer 4))
-                                (IntegerConstant 7 (Integer 4))
-                                (IntegerConstant 8 (Integer 4))
-                                (IntegerConstant 9 (Integer 4))
-                                (IntegerConstant 10 (Integer 4))
-                                (IntegerConstant 11 (Integer 4))
-                                (IntegerConstant 12 (Integer 4))]
+                                96
                                 (Array
                                     (Integer 4)
                                     [((IntegerConstant 1 (Integer 4))
@@ -310,8 +299,7 @@
                             )
                             (ArrayPhysicalCast
                                 (ArrayConstant
-                                    [(IntegerConstant 3 (Integer 4))
-                                    (IntegerConstant 4 (Integer 4))]
+                                    16
                                     (Array
                                         (Integer 4)
                                         [((IntegerConstant 1 (Integer 4))
@@ -451,31 +439,7 @@
                         (Cast
                             (ArrayReshape
                                 (ArrayConstant
-                                    [(IntegerConstant 1 (Integer 4))
-                                    (IntegerConstant 2 (Integer 4))
-                                    (IntegerConstant 3 (Integer 4))
-                                    (IntegerConstant 4 (Integer 4))
-                                    (IntegerConstant 5 (Integer 4))
-                                    (IntegerConstant 6 (Integer 4))
-                                    (IntegerConstant 7 (Integer 4))
-                                    (IntegerConstant 8 (Integer 4))
-                                    (IntegerConstant 9 (Integer 4))
-                                    (IntegerConstant 10 (Integer 4))
-                                    (IntegerConstant 11 (Integer 4))
-                                    (IntegerConstant 12 (Integer 4))
-                                    (IntegerConstant 13 (Integer 4))
-                                    (IntegerConstant 14 (Integer 4))
-                                    (IntegerConstant 15 (Integer 4))
-                                    (IntegerConstant 16 (Integer 4))
-                                    (IntegerConstant 17 (Integer 4))
-                                    (IntegerConstant 18 (Integer 4))
-                                    (IntegerConstant 19 (Integer 4))
-                                    (IntegerConstant 20 (Integer 4))
-                                    (IntegerConstant 21 (Integer 4))
-                                    (IntegerConstant 22 (Integer 4))
-                                    (IntegerConstant 23 (Integer 4))
-                                    (IntegerConstant 24 (Integer 4))
-                                    (IntegerConstant 25 (Integer 4))]
+                                    200
                                     (Array
                                         (Integer 4)
                                         [((IntegerConstant 1 (Integer 4))
@@ -486,8 +450,7 @@
                                 )
                                 (ArrayPhysicalCast
                                     (ArrayConstant
-                                        [(IntegerConstant 5 (Integer 4))
-                                        (IntegerConstant 5 (Integer 4))]
+                                        16
                                         (Array
                                             (Integer 4)
                                             [((IntegerConstant 1 (Integer 4))
@@ -653,8 +616,7 @@
                         (Cast
                             (ArrayReshape
                                 (ArrayConstant
-                                    [(IntegerConstant 1 (Integer 4))
-                                    (IntegerConstant 2 (Integer 4))]
+                                    16
                                     (Array
                                         (Integer 4)
                                         [((IntegerConstant 1 (Integer 4))
@@ -665,8 +627,7 @@
                                 )
                                 (ArrayPhysicalCast
                                     (ArrayConstant
-                                        [(IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 2 (Integer 4))]
+                                        16
                                         (Array
                                             (Integer 4)
                                             [((IntegerConstant 1 (Integer 4))
@@ -839,26 +800,7 @@
                         (Var 2 c)
                         (ArrayReshape
                             (ArrayConstant
-                                [(ComplexConstant
-                                    1.000000
-                                    2.000000
-                                    (Complex 4)
-                                )
-                                (ComplexConstant
-                                    3.000000
-                                    4.000000
-                                    (Complex 4)
-                                )
-                                (ComplexConstant
-                                    5.000000
-                                    6.000000
-                                    (Complex 4)
-                                )
-                                (ComplexConstant
-                                    7.000000
-                                    8.000000
-                                    (Complex 4)
-                                )]
+                                32
                                 (Array
                                     (Complex 4)
                                     [((IntegerConstant 1 (Integer 4))
@@ -869,8 +811,7 @@
                             )
                             (ArrayPhysicalCast
                                 (ArrayConstant
-                                    [(IntegerConstant 2 (Integer 4))
-                                    (IntegerConstant 2 (Integer 4))]
+                                    16
                                     (Array
                                         (Integer 4)
                                         [((IntegerConstant 1 (Integer 4))
@@ -1100,8 +1041,7 @@
                                 (Logical 4)
                             )
                             (ArrayConstant
-                                [(IntegerConstant 12 (Integer 4))
-                                (IntegerConstant 31 (Integer 4))]
+                                16
                                 (Array
                                     (Integer 4)
                                     [((IntegerConstant 1 (Integer 4))

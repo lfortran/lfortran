@@ -55,10 +55,7 @@
                     [(Assignment
                         (Var 2 m)
                         (ArrayConstant
-                            [(IntegerConstant 1 (Integer 4))
-                            (IntegerConstant 0 (Integer 4))
-                            (IntegerConstant 0 (Integer 4))
-                            (IntegerConstant 2 (Integer 4))]
+                            32
                             (Array
                                 (Integer 4)
                                 [((IntegerConstant 1 (Integer 4))
@@ -110,10 +107,7 @@
                             )
                             (ArrayPhysicalCast
                                 (ArrayConstant
-                                    [(IntegerConstant 0 (Integer 4))
-                                    (IntegerConstant 0 (Integer 4))
-                                    (IntegerConstant 3 (Integer 4))
-                                    (IntegerConstant 4 (Integer 4))]
+                                    32
                                     (Array
                                         (Integer 4)
                                         [((IntegerConstant 1 (Integer 4))
@@ -156,10 +150,7 @@
                                     (Var 2 p)
                                     NotEq
                                     (ArrayConstant
-                                        [(IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 2 (Integer 4))
-                                        (IntegerConstant 3 (Integer 4))
-                                        (IntegerConstant 4 (Integer 4))]
+                                        32
                                         (Array
                                             (Integer 4)
                                             [((IntegerConstant 1 (Integer 4))

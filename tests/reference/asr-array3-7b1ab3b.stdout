@@ -55,18 +55,7 @@
                     [(Assignment
                         (Var 2 a)
                         (ArrayConstant
-                            [(RealConstant
-                                1.000000
-                                (Real 4)
-                            )
-                            (RealConstant
-                                2.000000
-                                (Real 4)
-                            )
-                            (RealConstant
-                                3.000000
-                                (Real 4)
-                            )]
+                            24
                             (Array
                                 (Real 4)
                                 [((IntegerConstant 1 (Integer 4))
@@ -80,18 +69,7 @@
                     (Assignment
                         (Var 2 b)
                         (ArrayConstant
-                            [(RealConstant
-                                1.000000
-                                (Real 4)
-                            )
-                            (RealConstant
-                                2.000000
-                                (Real 4)
-                            )
-                            (RealConstant
-                                3.000000
-                                (Real 4)
-                            )]
+                            24
                             (Array
                                 (Real 4)
                                 [((IntegerConstant 1 (Integer 4))
