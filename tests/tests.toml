@@ -3885,3 +3885,7 @@ asr = true
 [[test]]
 filename = "character2.f90"
 asr = true
+
+[[test]]
+filename = "errors/specific_type_intrinsic.f90"
+asr = true
