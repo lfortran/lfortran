@@ -60,4 +60,21 @@ program elemental_09
     if (abs(arr_out(3) - 9) > epsilon ) error stop
     if (abs(arr_out(4) - 12) > epsilon ) error stop
     if (abs(arr_out(5) - 15) > epsilon ) error stop
+
+    call sum_elements(arr_in1, arr_in2, arr_out)
+    print *, arr_out
+    if (abs(arr_out(1) - 3) > epsilon ) error stop
+    if (abs(arr_out(2) - 5) > epsilon ) error stop
+    if (abs(arr_out(3) - 7) > epsilon ) error stop
+    if (abs(arr_out(4) - 9) > epsilon ) error stop
+    if (abs(arr_out(5) - 11) > epsilon ) error stop
+
+    contains
+
+    elemental subroutine sum_elements(x, y, z)
+        real, intent(in) :: x
+        real, intent(in) :: y
+        real, intent(out) :: z
+        z = x + y
+    end subroutine sum_elements
 end program elemental_09

@@ -2009,7 +2009,7 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
         // individually apply the subroutine to each element of the array(s).
         void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
             ASR::symbol_t* sym = x.m_name;
-            if (sym && ASR::is_a<ASR::ExternalSymbol_t>(*sym) && PassUtils::is_elemental(sym)) {
+            if (sym && PassUtils::is_elemental(sym)) {
                 if (!x.n_args) {
                     return;
                 }
