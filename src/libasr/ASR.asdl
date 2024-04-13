@@ -140,7 +140,7 @@ expr
     | Var(symbol v)
     | FunctionParam(int param_number, ttype type, expr? value)
     | ArrayConstructor(expr* args, ttype type, expr? value, arraystorage storage_format)
-    | ArrayConstant(void data, ttype type, arraystorage storage_format)
+    | ArrayConstant(int n_data, ttype type, void data, arraystorage storage_format)
     | ArrayItem(expr v, array_index* args, ttype type, arraystorage storage_format, expr? value)
     | ArraySection(expr v, array_index* args, ttype type, expr? value)
     | ArraySize(expr v, expr? dim, ttype type, expr? value)
