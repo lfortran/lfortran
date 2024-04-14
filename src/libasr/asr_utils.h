@@ -5379,11 +5379,12 @@ inline ASR::asr_t* make_ArrayConstructor_t_util(Allocator &al, const Location &a
     if (all_expr_evaluated) {
         Vec<ASR::expr_t*> a_args_values; a_args_values.reserve(al, n_args);
         int curr_idx = 0;
+        a_type = ASRUtils::type_get_past_pointer(a_type);
         ASR::Array_t* a_type_ = ASR::down_cast<ASR::Array_t>(a_type);
         flatten_ArrayConstant_data(al, a_args_values, a_args, n_args, a_type_->m_type, curr_idx, nullptr);
         Vec<ASR::dimension_t> dims; dims.reserve(al, 1);
         ASR::dimension_t dim; dim.loc = a_type_->m_dims[0].loc; dim.m_start = a_type_->m_dims[0].m_start;
-        dim.m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, a_type_->m_dims[0].m_length->base.loc,
+        dim.m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, a_type_->m_dims[0].loc,
                         curr_idx,
                         ASRUtils::TYPE(ASR::make_Integer_t(al, a_loc, 4))));
         dims.push_back(al, dim);
