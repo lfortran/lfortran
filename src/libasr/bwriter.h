@@ -419,17 +419,13 @@ public:
                 }
             }
             case ASR::ttypeType::Logical: {
-                if (kind == 1) {
-                    bool *r = new bool[n_data];
+                bool *r = new bool[n_data];
 
-                    for (int64_t i = 0; i < n_data; i++) {
-                        r[i] = read_int8();
-                    }
-
-                    return (void*)r;
-                } else {
-                    throw LCompilersException("Unsupported kind for logical array constant.");
+                for (int64_t i = 0; i < n_data; i++) {
+                    r[i] = read_int8();
                 }
+
+                return (void*)r;
             }
             case ASR::ttypeType::Character: {
                 char *r = new char[n_data];
@@ -777,17 +773,13 @@ public:
                 }
             }
             case ASR::ttypeType::Logical: {
-                if (kind == 1) {
-                    bool *r = new bool[n_data];
+                bool *r = new bool[n_data];
 
-                    for (int64_t i = 0; i < n_data; i++) {
-                        r[i] = read_int8();
-                    }
-
-                    return (void*)r;
-                } else {
-                    throw LCompilersException("Unsupported kind for logical array constant.");
+                for (int64_t i = 0; i < n_data; i++) {
+                    r[i] = read_int8();
                 }
+
+                return (void*)r;
             }
             case ASR::ttypeType::Character: {
                 char *r = new char[n_data];
