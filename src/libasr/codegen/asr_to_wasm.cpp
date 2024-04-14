@@ -1204,6 +1204,107 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         }
     }
 
+    uint32_t emit_memory_store(ASR::ttype_t* type) {
+        auto ttype = ASRUtils::type_get_past_array(type);
+        auto kind = ASRUtils::extract_kind_from_ttype_t(ttype);
+        switch (ttype->type) {
+            case ASR::ttypeType::Integer: {
+                switch (kind) {
+                    case 4:
+                        m_wa.emit_i32_store(wasm::mem_align::b8, 0);
+                        break;
+                    case 8:
+                        m_wa.emit_i64_store(wasm::mem_align::b8, 0);
+                        break;
+                    default:
+                        throw CodeGenError(
+                            "MemoryStore: Unsupported Integer kind");
+                }
+                break;
+            }
+            case ASR::ttypeType::Real: {
+                switch (kind) {
+                    case 4:
+                        m_wa.emit_f32_store(wasm::mem_align::b8, 0);
+                        break;
+                    case 8:
+                        m_wa.emit_f64_store(wasm::mem_align::b8, 0);
+                        break;
+                    default:
+                        throw CodeGenError(
+                            "MemoryStore: Unsupported Real kind");
+                }
+                break;
+            }
+            case ASR::ttypeType::Logical: {
+                switch (kind) {
+                    case 4:
+                        m_wa.emit_i32_store(wasm::mem_align::b8, 0);
+                        break;
+                    default:
+                        throw CodeGenError(
+                            "MemoryStore: Unsupported Logical kind");
+                }
+                break;
+            }
+            case ASR::ttypeType::Character: {
+                switch (kind) {
+                    case 4:
+                        m_wa.emit_i32_store(wasm::mem_align::b8, 0);
+                        break;
+                    case 8:
+                        m_wa.emit_i64_store(wasm::mem_align::b8, 0);
+                        break;
+                    default:
+                        throw CodeGenError(
+                            "MemoryStore: Unsupported Character kind");
+                }
+                break;
+            }
+            case ASR::ttypeType::Complex: {
+                switch (kind) {
+                    case 4:
+                        m_wa.emit_global_set(m_compiler_globals[tmp_reg_f32]); // complex part
+                        m_wa.emit_global_set(m_compiler_globals[tmp_reg2_f32]); // real part
+                        m_wa.emit_global_set(m_compiler_globals[tmp_reg_i32]); // location
+
+                        m_wa.emit_global_get(m_compiler_globals[tmp_reg_i32]); // location
+                        m_wa.emit_global_get(m_compiler_globals[tmp_reg2_f32]); // real part
+                        m_wa.emit_f32_store(wasm::mem_align::b8, 0);
+
+                        m_wa.emit_global_get(m_compiler_globals[tmp_reg_i32]); // location
+                        m_wa.emit_global_get(m_compiler_globals[tmp_reg_f32]); // complex part
+                        m_wa.emit_f32_store(wasm::mem_align::b8, kind);
+                        break;
+                    case 8:
+                        m_wa.emit_global_set(m_compiler_globals[tmp_reg_f64]); // complex part
+                        m_wa.emit_global_set(m_compiler_globals[tmp_reg2_f64]); // real part
+                        m_wa.emit_global_set(m_compiler_globals[tmp_reg_i32]); // location
+
+                        m_wa.emit_global_get(m_compiler_globals[tmp_reg_i32]); // location
+                        m_wa.emit_global_get(m_compiler_globals[tmp_reg2_f64]); // real part
+                        m_wa.emit_f64_store(wasm::mem_align::b8, 0);
+
+                        m_wa.emit_global_get(m_compiler_globals[tmp_reg_i32]); // location
+                        m_wa.emit_global_get(m_compiler_globals[tmp_reg_f64]); // complex part
+                        m_wa.emit_f64_store(wasm::mem_align::b8, kind);
+                        break;
+                    default:
+                        throw CodeGenError(
+                            "MemoryStore: Unsupported Complex kind");
+                }
+                kind *= 2;
+                break;
+            }
+            default: {
+                throw CodeGenError("MemoryStore: Type " +
+                                   ASRUtils::type_to_str(ttype) +
+                                   " not yet supported");
+            }
+        }
+        return kind;
+    }
+
     uint32_t emit_memory_store(ASR::expr_t *v) {
         auto ttype = ASRUtils::type_get_past_array(ASRUtils::expr_type(v));
         auto kind = ASRUtils::extract_kind_from_ttype_t(ttype);
@@ -2398,6 +2499,70 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         m_wa.emit_i32_const(m_string_to_iov_loc_map[x.m_s]);
     }
 
+    void process_ArrayConstant_value(void* data, ASR::ttype_t* type, int i) {
+        type = ASRUtils::type_get_past_array(type);
+        int kind = ASRUtils::extract_kind_from_ttype_t(type);
+
+        switch (type->type) {
+            case ASR::ttypeType::Integer: {
+                if (kind == 1) {
+                    int8_t val = ((int8_t*)data)[i];
+                    m_wa.emit_i32_const(val);
+                } else if (kind == 2) {
+                    int16_t val = ((int16_t*)data)[i];
+                    m_wa.emit_i32_const(val);
+                } else if (kind == 4) {
+                    int32_t val = ((int32_t*)data)[i];
+                    m_wa.emit_i32_const(val);
+                } else if (kind == 8) {
+                    int64_t val = ((int64_t*)data)[i];
+                    m_wa.emit_i32_const(val);
+                } else {
+                    throw CodeGenError("process_ArrayConstant_value: Integer kind not supported");
+                }
+                break;
+            }
+            case ASR::ttypeType::Real: {
+                if (kind == 4) {
+                    float val = ((float*)data)[i];
+                    m_wa.emit_f32_const(val);
+                } else if (kind == 8) {
+                    double val = ((double*)data)[i];
+                    m_wa.emit_f32_const(val);
+                } else {
+                    throw CodeGenError("process_ArrayConstant_value: Real kind not supported");
+                }
+                break;
+            }
+            case ASR::ttypeType::Logical: {
+                if (kind == 4) {
+                    int32_t val = ((int32_t*)data)[i];
+                    m_wa.emit_i32_const(val);
+                } else {
+                    throw CodeGenError("process_ArrayConstant_value: Logical kind not supported");
+                }
+                break;
+            }
+            case ASR::ttypeType::Character: {
+                ASR::Character_t* char_type = ASR::down_cast<ASR::Character_t>(type);
+                int len = char_type->m_len;
+                char* data_char = (char*)data + i*len;
+                // take first len characters
+                char* new_char = new char[len];
+                for (int j = 0; j < len; j++) {
+                    new_char[j] = data_char[j];
+                }
+                std::string str = '\"' + std::string(new_char) + '\"';
+                emit_string(str);
+                m_wa.emit_i32_const(m_string_to_iov_loc_map[str]);
+                break;
+            }
+            default: {
+                throw CodeGenError("process_ArrayConstant_value: Type not supported");
+            }
+        }
+    }
+
     void visit_ArrayConstant(const ASR::ArrayConstant_t &x) {
         // Todo: Add a check here if there is memory available to store the
         // given string
@@ -2406,10 +2571,9 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             // emit memory location to store array element
             m_wa.emit_i32_const(avail_mem_loc);
 
-            // ASR::expr_t* arg = ASRUtils::fetch_ArrayConstant_value(al, x, i);
-            // this->visit_expr(*arg);
-            // int element_size_in_bytes = emit_memory_store(arg);
-            // avail_mem_loc += element_size_in_bytes;
+            process_ArrayConstant_value(x.m_data, x.m_type, i);
+            int element_size_in_bytes = emit_memory_store(x.m_type);
+            avail_mem_loc += element_size_in_bytes;
         }
         // leave array location in memory on the stack
         m_wa.emit_i32_const(cur_mem_loc);
