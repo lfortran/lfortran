@@ -27,8 +27,13 @@ set_target_properties(lfortran_runtime_static PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY ..)
 
 if(WITH_TARGET_WASM)
+    if (NOT (DEFINED ENV{WASI_SDK_PATH}))
+        message(FATAL_ERROR "'WASI_SDK_PATH' must be set when building with 'WITH_TARGET_WASM'")
+    endif()
+
     add_custom_command(OUTPUT lfortran_runtime_wasm.o
-        COMMAND $ENV{WASI_SDK_PATH}/bin/clang -I${libasr_SOURCE_DIR}/.. -DCOMPILE_TO_WASM -D_WASI_EMULATED_PROCESS_CLOCKS -c --target=wasm32-wasi ${SRC} -o lfortran_runtime_wasm.o
+        COMMAND $ENV{WASI_SDK_PATH}/bin/clang -I${libasr_SOURCE_DIR}/.. -DCOMPILE_TO_WASM
+            -D_WASI_EMULATED_PROCESS_CLOCKS -c --target=wasm32-wasi ${SRC} -o lfortran_runtime_wasm.o
         COMMENT "Cross compiling lfortran_intrinscs.c to lfortran_runtime_wasm.o"
         DEPENDS ${SRC})
     add_custom_target(lfortran_runtime_wasm ALL DEPENDS lfortran_runtime_wasm.o)
