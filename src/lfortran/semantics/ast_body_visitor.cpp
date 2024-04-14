@@ -2444,7 +2444,6 @@ public:
                     ASR::ArrayConstant_t *ac = ASR::down_cast<ASR::ArrayConstant_t>(value);
                     int size = ASRUtils::get_fixed_size_of_array(ac->m_type);
                     Vec<ASR::expr_t*> args; args.reserve(al, size);
-                    ac->m_type = ASRUtils::type_get_past_allocatable(target_type);
                     for (size_t i = 0; i < (size_t) size; i++) {
                         ASR::expr_t* arg = ASRUtils::fetch_ArrayConstant_value(al, ac, i);
                         ImplicitCastRules::set_converted_value(al, x.base.base.loc, &arg,
@@ -2454,7 +2453,7 @@ public:
                         args.push_back(al, arg);
                     }
                     ac = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, ac->base.base.loc,
-                            args.p, args.n, ac->m_type, ac->m_storage_format)));
+                            args.p, args.n, ASRUtils::type_get_past_allocatable(target_type), ac->m_storage_format)));
                     value = ASRUtils::EXPR((ASR::asr_t*) ac);
                     LCOMPILERS_ASSERT(ASRUtils::is_array(ac->m_type));
                     if( ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_pointer(
