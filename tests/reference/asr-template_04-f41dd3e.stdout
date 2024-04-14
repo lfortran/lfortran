@@ -17103,6 +17103,8 @@
                                                         (IntegerConstant 1 (Integer 4))
                                                         (Var 113 n)
                                                         ())
+                                                        []
+                                                        []
                                                         [(Assignment
                                                             (ArrayItem
                                                                 (StructInstanceMember

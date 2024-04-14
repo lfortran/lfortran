@@ -288,6 +288,8 @@
                                         (IntegerConstant 1 (Integer 4))
                                         (Var 3 n)
                                         ())
+                                        []
+                                        []
                                         [(Assignment
                                             (ArrayItem
                                                 (Var 3 c)
@@ -367,6 +369,8 @@
                         (IntegerConstant 1 (Integer 4))
                         (Var 2 nsize)
                         ())
+                        []
+                        []
                         [(Assignment
                             (ArrayItem
                                 (Var 2 a)
