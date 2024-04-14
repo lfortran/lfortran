@@ -5062,8 +5062,13 @@ inline std::string fetch_ArrayConstant_value(void *data, ASR::ttype_t* type, int
         case ASR::ttypeType::Character: {
             ASR::Character_t* char_type = ASR::down_cast<ASR::Character_t>(type);
             int len = char_type->m_len;
-            char* data_char = (char*)data;
-            return std::string(data_char + i*len);
+            char* data_char = (char*)data + i*len;
+            // take first len characters
+            char* new_char = new char[len];
+            for (int j = 0; j < len; j++) {
+                new_char[j] = data_char[j];
+            }
+            return '\"' + std::string(new_char) + '\"';
         }
         default:
             throw LCompilersException("Unsupported type for array constant.");
