@@ -1151,7 +1151,7 @@ namespace Dshiftl {
         int kind1 = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_type);
         int kind2 = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_type);
         if(kind1 != kind2) {
-            append_error(diag, "The kind of first argument of 'dshiftl' intrinsic must be the same as second arguement", loc);
+            append_error(diag, "The kind of first argument of 'dshiftl' intrinsic must be the same as second argument", loc);
             return nullptr;
         }
         if(shift < 0){
@@ -2075,11 +2075,17 @@ namespace Dim {
 namespace Sqrt {
 
     static ASR::expr_t *eval_Sqrt(Allocator &al, const Location &loc,
-            ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+            ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         ASRUtils::ASRBuilder b(al, loc);
         if (is_real(*arg_type)) {
             double val = ASR::down_cast<ASR::RealConstant_t>(expr_value(args[0]))->m_r;
-            return b.f(std::sqrt(val), arg_type);
+            if (val < 0.0) {
+            append_error(diag, "Argument of SQRT has a negative value", loc);
+            return nullptr;
+            }
+            else{
+                return b.f(std::sqrt(val), arg_type);
+            }
         } else {
             std::complex<double> crv;
             if( ASRUtils::extract_value(args[0], crv) ) {
