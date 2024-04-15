@@ -739,6 +739,7 @@ RUN(NAME intrinsics_205 LABELS gfortran llvm llvm_wasm) # acosd
 RUN(NAME intrinsics_206 LABELS gfortran llvm llvm_wasm fortran) # poppar
 RUN(NAME intrinsics_207 LABELS gfortran llvm llvm_wasm) # double precision intrinsics
 RUN(NAME intrinsics_208 LABELS gfortran llvm llvm_wasm) # bit_size
+RUN(NAME intrinsics_209 LABELS gfortran llvm llvm_wasm) # atand
 
 RUN(NAME parameter_01 LABELS gfortran)
 RUN(NAME parameter_02 LABELS gfortran)
