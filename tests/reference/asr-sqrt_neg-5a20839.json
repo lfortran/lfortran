@@ -1,0 +1,13 @@
+{
+    "basename": "asr-sqrt_neg-5a20839",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/sqrt_neg.f90",
+    "infile_hash": "15a7d352afe51615cd4dccb6177025a159d4a580e4e236cff0ecc4c2",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-sqrt_neg-5a20839.stderr",
+    "stderr_hash": "552d5a7fa70662e63c97de072539e61f808566312514dbc299b6782a",
+    "returncode": 2
+}
