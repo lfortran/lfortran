@@ -1873,6 +1873,31 @@ public:
             external_procedures_mapping[hash].end());
     }
 
+    // pad (with ' ') or trim character string 'value'
+    ASR::expr_t* adjust_character_length(ASR::expr_t* value, int64_t& lhs_len, int64_t& rhs_len, const Location& loc, Allocator& al) {
+        ASR::StringConstant_t* string_constant = ASR::down_cast<ASR::StringConstant_t>(value);
+        char* original_str = string_constant->m_s;
+        size_t original_length = std::strlen(original_str);
+
+        size_t new_length = static_cast<size_t>(lhs_len);
+        char* adjusted_str = al.allocate<char>(new_length + 1);
+
+        if (lhs_len < rhs_len) { // trim
+            std::memcpy(adjusted_str, original_str, new_length);
+        } else { // pad
+            std::memcpy(adjusted_str, original_str, original_length);
+            std::memset(adjusted_str + original_length, ' ', new_length - original_length);
+        }
+        adjusted_str[new_length] = '\0'; // null-terminate the string
+
+        ASR::ttype_t* value_type = ASRUtils::TYPE(ASR::make_Character_t(
+            al, loc, 1, new_length, nullptr));
+
+        rhs_len = lhs_len; // Update the rhs_len to match lhs_len
+        return ASRUtils::EXPR(ASR::make_StringConstant_t(
+            al, loc, adjusted_str, value_type));
+    }
+
     void visit_DeclarationUtil(const AST::Declaration_t &x) {
         _declaring_variable = true;
         if (x.m_vartype == nullptr &&
@@ -2607,6 +2632,7 @@ public:
                         type = ASRUtils::duplicate_type(al, type, &temp_dims);
                     }
                     init_expr = ASRUtils::EXPR(tmp);
+                    value = ASRUtils::expr_value(init_expr);
 
                     // we do checks and correct length initialization for
                     // character (& character array) before creating repeated argument
@@ -2614,7 +2640,6 @@ public:
                     // character(*) :: x(2) = "a", as we can assign "length" to
                     // character easily
                     if (is_char_type && storage_type == ASR::storage_typeType::Parameter) {
-                        value = init_expr;
                         ASR::Character_t *lhs_type = ASR::down_cast<ASR::Character_t>(
                             ASRUtils::type_get_past_array(type));
                         ASR::Character_t *rhs_type = ASR::down_cast<ASR::Character_t>(
@@ -2622,14 +2647,15 @@ public:
                         // in case when length is specified as:
                         // character(len=4) :: x*3 = "ape", we assign "3" as the length, and ignore "4"
                         // (that's what GFortran does)
-                        int64_t lhs_len { lhs_type->m_len };
-                        int rhs_len = rhs_type->m_len;
                         // The RHS len is known at compile time
                         // and the LHS is inferred length
+                        int64_t lhs_len = lhs_type->m_len;
+                        int64_t rhs_len = rhs_type->m_len;
                         lhs_len = (rhs_len >= 0 && lhs_len == -1) ? rhs_len : lhs_len;
                         if (rhs_len >= 0) {
                             if (lhs_len >= 0) {
-                                if (lhs_len != rhs_len) {
+                                // raise a warning only for loss of data
+                                if (lhs_len < rhs_len) {
                                     diag.semantic_warning_label(
                                         "The LHS character len="
                                             + std::to_string(lhs_len)
@@ -2639,7 +2665,10 @@ public:
                                         {x.base.base.loc},
                                         "help: consider changing the RHS character len to match the LHS character len"
                                     );
-                                    rhs_len = lhs_len;
+                                }
+                                // adjust character string by padding or trimming
+                                if (lhs_len != rhs_len) {
+                                    value = adjust_character_length(value, lhs_len, rhs_len, init_expr->base.loc, al);
                                 }
                             } else {
                                 LCOMPILERS_ASSERT(lhs_len == -2)
@@ -2655,10 +2684,14 @@ public:
                         lhs_type->m_len = lhs_len;
                     }
 
+                    ASR::expr_t* tmp_init = init_expr;
+                    if (value != nullptr) {
+                        tmp_init = value;
+                    }
                     if (!is_compile_time && ASR::is_a<ASR::Array_t>(*type)
-                        && (ASR::is_a<ASR::IntegerConstant_t>(*init_expr) || ASR::is_a<ASR::RealConstant_t>(*init_expr)
-                            || ASR::is_a<ASR::RealUnaryMinus_t>(*init_expr) || ASR::is_a<ASR::IntegerUnaryMinus_t>(*init_expr)
-                            || ASR::is_a<ASR::StringConstant_t>(*init_expr))) {
+                        && (ASR::is_a<ASR::IntegerConstant_t>(*tmp_init) || ASR::is_a<ASR::RealConstant_t>(*tmp_init)
+                            || ASR::is_a<ASR::RealUnaryMinus_t>(*tmp_init) || ASR::is_a<ASR::IntegerUnaryMinus_t>(*tmp_init)
+                            || ASR::is_a<ASR::StringConstant_t>(*tmp_init))) {
                         /*
                             Case: integer :: x(2) = 1
                             which is equivalent to x(2) = [1,1]
@@ -2666,12 +2699,13 @@ public:
                         int64_t size = ASRUtils::get_fixed_size_of_array(type);
                         Vec<ASR::expr_t*> args;
                         args.reserve(al, size);
-                        LCOMPILERS_ASSERT(init_expr != nullptr)
+                        LCOMPILERS_ASSERT(tmp_init != nullptr)
                         for (int64_t i = 0; i < size; i++) {
-                            args.push_back(al, init_expr);
+                            args.push_back(al, tmp_init);
                         }
                         init_expr = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, init_expr->base.loc,
                                     args.p, args.n, type, ASR::arraystorageType::ColMajor));
+                        value = init_expr;
                     }
                     ASR::ttype_t *init_type = ASRUtils::expr_type(init_expr);
                     if (init_type->type == ASR::ttypeType::Integer
@@ -2704,7 +2738,7 @@ public:
                         }
                         value = nullptr;
                         init_expr = nullptr;
-                    } else {
+                    } else if (!is_char_type) {
                         ImplicitCastRules::set_converted_value(al, x.base.base.loc, &init_expr, init_type, type);
                         LCOMPILERS_ASSERT(init_expr != nullptr);
                         value = ASRUtils::expr_value(init_expr);

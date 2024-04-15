@@ -1,0 +1,13 @@
+{
+    "basename": "asr-character_parameter_padding_trimming-ea91653",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/character_parameter_padding_trimming.f90",
+    "infile_hash": "3ac17fa68feb60423eaa66ebbb88a3e18da1a72d0c7e8ed8ac8de022",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-character_parameter_padding_trimming-ea91653.stdout",
+    "stdout_hash": "d3a78f22d9e07ad668186f27a325e0fe287b2cdb676a9e447c6a5603",
+    "stderr": "asr-character_parameter_padding_trimming-ea91653.stderr",
+    "stderr_hash": "dd1d526423717b4be7522ae77a4f0054f4ceee382d37bbf977ca3d2b",
+    "returncode": 0
+}

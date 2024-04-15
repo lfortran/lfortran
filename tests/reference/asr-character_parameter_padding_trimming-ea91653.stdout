@@ -1,0 +1,311 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            character_parameter_padding_trimming:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            p_pad:
+                                (Variable
+                                    2
+                                    p_pad
+                                    []
+                                    Local
+                                    (ArrayConstant
+                                        12
+                                        (Array
+                                            (Character 1 4 ())
+                                            [((IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 3 (Integer 4)))]
+                                            CharacterArraySinglePointer
+                                        )
+                                        ColMajor
+                                    )
+                                    (ArrayConstant
+                                        12
+                                        (Array
+                                            (Character 1 4 ())
+                                            [((IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 3 (Integer 4)))]
+                                            CharacterArraySinglePointer
+                                        )
+                                        ColMajor
+                                    )
+                                    Parameter
+                                    (Array
+                                        (Character 1 4 ())
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 3 (Integer 4)))]
+                                        CharacterArraySinglePointer
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            p_trim:
+                                (Variable
+                                    2
+                                    p_trim
+                                    []
+                                    Local
+                                    (ArrayConstant
+                                        3
+                                        (Array
+                                            (Character 1 1 ())
+                                            [((IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 3 (Integer 4)))]
+                                            CharacterArraySinglePointer
+                                        )
+                                        ColMajor
+                                    )
+                                    (ArrayConstant
+                                        3
+                                        (Array
+                                            (Character 1 1 ())
+                                            [((IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 3 (Integer 4)))]
+                                            CharacterArraySinglePointer
+                                        )
+                                        ColMajor
+                                    )
+                                    Parameter
+                                    (Array
+                                        (Character 1 1 ())
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 3 (Integer 4)))]
+                                        CharacterArraySinglePointer
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            x_pad:
+                                (Variable
+                                    2
+                                    x_pad
+                                    []
+                                    Local
+                                    (StringConstant
+                                        "apple"
+                                        (Character 1 5 ())
+                                    )
+                                    (StringConstant
+                                        "apple   "
+                                        (Character 1 8 ())
+                                    )
+                                    Parameter
+                                    (Character 1 8 ())
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            x_trim:
+                                (Variable
+                                    2
+                                    x_trim
+                                    []
+                                    Local
+                                    (StringConstant
+                                        "apple"
+                                        (Character 1 5 ())
+                                    )
+                                    (StringConstant
+                                        "ap"
+                                        (Character 1 2 ())
+                                    )
+                                    Parameter
+                                    (Character 1 2 ())
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            y_pad:
+                                (Variable
+                                    2
+                                    y_pad
+                                    []
+                                    Local
+                                    (StringConstant
+                                        "Ball"
+                                        (Character 1 4 ())
+                                    )
+                                    (StringConstant
+                                        "Ball      "
+                                        (Character 1 10 ())
+                                    )
+                                    Parameter
+                                    (Character 1 10 ())
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            y_trim:
+                                (Variable
+                                    2
+                                    y_trim
+                                    []
+                                    Local
+                                    (StringConstant
+                                        "Ball"
+                                        (Character 1 4 ())
+                                    )
+                                    (StringConstant
+                                        "Bal"
+                                        (Character 1 3 ())
+                                    )
+                                    Parameter
+                                    (Character 1 3 ())
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            z_pad:
+                                (Variable
+                                    2
+                                    z_pad
+                                    [x_pad
+                                    y_pad]
+                                    Local
+                                    (StringConcat
+                                        (StringConcat
+                                            (Var 2 x_pad)
+                                            (Var 2 y_pad)
+                                            (Character 1 18 ())
+                                            (StringConstant
+                                                "apple   Ball      "
+                                                (Character 1 18 ())
+                                            )
+                                        )
+                                        (Var 2 x_pad)
+                                        (Character 1 26 ())
+                                        (StringConstant
+                                            "apple   Ball      apple   "
+                                            (Character 1 26 ())
+                                        )
+                                    )
+                                    (StringConstant
+                                        "apple   Ball      apple       "
+                                        (Character 1 30 ())
+                                    )
+                                    Parameter
+                                    (Character 1 30 ())
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            z_trim:
+                                (Variable
+                                    2
+                                    z_trim
+                                    [x_trim
+                                    y_trim]
+                                    Local
+                                    (StringConcat
+                                        (StringConcat
+                                            (Var 2 x_trim)
+                                            (Var 2 y_trim)
+                                            (Character 1 5 ())
+                                            (StringConstant
+                                                "apBal"
+                                                (Character 1 5 ())
+                                            )
+                                        )
+                                        (Var 2 x_trim)
+                                        (Character 1 7 ())
+                                        (StringConstant
+                                            "apBalap"
+                                            (Character 1 7 ())
+                                        )
+                                    )
+                                    (StringConstant
+                                        "apBal"
+                                        (Character 1 5 ())
+                                    )
+                                    Parameter
+                                    (Character 1 5 ())
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    character_parameter_padding_trimming
+                    []
+                    [(Print
+                        [(StringConcat
+                            (StringConcat
+                                (StringConstant
+                                    "|"
+                                    (Character 1 1 ())
+                                )
+                                (Var 2 x_pad)
+                                (Character 1 9 ())
+                                (StringConstant
+                                    "|apple   "
+                                    (Character 1 9 ())
+                                )
+                            )
+                            (StringConstant
+                                "|"
+                                (Character 1 1 ())
+                            )
+                            (Character 1 10 ())
+                            (StringConstant
+                                "|apple   |"
+                                (Character 1 10 ())
+                            )
+                        )]
+                        ()
+                        ()
+                    )
+                    (Print
+                        [(Var 2 y_pad)]
+                        ()
+                        ()
+                    )
+                    (Print
+                        [(Var 2 p_pad)]
+                        ()
+                        ()
+                    )
+                    (Print
+                        [(Var 2 x_trim)]
+                        ()
+                        ()
+                    )
+                    (Print
+                        [(Var 2 y_trim)]
+                        ()
+                        ()
+                    )
+                    (Print
+                        [(Var 2 z_trim)]
+                        ()
+                        ()
+                    )
+                    (Print
+                        [(Var 2 p_trim)]
+                        ()
+                        ()
+                    )]
+                )
+        })
+    []
+)
