@@ -2080,12 +2080,10 @@ namespace Sqrt {
         if (is_real(*arg_type)) {
             double val = ASR::down_cast<ASR::RealConstant_t>(expr_value(args[0]))->m_r;
             if (val < 0.0) {
-            append_error(diag, "Argument of SQRT has a negative value", loc);
+                append_error(diag, "Argument of SQRT has a negative value", loc);
             return nullptr;
             }
-            else{
-                return b.f(std::sqrt(val), arg_type);
-            }
+            return b.f(std::sqrt(val), arg_type);
         } else {
             std::complex<double> crv;
             if( ASRUtils::extract_value(args[0], crv) ) {
