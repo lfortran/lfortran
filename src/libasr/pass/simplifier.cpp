@@ -552,6 +552,94 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         replace_current_expr("_dict_constant_")
     }
 
+    void replace_ArrayConstructor(ASR::ArrayConstructor_t* x) {
+        replace_current_expr("_array_constructor_")
+    }
+
+    void replace_ArrayConstant(ASR::ArrayConstant_t* x) {
+        replace_current_expr("_array_constant_")
+    }
+
+    void replace_ArraySection(ASR::ArraySection_t* x) {
+        replace_current_expr("_array_section_")
+    }
+
+    void replace_ArrayTranspose(ASR::ArrayTranspose_t* x) {
+        replace_current_expr("_array_transpose_")
+    }
+
+    void replace_ArrayPack(ASR::ArrayPack_t* x) {
+        replace_current_expr("_array_pack_")
+    }
+
+    void replace_ArrayReshape(ASR::ArrayReshape_t* x) {
+        replace_current_expr("_array_reshape_")
+    }
+
+    void replace_ArrayAll(ASR::ArrayAll_t* x) {
+        replace_current_expr("_array_all_")
+    }
+
+    void replace_StructInstanceMember(ASR::StructInstanceMember_t* x) {
+        replace_current_expr("_struct_instance_member_")
+    }
+
+    void replace_StructStaticMember(ASR::StructStaticMember_t* x) {
+        replace_current_expr("_struct_static_member_")
+    }
+
+    void replace_EnumStaticMember(ASR::EnumStaticMember_t* x) {
+        replace_current_expr("_enum_static_member_")
+    }
+
+    void replace_UnionInstanceMember(ASR::UnionInstanceMember_t* x) {
+        replace_current_expr("_union_instance_member_")
+    }
+
+    void replace_OverloadedCompare(ASR::OverloadedCompare_t* x) {
+        replace_current_expr("_overloaded_compare_")
+    }
+
+    void replace_OverloadedBinOp(ASR::OverloadedBinOp_t* x) {
+        replace_current_expr("_overloaded_binop_")
+    }
+
+    void replace_OverloadedUnaryMinus(ASR::OverloadedUnaryMinus_t* x) {
+        replace_current_expr("_overloaded_unary_minus_")
+    }
+
+    void replace_OverloadedStringConcat(ASR::OverloadedStringConcat_t* x) {
+        replace_current_expr("_overloaded_string_concat_")
+    }
+
+    void replace_ComplexRe(ASR::ComplexRe_t* x) {
+        replace_current_expr("_complex_re_")
+    }
+
+    void replace_ComplexIm(ASR::ComplexIm_t* x) {
+        replace_current_expr("_complex_im_")
+    }
+
+    void replace_ListSection(ASR::ListSection_t* x) {
+        replace_current_expr("_list_section_")
+    }
+
+    void replace_ListRepeat(ASR::ListRepeat_t* x) {
+        replace_current_expr("_list_repeat_")
+    }
+
+    void replace_DictPop(ASR::DictPop_t* x) {
+        replace_current_expr("_dict_pop_")
+    }
+
+    void replace_SetPop(ASR::SetPop_t* x) {
+        replace_current_expr("_set_pop_")
+    }
+
+    void replace_RealSqrt(ASR::RealSqrt_t* x) {
+        replace_current_expr("_real_sqrt_")
+    }
+
 };
 
 class ReplaceExprWithTemporaryVisitor:
