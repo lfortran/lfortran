@@ -2080,8 +2080,8 @@ namespace Sqrt {
         if (is_real(*arg_type)) {
             double val = ASR::down_cast<ASR::RealConstant_t>(expr_value(args[0]))->m_r;
             if (val < 0.0) {
-                append_error(diag, "Argument of SQRT has a negative value", loc);
-            return nullptr;
+                append_error(diag, "Argument of `sqrt` has a negative argument", loc);
+                return nullptr;
             }
             return b.f(std::sqrt(val), arg_type);
         } else {
