@@ -640,6 +640,19 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         replace_current_expr("_real_sqrt_")
     }
 
+    void replace_Var(ASR::Var_t* x) {
+        ASR::symbol_t* x_mv = x->m_v;
+        ASR::symbol_t* asr_owner = ASRUtils::get_asr_owner(x_mv);
+        if( asr_owner && ASR::is_a<ASR::Module_t>(*asr_owner) &&
+            ASR::is_a<ASR::Variable_t>(*x_mv) && ASRUtils::is_array(
+                ASRUtils::symbol_type(x_mv)) ) {
+            ASR::Variable_t* variable = ASR::down_cast<ASR::Variable_t>(x_mv);
+            LCOMPILERS_ASSERT(variable->m_symbolic_value);
+            *current_expr = variable->m_symbolic_value;
+            replace_expr(*current_expr);
+        }
+    }
+
 };
 
 class ReplaceExprWithTemporaryVisitor:
