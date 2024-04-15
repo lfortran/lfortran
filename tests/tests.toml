@@ -3889,3 +3889,7 @@ asr = true
 [[test]]
 filename = "errors/specific_type_intrinsic.f90"
 asr = true
+
+[[test]]
+filename = "errors/sqrt_neg.f90"
+asr = true

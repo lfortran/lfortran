@@ -692,6 +692,9 @@ def add_create_func_return_src(func_name):
     if func_name in compile_time_only_fn:
         src += indent * 2 + f"return_type = ASRUtils::extract_type(return_type);\n"
         src += indent * 2 + f"m_value = eval_{func_name}(al, loc, return_type, args, diag);\n"
+        src += indent * 3 +     "if (diag.has_error()) {\n"
+        src += indent * 4 +         f"return nullptr;\n"
+        src += indent * 3 +     "}\n"
         src += indent * 2 + "return ASR::make_TypeInquiry_t(al, loc, "\
             f"static_cast<int64_t>(IntrinsicElementalFunctions::{func_name}), "\
             "ASRUtils::expr_type(m_args[0]), m_args[0], return_type, m_value);\n"
@@ -702,6 +705,9 @@ def add_create_func_return_src(func_name):
         for _i in range(no_of_args):
             src += indent * 3 + f"args_values.push_back(al, expr_value(m_args[{_i}]));\n"
         src += indent * 3 +     f"m_value = eval_{func_name}(al, loc, return_type, args_values, diag);\n"
+        src += indent * 3 +     "if (diag.has_error()) {\n"
+        src += indent * 4 +         f"return nullptr;\n"
+        src += indent * 3 +     "}\n"
         src += indent * 2 + "}\n"
         if "null" in intrinsic_funcs_ret_type.get(func_name, []):
             src += indent * 2 + f"return ASR::make_Expr_t(al, loc, ASRUtils::EXPR(ASR::make_IntrinsicElementalFunction_t(al, loc, static_cast<int64_t>(IntrinsicElementalFunctions::{func_name}), m_args.p, m_args.n, 0, return_type, m_value)));\n"
