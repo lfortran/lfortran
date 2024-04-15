@@ -24,6 +24,11 @@
 
 #ifdef HAVE_RUNTIME_STACKTRACE
 
+#ifdef COMPILE_TO_WASM
+    #undef HAVE_LFORTRAN_MACHO
+    #undef HAVE_LFORTRAN_LINK
+#endif
+
 #ifdef HAVE_LFORTRAN_LINK
 // For dl_iterate_phdr() functionality
 #  include <link.h>
@@ -40,10 +45,6 @@ extern int dl_iterate_phdr (int (*__callback) (struct dl_phdr_info *,
 #ifdef HAVE_LFORTRAN_UNWIND
 // For _Unwind_Backtrace() function
 #  include <unwind.h>
-#endif
-
-#ifdef COMPILE_TO_WASM
-    #undef HAVE_LFORTRAN_MACHO
 #endif
 
 #ifdef HAVE_LFORTRAN_MACHO
