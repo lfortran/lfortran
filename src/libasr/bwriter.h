@@ -225,8 +225,8 @@ public:
     }
 
     void write_void(void *p, int64_t m_n_data, ASR::ttype_t* m_type) {
-        int n_data = m_n_data / sizeof(void*);
         ASR::ttype_t* t = ASRUtils::type_get_past_array(m_type);
+        int n_data = m_n_data / ASRUtils::extract_kind_from_ttype_t(m_type);
 
         for (int64_t i = 0; i < n_data; i++) {
             write_pointer(p, t, i);
@@ -442,8 +442,9 @@ public:
     }
 
     void* read_void(int64_t m_n_data, ASR::ttype_t* m_type) {
-        int n_data = m_n_data / sizeof(void*);
         ASR::ttype_t* t = ASRUtils::type_get_past_array(m_type);
+        int n_data = m_n_data / ASRUtils::extract_kind_from_ttype_t(m_type);
+
         return read_pointer(n_data, t);
     }
 };
@@ -561,8 +562,9 @@ public:
     }
 
     void write_void(void *p, int64_t m_n_data, ASR::ttype_t* m_type) {
-        int n_data = m_n_data / sizeof(void*);
         ASR::ttype_t* t = ASRUtils::type_get_past_array(m_type);
+        int n_data = m_n_data / ASRUtils::extract_kind_from_ttype_t(m_type);
+
 
         for (int64_t i = 0; i < n_data; i++) {
             write_pointer(p, t, i);
@@ -796,8 +798,9 @@ public:
     }
 
     void* read_void(int64_t m_n_data, ASR::ttype_t* m_type) {
-        int n_data = m_n_data / sizeof(void*);
         ASR::ttype_t* t = ASRUtils::type_get_past_array(m_type);
+        int n_data = m_n_data / ASRUtils::extract_kind_from_ttype_t(m_type);
+
         return read_pointer(n_data, t);
     }
 };

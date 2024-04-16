@@ -2211,7 +2211,7 @@ namespace Pack {
                 mask_expr.push_back(al, mask);
             }
             if (all_args_evaluated(mask_expr)) {
-                int64_t n_data = mask_expr.n * sizeof(void *);
+                int64_t n_data = mask_expr.n * extract_kind_from_ttype_t(logical);
                 mask = EXPR(ASR::make_ArrayConstant_t(al, mask->base.loc, n_data,
                         TYPE(ASR::make_Array_t(al, mask->base.loc, logical, array_dims, array_rank, ASR::array_physical_typeType::FixedSizeArray)),
                         ASRUtils::set_ArrayConstant_data(mask_expr.p, mask_expr.n, logical),
