@@ -2094,7 +2094,7 @@ class SerializationVisitorVisitor(ASDLVisitor):
                 self.emit("self().visit_%s(*x.m_%s[i]);" % (mod_name, field.name), level+1)
                 self.emit("}", level)
             elif field.type == "void":
-                self.emit('self().write_void(x.m_data, x.m_n_data, x.m_type);', 2)
+                self.emit('self().write_void(x.m_data, x.m_n_data);', 2)
             elif field.type == "symbol_table":
                 assert not field.opt
                 assert not field.seq
@@ -2413,7 +2413,7 @@ class DeserializationVisitorVisitor(ASDLVisitor):
                             lines.append("    }")
                             lines.append("}")
                     elif f.type == "void":
-                        lines.append("void *m_%s = self().read_void(m_n_data, m_type);" % (f.name))
+                        lines.append("void *m_%s = self().read_void(m_n_data);" % (f.name))
                         args.append("m_%s" % (f.name))
                     else:
                         print(f.type)

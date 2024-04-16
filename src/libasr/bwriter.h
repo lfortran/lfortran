@@ -161,14 +161,10 @@ public:
         s.append(uintptr_to_string(i));
     }
 
-    void write_void(void *p, int64_t m_n_data, ASR::ttype_t* m_type) {
-        int kind = ASRUtils::extract_kind_from_ttype_t(m_type);
-        int n_data = m_n_data / kind;
-
+    void write_void(void *p, int64_t n_data) {
         for (int64_t i = 0; i < n_data; i++) {
-            void* p_i = (void*)((uintptr_t)p + i*kind);
-            uint64_t* p_i_64 = (uint64_t*)p_i;
-            write_int64(*p_i_64);
+            uint8_t* p_i8 = (uint8_t*)p;
+            write_int8(p_i8[i]);
         }
     }
 
@@ -236,18 +232,15 @@ public:
         return *dp;
     }
 
-    void* read_void(int64_t m_n_data, ASR::ttype_t* m_type) {
-        int kind = ASRUtils::extract_kind_from_ttype_t(m_type);
-        int n_data = m_n_data / kind;
-
-        void *p = new char[m_n_data];
+    void* read_void(int64_t n_data) {
+        void *p = new char[n_data];
 
         for (int64_t i = 0; i < n_data; i++) {
-            uint64_t x = read_int64();
-            uint64_t *ip = &x;
-            void *p_i = (void*)((uintptr_t)p + i*kind);
-            uint64_t *p_i_64 = (uint64_t*)p_i;
-            *p_i_64 = *ip;
+            uint8_t x = read_int8();
+            uint8_t *ip = &x;
+            void *p_i = (void*)((uintptr_t)p + i);
+            uint8_t *p_i_8 = (uint8_t*)p_i;
+            *p_i_8 = *ip;
         }
 
         return p;
@@ -304,14 +297,10 @@ public:
         s += " ";
     }
 
-    void write_void(void *p, int64_t m_n_data, ASR::ttype_t* m_type) {
-        int kind = ASRUtils::extract_kind_from_ttype_t(m_type);
-        int n_data = m_n_data / kind;
-
+    void write_void(void *p, int64_t n_data) {
         for (int64_t i = 0; i < n_data; i++) {
-            void* p_i = (void*)((uintptr_t)p + i*kind);
-            uint64_t* p_i_64 = (uint64_t*)p_i;
-            write_int64(*p_i_64);
+            uint8_t* p_i8 = (uint8_t*)p;
+            write_int8(p_i8[i]);
         }
     }
 
@@ -397,162 +386,15 @@ public:
         return r;
     }
 
-    void* read_pointer(int n_data, ASR::ttype_t* t) {
-        int kind = ASRUtils::extract_kind_from_ttype_t(t);
-        switch (t->type) {
-            case ASR::ttypeType::Integer : {
-                if (kind == 1) {
-                    int8_t *r = new int8_t[n_data];
-
-                    for (int64_t i = 0; i < n_data; i++) {
-                        r[i] = read_int8();
-                    }
-
-                    return (void*)r;
-                } else if (kind == 2) {
-                    int16_t *r = new int16_t[n_data];
-
-                    for (int64_t i = 0; i < n_data; i++) {
-                        r[i] = read_int16();
-                    }
-
-                    return (void*)r;
-                } else if (kind == 4) {
-                    int32_t *r = new int32_t[n_data];
-
-                    for (int64_t i = 0; i < n_data; i++) {
-                        r[i] = read_int32();
-                    }
-
-                    return (void*)r;
-                } else if (kind == 8) {
-                    int64_t *r = new int64_t[n_data];
-
-                    for (int64_t i = 0; i < n_data; i++) {
-                        r[i] = read_int64();
-                    }
-
-                    return (void*)r;
-                } else {
-                    throw LCompilersException("Unsupported kind for integer array constant.");
-                }
-            }
-            case ASR::ttypeType::Real: {
-                if (kind == 4) {
-                    float *r = new float[n_data];
-
-                    for (int64_t i = 0; i < n_data; i++) {
-                        r[i] = read_float64();
-                    }
-
-                    return (void*)r;
-                } else if (kind == 8) {
-                    double *r = new double[n_data];
-
-                    for (int64_t i = 0; i < n_data; i++) {
-                        r[i] = read_float64();
-                    }
-
-                    return (void*)r;
-                } else {
-                    throw LCompilersException("Unsupported kind for real array constant.");
-                }
-            }
-            case ASR::ttypeType::UnsignedInteger: {
-                if (kind == 1) {
-                    uint8_t *r = new uint8_t[n_data];
-
-                    for (int64_t i = 0; i < n_data; i++) {
-                        r[i] = read_int8();
-                    }
-
-                    return (void*)r;
-                } else if (kind == 2) {
-                    uint16_t *r = new uint16_t[n_data];
-
-                    for (int64_t i = 0; i < n_data; i++) {
-                        r[i] = read_int16();
-                    }
-
-                    return (void*)r;
-                } else if (kind == 4) {
-                    uint32_t *r = new uint32_t[n_data];
-
-                    for (int64_t i = 0; i < n_data; i++) {
-                        r[i] = read_int32();
-                    }
-
-                    return (void*)r;
-                } else if (kind == 8) {
-                    uint64_t *r = new uint64_t[n_data];
-
-                    for (int64_t i = 0; i < n_data; i++) {
-                        r[i] = read_int64();
-                    }
-
-                    return (void*)r;
-                } else {
-                    throw LCompilersException("Unsupported kind for unsigned integer array constant.");
-                }
-            }
-            case ASR::ttypeType::Complex: {
-                if ( kind == 4 ) {
-                    float *r = new float[2*n_data];
-
-                    for (int64_t i = 0; i < n_data; i++) {
-                        r[2*i] = read_float64();
-                        r[2*i+1] = read_float64();
-                    }
-
-                    return (void*)r;
-                } else if (kind == 8) {
-                    double *r = new double[2*n_data];
-
-                    for (int64_t i = 0; i < n_data; i++) {
-                        r[2*i] = read_float64();
-                        r[2*i+1] = read_float64();
-                    }
-
-                    return (void*)r;
-                } else {
-                    throw LCompilersException("Unsupported kind for complex array constant.");
-                }
-            }
-            case ASR::ttypeType::Logical: {
-                bool *r = new bool[n_data];
-
-                for (int64_t i = 0; i < n_data; i++) {
-                    r[i] = read_int8();
-                }
-
-                return (void*)r;
-            }
-            case ASR::ttypeType::Character: {
-                char *r = new char[n_data];
-
-                for (int64_t i = 0; i < n_data; i++) {
-                    r[i] = read_int8();
-                }
-
-                return (void*)r;
-            }
-            default:
-                throw LCompilersException("Unsupported type for array constant.");
-        }
-    }
-
-    void* read_void(int64_t m_n_data, ASR::ttype_t* m_type) {
-        int kind = ASRUtils::extract_kind_from_ttype_t(m_type);
-        int n_data = m_n_data / kind;
-
-        void *p = new char[m_n_data];
+    void* read_void(int64_t n_data) {
+        void *p = new char[n_data];
 
         for (int64_t i = 0; i < n_data; i++) {
-            uint64_t x = read_int64();
-            uint64_t *ip = &x;
-            void *p_i = (void*)((uintptr_t)p + i*kind);
-            uint64_t *p_i_64 = (uint64_t*)p_i;
-            *p_i_64 = *ip;
+            uint8_t x = read_int8();
+            uint8_t *ip = &x;
+            void *p_i = (void*)((uintptr_t)p + i);
+            uint8_t *p_i_8 = (uint8_t*)p_i;
+            *p_i_8 = *ip;
         }
 
         return p;
