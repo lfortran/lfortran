@@ -1150,15 +1150,12 @@ public:
         require(ASRUtils::is_array(x.m_type),
             "Type of ArrayConstant must be an array");
 
-        for (size_t i = 0; i < x.n_args; i++) {
-            require(!ASR::is_a<ASR::ArrayConstant_t>(*x.m_args[i]),
-                "ArrayConstant cannot have ArrayConstant as its elements");
-            ASR::expr_t* arg_value = ASRUtils::expr_value(x.m_args[i]);
-            require(
-                ASRUtils::is_value_constant(arg_value),
-                "ArrayConstant must have constant values");
+        int64_t n_data = ASRUtils::get_fixed_size_of_array(x.m_type) * ASRUtils::extract_kind_from_ttype_t(x.m_type);
+        if (ASRUtils::is_character(*x.m_type)) {
+            ASR::ttype_t* t = ASRUtils::type_get_past_array(x.m_type);
+            n_data = ASRUtils::get_fixed_size_of_array(x.m_type) * ASR::down_cast<ASR::Character_t>(t)->m_len;
         }
-
+        require(n_data == x.m_n_data, "ArrayConstant::m_n_data must match the byte size of the array");
         visit_ttype(*x.m_type);
     }
 

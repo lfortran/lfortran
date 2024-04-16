@@ -14,18 +14,7 @@
                                     []
                                     Local
                                     (ArrayConstant
-                                        [(LogicalConstant
-                                            .true.
-                                            (Logical 4)
-                                        )
-                                        (LogicalConstant
-                                            .true.
-                                            (Logical 4)
-                                        )
-                                        (LogicalConstant
-                                            .true.
-                                            (Logical 4)
-                                        )]
+                                        12
                                         (Array
                                             (Logical 4)
                                             [((IntegerConstant 1 (Integer 4))
@@ -35,18 +24,7 @@
                                         ColMajor
                                     )
                                     (ArrayConstant
-                                        [(LogicalConstant
-                                            .true.
-                                            (Logical 4)
-                                        )
-                                        (LogicalConstant
-                                            .true.
-                                            (Logical 4)
-                                        )
-                                        (LogicalConstant
-                                            .true.
-                                            (Logical 4)
-                                        )]
+                                        12
                                         (Array
                                             (Logical 4)
                                             [((IntegerConstant 1 (Integer 4))
@@ -76,14 +54,7 @@
                                     Local
                                     (ArrayAll
                                         (ArrayConstant
-                                            [(LogicalConstant
-                                                .true.
-                                                (Logical 4)
-                                            )
-                                            (LogicalConstant
-                                                .true.
-                                                (Logical 4)
-                                            )]
+                                            8
                                             (Array
                                                 (Logical 4)
                                                 [((IntegerConstant 1 (Integer 4))
@@ -118,14 +89,7 @@
                         (Var 2 l)
                         (ArrayAll
                             (ArrayConstant
-                                [(LogicalConstant
-                                    .true.
-                                    (Logical 4)
-                                )
-                                (LogicalConstant
-                                    .false.
-                                    (Logical 4)
-                                )]
+                                8
                                 (Array
                                     (Logical 4)
                                     [((IntegerConstant 1 (Integer 4))
@@ -147,10 +111,7 @@
                         (Var 2 l)
                         (ArrayAll
                             (ArrayConstant
-                                [(LogicalConstant
-                                    .false.
-                                    (Logical 4)
-                                )]
+                                4
                                 (Array
                                     (Logical 4)
                                     [((IntegerConstant 1 (Integer 4))
@@ -172,10 +133,7 @@
                         (Var 2 l)
                         (ArrayAll
                             (ArrayConstant
-                                [(LogicalConstant
-                                    .true.
-                                    (Logical 4)
-                                )]
+                                4
                                 (Array
                                     (Logical 4)
                                     [((IntegerConstant 1 (Integer 4))
@@ -207,14 +165,7 @@
                         (Var 2 l)
                         (ArrayAll
                             (ArrayConstant
-                                [(LogicalConstant
-                                    .false.
-                                    (Logical 4)
-                                )
-                                (LogicalConstant
-                                    .true.
-                                    (Logical 4)
-                                )]
+                                8
                                 (Array
                                     (Logical 4)
                                     [((IntegerConstant 1 (Integer 4))

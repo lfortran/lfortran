@@ -74,8 +74,7 @@
                                 FixedSizeArray
                             )
                             (ArrayConstant
-                                [(IntegerConstant 3 (Integer 4))
-                                (IntegerConstant 4 (Integer 4))]
+                                8
                                 (Array
                                     (Integer 4)
                                     [((IntegerConstant 1 (Integer 4))
@@ -100,7 +99,7 @@
                                     (IntegerConstant 0 (Integer 4)))]
                                     FixedSizeArray
                                 )
-                                (ArrayConstant
+                                (ArrayConstructor
                                     []
                                     (Array
                                         (Integer 4)
@@ -108,6 +107,7 @@
                                         (IntegerConstant 0 (Integer 4)))]
                                         FixedSizeArray
                                     )
+                                    ()
                                     ColMajor
                                 )
                             )

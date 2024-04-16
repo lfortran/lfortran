@@ -14,11 +14,7 @@
                                     []
                                     Local
                                     (ArrayConstant
-                                        [(IntegerConstant 4 (Integer 4))
-                                        (IntegerConstant 9 (Integer 4))
-                                        (IntegerConstant 6 (Integer 4))
-                                        (IntegerConstant 12 (Integer 4))
-                                        (IntegerConstant 13 (Integer 4))]
+                                        20
                                         (Array
                                             (Integer 4)
                                             [((IntegerConstant 1 (Integer 4))
@@ -28,11 +24,7 @@
                                         ColMajor
                                     )
                                     (ArrayConstant
-                                        [(IntegerConstant 4 (Integer 4))
-                                        (IntegerConstant 9 (Integer 4))
-                                        (IntegerConstant 6 (Integer 4))
-                                        (IntegerConstant 12 (Integer 4))
-                                        (IntegerConstant 13 (Integer 4))]
+                                        20
                                         (Array
                                             (Integer 4)
                                             [((IntegerConstant 1 (Integer 4))

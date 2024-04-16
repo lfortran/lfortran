@@ -222,7 +222,7 @@
                         (ArrayBroadcast
                             (IntegerConstant 4 (Integer 4))
                             (ArrayConstant
-                                [(IntegerConstant 5 (Integer 4))]
+                                4
                                 (Array
                                     (Integer 4)
                                     [((IntegerConstant 1 (Integer 4))
@@ -238,11 +238,7 @@
                                 FixedSizeArray
                             )
                             (ArrayConstant
-                                [(IntegerConstant 4 (Integer 4))
-                                (IntegerConstant 4 (Integer 4))
-                                (IntegerConstant 4 (Integer 4))
-                                (IntegerConstant 4 (Integer 4))
-                                (IntegerConstant 4 (Integer 4))]
+                                20
                                 (Array
                                     (Integer 4)
                                     [((IntegerConstant 1 (Integer 4))

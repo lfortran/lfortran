@@ -109,10 +109,7 @@
                                         ))
                                         ((ArrayPhysicalCast
                                             (ArrayConstant
-                                                [(StringConstant
-                                                    "*"
-                                                    (Character 1 1 ())
-                                                )]
+                                                1
                                                 (Array
                                                     (Character 1 1 ())
                                                     [((IntegerConstant 1 (Integer 4))

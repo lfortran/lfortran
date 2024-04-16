@@ -845,7 +845,7 @@ class ASRBuilder {
         for (auto &x: elements) m_eles.push_back(al, x);
 
         ASR::ttype_t *fixed_size_type = Array({(int64_t) elements.size()}, base_type);
-        ASR::expr_t *arr_constant = EXPR(ASR::make_ArrayConstant_t(al, loc,
+        ASR::expr_t *arr_constant = EXPR(ASRUtils::make_ArrayConstructor_t_util(al, loc,
             m_eles.p, m_eles.n, fixed_size_type, ASR::arraystorageType::ColMajor));
 
         if (cast2descriptor) {

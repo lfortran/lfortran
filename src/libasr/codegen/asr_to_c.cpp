@@ -1118,8 +1118,7 @@ R"(    // Initialise Numpy
             for (int i = n_dims - 1; i >= 0; i--) {
                 std::string start = "0", length = "0";
                 if( lower_bounds ) {
-                    visit_expr(*lower_bounds->m_args[i]);
-                    start = src;
+                    start = ASRUtils::fetch_ArrayConstant_value(lower_bounds, i);
                 }
                 if( m_dims[i].m_length ) {
                     this->visit_expr(*m_dims[i].m_length);
@@ -1296,9 +1295,8 @@ R"(    // Initialise Numpy
         // TODO: Support and test for multi-dimensional array constants
         headers.insert("stdarg.h");
         std::string array_const = "";
-        for( size_t i = 0; i < x.n_args; i++ ) {
-            visit_expr(*x.m_args[i]);
-            array_const += src + ", ";
+        for( size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(x.m_type); i++ ) {
+            array_const += ASRUtils::fetch_ArrayConstant_value(x, i) + ", ";
         }
         array_const.pop_back();
         array_const.pop_back();
@@ -1309,7 +1307,7 @@ R"(    // Initialise Numpy
         std::string return_type = c_ds_api->get_array_type(array_type_name, array_encoded_type_name,array_types_decls, false);
 
         src = c_utils_functions->get_array_constant(return_type, array_type_name, array_encoded_type_name) +
-                "(" + std::to_string(x.n_args) + ", " + array_const + ")";
+                "(" + std::to_string(ASRUtils::get_fixed_size_of_array(x.m_type)) + ", " + array_const + ")";
     }
 
     void visit_ArrayItem(const ASR::ArrayItem_t &x) {

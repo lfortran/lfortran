@@ -112,6 +112,9 @@ def convert_type(asdl_type, seq, opt, mod_name):
     elif asdl_type == "int":
         type_ = "int64_t"
         assert not seq
+    elif asdl_type == "void":
+        type_ = "void *"
+        assert not seq
     else:
         type_ = asdl_type + "_t"
         if asdl_type in products:
@@ -1489,7 +1492,7 @@ class PickleVisitorVisitor(ASDLVisitor):
         self.used = False
         for n, field in enumerate(fields):
             self.visitField(field, cons)
-            if n < len(fields) - 1:
+            if n < len(fields) - 1 and field.type != "void":
                 if name not in symbol:
                     self.emit(    'if(indent) s.append("\\n" + indented);', 2)
                     self.emit(    'else s.append(" ");', 2)
@@ -1690,6 +1693,9 @@ class PickleVisitorVisitor(ASDLVisitor):
                 else:
                     self.emit('visit_%sType(x.m_%s);' \
                             % (field.type, field.name), 2)
+            elif field.type == "void":
+                # just skip void fields
+                pass
             else:
                 self.emit('s.append("Unimplemented' + field.type + '");', 2)
 
@@ -2087,6 +2093,8 @@ class SerializationVisitorVisitor(ASDLVisitor):
                         field.name, level+1)
                 self.emit("self().visit_%s(*x.m_%s[i]);" % (mod_name, field.name), level+1)
                 self.emit("}", level)
+            elif field.type == "void":
+                self.emit('self().write_void(x.m_data, x.m_n_data);', 2)
             elif field.type == "symbol_table":
                 assert not field.opt
                 assert not field.seq
@@ -2139,6 +2147,8 @@ class SerializationVisitorVisitor(ASDLVisitor):
                 self.emit("}", 2)
             elif field.type == "float" and not field.seq and not field.opt:
                 self.emit('self().write_float64(x.m_%s);' % field.name, 2)
+            elif field.type == "void":
+                assert True
             elif field.type in self.data.simple_types:
                 if field.opt:
                     raise Exception("Unimplemented opt for field type: " + field.type);
@@ -2402,6 +2412,9 @@ class DeserializationVisitorVisitor(ASDLVisitor):
                             lines.append("        self().symtab_insert_symbol(*m_%s, name, sym);" % f.name)
                             lines.append("    }")
                             lines.append("}")
+                    elif f.type == "void":
+                        lines.append("void *m_%s = self().read_void(m_n_data);" % (f.name))
+                        args.append("m_%s" % (f.name))
                     else:
                         print(f.type)
                         assert False
