@@ -1581,7 +1581,8 @@ int link_executable(const std::vector<std::string> &infiles,
                 CC = std::string(emsdk_path) + "/upstream/emscripten/emcc";
                 options = " --target=wasm32-unknown-emscripten -sSTACK_SIZE=50mb -sINITIAL_MEMORY=256mb";
                 runtime_lib = "lfortran_runtime_wasm_emcc.o";
-                compile_cmd = CC + options + " -o " + outfile + " ";
+                compile_cmd = CC + options + " -o " + outfile +
+                     (compiler_options.wasm_html ? ".html " : " ");
             } else {
                 std::cerr << "Unsupported target: " << t << std::endl;
                 return 10;
@@ -1776,7 +1777,8 @@ int link_executable(const std::vector<std::string> &infiles,
         if (LCompilers::endswith(t, "wasi")) {
             run_cmd = "wasmtime " + outfile + " --dir=.";
         } else if (LCompilers::endswith(t, "emscripten")) {
-            run_cmd = "node " + outfile;
+            run_cmd = "node " + outfile +
+                (compiler_options.wasm_html ? ".js" : "");
         }
     } else {
         run_cmd = "./" + outfile;
@@ -2089,6 +2091,7 @@ int main_app(int argc, char *argv[]) {
     app.add_flag("--legacy-array-sections", compiler_options.legacy_array_sections, "Enables passing array items as sections if required");
     app.add_flag("--ignore-pragma", compiler_options.ignore_pragma, "Ignores all the pragmas");
     app.add_flag("--stack-arrays", compiler_options.stack_arrays, "Allocate memory for arrays on stack");
+    app.add_flag("--wasm-html", compiler_options.wasm_html, "Generate HTML file using emscripten for LLVM->WASM");
 
     /*
     * Subcommands:
