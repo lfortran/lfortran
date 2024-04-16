@@ -58,6 +58,7 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Modulo)
         INTRINSIC_NAME_CASE(BesselJ0)
         INTRINSIC_NAME_CASE(BesselJ1)
+        INTRINSIC_NAME_CASE(BesselJN)
         INTRINSIC_NAME_CASE(BesselY0)
         INTRINSIC_NAME_CASE(BesselY1)
         INTRINSIC_NAME_CASE(Mvbits)
@@ -246,6 +247,8 @@ namespace IntrinsicElementalFunctionRegistry {
             {&BesselJ0::instantiate_BesselJ0, &BesselJ0::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::BesselJ1),
             {&BesselJ1::instantiate_BesselJ1, &BesselJ1::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::BesselJN),
+            {&BesselJN::instantiate_BesselJN, &BesselJN::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::BesselY0),
             {&BesselY0::instantiate_BesselY0, &BesselY0::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::BesselY1),
@@ -541,6 +544,10 @@ namespace IntrinsicElementalFunctionRegistry {
             "modulo"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::BesselJ0),
             "bessel_j0"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::BesselJ1),
+            "bessel_j1"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::BesselJN),
+            "bessel_jn"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::BesselY0),
             "bessel_y0"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::BesselY1),
@@ -800,6 +807,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"modulo", {&Modulo::create_Modulo, &Modulo::eval_Modulo}},
                 {"bessel_j0", {&BesselJ0::create_BesselJ0, &BesselJ0::eval_BesselJ0}},
                 {"bessel_j1", {&BesselJ1::create_BesselJ1, &BesselJ1::eval_BesselJ1}},
+                {"bessel_jn", {&BesselJN::create_BesselJN, &BesselJN::eval_BesselJN}},
                 {"bessel_y0", {&BesselY0::create_BesselY0, &BesselY0::eval_BesselY0}},
                 {"bessel_y1", {&BesselY1::create_BesselY1, &BesselY1::eval_BesselY1}},
                 {"mvbits", {&Mvbits::create_Mvbits, &Mvbits::eval_Mvbits}},
