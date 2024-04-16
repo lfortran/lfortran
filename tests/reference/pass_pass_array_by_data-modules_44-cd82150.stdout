@@ -149,7 +149,7 @@
                                     [(Assignment
                                         (Var 8 littlefile)
                                         (ArrayConstant
-                                            2
+                                            160
                                             (Array
                                                 (Character 1 80 ())
                                                 [((IntegerConstant 1 (Integer 4))
