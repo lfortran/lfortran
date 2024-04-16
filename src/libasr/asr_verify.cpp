@@ -1221,6 +1221,18 @@ public:
         BaseWalkVisitor<VerifyVisitor>::visit_Allocate(x);
     }
 
+    void visit_DoConcurrentLoop(const DoConcurrentLoop_t &x) {
+        for ( size_t i = 0; i < x.n_local; i++ ) {
+            require(ASR::is_a<ASR::Var_t>(*x.m_local[i]),
+                "DoConcurrentLoop::m_local must be a Var");
+        }
+        for ( size_t i = 0; i < x.n_shared; i++ ) {
+            require(ASR::is_a<ASR::Var_t>(*x.m_shared[i]),
+                "DoConcurrentLoop::m_shared must be a Var");
+        }
+        BaseWalkVisitor<VerifyVisitor>::visit_DoConcurrentLoop(x);
+    }
+
 };
 
 

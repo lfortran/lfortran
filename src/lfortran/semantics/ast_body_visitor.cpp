@@ -3345,7 +3345,7 @@ public:
         head.m_end = end;
         head.m_increment = increment;
         head.loc = head.m_v->base.loc;
-        tmp = ASR::make_DoConcurrentLoop_t(al, x.base.base.loc, head, body.p,
+        tmp = ASR::make_DoConcurrentLoop_t(al, x.base.base.loc, head, nullptr, 0, nullptr, 0, body.p,
                 body.size());
     }
 
