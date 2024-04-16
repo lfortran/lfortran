@@ -5393,7 +5393,10 @@ inline ASR::asr_t* make_ArrayConstructor_t_util(Allocator &al, const Location &a
         void *data = set_ArrayConstant_data(a_args_values.p, curr_idx, a_type_->m_type);
         // data is always allocated to n_data bytes
         int64_t n_data = curr_idx * extract_kind_from_ttype_t(a_type_->m_type);
-        return ASR::make_ArrayConstant_t(al, a_loc, n_data, new_type, data, a_storage_format);
+        if (is_character(*a_type_->m_type)) {
+            n_data = curr_idx * ASR::down_cast<ASR::Character_t>(a_type_->m_type)->m_len;
+        }
+        return ASR::make_ArrayConstant_t(al, a_loc, n_data, data, new_type, a_storage_format);
     } else {
         return ASR::make_ArrayConstructor_t(al, a_loc, a_args, n_args, a_type, nullptr, a_storage_format);
     }
