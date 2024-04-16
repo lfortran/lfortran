@@ -61,6 +61,7 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(BesselJN)
         INTRINSIC_NAME_CASE(BesselY0)
         INTRINSIC_NAME_CASE(BesselY1)
+        INTRINSIC_NAME_CASE(BesselYN)
         INTRINSIC_NAME_CASE(Mvbits)
         INTRINSIC_NAME_CASE(Shiftr)
         INTRINSIC_NAME_CASE(Rshift)
@@ -253,6 +254,8 @@ namespace IntrinsicElementalFunctionRegistry {
             {&BesselY0::instantiate_BesselY0, &BesselY0::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::BesselY1),
             {&BesselY1::instantiate_BesselY1, &BesselY1::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::BesselYN),
+            {&BesselYN::instantiate_BesselYN, &BesselYN::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Mvbits),
             {&Mvbits::instantiate_Mvbits, &Mvbits::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Shiftr),
@@ -552,6 +555,8 @@ namespace IntrinsicElementalFunctionRegistry {
             "bessel_y0"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::BesselY1),
             "bessel_y1"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::BesselYN),
+            "bessel_yn"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Mvbits),
             "mvbits"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Shiftr),
@@ -810,6 +815,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"bessel_jn", {&BesselJN::create_BesselJN, &BesselJN::eval_BesselJN}},
                 {"bessel_y0", {&BesselY0::create_BesselY0, &BesselY0::eval_BesselY0}},
                 {"bessel_y1", {&BesselY1::create_BesselY1, &BesselY1::eval_BesselY1}},
+                {"bessel_yn", {&BesselYN::create_BesselYN, &BesselYN::eval_BesselYN}},
                 {"mvbits", {&Mvbits::create_Mvbits, &Mvbits::eval_Mvbits}},
                 {"shiftr", {&Shiftr::create_Shiftr, &Shiftr::eval_Shiftr}},
                 {"rshift", {&Rshift::create_Rshift, &Rshift::eval_Rshift}},

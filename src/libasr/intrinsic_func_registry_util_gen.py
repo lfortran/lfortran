@@ -74,6 +74,12 @@ intrinsic_funcs_args = {
             "ret_type_arg_idx": 0
         },
     ],
+    "BesselYN": [
+        {
+            "args": [("int", "real")],
+            "ret_type_arg_idx": 1
+        },
+    ],
     "Mvbits": [
         {
             "args": [("int", "int", "int", "int", "int")],
