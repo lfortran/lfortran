@@ -74,7 +74,7 @@
                                 FixedSizeArray
                             )
                             (ArrayConstant
-                                16
+                                8
                                 (Array
                                     (Integer 4)
                                     [((IntegerConstant 1 (Integer 4))

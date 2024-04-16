@@ -666,7 +666,7 @@
                                     [(Assignment
                                         (Var 7 a)
                                         (ArrayConstant
-                                            40
+                                            20
                                             (Array
                                                 (Integer 4)
                                                 [((IntegerConstant 1 (Integer 4))

@@ -50,7 +50,7 @@
                     [(Assignment
                         (Var 2 m)
                         (ArrayConstant
-                            48
+                            24
                             (Array
                                 (Integer 4)
                                 [((IntegerConstant 1 (Integer 4))

@@ -461,7 +461,7 @@
                         (Var 2 queries)
                         (Var 2 x)
                         (ArrayConstant
-                            16
+                            8
                             (Array
                                 (Integer 4)
                                 [((IntegerConstant 1 (Integer 4))

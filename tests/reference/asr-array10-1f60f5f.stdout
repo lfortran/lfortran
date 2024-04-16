@@ -14,7 +14,7 @@
                                     []
                                     Local
                                     (ArrayConstant
-                                        40
+                                        20
                                         (Array
                                             (Integer 4)
                                             [((IntegerConstant 1 (Integer 4))
@@ -24,7 +24,7 @@
                                         ColMajor
                                     )
                                     (ArrayConstant
-                                        40
+                                        20
                                         (Array
                                             (Integer 4)
                                             [((IntegerConstant 1 (Integer 4))

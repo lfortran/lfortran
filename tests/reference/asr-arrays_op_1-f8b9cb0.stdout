@@ -1063,7 +1063,7 @@
                                         )
                                     )
                                     (ArrayConstant
-                                        8
+                                        4
                                         (Array
                                             (Integer 4)
                                             [((IntegerConstant 1 (Integer 4))
@@ -1079,7 +1079,7 @@
                                         FixedSizeArray
                                     )
                                     (ArrayConstant
-                                        32
+                                        16
                                         (Array
                                             (Real 4)
                                             [((IntegerConstant 1 (Integer 4))

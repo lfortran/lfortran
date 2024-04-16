@@ -105,7 +105,7 @@
                                     (Assignment
                                         (Var 3 e)
                                         (ArrayConstant
-                                            32
+                                            16
                                             (Array
                                                 (Real 4)
                                                 [((IntegerConstant 1 (Integer 4))

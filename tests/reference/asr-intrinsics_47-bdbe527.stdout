@@ -14,7 +14,7 @@
                                     []
                                     Local
                                     (ArrayConstant
-                                        24
+                                        12
                                         (Array
                                             (Logical 4)
                                             [((IntegerConstant 1 (Integer 4))
@@ -24,7 +24,7 @@
                                         ColMajor
                                     )
                                     (ArrayConstant
-                                        24
+                                        12
                                         (Array
                                             (Logical 4)
                                             [((IntegerConstant 1 (Integer 4))
@@ -54,7 +54,7 @@
                                     Local
                                     (ArrayAll
                                         (ArrayConstant
-                                            16
+                                            8
                                             (Array
                                                 (Logical 4)
                                                 [((IntegerConstant 1 (Integer 4))
@@ -89,7 +89,7 @@
                         (Var 2 l)
                         (ArrayAll
                             (ArrayConstant
-                                16
+                                8
                                 (Array
                                     (Logical 4)
                                     [((IntegerConstant 1 (Integer 4))
@@ -111,7 +111,7 @@
                         (Var 2 l)
                         (ArrayAll
                             (ArrayConstant
-                                8
+                                4
                                 (Array
                                     (Logical 4)
                                     [((IntegerConstant 1 (Integer 4))
@@ -133,7 +133,7 @@
                         (Var 2 l)
                         (ArrayAll
                             (ArrayConstant
-                                8
+                                4
                                 (Array
                                     (Logical 4)
                                     [((IntegerConstant 1 (Integer 4))
@@ -165,7 +165,7 @@
                         (Var 2 l)
                         (ArrayAll
                             (ArrayConstant
-                                16
+                                8
                                 (Array
                                     (Logical 4)
                                     [((IntegerConstant 1 (Integer 4))

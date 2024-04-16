@@ -327,7 +327,7 @@
                                                     4 specified
                                                     ()
                                                     [((ArrayConstant
-                                                        40
+                                                        5
                                                         (Array
                                                             (Character 1 10 ())
                                                             [((IntegerConstant 1 (Integer 4))

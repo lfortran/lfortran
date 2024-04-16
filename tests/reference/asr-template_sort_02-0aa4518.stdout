@@ -3095,7 +3095,7 @@
                                     [(Assignment
                                         (Var 15 xi)
                                         (ArrayConstant
-                                            80
+                                            40
                                             (Array
                                                 (Integer 4)
                                                 [((IntegerConstant 1 (Integer 4))
@@ -3109,7 +3109,7 @@
                                     (Assignment
                                         (Var 15 xr)
                                         (ArrayConstant
-                                            80
+                                            40
                                             (Array
                                                 (Real 4)
                                                 [((IntegerConstant 1 (Integer 4))

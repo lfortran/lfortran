@@ -138,7 +138,7 @@
                     (Assignment
                         (Var 2 x)
                         (ArrayConstant
-                            64
+                            32
                             (Array
                                 (Integer 4)
                                 [((IntegerConstant 1 (Integer 4))
