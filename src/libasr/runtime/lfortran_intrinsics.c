@@ -1039,6 +1039,16 @@ LFORTRAN_API float _lfortran_sbessely1( float x ) {
     return y1(x);
 }
 
+// besselyn --------------------------------------------------------------------
+
+LFORTRAN_API double _lfortran_dbesselyn( int n, double x ) {
+    return yn(n, x);
+}
+
+LFORTRAN_API float _lfortran_sbesselyn( int n, float x ) {
+    return yn(n, x);
+}
+
 // sin -------------------------------------------------------------------------
 
 LFORTRAN_API float _lfortran_ssin(float x)
