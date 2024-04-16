@@ -1561,15 +1561,32 @@ int link_executable(const std::vector<std::string> &infiles,
             compile_cmd += runtime_library_dir + "\\lfortran_runtime_static.lib";
             run_cmd = outfile;
         } else if (LCompilers::startswith(t, "wasm")) {
-            char* wasi_sdk_path = std::getenv("WASI_SDK_PATH");
-            if (wasi_sdk_path == nullptr) {
-                std::cerr << "WASI_SDK_PATH must be defined to use llvm->wasm\n";
-                return 11;
+            std::string CC, options, runtime_lib;
+            if (LCompilers::endswith(t, "wasi")) {
+                char* wasi_sdk_path = std::getenv("WASI_SDK_PATH");
+                if (wasi_sdk_path == nullptr) {
+                    std::cerr << "WASI_SDK_PATH must be defined to use llvm->wasm\n";
+                    return 11;
+                }
+                CC = std::string(wasi_sdk_path) + "/bin/clang";
+                options = " --target=wasm32-wasi -nostartfiles -Wl,--entry=_start -Wl,-lwasi-emulated-process-clocks";
+                runtime_lib = "lfortran_runtime_wasm_wasi.o";
+                compile_cmd = CC + options + " -o " + outfile + " ";
+            } else if (LCompilers::endswith(t, "emscripten")) {
+                char* emsdk_path = std::getenv("EMSDK_PATH");
+                if (emsdk_path == nullptr) {
+                    std::cerr << "EMSDK_PATH must be defined to use llvm->wasm\n";
+                    return 11;
+                }
+                CC = std::string(emsdk_path) + "/upstream/emscripten/emcc";
+                options = " --target=wasm32-unknown-emscripten -sSTACK_SIZE=50mb -sINITIAL_MEMORY=256mb";
+                runtime_lib = "lfortran_runtime_wasm_emcc.o";
+                compile_cmd = CC + options + " -o " + outfile +
+                     (compiler_options.wasm_html ? ".html " : " ");
+            } else {
+                std::cerr << "Unsupported target: " << t << std::endl;
+                return 10;
             }
-            std::string CC = std::string(wasi_sdk_path) + "/bin/clang";
-            std::string options = " --target=wasm32-wasi -nostartfiles -Wl,--entry=_start -Wl,-lwasi-emulated-process-clocks";
-            std::string runtime_lib = "lfortran_runtime_wasm.o";
-            compile_cmd = CC + options + " -o " + outfile + " ";
             for (auto &s : infiles) {
                 compile_cmd += s + " ";
             }
@@ -1757,7 +1774,12 @@ int link_executable(const std::vector<std::string> &infiles,
     } else if (t == "x86_64-pc-windows-msvc") {
         run_cmd = outfile;
     } else if (LCompilers::startswith(t, "wasm")) {
-        run_cmd = "wasmtime " + outfile + " --dir=.";
+        if (LCompilers::endswith(t, "wasi")) {
+            run_cmd = "wasmtime " + outfile + " --dir=.";
+        } else if (LCompilers::endswith(t, "emscripten")) {
+            run_cmd = "node " + outfile +
+                (compiler_options.wasm_html ? ".js" : "");
+        }
     } else {
         run_cmd = "./" + outfile;
     }
@@ -2069,6 +2091,7 @@ int main_app(int argc, char *argv[]) {
     app.add_flag("--legacy-array-sections", compiler_options.legacy_array_sections, "Enables passing array items as sections if required");
     app.add_flag("--ignore-pragma", compiler_options.ignore_pragma, "Ignores all the pragmas");
     app.add_flag("--stack-arrays", compiler_options.stack_arrays, "Allocate memory for arrays on stack");
+    app.add_flag("--wasm-html", compiler_options.wasm_html, "Generate HTML file using emscripten for LLVM->WASM");
 
     /*
     * Subcommands:
