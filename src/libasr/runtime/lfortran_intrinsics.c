@@ -865,18 +865,6 @@ LFORTRAN_API void _lfortran_complex_pow_64(struct _lfortran_complex_64* a,
 
 }
 
-// sqrt ------------------------------------------------------------------------
-
-LFORTRAN_API float_complex_t _lfortran_csqrt(float_complex_t x)
-{
-    return csqrtf(x);
-}
-
-LFORTRAN_API double_complex_t _lfortran_zsqrt(double_complex_t x)
-{
-    return csqrt(x);
-}
-
 // aimag -----------------------------------------------------------------------
 
 LFORTRAN_API void _lfortran_complex_aimag_32(struct _lfortran_complex_32 *x, float *res)
@@ -1019,6 +1007,16 @@ LFORTRAN_API double _lfortran_dbesselj1( double x ) {
 
 LFORTRAN_API float _lfortran_sbesselj1( float x ) {
     return j1(x);
+}
+
+// besseljn --------------------------------------------------------------------
+
+LFORTRAN_API double _lfortran_dbesseljn( int n, double x ) {
+    return jn(n, x);
+}
+
+LFORTRAN_API float _lfortran_sbesseljn( int n, float x ) {
+    return jn(n, x);
 }
 
 // bessely0 --------------------------------------------------------------------
