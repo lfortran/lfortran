@@ -1773,7 +1773,11 @@ int link_executable(const std::vector<std::string> &infiles,
     } else if (t == "x86_64-pc-windows-msvc") {
         run_cmd = outfile;
     } else if (LCompilers::startswith(t, "wasm")) {
-        run_cmd = "wasmtime " + outfile + " --dir=.";
+        if (LCompilers::endswith(t, "wasi")) {
+            run_cmd = "wasmtime " + outfile + " --dir=.";
+        } else if (LCompilers::endswith(t, "emscripten")) {
+            run_cmd = "node " + outfile;
+        }
     } else {
         run_cmd = "./" + outfile;
     }
