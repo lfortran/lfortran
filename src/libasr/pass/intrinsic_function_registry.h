@@ -25,11 +25,12 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Cos)
         INTRINSIC_NAME_CASE(Tan)
         INTRINSIC_NAME_CASE(Asin)
+        INTRINSIC_NAME_CASE(Acos)
+        INTRINSIC_NAME_CASE(Atan)
+        INTRINSIC_NAME_CASE(Sind)
         INTRINSIC_NAME_CASE(Asind)
         INTRINSIC_NAME_CASE(Acosd)
         INTRINSIC_NAME_CASE(Atand)
-        INTRINSIC_NAME_CASE(Acos)
-        INTRINSIC_NAME_CASE(Atan)
         INTRINSIC_NAME_CASE(Sinh)
         INTRINSIC_NAME_CASE(Cosh)
         INTRINSIC_NAME_CASE(Tanh)
@@ -236,6 +237,8 @@ namespace IntrinsicElementalFunctionRegistry {
             {&Mod::instantiate_Mod, &Mod::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Asind),
             {&Asind::instantiate_Asind, &Asind::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Sind),
+            {&Sind::instantiate_Sind, &Sind::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Acosd),
             {&Acosd::instantiate_Acosd, &Acosd::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Atand),
@@ -537,6 +540,8 @@ namespace IntrinsicElementalFunctionRegistry {
             "mod"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Asind),
             "asind"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Sind),
+            "sind"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Acosd),
             "acosd"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Atand),
@@ -806,6 +811,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"floordiv", {&FloorDiv::create_FloorDiv, &FloorDiv::eval_FloorDiv}},
                 {"mod", {&Mod::create_Mod, &Mod::eval_Mod}},
                 {"asind", {&Asind::create_Asind, &Asind::eval_Asind}},
+                {"sind", {&Sind::create_Sind, &Sind::eval_Sind}},
                 {"acosd", {&Acosd::create_Acosd, &Acosd::eval_Acosd}},
                 {"atand", {&Atand::create_Atand, &Atand::eval_Atand}},
                 {"trailz", {&Trailz::create_Trailz, &Trailz::eval_Trailz}},

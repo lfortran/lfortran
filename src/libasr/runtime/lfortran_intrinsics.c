@@ -1073,6 +1073,18 @@ LFORTRAN_API double _lfortran_dsin(double x)
     return sin(x);
 }
 
+LFORTRAN_API float _lfortran_ssind(float x)
+{
+    float radians = (x * PI) / 180.0;
+    return sin(radians);
+}
+
+LFORTRAN_API double _lfortran_dsind(double x)
+{
+    double radians = (x * PI) / 180.0;
+    return sin(radians);
+}
+
 LFORTRAN_API float_complex_t _lfortran_csin(float_complex_t x)
 {
     return csinf(x);

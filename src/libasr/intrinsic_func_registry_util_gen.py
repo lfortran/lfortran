@@ -241,6 +241,12 @@ intrinsic_funcs_args = {
             "kind_arg": True
         }
     ],
+    "Sind": [
+        {
+            "args": [("real",)],
+            "ret_type_arg_idx": 0
+        }
+    ],
     "Asind": [
         {
             "args": [("real",)],
