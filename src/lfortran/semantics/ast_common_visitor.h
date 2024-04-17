@@ -5329,7 +5329,7 @@ public:
         }
     }
 
-    void check_coarray_and_atomic_intrinsics(std::string intrinsic_name, const Location& loc){
+    void is_coarray_or_atomic(std::string intrinsic_name, const Location& loc){
         std::vector<std::string> coarray_intrinsics, atomic_intrinsics;
         coarray_intrinsics = {"co_broadcast", "co_max", "co_min", "co_reduce", "co_sum", "lcobound", "ucobound", "failed_images", "image_status", "get_team", 
         "image_index", "num_images", "stopped_images", "team_number", "this_image", "coshape", "corank", "atomic_add", "atomic_and", "atomic_cas", 
@@ -5843,7 +5843,7 @@ public:
             var_name = handle_templated(x.m_func, ASR::is_a<ASR::Template_t>(*ASRUtils::get_asr_owner(owner_sym)),
                 x.m_temp_args, x.n_temp_args, x.base.base.loc);
         }
-        check_coarray_and_atomic_intrinsics(var_name, x.base.base.loc);
+        is_coarray_or_atomic(var_name, x.base.base.loc);
         SymbolTable *scope = current_scope;
         ASR::symbol_t *v = nullptr;
         ASR::expr_t *v_expr = nullptr;
