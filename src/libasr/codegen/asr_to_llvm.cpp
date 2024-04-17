@@ -6929,7 +6929,7 @@ public:
             arg = builder->CreateAlloca(complex_type_4,
                 nullptr);
         } else {
-             runtime_func_name = "_lfortran_complex_aimag_64";
+            runtime_func_name = "_lfortran_complex_aimag_64";
             ret_type = llvm::Type::getDoubleTy(context);
             complex_type = complex_type_8;
             arg = builder->CreateAlloca(complex_type_8,

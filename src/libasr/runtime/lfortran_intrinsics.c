@@ -1021,6 +1021,16 @@ LFORTRAN_API float _lfortran_sbesselj1( float x ) {
     return j1(x);
 }
 
+// besseljn --------------------------------------------------------------------
+
+LFORTRAN_API double _lfortran_dbesseljn( int n, double x ) {
+    return jn(n, x);
+}
+
+LFORTRAN_API float _lfortran_sbesseljn( int n, float x ) {
+    return jn(n, x);
+}
+
 // bessely0 --------------------------------------------------------------------
 
 LFORTRAN_API double _lfortran_dbessely0( double x ) {
@@ -1039,6 +1049,16 @@ LFORTRAN_API double _lfortran_dbessely1( double x ) {
 
 LFORTRAN_API float _lfortran_sbessely1( float x ) {
     return y1(x);
+}
+
+// besselyn --------------------------------------------------------------------
+
+LFORTRAN_API double _lfortran_dbesselyn( int n, double x ) {
+    return yn(n, x);
+}
+
+LFORTRAN_API float _lfortran_sbesselyn( int n, float x ) {
+    return yn(n, x);
 }
 
 // sin -------------------------------------------------------------------------
