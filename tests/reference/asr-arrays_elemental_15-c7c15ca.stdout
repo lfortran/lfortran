@@ -194,6 +194,7 @@
                                                 )
                                                 (ArrayConstant
                                                     8
+                                                    [256, 64]
                                                     (Array
                                                         (Integer 4)
                                                         [((IntegerConstant 1 (Integer 4))
@@ -641,6 +642,7 @@
                                                 )
                                                 (ArrayConstant
                                                     12
+                                                    [256, 64, 16]
                                                     (Array
                                                         (Integer 4)
                                                         [((IntegerConstant 1 (Integer 4))
@@ -1065,6 +1067,7 @@
                                                     )
                                                     (ArrayConstant
                                                         16
+                                                        [64, 32, 84]
                                                         (Array
                                                             (Integer 4)
                                                             [((IntegerConstant 1 (Integer 4))
@@ -1151,6 +1154,7 @@
                                                     )
                                                     (ArrayConstant
                                                         16
+                                                        [64, 32, 84]
                                                         (Array
                                                             (Integer 4)
                                                             [((IntegerConstant 1 (Integer 4))

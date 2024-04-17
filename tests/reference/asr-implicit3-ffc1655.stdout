@@ -199,6 +199,7 @@
                         (Var 2 x)
                         (ArrayConstant
                             20
+                            [1, 2, 34, 5]
                             (Array
                                 (Integer 4)
                                 [((IntegerConstant 1 (Integer 4))

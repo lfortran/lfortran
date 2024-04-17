@@ -3096,6 +3096,7 @@
                                         (Var 15 xi)
                                         (ArrayConstant
                                             40
+                                            [2, 4, 1, ...., 3, 42, 2]
                                             (Array
                                                 (Integer 4)
                                                 [((IntegerConstant 1 (Integer 4))
@@ -3110,6 +3111,7 @@
                                         (Var 15 xr)
                                         (ArrayConstant
                                             40
+                                            [2.000000, 4.000000, 1.000000, ...., 3.000000, 42.000000, 2.000000]
                                             (Array
                                                 (Real 4)
                                                 [((IntegerConstant 1 (Integer 4))

@@ -309,6 +309,7 @@
                                         (Var 4 w_cast)
                                         (ArrayConstant
                                             4
+                                            [1000]
                                             (Array
                                                 (Integer 4)
                                                 [((IntegerConstant 1 (Integer 4))

@@ -1033,6 +1033,7 @@
                                             (IntegerConstant 2 (Integer 4))
                                             (ArrayConstant
                                                 4
+                                                [3]
                                                 (Array
                                                     (Integer 4)
                                                     [((IntegerConstant 1 (Integer 4))
@@ -1049,6 +1050,7 @@
                                             )
                                             (ArrayConstant
                                                 12
+                                                [2, 2, 2]
                                                 (Array
                                                     (Integer 4)
                                                     [((IntegerConstant 1 (Integer 4))
@@ -1074,6 +1076,7 @@
                                             )
                                             (ArrayConstant
                                                 4
+                                                [3]
                                                 (Array
                                                     (Integer 4)
                                                     [((IntegerConstant 1 (Integer 4))
@@ -1090,6 +1093,7 @@
                                             )
                                             (ArrayConstant
                                                 12
+                                                [0.000000, 0.000000, 0.000000]
                                                 (Array
                                                     (Real 4)
                                                     [((IntegerConstant 1 (Integer 4))
