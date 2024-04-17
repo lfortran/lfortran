@@ -103,12 +103,12 @@ public:
             }
         }
         if (size > 6) {
-            s.append(", ...., ");
+            s.append(", ....");
             curr = size - 3;
         }
         for (int i = 0; i < 3; i++) {
             if (curr < size) {
-                if (i > 0) s.append(", ");
+                s.append(", ");
                 s.append(ASRUtils::fetch_ArrayConstant_value(x, curr));
                 curr++;
             }
