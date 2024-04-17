@@ -5329,6 +5329,16 @@ public:
         }
     }
 
+    void check_coarray_and_atomic_intrinsics(std::string intrinsic_name, const Location& loc){
+        std::vector<std::string> coarray_intrinsics, atomic_intrinsics;
+        coarray_intrinsics = {"co_broadcast", "co_max", "co_min", "co_reduce", "co_sum", "lcobound", "ucobound", "failed_images", "image_status", "get_team", 
+        "image_index", "num_images", "stopped_images", "team_number", "this_image", "coshape", "corank", "atomic_add", "atomic_and", "atomic_cas", 
+        "atomic_define", "atomic_fetch_add", "atomic_fetch_and", "atomic_fetch_or", "atomic_fetch_xor", "atomic_or", "atomic_ref", "atomic_xor"};
+        if (std::find(coarray_intrinsics.begin(), coarray_intrinsics.end(), intrinsic_name) != coarray_intrinsics.end()) {
+            throw SemanticError("Coarrays are not supported yet", loc);
+        }
+    }
+
     /**
      * Broadcast `create_func` to elements of `args`, out of which atleast
      * one element is an array (i.e not a scalar)
@@ -5833,6 +5843,7 @@ public:
             var_name = handle_templated(x.m_func, ASR::is_a<ASR::Template_t>(*ASRUtils::get_asr_owner(owner_sym)),
                 x.m_temp_args, x.n_temp_args, x.base.base.loc);
         }
+        check_coarray_and_atomic_intrinsics(var_name, x.base.base.loc);
         SymbolTable *scope = current_scope;
         ASR::symbol_t *v = nullptr;
         ASR::expr_t *v_expr = nullptr;
