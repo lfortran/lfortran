@@ -893,8 +893,8 @@ namespace Radix {
 namespace Scale {
     static ASR::expr_t *eval_Scale(Allocator &al, const Location &loc,
             ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
-        double value_X = ASR::down_cast<ASR::RealConstant_t>(expr_value(args[0]))->m_r;
-        int64_t value_I = ASR::down_cast<ASR::IntegerConstant_t>(expr_value(args[1]))->m_n;
+        double value_X = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
+        int64_t value_I = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
         double result = value_X * std::pow(2, value_I);
         ASRUtils::ASRBuilder b(al, loc);
         return b.f(result, arg_type);
@@ -923,8 +923,8 @@ namespace Scale {
 namespace Dprod {
     static ASR::expr_t *eval_Dprod(Allocator &al, const Location &loc,
             ASR::ttype_t* return_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
-        double value_X = ASR::down_cast<ASR::RealConstant_t>(expr_value(args[0]))->m_r;
-        double value_Y = ASR::down_cast<ASR::RealConstant_t>(expr_value(args[1]))->m_r;
+        double value_X = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
+        double value_Y = ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r;
         double result = value_X * value_Y;
         ASRUtils::ASRBuilder b(al, loc);
         return b.f(result, return_type);
@@ -1818,7 +1818,7 @@ namespace Aint {
 
     static ASR::expr_t *eval_Aint(Allocator &al, const Location &loc,
             ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
-        double rv = ASR::down_cast<ASR::RealConstant_t>(expr_value(args[0]))->m_r;
+        double rv = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
         ASRUtils::ASRBuilder b(al, loc);
         return b.f(std::trunc(rv), arg_type);
     }
@@ -1846,7 +1846,7 @@ namespace Anint {
 
     static ASR::expr_t *eval_Anint(Allocator &al, const Location &loc,
             ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
-        double rv = ASR::down_cast<ASR::RealConstant_t>(expr_value(args[0]))->m_r;
+        double rv = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
         ASRUtils::ASRBuilder b(al, loc);
         return b.f(std::round(rv), arg_type);
     }
@@ -1884,7 +1884,7 @@ namespace Nint {
 
     static ASR::expr_t *eval_Nint(Allocator &al, const Location &loc,
             ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
-        double rv = ASR::down_cast<ASR::RealConstant_t>(expr_value(args[0]))->m_r;
+        double rv = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
         double near_integer = std::round(rv);
         int64_t result = int64_t(near_integer);
         return make_ConstantWithType(make_IntegerConstant_t, result, arg_type, loc);
@@ -2081,7 +2081,7 @@ namespace Sqrt {
             ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         ASRUtils::ASRBuilder b(al, loc);
         if (is_real(*arg_type)) {
-            double val = ASR::down_cast<ASR::RealConstant_t>(expr_value(args[0]))->m_r;
+            double val = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
             if (val < 0.0) {
                 append_error(diag, "Argument of `sqrt` has a negative argument", loc);
                 return nullptr;
@@ -2310,7 +2310,7 @@ namespace Sngl {
     static ASR::expr_t *eval_Sngl(Allocator &al, const Location &loc,
             ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         ASRUtils::ASRBuilder b(al, loc);
-        double val = ASR::down_cast<ASR::RealConstant_t>(expr_value(args[0]))->m_r;
+        double val = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
         return b.f(val, arg_type);
     }
 
@@ -2334,7 +2334,7 @@ namespace Ifix {
 
     static ASR::expr_t *eval_Ifix(Allocator &al, const Location &loc,
             ASR::ttype_t* /*arg_type*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
-        int val = ASR::down_cast<ASR::RealConstant_t>(expr_value(args[0]))->m_r;
+        int val = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
         return make_ConstantWithType(make_IntegerConstant_t, val, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), loc);
     }
 
@@ -2358,7 +2358,7 @@ namespace Idint {
 
     static ASR::expr_t *eval_Idint(Allocator &al, const Location &loc,
             ASR::ttype_t* /*arg_type*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
-        int val = ASR::down_cast<ASR::RealConstant_t>(expr_value(args[0]))->m_r;
+        int val = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
         return make_ConstantWithType(make_IntegerConstant_t, val, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), loc);
     }
 
