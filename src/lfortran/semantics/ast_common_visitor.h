@@ -3625,6 +3625,17 @@ public:
         }
     }
 
+    void check_if_type_spec_has_asterisk(const ASR::ttype_t* type) {
+        if (type && ASR::is_a<ASR::Character_t>(*type)) {
+            ASR::Character_t* char_type_spec = ASR::down_cast<ASR::Character_t>(type);
+            // e.g. [character(len=*) :: "a", "apple"], this isn't allowed
+            if (char_type_spec->m_len == -1) {
+                throw SemanticError("Type-spec cannot contain an asterisk for a type "
+                    "parameter", char_type_spec->base.base.loc);
+            }
+        }
+    }
+
     void visit_ArrayInitializer(const AST::ArrayInitializer_t &x) {
         Vec<ASR::expr_t*> body;
         body.reserve(al, x.n_args);
@@ -3647,6 +3658,8 @@ public:
         // otherwise each element in the array-constructor is cast using "ImplicitCastRules"
         // (e.g. "[real :: 1, 2, 3, 4]")
         bool is_type_spec_ommitted { type == nullptr };
+        check_if_type_spec_has_asterisk(type);
+
         bool implied_do_loops_present = false;
         ASR::ttype_t* extracted_type { type ? ASRUtils::extract_type(type) : nullptr };
         for (size_t i=0; i<x.n_args; i++) {
@@ -3668,6 +3681,13 @@ public:
                     throw SemanticError("Element in `" + ASRUtils::type_to_str_with_type(extracted_type) +
                         "` array constructor is `" + ASRUtils::type_to_str_with_type(extracted_new_type) + "`",
                         expr->base.loc);
+                } else if (ASR::is_a<ASR::Character_t>(*extracted_type)) {
+                    int64_t l1 = ASR::down_cast<ASR::Character_t>(extracted_type)->m_len;
+                    int64_t l2 = ASR::down_cast<ASR::Character_t>(extracted_new_type)->m_len;
+                    if (l1 != l2) {
+                        throw SemanticError("Different `character` lengths " + std::to_string(l1)
+                            + " and " + std::to_string(l2) + " in array constructor", expr->base.loc);
+                    }
                 }
             } else if (!ASRUtils::check_equal_type(expr_type, type)) {
                 ImplicitCastRules::set_converted_value(al, expr->base.loc,
