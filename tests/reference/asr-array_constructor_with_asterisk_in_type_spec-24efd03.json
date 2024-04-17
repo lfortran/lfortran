@@ -1,0 +1,13 @@
+{
+    "basename": "asr-array_constructor_with_asterisk_in_type_spec-24efd03",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/array_constructor_with_asterisk_in_type_spec.f90",
+    "infile_hash": "32cd88de1530bbe18208a1999a4a3eb975c5e679d7a5f417966d2507",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-array_constructor_with_asterisk_in_type_spec-24efd03.stderr",
+    "stderr_hash": "a54c91b46642660539c1dc2e3abfad83c7c1b128c15b0bbcbec31518",
+    "returncode": 2
+}

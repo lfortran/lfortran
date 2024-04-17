@@ -1,0 +1,13 @@
+{
+    "basename": "asr-array_constructor_with_different_char_lengths-5ba8b29",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/array_constructor_with_different_char_lengths.f90",
+    "infile_hash": "61dc3cb74e4af0fdc0ee167225903f7143b7f920c38c4f7c5c4bfc3a",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-array_constructor_with_different_char_lengths-5ba8b29.stderr",
+    "stderr_hash": "646eae0030ddaf3e0ef573ad8a04e67a143812eae6c2ff7e3a9e363c",
+    "returncode": 2
+}
