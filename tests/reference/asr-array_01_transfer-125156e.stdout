@@ -51,7 +51,7 @@
                         (Var 2 m)
                         (ArrayConstant
                             24
-                            [1, 0, 00, 5, 0]
+                            [1, 0, 0, 0, 5, 0]
                             (Array
                                 (Integer 4)
                                 [((IntegerConstant 1 (Integer 4))

@@ -106,7 +106,7 @@
                                         (Var 3 e)
                                         (ArrayConstant
                                             16
-                                            [1.000000, 2.000000, 3.0000004.000000]
+                                            [1.000000, 2.000000, 3.000000, 4.000000]
                                             (Array
                                                 (Real 4)
                                                 [((IntegerConstant 1 (Integer 4))

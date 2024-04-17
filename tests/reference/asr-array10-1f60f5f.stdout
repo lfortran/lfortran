@@ -15,7 +15,7 @@
                                     Local
                                     (ArrayConstant
                                         20
-                                        [4, 9, 612, 13]
+                                        [4, 9, 6, 12, 13]
                                         (Array
                                             (Integer 4)
                                             [((IntegerConstant 1 (Integer 4))
@@ -26,7 +26,7 @@
                                     )
                                     (ArrayConstant
                                         20
-                                        [4, 9, 612, 13]
+                                        [4, 9, 6, 12, 13]
                                         (Array
                                             (Integer 4)
                                             [((IntegerConstant 1 (Integer 4))

@@ -115,7 +115,7 @@
                                             )
                                             (ArrayConstant
                                                 24
-                                                [1, 1, 11, 1, 1]
+                                                [1, 1, 1, 1, 1, 1]
                                                 (Array
                                                     (Integer 4)
                                                     [((IntegerConstant 1 (Integer 4))
@@ -150,7 +150,7 @@
                                             )
                                             (ArrayConstant
                                                 24
-                                                [1, 1, 11, 1, 1]
+                                                [1, 1, 1, 1, 1, 1]
                                                 (Array
                                                     (Integer 4)
                                                     [((IntegerConstant 1 (Integer 4))

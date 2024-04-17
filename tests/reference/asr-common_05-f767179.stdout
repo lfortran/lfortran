@@ -230,7 +230,7 @@
                             )
                             (ArrayConstant
                                 20
-                                [3, 3, 33, 3]
+                                [3, 3, 3, 3, 3]
                                 (Array
                                     (Integer 4)
                                     [((IntegerConstant 1 (Integer 4))
