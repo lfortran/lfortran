@@ -5064,10 +5064,11 @@ inline std::string fetch_ArrayConstant_value(void *data, ASR::ttype_t* type, int
             int len = char_type->m_len;
             char* data_char = (char*)data + i*len;
             // take first len characters
-            char* new_char = new char[len];
+            char* new_char = new char[len + 1];
             for (int j = 0; j < len; j++) {
                 new_char[j] = data_char[j];
             }
+            new_char[len] = '\0';
             return '\"' + std::string(new_char) + '\"';
         }
         default:
@@ -5302,13 +5303,14 @@ inline void* set_ArrayConstant_data(ASR::expr_t** a_args, size_t n_args, ASR::tt
         }
         case ASR::ttypeType::Character: {
             int len = ASR::down_cast<ASR::Character_t>(a_type)->m_len;
-            char* data = new char[len*n_args];
+            char* data = new char[len*n_args + 1];
             for (size_t i = 0; i < n_args; i++) {
                 char* value = ASR::down_cast<ASR::StringConstant_t>(ASRUtils::expr_value(a_args[i]))->m_s;
                 for (int j = 0; j < len; j++) {
                     data[i*len + j] = value[j];
                 }
             }
+            data[len*n_args] = '\0';
             return (void*) data;
         }
         default: {
