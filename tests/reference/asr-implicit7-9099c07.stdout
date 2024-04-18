@@ -139,6 +139,7 @@
                         (Var 2 x)
                         (ArrayConstant
                             32
+                            [1, 2, 3, ...., 6, 7, 8]
                             (Array
                                 (Integer 4)
                                 [((IntegerConstant 1 (Integer 4))

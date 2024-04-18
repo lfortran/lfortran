@@ -105,6 +105,7 @@
                             (ArrayPhysicalCast
                                 (ArrayConstant
                                     8
+                                    [3, 5]
                                     (Array
                                         (Integer 4)
                                         [((IntegerConstant 1 (Integer 4))

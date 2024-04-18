@@ -35,6 +35,7 @@
                         (Var 2 m)
                         (ArrayConstant
                             28
+                            [1, 0, 0, ...., 5, 0, 0]
                             (Array
                                 (Integer 4)
                                 [((IntegerConstant 1 (Integer 4))
@@ -50,6 +51,7 @@
                             (Var 2 m)
                             (ArrayConstant
                                 4
+                                [1.000000]
                                 (Array
                                     (Real 4)
                                     [((IntegerConstant 1 (Integer 4))

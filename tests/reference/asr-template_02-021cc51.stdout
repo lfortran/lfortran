@@ -907,6 +907,7 @@
                             [((ArrayPhysicalCast
                                 (ArrayConstant
                                     28
+                                    [3, 3, 6, ...., 2, 2, 1]
                                     (Array
                                         (Integer 4)
                                         [((IntegerConstant 1 (Integer 4))
@@ -946,6 +947,7 @@
                             [((ArrayPhysicalCast
                                 (ArrayConstant
                                     7
+                                    ["a", "a", "b", ...., "p", "p", "o"]
                                     (Array
                                         (Character 1 1 ())
                                         [((IntegerConstant 1 (Integer 4))
