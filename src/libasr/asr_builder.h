@@ -1064,6 +1064,22 @@ class ASRBuilder {
         return s;
     }
 
+    ASR::expr_t* math_helper_func1(std::string new_name, SymbolTable *scope, Vec<ASR::call_arg_t>& new_args) {
+        ASR::symbol_t *s = scope->get_symbol(new_name);
+        ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(s);
+        return this->Call(s, new_args, expr_type(f->m_return_var));
+    }
+
+    ASR::expr_t* math_helper_func2(ASR::expr_t* result, ASRUtils::ASRBuilder b, SymbolTable *fn_symtab, SetChar dep, Vec<ASR::stmt_t*> body, Vec<ASR::expr_t*> args, std::string c_func_name, ASR::ttype_t* return_type, int n_args, Vec<ASR::ttype_t*>& arg_types) {
+    
+        ASR::symbol_t *s = b.create_c_func(c_func_name, fn_symtab, return_type, n_args, arg_types);
+        fn_symtab->add_symbol(c_func_name, s);
+        dep.push_back(al, s2c(al, c_func_name));
+        body.push_back(al, b.Assignment(result, b.Call(s, args, return_type)));
+        
+
+        return result;
+    }
 };
 
 } // namespace LCompilers::ASRUtils
