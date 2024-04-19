@@ -2060,6 +2060,7 @@ int main_app(int argc, char *argv[]) {
     app.add_flag("--static", static_link, "Create a static executable");
     app.add_flag("--shared", shared_link, "Create a shared executable");
     app.add_flag("--no-warnings", compiler_options.no_warnings, "Turn off all warnings");
+    app.add_flag("--enable-style", compiler_options.enable_style, "Turn on style suggestions");
     app.add_flag("--no-error-banner", compiler_options.no_error_banner, "Turn off error banner");
     app.add_option("--error-format", compiler_options.error_format, "Control how errors are produced (human, short)")->capture_default_str();
     app.add_option("--backend", arg_backend, "Select a backend (llvm, c, cpp, x86, wasm, fortran)")->capture_default_str();

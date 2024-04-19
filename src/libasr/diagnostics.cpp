@@ -65,12 +65,15 @@ std::string Diagnostics::render(LocationManager &lm,
         const CompilerOptions &compiler_options) {
     std::string out;
     for (auto &d : this->diagnostics) {
-        if (compiler_options.no_warnings && d.level != Level::Error) {
-            continue;
-        }
         if (compiler_options.error_format == "human") {
-            out += render_diagnostic_human(d, lm, compiler_options.use_colors,
+            if (!compiler_options.enable_style && d.level == Level::Style) {
+                out += "";
+            } else if (compiler_options.no_warnings && d.level == Level::Warning) {
+                out += "";
+            } else {
+                out += render_diagnostic_human(d, lm, compiler_options.use_colors,
                 compiler_options.show_stacktrace);
+            }
             if (&d != &this->diagnostics.back()) out += "\n";
         } else if (compiler_options.error_format == "short") {
             out += render_diagnostic_short(d, lm);
@@ -80,7 +83,7 @@ std::string Diagnostics::render(LocationManager &lm,
     }
     if (compiler_options.error_format == "human") {
         if (this->diagnostics.size() > 0 && !compiler_options.no_error_banner) {
-            if (!compiler_options.no_warnings || has_error()) {
+            if (compiler_options.enable_style || has_error()) {
                 std::string bold  = ColorsANSI::BOLD;
                 std::string reset = ColorsANSI::RESET;
                 if (!compiler_options.use_colors) {

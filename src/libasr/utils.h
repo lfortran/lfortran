@@ -83,6 +83,7 @@ struct CompilerOptions {
     bool openmp = false;
     bool generate_object_code = false;
     bool no_warnings = false;
+    bool enable_style = false;
     bool no_error_banner = false;
     bool enable_bounds_checking = false;
     std::string error_format = "human";
