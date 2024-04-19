@@ -7,7 +7,7 @@
     "outfile_hash": null,
     "stdout": "ast_f90-associate_01-aa0fe46.stdout",
     "stdout_hash": "50cf8571646cf55d99209c64d3395872288f6f03b1ade8b0546581ea",
-    "stderr": "ast_f90-associate_01-aa0fe46.stderr",
-    "stderr_hash": "1f6e46d80cfcc70f0d91ed20562c4d7c39b2990b877e7de481e73a19",
+    "stderr": null,
+    "stderr_hash": null,
     "returncode": 0
 }

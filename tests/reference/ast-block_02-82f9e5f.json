@@ -7,7 +7,7 @@
     "outfile_hash": null,
     "stdout": "ast-block_02-82f9e5f.stdout",
     "stdout_hash": "45b1d45576c28eacf2c4b9ef1ae02297750db8b8b742647b258304bf",
-    "stderr": "ast-block_02-82f9e5f.stderr",
-    "stderr_hash": "60488b7fcd202fd28a9fb7045091257667eed65fe1dec8040b9c2871",
+    "stderr": null,
+    "stderr_hash": null,
     "returncode": 0
 }

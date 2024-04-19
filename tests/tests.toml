@@ -11,7 +11,6 @@ ast_indent = true
 asr_indent = true
 ast = true
 julia = true
-ast_enable_style = true
 
 [[test]]
 filename = "../integration_tests/template_add_01.f90"

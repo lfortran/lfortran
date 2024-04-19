@@ -1,0 +1,13 @@
+{
+    "basename": "ast_enable_style-style_01-648d075",
+    "cmd": "lfortran --show-ast --enable-style --no-color {infile} -o {outfile}",
+    "infile": "tests/warnings/style_01.f90",
+    "infile_hash": "6d5ef2c8bd2e85b3d67e407d9df511c07558c442e27b4a5346240c23",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "ast_enable_style-style_01-648d075.stdout",
+    "stdout_hash": "07bd4cf15c6ace04896fd8202cf0844f01ff0bbae94d9ab9022e8c09",
+    "stderr": "ast_enable_style-style_01-648d075.stderr",
+    "stderr_hash": "728706a7aa4ffea746434f6731b7d48403583c41414112051f904652",
+    "returncode": 0
+}
