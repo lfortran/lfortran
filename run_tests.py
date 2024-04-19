@@ -31,6 +31,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     tokens = is_included("tokens")
     ast = is_included("ast")
     ast_indent = is_included("ast_indent")
+    ast_enable_style = is_included("ast_enable_style")
     ast_json = is_included("ast_json")
     ast_no_prescan = is_included("ast_no_prescan")
     ast_f90 = is_included("ast_f90")
@@ -134,6 +135,15 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             filename,
             "ast_indent",
             "lfortran --show-ast --no-color {infile} -o {outfile}",
+            filename,
+            update_reference,
+            verify_hash,
+            extra_args)
+    if ast_enable_style:
+        run_test(
+            filename,
+            "ast_enable_style",
+            "lfortran --show-ast --enable-style --no-color {infile} -o {outfile}",
             filename,
             update_reference,
             verify_hash,
