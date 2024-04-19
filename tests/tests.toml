@@ -3901,3 +3901,11 @@ asr = true
 [[test]]
 filename = "errors/sqrt_neg.f90"
 asr = true
+
+[[test]]
+filename = "errors/coarray_01.f90"
+asr = true
+
+[[test]]
+filename = "errors/atomic_01.f90"
+asr = true

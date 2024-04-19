@@ -5329,6 +5329,19 @@ public:
         }
     }
 
+    void is_coarray_or_atomic(std::string intrinsic_name, const Location& loc){
+        std::vector<std::string> coarray_intrinsics, atomic_intrinsics;
+        coarray_intrinsics = {"co_broadcast", "co_max", "co_min", "co_reduce", "co_sum", "lcobound", "ucobound", "failed_images", 
+            "image_status", "get_team", "image_index", "num_images", "stopped_images", "team_number", "this_image", "coshape", "corank"};
+        atomic_intrinsics = {"atomic_add", "atomic_and", "atomic_cas", "atomic_define", "atomic_fetch_add", "atomic_fetch_and", 
+            "atomic_fetch_or", "atomic_fetch_xor", "atomic_or", "atomic_ref", "atomic_xor"};
+        if (std::find(coarray_intrinsics.begin(), coarray_intrinsics.end(), intrinsic_name) != coarray_intrinsics.end()) {
+            throw SemanticError("Coarrays are not supported yet", loc);
+        } else if (std::find(atomic_intrinsics.begin(), atomic_intrinsics.end(), intrinsic_name) != atomic_intrinsics.end()) {
+            throw SemanticError("Atomic operations are not supported yet", loc);
+        }
+    }
+
     /**
      * Broadcast `create_func` to elements of `args`, out of which atleast
      * one element is an array (i.e not a scalar)
@@ -6202,6 +6215,7 @@ public:
             if (compiler_options.implicit_interface) {
                 return nullptr;
             } else {
+                is_coarray_or_atomic(remote_sym, loc);
                 throw SemanticError("Function '" + remote_sym + "' not found"
                     " or not implemented yet (if it is intrinsic)",
                     loc);
