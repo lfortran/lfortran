@@ -14,12 +14,12 @@
                                     []
                                     Local
                                     (StringConstant
-                                        ""
-                                        (Character 1 0 ())
+                                        "ball"
+                                        (Character 1 4 ())
                                     )
                                     (StringConstant
-                                        ""
-                                        (Character 1 0 ())
+                                        "b"
+                                        (Character 1 1 ())
                                     )
                                     Parameter
                                     (Character 1 1 ())
