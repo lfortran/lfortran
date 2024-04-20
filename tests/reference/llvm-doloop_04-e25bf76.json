@@ -2,11 +2,11 @@
     "basename": "llvm-doloop_04-e25bf76",
     "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
     "infile": "tests/../integration_tests/doloop_04.f90",
-    "infile_hash": "d2027c560ba8546e31b7627200b8fb28695617c3238a8f1a086c62ef",
+    "infile_hash": "957bc032bcfb19232053abcdcefdb50e78b38ecee7817c893fe72b4e",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "llvm-doloop_04-e25bf76.stdout",
-    "stdout_hash": "f4119c193155eebf0e40118530ac5e2bf8ef9608981f13f2b263ceea",
+    "stdout_hash": "0d9077bb27bfd81a1ecd1d489acfa960b6b6f89843382962ef43de99",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0

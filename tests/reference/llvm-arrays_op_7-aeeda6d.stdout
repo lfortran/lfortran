@@ -18,45 +18,43 @@ define void @f_integer____0_integer____1(i32* %x, i32* %__1x, i32* %__2x, i32* %
   %0 = load i32, i32* %__1x, align 4
   store i32 %0, i32* %__1_v, align 4
   %1 = load i32, i32* %__1y, align 4
-  %2 = sub i32 %1, 1
-  store i32 %2, i32* %__1_t, align 4
+  store i32 %1, i32* %__1_t, align 4
   br label %loop.head
 
 loop.head:                                        ; preds = %loop.body, %.entry
-  %3 = load i32, i32* %__1_t, align 4
-  %4 = add i32 %3, 1
-  %5 = load i32, i32* %__2y, align 4
-  %6 = load i32, i32* %__1y, align 4
-  %7 = add i32 %5, %6
-  %8 = sub i32 %7, 1
-  %9 = icmp sle i32 %4, %8
-  br i1 %9, label %loop.body, label %loop.end
+  %2 = load i32, i32* %__1_t, align 4
+  %3 = load i32, i32* %__2y, align 4
+  %4 = load i32, i32* %__1y, align 4
+  %5 = add i32 %3, %4
+  %6 = sub i32 %5, 1
+  %7 = icmp sle i32 %2, %6
+  br i1 %7, label %loop.body, label %loop.end
 
 loop.body:                                        ; preds = %loop.head
-  %10 = load i32, i32* %__1_t, align 4
-  %11 = add i32 %10, 1
-  store i32 %11, i32* %__1_t, align 4
-  %12 = load i32, i32* %__1_t, align 4
-  %13 = load i32, i32* %__1y, align 4
-  %14 = load i32, i32* %__2y, align 4
-  %15 = sub i32 %12, %13
-  %16 = mul i32 1, %15
-  %17 = add i32 0, %16
-  %18 = mul i32 1, %14
-  %19 = getelementptr inbounds i32, i32* %y, i32 %17
-  %20 = load i32, i32* %__1_v, align 4
-  %21 = load i32, i32* %__1x, align 4
-  %22 = load i32, i32* %__2x, align 4
-  %23 = sub i32 %20, %21
-  %24 = mul i32 1, %23
-  %25 = add i32 0, %24
-  %26 = mul i32 1, %22
-  %27 = getelementptr inbounds i32, i32* %x, i32 %25
-  %28 = load i32, i32* %27, align 4
-  store i32 %28, i32* %19, align 4
-  %29 = load i32, i32* %__1_v, align 4
-  %30 = add i32 %29, 1
-  store i32 %30, i32* %__1_v, align 4
+  %8 = load i32, i32* %__1_t, align 4
+  %9 = load i32, i32* %__1y, align 4
+  %10 = load i32, i32* %__2y, align 4
+  %11 = sub i32 %8, %9
+  %12 = mul i32 1, %11
+  %13 = add i32 0, %12
+  %14 = mul i32 1, %10
+  %15 = getelementptr inbounds i32, i32* %y, i32 %13
+  %16 = load i32, i32* %__1_v, align 4
+  %17 = load i32, i32* %__1x, align 4
+  %18 = load i32, i32* %__2x, align 4
+  %19 = sub i32 %16, %17
+  %20 = mul i32 1, %19
+  %21 = add i32 0, %20
+  %22 = mul i32 1, %18
+  %23 = getelementptr inbounds i32, i32* %x, i32 %21
+  %24 = load i32, i32* %23, align 4
+  store i32 %24, i32* %15, align 4
+  %25 = load i32, i32* %__1_v, align 4
+  %26 = add i32 %25, 1
+  store i32 %26, i32* %__1_v, align 4
+  %27 = load i32, i32* %__1_t, align 4
+  %28 = add i32 %27, 1
+  store i32 %28, i32* %__1_t, align 4
   br label %loop.head
 
 loop.end:                                         ; preds = %loop.head
@@ -92,13 +90,11 @@ else:                                             ; preds = %.entry
 
 ifcont:                                           ; preds = %else, %then
   %2 = load i32, i32* %array_bound, align 4
-  %3 = sub i32 %2, 1
-  store i32 %3, i32* %__1_t, align 4
+  store i32 %2, i32* %__1_t, align 4
   br label %loop.head
 
 loop.head:                                        ; preds = %loop.body, %ifcont
-  %4 = load i32, i32* %__1_t, align 4
-  %5 = add i32 %4, 1
+  %3 = load i32, i32* %__1_t, align 4
   br i1 true, label %then2, label %else3
 
 then2:                                            ; preds = %loop.head
@@ -109,30 +105,30 @@ else3:                                            ; preds = %loop.head
   br label %ifcont4
 
 ifcont4:                                          ; preds = %else3, %then2
-  %6 = load i32, i32* %array_bound1, align 4
-  %7 = icmp sle i32 %5, %6
-  br i1 %7, label %loop.body, label %loop.end
+  %4 = load i32, i32* %array_bound1, align 4
+  %5 = icmp sle i32 %3, %4
+  br i1 %5, label %loop.body, label %loop.end
 
 loop.body:                                        ; preds = %ifcont4
-  %8 = load i32, i32* %__1_t, align 4
-  %9 = add i32 %8, 1
-  store i32 %9, i32* %__1_t, align 4
-  %10 = load i32, i32* %__1_t, align 4
-  %11 = sub i32 %10, 1
-  %12 = mul i32 1, %11
-  %13 = add i32 0, %12
-  %14 = getelementptr [3 x i32], [3 x i32]* %x, i32 0, i32 %13
-  store i32 3, i32* %14, align 4
+  %6 = load i32, i32* %__1_t, align 4
+  %7 = sub i32 %6, 1
+  %8 = mul i32 1, %7
+  %9 = add i32 0, %8
+  %10 = getelementptr [3 x i32], [3 x i32]* %x, i32 0, i32 %9
+  store i32 3, i32* %10, align 4
+  %11 = load i32, i32* %__1_t, align 4
+  %12 = add i32 %11, 1
+  store i32 %12, i32* %__1_t, align 4
   br label %loop.head
 
 loop.end:                                         ; preds = %ifcont4
-  %15 = getelementptr [3 x i32], [3 x i32]* %x, i32 0, i32 0
+  %13 = getelementptr [3 x i32], [3 x i32]* %x, i32 0, i32 0
   store i32 1, i32* %call_arg_value, align 4
   store i32 3, i32* %call_arg_value5, align 4
-  %16 = getelementptr [3 x i32], [3 x i32]* %y, i32 0, i32 0
+  %14 = getelementptr [3 x i32], [3 x i32]* %y, i32 0, i32 0
   store i32 1, i32* %call_arg_value6, align 4
   store i32 3, i32* %call_arg_value7, align 4
-  call void @f_integer____0_integer____1(i32* %15, i32* %call_arg_value, i32* %call_arg_value5, i32* %16, i32* %call_arg_value6, i32* %call_arg_value7)
+  call void @f_integer____0_integer____1(i32* %13, i32* %call_arg_value, i32* %call_arg_value5, i32* %14, i32* %call_arg_value6, i32* %call_arg_value7)
   br i1 true, label %then9, label %else10
 
 then9:                                            ; preds = %loop.end
@@ -143,14 +139,12 @@ else10:                                           ; preds = %loop.end
   br label %ifcont11
 
 ifcont11:                                         ; preds = %else10, %then9
-  %17 = load i32, i32* %array_bound8, align 4
-  %18 = sub i32 %17, 1
-  store i32 %18, i32* %__1_k, align 4
+  %15 = load i32, i32* %array_bound8, align 4
+  store i32 %15, i32* %__1_k, align 4
   br label %loop.head12
 
 loop.head12:                                      ; preds = %loop.body17, %ifcont11
-  %19 = load i32, i32* %__1_k, align 4
-  %20 = add i32 %19, 1
+  %16 = load i32, i32* %__1_k, align 4
   br i1 true, label %then14, label %else15
 
 then14:                                           ; preds = %loop.head12
@@ -161,21 +155,21 @@ else15:                                           ; preds = %loop.head12
   br label %ifcont16
 
 ifcont16:                                         ; preds = %else15, %then14
-  %21 = load i32, i32* %array_bound13, align 4
-  %22 = icmp sle i32 %20, %21
-  br i1 %22, label %loop.body17, label %loop.end18
+  %17 = load i32, i32* %array_bound13, align 4
+  %18 = icmp sle i32 %16, %17
+  br i1 %18, label %loop.body17, label %loop.end18
 
 loop.body17:                                      ; preds = %ifcont16
-  %23 = load i32, i32* %__1_k, align 4
-  %24 = add i32 %23, 1
-  store i32 %24, i32* %__1_k, align 4
+  %19 = load i32, i32* %__1_k, align 4
+  %20 = sub i32 %19, 1
+  %21 = mul i32 1, %20
+  %22 = add i32 0, %21
+  %23 = getelementptr [3 x i32], [3 x i32]* %y, i32 0, i32 %22
+  %24 = load i32, i32* %23, align 4
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @2, i32 0, i32 0), i32 %24, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0))
   %25 = load i32, i32* %__1_k, align 4
-  %26 = sub i32 %25, 1
-  %27 = mul i32 1, %26
-  %28 = add i32 0, %27
-  %29 = getelementptr [3 x i32], [3 x i32]* %y, i32 0, i32 %28
-  %30 = load i32, i32* %29, align 4
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @2, i32 0, i32 0), i32 %30, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0))
+  %26 = add i32 %25, 1
+  store i32 %26, i32* %__1_k, align 4
   br label %loop.head12
 
 loop.end18:                                       ; preds = %ifcont16

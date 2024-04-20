@@ -10,6 +10,9 @@ end do
 if (j /= 25) then
     error stop
 end if
+if (i /= 11) then
+    error stop
+end if
 print *, j
 
 j = 0
@@ -18,6 +21,9 @@ do i = 10, 1, k
     j = j + i
 end do
 if (j /= 30) then
+    error stop
+end if
+if (i /= 0) then
     error stop
 end if
 print *, j
@@ -32,6 +38,9 @@ end do a
 if (j /= 3) then
     error stop
 end if
+if (i /= 2) then
+    error stop
+end if
 
 j = 0
 b: do i = 1, 10, 2
@@ -41,6 +50,9 @@ b: do i = 1, 10, 2
     end if
 end do b
 if (j /= 4) then
+    error stop
+end if
+if (i /= 3) then
     error stop
 end if
 
@@ -56,6 +68,9 @@ end do c
 if (j /= 3) then
     error stop
 end if
+if (i /= 2) then
+    error stop
+end if
 
 !test-issue 746
 
@@ -63,5 +78,16 @@ k = 2
 do i = 1, 10, k
     100 continue
 end do
+if (i /= 11) then
+    error stop
+end if
+
+! test issue #3902
+do i = 1, 10
+    print *, i
+end do
+if (i /= 11) then
+    error stop
+end if
 
 end program doloop_04

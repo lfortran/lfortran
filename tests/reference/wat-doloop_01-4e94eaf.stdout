@@ -17,24 +17,20 @@
         i32.const 0
         local.set 1
         i32.const 1
-        i32.const 1
-        i32.sub
         local.set 0
         loop
             local.get 0
-            i32.const 1
-            i32.add
             i32.const 10
             i32.le_s
             if
-                local.get 0
-                i32.const 1
-                i32.add
-                local.set 0
                 local.get 1
                 local.get 0
                 i32.add
                 local.set 1
+                local.get 0
+                i32.const 1
+                i32.add
+                local.set 0
                 br 1
             else
             end
@@ -66,24 +62,20 @@
         i32.const 0
         local.set 1
         i32.const 10
-        i32.const -1
-        i32.sub
         local.set 0
         loop
             local.get 0
-            i32.const -1
-            i32.add
             i32.const 1
             i32.ge_s
             if
-                local.get 0
-                i32.const -1
-                i32.add
-                local.set 0
                 local.get 1
                 local.get 0
                 i32.add
                 local.set 1
+                local.get 0
+                i32.const -1
+                i32.add
+                local.set 0
                 br 1
             else
             end
@@ -115,24 +107,20 @@
         i32.const 0
         local.set 1
         i32.const 1
-        i32.const 2
-        i32.sub
         local.set 0
         loop
             local.get 0
-            i32.const 2
-            i32.add
             i32.const 9
             i32.le_s
             if
-                local.get 0
-                i32.const 2
-                i32.add
-                local.set 0
                 local.get 1
                 local.get 0
                 i32.add
                 local.set 1
+                local.get 0
+                i32.const 2
+                i32.add
+                local.set 0
                 br 1
             else
             end
@@ -164,24 +152,20 @@
         i32.const 0
         local.set 1
         i32.const 9
-        i32.const -2
-        i32.sub
         local.set 0
         loop
             local.get 0
-            i32.const -2
-            i32.add
             i32.const 1
             i32.ge_s
             if
+                local.get 1
+                local.get 0
+                i32.add
+                local.set 1
                 local.get 0
                 i32.const -2
                 i32.add
                 local.set 0
-                local.get 1
-                local.get 0
-                i32.add
-                local.set 1
                 br 1
             else
             end
@@ -213,24 +197,20 @@
         i32.const 0
         local.set 1
         i32.const 1
-        i32.const 2
-        i32.sub
         local.set 0
         loop
             local.get 0
-            i32.const 2
-            i32.add
             i32.const 10
             i32.le_s
             if
+                local.get 1
+                local.get 0
+                i32.add
+                local.set 1
                 local.get 0
                 i32.const 2
                 i32.add
                 local.set 0
-                local.get 1
-                local.get 0
-                i32.add
-                local.set 1
                 br 1
             else
             end
@@ -262,24 +242,20 @@
         i32.const 0
         local.set 1
         i32.const 1
-        i32.const 3
-        i32.sub
         local.set 0
         loop
             local.get 0
-            i32.const 3
-            i32.add
             i32.const 10
             i32.le_s
             if
-                local.get 0
-                i32.const 3
-                i32.add
-                local.set 0
                 local.get 1
                 local.get 0
                 i32.add
                 local.set 1
+                local.get 0
+                i32.const 3
+                i32.add
+                local.set 0
                 br 1
             else
             end
@@ -311,24 +287,20 @@
         i32.const 0
         local.set 1
         i32.const 10
-        i32.const -3
-        i32.sub
         local.set 0
         loop
             local.get 0
-            i32.const -3
-            i32.add
             i32.const 1
             i32.ge_s
             if
-                local.get 0
-                i32.const -3
-                i32.add
-                local.set 0
                 local.get 1
                 local.get 0
                 i32.add
                 local.set 1
+                local.get 0
+                i32.const -3
+                i32.add
+                local.set 0
                 br 1
             else
             end
@@ -360,24 +332,20 @@
         i32.const 0
         local.set 1
         i32.const 1
-        i32.const 1
-        i32.sub
         local.set 0
         loop
             local.get 0
             i32.const 1
-            i32.add
-            i32.const 1
             i32.le_s
             if
+                local.get 1
+                local.get 0
+                i32.add
+                local.set 1
                 local.get 0
                 i32.const 1
                 i32.add
                 local.set 0
-                local.get 1
-                local.get 0
-                i32.add
-                local.set 1
                 br 1
             else
             end
@@ -409,24 +377,20 @@
         i32.const 0
         local.set 1
         i32.const 1
-        i32.const -1
-        i32.sub
         local.set 0
         loop
             local.get 0
-            i32.const -1
-            i32.add
             i32.const 1
             i32.ge_s
             if
+                local.get 1
+                local.get 0
+                i32.add
+                local.set 1
                 local.get 0
                 i32.const -1
                 i32.add
                 local.set 0
-                local.get 1
-                local.get 0
-                i32.add
-                local.set 1
                 br 1
             else
             end
@@ -458,24 +422,20 @@
         i32.const 0
         local.set 1
         i32.const 1
-        i32.const 1
-        i32.sub
         local.set 0
         loop
             local.get 0
-            i32.const 1
-            i32.add
             i32.const 0
             i32.le_s
             if
+                local.get 1
+                local.get 0
+                i32.add
+                local.set 1
                 local.get 0
                 i32.const 1
                 i32.add
                 local.set 0
-                local.get 1
-                local.get 0
-                i32.add
-                local.set 1
                 br 1
             else
             end
@@ -507,24 +467,20 @@
         i32.const 0
         local.set 1
         i32.const 0
-        i32.const -1
-        i32.sub
         local.set 0
         loop
             local.get 0
-            i32.const -1
-            i32.add
             i32.const 1
             i32.ge_s
             if
-                local.get 0
-                i32.const -1
-                i32.add
-                local.set 0
                 local.get 1
                 local.get 0
                 i32.add
                 local.set 1
+                local.get 0
+                i32.const -1
+                i32.add
+                local.set 0
                 br 1
             else
             end

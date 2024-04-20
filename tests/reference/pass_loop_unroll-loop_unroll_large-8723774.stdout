@@ -93,42 +93,19 @@
                     )
                     (Assignment
                         (Var 2 i)
-                        (IntegerBinOp
-                            (IntegerConstant 1 (Integer 4))
-                            Sub
-                            (IntegerConstant 1 (Integer 4))
-                            (Integer 4)
-                            ()
-                        )
+                        (IntegerConstant 1 (Integer 4))
                         ()
                     )
                     (WhileLoop
                         ()
                         (IntegerCompare
-                            (IntegerBinOp
-                                (Var 2 i)
-                                Add
-                                (IntegerConstant 1 (Integer 4))
-                                (Integer 4)
-                                ()
-                            )
+                            (Var 2 i)
                             LtE
                             (IntegerConstant 32 (Integer 4))
                             (Logical 4)
                             ()
                         )
                         [(Assignment
-                            (Var 2 i)
-                            (IntegerBinOp
-                                (Var 2 i)
-                                Add
-                                (IntegerConstant 1 (Integer 4))
-                                (Integer 4)
-                                ()
-                            )
-                            ()
-                        )
-                        (Assignment
                             (ArrayItem
                                 (Var 2 array)
                                 [(()
@@ -883,22 +860,22 @@
                                 ()
                             )
                             (Var 2 i)
+                            ()
+                        )
+                        (Assignment
+                            (Var 2 i)
+                            (IntegerBinOp
+                                (Var 2 i)
+                                Add
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
+                                ()
+                            )
                             ()
                         )]
                         []
                     )
                     (Assignment
-                        (Var 2 i)
-                        (IntegerBinOp
-                            (Var 2 i)
-                            Add
-                            (IntegerConstant 1 (Integer 4))
-                            (Integer 4)
-                            ()
-                        )
-                        ()
-                    )
-                    (Assignment
                         (ArrayItem
                             (Var 2 array)
                             [(()
@@ -962,41 +939,29 @@
                     (Assignment
                         (Var 2 i)
                         (IntegerBinOp
-                            (IntegerConstant 1 (Integer 4))
-                            Sub
+                            (Var 2 i)
+                            Add
                             (IntegerConstant 1 (Integer 4))
                             (Integer 4)
                             ()
                         )
+                        ()
+                    )
+                    (Assignment
+                        (Var 2 i)
+                        (IntegerConstant 1 (Integer 4))
                         ()
                     )
                     (WhileLoop
                         ()
                         (IntegerCompare
-                            (IntegerBinOp
-                                (Var 2 i)
-                                Add
-                                (IntegerConstant 1 (Integer 4))
-                                (Integer 4)
-                                ()
-                            )
+                            (Var 2 i)
                             LtE
                             (IntegerConstant 32 (Integer 4))
                             (Logical 4)
                             ()
                         )
-                        [(Assignment
-                            (Var 2 i)
-                            (IntegerBinOp
-                                (Var 2 i)
-                                Add
-                                (IntegerConstant 1 (Integer 4))
-                                (Integer 4)
-                                ()
-                            )
-                            ()
-                        )
-                        (Print
+                        [(Print
                             [(ArrayItem
                                 (Var 2 array)
                                 [(()
@@ -1751,21 +1716,21 @@
                                 ()
                             )]
                             ()
+                            ()
+                        )
+                        (Assignment
+                            (Var 2 i)
+                            (IntegerBinOp
+                                (Var 2 i)
+                                Add
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
+                                ()
+                            )
                             ()
                         )]
                         []
                     )
-                    (Assignment
-                        (Var 2 i)
-                        (IntegerBinOp
-                            (Var 2 i)
-                            Add
-                            (IntegerConstant 1 (Integer 4))
-                            (Integer 4)
-                            ()
-                        )
-                        ()
-                    )
                     (Print
                         [(ArrayItem
                             (Var 2 array)
@@ -1825,6 +1790,17 @@
                             ()
                         )]
                         ()
+                        ()
+                    )
+                    (Assignment
+                        (Var 2 i)
+                        (IntegerBinOp
+                            (Var 2 i)
+                            Add
+                            (IntegerConstant 1 (Integer 4))
+                            (Integer 4)
+                            ()
+                        )
                         ()
                     )
                     (ImplicitDeallocate

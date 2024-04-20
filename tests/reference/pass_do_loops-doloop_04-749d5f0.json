@@ -2,11 +2,11 @@
     "basename": "pass_do_loops-doloop_04-749d5f0",
     "cmd": "lfortran --pass=do_loops --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/../integration_tests/doloop_04.f90",
-    "infile_hash": "d2027c560ba8546e31b7627200b8fb28695617c3238a8f1a086c62ef",
+    "infile_hash": "957bc032bcfb19232053abcdcefdb50e78b38ecee7817c893fe72b4e",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "pass_do_loops-doloop_04-749d5f0.stdout",
-    "stdout_hash": "fab4554fd0f0e8ba560fbd2db0f7a996fecefe71bf1f9be0300fb368",
+    "stdout_hash": "6fa97bef4ef36f2e55fbf11eee36815dcbebab2d9f42db850870592d",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0

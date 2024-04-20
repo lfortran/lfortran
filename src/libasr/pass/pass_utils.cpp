@@ -1030,9 +1030,6 @@ namespace LCompilers {
                 if( comp == -1 ) {
                     int increment;
                     bool not_constant_inc = false;
-                    if (!ASRUtils::is_integer(*ASRUtils::expr_type(c))) {
-                        throw LCompilersException("Do loop increment type should be an integer");
-                    }
                     if (c->type == ASR::exprType::IntegerConstant) {
                         increment = ASR::down_cast<ASR::IntegerConstant_t>(c)->m_n;
                     } else if (c->type == ASR::exprType::IntegerUnaryMinus) {
@@ -1065,13 +1062,11 @@ namespace LCompilers {
 
                         // test11: target + c <= b
                         ASR::expr_t *test11 = ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loc,
-                            ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, target,
-                            ASR::binopType::Add, c, int_type, nullptr)), ASR::cmpopType::LtE, b, log_type, nullptr));
+                            target, ASR::cmpopType::LtE, b, log_type, nullptr));
 
                         // test22: target + c >= b
                         ASR::expr_t *test22 = ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loc,
-                            ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, target,
-                            ASR::binopType::Add, c, int_type, nullptr)), ASR::cmpopType::GtE, b, log_type, nullptr));
+                            target, ASR::cmpopType::GtE, b, log_type, nullptr));
 
                         // cond1: test1 && test11
                         ASR::expr_t *cond1 = ASRUtils::EXPR(make_LogicalBinOp_t(al, loc,
@@ -1099,9 +1094,7 @@ namespace LCompilers {
                 int a_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(target));
                 ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, a_kind));
 
-                loop_init_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al, loc, target,
-                    ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, a,
-                            ASR::binopType::Sub, c, type, nullptr)), nullptr));
+                loop_init_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al, loc, target, a, nullptr));
                 if (use_loop_variable_after_loop) {
                     stmt_add_c_after_loop = ASRUtils::STMT(ASR::make_Assignment_t(al, loc, target,
                         ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, target,
@@ -1113,8 +1106,7 @@ namespace LCompilers {
                                 ASR::binopType::Add, c, type, nullptr)), nullptr));
                 if (cond == nullptr) {
                     ASR::ttype_t *log_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4));
-                    ASR::expr_t* left = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, target,
-                                            ASR::binopType::Add, c, type, nullptr));
+                    ASR::expr_t* left = target;
 
                     cond = ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loc,
                         left, cmp_op, b, log_type, nullptr));
@@ -1122,11 +1114,11 @@ namespace LCompilers {
             }
             Vec<ASR::stmt_t*> body;
             body.reserve(al, loop.n_body + (inc_stmt != nullptr));
-            if( inc_stmt ) {
-                body.push_back(al, inc_stmt);
-            }
             for (size_t i=0; i<loop.n_body; i++) {
                 body.push_back(al, loop.m_body[i]);
+            }
+            if( inc_stmt ) {
+                body.push_back(al, inc_stmt);
             }
             ASR::stmt_t *while_loop_stmt = ASRUtils::STMT(ASR::make_WhileLoop_t(al, loc,
                 loop.m_name, cond, body.p, body.size(), loop.m_orelse, loop.n_orelse));
