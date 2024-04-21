@@ -715,7 +715,6 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                 ASR::expr_t* start_value = ASRUtils::expr_value(x_dim.m_start);
                 ASR::expr_t* end_value = ASRUtils::expr_value(x->m_args[i].m_right);
                 ASR::expr_t* step_value = ASRUtils::expr_value(x->m_args[i].m_step);
-                ASR::expr_t* length_value = nullptr;
                 if( ASRUtils::is_value_constant(start_value) &&
                     ASRUtils::is_value_constant(end_value) &&
                     ASRUtils::is_value_constant(step_value) ) {
@@ -731,8 +730,6 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                     if( !ASRUtils::extract_value(step_value, const_step) ) {
                         LCOMPILERS_ASSERT(false);
                     }
-                    length_value = make_ConstantWithKind(make_IntegerConstant_t, make_Integer_t,
-                        ((const_end - const_start)/const_step) + 1, 4, loc);
                 }
 
                 ASR::expr_t* m_right = x->m_args[i].m_right;
@@ -741,9 +738,9 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                 m_right = CastingUtil::perform_casting(m_right, int32_type, al, loc);
                 m_left = CastingUtil::perform_casting(m_left, int32_type, al, loc);
                 m_step = CastingUtil::perform_casting(m_step, int32_type, al, loc);
-                x_dim.m_length = builder.ElementalAdd(builder.ElementalDiv(
-                    builder.ElementalSub(m_right, m_left, loc),
-                    m_step, loc), i32_one, loc, length_value);
+                x_dim.m_length = builder.Add(builder.Div(
+                    builder.Sub(m_right, m_left),
+                    m_step), i32_one);
                 x_dims.push_back(al, x_dim);
             }
         }

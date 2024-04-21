@@ -516,7 +516,7 @@ namespace LCompilers {
                 }
                 return b.DoLoop(do_loop_variables[curr_idx - 1], LBound(mask, curr_idx), UBound(mask, curr_idx), {
                     b.If(b.ArrayItem_01(mask, vars), {
-                        b.Assignment(res, b.Add(res, b.i(1, ASRUtils::expr_type(res))))
+                        b.Assignment(res, b.Add(res, b.i_t(1, ASRUtils::expr_type(res))))
                     }, {}),
                 }, nullptr);
             }
@@ -1143,9 +1143,9 @@ namespace LCompilers {
             return result;
         }
 
-    #define increment_by_one(var, body) ASR::expr_t* inc_by_one = builder.ElementalAdd(var, \
+    #define increment_by_one(var, body) ASR::expr_t* inc_by_one = builder.Add(var, \
         make_ConstantWithType(make_IntegerConstant_t, 1, \
-            ASRUtils::expr_type(var), loc), loc); \
+            ASRUtils::expr_type(var), loc)); \
         ASR::stmt_t* assign_inc = builder.Assignment(var, inc_by_one); \
         body->push_back(al, assign_inc); \
 

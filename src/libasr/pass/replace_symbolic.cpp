@@ -73,7 +73,7 @@ public:
         case LCompilers::ASRUtils::IntrinsicElementalFunctions::Symbolic##SYM: {   \
             ASR::expr_t* function_call = basic_get_type(loc,                    \
                 intrinsic_func->m_args[0]);                                     \
-            return b.iEq(function_call, b.i32(N)); }
+            return b.Eq(function_call, b.i32(N)); }
 
     ASR::stmt_t *SubroutineCall(const Location &loc, ASR::symbol_t *sym,
             std::vector<ASR::expr_t *> args) {

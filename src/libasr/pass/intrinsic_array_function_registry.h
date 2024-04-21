@@ -65,7 +65,7 @@ inline std::string get_array_intrinsic_name(int x) {
 }
 
 typedef ASR::expr_t* (ASRBuilder::*elemental_operation_func)(ASR::expr_t*,
-    ASR::expr_t*, const Location&, ASR::expr_t*);
+    ASR::expr_t*);
 
 typedef void (*verify_array_func)(ASR::expr_t*, ASR::ttype_t*,
     const Location&, diag::Diagnostics&,
@@ -467,7 +467,7 @@ static inline ASR::asr_t* create_ArrIntrinsic(
             ASRUtils::ASRBuilder b(al, loc);
             args_merge.push_back(al, b.ArraySize(args[0], b.i32(it+1), int32));
             args_merge.push_back(al, b.ArraySize(args[0], b.i32(it+2), int32));
-            args_merge.push_back(al, b.iLt(b.i32(it+1), args[1]));
+            args_merge.push_back(al, b.Lt(b.i32(it+1), args[1]));
             ASR::expr_t* merge = EXPR(Merge::create_Merge(al, loc, args_merge, diag));
             ASR::dimension_t dim;
             dim.loc = array->base.loc;
@@ -511,7 +511,7 @@ static inline void generate_body_for_array_input(Allocator& al, const Location& 
         },
         [=, &al, &idx_vars, &doloop_body, &builder] () {
             ASR::expr_t* array_ref = PassUtils::create_array_ref(array, idx_vars, al);
-            ASR::expr_t* elemental_operation_val = (builder.*elemental_operation)(return_var, array_ref, loc, nullptr);
+            ASR::expr_t* elemental_operation_val = (builder.*elemental_operation)(return_var, array_ref);
             ASR::stmt_t* loop_invariant = builder.Assignment(return_var, elemental_operation_val);
             doloop_body.push_back(al, loop_invariant);
     });
@@ -535,7 +535,7 @@ static inline void generate_body_for_array_mask_input(Allocator& al, const Locat
         [=, &al, &idx_vars, &doloop_body, &builder] () {
             ASR::expr_t* array_ref = PassUtils::create_array_ref(array, idx_vars, al);
             ASR::expr_t* mask_ref = PassUtils::create_array_ref(mask, idx_vars, al);
-            ASR::expr_t* elemental_operation_val = (builder.*elemental_operation)(return_var, array_ref, loc, nullptr);
+            ASR::expr_t* elemental_operation_val = (builder.*elemental_operation)(return_var, array_ref);
             ASR::stmt_t* loop_invariant = builder.Assignment(return_var, elemental_operation_val);
             Vec<ASR::stmt_t*> if_mask;
             if_mask.reserve(al, 1);
@@ -567,7 +567,7 @@ static inline void generate_body_for_array_dim_input(
         [=, &al, &idx_vars, &target_idx_vars, &doloop_body, &builder, &result] () {
             ASR::expr_t* result_ref = PassUtils::create_array_ref(result, target_idx_vars, al);
             ASR::expr_t* array_ref = PassUtils::create_array_ref(array, idx_vars, al);
-            ASR::expr_t* elemental_operation_val = (builder.*elemental_operation)(result_ref, array_ref, loc, nullptr);
+            ASR::expr_t* elemental_operation_val = (builder.*elemental_operation)(result_ref, array_ref);
             ASR::stmt_t* loop_invariant = builder.Assignment(result_ref, elemental_operation_val);
             doloop_body.push_back(al, loop_invariant);
         });
@@ -595,7 +595,7 @@ static inline void generate_body_for_array_dim_mask_input(
             ASR::expr_t* result_ref = PassUtils::create_array_ref(result, target_idx_vars, al);
             ASR::expr_t* array_ref = PassUtils::create_array_ref(array, idx_vars, al);
             ASR::expr_t* mask_ref = PassUtils::create_array_ref(mask, idx_vars, al);
-            ASR::expr_t* elemental_operation_val = (builder.*elemental_operation)(result_ref, array_ref, loc, nullptr);
+            ASR::expr_t* elemental_operation_val = (builder.*elemental_operation)(result_ref, array_ref);
             ASR::stmt_t* loop_invariant = builder.Assignment(result_ref, elemental_operation_val);
             Vec<ASR::stmt_t*> if_mask;
             if_mask.reserve(al, 1);
@@ -784,7 +784,7 @@ static inline ASR::expr_t *eval_MaxMinLoc(Allocator &al, const Location &loc,
                 std::min_element(m_eles.begin(), m_eles.end())) + 1;
         }
         if (!is_array(type)) {
-            return b.i(index, type);
+            return b.i_t(index, type);
         } else {
             return b.ArrayConstant({b.i32(index)}, extract_type(type), false);
         }
@@ -902,15 +902,15 @@ static inline ASR::expr_t *instantiate_MaxMinLoc(Allocator &al,
         b.generate_reduction_intrinsic_stmts_for_scalar_output(
             loc, args[0], fn_symtab, body, idx_vars, doloop_body,
             [=, &al, &body, &b] () {
-                body.push_back(al, b.Assignment(result, b.i(1, type)));
+                body.push_back(al, b.Assignment(result, b.i_t(1, type)));
             }, [=, &al, &b, &idx_vars, &doloop_body] () {
                 std::vector<ASR::stmt_t *> if_body; if_body.reserve(n_dims);
                 Vec<ASR::expr_t *> result_idx; result_idx.reserve(al, n_dims);
                 for (int i = 0; i < n_dims; i++) {
                     ASR::expr_t *idx = b.ArrayItem_01(result, {b.i32(i+1)});
                     if (extract_kind_from_ttype_t(type) != 4) {
-                        if_body.push_back(b.Assignment(idx, b.i2i(idx_vars[i], type)));
-                        result_idx.push_back(al, b.i2i32(idx));
+                        if_body.push_back(b.Assignment(idx, b.i2i_t(idx_vars[i], type)));
+                        result_idx.push_back(al, b.i2i_t(idx, int32));
                     } else {
                         if_body.push_back(b.Assignment(idx, idx_vars[i]));
                         result_idx.push_back(al, idx);
@@ -933,14 +933,14 @@ static inline ASR::expr_t *instantiate_MaxMinLoc(Allocator &al,
             loc, args[0], args[1], fn_symtab, body, idx_vars,
             target_idx_vars, doloop_body,
             [=, &al, &body, &b] () {
-                body.push_back(al, b.Assignment(result, b.i(1, type)));
+                body.push_back(al, b.Assignment(result, b.i_t(1, type)));
             }, [=, &al, &b, &idx_vars, &target_idx_vars, &doloop_body] () {
                 ASR::expr_t *result_ref, *array_ref_02;
                 if (is_array(return_type)) {
                     result_ref = ArrayItem_02(result, target_idx_vars);
                     Vec<ASR::expr_t*> tmp_idx_vars;
                     tmp_idx_vars.from_pointer_n_copy(al, idx_vars.p, idx_vars.n);
-                    tmp_idx_vars.p[dim - 1] = b.i2i32(result_ref);
+                    tmp_idx_vars.p[dim - 1] = b.i2i_t(result_ref, int32);
                     array_ref_02 = ArrayItem_02(args[0], tmp_idx_vars);
                 } else {
                     // 1D scalar output
@@ -950,7 +950,7 @@ static inline ASR::expr_t *instantiate_MaxMinLoc(Allocator &al,
                 ASR::expr_t *array_ref_01 = ArrayItem_02(args[0], idx_vars);
                 ASR::expr_t *res_idx = idx_vars.p[dim - 1];
                 if (extract_kind_from_ttype_t(type) != 4) {
-                    res_idx = b.i2i(res_idx, type);
+                    res_idx = b.i2i_t(res_idx, type);
                 }
                 if (static_cast<int>(IntrinsicArrayFunctions::MaxLoc) == intrinsic_id) {
                     doloop_body.push_back(al, b.If(b.Gt(array_ref_01, array_ref_02), {
@@ -963,7 +963,7 @@ static inline ASR::expr_t *instantiate_MaxMinLoc(Allocator &al,
                 }
             });
     }
-    body.push_back(al, Return());
+    body.push_back(al, b.Return());
     ASR::symbol_t *fn_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
     scope->add_symbol(fn_name, fn_sym);
@@ -996,7 +996,7 @@ namespace Shape {
                     ASR::expr_t *e = nullptr;
                     if (extract_kind_from_ttype_t(type) != 4) {
                         ASRUtils::ASRBuilder b(al, loc);
-                        e = b.i2i(m_dims[i].m_length, extract_type(type));
+                        e = b.i2i_t(m_dims[i].m_length, extract_type(type));
                     } else {
                         e = m_dims[i].m_length;
                     }
@@ -1055,12 +1055,12 @@ namespace Shape {
         int iter = extract_n_dims_from_ttype(arg_types[0]) + 1;
         auto i = declare("i", int32, Local);
         body.push_back(al, b.Assignment(i, b.i32(1)));
-        body.push_back(al, b.While(b.iLt(i, b.i32(iter)), {
+        body.push_back(al, b.While(b.Lt(i, b.i32(iter)), {
             b.Assignment(b.ArrayItem_01(result, {i}),
-                b.ArraySize_2(args[0], i, extract_type(return_type))),
-            b.Assignment(i, b.iAdd(i, b.i32(1)))
+                b.ArraySize(args[0], i, extract_type(return_type))),
+            b.Assignment(i, b.Add(i, b.i32(1)))
         }));
-        body.push_back(al, Return());
+        body.push_back(al, b.Return());
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
@@ -1223,7 +1223,7 @@ namespace Any {
             },
             [=, &al, &idx_vars, &doloop_body, &builder] () {
                 ASR::expr_t* array_ref = PassUtils::create_array_ref(array, idx_vars, al);
-                ASR::expr_t* logical_or = builder.LogicalOr(return_var, array_ref, loc);
+                ASR::expr_t* logical_or = builder.Or(return_var, array_ref);
                 ASR::stmt_t* loop_invariant = builder.Assignment(return_var, logical_or);
                 doloop_body.push_back(al, loop_invariant);
             }
@@ -1248,7 +1248,7 @@ namespace Any {
             [=, &al, &idx_vars, &target_idx_vars, &doloop_body, &result, &builder] () {
                 ASR::expr_t* result_ref = PassUtils::create_array_ref(result, target_idx_vars, al);
                 ASR::expr_t* array_ref = PassUtils::create_array_ref(array, idx_vars, al);
-                ASR::expr_t* logical_or = builder.ElementalOr(result_ref, array_ref, loc);
+                ASR::expr_t* logical_or = builder.Or(result_ref, array_ref);
                 ASR::stmt_t* loop_invariant = builder.Assignment(result_ref, logical_or);
                 doloop_body.push_back(al, loop_invariant);
             });
@@ -1380,7 +1380,7 @@ namespace Sum {
             int64_t overload_id) {
         return ArrIntrinsic::instantiate_ArrIntrinsic(al, loc, scope, arg_types,
             return_type, new_args, overload_id, IntrinsicArrayFunctions::Sum,
-            &get_constant_zero_with_given_type, &ASRBuilder::ElementalAdd);
+            &get_constant_zero_with_given_type, &ASRBuilder::Add);
     }
 
 } // namespace Sum
@@ -1412,7 +1412,7 @@ namespace Product {
             int64_t overload_id) {
         return ArrIntrinsic::instantiate_ArrIntrinsic(al, loc, scope, arg_types,
             return_type, new_args, overload_id, IntrinsicArrayFunctions::Product,
-            &get_constant_one_with_given_type, &ASRBuilder::ElementalMul);
+            &get_constant_one_with_given_type, &ASRBuilder::Mul);
     }
 
 } // namespace Product
@@ -1444,7 +1444,7 @@ namespace MaxVal {
             int64_t overload_id) {
         return ArrIntrinsic::instantiate_ArrIntrinsic(al, loc, scope, arg_types,
             return_type, new_args, overload_id, IntrinsicArrayFunctions::MaxVal,
-            &get_minimum_value_with_given_type, &ASRBuilder::ElementalMax);
+            &get_minimum_value_with_given_type, &ASRBuilder::Max);
     }
 
 } // namespace MaxVal
@@ -1501,7 +1501,7 @@ namespace MinVal {
             int64_t overload_id) {
         return ArrIntrinsic::instantiate_ArrIntrinsic(al, loc, scope, arg_types,
             return_type, new_args, overload_id, IntrinsicArrayFunctions::MinVal,
-            &get_maximum_value_with_given_type, &ASRBuilder::ElementalMin);
+            &get_maximum_value_with_given_type, &ASRBuilder::Min);
     }
 
 } // namespace MinVal
@@ -1725,7 +1725,7 @@ namespace MatMul {
         extract_dimensions_from_ttype(arg_types[1], matrix_b_dims);
         ASR::expr_t *res_ref, *a_ref, *b_ref, *a_lbound, *b_lbound;
         ASR::expr_t *dim_mismatch_check, *a_ubound, *b_ubound;
-        dim_mismatch_check = b.iEq(UBound(args[0], 2), UBound(args[1], 1));
+        dim_mismatch_check = b.Eq(UBound(args[0], 2), UBound(args[1], 1));
         a_lbound = LBound(args[0], 1); a_ubound = UBound(args[0], 1);
         b_lbound = LBound(args[1], 2); b_ubound = UBound(args[1], 2);
         std::string assert_msg = "'MatMul' intrinsic dimension mismatch: "
@@ -1738,7 +1738,7 @@ namespace MatMul {
             b_ref   = b.ArrayItem_01(args[1], {k, j});
             a_ubound = a_lbound;
             alloc_dims.push_back(al, b.set_dim(LBound(args[1], 2), UBound(args[1], 2)));
-            dim_mismatch_check = b.iEq(UBound(args[0], 1), UBound(args[1], 1));
+            dim_mismatch_check = b.Eq(UBound(args[0], 1), UBound(args[1], 1));
             assert_msg += "`matrix_a(k)` and `matrix_b(k, j)`";
         } else if ( overload_id == 2 ) {
             // r(i) = r(i) + a(i, k) * b(k)
@@ -1765,21 +1765,21 @@ namespace MatMul {
             character(assert_msg.size()))))));
         ASR::expr_t *mul_value;
         if (is_real(*expr_type(a_ref)) && is_integer(*expr_type(b_ref))) {
-            mul_value = b.Mul(a_ref, b.i2r(b_ref, expr_type(a_ref)));
+            mul_value = b.Mul(a_ref, b.i2r_t(b_ref, expr_type(a_ref)));
         } else if (is_real(*expr_type(b_ref)) && is_integer(*expr_type(a_ref))) {
-            mul_value = b.Mul(b.i2r(a_ref, expr_type(b_ref)), b_ref);
+            mul_value = b.Mul(b.i2r_t(a_ref, expr_type(b_ref)), b_ref);
         } else if (is_real(*expr_type(a_ref)) && is_complex(*expr_type(b_ref))){
-            mul_value = b.Mul(EXPR(ASR::make_ComplexConstructor_t(al, loc, a_ref, b.f(0, expr_type(a_ref)), expr_type(b_ref), nullptr)), b_ref);
+            mul_value = b.Mul(EXPR(ASR::make_ComplexConstructor_t(al, loc, a_ref, b.f_t(0, expr_type(a_ref)), expr_type(b_ref), nullptr)), b_ref);
         } else if (is_complex(*expr_type(a_ref)) && is_real(*expr_type(b_ref))){
-            mul_value = b.Mul(a_ref, EXPR(ASR::make_ComplexConstructor_t(al, loc, b_ref, b.f(0, expr_type(b_ref)), expr_type(a_ref), nullptr)));
+            mul_value = b.Mul(a_ref, EXPR(ASR::make_ComplexConstructor_t(al, loc, b_ref, b.f_t(0, expr_type(b_ref)), expr_type(a_ref), nullptr)));
         } else if (is_integer(*expr_type(a_ref)) && is_complex(*expr_type(b_ref))) {
             int kind = ASRUtils::extract_kind_from_ttype_t(expr_type(b_ref));
             ASR::ttype_t* real_type = TYPE(ASR::make_Real_t(al, loc, kind));
-            mul_value = b.Mul(EXPR(ASR::make_ComplexConstructor_t(al, loc, b.i2r(a_ref, real_type), b.f(0, real_type), expr_type(b_ref), nullptr)), b_ref);
+            mul_value = b.Mul(EXPR(ASR::make_ComplexConstructor_t(al, loc, b.i2r_t(a_ref, real_type), b.f_t(0, real_type), expr_type(b_ref), nullptr)), b_ref);
         } else if (is_complex(*expr_type(a_ref)) && is_integer(*expr_type(b_ref))) {
             int kind = ASRUtils::extract_kind_from_ttype_t(expr_type(a_ref));
             ASR::ttype_t* real_type = TYPE(ASR::make_Real_t(al, loc, kind));
-            mul_value = b.Mul(a_ref, EXPR(ASR::make_ComplexConstructor_t(al, loc, b.i2r(b_ref, real_type), b.f(0, real_type), expr_type(a_ref), nullptr)));
+            mul_value = b.Mul(a_ref, EXPR(ASR::make_ComplexConstructor_t(al, loc, b.i2r_t(b_ref, real_type), b.f_t(0, real_type), expr_type(a_ref), nullptr)));
         } else {
             mul_value = b.Mul(a_ref, b_ref);
         }
@@ -1791,7 +1791,7 @@ namespace MatMul {
                 }),
             })
         }));
-        body.push_back(al, Return());
+        body.push_back(al, b.Return());
         ASR::symbol_t *fn_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
                 body, nullptr, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, fn_sym);
@@ -1923,10 +1923,10 @@ namespace Count {
             for (int i = 0; i < array_rank; i++) {
                 do_loop_variables.push_back(declare("i_" + std::to_string(i), int32, Local));
             }
-            body.push_back(al, b.Assignment(result, b.i(0, return_type)));
+            body.push_back(al, b.Assignment(result, b.i_t(0, return_type)));
             ASR::stmt_t* do_loop = PassUtils::create_do_loop_helper_count(al, loc, do_loop_variables, args[0], result, array_rank);
             body.push_back(al, do_loop);
-            body.push_back(al, Return());
+            body.push_back(al, b.Return());
             ASR::symbol_t *fn_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
                     body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
             scope->add_symbol(fn_name, fn_sym);
@@ -1978,7 +1978,7 @@ namespace Count {
             ASR::stmt_t* do_loop = PassUtils::create_do_loop_helper_count_dim(al, loc,
                                     idx, res_idx, inner_most_do_loop, c, args[0], result, 0, dim);
             body.push_back(al, do_loop);
-            body.push_back(al, Return());
+            body.push_back(al, b.Return());
             ASR::symbol_t *fn_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
                     body, nullptr, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
             scope->add_symbol(fn_name, fn_sym);
@@ -2362,7 +2362,7 @@ namespace Pack {
                 b.Assignment(k, b.Add(k, b.i32(1)))
             }));
         }
-        body.push_back(al, Return());
+        body.push_back(al, b.Return());
         ASR::symbol_t *fn_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
                 body, nullptr, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, fn_sym);
@@ -2674,7 +2674,7 @@ namespace Unpack {
         body.push_back(al, b.Assignment(result, args[2]));
         ASR::stmt_t* do_loop = PassUtils::create_do_loop_helper_unpack(al, loc, do_loop_variables, args[0], args[1], result, k, mask_rank);
         body.push_back(al, do_loop);
-        body.push_back(al, Return());
+        body.push_back(al, b.Return());
         ASR::symbol_t *fn_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
                 body, nullptr, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, fn_sym);
@@ -2922,7 +2922,7 @@ namespace DotProduct {
         if (is_logical(*return_type)) {
             body.push_back(al, b.Assignment(result, ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, loc, false, return_type))));
             body.push_back(al, b.DoLoop(i, LBound(args[0], 1), UBound(args[0], 1), {
-                b.Assignment(result, b.LogicalOr(result, b.And(b.ArrayItem_01(args[0], {i}), b.ArrayItem_01(args[1], {i})), loc))
+                b.Assignment(result, b.Or(result, b.And(b.ArrayItem_01(args[0], {i}), b.ArrayItem_01(args[1], {i}))))
             }));
         } else if (is_complex(*return_type)) {
             body.push_back(al, b.Assignment(result, EXPR(ASR::make_ComplexConstant_t(al, loc, 0.0, 0.0, return_type))));
@@ -2949,7 +2949,7 @@ namespace DotProduct {
                 b.Assignment(result, b.Add(result, b.Mul(b.ArrayItem_01(args[0], {i}), b.ArrayItem_01(args[1], {i}))))
             }, nullptr));
         }
-        body.push_back(al, Return());
+        body.push_back(al, b.Return());
         ASR::symbol_t *fn_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
                 body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, fn_sym);
@@ -3054,7 +3054,7 @@ namespace Transpose {
                 b.Assignment(b.ArrayItem_01(result, {j, i}), b.ArrayItem_01(args[0], {i, j}))
             }, nullptr)
         }, nullptr));
-        body.push_back(al, Return());
+        body.push_back(al, b.Return());
         ASR::symbol_t *fn_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
                 body, nullptr, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, fn_sym);
