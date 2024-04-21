@@ -81,6 +81,7 @@ class ASRBuilder {
     #define real32       TYPE(ASR::make_Real_t(al, loc, 4))
     #define real64       TYPE(ASR::make_Real_t(al, loc, 8))
     #define complex32    TYPE(ASR::make_Complex_t(al, loc, 4))
+    #define complex64    TYPE(ASR::make_Complex_t(al, loc, 8))
     #define logical      TYPE(ASR::make_Logical_t(al, loc, 4))
     #define character(x) TYPE(ASR::make_Character_t(al, loc, 1, x, nullptr))
     #define List(x)      TYPE(ASR::make_List_t(al, loc, x))
@@ -92,6 +93,7 @@ class ASRBuilder {
         }
         return TYPE(ASR::make_Tuple_t(al, loc, m_tuple_type.p, m_tuple_type.n));
     }
+
     ASR::ttype_t *Array(std::vector<int64_t> dims, ASR::ttype_t *type) {
         Vec<ASR::dimension_t> m_dims; m_dims.reserve(al, 1);
         for (auto &x: dims) {
@@ -110,7 +112,7 @@ class ASRBuilder {
     }
 
     // Expressions -------------------------------------------------------------
-    inline ASR::expr_t* i(int64_t x, ASR::ttype_t* t) {
+    inline ASR::expr_t* i_t(int64_t x, ASR::ttype_t* t) {
         return EXPR(ASR::make_IntegerConstant_t(al, loc, x, t));
     }
 
@@ -122,15 +124,11 @@ class ASRBuilder {
         return EXPR(ASR::make_IntegerConstant_t(al, loc, x, int64));
     }
 
-    inline ASR::expr_t* i32_n(int64_t x) {
-        return EXPR(ASR::make_IntegerUnaryMinus_t(al, loc, i32(abs(x)), int32, i32(x)));
-    }
-
-    inline ASR::expr_t* i32_neg(ASR::expr_t* x, ASR::ttype_t* t) {
+    inline ASR::expr_t* i_neg(ASR::expr_t* x, ASR::ttype_t* t) {
         return EXPR(ASR::make_IntegerUnaryMinus_t(al, loc, x, t, nullptr));
     }
 
-    inline ASR::expr_t* f(double x, ASR::ttype_t* t) {
+    inline ASR::expr_t* f_t(double x, ASR::ttype_t* t) {
         return EXPR(ASR::make_RealConstant_t(al, loc, x, t));
     }
 
@@ -138,24 +136,28 @@ class ASRBuilder {
         return EXPR(ASR::make_RealConstant_t(al, loc, x, real32));
     }
 
-    inline ASR::expr_t* f32_neg(ASR::expr_t* x, ASR::ttype_t* t) {
-        return EXPR(ASR::make_RealUnaryMinus_t(al, loc, x, t, nullptr));
+    inline ASR::expr_t* f64(double x) {
+        return EXPR(ASR::make_RealConstant_t(al, loc, x, real64));
     }
 
-    inline ASR::expr_t* bool32(bool x) {
-        return EXPR(ASR::make_LogicalConstant_t(al, loc, x, logical));
+    inline ASR::expr_t* f_neg(ASR::expr_t* x, ASR::ttype_t* t) {
+        return EXPR(ASR::make_RealUnaryMinus_t(al, loc, x, t, nullptr));
     }
 
     inline ASR::expr_t* bool_t(bool x, ASR::ttype_t* t) {
         return EXPR(ASR::make_LogicalConstant_t(al, loc, x, t));
     }
 
-    inline ASR::expr_t* complex(double x, double y, ASR::ttype_t* t) {
+    inline ASR::expr_t* complex_t(double x, double y, ASR::ttype_t* t) {
         return EXPR(ASR::make_ComplexConstant_t(al, loc, x, y, t));
     }
 
     inline ASR::expr_t* c32(double x, double y) {
         return EXPR(ASR::make_ComplexConstant_t(al, loc, x, y, complex32));
+    }
+
+    inline ASR::expr_t* c64(double x, double y) {
+        return EXPR(ASR::make_ComplexConstant_t(al, loc, x, y, complex64));
     }
 
     inline ASR::expr_t* ListItem(ASR::expr_t* x, ASR::expr_t* pos, ASR::ttype_t* type) {
@@ -187,7 +189,7 @@ class ASRBuilder {
     }
 
     inline ASR::expr_t* ArraySize(ASR::expr_t* x, ASR::expr_t* dim, ASR::ttype_t* t) {
-        return EXPR(ASR::make_ArraySize_t(al, loc, x, dim, t, nullptr));
+        return EXPR(make_ArraySize_t_util(al, loc, x, dim, t, nullptr));
     }
 
     inline ASR::expr_t* Ichar(std::string s, ASR::ttype_t* type, ASR::ttype_t* t) {
@@ -197,262 +199,89 @@ class ASRBuilder {
 
     // Cast --------------------------------------------------------------------
 
-    inline ASR::expr_t* r2i8(ASR::expr_t* x) {
-        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::RealToInteger, int8, nullptr));
-    }
-
-    inline ASR::expr_t* r2i16(ASR::expr_t* x) {
-        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::RealToInteger, int16, nullptr));
-    }
-
-    inline ASR::expr_t* r2i32(ASR::expr_t* x) {
-        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::RealToInteger, int32, nullptr));
-    }
-
-    inline ASR::expr_t* r2i64(ASR::expr_t* x) {
-        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::RealToInteger, int64, nullptr));
-    }
-
-    inline ASR::expr_t* i2r32(ASR::expr_t* x) {
-        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::IntegerToReal, real32, nullptr));
-    }
-
-    inline ASR::expr_t* i2r64(ASR::expr_t* x) {
-        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::IntegerToReal, real64, nullptr));
-    }
-
-    inline ASR::expr_t* i2i(ASR::expr_t* x, ASR::ttype_t* t) {
-        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::IntegerToInteger, t, nullptr));
-    }
-
-    inline ASR::expr_t* i2i64(ASR::expr_t* x) {
-        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::IntegerToInteger, int64, nullptr));
-    }
-
-    inline ASR::expr_t* i2i32(ASR::expr_t* x) {
-        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::IntegerToInteger, int32, nullptr));
-    }
-
-    inline ASR::expr_t* r2r32(ASR::expr_t* x) {
-        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::RealToReal, real32, nullptr));
-    }
-
-    inline ASR::expr_t* r2r64(ASR::expr_t* x) {
-        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::RealToReal, real64, nullptr));
-    }
-
-    inline ASR::expr_t* r2r(ASR::expr_t* x, ASR::ttype_t* t) {
-        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::RealToReal, t, nullptr));
-    }
-
-    inline ASR::expr_t* r2i(ASR::expr_t* x, ASR::ttype_t* t) {
+    inline ASR::expr_t* r2i_t(ASR::expr_t* x, ASR::ttype_t* t) {
         return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::RealToInteger, t, nullptr));
     }
 
-    inline ASR::expr_t* i2r(ASR::expr_t* x, ASR::ttype_t* t) {
+    inline ASR::expr_t* i2r_t(ASR::expr_t* x, ASR::ttype_t* t) {
         return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::IntegerToReal, t, nullptr));
+    }
+
+    inline ASR::expr_t* i2i_t(ASR::expr_t* x, ASR::ttype_t* t) {
+        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::IntegerToInteger, t, nullptr));
+    }
+
+    inline ASR::expr_t* r2r_t(ASR::expr_t* x, ASR::ttype_t* t) {
+        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::RealToReal, t, nullptr));
     }
 
     // Binop -------------------------------------------------------------------
 
-    inline ASR::expr_t* iAdd(ASR::expr_t* left, ASR::expr_t* right) {
-        return EXPR(ASR::make_IntegerBinOp_t(al, loc, left, ASR::binopType::Add, right, ASRUtils::int32, nullptr));
-    }
-
-    inline ASR::expr_t* i8Add(ASR::expr_t* left, ASR::expr_t* right) {
-        return EXPR(ASR::make_IntegerBinOp_t(al, loc, left, ASR::binopType::Add, right, ASRUtils::int8, nullptr));
-    }
-
-    inline ASR::expr_t* i16Add(ASR::expr_t* left, ASR::expr_t* right) {
-        return EXPR(ASR::make_IntegerBinOp_t(al, loc, left, ASR::binopType::Add, right, ASRUtils::int16, nullptr));
-    }
-
-    inline ASR::expr_t* i64Add(ASR::expr_t* left, ASR::expr_t* right) {
-        return EXPR(ASR::make_IntegerBinOp_t(al, loc, left, ASR::binopType::Add, right, ASRUtils::int64, nullptr));
-    }
-
-    inline ASR::expr_t* rAdd(ASR::expr_t* left, ASR::expr_t* right, ASR::ttype_t* t) {
-        return EXPR(ASR::make_RealBinOp_t(al, loc, left, ASR::binopType::Add, right, t, nullptr));
-    }
-
-    inline ASR::expr_t* r32Add(ASR::expr_t* left, ASR::expr_t* right) {
-        return EXPR(ASR::make_RealBinOp_t(al, loc, left, ASR::binopType::Add, right, ASRUtils::real32, nullptr));
-    }
-
-    inline ASR::expr_t* r64Add(ASR::expr_t* left, ASR::expr_t* right) {
-        return EXPR(ASR::make_RealBinOp_t(al, loc, left, ASR::binopType::Add, right, ASRUtils::real64, nullptr));
-    }
-
-    inline ASR::expr_t* i_tAdd(ASR::expr_t* left, ASR::expr_t* right, ASR::ttype_t* t) {
-        return EXPR(ASR::make_IntegerBinOp_t(al, loc, left, ASR::binopType::Add, right, t, nullptr));
-    }
-
-    inline ASR::expr_t* r_tAdd(ASR::expr_t* left, ASR::expr_t* right, ASR::ttype_t* t) {
-        return EXPR(ASR::make_RealBinOp_t(al, loc, left, ASR::binopType::Add, right, t, nullptr));
-    }
-
-    inline ASR::expr_t* iSub(ASR::expr_t* left, ASR::expr_t* right) {
-        return EXPR(ASR::make_IntegerBinOp_t(al, loc, left, ASR::binopType::Sub, right, ASRUtils::int32, nullptr));
-    }
-
-    inline ASR::expr_t* i_vSub(ASR::expr_t* left, ASR::expr_t* right, ASR::expr_t* value) {
-        return EXPR(ASR::make_IntegerBinOp_t(al, loc, left, ASR::binopType::Sub, right, ASRUtils::int32, value));
-    }
-
-    inline ASR::expr_t* i8Sub(ASR::expr_t* left, ASR::expr_t* right) {
-        return EXPR(ASR::make_IntegerBinOp_t(al, loc, left, ASR::binopType::Sub, right, int8, nullptr));
-    }
-
-    inline ASR::expr_t* i16Sub(ASR::expr_t* left, ASR::expr_t* right) {
-        return EXPR(ASR::make_IntegerBinOp_t(al, loc, left, ASR::binopType::Sub, right, int16, nullptr));
-    }
-
-    inline ASR::expr_t* i64Sub(ASR::expr_t* left, ASR::expr_t* right) {
-        return EXPR(ASR::make_IntegerBinOp_t(al, loc, left, ASR::binopType::Sub, right, int64, nullptr));
-    }
-
-    inline ASR::expr_t* rSub(ASR::expr_t* left, ASR::expr_t* right, ASR::ttype_t* t) {
-        return EXPR(ASR::make_RealBinOp_t(al, loc, left, ASR::binopType::Sub, right, t, nullptr));
-    }
-
-    inline ASR::expr_t* r32Sub(ASR::expr_t* left, ASR::expr_t* right) {
-        return EXPR(ASR::make_RealBinOp_t(al, loc, left, ASR::binopType::Sub, right, ASRUtils::real32, nullptr));
-    }
-
-    inline ASR::expr_t* r64Sub(ASR::expr_t* left, ASR::expr_t* right) {
-        return EXPR(ASR::make_RealBinOp_t(al, loc, left, ASR::binopType::Sub, right, ASRUtils::real64, nullptr));
-    }
-
-    inline ASR::expr_t* i_tSub(ASR::expr_t* left, ASR::expr_t* right, ASR::ttype_t* t) {
-        return EXPR(ASR::make_IntegerBinOp_t(al, loc, left, ASR::binopType::Sub, right, t, nullptr));
-    }
-
-    inline ASR::expr_t* r_tSub(ASR::expr_t* left, ASR::expr_t* right, ASR::ttype_t* t) {
-        return EXPR(ASR::make_RealBinOp_t(al, loc, left, ASR::binopType::Sub, right, t, nullptr));
-    }
-
-    inline ASR::expr_t* iDiv(ASR::expr_t* left, ASR::expr_t* right) {
-        return EXPR(ASR::make_IntegerBinOp_t(al, loc, left, ASR::binopType::Div, right, ASRUtils::int32, nullptr));
-    }
-
-    inline ASR::expr_t* i8Div(ASR::expr_t* left, ASR::expr_t* right) {
-        return EXPR(ASR::make_IntegerBinOp_t(al, loc, left, ASR::binopType::Div, right, ASRUtils::int8, nullptr));
-    }
-
-    inline ASR::expr_t* i16Div(ASR::expr_t* left, ASR::expr_t* right) {
-        return EXPR(ASR::make_IntegerBinOp_t(al, loc, left, ASR::binopType::Div, right, ASRUtils::int16, nullptr));
-    }
-
-    inline ASR::expr_t* i64Div(ASR::expr_t* left, ASR::expr_t* right) {
-        return EXPR(ASR::make_IntegerBinOp_t(al, loc, left, ASR::binopType::Div, right, ASRUtils::int64, nullptr));
-    }
-
-    inline ASR::expr_t* rDiv(ASR::expr_t* left, ASR::expr_t* right, ASR::ttype_t* t) {
-        return EXPR(ASR::make_RealBinOp_t(al, loc, left, ASR::binopType::Div, right, t, nullptr));
-    }
-
-    inline ASR::expr_t* r32Div(ASR::expr_t* left, ASR::expr_t* right) {
-        return EXPR(ASR::make_RealBinOp_t(al, loc, left, ASR::binopType::Div, right, ASRUtils::real32, nullptr));
-    }
-
-    inline ASR::expr_t* r64Div(ASR::expr_t* left, ASR::expr_t* right) {
-        return EXPR(ASR::make_RealBinOp_t(al, loc, left, ASR::binopType::Div, right, ASRUtils::real64, nullptr));
-    }
-
-    inline ASR::expr_t* i_tDiv(ASR::expr_t* left, ASR::expr_t* right, ASR::ttype_t* t) {
-        return EXPR(ASR::make_IntegerBinOp_t(al, loc, left, ASR::binopType::Div, right, t, nullptr));
-    }
-
-    inline ASR::expr_t* iMul(ASR::expr_t* left, ASR::expr_t* right) {
-        return EXPR(ASR::make_IntegerBinOp_t(al, loc, left, ASR::binopType::Mul, right, ASRUtils::int32, nullptr));
-    }
-
-    inline ASR::expr_t* i8Mul(ASR::expr_t* left, ASR::expr_t* right) {
-        return EXPR(ASR::make_IntegerBinOp_t(al, loc, left, ASR::binopType::Mul, right, ASRUtils::int8, nullptr));
-    }
-
-    inline ASR::expr_t* i16Mul(ASR::expr_t* left, ASR::expr_t* right) {
-        return EXPR(ASR::make_IntegerBinOp_t(al, loc, left, ASR::binopType::Mul, right, ASRUtils::int16, nullptr));
-    }
-
-    inline ASR::expr_t* i64Mul(ASR::expr_t* left, ASR::expr_t* right) {
-        return EXPR(ASR::make_IntegerBinOp_t(al, loc, left, ASR::binopType::Mul, right, ASRUtils::int64, nullptr));
-    }
-
-    inline ASR::expr_t* rMul(ASR::expr_t* left, ASR::expr_t* right, ASR::ttype_t* t) {
-        return EXPR(ASR::make_RealBinOp_t(al, loc, left, ASR::binopType::Mul, right, t, nullptr));
-    }
-
-    inline ASR::expr_t* r32Mul(ASR::expr_t* left, ASR::expr_t* right) {
-        return EXPR(ASR::make_RealBinOp_t(al, loc, left, ASR::binopType::Mul, right, ASRUtils::real32, nullptr));
-    }
-
-    inline ASR::expr_t* r64Mul(ASR::expr_t* left, ASR::expr_t* right) {
-        return EXPR(ASR::make_RealBinOp_t(al, loc, left, ASR::binopType::Mul, right, ASRUtils::real64, nullptr));
-    }
-
-    inline ASR::expr_t* i_tMul(ASR::expr_t* left, ASR::expr_t* right, ASR::ttype_t* t) {
-        return EXPR(ASR::make_IntegerBinOp_t(al, loc, left, ASR::binopType::Mul, right, t, nullptr));
-    }
-
-    inline ASR::expr_t* i_tAnd(ASR::expr_t* left, ASR::expr_t* right, ASR::ttype_t* t) {
-        return EXPR(ASR::make_IntegerBinOp_t(al, loc, left, ASR::binopType::BitAnd, right, t, nullptr));
-    }
-
-    inline ASR::expr_t* r_tMul(ASR::expr_t* left, ASR::expr_t* right, ASR::ttype_t* t) {
-        return EXPR(ASR::make_RealBinOp_t(al, loc, left, ASR::binopType::Mul, right, t, nullptr));
-    }
-
-    inline ASR::expr_t* r_tDiv(ASR::expr_t* left, ASR::expr_t* right, ASR::ttype_t* t) {
-        return EXPR(ASR::make_RealBinOp_t(al, loc, left, ASR::binopType::Div, right, t, nullptr));
-    }
-
-    inline ASR::expr_t* iPow(ASR::expr_t* left, ASR::expr_t* right, ASR::ttype_t* t) {
-        return EXPR(ASR::make_IntegerBinOp_t(al, loc, left, ASR::binopType::Pow, right, t, nullptr));
-    }
-
-    inline ASR::expr_t* rPow(ASR::expr_t* left, ASR::expr_t* right, ASR::ttype_t* t) {
-        return EXPR(ASR::make_RealBinOp_t(al, loc, left, ASR::binopType::Pow, right, t, nullptr));
-    }
-
-    inline ASR::expr_t* And(ASR::expr_t* x, ASR::expr_t* y) {
-        return EXPR(ASR::make_LogicalBinOp_t(al, loc, x, ASR::logicalbinopType::And, y, logical, nullptr));
-    }
-
-    inline ASR::expr_t* Or(ASR::expr_t* x, ASR::expr_t* y) {
-        return EXPR(ASR::make_LogicalBinOp_t(al, loc, x, ASR::logicalbinopType::Or, y, logical, nullptr));
-    }
-
-    inline ASR::expr_t* Not(ASR::expr_t* x) {
-        return EXPR(ASR::make_LogicalNot_t(al, loc, x, logical, nullptr));
-    }
-
-    inline ASR::expr_t* i_BitRshift(ASR::expr_t* n, ASR::expr_t* bits, ASR::ttype_t* t) {
+    inline ASR::expr_t* BitRshift(ASR::expr_t* n, ASR::expr_t* bits, ASR::ttype_t* t) {
         return EXPR(ASR::make_IntegerBinOp_t(al, loc, n, ASR::binopType::BitRShift, bits, t, nullptr));
     }
 
-    inline ASR::expr_t* i_BitLshift(ASR::expr_t* n, ASR::expr_t* bits, ASR::ttype_t* t) {
+    inline ASR::expr_t* BitLshift(ASR::expr_t* n, ASR::expr_t* bits, ASR::ttype_t* t) {
         return EXPR(ASR::make_IntegerBinOp_t(al, loc, n, ASR::binopType::BitLShift, bits, t, nullptr));
     }
 
-    inline ASR::expr_t* i_BitNot(ASR::expr_t* x, ASR::ttype_t* t) {
-        return EXPR(ASR::make_IntegerBitNot_t(al, loc, x, t, nullptr));
-    }
-
-    inline ASR::expr_t* i_BitAnd(ASR::expr_t* i, ASR::expr_t* j, ASR::ttype_t* t) {
-        return EXPR(ASR::make_IntegerBinOp_t(al, loc, i, ASR::binopType::BitAnd, j, t, nullptr));
-    }
-
-    inline ASR::expr_t* i_BitOr(ASR::expr_t* i, ASR::expr_t* j, ASR::ttype_t* t) {
-        return EXPR(ASR::make_IntegerBinOp_t(al, loc, i, ASR::binopType::BitOr, j, t, nullptr));
-    }
-
-    inline ASR::expr_t* i_BitXor(ASR::expr_t* i, ASR::expr_t* j, ASR::ttype_t* t) {
+    inline ASR::expr_t* BitXor(ASR::expr_t* i, ASR::expr_t* j, ASR::ttype_t* t) {
         return EXPR(ASR::make_IntegerBinOp_t(al, loc, i, ASR::binopType::BitXor, j, t, nullptr));
     }
 
-    inline ASR::expr_t* sConstant(std::string s, ASR::ttype_t* type) {
-        return EXPR(ASR::make_StringConstant_t(al, loc, s2c(al, s), type));
+    ASR::expr_t *And(ASR::expr_t *left, ASR::expr_t *right) {
+        LCOMPILERS_ASSERT(check_equal_type(expr_type(left), expr_type(right)));
+        ASR::ttype_t *type = expr_type(left);
+        ASRUtils::make_ArrayBroadcast_t_util(al, loc, left, right);
+        switch (type->type) {
+            case ASR::ttypeType::Integer: {
+                return EXPR(ASR::make_IntegerBinOp_t(al, loc, left, ASR::binopType::BitAnd, right, type, nullptr));
+            }
+            case ASR::ttypeType::Logical: {
+                return EXPR(ASR::make_LogicalBinOp_t(al, loc, left, ASR::logicalbinopType::And, right, logical, nullptr));
+            }
+            default: {
+                throw LCompilersException("Expression type, " +
+                    std::to_string(expr_type(left)->type) + " not yet supported");
+                return nullptr;
+            }
+        }
+    }
+
+    ASR::expr_t *Or(ASR::expr_t *left, ASR::expr_t *right) {
+        LCOMPILERS_ASSERT(check_equal_type(expr_type(left), expr_type(right)));
+        ASR::ttype_t *type = expr_type(left);
+        ASRUtils::make_ArrayBroadcast_t_util(al, loc, left, right);
+        switch (type->type) {
+            case ASR::ttypeType::Integer: {
+                return EXPR(ASR::make_IntegerBinOp_t(al, loc, left, ASR::binopType::BitOr, right, type, nullptr));
+            }
+            case ASR::ttypeType::Logical: {
+                return EXPR(ASR::make_LogicalBinOp_t(al, loc, left, ASR::logicalbinopType::Or, right, logical, nullptr));
+            }
+            default: {
+                throw LCompilersException("Expression type, " +
+                    std::to_string(expr_type(left)->type) + " not yet supported");
+                return nullptr;
+            }
+        }
+    }
+
+    ASR::expr_t *Not(ASR::expr_t *x) {
+        ASR::ttype_t *type = expr_type(x);
+        switch (type->type) {
+            case ASR::ttypeType::Integer: {
+                return EXPR(ASR::make_IntegerBitNot_t(al, loc, x, type, nullptr));
+            }
+            case ASR::ttypeType::Logical: {
+                return EXPR(ASR::make_LogicalNot_t(al, loc, x, logical, nullptr));
+            }
+            default: {
+                throw LCompilersException("Expression type, " +
+                    std::to_string(expr_type(x)->type) + " not yet supported");
+                return nullptr;
+            }
+        }
     }
 
     ASR::expr_t *Add(ASR::expr_t *left, ASR::expr_t *right) {
@@ -463,24 +292,47 @@ class ASRBuilder {
             case ASR::ttypeType::Integer : {
                 return EXPR(ASR::make_IntegerBinOp_t(al, loc, left,
                     ASR::binopType::Add, right, type, nullptr));
-                break;
             }
             case ASR::ttypeType::Real : {
                 return EXPR(ASR::make_RealBinOp_t(al, loc, left,
                     ASR::binopType::Add, right, type, nullptr));
-                break;
             }
             case ASR::ttypeType::Character : {
                 return EXPR(ASR::make_StringConcat_t(al, loc, left,
                     right, type, nullptr));
-                break;
             }
             case ASR::ttypeType::Complex : {
                 return EXPR(ASR::make_ComplexBinOp_t(al, loc, left,
                     ASR::binopType::Add, right, type, nullptr));
             }
             default: {
-                LCOMPILERS_ASSERT(false);
+                throw LCompilersException("Expression type, " +
+                    std::to_string(expr_type(left)->type) + " not yet supported");
+                return nullptr;
+            }
+        }
+    }
+
+    ASR::expr_t *Sub(ASR::expr_t *left, ASR::expr_t *right, ASR::expr_t* value = nullptr) {
+        LCOMPILERS_ASSERT(check_equal_type(expr_type(left), expr_type(right)));
+        ASR::ttype_t *type = expr_type(left);
+        ASRUtils::make_ArrayBroadcast_t_util(al, loc, left, right);
+        switch (type->type) {
+            case ASR::ttypeType::Integer: {
+                return EXPR(ASR::make_IntegerBinOp_t(al, loc, left,
+                    ASR::binopType::Sub, right, type, value));
+            }
+            case ASR::ttypeType::Real: {
+                return EXPR(ASR::make_RealBinOp_t(al, loc, left,
+                    ASR::binopType::Sub, right, type, value));
+            }
+            case ASR::ttypeType::Complex: {
+                return EXPR(ASR::make_ComplexBinOp_t(al, loc, left,
+                    ASR::binopType::Sub, right, type, value));
+            }
+            default: {
+                throw LCompilersException("Expression type, " +
+                    std::to_string(expr_type(left)->type) + " not yet supported");
                 return nullptr;
             }
         }
@@ -491,25 +343,82 @@ class ASRBuilder {
         ASR::ttype_t *type = expr_type(left);
         ASRUtils::make_ArrayBroadcast_t_util(al, loc, left, right);
         switch (type->type) {
-            case ASR::ttypeType::Integer : {
+            case ASR::ttypeType::Integer: {
                 return EXPR(ASR::make_IntegerBinOp_t(al, loc, left,
                     ASR::binopType::Mul, right, type, nullptr));
-                break;
             }
-            case ASR::ttypeType::Real : {
+            case ASR::ttypeType::Real: {
                 return EXPR(ASR::make_RealBinOp_t(al, loc, left,
                     ASR::binopType::Mul, right, type, nullptr));
-                break;
             }
-            case ASR::ttypeType::Complex : {
+            case ASR::ttypeType::Complex: {
                 return EXPR(ASR::make_ComplexBinOp_t(al, loc, left,
                     ASR::binopType::Mul, right, type, nullptr));
             }
             default: {
-                LCOMPILERS_ASSERT(false);
+                throw LCompilersException("Expression type, " +
+                    std::to_string(expr_type(left)->type) + " not yet supported");
                 return nullptr;
             }
         }
+    }
+
+    ASR::expr_t *Div(ASR::expr_t *left, ASR::expr_t *right) {
+        LCOMPILERS_ASSERT(check_equal_type(expr_type(left), expr_type(right)));
+        ASR::ttype_t *type = expr_type(left);
+        ASRUtils::make_ArrayBroadcast_t_util(al, loc, left, right);
+        switch (type->type) {
+            case ASR::ttypeType::Integer: {
+                return EXPR(ASR::make_IntegerBinOp_t(al, loc, left,
+                    ASR::binopType::Div, right, type, nullptr));
+            }
+            case ASR::ttypeType::Real: {
+                return EXPR(ASR::make_RealBinOp_t(al, loc, left,
+                    ASR::binopType::Div, right, type, nullptr));
+            }
+            case ASR::ttypeType::Complex: {
+                return EXPR(ASR::make_ComplexBinOp_t(al, loc, left,
+                    ASR::binopType::Div, right, type, nullptr));
+            }
+            default: {
+                throw LCompilersException("Expression type, " +
+                    std::to_string(expr_type(left)->type) + " not yet supported");
+                return nullptr;
+            }
+        }
+    }
+
+    ASR::expr_t *Pow(ASR::expr_t *left, ASR::expr_t *right) {
+        LCOMPILERS_ASSERT(check_equal_type(expr_type(left), expr_type(right)));
+        ASR::ttype_t *type = expr_type(left);
+        ASRUtils::make_ArrayBroadcast_t_util(al, loc, left, right);
+        switch (type->type) {
+            case ASR::ttypeType::Integer: {
+                return EXPR(ASR::make_IntegerBinOp_t(al, loc, left,
+                    ASR::binopType::Pow, right, type, nullptr));
+            }
+            case ASR::ttypeType::Real: {
+                return EXPR(ASR::make_RealBinOp_t(al, loc, left,
+                    ASR::binopType::Pow, right, type, nullptr));
+            }
+            case ASR::ttypeType::Complex: {
+                return EXPR(ASR::make_ComplexBinOp_t(al, loc, left,
+                    ASR::binopType::Pow, right, type, nullptr));
+            }
+            default: {
+                throw LCompilersException("Expression type, " +
+                    std::to_string(expr_type(left)->type) + " not yet supported");
+                return nullptr;
+            }
+        }
+    }
+
+    ASR::expr_t* Max(ASR::expr_t* left, ASR::expr_t* right) {
+        return ASRUtils::EXPR(ASR::make_IfExp_t(al, loc, Gt(left, right), left, right, ASRUtils::expr_type(left), nullptr));
+    }
+
+    ASR::expr_t* Min(ASR::expr_t* left, ASR::expr_t* right) {
+        return ASRUtils::EXPR(ASR::make_IfExp_t(al, loc, Lt(left, right), left, right, ASRUtils::expr_type(left), nullptr));
     }
 
     ASR::stmt_t* CallIntrinsicSubroutine(SymbolTable* scope, std::vector<ASR::ttype_t*> types,
@@ -544,92 +453,148 @@ class ASRBuilder {
         return intrinsic_func(al, loc, scope, arg_types, return_type, new_args, overload_id);
     }
 
-    // Compare -----------------------------------------------------------------
-    inline ASR::expr_t* iEq(ASR::expr_t* x, ASR::expr_t* y) {
-        return EXPR(ASR::make_IntegerCompare_t(al, loc, x, ASR::cmpopType::Eq, y, logical, nullptr));
-    }
-    inline ASR::expr_t* iNotEq(ASR::expr_t* x, ASR::expr_t* y) {
-        return EXPR(ASR::make_IntegerCompare_t(al, loc, x, ASR::cmpopType::NotEq, y, logical, nullptr));
-    }
-    inline ASR::expr_t* iLt(ASR::expr_t* x, ASR::expr_t* y) {
-        return EXPR(ASR::make_IntegerCompare_t(al, loc, x, ASR::cmpopType::Lt, y, logical, nullptr));
-    }
-    inline ASR::expr_t* iLtE(ASR::expr_t* x, ASR::expr_t* y) {
-        return EXPR(ASR::make_IntegerCompare_t(al, loc, x, ASR::cmpopType::LtE, y, logical, nullptr));
-    }
-    inline ASR::expr_t* iGtE(ASR::expr_t* x, ASR::expr_t* y) {
-        return EXPR(ASR::make_IntegerCompare_t(al, loc, x, ASR::cmpopType::GtE, y, logical, nullptr));
-    }
-    inline ASR::expr_t* iGt(ASR::expr_t* x, ASR::expr_t* y) {
-        return EXPR(ASR::make_IntegerCompare_t(al, loc, x, ASR::cmpopType::Gt, y, logical, nullptr));
-    }
-    inline ASR::expr_t* ArraySize_1(ASR::expr_t* x, ASR::expr_t* dim) {
-        return EXPR(make_ArraySize_t_util(al, loc, x, dim, int32, nullptr));
-    }
-    inline ASR::expr_t* ArraySize_2(ASR::expr_t* x, ASR::expr_t* dim, ASR::ttype_t* t) {
-        return EXPR(make_ArraySize_t_util(al, loc, x, dim, t, nullptr));
-    }
-    inline ASR::expr_t* fEq(ASR::expr_t* x, ASR::expr_t* y) {
-        return EXPR(ASR::make_RealCompare_t(al, loc, x, ASR::cmpopType::Eq, y, logical, nullptr));
-    }
-    inline ASR::expr_t* fGtE(ASR::expr_t* x, ASR::expr_t* y) {
-        return EXPR(ASR::make_RealCompare_t(al, loc, x, ASR::cmpopType::GtE, y, logical, nullptr));
-    }
-    inline ASR::expr_t* fLtE(ASR::expr_t* x, ASR::expr_t* y) {
-        return EXPR(ASR::make_RealCompare_t(al, loc, x, ASR::cmpopType::LtE, y, logical, nullptr));
-    }
-    inline ASR::expr_t* fLt(ASR::expr_t* x, ASR::expr_t* y) {
-        return EXPR(ASR::make_RealCompare_t(al, loc, x, ASR::cmpopType::Lt, y, logical, nullptr));
-    }
-    inline ASR::expr_t* fGt(ASR::expr_t* x, ASR::expr_t* y) {
-        return EXPR(ASR::make_RealCompare_t(al, loc, x, ASR::cmpopType::Gt, y, logical, nullptr));
-    }
-    inline ASR::expr_t* fNotEq(ASR::expr_t* x, ASR::expr_t* y) {
-        return EXPR(ASR::make_RealCompare_t(al, loc, x, ASR::cmpopType::NotEq, y, logical, nullptr));
-    }
-    inline ASR::expr_t* boolEq(ASR::expr_t* x, ASR::expr_t* y) {
-        return EXPR(ASR::make_LogicalCompare_t(al, loc, x, ASR::cmpopType::Eq, y, logical, nullptr));
-    }
-    inline ASR::expr_t* sEq(ASR::expr_t* x, ASR::expr_t* y) {
-        return EXPR(ASR::make_StringCompare_t(al, loc, x, ASR::cmpopType::Eq, y, logical, nullptr));
-    }
-    inline ASR::expr_t* sNotEq(ASR::expr_t* x, ASR::expr_t* y) {
-        return EXPR(ASR::make_StringCompare_t(al, loc, x, ASR::cmpopType::NotEq, y, logical, nullptr));
-    }
-    inline ASR::expr_t* sLt(ASR::expr_t* x, ASR::expr_t* y) {
-        return EXPR(ASR::make_StringCompare_t(al, loc, x, ASR::cmpopType::Lt, y, logical, nullptr));
-    }
-    inline ASR::expr_t* sLtE(ASR::expr_t* x, ASR::expr_t* y) {
-        return EXPR(ASR::make_StringCompare_t(al, loc, x, ASR::cmpopType::LtE, y, logical, nullptr));
-    }
-    inline ASR::expr_t* sGt(ASR::expr_t* x, ASR::expr_t* y) {
-        return EXPR(ASR::make_StringCompare_t(al, loc, x, ASR::cmpopType::Gt, y, logical, nullptr));
-    }
-    inline ASR::expr_t* sGtE(ASR::expr_t* x, ASR::expr_t* y) {
-        return EXPR(ASR::make_StringCompare_t(al, loc, x, ASR::cmpopType::GtE, y, logical, nullptr));
-    }
-
+    // Compare -----------------------------------------------------------------   
     ASR::expr_t *Gt(ASR::expr_t *left, ASR::expr_t *right) {
         LCOMPILERS_ASSERT(check_equal_type(expr_type(left), expr_type(right)));
-        if (is_real(*expr_type(left))) {
-            return fGt(left, right);
-        } else if (is_integer(*expr_type(left))) {
-            return iGt(left, right);
-        } else {
-            LCOMPILERS_ASSERT(false);
-            return nullptr;
+        ASR::ttype_t *type = expr_type(left);
+        switch(type->type){
+            case ASR::ttypeType::Integer: {
+                return EXPR(ASR::make_IntegerCompare_t(al, loc, left, ASR::cmpopType::Gt, right, logical, nullptr));
+            }
+            case ASR::ttypeType::Real: {
+                return EXPR(ASR::make_RealCompare_t(al, loc, left, ASR::cmpopType::Gt, right, logical, nullptr));
+            }
+            case ASR::ttypeType::Character: {
+                return EXPR(ASR::make_StringCompare_t(al, loc, left, ASR::cmpopType::Gt, right, logical, nullptr));
+            }
+            case ASR::ttypeType::Logical: {
+                return EXPR(ASR::make_LogicalCompare_t(al, loc, left, ASR::cmpopType::Gt, right, logical, nullptr));
+            }
+            default: {
+                throw LCompilersException("Expression type, " +
+                    std::to_string(expr_type(left)->type) + " not yet supported");
+                return nullptr;
+            }
         }
     }
 
     ASR::expr_t *Lt(ASR::expr_t *left, ASR::expr_t *right) {
         LCOMPILERS_ASSERT(check_equal_type(expr_type(left), expr_type(right)));
-        if (is_real(*expr_type(left))) {
-            return fLt(left, right);
-        } else if (is_integer(*expr_type(left))) {
-            return iLt(left, right);
-        } else {
-            LCOMPILERS_ASSERT(false);
-            return nullptr;
+        ASR::ttype_t *type = expr_type(left);
+        switch(type->type){
+            case ASR::ttypeType::Integer: {
+                return EXPR(ASR::make_IntegerCompare_t(al, loc, left, ASR::cmpopType::Lt, right, logical, nullptr));
+            }
+            case ASR::ttypeType::Real: {
+                return EXPR(ASR::make_RealCompare_t(al, loc, left, ASR::cmpopType::Lt, right, logical, nullptr));
+            }
+            case ASR::ttypeType::Character: {
+                return EXPR(ASR::make_StringCompare_t(al, loc, left, ASR::cmpopType::Lt, right, logical, nullptr));
+            }
+            case ASR::ttypeType::Logical: {
+                return EXPR(ASR::make_LogicalCompare_t(al, loc, left, ASR::cmpopType::Lt, right, logical, nullptr));
+            }
+            default: {
+                throw LCompilersException("Expression type, " +
+                    std::to_string(expr_type(left)->type) + " not yet supported");
+                return nullptr;
+            }
+        }
+    }
+
+    ASR::expr_t *GtE(ASR::expr_t *left, ASR::expr_t *right) {
+        LCOMPILERS_ASSERT(check_equal_type(expr_type(left), expr_type(right)));
+        ASR::ttype_t *type = expr_type(left);
+        switch(type->type){
+            case ASR::ttypeType::Integer: {
+                return EXPR(ASR::make_IntegerCompare_t(al, loc, left, ASR::cmpopType::GtE, right, logical, nullptr));
+            }
+            case ASR::ttypeType::Real: {
+                return EXPR(ASR::make_RealCompare_t(al, loc, left, ASR::cmpopType::GtE, right, logical, nullptr));
+            }
+            case ASR::ttypeType::Character: {
+                return EXPR(ASR::make_StringCompare_t(al, loc, left, ASR::cmpopType::GtE, right, logical, nullptr));
+            }
+            case ASR::ttypeType::Logical: {
+                return EXPR(ASR::make_LogicalCompare_t(al, loc, left, ASR::cmpopType::GtE, right, logical, nullptr));
+            }
+            default: {
+                throw LCompilersException("Expression type, " +
+                    std::to_string(expr_type(left)->type) + " not yet supported");
+                return nullptr;
+            }
+        }
+    }
+
+    ASR::expr_t *LtE(ASR::expr_t *left, ASR::expr_t *right) {
+        LCOMPILERS_ASSERT(check_equal_type(expr_type(left), expr_type(right)));
+        ASR::ttype_t *type = expr_type(left);
+        switch(type->type){
+            case ASR::ttypeType::Integer: {
+                return EXPR(ASR::make_IntegerCompare_t(al, loc, left, ASR::cmpopType::LtE, right, logical, nullptr));
+            }
+            case ASR::ttypeType::Real: {
+                return EXPR(ASR::make_RealCompare_t(al, loc, left, ASR::cmpopType::LtE, right, logical, nullptr));
+            }
+            case ASR::ttypeType::Character: {
+                return EXPR(ASR::make_StringCompare_t(al, loc, left, ASR::cmpopType::LtE, right, logical, nullptr));
+            }
+            case ASR::ttypeType::Logical: {
+                return EXPR(ASR::make_LogicalCompare_t(al, loc, left, ASR::cmpopType::LtE, right, logical, nullptr));
+            }
+            default: {
+                throw LCompilersException("Expression type, " +
+                    std::to_string(expr_type(left)->type) + " not yet supported");
+                return nullptr;
+            }
+        }
+    }
+
+    ASR::expr_t *Eq(ASR::expr_t *left, ASR::expr_t *right) {
+        LCOMPILERS_ASSERT(check_equal_type(expr_type(left), expr_type(right)));
+        ASR::ttype_t *type = expr_type(left);
+        switch(type->type){
+            case ASR::ttypeType::Integer: {
+                return EXPR(ASR::make_IntegerCompare_t(al, loc, left, ASR::cmpopType::Eq, right, logical, nullptr));
+            }
+            case ASR::ttypeType::Real: {
+                return EXPR(ASR::make_RealCompare_t(al, loc, left, ASR::cmpopType::Eq, right, logical, nullptr));
+            }
+            case ASR::ttypeType::Character: {
+                return EXPR(ASR::make_StringCompare_t(al, loc, left, ASR::cmpopType::Eq, right, logical, nullptr));
+            }
+            case ASR::ttypeType::Logical: {
+                return EXPR(ASR::make_LogicalCompare_t(al, loc, left, ASR::cmpopType::Eq, right, logical, nullptr));
+            }
+            default: {
+                throw LCompilersException("Expression type, " +
+                    std::to_string(expr_type(left)->type) + " not yet supported");
+                return nullptr;
+            }
+        }
+    }
+
+    ASR::expr_t *NotEq(ASR::expr_t *left, ASR::expr_t *right) {
+        LCOMPILERS_ASSERT(check_equal_type(expr_type(left), expr_type(right)));
+        ASR::ttype_t *type = expr_type(left);
+        switch(type->type){
+            case ASR::ttypeType::Integer: {
+                return EXPR(ASR::make_IntegerCompare_t(al, loc, left, ASR::cmpopType::NotEq, right, logical, nullptr));
+            }
+            case ASR::ttypeType::Real: {
+                return EXPR(ASR::make_RealCompare_t(al, loc, left, ASR::cmpopType::NotEq, right, logical, nullptr));
+            }
+            case ASR::ttypeType::Character: {
+                return EXPR(ASR::make_StringCompare_t(al, loc, left, ASR::cmpopType::NotEq, right, logical, nullptr));
+            }
+            case ASR::ttypeType::Logical: {
+                return EXPR(ASR::make_LogicalCompare_t(al, loc, left, ASR::cmpopType::NotEq, right, logical, nullptr));
+            }
+            default: {
+                throw LCompilersException("Expression type, " +
+                    std::to_string(expr_type(left)->type) + " not yet supported");
+                return nullptr;
+            }
         }
     }
 
@@ -653,151 +618,10 @@ class ASRBuilder {
             m_body.p, m_body.n, nullptr, 0));
     }
 
-    ASR::stmt_t *Exit(char* loop_name) {
-        return STMT(ASR::make_Exit_t(al, loc, loop_name));
-    }
-
     ASR::expr_t *TupleConstant(std::vector<ASR::expr_t*> ele, ASR::ttype_t *type) {
         Vec<ASR::expr_t*> m_ele; m_ele.reserve(al, 3);
         for (auto &x: ele) m_ele.push_back(al, x);
         return EXPR(ASR::make_TupleConstant_t(al, loc, m_ele.p, m_ele.n, type));
-    }
-
-    #define make_Compare(Constructor, left, op, right) ASRUtils::EXPR(ASR::Constructor( \
-        al, loc, left, ASR::cmpopType::op, right, \
-        ASRUtils::TYPE(ASR::make_Logical_t( \
-            al, loc, 4)), nullptr)); \
-
-    #define create_ElementalBinOp(OpType, BinOpName, OpName, value) case ASR::ttypeType::OpType: { \
-        return ASRUtils::EXPR(ASR::BinOpName(al, loc, \
-                left, ASR::binopType::OpName, right, \
-                ASRUtils::expr_type(left), value)); \
-    } \
-
-    ASR::expr_t* ElementalAdd(ASR::expr_t* left, ASR::expr_t* right,
-        const Location& loc, ASR::expr_t* value=nullptr) {
-        ASR::ttype_t *left_type = ASRUtils::expr_type(left);
-        left_type = ASRUtils::type_get_past_pointer(left_type);
-        switch (left_type->type) {
-            create_ElementalBinOp(Real, make_RealBinOp_t, Add, value)
-            create_ElementalBinOp(Integer, make_IntegerBinOp_t, Add, value)
-            create_ElementalBinOp(Complex, make_ComplexBinOp_t, Add, value)
-            default: {
-                throw LCompilersException("Expression type, " +
-                                          std::to_string(left_type->type) +
-                                          " not yet supported");
-            }
-        }
-    }
-
-    ASR::expr_t* ElementalSub(ASR::expr_t* left, ASR::expr_t* right,
-        const Location& loc, ASR::expr_t* value=nullptr) {
-        switch (ASRUtils::expr_type(left)->type) {
-            create_ElementalBinOp(Real, make_RealBinOp_t, Sub, value)
-            create_ElementalBinOp(Integer, make_IntegerBinOp_t, Sub, value)
-            create_ElementalBinOp(Complex, make_ComplexBinOp_t, Sub, value)
-            default: {
-                throw LCompilersException("Expression type, " +
-                                          std::to_string(expr_type(left)->type) +
-                                          " not yet supported");
-            }
-        }
-    }
-
-    ASR::expr_t* ElementalDiv(ASR::expr_t* left, ASR::expr_t* right,
-        const Location& loc, ASR::expr_t* value=nullptr) {
-        switch (ASRUtils::expr_type(left)->type) {
-            create_ElementalBinOp(Real, make_RealBinOp_t, Div, value)
-            create_ElementalBinOp(Integer, make_IntegerBinOp_t, Div, value)
-            create_ElementalBinOp(Complex, make_ComplexBinOp_t, Div, value)
-            default: {
-                throw LCompilersException("Expression type, " +
-                                          std::to_string(expr_type(left)->type) +
-                                          " not yet supported");
-            }
-        }
-    }
-
-    ASR::expr_t* ElementalMul(ASR::expr_t* left, ASR::expr_t* right,
-        const Location& loc, ASR::expr_t* value=nullptr) {
-        switch (ASRUtils::expr_type(left)->type) {
-            create_ElementalBinOp(Real, make_RealBinOp_t, Mul, value)
-            create_ElementalBinOp(Integer, make_IntegerBinOp_t, Mul, value)
-            create_ElementalBinOp(Complex, make_ComplexBinOp_t, Mul, value)
-            default: {
-                throw LCompilersException("Expression type, " +
-                                          std::to_string(expr_type(left)->type) +
-                                          " not yet supported");
-            }
-        }
-    }
-
-    ASR::expr_t* ElementalPow(ASR::expr_t* left, ASR::expr_t* right,
-        const Location& loc, ASR::expr_t* value=nullptr) {
-        switch (ASRUtils::expr_type(left)->type) {
-            create_ElementalBinOp(Real, make_RealBinOp_t, Pow, value)
-            create_ElementalBinOp(Integer, make_IntegerBinOp_t, Pow, value)
-            create_ElementalBinOp(Complex, make_ComplexBinOp_t, Pow, value)
-            default: {
-                throw LCompilersException("Expression type, " +
-                                          std::to_string(expr_type(left)->type) +
-                                          " not yet supported");
-            }
-        }
-    }
-
-    ASR::expr_t* ElementalMax(ASR::expr_t* left, ASR::expr_t* right,
-        const Location& loc, ASR::expr_t* value=nullptr) {
-        ASR::expr_t* test_condition = nullptr;
-        switch (ASRUtils::expr_type(left)->type) {
-            case ASR::ttypeType::Integer: {
-                test_condition = make_Compare(make_IntegerCompare_t, left, Gt, right);
-                break;
-            }
-            case ASR::ttypeType::Real: {
-                test_condition = make_Compare(make_RealCompare_t, left, Gt, right);
-                break;
-            }
-            default: {
-                throw LCompilersException("Expression type, " +
-                    std::to_string(expr_type(left)->type) + " not yet supported");
-            }
-        }
-        return ASRUtils::EXPR(ASR::make_IfExp_t(al, loc, test_condition, left, right, ASRUtils::expr_type(left), value));
-    }
-
-    ASR::expr_t* ElementalMin(ASR::expr_t* left, ASR::expr_t* right,
-        const Location& loc, ASR::expr_t* value=nullptr) {
-        ASR::expr_t* test_condition = nullptr;
-        switch (ASRUtils::expr_type(left)->type) {
-            case ASR::ttypeType::Integer: {
-                test_condition = make_Compare(make_IntegerCompare_t, left, Lt, right);
-                break;
-            }
-            case ASR::ttypeType::Real: {
-                test_condition = make_Compare(make_RealCompare_t, left, Lt, right);
-                break;
-            }
-            default: {
-                throw LCompilersException("Expression type, " +
-                    std::to_string(expr_type(left)->type) + " not yet supported");
-            }
-        }
-        return ASRUtils::EXPR(ASR::make_IfExp_t(al, loc, test_condition, left, right, ASRUtils::expr_type(left), value));
-    }
-
-    ASR::expr_t* ElementalOr(ASR::expr_t* left, ASR::expr_t* right,
-        const Location& loc) {
-        return ASRUtils::EXPR(ASR::make_LogicalBinOp_t(al, loc,
-            left, ASR::Or, right,
-            ASRUtils::TYPE(ASR::make_Logical_t( al, loc, 4)), nullptr));
-    }
-
-    ASR::expr_t* LogicalOr(ASR::expr_t* left, ASR::expr_t* right,
-        const Location& loc) {
-        return ASRUtils::EXPR(ASR::make_LogicalBinOp_t(al, loc,
-            left, ASR::Or, right, ASRUtils::expr_type(left),
-            nullptr));
     }
 
     ASR::expr_t* Call(ASR::symbol_t* s, Vec<ASR::call_arg_t>& args,
@@ -864,7 +688,13 @@ class ASRBuilder {
     }
 
     // Statements --------------------------------------------------------------
-    #define Return() STMT(ASR::make_Return_t(al, loc))
+    ASR::stmt_t *Exit() {
+        return STMT(ASR::make_Exit_t(al, loc, nullptr));
+    }
+
+    ASR::stmt_t *Return() {
+        return STMT(ASR::make_Return_t(al, loc));
+    }
 
     ASR::stmt_t *Assignment(ASR::expr_t *lhs, ASR::expr_t *rhs) {
         LCOMPILERS_ASSERT(check_equal_type(expr_type(lhs), expr_type(rhs)));
@@ -876,13 +706,13 @@ class ASRBuilder {
         ASR::ttype_t *type = expr_type(lhs);
         switch(type->type) {
             case ASR::ttypeType::Integer : {
-                return Assignment(lhs, i(init_value, type));
+                return Assignment(lhs, i_t(init_value, type));
             }
             case ASR::ttypeType::Real : {
-                return Assignment(lhs, f(init_value, type));
+                return Assignment(lhs, f_t(init_value, type));
             }
             case ASR::ttypeType::Complex : {
-                return Assignment(lhs, complex(init_value, init_value, type));
+                return Assignment(lhs, complex_t(init_value, init_value, type));
             }
             default : {
                 LCOMPILERS_ASSERT(false);
@@ -1003,9 +833,7 @@ class ASRBuilder {
         PassUtils::create_idx_vars(idx_vars, n_dims, loc, al, fn_scope, "_j");
         for( int i = 1; i <= n_dims; i++ ) {
             ASR::expr_t* current_dim = i32(i);
-            ASR::expr_t* test_expr = make_Compare(make_IntegerCompare_t, dim,
-                                        Eq, current_dim);
-
+            ASR::expr_t* test_expr = Eq(dim, current_dim);
             Vec<ASR::expr_t*> loop_vars;
             std::vector<int> loop_dims;
             loop_dims.reserve(n_dims);
