@@ -1003,21 +1003,21 @@ LFORTRAN_API double _lfortran_dlog_gamma(double x)
 
 // besselj0 --------------------------------------------------------------------
 
-LFORTRAN_API double _lfortran_dbesselj0( double x ) {
+LFORTRAN_API double _lfortran_dbessel_j0( double x ) {
     return j0(x);
 }
 
-LFORTRAN_API float _lfortran_sbesselj0( float x ) {
+LFORTRAN_API float _lfortran_sbessel_j0( float x ) {
     return j0(x);
 }
 
 // besselj1 --------------------------------------------------------------------
 
-LFORTRAN_API double _lfortran_dbesselj1( double x ) {
+LFORTRAN_API double _lfortran_dbessel_j1( double x ) {
     return j1(x);
 }
 
-LFORTRAN_API float _lfortran_sbesselj1( float x ) {
+LFORTRAN_API float _lfortran_sbessel_j1( float x ) {
     return j1(x);
 }
 
@@ -1033,21 +1033,21 @@ LFORTRAN_API float _lfortran_sbesseljn( int n, float x ) {
 
 // bessely0 --------------------------------------------------------------------
 
-LFORTRAN_API double _lfortran_dbessely0( double x ) {
+LFORTRAN_API double _lfortran_dbessel_y0( double x ) {
     return y0(x);
 }
 
-LFORTRAN_API float _lfortran_sbessely0( float x ) {
+LFORTRAN_API float _lfortran_sbessel_y0( float x ) {
     return y0(x);
 }
 
 // bessely1 --------------------------------------------------------------------
 
-LFORTRAN_API double _lfortran_dbessely1( double x ) {
+LFORTRAN_API double _lfortran_dbessel_y1( double x ) {
     return y1(x);
 }
 
-LFORTRAN_API float _lfortran_sbessely1( float x ) {
+LFORTRAN_API float _lfortran_sbessel_y1( float x ) {
     return y1(x);
 }
 

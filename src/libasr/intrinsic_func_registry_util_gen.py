@@ -217,6 +217,48 @@ intrinsic_funcs_args = {
             "kind_arg": True
         }
     ],
+    "Asind": [
+        {
+            "args": [("real",)],
+            "ret_type_arg_idx": 0
+        }
+    ],
+    "Acosd": [
+        {
+            "args": [("real",)],
+            "ret_type_arg_idx": 0
+        }
+    ],
+    "Atand": [
+        {
+            "args": [("real",)],
+            "ret_type_arg_idx": 0
+        }
+    ],
+    "BesselJ0": [
+        {
+            "args": [("real",)],
+            "ret_type_arg_idx": 0
+        },
+    ],
+    "BesselJ1": [
+        {
+            "args": [("real",)],
+            "ret_type_arg_idx": 0
+        },
+    ],
+    "BesselY0": [
+        {
+            "args": [("real",)],
+            "ret_type_arg_idx": 0
+        },
+    ],
+    "BesselY1": [
+        {
+            "args": [("real",)],
+            "ret_type_arg_idx": 0
+        },
+    ],
     "Sqrt": [
         {
             "args": [("real",), ("complex",)],

@@ -684,15 +684,15 @@ create_trig(Acosh, acosh, acosh)
 create_trig(Atanh, atanh, atanh)
 create_trig(Log, log, log)
 
-namespace UnaryMathIntrinsicFunction{
+namespace MathIntrinsicFunction{
     static inline ASR::expr_t* instantiate_functions(Allocator &al, const Location &loc,
-            SymbolTable *scope, std::string func_name, std::string lcompiler_name, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            SymbolTable *scope, std::string lcompiler_name, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
         std::string c_func_name;
         if (ASRUtils::extract_kind_from_ttype_t(arg_types[0]) == 4) {
-            c_func_name = "_lfortran_s" + func_name;
+            c_func_name = "_lfortran_s" + lcompiler_name;
         } else {
-            c_func_name = "_lfortran_d" + func_name;
+            c_func_name = "_lfortran_d" + lcompiler_name;
         }
         std::string new_name = "_lcompilers_" + lcompiler_name + "_"+ type_to_str_python(arg_types[0]);
 
@@ -705,22 +705,7 @@ namespace UnaryMathIntrinsicFunction{
         fill_func_arg("x", arg_types[0]);
         auto result = declare(new_name, return_type, ReturnVar);
         {
-            SymbolTable *fn_symtab_1 = al.make_new<SymbolTable>(fn_symtab);
-            Vec<ASR::expr_t*> args_1;
-            {
-                args_1.reserve(al, 1);
-                ASR::expr_t *arg = b.Variable(fn_symtab_1, "x", arg_types[0],
-                    ASR::intentType::In, ASR::abiType::BindC, true);
-                args_1.push_back(al, arg);
-            }
-
-            ASR::expr_t *return_var_1 = b.Variable(fn_symtab_1, c_func_name,
-                return_type, ASRUtils::intent_return_var, ASR::abiType::BindC, false);
-
-            SetChar dep_1; dep_1.reserve(al, 1);
-            Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 1);
-            ASR::symbol_t *s = make_ASR_Function_t(c_func_name, fn_symtab_1, dep_1, args_1,
-                body_1, return_var_1, ASR::abiType::BindC, ASR::deftypeType::Interface, s2c(al, c_func_name));
+            ASR::symbol_t *s = b.create_c_func(c_func_name, fn_symtab, return_type, arg_types.size(), arg_types);
             fn_symtab->add_symbol(c_func_name, s);
             dep.push_back(al, s2c(al, c_func_name));
             body.push_back(al, b.Assignment(result, b.Call(s, args, return_type)));
@@ -731,87 +716,35 @@ namespace UnaryMathIntrinsicFunction{
         scope->add_symbol(fn_name, new_symbol);
         return b.Call(new_symbol, new_args, return_type);
     }
-
-    static inline ASR::asr_t* create_UnaryMathFunction(Allocator& al, const Location& loc,
-    Vec<ASR::expr_t*>& args, eval_intrinsic_function eval_function,
-    int64_t intrinsic_id, int64_t overload_id, ASR::ttype_t* type, diag::Diagnostics& diag) {
-    ASR::expr_t *value = nullptr;
-    if (ASRUtils::all_args_evaluated(args)) {
-        Vec<ASR::expr_t*> arg_values; arg_values.reserve(al, 1);
-        arg_values.push_back(al, ASRUtils::expr_value(args[0]));
-        value = eval_function(al, loc, type, arg_values, diag);
-    }
-
-    return ASRUtils::make_IntrinsicElementalFunction_t_util(al, loc, intrinsic_id,
-        args.p, args.n, overload_id, type, value);
-    }
-
-    static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x,
-        diag::Diagnostics& diagnostics) {
-        const Location& loc = x.base.base.loc;
-        ASRUtils::require_impl(x.n_args == 1,
-        "Elemental intrinsics must have only 1 input argument",
-        loc, diagnostics);
-
-        ASR::ttype_t* input_type = ASRUtils::expr_type(x.m_args[0]);
-        ASR::ttype_t* output_type = x.m_type;
-        ASRUtils::require_impl(ASRUtils::check_equal_type(input_type, output_type, true),
-        "The input and output type of elemental intrinsics must exactly match, input type: " +
-        ASRUtils::get_type_code(input_type) + " output type: " + ASRUtils::get_type_code(output_type),
-        loc, diagnostics);
-    }
 }
 
-#define create_math_bindc(math_func, stdeval, intermediate, new_name, lcompilers_name)                  \
+#define create_math_bindc(math_func, stdeval, degree, new_name, lcompilers_name)                        \
 namespace math_func {                                                                                   \
     static inline ASR::expr_t *eval_##math_func(Allocator &al, const Location &loc,                     \
             ASR::ttype_t *t, Vec<ASR::expr_t*>& args,                                                   \
             diag::Diagnostics& /*diag*/) {                                                              \
         LCOMPILERS_ASSERT(args.size() == 1);                                                            \
-        if(intermediate == 0){                                                                          \
-        double rv = -1;                                                                                 \
-        rv = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;                                         \
-        double val = stdeval(rv);                                                                       \
-        return make_ConstantWithType(make_RealConstant_t, val, t, loc);                                 \
+        double rv = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;                                  \
+        double result = stdeval(rv);                                                                    \
+        if(degree == 1){                                                                                \
+            double PI = 3.14159265358979323846;                                                         \
+            result = result * 180.0 / PI;                                                               \
         }                                                                                               \
-        else{                                                                                           \
-            double i = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;                               \
-        double PI = 3.14159265358979323846;                                                             \
-        double result = stdeval(i) * 180.0 / PI;                                                        \
         return make_ConstantWithType(make_RealConstant_t, result, t, loc);                              \
-        }                                                                                               \
-    }                                                                                                   \
-    static inline ASR::asr_t* create_##math_func(Allocator& al, const Location& loc,                    \
-        Vec<ASR::expr_t*>& args,                                                                        \
-        diag::Diagnostics& diag)                                                                        \
-    {                                                                                                   \
-        ASR::ttype_t *type = ASRUtils::expr_type(args[0]);                                              \
-        if (args.n != 1) {                                                                              \
-            append_error(diag, "Intrinsic `"#math_func"` accepts exactly one argument",                 \
-                loc);                                                                                   \
-            return nullptr;                                                                             \
-        } else if (!ASRUtils::is_real(*type)) {                                                         \
-            append_error(diag, "`x` argument of `"#math_func"` must be real",                           \
-                args[0]->base.loc);                                                                     \
-            return nullptr;                                                                             \
-        }                                                                                               \
-        return UnaryMathIntrinsicFunction::create_UnaryMathFunction(al, loc, args,                      \
-                eval_##math_func, static_cast<int64_t>(IntrinsicElementalFunctions::math_func),         \
-                0, type, diag);                                                                         \
     }                                                                                                   \
     static inline ASR::expr_t* instantiate_##math_func (Allocator &al,                                  \
             const Location &loc, SymbolTable *scope,                                                    \
             Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,                                   \
             Vec<ASR::call_arg_t>& new_args,int64_t overload_id)  {                                      \
-        return UnaryMathIntrinsicFunction::instantiate_functions(al, loc, scope,                        \
-            #new_name, #lcompilers_name, arg_types, return_type, new_args, overload_id);                \
+        return MathIntrinsicFunction::instantiate_functions(al, loc, scope,                             \
+            #lcompilers_name, arg_types, return_type, new_args, overload_id);                           \
     }                                                                                                   \
 } // namespace math_func
 
-create_math_bindc(BesselJ0, j0, 0, besselj0, bessel_j0)
-create_math_bindc(BesselJ1, j1, 0, besselj1, bessel_j1)
-create_math_bindc(BesselY0, y0, 0, bessely0, bessel_y0)
-create_math_bindc(BesselY1, y1, 0, bessely1, bessel_y1)
+create_math_bindc(BesselJ0, j0, 0, bessel_j0, bessel_j0)
+create_math_bindc(BesselJ1, j1, 0, bessel_j1, bessel_j1)
+create_math_bindc(BesselY0, y0, 0, bessel_y0, bessel_y0)
+create_math_bindc(BesselY1, y1, 0, bessel_y1, bessel_y1)
 create_math_bindc(Asind, asin, 1, asind, asind)
 create_math_bindc(Acosd, acos, 1, acosd, acosd)
 create_math_bindc(Atand, atan, 1, atand, atand)
