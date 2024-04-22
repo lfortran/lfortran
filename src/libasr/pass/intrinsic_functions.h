@@ -718,7 +718,7 @@ namespace MathIntrinsicFunction{
     }
 }
 
-#define create_math_bindc(math_func, stdeval, degree, new_name, lcompilers_name)                        \
+#define create_math_bindc(math_func, stdeval, degree, lcompilers_name)                        \
 namespace math_func {                                                                                   \
     static inline ASR::expr_t *eval_##math_func(Allocator &al, const Location &loc,                     \
             ASR::ttype_t *t, Vec<ASR::expr_t*>& args,                                                   \
@@ -741,13 +741,13 @@ namespace math_func {                                                           
     }                                                                                                   \
 } // namespace math_func
 
-create_math_bindc(BesselJ0, j0, 0, bessel_j0, bessel_j0)
-create_math_bindc(BesselJ1, j1, 0, bessel_j1, bessel_j1)
-create_math_bindc(BesselY0, y0, 0, bessel_y0, bessel_y0)
-create_math_bindc(BesselY1, y1, 0, bessel_y1, bessel_y1)
-create_math_bindc(Asind, asin, 1, asind, asind)
-create_math_bindc(Acosd, acos, 1, acosd, acosd)
-create_math_bindc(Atand, atan, 1, atand, atand)
+create_math_bindc(BesselJ0, j0, 0, bessel_j0)
+create_math_bindc(BesselJ1, j1, 0, bessel_j1)
+create_math_bindc(BesselY0, y0, 0, bessel_y0)
+create_math_bindc(BesselY1, y1, 0, bessel_y1)
+create_math_bindc(Asind, asin, 1, asind)
+create_math_bindc(Acosd, acos, 1, acosd)
+create_math_bindc(Atand, atan, 1, atand)
 
 namespace Aimag {
 
