@@ -684,6 +684,71 @@ create_trig(Acosh, acosh, acosh)
 create_trig(Atanh, atanh, atanh)
 create_trig(Log, log, log)
 
+namespace MathIntrinsicFunction{
+    static inline ASR::expr_t* instantiate_functions(Allocator &al, const Location &loc,
+            SymbolTable *scope, std::string lcompiler_name, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        std::string c_func_name;
+        if (ASRUtils::extract_kind_from_ttype_t(arg_types[0]) == 4) {
+            c_func_name = "_lfortran_s" + lcompiler_name;
+        } else {
+            c_func_name = "_lfortran_d" + lcompiler_name;
+        }
+        std::string new_name = "_lcompilers_" + lcompiler_name + "_"+ type_to_str_python(arg_types[0]);
+
+        declare_basic_variables(new_name);
+        if (scope->get_symbol(new_name)) {
+            ASR::symbol_t *s = scope->get_symbol(new_name);
+            ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(s);
+            return b.Call(s, new_args, expr_type(f->m_return_var));
+        }
+        fill_func_arg("x", arg_types[0]);
+        auto result = declare(new_name, return_type, ReturnVar);
+        {
+            ASR::symbol_t *s = b.create_c_func(c_func_name, fn_symtab, return_type, arg_types.size(), arg_types);
+            fn_symtab->add_symbol(c_func_name, s);
+            dep.push_back(al, s2c(al, c_func_name));
+            body.push_back(al, b.Assignment(result, b.Call(s, args, return_type)));
+        }
+
+        ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, new_symbol);
+        return b.Call(new_symbol, new_args, return_type);
+    }
+}
+
+#define create_math_bindc(math_func, stdeval, degree, lcompilers_name)                        \
+namespace math_func {                                                                                   \
+    static inline ASR::expr_t *eval_##math_func(Allocator &al, const Location &loc,                     \
+            ASR::ttype_t *t, Vec<ASR::expr_t*>& args,                                                   \
+            diag::Diagnostics& /*diag*/) {                                                              \
+        LCOMPILERS_ASSERT(args.size() == 1);                                                            \
+        double rv = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;                                  \
+        double result = stdeval(rv);                                                                    \
+        if(degree == 1){                                                                                \
+            double PI = 3.14159265358979323846;                                                         \
+            result = result * 180.0 / PI;                                                               \
+        }                                                                                               \
+        return make_ConstantWithType(make_RealConstant_t, result, t, loc);                              \
+    }                                                                                                   \
+    static inline ASR::expr_t* instantiate_##math_func (Allocator &al,                                  \
+            const Location &loc, SymbolTable *scope,                                                    \
+            Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,                                   \
+            Vec<ASR::call_arg_t>& new_args,int64_t overload_id)  {                                      \
+        return MathIntrinsicFunction::instantiate_functions(al, loc, scope,                             \
+            #lcompilers_name, arg_types, return_type, new_args, overload_id);                           \
+    }                                                                                                   \
+} // namespace math_func
+
+create_math_bindc(BesselJ0, j0, 0, bessel_j0)
+create_math_bindc(BesselJ1, j1, 0, bessel_j1)
+create_math_bindc(BesselY0, y0, 0, bessel_y0)
+create_math_bindc(BesselY1, y1, 0, bessel_y1)
+create_math_bindc(Asind, asin, 1, asind)
+create_math_bindc(Acosd, acos, 1, acosd)
+create_math_bindc(Atand, atan, 1, atand)
+
 namespace Aimag {
 
     static inline ASR::expr_t *eval_Aimag(Allocator &al, const Location &loc,
@@ -2934,88 +2999,6 @@ namespace Modulo {
 
 }  // namespace Modulo
 
-namespace BesselJ0 {
-
-    static ASR::expr_t *eval_BesselJ0(Allocator& al, const Location& loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
-        return make_ConstantWithType(make_RealConstant_t, j0(ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r), t1, loc);
-    }
-
-    static inline ASR::expr_t* instantiate_BesselJ0(Allocator &al, const Location &loc,
-            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
-            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        std::string c_func_name;
-        if (ASRUtils::extract_kind_from_ttype_t(arg_types[0]) == 4) {
-            c_func_name = "_lfortran_sbesselj0";
-        } else {
-            c_func_name = "_lfortran_dbesselj0";
-        }
-        std::string new_name = "_lcompilers_bessel_j0_"+ type_to_str_python(arg_types[0]);
-
-        declare_basic_variables(new_name);
-        if (scope->get_symbol(new_name)) {
-            ASR::symbol_t *s = scope->get_symbol(new_name);
-            ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(s);
-            return b.Call(s, new_args, expr_type(f->m_return_var));
-        }
-        fill_func_arg("x", arg_types[0]);
-        auto result = declare(new_name, return_type, ReturnVar);
-        {
-            ASR::symbol_t *s = b.create_c_func(c_func_name, fn_symtab, return_type, 1, arg_types);
-            fn_symtab->add_symbol(c_func_name, s);
-            dep.push_back(al, s2c(al, c_func_name));
-            body.push_back(al, b.Assignment(result, b.Call(s, args, return_type)));
-        }
-
-        ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
-            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
-        scope->add_symbol(fn_name, new_symbol);
-        return b.Call(new_symbol, new_args, return_type);
-    }
-
-} // namespace BesselJ0
-
-namespace BesselJ1 {
-
-    static ASR::expr_t *eval_BesselJ1(Allocator& al, const Location& loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
-        return make_ConstantWithType(make_RealConstant_t, j1(ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r), t1, loc);
-    }
-
-    static inline ASR::expr_t* instantiate_BesselJ1(Allocator &al, const Location &loc,
-            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
-            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        std::string c_func_name;
-        if (ASRUtils::extract_kind_from_ttype_t(arg_types[0]) == 4) {
-            c_func_name = "_lfortran_sbesselj1";
-        } else {
-            c_func_name = "_lfortran_dbesselj1";
-        }
-        std::string new_name = "_lcompilers_bessel_j1_"+ type_to_str_python(arg_types[0]);
-
-        declare_basic_variables(new_name);
-        if (scope->get_symbol(new_name)) {
-            ASR::symbol_t *s = scope->get_symbol(new_name);
-            ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(s);
-            return b.Call(s, new_args, expr_type(f->m_return_var));
-        }
-        fill_func_arg("x", arg_types[0]);
-        auto result = declare(new_name, return_type, ReturnVar);
-        {
-            ASR::symbol_t *s = b.create_c_func(c_func_name, fn_symtab, return_type, 1, arg_types);
-            fn_symtab->add_symbol(c_func_name, s);
-            dep.push_back(al, s2c(al, c_func_name));
-            body.push_back(al, b.Assignment(result, b.Call(s, args, return_type)));
-        }
-
-        ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
-            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
-        scope->add_symbol(fn_name, new_symbol);
-        return b.Call(new_symbol, new_args, return_type);
-    }
-
-} // namespace BesselJ1
-
 namespace BesselJN {
 
     static ASR::expr_t *eval_BesselJN(Allocator& al, const Location& loc,
@@ -3058,88 +3041,6 @@ namespace BesselJN {
 
 } // namespace BesselJN
 
-namespace BesselY0 {
-
-    static ASR::expr_t *eval_BesselY0(Allocator& al, const Location& loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
-        return make_ConstantWithType(make_RealConstant_t, y0(ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r), t1, loc);
-    }
-
-    static inline ASR::expr_t* instantiate_BesselY0(Allocator &al, const Location &loc,
-            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
-            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        std::string c_func_name;
-        if (ASRUtils::extract_kind_from_ttype_t(arg_types[0]) == 4) {
-            c_func_name = "_lfortran_sbessely0";
-        } else {
-            c_func_name = "_lfortran_dbessely0";
-        }
-        std::string new_name = "_lcompilers_bessel_y0_"+ type_to_str_python(arg_types[0]);
-
-        declare_basic_variables(new_name);
-        if (scope->get_symbol(new_name)) {
-            ASR::symbol_t *s = scope->get_symbol(new_name);
-            ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(s);
-            return b.Call(s, new_args, expr_type(f->m_return_var));
-        }
-        fill_func_arg("x", arg_types[0]);
-        auto result = declare(new_name, return_type, ReturnVar);
-        {
-            ASR::symbol_t *s = b.create_c_func(c_func_name, fn_symtab, return_type, 1, arg_types);
-            fn_symtab->add_symbol(c_func_name, s);
-            dep.push_back(al, s2c(al, c_func_name));
-            body.push_back(al, b.Assignment(result, b.Call(s, args, return_type)));
-        }
-
-        ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
-            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
-        scope->add_symbol(fn_name, new_symbol);
-        return b.Call(new_symbol, new_args, return_type);
-    }
-
-} // namespace BesselY0
-
-namespace BesselY1 {
-
-    static ASR::expr_t *eval_BesselY1(Allocator& al, const Location& loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
-        return make_ConstantWithType(make_RealConstant_t, y1(ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r), t1, loc);
-    }
-
-    static inline ASR::expr_t* instantiate_BesselY1(Allocator &al, const Location &loc,
-            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
-            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        std::string c_func_name;
-        if (ASRUtils::extract_kind_from_ttype_t(arg_types[0]) == 4) {
-            c_func_name = "_lfortran_sbessely1";
-        } else {
-            c_func_name = "_lfortran_dbessely1";
-        }
-        std::string new_name = "_lcompilers_bessel_y1_"+ type_to_str_python(arg_types[0]);
-
-        declare_basic_variables(new_name);
-        if (scope->get_symbol(new_name)) {
-            ASR::symbol_t *s = scope->get_symbol(new_name);
-            ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(s);
-            return b.Call(s, new_args, expr_type(f->m_return_var));
-        }
-        fill_func_arg("x", arg_types[0]);
-        auto result = declare(new_name, return_type, ReturnVar);
-        {
-            ASR::symbol_t *s = b.create_c_func(c_func_name, fn_symtab, return_type, 1, arg_types);
-            fn_symtab->add_symbol(c_func_name, s);
-            dep.push_back(al, s2c(al, c_func_name));
-            body.push_back(al, b.Assignment(result, b.Call(s, args, return_type)));
-        }
-
-        ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
-            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
-        scope->add_symbol(fn_name, new_symbol);
-        return b.Call(new_symbol, new_args, return_type);
-    }
-
-} // namespace BesselY1
-
 namespace BesselYN {
 
     static ASR::expr_t *eval_BesselYN(Allocator& al, const Location& loc,
@@ -3181,138 +3082,6 @@ namespace BesselYN {
     }
 
 } // namespace BesselYN
-
-namespace Asind {
-
-    static ASR::expr_t *eval_Asind(Allocator& al, const Location& loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
-        double i = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
-        double PI = 3.14159265358979323846;
-        double result = asin(i) * 180.0 / PI;
-        return make_ConstantWithType(make_RealConstant_t, result, t1, loc);
-    }
-
-    static inline ASR::expr_t* instantiate_Asind(Allocator &al, const Location &loc,
-            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
-            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        std::string c_func_name;
-        if (ASRUtils::extract_kind_from_ttype_t(arg_types[0]) == 4) {
-            c_func_name = "_lfortran_sasind";
-        } else {
-            c_func_name = "_lfortran_dasind";
-        }
-        std::string new_name = "_lcompilers_asind_"+ type_to_str_python(arg_types[0]);
-
-        declare_basic_variables(new_name);
-        if (scope->get_symbol(new_name)) {
-            ASR::symbol_t *s = scope->get_symbol(new_name);
-            ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(s);
-            return b.Call(s, new_args, expr_type(f->m_return_var));
-        }
-        fill_func_arg("x", arg_types[0]);
-        auto result = declare(new_name, return_type, ReturnVar);
-        {
-            ASR::symbol_t *s = b.create_c_func(c_func_name, fn_symtab, return_type, 1, arg_types);
-            fn_symtab->add_symbol(c_func_name, s);
-            dep.push_back(al, s2c(al, c_func_name));
-            body.push_back(al, b.Assignment(result, b.Call(s, args, return_type)));
-        }
-
-        ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
-            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
-        scope->add_symbol(fn_name, new_symbol);
-        return b.Call(new_symbol, new_args, return_type);
-    }
-
-} // namespace Asind
-
-namespace Acosd {
-
-    static ASR::expr_t* eval_Acosd(Allocator& al, const Location& loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
-        double i = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
-        double PI = 3.14159265358979323846;
-        double result = acos(i) * 180.0 / PI;
-        return make_ConstantWithType(make_RealConstant_t, result, t1, loc);
-    }
-
-    static inline ASR::expr_t* instantiate_Acosd(Allocator &al, const Location &loc,
-            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
-            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        std::string c_func_name;
-        if (ASRUtils::extract_kind_from_ttype_t(arg_types[0]) == 4) {
-            c_func_name = "_lfortran_sacosd";
-        } else {
-            c_func_name = "_lfortran_dacosd";
-        }
-        std::string new_name = "_lcompilers_acosd_"+ type_to_str_python(arg_types[0]);
-
-        declare_basic_variables(new_name);
-        if (scope->get_symbol(new_name)) {
-            ASR::symbol_t *s = scope->get_symbol(new_name);
-            ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(s);
-            return b.Call(s, new_args, expr_type(f->m_return_var));
-        }
-        fill_func_arg("x", arg_types[0]);
-        auto result = declare(new_name, return_type, ReturnVar);
-        {
-            ASR::symbol_t *s = b.create_c_func(c_func_name, fn_symtab, return_type, 1, arg_types);
-            fn_symtab->add_symbol(c_func_name, s);
-            dep.push_back(al, s2c(al, c_func_name));
-            body.push_back(al, b.Assignment(result, b.Call(s, args, return_type)));
-        }
-
-        ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
-            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
-        scope->add_symbol(fn_name, new_symbol);
-        return b.Call(new_symbol, new_args, return_type);
-    }
-
-} // namespace Acosd
-
-namespace Atand {
-
-    static ASR::expr_t* eval_Atand(Allocator& al, const Location& loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
-        double i = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
-        double PI = 3.14159265358979323846;
-        double result = atan(i) * 180.0 / PI;
-        return make_ConstantWithType(make_RealConstant_t, result, t1, loc);
-    }
-
-    static inline ASR::expr_t* instantiate_Atand(Allocator &al, const Location &loc,
-            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
-            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        std::string c_func_name;
-        if (ASRUtils::extract_kind_from_ttype_t(arg_types[0]) == 4) {
-            c_func_name = "_lfortran_satand";
-        } else {
-            c_func_name = "_lfortran_datand";
-        }
-        std::string new_name = "_lcompilers_atand_"+ type_to_str_python(arg_types[0]);
-
-        declare_basic_variables(new_name);
-        if (scope->get_symbol(new_name)) {
-            ASR::symbol_t *s = scope->get_symbol(new_name);
-            ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(s);
-            return b.Call(s, new_args, expr_type(f->m_return_var));
-        }
-        fill_func_arg("x", arg_types[0]);
-        auto result = declare(new_name, return_type, ReturnVar);
-        {
-            ASR::symbol_t *s = b.create_c_func(c_func_name, fn_symtab, return_type, 1, arg_types);
-            fn_symtab->add_symbol(c_func_name, s);
-            dep.push_back(al, s2c(al, c_func_name));
-            body.push_back(al, b.Assignment(result, b.Call(s, args, return_type)));
-        }
-
-        ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
-            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
-        scope->add_symbol(fn_name, new_symbol);
-        return b.Call(new_symbol, new_args, return_type);
-    }
-
-} // namespace Atand
 
 namespace Poppar {
 

@@ -44,34 +44,10 @@ intrinsic_funcs_args = {
             "ret_type_arg_idx": 0
         },
     ],
-    "BesselJ0": [
-        {
-            "args": [("real",)],
-            "ret_type_arg_idx": 0
-        },
-    ],
-    "BesselJ1": [
-        {
-            "args": [("real",)],
-            "ret_type_arg_idx": 0
-        },
-    ],
     "BesselJN": [
         {
             "args": [("int", "real")],
             "ret_type_arg_idx": 1
-        },
-    ],
-    "BesselY0": [
-        {
-            "args": [("real",)],
-            "ret_type_arg_idx": 0
-        },
-    ],
-    "BesselY1": [
-        {
-            "args": [("real",)],
-            "ret_type_arg_idx": 0
         },
     ],
     "BesselYN": [
@@ -258,6 +234,30 @@ intrinsic_funcs_args = {
             "args": [("real",)],
             "ret_type_arg_idx": 0
         }
+    ],
+    "BesselJ0": [
+        {
+            "args": [("real",)],
+            "ret_type_arg_idx": 0
+        },
+    ],
+    "BesselJ1": [
+        {
+            "args": [("real",)],
+            "ret_type_arg_idx": 0
+        },
+    ],
+    "BesselY0": [
+        {
+            "args": [("real",)],
+            "ret_type_arg_idx": 0
+        },
+    ],
+    "BesselY1": [
+        {
+            "args": [("real",)],
+            "ret_type_arg_idx": 0
+        },
     ],
     "Sqrt": [
         {
