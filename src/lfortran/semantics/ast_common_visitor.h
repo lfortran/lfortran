@@ -3630,7 +3630,7 @@ public:
                         // use 0 based indexing for string slice, so subtract 1 from left index
                         int32_t offset = 1;
                         ASRUtils::ASRBuilder b(al, loc);
-                        ASR::expr_t* const_1 = b.i(offset, int_type);
+                        ASR::expr_t* const_1 = b.i_t(offset, int_type);
                         ASR::expr_t* a_value = nullptr;
                         if (ASR::is_a<ASR::IntegerConstant_t>(*args[0].m_left)) {
                             int64_t a = ASR::down_cast<ASR::IntegerConstant_t>(
@@ -3639,7 +3639,7 @@ public:
                                                     a, int_type)));
                         }
                         ASR::expr_t* casted_left = CastingUtil::perform_casting(args[0].m_left, int_type, al, loc);
-                        l = b.i_vSub(casted_left, const_1, a_value);
+                        l = b.Sub(casted_left, const_1, a_value);
                     }
                     if (m_args[0].m_end) {
                         r = args[0].m_right;
@@ -3655,7 +3655,7 @@ public:
                         if (l && r) {
                             // TODO: Handle `args[0].m_step`
                             ASRUtils::ASRBuilder b(al, loc);
-                            a_len_expr = b.iSub(r, l);
+                            a_len_expr = b.Sub(r, l);
                             a_len = -3;
                         }
                         char_type = ASRUtils::TYPE(ASR::make_Character_t(al, loc,
@@ -5220,7 +5220,7 @@ public:
                 int kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[0]));
                 ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, kind));
                 ASRUtils::ASRBuilder b(al, loc);
-                args.push_back(al, b.i(kind, type));
+                args.push_back(al, b.i_t(kind, type));
             }
         }
     }
