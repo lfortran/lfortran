@@ -1463,6 +1463,12 @@ ASR::asr_t* make_Cast_t_value(Allocator &al, const Location &a_loc,
             double real = value_complex->m_re;
             value = ASR::down_cast<ASR::expr_t>(
                     ASR::make_RealConstant_t(al, a_loc, real, a_type));
+        } else if (a_kind == ASR::cast_kindType::ComplexToInteger) {
+            ASR::ComplexConstant_t* value_complex = ASR::down_cast<ASR::ComplexConstant_t>(
+                        ASRUtils::expr_value(a_arg));
+            int64_t val = value_complex->m_re;
+            value = ASR::down_cast<ASR::expr_t>(
+                    ASR::make_IntegerConstant_t(al, a_loc, val, a_type));
         } else if (a_kind == ASR::cast_kindType::IntegerToSymbolicExpression) {
             Vec<ASR::expr_t*> args;
             args.reserve(al, 1);

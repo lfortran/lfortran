@@ -19,6 +19,7 @@ namespace LCompilers::CastingUtil {
     // intrinsic types defined in ASR
     const std::map<std::pair<ASR::ttypeType, ASR::ttypeType>, ASR::cast_kindType>& type_rules = {
         {std::make_pair(ASR::ttypeType::Complex, ASR::ttypeType::Real), ASR::cast_kindType::ComplexToReal},
+        {std::make_pair(ASR::ttypeType::Complex, ASR::ttypeType::Integer), ASR::cast_kindType::ComplexToInteger},
         {std::make_pair(ASR::ttypeType::Complex, ASR::ttypeType::Logical), ASR::cast_kindType::ComplexToLogical},
         {std::make_pair(ASR::ttypeType::Real, ASR::ttypeType::Complex), ASR::cast_kindType::RealToComplex},
         {std::make_pair(ASR::ttypeType::Real, ASR::ttypeType::Integer), ASR::cast_kindType::RealToInteger},
