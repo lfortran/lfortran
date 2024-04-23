@@ -28,6 +28,7 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Asind)
         INTRINSIC_NAME_CASE(Acosd)
         INTRINSIC_NAME_CASE(Atand)
+        INTRINSIC_NAME_CASE(Sind)
         INTRINSIC_NAME_CASE(Acos)
         INTRINSIC_NAME_CASE(Atan)
         INTRINSIC_NAME_CASE(Sinh)
@@ -210,6 +211,8 @@ namespace IntrinsicElementalFunctionRegistry {
             {&Acosd::instantiate_Acosd, &Acosd::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Atand),
             {&Atand::instantiate_Atand, &Atand::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Sind),
+            {&Sind::instantiate_Sind, &Sind::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Cos),
             {&Cos::instantiate_Cos, &UnaryIntrinsicFunction::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Tan),
@@ -545,6 +548,8 @@ namespace IntrinsicElementalFunctionRegistry {
             "acosd"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Atan),
             "atand"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Sind),
+            "sind"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::BesselJ0),
             "bessel_j0"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::BesselJ1),
@@ -792,6 +797,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"asind", {&Asind::create_Asind, &Asind::eval_Asind}},
                 {"acosd", {&Acosd::create_Acosd, &Acosd::eval_Acosd}},
                 {"atand", {&Atand::create_Atand, &Atand::eval_Atand}},
+                {"sind", {&Sind::create_Sind, &Sind::eval_Sind}},
                 {"cos", {&Cos::create_Cos, &Cos::eval_Cos}},
                 {"tan", {&Tan::create_Tan, &Tan::eval_Tan}},
                 {"asin", {&Asin::create_Asin, &Asin::eval_Asin}},
