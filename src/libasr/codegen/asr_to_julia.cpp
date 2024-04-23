@@ -1341,6 +1341,14 @@ public:
         src = pre + out + post;
     }
 
+    void visit_IntegerConstructor(const ASR::IntegerConstructor_t& x)
+    {
+        visit_expr(*x.m_val);
+        std::string val = src;
+        src = "Integer(" + val + ")";
+        last_expr_precedence = julia_prec::Base;
+    }
+
     void visit_IntegerConstant(const ASR::IntegerConstant_t& x)
     {
         src = std::to_string(x.m_n);

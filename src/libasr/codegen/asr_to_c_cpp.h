@@ -2482,6 +2482,12 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         src = "CMPLX(" + re + "," + im + ")";
     }
 
+    void visit_IntegerConstructor(const ASR::IntegerConstructor_t &x) {
+        self().visit_expr(*x.m_val);
+        std::string val = std::move(src);
+        src = "INT(" + val + ")";
+    }
+
     void visit_StructTypeConstructor(const ASR::StructTypeConstructor_t &x) {
         std::string out = "{";
         ASR::StructType_t *st = ASR::down_cast<ASR::StructType_t>(x.m_dt_sym);

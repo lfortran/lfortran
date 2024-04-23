@@ -1186,6 +1186,12 @@ public:
         src = "(" + re + ", " + im + ")";
     }
 
+    void visit_IntegerConstructor(const ASR::IntegerConstructor_t &x) {
+        visit_expr(*x.m_val);
+        std::string val = src;
+        src = "(" + val + ")";
+    }
+
     // void visit_NamedExpr(const ASR::NamedExpr_t &x) {}
 
     void visit_FunctionCall(const ASR::FunctionCall_t &x) {

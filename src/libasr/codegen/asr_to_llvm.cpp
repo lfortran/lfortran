@@ -6634,6 +6634,41 @@ public:
         tmp = complex_from_floats(re2, im2, type);
     }
 
+    void visit_IntegerConstructor(const ASR::IntegerConstructor_t &x) {
+        if (x.m_value) {
+            this->visit_expr_wrapper(x.m_value, true);
+            return;
+        }
+        this->visit_expr_wrapper(x.m_val, true);
+        llvm::Value *val = tmp;
+
+        int a_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+
+        llvm::Value *val2;
+        switch( a_kind ) {
+            case 1: {
+                val2 = builder->CreateFPTrunc(val, llvm::Type::getInt8Ty(context));
+                break;
+            }
+            case 2: {
+                val2 = builder->CreateFPExt(val, llvm::Type::getInt16Ty(context));
+                break;
+            }
+            case 4: {
+                val2 = builder->CreateFPExt(val, llvm::Type::getInt32Ty(context));
+                break;
+            }
+            case 8: {
+                val2 = builder->CreateFPExt(val, llvm::Type::getInt64Ty(context));
+                break;
+            }
+            default: {
+                throw CodeGenError("kind type is not supported");
+            }
+        }
+        tmp = val2;
+    }
+
     void visit_ComplexConstant(const ASR::ComplexConstant_t &x) {
         double re = x.m_re;
         double im = x.m_im;

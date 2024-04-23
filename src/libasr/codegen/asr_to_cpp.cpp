@@ -485,6 +485,13 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
         last_expr_precedence = 2;
     }
 
+    void visit_IntegerConstructor(const ASR::IntegerConstructor_t &x) {
+        this->visit_expr(*x.m_val);
+        std::string val = src;
+        src = "std::int(" + val + ")";
+        last_expr_precedence = 2;
+    }
+
     void visit_ComplexConstant(const ASR::ComplexConstant_t &x) {
         std::string re = std::to_string(x.m_re);
         std::string im = std::to_string(x.m_im);
