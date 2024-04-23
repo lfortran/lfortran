@@ -3244,6 +3244,7 @@ asr_implicit_typing = true
 filename = "implicit10.f90"
 asr = true
 asr_implicit_typing = true
+ast_disable_style = true
 
 [[test]]
 filename = "implicit11.f90"
