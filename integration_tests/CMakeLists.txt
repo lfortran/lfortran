@@ -743,6 +743,7 @@ RUN(NAME intrinsics_209 LABELS gfortran llvm llvm_wasm) # atand
 RUN(NAME intrinsics_210 LABELS gfortran llvm llvm_wasm) # bessel_jn
 RUN(NAME intrinsics_211 LABELS gfortran llvm llvm_wasm) # bessel_yn
 RUN(NAME intrinsics_212 LABELS gfortran llvm) # specific type intrinsics
+RUN(NAME intrinsics_213 LABELS gfortran llvm) # int
 
 RUN(NAME parameter_01 LABELS gfortran)
 RUN(NAME parameter_02 LABELS gfortran)
