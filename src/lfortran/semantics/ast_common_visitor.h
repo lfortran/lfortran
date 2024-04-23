@@ -5186,6 +5186,38 @@ public:
         return ASR::make_ComplexConstructor_t(al, loc, re, im, ret_type, value);
     }
 
+    ASR::asr_t* create_Int(const AST::FuncCallOrArray_t& x) {
+        const Location &loc = x.base.base.loc;
+        Vec<ASR::expr_t*> args;
+        std::vector<std::string> kwarg_names = {"A", "kind"};
+        handle_intrinsic_node_args(x, args, kwarg_names, 1, 2, "int");
+
+        ASR::ttype_t *arg_type0 = ASRUtils::expr_type(args[0]);
+        if(!(is_integer(*arg_type0) || is_real(*arg_type0) || is_complex(*arg_type0))) {
+            throw SemanticError("Unexpected args, Int expects (int), (real) or (complex) "
+                "as arguments", loc);
+        }
+
+        ASR::expr_t* value = nullptr;
+        ASR::expr_t *kind = args[1];
+        int64_t kind_const = handle_kind(kind);
+        ASR::ttype_t* ret_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, kind_const));
+
+        if (ASRUtils::all_args_evaluated(args, true)) {
+            int64_t val;
+            if (!is_complex(*arg_type0))
+                ASRUtils::extract_value(ASRUtils::expr_value(args[0]), val);
+            else {
+                ASR::ComplexConstant_t *complex_const = ASR::down_cast<ASR::ComplexConstant_t>(ASRUtils::expr_value(args[0]));
+                val = complex_const->m_re;
+            }        
+            value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, val, ret_type));
+        }
+        
+        ASR::expr_t* res = CastingUtil::perform_casting(args[0], ret_type, al, loc);
+        return ASR::make_IntegerConstructor_t(al, loc, res, ret_type, value);
+    }
+
     std::vector<IntrinsicSignature> get_intrinsic_signature(std::string& var_name) {
         if( name2signature.find(var_name) == name2signature.end() ) {
             return {IntrinsicSignature({}, 1, 1)};
@@ -5550,6 +5582,8 @@ public:
                 tmp = create_ArrayAll(x);
             } else if( var_name == "complex" ) {
                 tmp = create_Complex(x);
+            } else if( var_name == "int" ) {
+                tmp = create_Int(x);
             } else {
                 throw LCompilersException("create_" + var_name + " not implemented yet.");
             }
