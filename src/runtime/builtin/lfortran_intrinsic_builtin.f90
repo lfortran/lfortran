@@ -6,16 +6,6 @@ interface
     integer, allocatable, intent(inout) :: from
     integer, allocatable, intent(out) :: to
     end subroutine
-    
-    real function real(x, kind)
-    integer, intent(in) :: x(:)
-    integer, intent(in) :: kind
-    end function
-
-    integer function int(x, kind)
-    real, intent(in) :: x(:)
-    integer, optional, intent(in) :: kind
-    end function
 
     integer function len(x, kind)
     character(len=*), intent(in) :: x
