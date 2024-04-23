@@ -78,6 +78,7 @@ stmt
 expr
     = IfExp(expr test, expr body, expr orelse, ttype type, expr? value)
     | ComplexConstructor(expr re, expr im, ttype type, expr? value)
+    | IntegerConstructor(expr val, ttype type, expr? value)
     | NamedExpr(expr target, expr value, ttype type)
     | FunctionCall(symbol name, symbol? original_name, call_arg* args, ttype type, expr? value, expr? dt)
     | IntrinsicElementalFunction(int intrinsic_id, expr* args, int overload_id, ttype? type, expr? value)
