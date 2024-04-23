@@ -5193,9 +5193,11 @@ public:
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 2, "int");
 
         ASR::ttype_t *arg_type0 = ASRUtils::expr_type(args[0]);
-        if(!(is_integer(*arg_type0) || is_real(*arg_type0) || is_complex(*arg_type0))) {
-            throw SemanticError("Unexpected args, Int expects (int), (real) or (complex) "
-                "as arguments", loc);
+        if (!ASR::is_a<ASR::IntegerBOZ_t>(*args[0]) ) {
+            if(!(is_integer(*arg_type0) || is_real(*arg_type0) || is_complex(*arg_type0))) {
+                throw SemanticError("Unexpected args, Int expects (int), (real) or (complex) "
+                    "as arguments", loc);
+            }
         }
 
         ASR::expr_t* value = nullptr;
@@ -5205,16 +5207,21 @@ public:
 
         if (ASRUtils::all_args_evaluated(args, true)) {
             int64_t val;
-            if (!is_complex(*arg_type0))
+            if( ASR::is_a<ASR::IntegerBOZ_t>(*args[0]) ) {
+                val = ASR::down_cast<ASR::IntegerBOZ_t>(args[0])->m_v;
+            } else if (is_complex(*arg_type0)) {
+                val = ASR::down_cast<ASR::ComplexConstant_t>(ASRUtils::expr_value(args[0]))->m_re;
+            } else {
                 ASRUtils::extract_value(ASRUtils::expr_value(args[0]), val);
-            else {
-                ASR::ComplexConstant_t *complex_const = ASR::down_cast<ASR::ComplexConstant_t>(ASRUtils::expr_value(args[0]));
-                val = complex_const->m_re;
             }        
             value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, val, ret_type));
         }
         
-        ASR::expr_t* res = CastingUtil::perform_casting(args[0], ret_type, al, loc);
+        ASR::expr_t* res = args[0];
+        if (!ASR::is_a<ASR::IntegerBOZ_t>(*args[0]) ) {
+            res = CastingUtil::perform_casting(args[0], ret_type, al, loc);
+        }
+
         return ASR::make_IntegerConstructor_t(al, loc, res, ret_type, value);
     }
 
