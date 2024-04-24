@@ -9,4 +9,8 @@ program character_array_indexing
     a(1:2) = b(1:2)
     if (a(1) /= "xi") error stop
     if (a(2) /= "xp") error stop
+
+    a(1:2) = b(2:1:-1)
+    if (a(1) /= "xp") error stop
+    if (a(2) /= "xi") error stop
 end program character_array_indexing
