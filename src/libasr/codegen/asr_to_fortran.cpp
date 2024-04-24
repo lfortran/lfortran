@@ -1723,20 +1723,6 @@ public:
         src = r;
     }
 
-    void visit_ArrayAll(const ASR::ArrayAll_t &x) {
-        std::string r;
-        r += "all";
-        r += "(";
-        visit_expr(*x.m_mask);
-        r += src;
-        if (x.m_dim) {
-            visit_expr(*x.m_dim);
-            r += src;
-        }
-        r += ")";
-        src = r;
-    }
-
     // void visit_BitCast(const ASR::BitCast_t &x) {}
 
     void visit_StructInstanceMember(const ASR::StructInstanceMember_t &x) {
