@@ -1952,6 +1952,7 @@ int main_app(int argc, char *argv[]) {
     std::vector<std::string> arg_l;
     std::vector<std::string> arg_L;
     std::vector<std::string> arg_files;
+    std::string arg_standard;
     bool arg_version = false;
     bool show_prescan = false;
     bool show_tokens = false;
@@ -2032,7 +2033,7 @@ int main_app(int argc, char *argv[]) {
     app.add_flag("--no-cpp", no_cpp, "Disable C preprocessing");
     app.add_flag("--fixed-form", compiler_options.fixed_form, "Use fixed form Fortran source parsing");
     app.add_flag("--fixed-form-infer", fixed_form_infer, "Use heuristics to infer if a file is in fixed form");
-    app.add_flag("--no-prescan", arg_no_prescan, "Turn off prescan");
+    app.add_flag("--no-prescan", arg_no_prescan, "Turn off prescanning");
     app.add_flag("--show-prescan", show_prescan, "Show tokens for the given file and exit");
     app.add_flag("--show-tokens", show_tokens, "Show tokens for the given file and exit");
     app.add_flag("--show-ast", show_ast, "Show AST for the given file and exit");
