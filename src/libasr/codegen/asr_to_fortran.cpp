@@ -1297,6 +1297,7 @@ public:
         std::string out;
         switch (x.m_arr_intrinsic_id) {
             SET_ARR_INTRINSIC_NAME(Any, "any");
+            SET_ARR_INTRINSIC_NAME(All, "all");
             SET_ARR_INTRINSIC_NAME(Sum, "sum");
             SET_ARR_INTRINSIC_NAME(Shape, "shape");
             SET_ARR_INTRINSIC_NAME(MaxVal, "maxval");
