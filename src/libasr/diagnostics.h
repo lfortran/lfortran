@@ -122,6 +122,8 @@ struct Diagnostics {
 
     // Returns true iff diagnostics contains at least one error message
     bool has_error() const;
+    bool has_warning() const;
+    bool has_style() const;
 
     void add(const Diagnostic &d) {
         diagnostics.push_back(d);
