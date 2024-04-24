@@ -19,6 +19,7 @@ namespace ASRUtils {
 /************************* Intrinsic Array Functions **************************/
 enum class IntrinsicArrayFunctions : int64_t {
     Any,
+    All,
     MatMul,
     MaxLoc,
     MaxVal,
@@ -44,6 +45,7 @@ enum class IntrinsicArrayFunctions : int64_t {
 inline std::string get_array_intrinsic_name(int x) {
     switch (x) {
         ARRAY_INTRINSIC_NAME_CASE(Any)
+        ARRAY_INTRINSIC_NAME_CASE(All)
         ARRAY_INTRINSIC_NAME_CASE(MatMul)
         ARRAY_INTRINSIC_NAME_CASE(MaxLoc)
         ARRAY_INTRINSIC_NAME_CASE(MaxVal)
@@ -1352,6 +1354,257 @@ namespace Any {
     }
 
 } // namespace Any
+
+namespace All {
+
+    static inline void verify_array(ASR::expr_t* array, ASR::ttype_t* return_type,
+        const Location& loc, diag::Diagnostics& diagnostics) {
+        ASR::ttype_t* array_type = ASRUtils::expr_type(array);
+        ASRUtils::require_impl(ASRUtils::is_logical(*array_type) && ASRUtils::extract_n_dims_from_ttype(array_type) > 0,
+            "`mask` argument of `all` intrinsic must be a logical array, found: " + ASRUtils::get_type_code(array_type),
+            loc, diagnostics);
+
+        ASRUtils::require_impl(ASRUtils::is_logical(*return_type) && ASRUtils::extract_n_dims_from_ttype(return_type) == 0,
+            "`all` intrinsic must return a scalar logical output", loc, diagnostics);
+    }
+
+    static inline void verify_array_dim(ASR::expr_t* array, ASR::expr_t* dim,
+        ASR::ttype_t* return_type, const Location& loc, diag::Diagnostics& diagnostics) {
+        ASR::ttype_t* array_type = ASRUtils::expr_type(array);
+        ASRUtils::require_impl(ASRUtils::is_logical(*ASRUtils::type_get_past_pointer(array_type)) && ASRUtils::extract_n_dims_from_ttype(array_type) > 0,
+            "`mask` argument of `all` intrinsic must be a logical array, found: " + ASRUtils::get_type_code(array_type),
+            loc, diagnostics);
+
+        ASRUtils::require_impl(ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_pointer(ASRUtils::expr_type(dim))),
+            "`dim` argument of `all` intrinsic must be an integer", loc, diagnostics);
+
+        ASRUtils::require_impl(ASRUtils::is_logical(*return_type) && ASRUtils::extract_n_dims_from_ttype(array_type) == ASRUtils::extract_n_dims_from_ttype(return_type) + 1,
+            "`all` intrinsic must return a logical output with dimension "
+            "only 1 less than that of input array", loc, diagnostics);
+    }
+
+    static inline void verify_args(const ASR::IntrinsicArrayFunction_t& x, diag::Diagnostics& diagnostics) {
+        ASRUtils::require_impl(x.m_args[0] != nullptr, "`mask` argument to `all` intrinsic cannot be nullptr",
+            x.base.base.loc, diagnostics);
+        switch( x.m_overload_id ) {
+            case 0: {
+                verify_array(x.m_args[0], x.m_type, x.base.base.loc, diagnostics);
+                break;
+            }
+            case 1: {
+                ASRUtils::require_impl(x.n_args == 2 && x.m_args[1] != nullptr,
+                    "`dim` argument to `all` intrinsic cannot be nullptr",
+                    x.base.base.loc, diagnostics);
+                verify_array_dim(x.m_args[0], x.m_args[1], x.m_type, x.base.base.loc, diagnostics);
+                break;
+            }
+            default: {
+                require_impl(false, "Unrecognised overload id in `all` intrinsic",
+                            x.base.base.loc, diagnostics);
+            }
+        }
+    }
+
+    static inline ASR::expr_t *eval_All(Allocator & /*al*/,
+        const Location & /*loc*/, ASR::ttype_t */*t*/, Vec<ASR::expr_t*>& /*args*/,
+        diag::Diagnostics& /*diag*/) {
+        return nullptr;
+    }
+
+    static inline ASR::asr_t* create_All(
+        Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args,
+        diag::Diagnostics& diag) {
+        int64_t overload_id = 0;
+        Vec<ASR::expr_t*> all_args; all_args.reserve(al, 2);
+
+        ASR::expr_t* mask = args[0];
+        ASR::expr_t* dim = nullptr;
+        if( args.size() == 2 ) {
+            dim = args[1];
+        }
+        if( ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(mask)) == 0 ) {
+            append_error(diag, "`mask` argument of `all` intrinsic must be a logical array",
+                mask->base.loc);
+            return nullptr;
+        }
+
+        ASR::expr_t *value = nullptr;
+        Vec<ASR::expr_t*> arg_values; arg_values.reserve(al, 2);
+        arg_values.push_back(al, ASRUtils::expr_value(mask));
+        if( dim ) arg_values.push_back(al,  ASRUtils::expr_value(dim));
+        
+        ASR::ttype_t* logical_return_type = logical;
+        if( dim ) {
+            overload_id = 1;
+            size_t n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(mask));
+            Vec<ASR::dimension_t> dims; dims.reserve(al, (int) n_dims - 1);
+            for( int i = 0; i < (int) n_dims - 1; i++ ) {
+                ASR::dimension_t d;
+                d.loc = mask->base.loc;
+                d.m_length = nullptr;
+                d.m_start = nullptr;
+                dims.push_back(al, d);
+            }
+            if( dims.size() > 0 ) {
+                logical_return_type = ASRUtils::make_Array_t_util(al, loc,
+                    logical, dims.p, dims.size());
+            }
+        }
+        
+        value = eval_All(al, loc, logical_return_type, arg_values, diag);
+        all_args.push_back(al, mask);
+        if( dim ) all_args.push_back(al, dim);
+
+        return ASRUtils::make_IntrinsicArrayFunction_t_util(al, loc,
+            static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::All),
+            all_args.p, all_args.n, overload_id, logical_return_type, value);
+    }
+
+    static inline void generate_body_for_scalar_output(Allocator& al, const Location& loc,
+        ASR::expr_t* array, ASR::expr_t* return_var, SymbolTable* fn_scope,
+        Vec<ASR::stmt_t*>& fn_body) {
+        ASRBuilder builder(al, loc);
+        Vec<ASR::expr_t*> idx_vars;
+        Vec<ASR::stmt_t*> doloop_body;
+
+        builder.generate_reduction_intrinsic_stmts_for_scalar_output(loc,
+            array, fn_scope, fn_body, idx_vars, doloop_body,
+            [=, &al, &fn_body, &builder] () {
+                ASR::expr_t* logical_true = make_ConstantWithKind(
+                    make_LogicalConstant_t, make_Logical_t, true, 4, loc);
+                ASR::stmt_t* return_var_init = builder.Assignment(return_var, logical_true);
+                fn_body.push_back(al, return_var_init);
+            },
+            [=, &al, &idx_vars, &doloop_body, &builder] () {
+                ASR::expr_t* array_ref = PassUtils::create_array_ref(array, idx_vars, al);
+                ASR::expr_t* logical_and = builder.And(return_var, array_ref);
+                ASR::stmt_t* loop_invariant = builder.Assignment(return_var, logical_and);
+                doloop_body.push_back(al, loop_invariant);
+            }
+        );
+    }
+
+    static inline void generate_body_for_array_output(Allocator& al, const Location& loc,
+        ASR::expr_t* array, ASR::expr_t* dim, ASR::expr_t* result,
+        SymbolTable* fn_scope, Vec<ASR::stmt_t*>& fn_body) {
+        ASRBuilder builder(al, loc);
+        Vec<ASR::expr_t*> idx_vars, target_idx_vars;
+        Vec<ASR::stmt_t*> doloop_body;
+        builder.generate_reduction_intrinsic_stmts_for_array_output(
+            loc, array, dim, fn_scope, fn_body,
+            idx_vars, target_idx_vars, doloop_body,
+            [=, &al, &fn_body, &builder] {
+                ASR::expr_t* logical_true = make_ConstantWithKind(
+                    make_LogicalConstant_t, make_Logical_t, true, 4, loc);
+                ASR::stmt_t* result_init = builder.Assignment(result, logical_true);
+                fn_body.push_back(al, result_init);
+            },
+            [=, &al, &idx_vars, &target_idx_vars, &doloop_body, &result, &builder] () {
+                ASR::expr_t* result_ref = PassUtils::create_array_ref(result, target_idx_vars, al);
+                ASR::expr_t* array_ref = PassUtils::create_array_ref(array, idx_vars, al);
+                ASR::expr_t* logical_and = builder.And(result_ref, array_ref);
+                ASR::stmt_t* loop_invariant = builder.Assignment(result_ref, logical_and);
+                doloop_body.push_back(al, loop_invariant);
+            });
+    }
+
+    static inline ASR::expr_t* instantiate_All(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *logical_return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t overload_id) {
+        ASRBuilder builder(al, loc);
+        ASRBuilder& b = builder;
+        ASR::ttype_t* arg_type = arg_types[0];
+        int kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
+        int rank = ASRUtils::extract_n_dims_from_ttype(arg_type);
+        std::string new_name = "all_" + std::to_string(kind) +
+                                "_" + std::to_string(rank) +
+                                "_" + std::to_string(overload_id);
+        // Check if Function is already defined.
+        {
+            std::string new_func_name = new_name;
+            int i = 1;
+            while (scope->get_symbol(new_func_name) != nullptr) {
+                ASR::symbol_t *s = scope->get_symbol(new_func_name);
+                ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(s);
+                int orig_array_rank = ASRUtils::extract_n_dims_from_ttype(
+                                        ASRUtils::expr_type(f->m_args[0]));
+                bool same_allocatable_type = (ASRUtils::is_allocatable(arg_type) ==
+                                        ASRUtils::is_allocatable(ASRUtils::expr_type(f->m_args[0])));
+                if (same_allocatable_type && ASRUtils::types_equal(ASRUtils::expr_type(f->m_args[0]),
+                        ASRUtils::expr_type(new_args[0].m_value), true) && orig_array_rank == rank) {
+                    return builder.Call(s, new_args, logical_return_type, nullptr);
+                } else {
+                    new_func_name += std::to_string(i);
+                    i++;
+                }
+            }
+        }
+
+        new_name = scope->get_unique_name(new_name, false);
+        SymbolTable *fn_symtab = al.make_new<SymbolTable>(scope);
+
+        Vec<ASR::expr_t*> args;
+        int result_dims = 0;
+        {
+            args.reserve(al, 1);
+            ASR::ttype_t* mask_type = ASRUtils::duplicate_type_with_empty_dims(al, arg_type);
+            fill_func_arg("mask", mask_type);
+            if( overload_id == 1 ) {
+                ASR::ttype_t* dim_type = ASRUtils::expr_type(new_args[1].m_value);
+                LCOMPILERS_ASSERT(ASR::is_a<ASR::Integer_t>(*dim_type));
+                [[maybe_unused]] int kind = ASRUtils::extract_kind_from_ttype_t(dim_type);
+                LCOMPILERS_ASSERT(kind == 4);
+                fill_func_arg("dim", dim_type);
+
+                Vec<ASR::dimension_t> dims;
+                size_t n_dims = ASRUtils::extract_n_dims_from_ttype(arg_type);
+                dims.reserve(al, (int) n_dims - 1);
+                for( int i = 0; i < (int) n_dims - 1; i++ ) {
+                    ASR::dimension_t dim;
+                    dim.loc = new_args[0].m_value->base.loc;
+                    dim.m_length = nullptr;
+                    dim.m_start = nullptr;
+                    dims.push_back(al, dim);
+                }
+                result_dims = dims.size();
+                if( result_dims > 0 ) {
+                    fill_func_arg("result", logical_return_type);
+                }
+            }
+        }
+
+        ASR::expr_t* return_var = nullptr;
+        if( result_dims == 0 ) {
+            return_var = declare(new_name, logical_return_type, ReturnVar);
+        }
+
+        Vec<ASR::stmt_t*> body;
+        body.reserve(al, 1);
+        if( overload_id == 0 || return_var ) {
+            generate_body_for_scalar_output(al, loc, args[0], return_var, fn_symtab, body);
+        } else if( overload_id == 1 ) {
+            generate_body_for_array_output(al, loc, args[0], args[1], args[2], fn_symtab, body);
+        } else {
+            LCOMPILERS_ASSERT(false);
+        }
+
+        Vec<char *> dep;
+        dep.reserve(al, 1);
+
+        ASR::symbol_t *new_symbol = nullptr;
+        if( return_var ) {
+            new_symbol = make_ASR_Function_t(new_name, fn_symtab, dep, args,
+                body, return_var, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        } else {
+            new_symbol = make_Function_Without_ReturnVar_t(
+                new_name, fn_symtab, dep, args,
+                body, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        }
+        scope->add_symbol(new_name, new_symbol);
+        return builder.Call(new_symbol, new_args, logical_return_type, nullptr);
+    }
+
+} // namespace All
 
 namespace Sum {
 
@@ -3069,6 +3322,8 @@ namespace IntrinsicArrayFunctionRegistry {
             verify_array_function>>& intrinsic_function_by_id_db = {
         {static_cast<int64_t>(IntrinsicArrayFunctions::Any),
             {&Any::instantiate_Any, &Any::verify_args}},
+        {static_cast<int64_t>(IntrinsicArrayFunctions::All),
+            {&All::instantiate_All, &All::verify_args}},
         {static_cast<int64_t>(IntrinsicArrayFunctions::MatMul),
             {&MatMul::instantiate_MatMul, &MatMul::verify_args}},
         {static_cast<int64_t>(IntrinsicArrayFunctions::MaxLoc),
@@ -3102,6 +3357,7 @@ namespace IntrinsicArrayFunctionRegistry {
     static const std::map<std::string, std::tuple<create_intrinsic_function,
             eval_intrinsic_function>>& function_by_name_db = {
         {"any", {&Any::create_Any, &Any::eval_Any}},
+        {"all", {&All::create_All, &All::eval_All}},
         {"matmul", {&MatMul::create_MatMul, &MatMul::eval_MatMul}},
         {"maxloc", {&MaxLoc::create_MaxLoc, nullptr}},
         {"maxval", {&MaxVal::create_MaxVal, &MaxVal::eval_MaxVal}},
@@ -3148,6 +3404,7 @@ namespace IntrinsicArrayFunctionRegistry {
     */
     static inline int get_dim_index(IntrinsicArrayFunctions id) {
         if( id == IntrinsicArrayFunctions::Any ||
+            id == IntrinsicArrayFunctions::All ||
             id == IntrinsicArrayFunctions::Sum ||
             id == IntrinsicArrayFunctions::Product ||
             id == IntrinsicArrayFunctions::MaxVal ||
