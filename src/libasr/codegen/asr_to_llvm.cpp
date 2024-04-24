@@ -4335,9 +4335,12 @@ public:
             llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, target_rank)));
         builder->CreateStore(target_dim_des_val, target_dim_des_ptr);
         ASR::ttype_t* array_type = ASRUtils::expr_type(array_section->m_v);
-        if( ASRUtils::extract_physical_type(array_type) == ASR::array_physical_typeType::PointerToDataArray ||
-            ASRUtils::extract_physical_type(array_type) == ASR::array_physical_typeType::FixedSizeArray ) {
-            if( ASRUtils::extract_physical_type(array_type) == ASR::array_physical_typeType::FixedSizeArray ) {
+        ASR::array_physical_typeType arr_physical_type = ASRUtils::extract_physical_type(array_type);
+        if( arr_physical_type == ASR::array_physical_typeType::PointerToDataArray ||
+            arr_physical_type == ASR::array_physical_typeType::FixedSizeArray ||
+            arr_physical_type == ASR::array_physical_typeType::CharacterArraySinglePointer) {
+            if( arr_physical_type == ASR::array_physical_typeType::FixedSizeArray ||
+                arr_physical_type == ASR::array_physical_typeType::CharacterArraySinglePointer) {
                 value_desc = llvm_utils->create_gep(value_desc, 0);
             }
             ASR::dimension_t* m_dims = nullptr;
