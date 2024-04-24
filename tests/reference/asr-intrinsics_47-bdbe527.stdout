@@ -54,30 +54,9 @@
                                     l
                                     []
                                     Local
-                                    (ArrayAll
-                                        (ArrayConstant
-                                            8
-                                            [1, 1]
-                                            (Array
-                                                (Logical 4)
-                                                [((IntegerConstant 1 (Integer 4))
-                                                (IntegerConstant 2 (Integer 4)))]
-                                                FixedSizeArray
-                                            )
-                                            ColMajor
-                                        )
-                                        ()
-                                        (Logical 4)
-                                        (LogicalConstant
-                                            .true.
-                                            (Logical 4)
-                                        )
-                                    )
-                                    (LogicalConstant
-                                        .true.
-                                        (Logical 4)
-                                    )
-                                    Save
+                                    ()
+                                    ()
+                                    Default
                                     (Logical 4)
                                     ()
                                     Source
@@ -90,103 +69,255 @@
                     []
                     [(Assignment
                         (Var 2 l)
-                        (ArrayAll
-                            (ArrayConstant
-                                8
-                                [1, 0]
+                        (IntrinsicArrayFunction
+                            All
+                            [(ArrayPhysicalCast
+                                (ArrayConstant
+                                    8
+                                    [1, 1]
+                                    (Array
+                                        (Logical 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 2 (Integer 4)))]
+                                        FixedSizeArray
+                                    )
+                                    ColMajor
+                                )
+                                FixedSizeArray
+                                DescriptorArray
                                 (Array
                                     (Logical 4)
                                     [((IntegerConstant 1 (Integer 4))
                                     (IntegerConstant 2 (Integer 4)))]
-                                    FixedSizeArray
+                                    DescriptorArray
                                 )
-                                ColMajor
-                            )
-                            ()
+                                ()
+                            )]
+                            0
                             (Logical 4)
-                            (LogicalConstant
-                                .false.
-                                (Logical 4)
-                            )
+                            ()
                         )
                         ()
                     )
                     (Assignment
                         (Var 2 l)
-                        (ArrayAll
-                            (ArrayConstant
-                                4
-                                [0]
-                                (Array
-                                    (Logical 4)
-                                    [((IntegerConstant 1 (Integer 4))
-                                    (IntegerConstant 1 (Integer 4)))]
-                                    FixedSizeArray
+                        (IntrinsicArrayFunction
+                            All
+                            [(ArrayPhysicalCast
+                                (ArrayConstant
+                                    8
+                                    [1, 0]
+                                    (Array
+                                        (Logical 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 2 (Integer 4)))]
+                                        FixedSizeArray
+                                    )
+                                    ColMajor
                                 )
-                                ColMajor
-                            )
-                            ()
-                            (Logical 4)
-                            (LogicalConstant
-                                .false.
-                                (Logical 4)
-                            )
-                        )
-                        ()
-                    )
-                    (Assignment
-                        (Var 2 l)
-                        (ArrayAll
-                            (ArrayConstant
-                                4
-                                [1]
-                                (Array
-                                    (Logical 4)
-                                    [((IntegerConstant 1 (Integer 4))
-                                    (IntegerConstant 1 (Integer 4)))]
-                                    FixedSizeArray
-                                )
-                                ColMajor
-                            )
-                            ()
-                            (Logical 4)
-                            (LogicalConstant
-                                .true.
-                                (Logical 4)
-                            )
-                        )
-                        ()
-                    )
-                    (Assignment
-                        (Var 2 l)
-                        (ArrayAll
-                            (Var 2 a)
-                            ()
-                            (Logical 4)
-                            ()
-                        )
-                        ()
-                    )
-                    (Assignment
-                        (Var 2 l)
-                        (ArrayAll
-                            (ArrayConstant
-                                8
-                                [0, 1]
+                                FixedSizeArray
+                                DescriptorArray
                                 (Array
                                     (Logical 4)
                                     [((IntegerConstant 1 (Integer 4))
                                     (IntegerConstant 2 (Integer 4)))]
-                                    FixedSizeArray
+                                    DescriptorArray
                                 )
-                                ColMajor
-                            )
-                            ()
+                                ()
+                            )]
+                            0
                             (Logical 4)
-                            (LogicalConstant
-                                .false.
-                                (Logical 4)
-                            )
+                            ()
+                        )
+                        ()
+                    )
+                    (Assignment
+                        (Var 2 l)
+                        (IntrinsicArrayFunction
+                            All
+                            [(ArrayPhysicalCast
+                                (ArrayConstant
+                                    4
+                                    [0]
+                                    (Array
+                                        (Logical 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 1 (Integer 4)))]
+                                        FixedSizeArray
+                                    )
+                                    ColMajor
+                                )
+                                FixedSizeArray
+                                DescriptorArray
+                                (Array
+                                    (Logical 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4)))]
+                                    DescriptorArray
+                                )
+                                ()
+                            )]
+                            0
+                            (Logical 4)
+                            ()
+                        )
+                        ()
+                    )
+                    (Assignment
+                        (Var 2 l)
+                        (IntrinsicArrayFunction
+                            All
+                            [(ArrayPhysicalCast
+                                (ArrayConstant
+                                    4
+                                    [1]
+                                    (Array
+                                        (Logical 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 1 (Integer 4)))]
+                                        FixedSizeArray
+                                    )
+                                    ColMajor
+                                )
+                                FixedSizeArray
+                                DescriptorArray
+                                (Array
+                                    (Logical 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4)))]
+                                    DescriptorArray
+                                )
+                                ()
+                            )]
+                            0
+                            (Logical 4)
+                            ()
+                        )
+                        ()
+                    )
+                    (Assignment
+                        (Var 2 l)
+                        (IntrinsicArrayFunction
+                            All
+                            [(ArrayPhysicalCast
+                                (Var 2 a)
+                                FixedSizeArray
+                                DescriptorArray
+                                (Array
+                                    (Logical 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 3 (Integer 4)))]
+                                    DescriptorArray
+                                )
+                                ()
+                            )]
+                            0
+                            (Logical 4)
+                            ()
+                        )
+                        ()
+                    )
+                    (Assignment
+                        (Var 2 l)
+                        (IntrinsicArrayFunction
+                            All
+                            [(ArrayPhysicalCast
+                                (ArrayConstant
+                                    8
+                                    [0, 1]
+                                    (Array
+                                        (Logical 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 2 (Integer 4)))]
+                                        FixedSizeArray
+                                    )
+                                    ColMajor
+                                )
+                                FixedSizeArray
+                                DescriptorArray
+                                (Array
+                                    (Logical 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 2 (Integer 4)))]
+                                    DescriptorArray
+                                )
+                                ()
+                            )]
+                            0
+                            (Logical 4)
+                            ()
+                        )
+                        ()
+                    )
+                    (Assignment
+                        (Var 2 l)
+                        (IntrinsicArrayFunction
+                            All
+                            [(ArrayPhysicalCast
+                                (ArrayConstructor
+                                    [(Var 2 l)]
+                                    (Array
+                                        (Logical 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 1 (Integer 4)))]
+                                        FixedSizeArray
+                                    )
+                                    ()
+                                    ColMajor
+                                )
+                                FixedSizeArray
+                                DescriptorArray
+                                (Array
+                                    (Logical 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4)))]
+                                    DescriptorArray
+                                )
+                                ()
+                            )]
+                            0
+                            (Logical 4)
+                            ()
+                        )
+                        ()
+                    )
+                    (Assignment
+                        (Var 2 l)
+                        (IntrinsicArrayFunction
+                            All
+                            [(ArrayPhysicalCast
+                                (ArrayConstructor
+                                    [(LogicalConstant
+                                        .false.
+                                        (Logical 4)
+                                    )
+                                    (Var 2 a)
+                                    (LogicalConstant
+                                        .true.
+                                        (Logical 4)
+                                    )]
+                                    (Array
+                                        (Logical 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 3 (Integer 4)))]
+                                        FixedSizeArray
+                                    )
+                                    ()
+                                    ColMajor
+                                )
+                                FixedSizeArray
+                                DescriptorArray
+                                (Array
+                                    (Logical 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 3 (Integer 4)))]
+                                    DescriptorArray
+                                )
+                                ()
+                            )]
+                            0
+                            (Logical 4)
+                            ()
                         )
                         ()
                     )
