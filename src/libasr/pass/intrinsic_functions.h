@@ -727,14 +727,12 @@ namespace math_func {                                                           
         LCOMPILERS_ASSERT(args.size() == 1);                                                            \
         double rv = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;                                  \
         double result = stdeval(rv);                                                                    \
-        double PI = 3.14159265358979323846;                                                             \
-        if(degree == 1){                                                                                \
+        if ( degree == 1 ) {                                                                            \
             double PI = 3.14159265358979323846;                                                         \
-            result = result * 180.0 / PI;                                                               \
-        }                                                                                               \
-        if(degree == 2){                                                                                \
-            double radians = (rv * PI) / 180.0;                                                         \
-            result = stdeval(radians);                                                                  \
+            result = result * 180.0/PI;                                                                 \
+        } else if ( degree == 2 ) {                                                                     \
+            double PI = 3.14159265358979323846;                                                         \
+            result = stdeval( ( rv * PI ) / 180.0 );                                                    \
         }                                                                                               \
         return make_ConstantWithType(make_RealConstant_t, result, t, loc);                              \
     }                                                                                                   \
@@ -746,6 +744,13 @@ namespace math_func {                                                           
             #lcompilers_name, arg_types, return_type, new_args, overload_id);                           \
     }                                                                                                   \
 } // namespace math_func
+
+/*
+    Degree acts as a switch
+    - if degree = 1, math function output is in degrees
+    - if degree = 2, math function input is in degrees
+    - degree = 0, implies no change in input or output ( radians )
+*/
 
 create_math_bindc(BesselJ0, j0, 0, bessel_j0)
 create_math_bindc(BesselJ1, j1, 0, bessel_j1)
