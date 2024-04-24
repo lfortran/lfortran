@@ -2033,6 +2033,7 @@ int main_app(int argc, char *argv[]) {
     app.add_flag("--no-cpp", no_cpp, "Disable C preprocessing");
     app.add_flag("--fixed-form", compiler_options.fixed_form, "Use fixed form Fortran source parsing");
     app.add_flag("--fixed-form-infer", fixed_form_infer, "Use heuristics to infer if a file is in fixed form");
+    app.add_option("--std", arg_standard, "Select standard conformance (lf, f23, legacy)");
     app.add_flag("--no-prescan", arg_no_prescan, "Turn off prescanning");
     app.add_flag("--show-prescan", show_prescan, "Show tokens for the given file and exit");
     app.add_flag("--show-tokens", show_tokens, "Show tokens for the given file and exit");
@@ -2147,6 +2148,32 @@ int main_app(int argc, char *argv[]) {
         std::cerr << "The --print-targets option requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
         return 1;
 #endif
+    }
+
+    if (arg_standard == "" || arg_standard == "lf") {
+        // The default LFortran behavior, do nothing
+    } else if (arg_standard == "f23") {
+        compiler_options.disable_style = true;
+        compiler_options.implicit_typing = true;
+        compiler_options.implicit_argument_casting = true;
+        compiler_options.implicit_interface = true;
+        compiler_options.print_leading_space = true;
+    } else if (arg_standard == "legacy") {
+        // f23
+        compiler_options.disable_style = true;
+        compiler_options.implicit_typing = true;
+        compiler_options.implicit_argument_casting = true;
+        compiler_options.implicit_interface = true;
+        compiler_options.print_leading_space = true;
+
+        // legacy options
+        compiler_options.fixed_form = true;
+        compiler_options.legacy_array_sections = true;
+        compiler_options.use_loop_variable_after_loop = true;
+        compiler_options.generate_object_code = true;
+    } else {
+        std::cerr << "The option `--std=" << arg_standard << "` is not supported" << std::endl;
+        return 1;
     }
 
     compiler_options.use_colors = !arg_no_color;
