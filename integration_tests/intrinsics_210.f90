@@ -1,4 +1,5 @@
 program intrinsics_210
+    use lcompilers_test_module
     use, intrinsic :: iso_fortran_env, only: dp => real64, sp => real32
     integer(4) :: n(40)
     real(dp) :: x(40)
@@ -36,10 +37,7 @@ program intrinsics_210
         6.9929712255690990E-039_dp, 7.0335789790577674E-041_dp, 6.8007546900796684E-043_dp, 6.3118158714187534E-045_dp, &
         -3.3890445848758326E-002_dp, 6.2626337984015854E-003_dp, 3.5724011188705031E-002_dp, 7.5701847451948119E-003_dp]
 
-      do i = 1, size(res)
-            print *, res(i)
-            if (abs(res(i) - expected_res(i)) > 1e-5_dp) error stop
-      end do
+    call lcompilers_test(res, expected_res)
 
     n = [0, 1, 2, 3, &
         4, 5, 6, 7, &
@@ -75,10 +73,7 @@ program intrinsics_210
         0.0000000000000000_dp, 0.0000000000000000_dp, 0.0000000000000000_dp, 0.0000000000000000_dp, &
         -3.5113774172006770E-002_dp, -1.2362051018001158E-002_dp, 3.1067922823692470E-002_dp, 2.5002750863701195E-002_dp] 
 
-    do i = 1, size(x)
-        print *, bessel_jn(n(i), x(i)), "i = ", i
-        if (abs(bessel_jn(n(i), x(i)) - expected(i)) > 1e-12_dp) error stop
-    end do
+    call lcompilers_test(bessel_jn(n, x), expected)
 
 
     y = [1036.462826483388272_sp, 1.7197292882018389_sp, 10.2368267382872828_sp, 0.17197292882018389_sp, &
@@ -97,8 +92,5 @@ program intrinsics_210
         4.41184424E-31_sp, 5.28522317E-33_sp, 6.04228548E-35_sp, 6.58917622E-37_sp, &
         -3.08027826E-02_sp, 1.36694657E-02_sp, 3.46039571E-02_sp, -6.74327370E-04_sp]
 
-    do i = 1, size(y)
-        print *, bessel_jn(n(i), y(i)), "i = ", i
-        if (abs(bessel_jn(n(i), y(i)) - expected_y(i)) > 1e-6) error stop
-    end do
+    call lcompilers_test(bessel_jn(n(1:size(y)), y), expected_y, 10.0_sp)
 end program
