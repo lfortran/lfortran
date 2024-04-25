@@ -683,13 +683,75 @@ class ReplaceExprWithTemporaryVisitor:
 
 };
 
+class TransformVariableInitialiser:
+    public ASR::CallReplacerOnExpressionsVisitor<TransformVariableInitialiser> {
+
+    private:
+
+    Allocator& al;
+    std::set<ASR::expr_t*>& exprs_with_target;
+    std::map<SymbolTable*, Vec<ASR::stmt_t*>> symtab2decls;
+
+    public:
+
+    TransformVariableInitialiser(Allocator& al_, std::set<ASR::expr_t*>& exprs_with_target_):
+        al(al_), exprs_with_target(exprs_with_target_) {}
+
+    void visit_Variable(const ASR::Variable_t &x) {
+        const Location& loc = x.base.base.loc;
+        for( size_t i = 0; i < x.n_dependencies; i++ ) {
+            std::string dep_name = x.m_dependencies[i];
+            visit_symbol(*(current_scope->resolve_symbol(dep_name)));
+        }
+
+        ASR::Variable_t& xx = const_cast<ASR::Variable_t&>(x);
+        if( x.m_symbolic_value ) {
+            if( symtab2decls.find(current_scope) == symtab2decls.end() ) {
+                Vec<ASR::stmt_t*> result_vec; result_vec.reserve(al, 1);
+                symtab2decls[current_scope] = result_vec;
+            }
+            Vec<ASR::stmt_t*>& result_vec = symtab2decls[current_scope];
+            ASR::expr_t* target = ASRUtils::EXPR(ASR::make_Var_t(al, loc, &(xx.base)));
+            exprs_with_target.insert(xx.m_symbolic_value);
+            result_vec.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(
+                al, loc, target, xx.m_symbolic_value, nullptr)));
+            xx.m_symbolic_value = nullptr;
+            xx.m_value = nullptr;
+        }
+    }
+
+    void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
+        Vec<ASR::stmt_t*> body;
+        body.reserve(al, n_body);
+
+        if( symtab2decls.find(current_scope) != symtab2decls.end() ) {
+            Vec<ASR::stmt_t*>& decls = symtab2decls[current_scope];
+            for (size_t j = 0; j < decls.size(); j++) {
+                body.push_back(al, decls[j]);
+            }
+            symtab2decls.erase(current_scope);
+        }
+
+        for (size_t i = 0; i < n_body; i++) {
+            body.push_back(al, m_body[i]);
+        }
+        m_body = body.p;
+        n_body = body.size();
+    }
+
+};
+
 void pass_simplifier(Allocator &al, ASR::TranslationUnit_t &unit,
                      const PassOptions &/*pass_options*/) {
     std::set<ASR::expr_t*> exprs_with_target;
-    ArgSimplifier v(al, exprs_with_target);
-    v.visit_TranslationUnit(unit);
-    PassUtils::UpdateDependenciesVisitor u(al);
-    u.visit_TranslationUnit(unit);
+    TransformVariableInitialiser a(al, exprs_with_target);
+    a.visit_TranslationUnit(unit);
+    ArgSimplifier b(al, exprs_with_target);
+    b.visit_TranslationUnit(unit);
+    ReplaceExprWithTemporaryVisitor c(al, exprs_with_target);
+    c.visit_TranslationUnit(unit);
+    PassUtils::UpdateDependenciesVisitor d(al);
+    d.visit_TranslationUnit(unit);
 }
 
 
