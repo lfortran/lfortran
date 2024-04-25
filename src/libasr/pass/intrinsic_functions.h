@@ -33,6 +33,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     Tanh,
     Atan2,
     Asinh,
+    Sind,
     Asind,
     Acosd,
     Atand,
@@ -718,7 +719,7 @@ namespace MathIntrinsicFunction{
     }
 }
 
-#define create_math_bindc(math_func, stdeval, degree, lcompilers_name)                        \
+#define create_math_bindc(math_func, stdeval, degree, lcompilers_name)                                  \
 namespace math_func {                                                                                   \
     static inline ASR::expr_t *eval_##math_func(Allocator &al, const Location &loc,                     \
             ASR::ttype_t *t, Vec<ASR::expr_t*>& args,                                                   \
@@ -726,9 +727,12 @@ namespace math_func {                                                           
         LCOMPILERS_ASSERT(args.size() == 1);                                                            \
         double rv = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;                                  \
         double result = stdeval(rv);                                                                    \
-        if(degree == 1){                                                                                \
+        if ( degree == 1 ) {                                                                            \
             double PI = 3.14159265358979323846;                                                         \
-            result = result * 180.0 / PI;                                                               \
+            result = result * 180.0/PI;                                                                 \
+        } else if ( degree == 2 ) {                                                                     \
+            double PI = 3.14159265358979323846;                                                         \
+            result = stdeval( ( rv * PI ) / 180.0 );                                                    \
         }                                                                                               \
         return make_ConstantWithType(make_RealConstant_t, result, t, loc);                              \
     }                                                                                                   \
@@ -741,6 +745,13 @@ namespace math_func {                                                           
     }                                                                                                   \
 } // namespace math_func
 
+/*
+    Degree acts as a switch
+    - if degree = 1, math function output is in degrees
+    - if degree = 2, math function input is in degrees
+    - degree = 0, implies no change in input or output ( radians )
+*/
+
 create_math_bindc(BesselJ0, j0, 0, bessel_j0)
 create_math_bindc(BesselJ1, j1, 0, bessel_j1)
 create_math_bindc(BesselY0, y0, 0, bessel_y0)
@@ -748,6 +759,7 @@ create_math_bindc(BesselY1, y1, 0, bessel_y1)
 create_math_bindc(Asind, asin, 1, asind)
 create_math_bindc(Acosd, acos, 1, acosd)
 create_math_bindc(Atand, atan, 1, atand)
+create_math_bindc(Sind, sin, 2, sind)
 
 namespace Aimag {
 
