@@ -35,6 +35,7 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
     set(extra_args ${${RUN_EXTRA_ARGS}})
     set(copy_to_bin ${${RUN_COPY_TO_BIN}})
     set(gfortran_args ${${RUN_GFORTRAN_ARGS}})
+    set(lcompilers_test_module ${CMAKE_CURRENT_SOURCE_DIR}/lcompilers_test_module.f90)
 
     if (NOT name)
         message(FATAL_ERROR "Must specify the NAME argument")
@@ -88,18 +89,18 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
             execute_process(COMMAND "${WASM_EXEC_RUNTIME}" --version
                             OUTPUT_VARIABLE WASM_EXEC_VERSION
                             OUTPUT_STRIP_TRAILING_WHITESPACE)
-            add_executable(${name} ${file_name}.f90 ${extra_files})
+            add_executable(${name} ${file_name}.f90 ${extra_files} ${lcompilers_test_module})
             target_compile_options(${name} PUBLIC ${extra_args} --backend=llvm --target=wasm32-wasi)
             target_link_options(${name} PUBLIC --backend=llvm --target=wasm32-wasi
                 -Wl,-zstack-size=52428800 -Wl,--initial-memory=268435456 -Wl,--max-memory=268435456)
             add_test(${name} ${WASM_EXEC_RUNTIME} ${CURRENT_BINARY_DIR}/${name} --dir=.)
         elseif (LFORTRAN_BACKEND STREQUAL "llvm2")
-            add_executable(${name} ${file_name}.f90 ${extra_files})
+            add_executable(${name} ${file_name}.f90 ${extra_files} ${lcompilers_test_module})
             target_compile_options(${name} PUBLIC --generate-object-code ${extra_args})
             target_link_options(${name} PUBLIC  --generate-object-code ${extra_args})
             add_test(${name} ${CURRENT_BINARY_DIR}/${name})
         elseif (LFORTRAN_BACKEND STREQUAL "llvm_rtlib")
-            add_executable(${name} ${file_name}.f90 ${extra_files})
+            add_executable(${name} ${file_name}.f90 ${extra_files} ${lcompilers_test_module})
             target_compile_options(${name} PUBLIC --generate-object-code ${extra_args})
             set_source_files_properties(${file_name}.f90 PROPERTIES COMPILE_OPTIONS "--rtlib")
             add_test(${name} ${CURRENT_BINARY_DIR}/${name})
@@ -112,22 +113,29 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
                 ${extra_args} --stack-arrays=true -o ${name})
             add_test(${name} ${CURRENT_BINARY_DIR}/${name})
         elseif (LFORTRAN_BACKEND STREQUAL "llvm_nopragma")
-            add_executable(${name} ${file_name}.f90 ${extra_files})
+            add_executable(${name} ${file_name}.f90 ${extra_files} ${lcompilers_test_module})
             target_compile_options(${name} PUBLIC --ignore-pragma ${extra_args})
             add_test(${name} ${CURRENT_BINARY_DIR}/${name})
         elseif (LFORTRAN_BACKEND STREQUAL "c_nopragma")
-            add_executable(${name} ${file_name}.f90 ${extra_files})
+            add_executable(${name} ${file_name}.f90 ${extra_files} ${lcompilers_test_module})
             target_compile_options(${name} PUBLIC --backend=c --ignore-pragma ${extra_args})
             add_test(${name} ${CURRENT_BINARY_DIR}/${name})
         elseif (LFORTRAN_BACKEND STREQUAL "llvm")
-            add_executable(${name} ${file_name}.f90 ${extra_files})
+            add_executable(${name} ${file_name}.f90 ${extra_files} ${lcompilers_test_module})
             target_compile_options(${name} PUBLIC ${extra_args})
             add_test(${name} ${CURRENT_BINARY_DIR}/${name})
         elseif (LFORTRAN_BACKEND STREQUAL "gfortranModfileCompilation")
             execute_process(COMMAND gfortran ${CMAKE_CURRENT_SOURCE_DIR}/${file_name}.f90 -c)
             add_test(${name} ${CURRENT_BINARY_DIR}/${name})
         else ()
-            add_executable(${name} ${file_name}.f90 ${extra_files})
+            # check if `lcompilers_test_module.o` exist or not
+            if (EXISTS ${CMAKE_CURRENT_BINARY_DIR}/lcompilers_test_module.o)
+                set(lcompilers_test_module ${CMAKE_CURRENT_BINARY_DIR}/lcompilers_test_module.o)
+            else()
+                execute_process(COMMAND gfortran ${CMAKE_CURRENT_SOURCE_DIR}/lcompilers_test_module.f90 -c)
+                set(lcompilers_test_module ${CMAKE_CURRENT_BINARY_DIR}/lcompilers_test_module.o)
+            endif()
+            add_executable(${name} ${file_name}.f90 ${extra_files} ${lcompilers_test_module})
             target_compile_options(${name} PUBLIC ${gfortran_args})
             add_test(${name} ${CURRENT_BINARY_DIR}/${name})
         endif()
@@ -740,7 +748,7 @@ RUN(NAME intrinsics_206 LABELS gfortran llvm llvm_wasm fortran) # poppar
 RUN(NAME intrinsics_207 LABELS gfortran llvm llvm_wasm) # double precision intrinsics
 RUN(NAME intrinsics_208 LABELS gfortran llvm llvm_wasm) # bit_size
 RUN(NAME intrinsics_209 LABELS gfortran llvm llvm_wasm) # atand
-RUN(NAME intrinsics_210 LABELS gfortran llvm llvm_wasm EXTRAFILES lcompilers_test_module.f90) # bessel_jn
+RUN(NAME intrinsics_210 LABELS gfortran llvm llvm_wasm) # bessel_jn
 RUN(NAME intrinsics_211 LABELS gfortran llvm llvm_wasm) # bessel_yn
 RUN(NAME intrinsics_212 LABELS gfortran llvm) # specific type intrinsics
 RUN(NAME intrinsics_213 LABELS gfortran llvm) # cpu_time
