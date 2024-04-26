@@ -230,6 +230,10 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                     modfile = extrafile_[:-4] + ".mod"
                     if not os.path.exists(modfile):
                         run_cmd("lfortran -c {}".format(extrafile_))
+                    # default lcompilers_test_module
+                    lcompilers_test_module = "lcompilers_test_module.mod"
+                    if not os.path.exists(lcompilers_test_module):
+                        run_cmd("lfortran -c ./integration_tests/lcompilers_test_module.f90")
 
             if not skip_test:
                 run_test(
