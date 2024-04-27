@@ -29,6 +29,8 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Acosd)
         INTRINSIC_NAME_CASE(Atand)
         INTRINSIC_NAME_CASE(Sind)
+        INTRINSIC_NAME_CASE(Cosd)
+        INTRINSIC_NAME_CASE(Tand)
         INTRINSIC_NAME_CASE(Acos)
         INTRINSIC_NAME_CASE(Atan)
         INTRINSIC_NAME_CASE(Sinh)
@@ -213,6 +215,10 @@ namespace IntrinsicElementalFunctionRegistry {
             {&Atand::instantiate_Atand, &Atand::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Sind),
             {&Sind::instantiate_Sind, &Sind::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Cosd),
+            {&Cosd::instantiate_Cosd, &Cosd::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Tand),
+            {&Tand::instantiate_Tand, &Tand::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Cos),
             {&Cos::instantiate_Cos, &UnaryIntrinsicFunction::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Tan),
@@ -550,6 +556,10 @@ namespace IntrinsicElementalFunctionRegistry {
             "atand"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Sind),
             "sind"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Cosd),
+            "cosd"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Tand),
+            "tand"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::BesselJ0),
             "bessel_j0"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::BesselJ1),
@@ -798,6 +808,8 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"acosd", {&Acosd::create_Acosd, &Acosd::eval_Acosd}},
                 {"atand", {&Atand::create_Atand, &Atand::eval_Atand}},
                 {"sind", {&Sind::create_Sind, &Sind::eval_Sind}},
+                {"cosd", {&Cosd::create_Cosd, &Cosd::eval_Cosd}},
+                {"tand", {&Tand::create_Tand, &Tand::eval_Tand}},
                 {"cos", {&Cos::create_Cos, &Cos::eval_Cos}},
                 {"tan", {&Tan::create_Tan, &Tan::eval_Tan}},
                 {"asin", {&Asin::create_Asin, &Asin::eval_Asin}},

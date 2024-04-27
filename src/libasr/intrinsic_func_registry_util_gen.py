@@ -241,6 +241,18 @@ intrinsic_funcs_args = {
             "ret_type_arg_idx": 0
         }
     ],
+    "Cosd": [
+        {
+            "args": [("real",)],
+            "ret_type_arg_idx": 0
+        }
+    ],
+    "Tand": [
+        {
+            "args": [("real",)],
+            "ret_type_arg_idx": 0
+        }
+    ],
     "BesselJ0": [
         {
             "args": [("real",)],

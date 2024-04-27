@@ -34,6 +34,8 @@ enum class IntrinsicElementalFunctions : int64_t {
     Atan2,
     Asinh,
     Sind,
+    Cosd,
+    Tand,
     Asind,
     Acosd,
     Atand,
@@ -760,6 +762,8 @@ create_math_bindc(Asind, asin, 1, asind)
 create_math_bindc(Acosd, acos, 1, acosd)
 create_math_bindc(Atand, atan, 1, atand)
 create_math_bindc(Sind, sin, 2, sind)
+create_math_bindc(Cosd, cos, 2, cosd)
+create_math_bindc(Tand, tan, 2, tand)
 
 namespace Aimag {
 
