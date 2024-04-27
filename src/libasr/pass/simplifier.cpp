@@ -750,12 +750,14 @@ class VerifySimplifierASROutput:
         LCOMPILERS_ASSERT(!ASR::is_a<ASR::ArrayPhysicalCast_t>(*x.m_value));
     }
 
+    #define check_for_var_if_array(expr) if( expr && ASRUtils::is_array(ASRUtils::expr_type(expr)) ) { \
+            LCOMPILERS_ASSERT(ASR::is_a<ASR::Var_t>(*expr)); \
+        } \
+
     template <typename T>
     void visit_IO(const T& x) {
         for( size_t i = 0; i < x.n_values; i++ ) {
-            if( ASRUtils::is_array(ASRUtils::expr_type(x.m_values[i])) ) {
-                LCOMPILERS_ASSERT(ASR::is_a<ASR::Var_t>(*x.m_values[i]));
-            }
+            check_for_var_if_array(x.m_values[i]);
         }
     }
 
@@ -767,13 +769,21 @@ class VerifySimplifierASROutput:
         visit_IO(x);
     }
 
+    void traverse_call_args(ASR::call_arg_t* m_args, size_t n_args) {
+        for( size_t i = 0; i < n_args; i++ ) {
+            check_for_var_if_array(m_args[i].m_value);
+        }
+    }
+
+    void traverse_args(ASR::expr_t** m_args, size_t n_args) {
+        for( size_t i = 0; i < n_args; i++ ) {
+            check_for_var_if_array(m_args[i]);
+        }
+    }
+
     template <typename T>
     void visit_Call(const T& x) {
-        for( size_t i = 0; i < x.n_args; i++ ) {
-            if( ASRUtils::is_array(ASRUtils::expr_type(x.m_args[i].m_value)) ) {
-                LCOMPILERS_ASSERT(ASR::is_a<ASR::Var_t>(*x.m_args[i].m_value));
-            }
-        }
+        traverse_call_args(x.m_args, x.n_args);
     }
 
     void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
@@ -782,15 +792,78 @@ class VerifySimplifierASROutput:
 
     template <typename T>
     void visit_IntrinsicCall(const T& x) {
-        for( size_t i = 0; i < x.n_args; i++ ) {
-            if( ASRUtils::is_array(ASRUtils::expr_type(x.m_args[i])) ) {
-                LCOMPILERS_ASSERT(ASR::is_a<ASR::Var_t>(*x.m_args[i]));
-            }
-        }
+        traverse_args(x.m_args, x.n_args);
     }
 
     void visit_IntrinsicImpureSubroutine(const ASR::IntrinsicImpureSubroutine_t& x) {
         visit_IntrinsicCall(x);
+    }
+
+    void visit_ComplexConstructor(const ASR::ComplexConstructor_t& x) {
+        check_for_var_if_array(x.m_re);
+        check_for_var_if_array(x.m_im);
+    }
+
+    void visit_FunctionCall(const ASR::FunctionCall_t& x) {
+        visit_Call(x);
+    }
+
+    void visit_IntrinsicElementalFunction(const ASR::IntrinsicElementalFunction_t& x) {
+        visit_IntrinsicCall(x);
+    }
+
+    void visit_IntrinsicArrayFunction(const ASR::IntrinsicArrayFunction_t& x) {
+        visit_IntrinsicCall(x);
+    }
+
+    void visit_IntrinsicImpureFunction(const ASR::IntrinsicImpureFunction_t& x) {
+        visit_IntrinsicCall(x);
+    }
+
+    void visit_StructTypeConstructor(const ASR::StructTypeConstructor_t& x) {
+        traverse_call_args(x.m_args, x.n_args);
+    }
+
+    void visit_EnumTypeConstructor(const ASR::EnumTypeConstructor_t& x) {
+        traverse_args(x.m_args, x.n_args);
+    }
+
+    void visit_UnionTypeConstructor(const ASR::UnionTypeConstructor_t& x) {
+        traverse_args(x.m_args, x.n_args);
+    }
+
+    void visit_ArrayConstructor(const ASR::ArrayConstructor_t& x) {
+        traverse_args(x.m_args, x.n_args);
+    }
+
+    void visit_ArrayTranspose(const ASR::ArrayTranspose_t& x) {
+        check_for_var_if_array(x.m_matrix);
+    }
+
+    void visit_ArrayPack(const ASR::ArrayPack_t& x) {
+        check_for_var_if_array(x.m_array);
+        check_for_var_if_array(x.m_mask);
+        check_for_var_if_array(x.m_vector);
+    }
+
+    void visit_ArrayAll(const ASR::ArrayAll_t& x) {
+        check_for_var_if_array(x.m_mask);
+    }
+
+    void visit_Cast(const ASR::Cast_t& x) {
+        check_for_var_if_array(x.m_arg);
+    }
+
+    void visit_ComplexRe(const ASR::ComplexRe_t& x) {
+        check_for_var_if_array(x.m_arg);
+    }
+
+    void visit_ComplexIm(const ASR::ComplexIm_t& x) {
+        check_for_var_if_array(x.m_arg);
+    }
+
+    void visit_RealSqrt(const ASR::RealSqrt_t& x) {
+        check_for_var_if_array(x.m_arg);
     }
 
 };
