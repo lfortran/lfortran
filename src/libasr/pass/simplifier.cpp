@@ -741,6 +741,60 @@ class TransformVariableInitialiser:
 
 };
 
+class VerifySimplifierASROutput:
+    public ASR::BaseWalkVisitor<VerifySimplifierASROutput> {
+
+    public:
+
+    void visit_Assignment(const ASR::Assignment_t& x) {
+        LCOMPILERS_ASSERT(!ASR::is_a<ASR::ArrayPhysicalCast_t>(*x.m_value));
+    }
+
+    template <typename T>
+    void visit_IO(const T& x) {
+        for( size_t i = 0; i < x.n_values; i++ ) {
+            if( ASRUtils::is_array(ASRUtils::expr_type(x.m_values[i])) ) {
+                LCOMPILERS_ASSERT(ASR::is_a<ASR::Var_t>(*x.m_values[i]));
+            }
+        }
+    }
+
+    void visit_Print(const ASR::Print_t& x) {
+        visit_IO(x);
+    }
+
+    void visit_FileWrite(const ASR::FileWrite_t& x) {
+        visit_IO(x);
+    }
+
+    template <typename T>
+    void visit_Call(const T& x) {
+        for( size_t i = 0; i < x.n_args; i++ ) {
+            if( ASRUtils::is_array(ASRUtils::expr_type(x.m_args[i].m_value)) ) {
+                LCOMPILERS_ASSERT(ASR::is_a<ASR::Var_t>(*x.m_args[i].m_value));
+            }
+        }
+    }
+
+    void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
+        visit_Call(x);
+    }
+
+    template <typename T>
+    void visit_IntrinsicCall(const T& x) {
+        for( size_t i = 0; i < x.n_args; i++ ) {
+            if( ASRUtils::is_array(ASRUtils::expr_type(x.m_args[i])) ) {
+                LCOMPILERS_ASSERT(ASR::is_a<ASR::Var_t>(*x.m_args[i]));
+            }
+        }
+    }
+
+    void visit_IntrinsicImpureSubroutine(const ASR::IntrinsicImpureSubroutine_t& x) {
+        visit_IntrinsicCall(x);
+    }
+
+};
+
 void pass_simplifier(Allocator &al, ASR::TranslationUnit_t &unit,
                      const PassOptions &/*pass_options*/) {
     std::set<ASR::expr_t*> exprs_with_target;
@@ -752,6 +806,10 @@ void pass_simplifier(Allocator &al, ASR::TranslationUnit_t &unit,
     c.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor d(al);
     d.visit_TranslationUnit(unit);
+    #if defined(WITH_LFORTRAN_ASSERT)
+    VerifySimplifierASROutput e;
+    e.visit_TranslationUnit(unit);
+    #endif
 }
 
 
