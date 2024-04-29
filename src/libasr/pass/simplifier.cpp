@@ -238,7 +238,8 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         transform_stmts_impl
     }
 
-    #define BEGIN_VAR_CHECK(expr) if( !ASR::is_a<ASR::Var_t>(*expr) ) {
+    #define BEGIN_VAR_CHECK(expr) if( !ASR::is_a<ASR::Var_t>(*expr) && \
+        ASRUtils::is_array(ASRUtils::expr_type(expr)) ) {
     #define END_VAR_CHECK }
 
     template <typename T>
@@ -741,10 +742,58 @@ class TransformVariableInitialiser:
 
 };
 
+class CheckNodeTypesInExpr: public ASR::BaseWalkVisitor<CheckNodeTypesInExpr> {
+    private:
+
+    Vec<ASR::exprType>& nodes;
+
+    public:
+
+    bool is_node_incorrect;
+    CheckNodeTypesInExpr(Vec<ASR::exprType>& nodes_):
+        nodes(nodes_), is_node_incorrect(false) {}
+
+    void visit_expr(const ASR::expr_t& e) {
+        if( is_node_incorrect ) {
+            return;
+        }
+        bool is_node_correct = false;
+        for( size_t i = 0; i < nodes.size(); i++ ) {
+            if( e.type == nodes[i] ) {
+                if( e.type == ASR::exprType::FunctionCall ) {
+                    ASR::FunctionCall_t* func_call = ASR::down_cast<ASR::FunctionCall_t>(&(e));
+                    if( !ASRUtils::is_array(func_call->m_type) ) {
+                        is_node_correct = true;
+                    }
+                } else if( e.type == ASR::exprType::IntrinsicElementalFunction ) {
+                    ASR::IntrinsicElementalFunction_t* elem_func = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(&(e));
+                    if( !ASRUtils::is_array(elem_func->m_type) ) {
+                        is_node_correct = true;
+                    }
+                } else {
+                    is_node_correct = true;
+                }
+                break;
+            }
+        }
+        is_node_incorrect = is_node_incorrect || !is_node_correct;
+        ASR::BaseWalkVisitor<CheckNodeTypesInExpr>::visit_expr(e);
+    }
+
+};
+
 class VerifySimplifierASROutput:
     public ASR::BaseWalkVisitor<VerifySimplifierASROutput> {
 
+    private:
+
+    Allocator& al;
+    std::set<ASR::expr_t*> exprs_with_target;
+
     public:
+
+    VerifySimplifierASROutput(Allocator& al_, std::set<ASR::expr_t*>& exprs_with_target_) :
+        al(al_), exprs_with_target(exprs_with_target_) {}
 
     void visit_Assignment(const ASR::Assignment_t& x) {
         LCOMPILERS_ASSERT(!ASR::is_a<ASR::ArrayPhysicalCast_t>(*x.m_value));
@@ -753,6 +802,11 @@ class VerifySimplifierASROutput:
     #define check_for_var_if_array(expr) if( expr && ASRUtils::is_array(ASRUtils::expr_type(expr)) ) { \
             LCOMPILERS_ASSERT(ASR::is_a<ASR::Var_t>(*expr)); \
         } \
+
+    #define check_if_linked_to_target(expr, type) if( ASRUtils::is_aggregate_type(type) ) { \
+         LCOMPILERS_ASSERT( exprs_with_target.find(&(const_cast<ASR::expr_t&>(expr))) != \
+                            exprs_with_target.end()); \
+    }
 
     template <typename T>
     void visit_IO(const T& x) {
@@ -802,10 +856,14 @@ class VerifySimplifierASROutput:
     void visit_ComplexConstructor(const ASR::ComplexConstructor_t& x) {
         check_for_var_if_array(x.m_re);
         check_for_var_if_array(x.m_im);
+        check_if_linked_to_target(x.base, x.m_type);
     }
 
     void visit_FunctionCall(const ASR::FunctionCall_t& x) {
         visit_Call(x);
+        if( !PassUtils::is_elemental(x.m_name) ) {
+            check_if_linked_to_target(x.base, x.m_type);
+        }
     }
 
     void visit_IntrinsicElementalFunction(const ASR::IntrinsicElementalFunction_t& x) {
@@ -814,22 +872,65 @@ class VerifySimplifierASROutput:
 
     void visit_IntrinsicArrayFunction(const ASR::IntrinsicArrayFunction_t& x) {
         visit_IntrinsicCall(x);
+        check_if_linked_to_target(x.base, x.m_type);
     }
 
     void visit_IntrinsicImpureFunction(const ASR::IntrinsicImpureFunction_t& x) {
         visit_IntrinsicCall(x);
+        if( ASRUtils::is_array(x.m_type) ) {
+            check_if_linked_to_target(x.base, x.m_type);
+        }
     }
 
     void visit_StructTypeConstructor(const ASR::StructTypeConstructor_t& x) {
         traverse_call_args(x.m_args, x.n_args);
+        check_if_linked_to_target(x.base, x.m_type);
     }
 
     void visit_EnumTypeConstructor(const ASR::EnumTypeConstructor_t& x) {
         traverse_args(x.m_args, x.n_args);
+        check_if_linked_to_target(x.base, x.m_type);
     }
 
     void visit_UnionTypeConstructor(const ASR::UnionTypeConstructor_t& x) {
         traverse_args(x.m_args, x.n_args);
+        check_if_linked_to_target(x.base, x.m_type);
+    }
+
+    void visit_ImpliedDoLoop(const ASR::ImpliedDoLoop_t& x) {
+        check_if_linked_to_target(x.base, x.m_type);
+    }
+
+    void visit_ListConstant(const ASR::ListConstant_t& x) {
+        check_if_linked_to_target(x.base, x.m_type);
+    }
+
+    void visit_SetConstant(const ASR::SetConstant_t& x) {
+        check_if_linked_to_target(x.base, x.m_type);
+    }
+
+    void visit_TupleConstant(const ASR::TupleConstant_t& x) {
+        check_if_linked_to_target(x.base, x.m_type);
+    }
+
+    void visit_StringSection(const ASR::StringSection_t& x) {
+        check_if_linked_to_target(x.base, x.m_type);
+    }
+
+    void visit_DictConstant(const ASR::DictConstant_t& x) {
+        check_if_linked_to_target(x.base, x.m_type);
+    }
+
+    void visit_ArrayConstant(const ASR::ArrayConstant_t& x) {
+        check_if_linked_to_target(x.base, x.m_type);
+    }
+
+    void visit_ArraySection(const ASR::ArraySection_t& x) {
+        check_if_linked_to_target(x.base, x.m_type);
+    }
+
+    void visit_ArrayReshape(const ASR::ArrayReshape_t& x) {
+        check_if_linked_to_target(x.base, x.m_type);
     }
 
     void visit_ArrayConstructor(const ASR::ArrayConstructor_t& x) {
@@ -848,22 +949,101 @@ class VerifySimplifierASROutput:
 
     void visit_ArrayAll(const ASR::ArrayAll_t& x) {
         check_for_var_if_array(x.m_mask);
+        check_if_linked_to_target(x.base, x.m_type);
+    }
+
+    void visit_StructInstanceMember(const ASR::StructInstanceMember_t& x) {
+        check_if_linked_to_target(x.base, x.m_type);
+    }
+
+    void visit_StructStaticMember(const ASR::StructStaticMember_t& x) {
+        check_if_linked_to_target(x.base, x.m_type);
+    }
+
+    void visit_EnumStaticMember(const ASR::EnumStaticMember_t& x) {
+        check_if_linked_to_target(x.base, x.m_type);
+    }
+
+    void visit_UnionInstanceMember(const ASR::UnionInstanceMember_t& x) {
+        check_if_linked_to_target(x.base, x.m_type);
     }
 
     void visit_Cast(const ASR::Cast_t& x) {
         check_for_var_if_array(x.m_arg);
     }
 
+    void visit_OverloadedCompare(const ASR::OverloadedCompare_t& x) {
+        check_if_linked_to_target(x.base, x.m_type);
+    }
+
+    void visit_OverloadedBinOp(const ASR::OverloadedBinOp_t& x) {
+        check_if_linked_to_target(x.base, x.m_type);
+    }
+
+    void visit_OverloadedUnaryMinus(const ASR::OverloadedUnaryMinus_t& x) {
+        check_if_linked_to_target(x.base, x.m_type);
+    }
+
+    void visit_OverloadedStringConcat(const ASR::OverloadedStringConcat_t& x) {
+        check_if_linked_to_target(x.base, x.m_type);
+    }
+
     void visit_ComplexRe(const ASR::ComplexRe_t& x) {
         check_for_var_if_array(x.m_arg);
+        check_if_linked_to_target(x.base, x.m_type);
     }
 
     void visit_ComplexIm(const ASR::ComplexIm_t& x) {
         check_for_var_if_array(x.m_arg);
+        check_if_linked_to_target(x.base, x.m_type);
+    }
+
+    void visit_ListSection(const ASR::ListSection_t& x) {
+        check_if_linked_to_target(x.base, x.m_type);
+    }
+
+    void visit_ListRepeat(const ASR::ListRepeat_t& x) {
+        check_if_linked_to_target(x.base, x.m_type);
+    }
+
+    void visit_DictPop(const ASR::DictPop_t& x) {
+        check_if_linked_to_target(x.base, x.m_type);
+    }
+
+    void visit_SetPop(const ASR::SetPop_t& x) {
+        check_if_linked_to_target(x.base, x.m_type);
     }
 
     void visit_RealSqrt(const ASR::RealSqrt_t& x) {
         check_for_var_if_array(x.m_arg);
+        check_if_linked_to_target(x.base, x.m_type);
+    }
+
+    void visit_Variable(const ASR::Variable_t& x) {
+        if( ASRUtils::is_array(x.m_type) ||
+            ASRUtils::is_aggregate_type(x.m_type) ) {
+            LCOMPILERS_ASSERT(x.m_symbolic_value == nullptr);
+            LCOMPILERS_ASSERT(x.m_value == nullptr);
+        }
+    }
+
+    void visit_Allocate(const ASR::Allocate_t& x) {
+        for( size_t i = 0; i < x.n_args; i++ ) {
+            for( size_t j = 0; j < x.m_args[i].n_dims; j++ ) {
+                ASR::dimension_t& alloc_dim = x.m_args[i].m_dims[j];
+                LCOMPILERS_ASSERT(alloc_dim.m_length);
+                Vec<ASR::exprType> vec;
+                vec.reserve(al, 2);
+                vec.push_back(al, ASR::exprType::Var);
+                vec.push_back(al, ASR::exprType::FunctionCall);
+                vec.push_back(al, ASR::exprType::IntrinsicElementalFunction);
+                CheckNodeTypesInExpr check(vec);
+                check.visit_expr(*alloc_dim.m_length);
+                if( alloc_dim.m_start != nullptr ) {
+                    check.visit_expr(*alloc_dim.m_start);
+                }
+            }
+        }
     }
 
 };
@@ -880,7 +1060,7 @@ void pass_simplifier(Allocator &al, ASR::TranslationUnit_t &unit,
     PassUtils::UpdateDependenciesVisitor d(al);
     d.visit_TranslationUnit(unit);
     #if defined(WITH_LFORTRAN_ASSERT)
-    VerifySimplifierASROutput e;
+    VerifySimplifierASROutput e(al, exprs_with_target);
     e.visit_TranslationUnit(unit);
     #endif
 }
