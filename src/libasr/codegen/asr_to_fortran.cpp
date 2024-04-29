@@ -1195,12 +1195,6 @@ public:
         } else {
             r += ASRUtils::symbol_name(x.m_name);
         }
-        if (r == "bit_size") {
-            // TODO: Remove this once bit_size is implemented in IntrinsicElementalFunction
-            visit_expr(*x.m_value);
-            return;
-        }
-
         r += "(";
         for (size_t i = 0; i < x.n_args; i ++) {
             visit_expr(*x.m_args[i].m_value);
