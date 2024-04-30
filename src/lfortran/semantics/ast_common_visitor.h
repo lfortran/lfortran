@@ -814,6 +814,7 @@ public:
         {"modulo", {IntrinsicSignature({"a", "p"}, 2, 2)}},
         {"bessel_jn", {IntrinsicSignature({"n", "x"}, 2, 2)}},
         {"bessel_yn", {IntrinsicSignature({"n", "x"}, 2, 2)}},
+        {"merge_bits", {IntrinsicSignature({"i", "j", "mask"}, 3, 3)}},
     };
 
     std::map<std::string, std::pair<std::string, std::string>> intrinsic_mapping = {

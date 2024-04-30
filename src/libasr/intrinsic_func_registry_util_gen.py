@@ -520,6 +520,12 @@ intrinsic_funcs_args = {
             "kind_arg": True
         }
     ],
+    "Mergebits": [
+        {
+            "args": [("int", "int", "int")],
+            "ret_type_arg_idx": 0
+        }
+    ], 
     "Ishftc": [
         {
             "args": [("int", "int")],
