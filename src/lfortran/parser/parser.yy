@@ -111,7 +111,9 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %token <string> TK_STRING
 %token <string> TK_COMMENT
 %token <string> TK_EOLCOMMENT
-%token <string> TK_PRAGMA
+%token <string> TK_PRAGMA_DECL
+%token <string> TK_OMP
+%token <string> TK_OMP_END
 
 %token TK_DBL_DOT ".."
 %token TK_DBL_COLON "::"
@@ -476,6 +478,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <vec_ast> case_conditions
 %type <ast> case_condition
 %type <ast> while_statement
+%type <ast> pragma_statement
 %type <ast> critical_statement
 %type <ast> change_team_statement
 %type <vec_ast> coarray_association_list
@@ -1001,7 +1004,7 @@ function
         sep decl_statements
         end_function sep {
             LLOC(@$, @13); $$ = TEMPLATED_FUNCTION0($2, $4, $7, $9, $10,
-                TRIVIA($11, $14, @$), SPLIT_DECL(p.m_a, $12), SPLIT_STMT(p.m_a, $12), $13, @$); } 
+                TRIVIA($11, $14, @$), SPLIT_DECL(p.m_a, $12), SPLIT_STMT(p.m_a, $12), $13, @$); }
     | fn_mod_plus KW_FUNCTION id "(" id_list_opt ")"
         sep use_statement_star import_statement_star implicit_statement_star decl_statements
         contains_block_opt
@@ -1305,7 +1308,7 @@ var_decl
         LLOC(@$, @2); $$ = VAR_DECL_COMMON($2, TRIVIA_AFTER($3, @$), @$); }
     | KW_EQUIVALENCE equivalence_set_list sep {
         LLOC(@$, @2); $$ = VAR_DECL_EQUIVALENCE($2, TRIVIA_AFTER($3, @$), @$);}
-    | TK_PRAGMA sep {
+    | TK_PRAGMA_DECL sep {
         LLOC(@$, @1); $$ = VAR_DECL_PRAGMA($1, TRIVIA_AFTER($2, @$), @$);}
     ;
 
@@ -1637,6 +1640,7 @@ single_line_statement
     | inquire_statement
     | nullify_statement
     | open_statement
+    | pragma_statement
     | print_statement
     | read_statement
     | return_statement
@@ -1728,6 +1732,11 @@ subroutine_call
             $$ = SUBROUTINE_CALL3($2, $3, @$); }
     | KW_CALL id "{" instantiate_symbol_list "}" "(" fnarray_arg_list_opt ")" {
             $$ = SUBROUTINE_CALL4($2, $4, $7, @$); }
+    ;
+
+pragma_statement
+    : TK_OMP     { $$ = OMP_PRAGMA($1, @$); }
+    | TK_OMP_END { $$ = OMP_PRAGMA($1, @$); }
     ;
 
 print_statement

@@ -111,6 +111,18 @@ uint64_t parse_int(const unsigned char *s)
 #define RET(x) token_loc(loc); last_token=yytokentype::x; return yytokentype::x;
 #define WARN_REL(x) add_rel_warning(diagnostics, fixed_form, yytokentype::TK_##x);
 
+#define TK_TRIVIA(X) {                              \
+    line_num++; cur_line=cur;                       \
+    token(yylval.string);                           \
+    token_loc(loc);                                 \
+    if (last_token == yytokentype::TK_NEWLINE) {    \
+        return yytokentype::X;                      \
+    } else {                                        \
+        last_token=yytokentype::TK_NEWLINE;         \
+        return yytokentype::TK_EOLCOMMENT;          \
+    }                                               \
+}
+
 void Tokenizer::add_rel_warning(diag::Diagnostics &diagnostics, bool fixed_form, int rel_token) const {
     if (!fixed_form) {
         static const std::map<int, std::pair<std::string, std::string>> m = {
@@ -233,7 +245,10 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
             real = ((significand exp?) | (digit+ exp)) ("_" kind)?;
             string1 = (kind "_")? '"' ('""'|[^"\x00])* '"';
             string2 = (kind "_")? "'" ("''"|[^'\x00])* "'";
-            pragma = "!LF$" [^\n\x00]*;
+            omp_kw = "!$" [oO][mM][pP];
+            omp = omp_kw [^\n\x00]*;
+            omp_end = omp_kw whitespace+ [eE][nN][dD] [^\n\x00]*;
+            pragma_decl = "!LF$" [^\n\x00]*;
             comment = "!" [^\n\x00]*;
             ws_comment = whitespace? comment? newline;
             ignore_till_newline = [^\n\x00]* newline;
@@ -644,17 +659,9 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
                 line_num++; cur_line=cur; continue;
             }
 
-            pragma / newline {
-                line_num++; cur_line=cur;
-                token(yylval.string);
-                token_loc(loc);
-                if (last_token == yytokentype::TK_NEWLINE) {
-                    return yytokentype::TK_PRAGMA;
-                } else {
-                    last_token=yytokentype::TK_NEWLINE;
-                    return yytokentype::TK_EOLCOMMENT;
-                }
-            }
+            omp_end / newline { TK_TRIVIA(TK_OMP_END) }
+            omp / newline { TK_TRIVIA(TK_OMP) }
+            pragma_decl / newline { TK_TRIVIA(TK_PRAGMA_DECL) }
 
             comment newline {
                 line_num++; cur_line=cur;

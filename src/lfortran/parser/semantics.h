@@ -1652,6 +1652,33 @@ static inline void repeat_list_add(Vec<ast_t*> &v, Allocator &al,
         /*body*/ STMTS(body), \
         /*n_body*/ body.size(), trivia_cast(trivia), nullptr)
 
+static inline ast_t* OMP_PRAGMA2(Allocator &al,
+        Location &loc, std::string omp_str) {
+    std::vector<std::string> omp_stmt = LCompilers::string_split(omp_str, " ");
+    size_t i = 1;
+    bool m_end = false;
+    std::string construct_name = omp_stmt[i++];
+    if (construct_name == "end") {
+        m_end = true;
+        construct_name = omp_stmt[i++];
+    }
+    Vec<expr_t *> m_clauses; m_clauses.reserve(al, 1);
+    for (; i < omp_stmt.size(); i++) {
+        if (omp_stmt[i] == "do" ||
+            omp_stmt[i] == "sections" ||
+            omp_stmt[i] == "workshare" ) {
+            construct_name += " " + omp_stmt[i];
+        } else {
+            m_clauses.push_back(al, EXPR(make_String_t(al, loc,
+                LCompilers::s2c(al, omp_stmt[i]))));
+        }
+    }
+    return make_Pragma_t(al, loc, 0, LCompilers::LFortran::AST::OMPPragma, m_end,
+        LCompilers::s2c(al, construct_name), m_clauses.p, m_clauses.n, nullptr);
+}
+
+#define OMP_PRAGMA(omp_str, l) OMP_PRAGMA2(p.m_a, l, omp_str.c_str(p.m_a))
+
 void add_ws_warning(const Location &loc,
         LCompilers::diag::Diagnostics &diagnostics, bool fixed_form,
         int end_token, int a_kind = 4) {
@@ -1687,7 +1714,7 @@ void add_ws_warning(const Location &loc,
                         "Use integer(4) instead of integer*4",
                         {loc},
                         "help: write this as 'integer(4)'");
-                } else if (a_kind == 8){ 
+                } else if (a_kind == 8){
                         diagnostics.parser_style_label(
                         "Use integer(8) instead of integer*8",
                         {loc},
@@ -2390,6 +2417,7 @@ void set_m_trivia(stmt_t *s, trivia_t *trivia) {
         TRIVIA_SET(Include)
         TRIVIA_SET(Inquire)
         TRIVIA_SET(Nullify)
+        TRIVIA_SET(Pragma)
         TRIVIA_SET(Open)
         TRIVIA_SET(Return)
         TRIVIA_SET(Print)
