@@ -14,7 +14,8 @@ namespace LCompilers {
 bool startswith(const std::string &s, const std::string &e);
 bool endswith(const std::string &s, const std::string &e);
 std::string to_lower(const std::string &s);
-std::vector<std::string> string_split(const std::string &s, const std::string &split_string);
+std::vector<std::string> string_split(const std::string &s,
+    const std::string &split_string, bool strs_to_lower=true);
 std::vector<std::string> split(const std::string &s);
 std::string join(const std::string j, const std::vector<std::string> &v);
 std::vector<std::string> slice(const std::vector<std::string> &v,

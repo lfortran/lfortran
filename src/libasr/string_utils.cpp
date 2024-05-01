@@ -38,17 +38,21 @@ char *s2c(Allocator &al, const std::string &s) {
 }
 
 // Splits the string `s` using the separator `split_string`
-std::vector<std::string> string_split(const std::string &s, const std::string &split_string)
+std::vector<std::string> string_split(const std::string &s,
+    const std::string &split_string, bool strs_to_lower)
 {
     std::vector<std::string> result;
     size_t old_pos = 0;
     size_t new_pos;
+    std::string substr;
     while ((new_pos = s.find(split_string, old_pos)) != std::string::npos) {
-        std::string substr = s.substr(old_pos, new_pos-old_pos);
-        if (substr.size() > 0) result.push_back(substr);
+        substr = s.substr(old_pos, new_pos-old_pos);
+        if (substr.size() > 0)
+            result.push_back(strs_to_lower ? to_lower(substr) : substr);
         old_pos = new_pos+split_string.size();
     }
-    result.push_back(s.substr(old_pos));
+    substr = s.substr(old_pos);
+    result.push_back(strs_to_lower ? to_lower(substr) : substr);
     return result;
 }
 
