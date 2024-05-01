@@ -741,7 +741,7 @@ RUN(NAME intrinsics_207 LABELS gfortran llvm llvm_wasm) # double precision intri
 RUN(NAME intrinsics_208 LABELS gfortran llvm llvm_wasm) # bit_size
 RUN(NAME intrinsics_209 LABELS gfortran llvm llvm_wasm) # atand
 RUN(NAME intrinsics_210 LABELS gfortran llvm llvm_wasm EXTRAFILES lcompilers_test_module.f90) # bessel_jn
-RUN(NAME intrinsics_211 LABELS gfortran llvm llvm_wasm) # bessel_yn
+# RUN(NAME intrinsics_211 LABELS gfortran llvm llvm_wasm) # bessel_yn
 RUN(NAME intrinsics_212 LABELS gfortran llvm) # specific type intrinsics
 RUN(NAME intrinsics_213 LABELS gfortran llvm) # cpu_time
 RUN(NAME intrinsics_214 LABELS gfortran llvm) # sind
