@@ -63,6 +63,7 @@ static inline int64_t stmt_label(AST::stmt_t *f)
         LFORTRAN_STMT_LABEL_TYPE(Nullify)
         LFORTRAN_STMT_LABEL_TYPE(Open)
         LFORTRAN_STMT_LABEL_TYPE(Return)
+        LFORTRAN_STMT_LABEL_TYPE(Pragma)
         LFORTRAN_STMT_LABEL_TYPE(Print)
         LFORTRAN_STMT_LABEL_TYPE(Read)
         LFORTRAN_STMT_LABEL_TYPE(Rewind)
@@ -87,7 +88,7 @@ static inline int64_t stmt_label(AST::stmt_t *f)
         LFORTRAN_STMT_LABEL_TYPE(SelectType)
         LFORTRAN_STMT_LABEL_TYPE(Where)
         LFORTRAN_STMT_LABEL_TYPE(WhileLoop)
-        default : throw LCompilersException("Not implemented");
+        default : throw LCompilersException("Unhandled type in stmt_label");
     }
 }
 
@@ -5365,9 +5366,9 @@ public:
 
     void is_coarray_or_atomic(std::string intrinsic_name, const Location& loc){
         std::vector<std::string> coarray_intrinsics, atomic_intrinsics;
-        coarray_intrinsics = {"co_broadcast", "co_max", "co_min", "co_reduce", "co_sum", "lcobound", "ucobound", "failed_images", 
+        coarray_intrinsics = {"co_broadcast", "co_max", "co_min", "co_reduce", "co_sum", "lcobound", "ucobound", "failed_images",
             "image_status", "get_team", "image_index", "num_images", "stopped_images", "team_number", "this_image", "coshape", "corank"};
-        atomic_intrinsics = {"atomic_add", "atomic_and", "atomic_cas", "atomic_define", "atomic_fetch_add", "atomic_fetch_and", 
+        atomic_intrinsics = {"atomic_add", "atomic_and", "atomic_cas", "atomic_define", "atomic_fetch_add", "atomic_fetch_and",
             "atomic_fetch_or", "atomic_fetch_xor", "atomic_or", "atomic_ref", "atomic_xor"};
         if (std::find(coarray_intrinsics.begin(), coarray_intrinsics.end(), intrinsic_name) != coarray_intrinsics.end()) {
             throw SemanticError("Coarrays are not supported yet", loc);
@@ -5379,11 +5380,11 @@ public:
     /**
      * Broadcast `create_func` to elements of `args`, out of which atleast
      * one element is an array (i.e not a scalar)
-     * 
+     *
      * e.g. of broadcasting:
      * min([-1, 2, 3], 2, 5, [4, 4, 5], [5, -8, 7]) is broadcasted as:
      * [min(-1, 2, 5, 4, 5), min(2, 2, 5, 4, -8), min(3, 2, 5, 5, 7)]
-     * 
+     *
     */
     void compiletime_broadcast_elemental_intrinsic(
         Vec<ASR::expr_t*> args,
@@ -5513,7 +5514,7 @@ public:
                         ASRUtils::IntrinsicArrayFunctionRegistry::get_create_function(var_name);
                     tmp = create_func(al, x.base.base.loc, args, diag);
                 }
-                
+
             } else if( ASRUtils::IntrinsicImpureFunctionRegistry::is_intrinsic_function(var_name) ) {
                 Vec<ASR::expr_t*> args;
                 args.reserve(al, 1);
