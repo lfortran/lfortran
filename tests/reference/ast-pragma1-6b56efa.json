@@ -1,0 +1,13 @@
+{
+    "basename": "ast-pragma1-6b56efa",
+    "cmd": "lfortran --show-ast --no-color {infile} -o {outfile}",
+    "infile": "tests/pragma1.f90",
+    "infile_hash": "6300d11ac5f152e0689d5be71f61b47d60eea4563f181a81825e4368",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "ast-pragma1-6b56efa.stdout",
+    "stdout_hash": "822f98b760aaf2ebaa241a88f21a9af6fc1114ea48b76c9ce6d882e6",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

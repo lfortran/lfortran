@@ -140,6 +140,8 @@ stmt
     | Nullify(int label, expr* args, keyword* kwargs, trivia? trivia)
     | Open(int label, expr* args, keyword* kwargs, trivia? trivia)
     | Return(int label, expr? value, trivia? trivia)
+    | Pragma(int label, pragma_type type, bool end, string construct_name,
+            expr* clauses, trivia? trivia)
     | Print(int label, expr? fmt, expr* values, trivia? trivia)
     | Read(int label, expr? format, argstar* args,
             kw_argstar* kwargs, expr* values, trivia? trivia)

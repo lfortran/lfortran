@@ -1567,7 +1567,7 @@ public:
                     t = t.substr(8);
                     // !LF$ attributes simd :: X, Y, Z
                     for (auto &var : string_split(t, ", ")) {
-                        simd_variables.push_back(std::pair(to_lower(var), x.base.base.loc));
+                        simd_variables.push_back(std::pair(var, x.base.base.loc));
                     }
                 } else {
                     throw SemanticError("Only `simd` attribute supported",

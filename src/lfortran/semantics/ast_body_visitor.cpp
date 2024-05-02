@@ -3590,6 +3590,10 @@ public:
 
     }
 
+    void visit_Pragma(const AST::Pragma_t /*&x*/) {
+        // ignore for now
+    }
+
     void visit_Template(const AST::Template_t &x){
         is_template = true;
 
