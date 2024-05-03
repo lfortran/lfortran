@@ -25,10 +25,10 @@ Converts:
 
 to:
 
-    i = a-c
-    do while (i+c <= b)
-        i = i+c
+    i = a
+    do while (i <= b)
         ...
+        i = i + c
     end do
 
 The comparison is >= for c<0.

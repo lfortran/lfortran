@@ -8,6 +8,7 @@ do i = 1, 10, k
     j = j + i
 end do
 if (j /= 25) error stop
+if (i /= 11) error stop
 print *, j
 
 j = 0
@@ -16,6 +17,7 @@ do i = 10, 1, k
     j = j + i
 end do
 if (j /= 30) error stop
+if (i /= 0) error stop
 print *, j
 
 j = 0
@@ -24,6 +26,7 @@ a: do i = 1, 10
     if (i == 2) exit a
 end do a
 if (j /= 3) error stop
+if (i /= 2) error stop
 
 j = 0
 b: do i = 1, 10, 2
@@ -31,6 +34,7 @@ b: do i = 1, 10, 2
     if (i == 3) exit b
 end do b
 if (j /= 4) error stop
+if (i /= 3) error stop
 
 j = 0
 i = 1
@@ -40,6 +44,7 @@ c: do
     i = i + 1
 end do c
 if (j /= 3) error stop
+if (i /= 2) error stop
 
 !test-issue 746
 
@@ -47,5 +52,12 @@ k = 2
 do i = 1, 10, k
     100 continue
 end do
+if (i /= 11) error stop
+
+! test issue #3902
+do i = 1, 10
+    print *, i
+end do
+if (i /= 11) error stop
 
 end
