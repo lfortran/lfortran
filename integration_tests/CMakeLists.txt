@@ -93,6 +93,18 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
             target_link_options(${name} PUBLIC --backend=llvm --target=wasm32-wasi
                 -Wl,-zstack-size=52428800 -Wl,--initial-memory=268435456 -Wl,--max-memory=268435456)
             add_test(${name} ${WASM_EXEC_RUNTIME} ${CURRENT_BINARY_DIR}/${name} --dir=.)
+        elseif (LFORTRAN_BACKEND STREQUAL "llvm_wasm_emcc")
+            find_program(WASM_EXEC_RUNTIME node)
+            execute_process(COMMAND "${WASM_EXEC_RUNTIME}" --version
+                            OUTPUT_VARIABLE WASM_EXEC_VERSION
+                            OUTPUT_STRIP_TRAILING_WHITESPACE)
+            add_executable(${name} ${file_name}.f90 ${extra_files})
+            target_compile_options(${name} PUBLIC ${extra_args} --backend=llvm --target=wasm32-unknown-emscripten)
+            target_link_options(${name} PUBLIC --backend=llvm --target=wasm32-unknown-emscripten)
+            if (copy_to_bin)
+                target_link_options(${name} PUBLIC --emcc-embed ${copy_to_bin})
+            endif()
+            add_test(${name} ${WASM_EXEC_RUNTIME} ${CURRENT_BINARY_DIR}/${name})
         elseif (LFORTRAN_BACKEND STREQUAL "llvm2")
             add_executable(${name} ${file_name}.f90 ${extra_files})
             target_compile_options(${name} PUBLIC --generate-object-code ${extra_args})
@@ -154,7 +166,7 @@ macro(RUN)
                         "${multiValueArgs}" ${ARGN} )
 
     foreach(b ${RUN_LABELS})
-        if (NOT (b MATCHES "^(llvm|llvm2|llvm_rtlib|c|cpp|x86|wasm|gfortran|llvmImplicit|llvmStackArray|fortran|c_nopragma|llvm_nopragma|llvm_wasm)$"))
+        if (NOT (b MATCHES "^(llvm|llvm2|llvm_rtlib|c|cpp|x86|wasm|gfortran|llvmImplicit|llvmStackArray|fortran|c_nopragma|llvm_nopragma|llvm_wasm|llvm_wasm_emcc)$"))
             message(FATAL_ERROR "Unsupported backend: ${b}")
         endif()
     endforeach()
