@@ -1580,6 +1580,9 @@ int link_executable(const std::vector<std::string> &infiles,
                 }
                 CC = std::string(emsdk_path) + "/upstream/emscripten/emcc";
                 options = " --target=wasm32-unknown-emscripten -sSTACK_SIZE=50mb -sINITIAL_MEMORY=256mb";
+                if (!compiler_options.emcc_embed.empty()) {
+                    options += " --embed-file " + compiler_options.emcc_embed;
+                }
                 runtime_lib = "lfortran_runtime_wasm_emcc.o";
                 compile_cmd = CC + options + " -o " + outfile +
                      (compiler_options.wasm_html ? ".html " : " ");
@@ -2095,6 +2098,7 @@ int main_app(int argc, char *argv[]) {
     app.add_flag("--ignore-pragma", compiler_options.ignore_pragma, "Ignores all the pragmas");
     app.add_flag("--stack-arrays", compiler_options.stack_arrays, "Allocate memory for arrays on stack");
     app.add_flag("--wasm-html", compiler_options.wasm_html, "Generate HTML file using emscripten for LLVM->WASM");
+    app.add_option("--emcc-embed", compiler_options.emcc_embed, "Embed a given file/directory using emscripten for LLVM->WASM");
 
     /*
     * Subcommands:
