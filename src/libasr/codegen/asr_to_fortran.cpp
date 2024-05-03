@@ -1264,6 +1264,7 @@ public:
             SET_INTRINSIC_NAME(Sqrt, "sqrt");
             SET_INTRINSIC_NAME(Mod, "mod");
             SET_INTRINSIC_NAME(Sin, "sin");
+            SET_INTRINSIC_NAME(Cos, "cos");
             SET_INTRINSIC_NAME(Char, "char");
             SET_INTRINSIC_NAME(StringContainsSet, "verify");
             SET_INTRINSIC_NAME(StringFindSet, "scan");
