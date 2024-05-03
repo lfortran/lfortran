@@ -721,6 +721,7 @@ jobs:
           environment-file: ci/environment_linux_llvm.yml
           create-args: >-
             llvmdev=${{ matrix.llvm-version }}
+            nodejs=18.13.0
 
       - uses: hendrikmuhs/ccache-action@main
         with:
@@ -746,10 +747,23 @@ jobs:
           export PATH=$HOME/wasmtime-v19.0.2-x86_64-linux:$PATH
           wasmtime --version
 
+      - name: Setup EMSCRIPTEN SDK
+        shell: bash -e -l {0}
+        run: |
+          cd $HOME
+          curl -o emsdk.tar.gz -L https://github.com/emscripten-core/emsdk/archive/refs/tags/3.1.59.tar.gz
+          tar -xvf emsdk.tar.gz
+          export EMSDK_PATH=$HOME/emsdk-3.1.59
+          echo $EMSDK_PATH
+          cd $EMSDK_PATH
+          ./emsdk install latest
+          ./emsdk activate latest
+
       - name: Build Linux
         shell: bash -e -l {0}
         run: |
             export WASI_SDK_PATH=$HOME/wasi-sdk-21.0
+            export EMSDK_PATH=$HOME/emsdk-3.1.59
             ./build0.sh
             cmake . -GNinja \
               -DCMAKE_BUILD_TYPE=Debug \
@@ -768,10 +782,11 @@ jobs:
         shell: bash -e -l {0}
         run: |
             export WASI_SDK_PATH=$HOME/wasi-sdk-21.0
+            export EMSDK_PATH=$HOME/emsdk-3.1.59
             export PATH=$HOME/wasmtime-v19.0.2-x86_64-linux:$PATH
             export WASMTIME_NEW_CLI=0
             cd integration_tests
-            ./run_tests.py -b llvm_wasm
+            ./run_tests.py -b llvm_wasm llvm_wasm_emcc
 
   gfortran:
     name: Test integration_tests with GFortran
