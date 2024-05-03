@@ -434,6 +434,12 @@ intrinsic_funcs_args = {
             "kind_arg": True
         },
     ],
+    "Dreal": [
+        {
+            "args": [("complex",)],
+            "return": "real64",
+        },
+    ],
     "Rank": [
         {
             "args": [("any",)],
