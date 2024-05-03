@@ -56,6 +56,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     FlipSign,
     Mod,
     Trailz,
+    Int,
     Modulo,
     BesselJ0,
     BesselJ1,
@@ -2957,6 +2958,57 @@ namespace Trailz {
     }
 
 } // namespace Trailz
+
+namespace Int {
+
+    static ASR::expr_t *eval_Int(Allocator &al, const Location &loc,
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+        std::cout<<"here\n";
+        if (is_integer(*ASRUtils::expr_type(args[0]))) {
+            return make_ConstantWithType(make_IntegerConstant_t, ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n, t1, loc);
+        } else if (is_real(*ASRUtils::expr_type(args[0]))) {
+            return make_ConstantWithType(make_IntegerConstant_t, (int64_t)ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r, t1, loc);
+        } else if (is_complex(*ASRUtils::expr_type(args[0]))) {
+            return make_ConstantWithType(make_IntegerConstant_t, (int64_t)ASR::down_cast<ASR::ComplexConstant_t>(args[0])->m_re, t1, loc);
+        } else {
+            return nullptr;
+        }
+    }
+
+    static inline ASR::expr_t* instantiate_Int(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        std::cout<<"here0"<<'\n';
+        declare_basic_variables("_lcompilers_int_" + type_to_str_python(arg_types[0]));
+        fill_func_arg("n", arg_types[0]);
+        fill_func_arg("k", arg_types[1]);
+        auto result = declare(fn_name, return_type, ReturnVar);  
+        auto arg = declare("arg", arg_types[0], Local);
+        body.push_back(al, b.Assignment(arg, args[0]));
+        std::cout<<"here1\n";
+        if (is_integer(*arg_types[0])) {
+            std::cout<<"here2\n";
+            body.push_back(al, b.Assignment(result, b.i2i_t(arg, return_type)));
+        } else if (is_real(*arg_types[0])) {
+            std::cout<<"here3\n";
+            body.push_back(al, b.Assignment(result, b.r2i_t(arg, return_type)));
+        } else if (is_complex(*arg_types[0])) {
+            ASR::expr_t* real_part = EXPR(ASR::make_ComplexRe_t(al, loc,
+                arg, return_type, nullptr));
+            body.push_back(al, b.Assignment(result, real_part));
+        } else {
+            std::cout<<"here4\n";
+            return nullptr;
+        }
+        std::cout<<"here5\n";
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        std::cout<<"here6\n";
+        return b.Call(f_sym, new_args, return_type, nullptr);
+    }
+
+} // namespace Int
 
 namespace Modulo {
 
