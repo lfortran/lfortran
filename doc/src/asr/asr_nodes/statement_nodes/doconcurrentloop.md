@@ -14,8 +14,8 @@ DoConcurrentLoop(do_loop_head head, expr* shared, expr* local, stmt* body)
 ### Arguments
 
 `head` contains do loop concurrent header.
-`shared` contains a list of variables that are shared with all the threads
-`local` contains a list of variables that are local to each threads
+`shared` contains a list of variables that are shared amongst all threads
+`local` contains a list of variables that are local to each thread
 `body` contains loop body.
 
 ### Return values
