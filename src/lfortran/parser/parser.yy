@@ -413,9 +413,13 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <vec_ast> use_modifier_list
 %type <vec_ast> var_decl_star
 %type <vec_var_sym> var_sym_decl_list
+%type <vec_var_sym> var_sym_decl_list_with_init
+%type <vec_var_sym> var_sym_decl_list_without_init
 %type <ast> var_decl
 %type <ast> decl_spec
 %type <var_sym> var_sym_decl
+%type <var_sym> var_sym_decl_with_init
+%type <var_sym> var_sym_decl_without_init
 %type <vec_dim> array_comp_decl_list
 %type <vec_codim> coarray_comp_decl_list
 %type <fnarg> fnarray_arg
@@ -428,6 +432,8 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <ast> fn_mod
 %type <vec_ast> fn_mod_plus
 %type <vec_ast> var_modifiers
+%type <vec_ast> non_colon_var_modifiers
+%type <vec_ast> colon_var_modifiers
 %type <vec_ast> enum_var_modifiers
 %type <vec_ast> var_modifier_list
 %type <ast> var_modifier
@@ -1292,7 +1298,9 @@ var_decl_star
     ;
 
 var_decl
-    : var_type var_modifiers var_sym_decl_list sep {
+    : var_type non_colon_var_modifiers var_sym_decl_list_without_init sep {
+        LLOC(@$, @3); $$ = VAR_DECL1($1, $2, $3, TRIVIA_AFTER($4, @$), @$); }
+    | var_type colon_var_modifiers var_sym_decl_list sep {
         LLOC(@$, @3); $$ = VAR_DECL1($1, $2, $3, TRIVIA_AFTER($4, @$), @$); }
     | var_modifier sep {
         LLOC(@$, @1); $$ = VAR_DECL2($1, TRIVIA_AFTER($2, @$), @$); }
@@ -1417,10 +1425,18 @@ kind_arg2
     | id "=" ":" { $$ = KIND_ARG2C($1, @$); }
     ;
 
-var_modifiers
+non_colon_var_modifiers
     : %empty { LIST_NEW($$); }
-    | "::" { LIST_NEW($$); }
+    ;
+
+colon_var_modifiers
+    : "::" { LIST_NEW($$); }
     | var_modifier_list "::" { $$ = $1; }
+    ;
+
+var_modifiers
+    : non_colon_var_modifiers
+    | colon_var_modifiers
     ;
 
 var_modifier_list
@@ -1499,26 +1515,24 @@ var_type
     | KW_CLASS "(" "*" ")" { $$ = ATTR_TYPE_STAR(Class, Asterisk, @$); }
     ;
 
-var_sym_decl_list
-    : var_sym_decl_list "," var_sym_decl { $$=$1; PLIST_ADD($$, $3); }
-    | var_sym_decl { LIST_NEW($$); PLIST_ADD($$, $1); }
-    ;
-
-var_sym_decl
-    : id { $$ = VAR_SYM_NAME($1, None, @$); }
-    | "/" id "/" { $$ = VAR_SYM_NAME($2, Slash, @$); }
-    | id "=" expr { $$ = VAR_SYM_DIM_INIT($1, nullptr, 0, $3, Equal, @$); }
-    | id "=>" expr { $$ = VAR_SYM_DIM_INIT($1, nullptr, 0, $3, Arrow, @$); }
-    | id "*" expr { $$ = VAR_SYM_DIM_LEN($1, nullptr, 0, $3, Asterisk, @$); }
+var_sym_decl_with_init
+    : id "=" expr { $$ = VAR_SYM_DIM_INIT($1, nullptr, 0, $3, Equal, @$); }
     | id "*" expr "=" expr { $$ = VAR_SYM_DIM_LEN_INIT($1, nullptr, 0, $3, $5, Equal, @$); }
-    | id "*" "(" "*" ")" { $$ = VAR_SYM_NAME($1, DoubleAsterisk, @$); }
-    | id "(" array_comp_decl_list ")" %dprec 1 { $$ = VAR_SYM_DIM($1, $3.p, $3.n, None, @$); }
-    | id "(" array_comp_decl_list ")" "*" expr %dprec 1 {
-            $$ = VAR_SYM_DIM_LEN($1, $3.p, $3.n, $6, Asterisk, @$); }
     | id "(" array_comp_decl_list ")" "=" expr {
             $$ = VAR_SYM_DIM_INIT($1, $3.p, $3.n, $6, Equal, @$); }
     | id "(" array_comp_decl_list ")" "*" expr "=" expr {
             $$ = VAR_SYM_DIM_LEN_INIT($1, $3.p, $3.n, $6, $8, Equal, @$); }
+    ;
+
+var_sym_decl_without_init
+    : id { $$ = VAR_SYM_NAME($1, None, @$); }
+    | "/" id "/" { $$ = VAR_SYM_NAME($2, Slash, @$); }
+    | id "=>" expr { $$ = VAR_SYM_DIM_INIT($1, nullptr, 0, $3, Arrow, @$); }
+    | id "*" expr { $$ = VAR_SYM_DIM_LEN($1, nullptr, 0, $3, Asterisk, @$); }
+    | id "*" "(" "*" ")" { $$ = VAR_SYM_NAME($1, DoubleAsterisk, @$); }
+    | id "(" array_comp_decl_list ")" %dprec 1 { $$ = VAR_SYM_DIM($1, $3.p, $3.n, None, @$); }
+    | id "(" array_comp_decl_list ")" "*" expr %dprec 1 {
+            $$ = VAR_SYM_DIM_LEN($1, $3.p, $3.n, $6, Asterisk, @$); }
     | id "(" array_comp_decl_list ")" "=>" expr {
             $$ = VAR_SYM_DIM_INIT($1, $3.p, $3.n, $6, Arrow, @$); }
     | id "[" coarray_comp_decl_list "]" {
@@ -1526,6 +1540,27 @@ var_sym_decl
     | id "(" array_comp_decl_list ")" "[" coarray_comp_decl_list "]" {
             $$ = VAR_SYM_DIM_CODIM($1, $3.p, $3.n, $6.p, $6.n, None, @$); }
     | decl_spec %dprec 2 { $$ = VAR_SYM_SPEC($1, None, @$); }
+    ;
+
+var_sym_decl
+    : var_sym_decl_with_init
+    | var_sym_decl_without_init
+    ;
+
+var_sym_decl_list_without_init
+    : var_sym_decl_list_without_init "," var_sym_decl_without_init { $$=$1; PLIST_ADD($$, $3); }
+    | var_sym_decl_without_init { LIST_NEW($$); PLIST_ADD($$, $1); }
+    ;
+
+var_sym_decl_list_with_init
+    : var_sym_decl_with_init { LIST_NEW($$); PLIST_ADD($$, $1); }
+    | var_sym_decl_list_with_init "," var_sym_decl { $$=$1; PLIST_ADD($$, $3); }
+    | var_sym_decl_list_without_init "," var_sym_decl_with_init { $$=$1; PLIST_ADD($$, $3); }
+    ;
+
+var_sym_decl_list
+    : var_sym_decl_list_without_init
+    | var_sym_decl_list_with_init
     ;
 
 decl_spec

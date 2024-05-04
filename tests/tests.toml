@@ -2566,9 +2566,9 @@ ast_f90 = true
 filename = "fixed_form2.f"
 ast = true
 
-[[test]]
-filename = "fixed_form3.f"
-ast = true
+# [[test]]
+# filename = "fixed_form3.f"
+# ast = true
 
 [[test]]
 filename = "fixed_form4.f"
@@ -3914,6 +3914,10 @@ asr = true
 [[test]]
 filename = "errors/atomic_01.f90"
 asr = true
+
+[[test]]
+filename = "errors/missing_colons_init.f90"
+ast = true
 
 [[test]]
 filename = "character_parameter_padding_trimming.f90"

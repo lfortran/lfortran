@@ -1,0 +1,5 @@
+syntax error: Token '=' is unexpected here
+ --> tests/errors/missing_colons_init.f90:6:15
+  |
+6 |     integer n = 1 ! bad syntax
+  |               ^ 
