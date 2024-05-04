@@ -155,7 +155,7 @@
                                 )
                                 (ArrayConstant
                                     8
-                                    [1.500000, 1.500000]
+                                    [1.50000000, 1.50000000]
                                     (Array
                                         (Real 4)
                                         [((IntegerConstant 1 (Integer 4))

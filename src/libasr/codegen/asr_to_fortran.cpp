@@ -1264,6 +1264,7 @@ public:
             SET_INTRINSIC_NAME(Sqrt, "sqrt");
             SET_INTRINSIC_NAME(Mod, "mod");
             SET_INTRINSIC_NAME(Sin, "sin");
+            SET_INTRINSIC_NAME(Cos, "cos");
             SET_INTRINSIC_NAME(Char, "char");
             SET_INTRINSIC_NAME(StringContainsSet, "verify");
             SET_INTRINSIC_NAME(StringFindSet, "scan");
@@ -1434,9 +1435,9 @@ public:
     void visit_RealConstant(const ASR::RealConstant_t &x) {
         int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
         if (kind >= 8) {
-            src = std::to_string(x.m_r) + "d0";
+            src = ASRUtils::to_string_with_precision(x.m_r, 16) + "d0";
         } else {
-            src = std::to_string(x.m_r);
+            src = ASRUtils::to_string_with_precision(x.m_r, 8);
         }
         last_expr_precedence = Precedence::Ext;
     }

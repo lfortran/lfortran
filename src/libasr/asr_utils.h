@@ -5028,6 +5028,14 @@ inline void set_ArrayConstant_value(ASR::ArrayConstant_t* x, ASR::expr_t* value,
     }
 }
 
+template <typename T>
+inline std::string to_string_with_precision(const T a_value, const int n) {
+    std::ostringstream out;
+    out.precision(n);
+    out << std::fixed << a_value;
+    return std::move(out).str();
+}
+
 inline std::string fetch_ArrayConstant_value(void *data, ASR::ttype_t* type, int i) {
    int kind = ASRUtils::extract_kind_from_ttype_t(type);
 
@@ -5040,8 +5048,8 @@ inline std::string fetch_ArrayConstant_value(void *data, ASR::ttype_t* type, int
             else throw LCompilersException("Unsupported kind for integer array constant.");
         }
         case ASR::ttypeType::Real: {
-            if (kind == 4) return std::to_string(((float*)data)[i]);
-            else if (kind == 8) return std::to_string(((double*)data)[i]);
+            if (kind == 4) return to_string_with_precision(((float*)data)[i], 8);
+            else if (kind == 8) return to_string_with_precision(((double*)data)[i], 16);
             else throw LCompilersException("Unsupported kind for real array constant.");
         }
         case ASR::ttypeType::UnsignedInteger: {
@@ -5052,8 +5060,8 @@ inline std::string fetch_ArrayConstant_value(void *data, ASR::ttype_t* type, int
             else throw LCompilersException("Unsupported kind for unsigned integer array constant.");
         }
         case ASR::ttypeType::Complex: {
-            if (kind == 4) return "("+(std::to_string(*(((float*)data) + 2*i)))+", "+ (std::to_string(*(((float*)data) + 2*i + 1))) + ")";
-            else if (kind == 8) return "("+(std::to_string(*(((double*)data) + 2*i)))+", "+ (std::to_string(*(((double*)data) + 2*i + 1))) + ")";
+            if (kind == 4) return "("+(to_string_with_precision(*(((float*)data) + 2*i), 8))+", "+ (to_string_with_precision(*(((float*)data) + 2*i + 1), 8)) + ")";
+            else if (kind == 8) return "("+(to_string_with_precision(*(((double*)data) + 2*i), 16))+", "+ (to_string_with_precision(*(((double*)data) + 2*i + 1), 16)) + ")";
             else throw LCompilersException("Unsupported kind for complex array constant.");
         }
         case ASR::ttypeType::Logical: {
