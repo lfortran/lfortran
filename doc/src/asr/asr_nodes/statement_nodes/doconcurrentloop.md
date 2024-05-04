@@ -22,9 +22,9 @@ None.
 
 ## Description
 
-**DoConcurrentLoop** specifies that there are no data dependecies between the
+**DoConcurrentLoop** specifies that there are no data dependencies between the
 iterations of a DO loop. Within the body of a `DoConcurrent` loop the program
-must adgere to a the list of restrictions specified on its use of Fortran
+must adhere to a the list of restrictions specified on its use of Fortran
 language features. Actions that can't be executed in parallel or that don't
 allow all iterations to execute are prohibited, like:
 
