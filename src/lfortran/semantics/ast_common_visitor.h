@@ -1179,7 +1179,7 @@ public:
 
     void process_dims(Allocator &al, Vec<ASR::dimension_t> &dims,
         AST::dimension_t *m_dim, size_t n_dim, bool &is_compile_time,
-        bool is_char_type=false) {
+        bool is_char_type=false, bool is_argument=false) {
         LCOMPILERS_ASSERT(dims.size() == 0);
         is_compile_time = false;
         _processing_dimensions = true;
@@ -1199,7 +1199,10 @@ public:
                 if (ASR::is_a<ASR::Var_t>(*end)) {
                     ASR::Var_t* end_var = ASR::down_cast<ASR::Var_t>(end);
                     ASR::symbol_t* end_sym = end_var->m_v;
-                    if (ASR::is_a<ASR::ExternalSymbol_t>(*end_sym)) {
+                    SymbolTable* symbol_scope = ASRUtils::symbol_parent_symtab(end_sym);
+                    if (ASR::is_a<ASR::ExternalSymbol_t>(*end_sym) ||
+                        (symbol_scope->counter != current_scope->counter && is_argument &&
+                        ASRUtils::expr_value(end) == nullptr) ) {
                         /*
                             case: ./integration_tests/arrays_45.f90
                             subroutine a(cs)
@@ -2502,6 +2505,31 @@ public:
                 if (x.n_attributes > 0) {
                     for (size_t i=0; i < x.n_attributes; i++) {
                         AST::decl_attribute_t *a = x.m_attributes[i];
+                        if (AST::is_a<AST::AttrIntent_t>(*a)) {
+                            AST::AttrIntent_t *ai =
+                                AST::down_cast<AST::AttrIntent_t>(a);
+                            switch (ai->m_intent) {
+                                case (AST::attr_intentType::In) : {
+                                    s_intent = ASRUtils::intent_in;
+                                    break;
+                                }
+                                case (AST::attr_intentType::Out) : {
+                                    s_intent = ASRUtils::intent_out;
+                                    break;
+                                }
+                                case (AST::attr_intentType::InOut) : {
+                                    s_intent = ASRUtils::intent_inout;
+                                    break;
+                                }
+                                default : {
+                                    s_intent = ASRUtils::intent_unspecified;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    for (size_t i=0; i < x.n_attributes; i++) {
+                        AST::decl_attribute_t *a = x.m_attributes[i];
                         if (AST::is_a<AST::SimpleAttribute_t>(*a)) {
                             AST::SimpleAttribute_t *sa =
                                 AST::down_cast<AST::SimpleAttribute_t>(a);
@@ -2558,26 +2586,7 @@ public:
                                         x.base.base.loc);
                             }
                         } else if (AST::is_a<AST::AttrIntent_t>(*a)) {
-                            AST::AttrIntent_t *ai =
-                                AST::down_cast<AST::AttrIntent_t>(a);
-                            switch (ai->m_intent) {
-                                case (AST::attr_intentType::In) : {
-                                    s_intent = ASRUtils::intent_in;
-                                    break;
-                                }
-                                case (AST::attr_intentType::Out) : {
-                                    s_intent = ASRUtils::intent_out;
-                                    break;
-                                }
-                                case (AST::attr_intentType::InOut) : {
-                                    s_intent = ASRUtils::intent_inout;
-                                    break;
-                                }
-                                default : {
-                                    s_intent = ASRUtils::intent_unspecified;
-                                    break;
-                                }
-                            }
+                            // processed already
                         } else if (AST::is_a<AST::AttrDimension_t>(*a)) {
                             AST::AttrDimension_t *ad =
                                 AST::down_cast<AST::AttrDimension_t>(a);
@@ -2586,7 +2595,9 @@ public:
                                         x.base.base.loc);
                             }
                             dims_attr_loc = ad->base.base.loc;
-                            process_dims(al, dims, ad->m_dim, ad->n_dim, is_compile_time, is_char_type);
+                            process_dims(al, dims, ad->m_dim, ad->n_dim, is_compile_time, is_char_type,
+                                (s_intent == ASRUtils::intent_in || s_intent == ASRUtils::intent_out ||
+                                s_intent == ASRUtils::intent_inout));
                         } else {
                             throw SemanticError("Attribute type not implemented yet",
                                     x.base.base.loc);
