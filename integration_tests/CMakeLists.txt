@@ -759,6 +759,7 @@ RUN(NAME intrinsics_213 LABELS gfortran llvm) # cpu_time
 RUN(NAME intrinsics_214 LABELS gfortran llvm) # sind
 RUN(NAME intrinsics_215 LABELS gfortran llvm) # cosd
 RUN(NAME intrinsics_216 LABELS gfortran llvm) # tand
+RUN(NAME intrinsics_217 LABELS gfortran llvm) # all
 
 RUN(NAME parameter_01 LABELS gfortran)
 RUN(NAME parameter_02 LABELS gfortran)

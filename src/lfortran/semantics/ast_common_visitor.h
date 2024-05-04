@@ -737,6 +737,7 @@ public:
 
     std::map<std::string, std::vector<IntrinsicSignature>> name2signature = {
         {"any", {IntrinsicSignature({"mask", "dim"}, 1, 2)}},
+        {"all", {IntrinsicSignature({"mask", "dim"}, 1, 2)}},
         {"sum", {IntrinsicSignature({"array", "dim", "mask"}, 1, 3),
                 IntrinsicSignature({"array", "mask"}, 1, 2)}},
         {"product", {IntrinsicSignature({"array", "dim", "mask"}, 1, 3),
@@ -5111,39 +5112,6 @@ public:
             func_args.size(), type, nullptr, nullptr, false);
     }
 
-    ASR::asr_t* create_ArrayAll(const AST::FuncCallOrArray_t& x) {
-        Vec<ASR::expr_t*> args;
-        std::vector<std::string> kwarg_names = {"mask", "dim"};
-        handle_intrinsic_node_args(x, args, kwarg_names, 1, 2, "all");
-        ASR::expr_t *mask = args[0], *dim = args[1];
-        ASR::expr_t* value = nullptr;
-        // TODO: Use dim to compute the `value`
-        ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
-        if (ASR::is_a<ASR::ArrayConstant_t>(*mask)) {
-            ASR::ArrayConstant_t *array = ASR::down_cast<ASR::ArrayConstant_t>(mask);
-            bool result = true;
-            value = ASRUtils::EXPR(ASR::make_LogicalConstant_t(al,
-                array->base.base.loc, result, type));
-            for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(array->m_type); i++) {
-                if (ASR::is_a<ASR::LogicalConstant_t>(*ASRUtils::fetch_ArrayConstant_value(al, array, i))) {
-                    if (result) {
-                        result = ASR::down_cast<ASR::LogicalConstant_t>(
-                            ASRUtils::fetch_ArrayConstant_value(al, array, i))->m_value;
-                    }
-                } else {
-                    // TODO: Handle other expressions
-                    result = true; value = nullptr;
-                    break;
-                }
-            }
-            if (!result) {
-                value = ASRUtils::EXPR(ASR::make_LogicalConstant_t(al,
-                    array->base.base.loc, false, type));
-            }
-        }
-        return ASR::make_ArrayAll_t(al, x.base.base.loc, mask, dim, type, value);
-    }
-
     ASR::asr_t* create_Complex(const AST::FuncCallOrArray_t& x) {
         const Location &loc = x.base.base.loc;
         Vec<ASR::expr_t*> args;
@@ -5547,8 +5515,6 @@ public:
                 tmp = create_NullPointerConstant(x);
             } else if( var_name == "associated" ) {
                 tmp = create_Associated(x);
-            } else if( var_name == "all" ) {
-                tmp = create_ArrayAll(x);
             } else if( var_name == "complex" ) {
                 tmp = create_Complex(x);
             } else {
