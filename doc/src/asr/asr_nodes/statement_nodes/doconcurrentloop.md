@@ -8,12 +8,14 @@ iterations of a DO loop.
 ### Syntax
 
 ```fortran
-DoConcurrentLoop(do_loop_head head, stmt* body)
+DoConcurrentLoop(do_loop_head head, expr* shared, expr* local, stmt* body)
 ```
 
 ### Arguments
 
 `head` contains do loop concurrent header.
+`shared` contains a list of variables that are shared with all the threads
+`local` contains a list of variables that are local to each threads
 `body` contains loop body.
 
 ### Return values
@@ -32,10 +34,12 @@ allow all iterations to execute are prohibited, like:
 iterations.
 - Image control statements, like `STOP`, `SYNC`, `ALLOCATE/DEALLOCATE`.
 
+`OMPPragma` is converted to `DoConcurrentLoop` in the AST->ASR phase.
+
 ## Types
 
 Accessible global identifier and a sequence of zero or more statements or
-construst that make the `DO` range.
+construct that make the `DO` range.
 
 ## Examples
 
@@ -74,7 +78,7 @@ ASR:
     (SymbolTable
         1
         {
-            doconcurrentloop_02:
+            doconcurrentloop:
                 (Program
                     (SymbolTable
                         2
@@ -83,12 +87,18 @@ ASR:
                                 (Variable
                                     2
                                     a
+                                    []
                                     Local
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 10 (Integer 4 [])))])
+                                    (Array
+                                        (Real 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 10 (Integer 4)))]
+                                        FixedSizeArray
+                                    )
+                                    ()
                                     Source
                                     Public
                                     Required
@@ -103,12 +113,18 @@ ASR:
                                                 (Variable
                                                     3
                                                     a
+                                                    []
                                                     In
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [(()
-                                                    ())])
+                                                    (Array
+                                                        (Real 4)
+                                                        [(()
+                                                        ())]
+                                                        DescriptorArray
+                                                    )
+                                                    ()
                                                     Source
                                                     Public
                                                     Required
@@ -118,27 +134,51 @@ ASR:
                                                 (Variable
                                                     3
                                                     sum
+                                                    []
                                                     Out
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
+                                                    ()
                                                     Source
                                                     Public
                                                     Required
                                                     .false.
                                                 )
-
                                         })
                                     arraysum
+                                    (FunctionType
+                                        [(Array
+                                            (Real 4)
+                                            [(()
+                                            ())]
+                                            DescriptorArray
+                                        )
+                                        (Real 4)]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
                                     [(Var 3 a)
                                     (Var 3 sum)]
                                     [(DoConcurrentLoop
                                         ((Var 2 i)
-                                        (IntegerConstant 1 (Integer 4 []))
+                                        (IntegerConstant 1 (Integer 4))
                                         (Var 2 n)
                                         ())
-                                        [(=
+                                        []
+                                        []
+                                        [(Assignment
                                             (Var 3 sum)
                                             (RealBinOp
                                                 (Var 3 sum)
@@ -148,38 +188,33 @@ ASR:
                                                     [(()
                                                     (Var 2 i)
                                                     ())]
-                                                    (Real 4 [])
+                                                    (Real 4)
+                                                    ColMajor
                                                     ()
                                                 )
-                                                (Real 4 [])
+                                                (Real 4)
                                                 ()
                                             )
                                             ()
                                         )]
                                     )]
                                     ()
-                                    Source
                                     Public
-                                    Implementation
+                                    .false.
+                                    .false.
                                     ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             i:
                                 (Variable
                                     2
                                     i
+                                    []
                                     Local
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
+                                    ()
                                     Source
                                     Public
                                     Required
@@ -189,11 +224,13 @@ ASR:
                                 (Variable
                                     2
                                     n
+                                    []
                                     Local
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
+                                    ()
                                     Source
                                     Public
                                     Required
@@ -203,55 +240,59 @@ ASR:
                                 (Variable
                                     2
                                     sum
+                                    []
                                     Local
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [])
+                                    (Real 4)
+                                    ()
                                     Source
                                     Public
                                     Required
                                     .false.
                                 )
-
                         })
-                    doconcurrentloop_02
+                    doconcurrentloop
                     []
-                    [(=
+                    [(Assignment
                         (Var 2 n)
                         (ArraySize
                             (Var 2 a)
                             ()
-                            (Integer 4 [])
-                            (IntegerConstant 10 (Integer 4 []))
+                            (Integer 4)
+                            (IntegerConstant 10 (Integer 4))
                         )
                         ()
                     )
-                    (=
+                    (Assignment
                         (Var 2 sum)
                         (Cast
-                            (IntegerConstant 0 (Integer 4 []))
+                            (IntegerConstant 0 (Integer 4))
                             IntegerToReal
-                            (Real 4 [])
+                            (Real 4)
                             (RealConstant
                                 0.000000
-                                (Real 4 [])
+                                (Real 4)
                             )
                         )
                         ()
                     )
                     (DoConcurrentLoop
                         ((Var 2 i)
-                        (IntegerConstant 1 (Integer 4 []))
+                        (IntegerConstant 1 (Integer 4))
                         (Var 2 n)
                         ())
-                        [(=
+                        []
+                        []
+                        [(Assignment
                             (ArrayItem
                                 (Var 2 a)
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Real 4 [])
+                                (Real 4)
+                                ColMajor
                                 ()
                             )
                             (RealBinOp
@@ -261,25 +302,26 @@ ASR:
                                     (IntegerBinOp
                                         (Var 2 i)
                                         Sub
-                                        (IntegerConstant 1 (Integer 4 []))
-                                        (Integer 4 [])
+                                        (IntegerConstant 1 (Integer 4))
+                                        (Integer 4)
                                         ()
                                     )
                                     ())]
-                                    (Real 4 [])
+                                    (Real 4)
+                                    ColMajor
                                     ()
                                 )
                                 Add
                                 (Cast
-                                    (IntegerConstant 5 (Integer 4 []))
+                                    (IntegerConstant 5 (Integer 4))
                                     IntegerToReal
-                                    (Real 4 [])
+                                    (Real 4)
                                     (RealConstant
                                         5.000000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                 )
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )
                             ()
@@ -288,12 +330,22 @@ ASR:
                     (SubroutineCall
                         2 arraysum
                         ()
-                        [((Var 2 a))
+                        [((ArrayPhysicalCast
+                            (Var 2 a)
+                            FixedSizeArray
+                            DescriptorArray
+                            (Array
+                                (Real 4)
+                                [((IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 10 (Integer 4)))]
+                                DescriptorArray
+                            )
+                            ()
+                        ))
                         ((Var 2 sum))]
                         ()
                     )]
                 )
-
         })
     []
 )
