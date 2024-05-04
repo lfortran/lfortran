@@ -757,6 +757,8 @@ RUN(NAME intrinsics_210 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRAFILES
 RUN(NAME intrinsics_212 LABELS gfortran llvm) # specific type intrinsics
 RUN(NAME intrinsics_213 LABELS gfortran llvm) # cpu_time
 RUN(NAME intrinsics_214 LABELS gfortran llvm) # sind
+RUN(NAME intrinsics_215 LABELS gfortran llvm) # cosd
+RUN(NAME intrinsics_216 LABELS gfortran llvm) # tand
 
 RUN(NAME parameter_01 LABELS gfortran)
 RUN(NAME parameter_02 LABELS gfortran)

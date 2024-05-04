@@ -1117,6 +1117,18 @@ LFORTRAN_API double_complex_t _lfortran_zcos(double_complex_t x)
     return ccos(x);
 }
 
+LFORTRAN_API float _lfortran_scosd(float x)
+{
+    float radians = (x * PI) / 180.0;
+    return cos(radians);
+}
+
+LFORTRAN_API double _lfortran_dcosd(double x)
+{
+    double radians = (x * PI) / 180.0;
+    return cos(radians);
+}
+
 // tan -------------------------------------------------------------------------
 
 LFORTRAN_API float _lfortran_stan(float x)
@@ -1137,6 +1149,18 @@ LFORTRAN_API float_complex_t _lfortran_ctan(float_complex_t x)
 LFORTRAN_API double_complex_t _lfortran_ztan(double_complex_t x)
 {
     return ctan(x);
+}
+
+LFORTRAN_API float _lfortran_stand(float x)
+{
+    float radians = (x * PI) / 180.0;
+    return tan(radians);
+}
+
+LFORTRAN_API double _lfortran_dtand(double x)
+{
+    double radians = (x * PI) / 180.0;
+    return tan(radians);
 }
 
 // sinh ------------------------------------------------------------------------
