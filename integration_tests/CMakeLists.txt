@@ -476,6 +476,7 @@ RUN(NAME arrays_43 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME arrays_44 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran NOFAST)
 RUN(NAME arrays_45 LABELS gfortran llvm)
 RUN(NAME arrays_46 LABELS gfortran llvm)
+RUN(NAME arrays_47 LABELS gfortran llvm)
 
 # GFortran
 RUN(NAME arrays_02 LABELS gfortran)
