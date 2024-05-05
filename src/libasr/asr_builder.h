@@ -112,6 +112,10 @@ class ASRBuilder {
     }
 
     // Expressions -------------------------------------------------------------
+    ASR::expr_t* Var(ASR::symbol_t* sym) {
+        return ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym));
+    }
+
     inline ASR::expr_t* i_t(int64_t x, ASR::ttype_t* t) {
         return EXPR(ASR::make_IntegerConstant_t(al, loc, x, t));
     }
