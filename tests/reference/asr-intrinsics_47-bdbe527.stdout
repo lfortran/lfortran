@@ -95,7 +95,10 @@
                             )]
                             0
                             (Logical 4)
-                            ()
+                            (LogicalConstant
+                                .true.
+                                (Logical 4)
+                            )
                         )
                         ()
                     )
@@ -127,7 +130,10 @@
                             )]
                             0
                             (Logical 4)
-                            ()
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
                         )
                         ()
                     )
@@ -159,7 +165,10 @@
                             )]
                             0
                             (Logical 4)
-                            ()
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
                         )
                         ()
                     )
@@ -191,7 +200,10 @@
                             )]
                             0
                             (Logical 4)
-                            ()
+                            (LogicalConstant
+                                .true.
+                                (Logical 4)
+                            )
                         )
                         ()
                     )
@@ -245,7 +257,10 @@
                             )]
                             0
                             (Logical 4)
-                            ()
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
                         )
                         ()
                     )
