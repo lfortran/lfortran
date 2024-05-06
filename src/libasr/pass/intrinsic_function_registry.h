@@ -16,7 +16,7 @@ namespace ASRUtils {
         return #X;                                                              \
     }
 
-inline std::string get_intrinsic_name(int x) {
+inline std::string get_intrinsic_name(int64_t x) {
     switch (x) {
         INTRINSIC_NAME_CASE(ObjectType)
         INTRINSIC_NAME_CASE(Kind)
@@ -1057,7 +1057,7 @@ namespace IntrinsicImpureFunctionRegistry {
         return #X;                                                              \
     }
 
-inline std::string get_impure_intrinsic_name(int x) {
+inline std::string get_impure_intrinsic_name(int64_t x) {
     switch (x) {
         IMPURE_INTRINSIC_NAME_CASE(IsIostatEnd)
         IMPURE_INTRINSIC_NAME_CASE(IsIostatEor)
