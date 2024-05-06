@@ -1,5 +1,5 @@
 semantic error: `iostat` must be scalar
- --> tests/errors/iostat_non_scalar_value.f90:8:5
+ --> tests/errors/iostat_non_scalar_value.f90:7:5
   |
-8 |     read(u, *, iostat=ios(1:1))
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+7 |     read(buffer, *, iostat=ios(1:1))
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 

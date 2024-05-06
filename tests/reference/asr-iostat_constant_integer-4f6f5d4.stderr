@@ -1,5 +1,5 @@
 semantic error: Non-variable expression for `iostat`
- --> tests/errors/iostat_constant_integer.f90:8:5
+ --> tests/errors/iostat_constant_integer.f90:7:5
   |
-8 |     read(u, *, iostat=ios)
-  |     ^^^^^^^^^^^^^^^^^^^^^^ 
+7 |     read(buffer, *, iostat=ios)
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
