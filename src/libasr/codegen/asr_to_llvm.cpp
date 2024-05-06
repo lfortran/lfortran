@@ -8176,40 +8176,42 @@ public:
                                 if (orig_arg->m_abi == ASR::abiType::BindC && orig_arg->m_value_attr) {
                                     ASR::ttype_t* arg_type = arg->m_type;
                                     if (ASR::is_a<ASR::Complex_t>(*arg_type)) {
-                                        int c_kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
-                                        if (c_kind == 4) {
-                                            if (compiler_options.platform == Platform::Windows) {
-                                                // tmp is {float, float}*
-                                                // type_fx2p is i64*
-                                                llvm::Type* type_fx2p = llvm::Type::getInt64PtrTy(context);
-                                                // Convert {float,float}* to i64* using bitcast
-                                                tmp = builder->CreateBitCast(tmp, type_fx2p);
-                                                // Then convert i64* -> i64
-                                                tmp = CreateLoad(tmp);
-                                            } else if (compiler_options.platform == Platform::macOS_ARM) {
-                                                // tmp is {float, float}*
-                                                // type_fx2p is [2 x float]*
-                                                llvm::Type* type_fx2p = llvm::ArrayType::get(llvm::Type::getFloatTy(context), 2)->getPointerTo();
-                                                // Convert {float,float}* to [2 x float]* using bitcast
-                                                tmp = builder->CreateBitCast(tmp, type_fx2p);
-                                                // Then convert [2 x float]* -> [2 x float]
-                                                tmp = CreateLoad(tmp);
+                                        if (!startswith(compiler_options.target, "wasm")) {
+                                            int c_kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
+                                            if (c_kind == 4) {
+                                                if (compiler_options.platform == Platform::Windows) {
+                                                    // tmp is {float, float}*
+                                                    // type_fx2p is i64*
+                                                    llvm::Type* type_fx2p = llvm::Type::getInt64PtrTy(context);
+                                                    // Convert {float,float}* to i64* using bitcast
+                                                    tmp = builder->CreateBitCast(tmp, type_fx2p);
+                                                    // Then convert i64* -> i64
+                                                    tmp = CreateLoad(tmp);
+                                                } else if (compiler_options.platform == Platform::macOS_ARM) {
+                                                    // tmp is {float, float}*
+                                                    // type_fx2p is [2 x float]*
+                                                    llvm::Type* type_fx2p = llvm::ArrayType::get(llvm::Type::getFloatTy(context), 2)->getPointerTo();
+                                                    // Convert {float,float}* to [2 x float]* using bitcast
+                                                    tmp = builder->CreateBitCast(tmp, type_fx2p);
+                                                    // Then convert [2 x float]* -> [2 x float]
+                                                    tmp = CreateLoad(tmp);
+                                                } else {
+                                                    // tmp is {float, float}*
+                                                    // type_fx2p is <2 x float>*
+                                                    llvm::Type* type_fx2p = FIXED_VECTOR_TYPE::get(llvm::Type::getFloatTy(context), 2)->getPointerTo();
+                                                    // Convert {float,float}* to <2 x float>* using bitcast
+                                                    tmp = builder->CreateBitCast(tmp, type_fx2p);
+                                                    // Then convert <2 x float>* -> <2 x float>
+                                                    tmp = CreateLoad(tmp);
+                                                }
                                             } else {
-                                                // tmp is {float, float}*
-                                                // type_fx2p is <2 x float>*
-                                                llvm::Type* type_fx2p = FIXED_VECTOR_TYPE::get(llvm::Type::getFloatTy(context), 2)->getPointerTo();
-                                                // Convert {float,float}* to <2 x float>* using bitcast
-                                                tmp = builder->CreateBitCast(tmp, type_fx2p);
-                                                // Then convert <2 x float>* -> <2 x float>
-                                                tmp = CreateLoad(tmp);
-                                            }
-                                        } else {
-                                            LCOMPILERS_ASSERT(c_kind == 8)
-                                            if (compiler_options.platform == Platform::Windows) {
-                                                // 128 bit aggregate type is passed by reference
-                                            } else {
-                                                // Pass by value
-                                                tmp = CreateLoad(tmp);
+                                                LCOMPILERS_ASSERT(c_kind == 8)
+                                                if (compiler_options.platform == Platform::Windows) {
+                                                    // 128 bit aggregate type is passed by reference
+                                                } else {
+                                                    // Pass by value
+                                                    tmp = CreateLoad(tmp);
+                                                }
                                             }
                                         }
                                     } else if (is_a<ASR::CPtr_t>(*arg_type)) {

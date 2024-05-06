@@ -706,7 +706,8 @@ namespace LCompilers {
             case (ASR::ttypeType::Complex) : {
                 ASR::Complex_t* v_type = ASR::down_cast<ASR::Complex_t>(asr_type);
                 a_kind = v_type->m_kind;
-                if (m_abi != ASR::abiType::BindC) {
+                if (m_abi != ASR::abiType::BindC
+                    || startswith(compiler_options.target, "wasm")) {
                     type = getComplexType(a_kind, true);
                 } else {
                     if (arg_m_abi == ASR::abiType::BindC
