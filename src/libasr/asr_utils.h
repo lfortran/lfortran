@@ -985,20 +985,21 @@ static inline bool all_args_have_value(const Vec<ASR::expr_t*> &args) {
 }
 
 /*
-See section 9.2 Variable from J3 SD-007r1.pdf for what a "Variable" is
 
-Below is an example verbatim from the document.
-For example, given the declarations:
+This function determines if a given expression represents a variable according
+to the rules of Fortran variable definitions. Here's an illustration of declaration's:
 
+```fortran
+    CHARACTER(len=5) x, y(3)
+    INTEGER, PARAMETER :: i
+    TYPE (EMPLOYEE) e
+        INTEGER age
+    END TYPE EMPLOYEE
 ```
-    CHARACTER (10) A, B (10)
-    TYPE (PERSON) P ! See 7.5.2.1, NOTE
-```
 
-then A, B, B (1), B (1:5), P % AGE, and A (1:1) are all variables.
+then 'x', 'y', 'y(1)', 'y(1:2)', 'e % age' are all variables, while 'i' isn't
 
 TODO: this definitely needs some extensions to include others as "variable"'s
-
 */
 static inline bool is_variable(ASR::expr_t* a_value) {
     if (a_value == nullptr) {
