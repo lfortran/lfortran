@@ -984,6 +984,55 @@ static inline bool all_args_have_value(const Vec<ASR::expr_t*> &args) {
     return true;
 }
 
+/*
+See section 9.2 Variable from J3 SD-007r1.pdf for what a "Variable" is
+
+Below is an example verbatim from the document.
+For example, given the declarations:
+
+```
+    CHARACTER (10) A, B (10)
+    TYPE (PERSON) P ! See 7.5.2.1, NOTE
+```
+
+then A, B, B (1), B (1:5), P % AGE, and A (1:1) are all variables.
+
+TODO: this definitely needs some extensions to include others as "variable"'s
+
+*/
+static inline bool is_variable(ASR::expr_t* a_value) {
+    if (a_value == nullptr) {
+        return false;
+    }
+    switch (a_value->type) {
+        case ASR::exprType::ArrayItem: {
+            ASR::ArrayItem_t* a_item = ASR::down_cast<ASR::ArrayItem_t>(a_value);
+            ASR::expr_t* array_expr = a_item->m_v;
+            ASR::Variable_t* array_var = ASRUtils::EXPR2VAR(array_expr);
+            // a constant array's item isn't a "variable"
+            return array_var->m_storage != ASR::storage_typeType::Parameter;
+        }
+        case ASR::exprType::Var: {
+            ASR::Var_t* var_t = ASR::down_cast<ASR::Var_t>(a_value);
+            if (ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(var_t->m_v))) {
+                ASR::Variable_t* variable_t = ASR::down_cast<ASR::Variable_t>(
+                    ASRUtils::symbol_get_past_external(var_t->m_v));
+                return variable_t->m_storage != ASR::storage_typeType::Parameter;
+            }
+            return true;
+        }
+        case ASR::exprType::StringItem:
+        case ASR::exprType::StringSection:
+        case ASR::exprType::ArraySection:
+        case ASR::exprType::StructInstanceMember: {
+            return true;
+        }
+        default: {
+            return false;
+        }
+    }
+}
+
 static inline bool is_value_constant(ASR::expr_t *a_value) {
     if( a_value == nullptr ) {
         return false;

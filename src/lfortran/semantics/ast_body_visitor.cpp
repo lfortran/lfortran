@@ -510,8 +510,13 @@ public:
                 this->visit_expr(*kwarg.m_value);
                 a_iostat = ASRUtils::EXPR(tmp);
                 ASR::ttype_t* a_iostat_type = ASRUtils::expr_type(a_iostat);
-                if( a_iostat->type != ASR::exprType::Var ||
-                    (!ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_pointer(a_iostat_type))) ) {
+                if (!ASRUtils::is_variable(a_iostat)) {
+                    throw SemanticError("Non-variable expression for `iostat`", loc);
+                }
+                if (ASRUtils::is_array(a_iostat_type)) {
+                    throw SemanticError("`iostat` must be scalar", loc);
+                }
+                if (!ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_pointer(a_iostat_type))) {
                         throw SemanticError("`iostat` must be of type, Integer", loc);
                 }
             } else if( m_arg_str == std::string("iomsg") ) {
@@ -522,10 +527,15 @@ public:
                 this->visit_expr(*kwarg.m_value);
                 a_iomsg = ASRUtils::EXPR(tmp);
                 ASR::ttype_t* a_iomsg_type = ASRUtils::expr_type(a_iomsg);
-                if( a_iomsg->type != ASR::exprType::Var ||
-                   (!ASR::is_a<ASR::Character_t>(*ASRUtils::type_get_past_pointer(a_iomsg_type))) ) {
-                        throw SemanticError("`iomsg` must be of type, Character", loc);
-                    }
+                if (!ASRUtils::is_variable(a_iomsg)) {
+                    throw SemanticError("Non-variable expression for `iomsg`", loc);
+                }
+                if (ASRUtils::is_array(a_iomsg_type)) {
+                    throw SemanticError("`iomsg` must be scalar", loc);
+                }
+                if (!ASR::is_a<ASR::Character_t>(*ASRUtils::type_get_past_pointer(a_iomsg_type))) {
+                    throw SemanticError("`iomsg` must be of type, Character", loc);
+                }
             } else if( m_arg_str == std::string("size") ) {
                 if( a_size != nullptr ) {
                     throw SemanticError(R"""(Duplicate value of `size` found, `size` has already been specified via arguments or keyword arguments)""",

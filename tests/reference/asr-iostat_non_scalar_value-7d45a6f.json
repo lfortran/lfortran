@@ -1,0 +1,13 @@
+{
+    "basename": "asr-iostat_non_scalar_value-7d45a6f",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/iostat_non_scalar_value.f90",
+    "infile_hash": "88c34f6424d28bdb1f5e1fdc5c30b7666e1131e29262d992a4047759",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-iostat_non_scalar_value-7d45a6f.stderr",
+    "stderr_hash": "2d94f2c232ece147eb91aae66003885e5210ce5c9b085634ac7867d0",
+    "returncode": 2
+}
