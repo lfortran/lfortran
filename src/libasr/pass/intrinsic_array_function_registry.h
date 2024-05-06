@@ -1075,7 +1075,7 @@ namespace AnyAll {
 
     static inline void verify_array(ASR::expr_t* array, ASR::ttype_t* return_type,
         const Location& loc, diag::Diagnostics& diagnostics, ASRUtils::IntrinsicArrayFunctions intrinsic_func_id) {
-        std::string intrinsic_func_name = ASRUtils::get_array_intrinsic_name(static_cast<int>(intrinsic_func_id));
+        std::string intrinsic_func_name = ASRUtils::get_array_intrinsic_name(static_cast<int64_t>(intrinsic_func_id));
         ASR::ttype_t* array_type = ASRUtils::expr_type(array);
         ASRUtils::require_impl(ASRUtils::is_logical(*array_type) && ASRUtils::extract_n_dims_from_ttype(array_type) > 0,
             "`mask` argument of `" + intrinsic_func_name + "` intrinsic must be a logical array, found: " + ASRUtils::get_type_code(array_type),
@@ -1087,7 +1087,7 @@ namespace AnyAll {
 
     static inline void verify_array_dim(ASR::expr_t* array, ASR::expr_t* dim,
         ASR::ttype_t* return_type, const Location& loc, diag::Diagnostics& diagnostics, ASRUtils::IntrinsicArrayFunctions intrinsic_func_id) {
-        std::string intrinsic_func_name = ASRUtils::get_array_intrinsic_name(static_cast<int>(intrinsic_func_id));
+        std::string intrinsic_func_name = ASRUtils::get_array_intrinsic_name(static_cast<int64_t>(intrinsic_func_id));
         ASR::ttype_t* array_type = ASRUtils::expr_type(array);
         ASRUtils::require_impl(ASRUtils::is_logical(*ASRUtils::type_get_past_pointer(array_type)) && ASRUtils::extract_n_dims_from_ttype(array_type) > 0,
             "`mask` argument of `" + intrinsic_func_name + "` intrinsic must be a logical array, found: " + ASRUtils::get_type_code(array_type),
@@ -1102,7 +1102,7 @@ namespace AnyAll {
     }
 
     static inline void verify_args(const ASR::IntrinsicArrayFunction_t& x, diag::Diagnostics& diagnostics, ASRUtils::IntrinsicArrayFunctions intrinsic_func_id) {
-        std::string intrinsic_func_name = ASRUtils::get_array_intrinsic_name(static_cast<int>(intrinsic_func_id));
+        std::string intrinsic_func_name = ASRUtils::get_array_intrinsic_name(static_cast<int64_t>(intrinsic_func_id));
         ASRUtils::require_impl(x.m_args[0] != nullptr, "`mask` argument to `" + intrinsic_func_name + "` intrinsic cannot be nullptr",
             x.base.base.loc, diagnostics);
         switch( x.m_overload_id ) {
@@ -1150,7 +1150,7 @@ namespace AnyAll {
     static inline ASR::asr_t* create_AnyAll(Allocator& al, const Location& loc,
         Vec<ASR::expr_t*>& args, diag::Diagnostics& diag, ASRUtils::IntrinsicArrayFunctions intrinsic_func_id, 
         bool init_logical_val, std::function<bool(bool,bool)> logical_operation) {
-        std::string intrinsic_func_name = ASRUtils::get_array_intrinsic_name(static_cast<int>(intrinsic_func_id));
+        std::string intrinsic_func_name = ASRUtils::get_array_intrinsic_name(static_cast<int64_t>(intrinsic_func_id));
         int64_t overload_id = 0;
         Vec<ASR::expr_t*> any_all_args; any_all_args.reserve(al, 2);
 
@@ -1247,7 +1247,7 @@ namespace AnyAll {
         SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *logical_return_type,
         Vec<ASR::call_arg_t>& new_args, int64_t overload_id, ASRUtils::IntrinsicArrayFunctions intrinsic_func_id,
         ASR::expr_t* initial_value, elemental_operation_func elemental_operation) {
-        std::string intrinsic_func_name = ASRUtils::get_array_intrinsic_name(static_cast<int>(intrinsic_func_id));
+        std::string intrinsic_func_name = ASRUtils::get_array_intrinsic_name(static_cast<int64_t>(intrinsic_func_id));
         ASRBuilder builder(al, loc);
         ASRBuilder& b = builder;
         ASR::ttype_t* arg_type = arg_types[0];
