@@ -1,10 +1,8 @@
 program iostat_constant_integer
     implicit none
-    integer :: u = 10
     integer, parameter :: ios = 1
+    character(len=100) :: buffer
+    buffer = 'Temporary date for testing purpose'
 
-    open(u, file='tmp.txt')
-
-    read(u, *, iostat=ios)
-    close(u)
+    read(buffer, *, iostat=ios)
 end program iostat_constant_integer

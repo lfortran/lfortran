@@ -1,10 +1,8 @@
 program iostat_non_scalar_value
     implicit none
-    integer :: u = 10
-    integer :: ios(2)
+    integer :: ios(2) = 1
+    character(len=100) :: buffer
+    buffer = 'Temporary date for testing purpose'
 
-    open(u, file='tmp.txt')
-
-    read(u, *, iostat=ios(1:1))
-    close(u)
+    read(buffer, *, iostat=ios(1:1))
 end program iostat_non_scalar_value
