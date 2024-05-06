@@ -1,0 +1,13 @@
+{
+    "basename": "asr-iostat_constant_integer-4f6f5d4",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/iostat_constant_integer.f90",
+    "infile_hash": "75139205f9e51e237d4b413809a7001dd54192e2c243a3523c0236a5",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-iostat_constant_integer-4f6f5d4.stderr",
+    "stderr_hash": "ac3a5c6e466d47baa24ef5636670716a1804de34604e5dccba05b530",
+    "returncode": 2
+}

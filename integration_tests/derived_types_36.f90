@@ -31,6 +31,7 @@ program derived_types_36
     type(my_type) :: x
     integer :: iostat
     character(len=20) :: iomsg, tmp
+    character(len=20) :: arr_iomsg(2)
 
     x%a = "tmp234"
     tmp = "tmp1"
@@ -41,7 +42,7 @@ program derived_types_36
     close(10)
 
     open(10, form="formatted", file="derived_types_36_file.txt")
-    read(10, '(a)', iostat=iostat, iomsg=iomsg) tmp
+    read(10, '(a)', iostat=iostat, iomsg=arr_iomsg(1)) tmp
     close(10)
 
     print *, tmp

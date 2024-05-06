@@ -3916,5 +3916,13 @@ filename = "errors/atomic_01.f90"
 asr = true
 
 [[test]]
+filename = "errors/iostat_non_scalar_value.f90"
+asr = true
+
+[[test]]
+filename = "errors/iostat_constant_integer.f90"
+asr = true
+
+[[test]]
 filename = "character_parameter_padding_trimming.f90"
 asr = true

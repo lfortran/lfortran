@@ -984,6 +984,51 @@ static inline bool all_args_have_value(const Vec<ASR::expr_t*> &args) {
     return true;
 }
 
+/*
+
+This function determines if a given expression represents a variable according
+to the rules of Fortran variable definitions. Here's an illustration of declaration's:
+
+```fortran
+    CHARACTER(len=5) x, y(3)
+    INTEGER, PARAMETER :: i
+    TYPE (EMPLOYEE) e
+        INTEGER age
+    END TYPE EMPLOYEE
+```
+
+then 'x', 'y', 'y(1)', 'y(1:2)', 'e % age' are all variables, while 'i' isn't
+
+TODO: this definitely needs some extensions to include others as "variable"'s
+*/
+static inline bool is_variable(ASR::expr_t* a_value) {
+    if (a_value == nullptr) {
+        return false;
+    }
+    switch (a_value->type) {
+        case ASR::exprType::ArrayItem: {
+            ASR::ArrayItem_t* a_item = ASR::down_cast<ASR::ArrayItem_t>(a_value);
+            ASR::expr_t* array_expr = a_item->m_v;
+            ASR::Variable_t* array_var = ASRUtils::EXPR2VAR(array_expr);
+            // a constant array's item isn't a "variable"
+            return array_var->m_storage != ASR::storage_typeType::Parameter;
+        }
+        case ASR::exprType::Var: {
+            ASR::Variable_t* variable_t = ASRUtils::EXPR2VAR(a_value);
+            return variable_t->m_storage != ASR::storage_typeType::Parameter;
+        }
+        case ASR::exprType::StringItem:
+        case ASR::exprType::StringSection:
+        case ASR::exprType::ArraySection:
+        case ASR::exprType::StructInstanceMember: {
+            return true;
+        }
+        default: {
+            return false;
+        }
+    }
+}
+
 static inline bool is_value_constant(ASR::expr_t *a_value) {
     if( a_value == nullptr ) {
         return false;
