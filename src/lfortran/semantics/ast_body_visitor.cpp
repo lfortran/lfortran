@@ -33,6 +33,7 @@ public:
     AST::stmt_t **starting_m_body = nullptr;
     std::vector<ASR::symbol_t*> do_loop_variables;
     std::map<ASR::asr_t*, std::pair<const AST::stmt_t*,int64_t>> print_statements;
+    std::vector<ASR::DoConcurrentLoop_t *> omp_constructs;
 
     BodyVisitor(Allocator &al, ASR::asr_t *unit, diag::Diagnostics &diagnostics,
             CompilerOptions &compiler_options, std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping,
@@ -3311,8 +3312,15 @@ public:
         head.m_increment = increment;
         if (head.m_v != nullptr) {
             head.loc = head.m_v->base.loc;
-            tmp = ASR::make_DoLoop_t(al, x.base.base.loc, x.m_stmt_name, head, body.p, body.size(), nullptr, 0);
-            do_loop_variables.pop_back();
+            if (!omp_constructs.empty()) {
+                omp_constructs.back()->m_head = head;
+                omp_constructs.back()->m_body = body.p;
+                omp_constructs.back()->n_body = body.size();
+            } else {
+                tmp = ASR::make_DoLoop_t(al, x.base.base.loc, x.m_stmt_name,
+                    head, body.p, body.size(), nullptr, 0);
+                do_loop_variables.pop_back();
+            }
         } else {
             ASR::ttype_t* cond_type
                 = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
@@ -3600,8 +3608,71 @@ public:
 
     }
 
-    void visit_Pragma(const AST::Pragma_t /*&x*/) {
-        // ignore for now
+    void visit_Pragma(const AST::Pragma_t &x) {
+        Location loc = x.base.base.loc;
+        if (x.m_type == AST::OMPPragma) {
+            if (x.m_end) {
+                if (LCompilers::startswith(x.m_construct_name, "parallel")) {
+                    tmp = (ASR::asr_t *) omp_constructs.back();
+                    omp_constructs.pop_back();
+                    return;
+                }
+            }
+
+            if ( LCompilers::startswith(x.m_construct_name, "parallel") ) {
+                std::string name = x.m_construct_name;
+                if (name != "parallel") {
+                    name = name.substr(9);
+                    if (name != "do") {
+                        throw SemanticError("Only `parallel do` combined construct"
+                            " is supported for now", loc);
+                    }
+                }
+
+                Vec<ASR::expr_t *> m_local, m_shared;
+                m_local.reserve(al, 1); m_shared.reserve(al, 1);
+                for (size_t i = 0; i < x.n_clauses; i++) {
+                    std::string clause = AST::down_cast<AST::String_t>(
+                        x.m_clauses[i])->m_s;
+                    std::string clause_name = clause.substr(0, clause.find('('));
+                    if (clause_name != "private" && clause_name != "shared") {
+                        throw SemanticError("The cluase "+ clause_name
+                            +" is not supported yet", loc);
+                    }
+                    std::string list = clause.substr(clause.find('(')+1,
+                        clause.size()-clause_name.size()-2);
+                    for (auto &s: LCompilers::string_split(list, ",", false)) {
+                        ASR::symbol_t *sym = current_scope->get_symbol(s);
+                        if (sym) {
+                            if (!ASR::is_a<ASR::Variable_t>(*sym)) {
+                                throw SemanticError("Only a variable is supported"
+                                    " in the clause for now", loc);
+                            }
+                            ASR::expr_t *v = ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym));
+                            if (clause_name == "private") {
+                                m_local.push_back(al, v);
+                            } else {
+                                m_shared.push_back(al, v);
+                            }
+                        } else {
+                            throw SemanticError("The cluase variable `"+ s
+                                +"` is not declared", loc);
+                        }
+                    }
+                }
+                ASR::do_loop_head_t head{};
+                omp_constructs.push_back(ASR::down_cast2<ASR::DoConcurrentLoop_t>(
+                    ASR::make_DoConcurrentLoop_t(al,loc, head, m_shared.p,
+                    m_shared.n, m_local.p, m_local.n, nullptr, 0)));
+            } else if ( strcmp(x.m_construct_name, "do") == 0 ) {
+                // pass
+            } else {
+                throw SemanticError("The construct "+ std::string(x.m_construct_name)
+                    +" is not supported yet", loc);
+            }
+        } else {
+            throw SemanticError("The pragma type is not supported yet", loc);
+        }
     }
 
     void visit_Template(const AST::Template_t &x){
