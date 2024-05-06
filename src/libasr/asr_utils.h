@@ -1013,12 +1013,8 @@ static inline bool is_variable(ASR::expr_t* a_value) {
             return array_var->m_storage != ASR::storage_typeType::Parameter;
         }
         case ASR::exprType::Var: {
-            ASR::Var_t* var_t = ASR::down_cast<ASR::Var_t>(a_value);
-            if (ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(var_t->m_v))) {
-                ASR::Variable_t* variable_t = ASRUtils::EXPR2VAR(var_t->m_v);
-                return variable_t->m_storage != ASR::storage_typeType::Parameter;
-            }
-            return true;
+            ASR::Variable_t* variable_t = ASRUtils::EXPR2VAR(a_value);
+            return variable_t->m_storage != ASR::storage_typeType::Parameter;
         }
         case ASR::exprType::StringItem:
         case ASR::exprType::StringSection:
