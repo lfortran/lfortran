@@ -276,7 +276,7 @@ static inline void verify_array_int_real_cmplx(ASR::expr_t* array, ASR::ttype_t*
 
 static inline void verify_array_int_real(ASR::expr_t* array, ASR::ttype_t* return_type,
     const Location& loc, diag::Diagnostics& diagnostics, ASRUtils::IntrinsicArrayFunctions intrinsic_func_id) {
-    std::string intrinsic_func_name = ASRUtils::get_array_intrinsic_name(static_cast<int>(intrinsic_func_id));
+    std::string intrinsic_func_name = ASRUtils::get_array_intrinsic_name(static_cast<int64_t>(intrinsic_func_id));
     ASR::ttype_t* array_type = ASRUtils::expr_type(array);
     ASRUtils::require_impl(ASRUtils::is_integer(*array_type) ||
         ASRUtils::is_real(*array_type),
@@ -296,7 +296,7 @@ static inline void verify_array_int_real(ASR::expr_t* array, ASR::ttype_t* retur
 
 static inline void verify_array_dim(ASR::expr_t* array, ASR::expr_t* dim,
     ASR::ttype_t* return_type, const Location& loc, diag::Diagnostics& diagnostics, ASRUtils::IntrinsicArrayFunctions intrinsic_func_id) {
-    std::string intrinsic_func_name = ASRUtils::get_array_intrinsic_name(static_cast<int>(intrinsic_func_id));
+    std::string intrinsic_func_name = ASRUtils::get_array_intrinsic_name(static_cast<int64_t>(intrinsic_func_id));
     ASR::ttype_t* array_type = ASRUtils::expr_type(array);
     ASRUtils::require_impl(ASRUtils::is_integer(*array_type) ||
         ASRUtils::is_real(*array_type) ||
@@ -322,7 +322,7 @@ static inline void verify_array_dim(ASR::expr_t* array, ASR::expr_t* dim,
 
 static inline void verify_args(const ASR::IntrinsicArrayFunction_t& x, diag::Diagnostics& diagnostics,
     ASRUtils::IntrinsicArrayFunctions intrinsic_func_id, verify_array_func verify_array) {
-    std::string intrinsic_func_name = ASRUtils::get_array_intrinsic_name(static_cast<int>(intrinsic_func_id));
+    std::string intrinsic_func_name = ASRUtils::get_array_intrinsic_name(static_cast<int64_t>(intrinsic_func_id));
     ASRUtils::require_impl(x.n_args >= 1, intrinsic_func_name + " intrinsic must accept at least one argument",
         x.base.base.loc, diagnostics);
     ASRUtils::require_impl(x.m_args[0] != nullptr, "Array argument to " + intrinsic_func_name + " intrinsic cannot be nullptr",
@@ -385,7 +385,7 @@ static inline ASR::asr_t* create_ArrIntrinsic(
     Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args,
     diag::Diagnostics& diag,
     ASRUtils::IntrinsicArrayFunctions intrinsic_func_id) {
-    std::string intrinsic_func_name = ASRUtils::get_array_intrinsic_name(static_cast<int>(intrinsic_func_id));
+    std::string intrinsic_func_name = ASRUtils::get_array_intrinsic_name(static_cast<int64_t>(intrinsic_func_id));
     int64_t id_array = 0, id_array_dim = 1, id_array_mask = 2;
     int64_t id_array_dim_mask = 3;
     int64_t overload_id = id_array;
@@ -1564,7 +1564,7 @@ namespace MinLoc {
             Vec<ASR::expr_t*>& args,
             diag::Diagnostics& diag) {
         return ArrIntrinsic::create_MaxMinLoc(al, loc, args,
-            static_cast<int>(IntrinsicArrayFunctions::MinLoc), diag);
+            static_cast<int64_t>(IntrinsicArrayFunctions::MinLoc), diag);
     }
 
     static inline ASR::expr_t *instantiate_MinLoc(Allocator &al,
@@ -1572,7 +1572,7 @@ namespace MinLoc {
             Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& m_args, int64_t overload_id) {
         return ArrIntrinsic::instantiate_MaxMinLoc(al, loc, scope,
-            static_cast<int>(IntrinsicArrayFunctions::MinLoc), arg_types, return_type,
+            static_cast<int64_t>(IntrinsicArrayFunctions::MinLoc), arg_types, return_type,
             m_args, overload_id);
     }
 
