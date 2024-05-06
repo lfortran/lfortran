@@ -764,7 +764,7 @@ static inline void verify_MaxMinLoc_args(const ASR::IntrinsicArrayFunction_t& x,
 }
 
 static inline ASR::expr_t *eval_MaxMinLoc(Allocator &al, const Location &loc,
-        ASR::ttype_t *type, Vec<ASR::expr_t*> &args, int64_t intrinsic_id) {
+        ASR::ttype_t *type, Vec<ASR::expr_t*> &args, ASRUtils::IntrinsicArrayFunctions intrinsic_func_id) {
     ASRBuilder b(al, loc);
     if (all_args_evaluated(args) &&
             extract_n_dims_from_ttype(expr_type(args[0])) == 1) {
@@ -778,7 +778,7 @@ static inline ASR::expr_t *eval_MaxMinLoc(Allocator &al, const Location &loc,
             }
         }
         int index = 0;
-        if (static_cast<int64_t>(IntrinsicArrayFunctions::MaxLoc) == intrinsic_id) {
+        if (static_cast<int64_t>(IntrinsicArrayFunctions::MaxLoc) == static_cast<int64_t>(intrinsic_func_id)) {
             index = std::distance(m_eles.begin(),
                 std::max_element(m_eles.begin(), m_eles.end())) + 1;
         } else {
@@ -796,9 +796,9 @@ static inline ASR::expr_t *eval_MaxMinLoc(Allocator &al, const Location &loc,
 }
 
 static inline ASR::asr_t* create_MaxMinLoc(Allocator& al, const Location& loc,
-        Vec<ASR::expr_t*>& args, int64_t intrinsic_id,
+        Vec<ASR::expr_t*>& args, ASRUtils::IntrinsicArrayFunctions intrinsic_func_id,
         diag::Diagnostics& diag) {
-    std::string intrinsic_name = get_array_intrinsic_name(static_cast<int64_t>(intrinsic_id));
+    std::string intrinsic_name = get_array_intrinsic_name(static_cast<int64_t>(intrinsic_func_id));
     ASRUtils::ASRBuilder b(al, loc);
     ASR::ttype_t *array_type = expr_type(args[0]);
     if ( !is_array(array_type) ) {
@@ -865,16 +865,16 @@ static inline ASR::asr_t* create_MaxMinLoc(Allocator& al, const Location& loc,
             ASR::make_Integer_t(al, loc, kind)), &result_dims);
     }
     ASR::expr_t *m_value = eval_MaxMinLoc(al, loc, return_type, m_args,
-        intrinsic_id);
+        intrinsic_func_id);
     return make_IntrinsicArrayFunction_t_util(al, loc,
-        intrinsic_id, m_args.p, m_args.n, 0, return_type, m_value);
+        static_cast<int64_t>(intrinsic_func_id), m_args.p, m_args.n, 0, return_type, m_value);
 }
 
 static inline ASR::expr_t *instantiate_MaxMinLoc(Allocator &al,
-        const Location &loc, SymbolTable *scope, int64_t intrinsic_id,
+        const Location &loc, SymbolTable *scope, ASRUtils::IntrinsicArrayFunctions intrinsic_func_id,
         Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
         Vec<ASR::call_arg_t>& m_args, int64_t /*overload_id*/) {
-    std::string intrinsic_name = get_array_intrinsic_name(static_cast<int64_t>(intrinsic_id));
+    std::string intrinsic_name = get_array_intrinsic_name(static_cast<int64_t>(intrinsic_func_id));
     declare_basic_variables("_lcompilers_" + intrinsic_name)
     /*
      * max_index = 1; min_index
@@ -920,7 +920,7 @@ static inline ASR::expr_t *instantiate_MaxMinLoc(Allocator &al,
                 }
                 ASR::expr_t *array_ref_01 = ArrayItem_02(args[0], idx_vars);
                 ASR::expr_t *array_ref_02 = ArrayItem_02(args[0], result_idx);
-                if (static_cast<int64_t>(IntrinsicArrayFunctions::MaxLoc) == intrinsic_id) {
+                if (static_cast<int64_t>(IntrinsicArrayFunctions::MaxLoc) == static_cast<int64_t>(intrinsic_func_id)) {
                     doloop_body.push_back(al, b.If(b.Gt(array_ref_01,
                         array_ref_02), if_body, {}));
                 } else {
@@ -954,7 +954,7 @@ static inline ASR::expr_t *instantiate_MaxMinLoc(Allocator &al,
                 if (extract_kind_from_ttype_t(type) != 4) {
                     res_idx = b.i2i_t(res_idx, type);
                 }
-                if (static_cast<int64_t>(IntrinsicArrayFunctions::MaxLoc) == intrinsic_id) {
+                if (static_cast<int64_t>(IntrinsicArrayFunctions::MaxLoc) == static_cast<int64_t>(intrinsic_func_id)) {
                     doloop_body.push_back(al, b.If(b.Gt(array_ref_01, array_ref_02), {
                         b.Assignment(result_ref, res_idx)
                     }, {}));
@@ -1507,7 +1507,7 @@ namespace MaxLoc {
             Vec<ASR::expr_t*>& args,
             diag::Diagnostics& diag) {
         return ArrIntrinsic::create_MaxMinLoc(al, loc, args,
-            static_cast<int64_t>(IntrinsicArrayFunctions::MaxLoc), diag);
+            IntrinsicArrayFunctions::MaxLoc, diag);
     }
 
     static inline ASR::expr_t *instantiate_MaxLoc(Allocator &al,
@@ -1515,7 +1515,7 @@ namespace MaxLoc {
             Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& m_args, int64_t overload_id) {
         return ArrIntrinsic::instantiate_MaxMinLoc(al, loc, scope,
-            static_cast<int64_t>(IntrinsicArrayFunctions::MaxLoc), arg_types, return_type,
+            IntrinsicArrayFunctions::MaxLoc, arg_types, return_type,
             m_args, overload_id);
     }
 
@@ -1564,7 +1564,7 @@ namespace MinLoc {
             Vec<ASR::expr_t*>& args,
             diag::Diagnostics& diag) {
         return ArrIntrinsic::create_MaxMinLoc(al, loc, args,
-            static_cast<int64_t>(IntrinsicArrayFunctions::MinLoc), diag);
+            IntrinsicArrayFunctions::MinLoc, diag);
     }
 
     static inline ASR::expr_t *instantiate_MinLoc(Allocator &al,
@@ -1572,7 +1572,7 @@ namespace MinLoc {
             Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& m_args, int64_t overload_id) {
         return ArrIntrinsic::instantiate_MaxMinLoc(al, loc, scope,
-            static_cast<int64_t>(IntrinsicArrayFunctions::MinLoc), arg_types, return_type,
+            IntrinsicArrayFunctions::MinLoc, arg_types, return_type,
             m_args, overload_id);
     }
 
