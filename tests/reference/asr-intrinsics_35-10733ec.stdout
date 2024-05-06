@@ -301,7 +301,10 @@
                             )]
                             0
                             (Logical 4)
-                            ()
+                            (LogicalConstant
+                                .true.
+                                (Logical 4)
+                            )
                         )
                         ()
                     )
