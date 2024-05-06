@@ -1,0 +1,13 @@
+{
+    "basename": "ast-missing_colons_init-ebb7ad8",
+    "cmd": "lfortran --show-ast --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/missing_colons_init.f90",
+    "infile_hash": "8831f21e75b7d6b5c7ab74df39c655b7ffcd378f327b088930104f70",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "ast-missing_colons_init-ebb7ad8.stderr",
+    "stderr_hash": "7c8451c638007c95a9cc47b257430a9b8e99e4f4049828284255bfdc",
+    "returncode": 2
+}
