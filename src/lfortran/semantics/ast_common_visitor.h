@@ -4928,14 +4928,9 @@ public:
         }
         ASR::expr_t* len_compiletime = nullptr;
         std::string input_string;
-        if( ASRUtils::extract_string_value(v_Var, input_string) ) {
+        if( ASRUtils::extract_string_value(ASRUtils::expr_value(v_Var), input_string) ) {
             len_compiletime = make_ConstantWithType(
                 make_IntegerConstant_t, input_string.size(), type, x.base.base.loc);
-        }
-        ASR::expr_t* value = ASRUtils::expr_value(v_Var);
-        if (value && ASR::is_a<ASR::StringConstant_t>(*value)) {
-            len_compiletime = make_ConstantWithType(
-                make_IntegerConstant_t, strlen(ASR::down_cast<ASR::StringConstant_t>(value)->m_s), type, x.base.base.loc);
         }
         return ASR::make_StringLen_t(al, x.base.base.loc, v_Var, type, len_compiletime);
     }
