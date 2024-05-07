@@ -143,6 +143,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     Precision,
     Tiny,
     BitSize,
+    NewLine,
     Conjg,
     Huge,
     Popcnt,
@@ -3599,6 +3600,16 @@ namespace BitSize {
     }
 
 } // namespace BitSize
+
+namespace NewLine {
+
+    static ASR::expr_t *eval_NewLine(Allocator &al, const Location &loc,
+            ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& /*diag*/) {
+        char* new_line_str = (char*)"\n";
+        return make_ConstantWithType(make_StringConstant_t, new_line_str, ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, 0, nullptr)), loc);
+    }
+
+} // namespace NewLine
 
 namespace Adjustl {
 

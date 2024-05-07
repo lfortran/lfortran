@@ -86,7 +86,6 @@ struct IntrinsicProcedures {
             // left unevaluated in body visitor
             {"trim", {m_string, &not_implemented, false}},
             {"len_trim", {m_string, &not_implemented, false}},
-            {"new_line", {m_string, &eval_new_line, false}},
 
             // Subroutines
             {"cpu_time", {m_math, &not_implemented, false}},
@@ -299,14 +298,6 @@ struct IntrinsicProcedures {
         } else {
             throw SemanticError("achar() must have one integer argument", loc);
         }
-    }
-
-    static ASR::expr_t *eval_new_line(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &) {
-        LCOMPILERS_ASSERT(args.size() == 1);
-        char* new_line_str = (char*)"\n";
-        return ASR::down_cast<ASR::expr_t>(ASR::make_StringConstant_t(
-                    al, loc, new_line_str,
-                    ASRUtils::expr_type(args[0])));
     }
 
 }; // ComptimeEval

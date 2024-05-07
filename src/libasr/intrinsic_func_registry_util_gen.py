@@ -446,6 +446,12 @@ intrinsic_funcs_args = {
             "return": "int32"
         }
     ],
+    "NewLine": [
+        {
+            "args": [("char",)],
+            "return": "character(-1)"
+        }
+    ],
     "Range": [
         {
             "args": [("int",), ("real",), ("complex",)],
@@ -589,6 +595,7 @@ compile_time_only_fn = [
     "Tiny",
     "Huge",
     "BitSize",
+    "NewLine",
 ]
 
 type_to_asr_type_check = {
