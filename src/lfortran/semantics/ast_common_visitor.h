@@ -3037,7 +3037,11 @@ public:
                                 }
                             } else if ( ASR::is_a<ASR::ArrayConstructor_t>(*init_expr) ||
                                 ( ASR::is_a<ASR::Cast_t>(*init_expr) &&
-                                ASR::is_a<ASR::ArrayConstructor_t>(*ASR::down_cast<ASR::Cast_t>(init_expr)->m_arg) ) ) {
+                                ASR::is_a<ASR::ArrayConstructor_t>(*ASR::down_cast<ASR::Cast_t>(init_expr)->m_arg) )
+                                || ASR::is_a<ASR::IntrinsicElementalFunction_t>(*init_expr) ||
+                                ASR::is_a<ASR::IntrinsicArrayFunction_t>(*init_expr) || 
+                                ASR::is_a<ASR::TypeInquiry_t>(*init_expr) ||
+                                ASR::is_a<ASR::StringLen_t>(*init_expr) ) {
                                 value = init_expr;
                             } else {
                                 throw SemanticError("Initialization of `" + std::string(x.m_syms[i].m_name) +
