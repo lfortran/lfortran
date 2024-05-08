@@ -21,7 +21,9 @@ class ArrayVarAddressReplacer: public ASR::BaseExprReplacer<ArrayVarAddressRepla
     Vec<ASR::expr_t**>& vars;
 
     ArrayVarAddressReplacer(Allocator& al_, Vec<ASR::expr_t**>& vars_):
-        al(al_), vars(vars_) {}
+        al(al_), vars(vars_) {
+        call_replacer_on_value = false;
+    }
 
     void replace_Var(ASR::Var_t* x) {
         if( ASRUtils::is_array(ASRUtils::symbol_type(x->m_v)) ) {
@@ -45,7 +47,8 @@ class ArrayVarAddressCollector: public ASR::CallReplacerOnExpressionsVisitor<Arr
     }
 
     ArrayVarAddressCollector(Allocator& al_, Vec<ASR::expr_t**>& vars_):
-        replacer(al_, vars_) {}
+        replacer(al_, vars_) {
+    }
 
 };
 
@@ -108,6 +111,14 @@ class FixTypeVisitor: public ASR::BaseWalkVisitor<FixTypeVisitor> {
     }
 };
 
+ASR::expr_t* at(Vec<ASR::expr_t*>& vec, int64_t index) {
+    index = index + vec.size();
+    if( index < 0 ) {
+        return nullptr;
+    }
+    return vec[index];
+}
+
 class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisitor> {
     private:
 
@@ -157,6 +168,45 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         }
     }
 
+    void increment_index_variables(std::unordered_map<size_t, Vec<ASR::expr_t*>>& var2indices,
+                                   size_t var_with_maxrank, int64_t loop_depth,
+                                   Vec<ASR::stmt_t*>& do_loop_body, const Location& loc) {
+        ASR::expr_t* step = make_ConstantWithKind(make_IntegerConstant_t, make_Integer_t, 1, 4, loc);
+        for( size_t i = 0; i < var2indices.size(); i++ ) {
+            if( i == var_with_maxrank ) {
+                continue;
+            }
+            ASR::expr_t* index_var = at(var2indices[i], loop_depth);
+            if( index_var == nullptr ) {
+                continue;
+            }
+            ASR::expr_t* plus_one = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, index_var,
+                ASR::binopType::Add, step, ASRUtils::expr_type(index_var), nullptr));
+            ASR::stmt_t* increment = ASRUtils::STMT(ASR::make_Assignment_t(
+                al, loc, index_var, plus_one, nullptr));
+            do_loop_body.push_back(al, increment);
+        }
+    }
+
+    void set_index_variables(std::unordered_map<size_t, Vec<ASR::expr_t*>>& var2indices,
+                             Vec<ASR::expr_t*>& vars_expr, size_t var_with_maxrank,
+                             int64_t loop_depth, const Location& loc) {
+        for( size_t i = 0; i < var2indices.size(); i++ ) {
+            if( i == var_with_maxrank ) {
+                continue;
+            }
+            ASR::expr_t* index_var = at(var2indices[i], loop_depth);
+            if( index_var == nullptr ) {
+                continue;
+            }
+            ASR::expr_t* lbound = PassUtils::get_bound(vars_expr[i],
+                loop_depth + vars_expr.size(), "lbound", al);
+            ASR::stmt_t* set_index_var = ASRUtils::STMT(ASR::make_Assignment_t(
+                al, loc, index_var, lbound, nullptr));
+            pass_result.push_back(al, set_index_var);
+        }
+    }
+
     void visit_Assignment(const ASR::Assignment_t& x) {
         const Location loc = x.base.base.loc;
         if( call_replace_on_expr(x.m_value->type) ) {
@@ -170,7 +220,8 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         }
 
         Vec<ASR::expr_t**> vars;
-        vars.reserve(al, 1);
+        Vec<ASR::expr_t*> vars_expr;
+        vars.reserve(al, 1); vars_expr.reserve(al, 1);
         vars.push_back(al, const_cast<ASR::expr_t**>(&(x.m_target)));
         ArrayVarAddressCollector var_collector(al, vars);
         var_collector.current_expr = const_cast<ASR::expr_t**>(&(x.m_value));
@@ -182,6 +233,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             ASR::expr_t* expr = *vars[i];
             ASR::ttype_t* type = ASRUtils::expr_type(expr);
             var_ranks.push_back(al, ASRUtils::extract_n_dims_from_ttype(type));
+            vars_expr.push_back(al, expr);
         }
 
         std::unordered_map<size_t, Vec<ASR::expr_t*>> var2indices;
@@ -222,6 +274,30 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
 
         FixTypeVisitor fix_types(al);
         fix_types.visit_expr(*x.m_value);
+
+        size_t var_with_maxrank = 0;
+        for( size_t i = 0; i < var_ranks.size(); i++ ) {
+            if( var_ranks[i] > var_ranks[var_with_maxrank] ) {
+                var_with_maxrank = i;
+            }
+        }
+
+        ASR::do_loop_head_t do_loop_head;
+        do_loop_head.loc = loc;
+        do_loop_head.m_v = at(var2indices[var_with_maxrank], -1);
+        do_loop_head.m_start = PassUtils::get_bound(vars_expr[var_with_maxrank],
+            var_ranks[var_with_maxrank], "lbound", al);
+        do_loop_head.m_end = PassUtils::get_bound(vars_expr[var_with_maxrank],
+            var_ranks[var_with_maxrank], "ubound", al);
+        do_loop_head.m_increment = nullptr;
+        Vec<ASR::stmt_t*> do_loop_body; do_loop_body.reserve(al, 1);
+        set_index_variables(var2indices, vars_expr, var_with_maxrank, -1, loc);
+        do_loop_body.push_back(al, const_cast<ASR::stmt_t*>(&(x.base)));
+        increment_index_variables(var2indices, var_with_maxrank, -1,
+                                  do_loop_body, loc);
+        ASR::stmt_t* do_loop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr,
+            do_loop_head, do_loop_body.p, do_loop_body.size(), nullptr, 0));
+        pass_result.push_back(al, do_loop);
     }
 
 };
