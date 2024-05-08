@@ -89,6 +89,25 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
 
 };
 
+class FixTypeVisitor: public ASR::BaseWalkVisitor<FixTypeVisitor> {
+    private:
+
+    Allocator& al;
+
+    public:
+
+    FixTypeVisitor(Allocator& al_): al(al_) {}
+
+    void visit_Cast(const ASR::Cast_t& x) {
+        ASR::Cast_t& xx = const_cast<ASR::Cast_t&>(x);
+        if( !ASRUtils::is_array(ASRUtils::expr_type(x.m_arg)) &&
+             ASRUtils::is_array(x.m_type) ) {
+            xx.m_type = ASRUtils::type_get_past_array(xx.m_type);
+            xx.m_value = nullptr;
+        }
+    }
+};
+
 class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisitor> {
     private:
 
@@ -200,6 +219,9 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             *vars[i] = ASRUtils::EXPR(ASR::make_ArrayItem_t(al, loc, *vars[i], indices.p,
                 indices.size(), var_i_type, ASR::arraystorageType::ColMajor, nullptr));
         }
+
+        FixTypeVisitor fix_types(al);
+        fix_types.visit_expr(*x.m_value);
     }
 
 };
