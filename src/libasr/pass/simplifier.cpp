@@ -437,12 +437,6 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         }
     }
 
-    void visit_ArrayAll(const ASR::ArrayAll_t& x) {
-        ASR::ArrayAll_t& xx = const_cast<ASR::ArrayAll_t&>(x);
-
-        replace_expr_with_temporary_variable(mask, "_array_all_mask_")
-    }
-
     void visit_Cast(const ASR::Cast_t& x) {
         ASR::Cast_t& xx = const_cast<ASR::Cast_t&>(x);
 
@@ -575,10 +569,6 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
 
     void replace_ArrayReshape(ASR::ArrayReshape_t* x) {
         replace_current_expr("_array_reshape_")
-    }
-
-    void replace_ArrayAll(ASR::ArrayAll_t* x) {
-        replace_current_expr("_array_all_")
     }
 
     void replace_StructInstanceMember(ASR::StructInstanceMember_t* x) {
@@ -945,11 +935,6 @@ class VerifySimplifierASROutput:
         check_for_var_if_array(x.m_array);
         check_for_var_if_array(x.m_mask);
         check_for_var_if_array(x.m_vector);
-    }
-
-    void visit_ArrayAll(const ASR::ArrayAll_t& x) {
-        check_for_var_if_array(x.m_mask);
-        check_if_linked_to_target(x.base, x.m_type);
     }
 
     void visit_StructInstanceMember(const ASR::StructInstanceMember_t& x) {
