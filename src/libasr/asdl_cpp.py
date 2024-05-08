@@ -529,6 +529,7 @@ class CallReplacerOnExpressionsVisitor(ASDLVisitor):
         self.emit("private:")
         self.emit("    StructType& self() { return static_cast<StructType&>(*this); }")
         self.emit("public:")
+        self.emit("    bool call_replacer_on_value=true;")
         self.emit("    ASR::expr_t** current_expr;")
         self.emit("    SymbolTable* current_scope=nullptr;")
         self.emit("")
@@ -585,10 +586,15 @@ class CallReplacerOnExpressionsVisitor(ASDLVisitor):
         self.emit("}", 1)
 
     def insert_call_replacer_code(self, name, level, index=""):
-        self.emit("ASR::expr_t** current_expr_copy_%d = current_expr;" % (self.current_expr_copy_variable_count), level)
-        self.emit("current_expr = const_cast<ASR::expr_t**>(&(x.m_%s%s));" % (name, index), level)
-        self.emit("self().call_replacer();", level)
-        self.emit("current_expr = current_expr_copy_%d;" % (self.current_expr_copy_variable_count), level)
+        one_or_zero = name == "value"
+        if name == "value":
+            self.emit("if (call_replacer_on_value) {", level)
+        self.emit("ASR::expr_t** current_expr_copy_%d = current_expr;" % (self.current_expr_copy_variable_count), level + one_or_zero)
+        self.emit("current_expr = const_cast<ASR::expr_t**>(&(x.m_%s%s));" % (name, index), level + one_or_zero)
+        self.emit("self().call_replacer();", level + one_or_zero)
+        self.emit("current_expr = current_expr_copy_%d;" % (self.current_expr_copy_variable_count), level + one_or_zero)
+        if name == "value":
+            self.emit("}", level)
         self.current_expr_copy_variable_count += 1
 
     def visitField(self, field):
@@ -1182,6 +1188,7 @@ class ExprBaseReplacerVisitor(ASDLVisitor):
         self.emit("template <class StructType>")
         self.emit("class BaseExprReplacer {")
         self.emit("public:")
+        self.emit("    bool call_replacer_on_value=true;")
         self.emit("    StructType& self() { return static_cast<StructType&>(*this); }")
         self.emit("")
         self.emit("    ASR::expr_t** current_expr;")
@@ -1309,10 +1316,15 @@ class ExprBaseReplacerVisitor(ASDLVisitor):
                     if field.type == "ttype":
                         self.emit("self().replace_%s(x->m_%s);" % (field.type, field.name), level)
                     else:
-                        self.emit("ASR::expr_t** current_expr_copy_%d = current_expr;" % (self.current_expr_copy_variable_count), level)
-                        self.emit("current_expr = &(x->m_%s);" % (field.name), level)
-                        self.emit("self().replace_%s(x->m_%s);" % (field.type, field.name), level)
-                        self.emit("current_expr = current_expr_copy_%d;" % (self.current_expr_copy_variable_count), level)
+                        one_or_zero = field.name == "value"
+                        if field.name == "value":
+                            self.emit("if (call_replacer_on_value) {", level)
+                        self.emit("ASR::expr_t** current_expr_copy_%d = current_expr;" % (self.current_expr_copy_variable_count), level + one_or_zero)
+                        self.emit("current_expr = &(x->m_%s);" % (field.name), level + one_or_zero)
+                        self.emit("self().replace_%s(x->m_%s);" % (field.type, field.name), level + one_or_zero)
+                        self.emit("current_expr = current_expr_copy_%d;" % (self.current_expr_copy_variable_count), level + one_or_zero)
+                        if field.name == "value":
+                            self.emit("}", level)
                         self.current_expr_copy_variable_count += 1
 
 class StmtBaseReplacerVisitor(ASDLVisitor):
