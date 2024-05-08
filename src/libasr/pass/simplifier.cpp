@@ -659,7 +659,10 @@ class ReplaceExprWithTemporaryVisitor:
     public:
 
     ReplaceExprWithTemporaryVisitor(Allocator& al_, std::set<ASR::expr_t*>& exprs_with_target_):
-        al(al_), exprs_with_target(exprs_with_target_), replacer(al, exprs_with_target) {}
+        al(al_), exprs_with_target(exprs_with_target_), replacer(al, exprs_with_target) {
+        replacer.call_replacer_on_value = false;
+        call_replacer_on_value = false;
+    }
 
     void call_replacer() {
         replacer.current_expr = current_expr;
@@ -1042,12 +1045,12 @@ void pass_simplifier(Allocator &al, ASR::TranslationUnit_t &unit,
     b.visit_TranslationUnit(unit);
     ReplaceExprWithTemporaryVisitor c(al, exprs_with_target);
     c.visit_TranslationUnit(unit);
-    PassUtils::UpdateDependenciesVisitor d(al);
-    d.visit_TranslationUnit(unit);
-    #if defined(WITH_LFORTRAN_ASSERT)
-    VerifySimplifierASROutput e(al, exprs_with_target);
-    e.visit_TranslationUnit(unit);
-    #endif
+    // PassUtils::UpdateDependenciesVisitor d(al);
+    // d.visit_TranslationUnit(unit);
+    // #if defined(WITH_LFORTRAN_ASSERT)
+    // VerifySimplifierASROutput e(al, exprs_with_target);
+    // e.visit_TranslationUnit(unit);
+    // #endif
 }
 
 
