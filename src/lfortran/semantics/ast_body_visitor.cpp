@@ -1321,7 +1321,7 @@ public:
             switch( x.m_body[i]->type ) {
                 case AST::type_stmtType::ClassStmt: {
                     AST::ClassStmt_t* class_stmt = AST::down_cast<AST::ClassStmt_t>(x.m_body[i]);
-                    ASR::symbol_t* sym = current_scope->resolve_symbol(std::string(class_stmt->m_id));
+                    ASR::symbol_t* sym = current_scope->resolve_symbol(to_lower(std::string(class_stmt->m_id)));
                     if( assoc_variable ) {
                         ASR::ttype_t* selector_type = nullptr;
                         ASR::symbol_t* sym_underlying = ASRUtils::symbol_get_past_external(sym);
@@ -1367,7 +1367,7 @@ public:
                 }
                 case AST::type_stmtType::TypeStmtName: {
                     AST::TypeStmtName_t* type_stmt_name = AST::down_cast<AST::TypeStmtName_t>(x.m_body[i]);
-                    ASR::symbol_t* sym = current_scope->resolve_symbol(std::string(type_stmt_name->m_name));
+                    ASR::symbol_t* sym = current_scope->resolve_symbol(to_lower(std::string(type_stmt_name->m_name)));
                     if( assoc_variable ) {
                         ASR::ttype_t* selector_type = nullptr;
                         ASR::symbol_t* sym_underlying = ASRUtils::symbol_get_past_external(sym);

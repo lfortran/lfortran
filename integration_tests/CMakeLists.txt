@@ -1537,3 +1537,5 @@ RUN(NAME types_real_array_to_complex_array_cast LABELS gfortran llvm llvm_wasm l
 RUN(NAME lbound_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME module_function_with_nopass LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME module_function_without_nopass LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+
+RUN(NAME polymorphic_argument LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
