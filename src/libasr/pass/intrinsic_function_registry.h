@@ -66,6 +66,7 @@ inline std::string get_intrinsic_name(int64_t x) {
         INTRINSIC_NAME_CASE(BesselY1)
         INTRINSIC_NAME_CASE(BesselYN)
         INTRINSIC_NAME_CASE(Mvbits)
+        INTRINSIC_NAME_CASE(Mergebits)
         INTRINSIC_NAME_CASE(Shiftr)
         INTRINSIC_NAME_CASE(Rshift)
         INTRINSIC_NAME_CASE(Shiftl)
@@ -268,6 +269,8 @@ namespace IntrinsicElementalFunctionRegistry {
             {&BesselYN::instantiate_BesselYN, &BesselYN::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Mvbits),
             {&Mvbits::instantiate_Mvbits, &Mvbits::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Mergebits),
+            {&Mergebits::instantiate_Mergebits, &Mergebits::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Shiftr),
             {&Shiftr::instantiate_Shiftr, &Shiftr::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Adjustl),
@@ -577,6 +580,8 @@ namespace IntrinsicElementalFunctionRegistry {
             "bessel_yn"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Mvbits),
             "mvbits"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Mergebits),
+            "mergebits"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Shiftr),
             "shiftr"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Rshift),
@@ -840,6 +845,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"bessel_jn", {&BesselJN::create_BesselJN, &BesselJN::eval_BesselJN}},
                 {"bessel_yn", {&BesselYN::create_BesselYN, &BesselYN::eval_BesselYN}},
                 {"mvbits", {&Mvbits::create_Mvbits, &Mvbits::eval_Mvbits}},
+                {"merge_bits", {&Mergebits::create_Mergebits, &Mergebits::eval_Mergebits}},
                 {"shiftr", {&Shiftr::create_Shiftr, &Shiftr::eval_Shiftr}},
                 {"rshift", {&Rshift::create_Rshift, &Rshift::eval_Rshift}},
                 {"shiftl", {&Shiftl::create_Shiftl, &Shiftl::eval_Shiftl}},
