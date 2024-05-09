@@ -11,18 +11,22 @@ end do
 end subroutine
 
 subroutine parallel_sum(n, a)
-    !$omp parallel private(partial_sum) shared(total_sum)
+    integer, intent(in) :: n
+    integer, intent(in) :: a(:)
+    integer :: partial_sum, total_sum, i
     partial_sum = 0
     total_sum = 0
 
+!$omp parallel private(partial_sum) shared(total_sum)
     !$omp do
         do i = 1, n
             partial_sum = partial_sum + a(i)
         end do
     !$omp end do
 
-    !$omp critical
-        total_sum = total_sum + partial_sum
-    !$omp end critical
+    ! TODO:
+    ! !$omp critical
+    !     total_sum = total_sum + partial_sum
+    ! !$omp end critical
 !$omp end parallel
 end subroutine

@@ -3536,6 +3536,7 @@ asr_implicit_interface_and_typing = true
 [[test]]
 filename = "pragma1.f90"
 ast = true
+asr_openmp = true
 
 [[test]]
 filename = "pragma2.f90"
