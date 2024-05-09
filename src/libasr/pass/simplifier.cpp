@@ -249,7 +249,8 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
            in reverse order. */
         for( size_t i = 0; i < x.n_values; i++ ) {
             if( ASRUtils::is_array(ASRUtils::expr_type(x.m_values[i])) &&
-                !ASR::is_a<ASR::Var_t>(*x.m_values[i]) ) {
+                !ASR::is_a<ASR::Var_t>(
+                    *ASRUtils::get_past_array_physical_cast(x.m_values[i])) ) {
                 visit_expr(*x.m_values[i]);
                 ASR::expr_t* array_var_temporary = create_and_allocate_temporary_variable_for_array(
                     x.m_values[i], name_hint, al, current_body, current_scope, exprs_with_target);
@@ -278,7 +279,8 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
            in reverse order. */
         for( size_t i = 0; i < x_n_args; i++ ) {
             if( ASRUtils::is_array(ASRUtils::expr_type(x_m_args[i])) &&
-                !ASR::is_a<ASR::Var_t>(*x_m_args[i]) ) {
+                !ASR::is_a<ASR::Var_t>(
+                    *ASRUtils::get_past_array_physical_cast(x_m_args[i])) ) {
                 visit_expr(*x_m_args[i]);
                 ASR::expr_t* array_var_temporary = create_and_allocate_temporary_variable_for_array(
                     x_m_args[i], name_hint, al, current_body, current_scope, exprs_with_target);
@@ -356,7 +358,8 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         for( size_t i = 0; i < x_n_args; i++ ) {
             if( x_m_args[i].m_value &&
                 ASRUtils::is_array(ASRUtils::expr_type(x_m_args[i].m_value)) &&
-                !ASR::is_a<ASR::Var_t>(*x_m_args[i].m_value) ) {
+                !ASR::is_a<ASR::Var_t>(
+                    *ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value)) ) {
                 visit_call_arg(x_m_args[i]);
                 ASR::expr_t* array_var_temporary = create_and_allocate_temporary_variable_for_array(
                     x_m_args[i].m_value, name_hint, al, current_body, current_scope, exprs_with_target);
@@ -571,6 +574,20 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         replace_current_expr("_array_reshape_")
     }
 
+    void replace_ArrayBroadcast(ASR::ArrayBroadcast_t* x) {
+        ASR::expr_t** current_expr_copy_161 = current_expr;
+        current_expr = &(x->m_array);
+        replace_expr(x->m_array);
+        current_expr = current_expr_copy_161;
+        replace_ttype(x->m_type);
+        if (call_replacer_on_value) {
+            ASR::expr_t** current_expr_copy_163 = current_expr;
+            current_expr = &(x->m_value);
+            replace_expr(x->m_value);
+            current_expr = current_expr_copy_163;
+        }
+    }
+
     void replace_ArrayItem(ASR::ArrayItem_t* x) {
         if( ASR::is_a<ASR::StructInstanceMember_t>(*x->m_v) ) {
             return ;
@@ -682,6 +699,27 @@ class ReplaceExprWithTemporaryVisitor:
 
     void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
         transform_stmts_impl
+    }
+
+    void visit_ArrayBroadcast(const ASR::ArrayBroadcast_t &x) {
+        ASR::expr_t** current_expr_copy_273 = current_expr;
+        current_expr = const_cast<ASR::expr_t**>(&(x.m_array));
+        call_replacer();
+        current_expr = current_expr_copy_273;
+        if( x.m_array )
+        visit_expr(*x.m_array);
+        visit_ttype(*x.m_type);
+        if (x.m_value) {
+            if (call_replacer_on_value) {
+                ASR::expr_t** current_expr_copy_275 = current_expr;
+                current_expr = const_cast<ASR::expr_t**>(&(x.m_value));
+                call_replacer();
+                current_expr = current_expr_copy_275;
+            }
+            if( x.m_value ) {
+                visit_expr(*x.m_value);
+            }
+        }
     }
 
     void visit_ArrayItem(const ASR::ArrayItem_t& x) {
@@ -813,7 +851,17 @@ class VerifySimplifierASROutput:
     public:
 
     VerifySimplifierASROutput(Allocator& al_, std::set<ASR::expr_t*>& exprs_with_target_) :
-        al(al_), exprs_with_target(exprs_with_target_) {}
+        al(al_), exprs_with_target(exprs_with_target_) {
+        visit_compile_time_value = false;
+    }
+
+    void visit_ArrayBroadcast(const ASR::ArrayBroadcast_t &x) {
+        visit_expr(*x.m_array);
+        visit_ttype(*x.m_type);
+        if (x.m_value && visit_compile_time_value) {
+            visit_expr(*x.m_value);
+        }
+    }
 
     void visit_Assignment(const ASR::Assignment_t& x) {
         LCOMPILERS_ASSERT(!ASR::is_a<ASR::ArrayPhysicalCast_t>(*x.m_value));
@@ -824,7 +872,7 @@ class VerifySimplifierASROutput:
     }
 
     #define check_for_var_if_array(expr) if( expr && ASRUtils::is_array(ASRUtils::expr_type(expr)) ) { \
-            LCOMPILERS_ASSERT(ASR::is_a<ASR::Var_t>(*expr)); \
+            LCOMPILERS_ASSERT(ASR::is_a<ASR::Var_t>(*ASRUtils::get_past_array_physical_cast(expr))); \
         } \
 
     #define check_if_linked_to_target(expr, type) if( ASRUtils::is_aggregate_type(type) ) { \
