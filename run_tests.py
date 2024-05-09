@@ -49,6 +49,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     asr_preprocess = is_included("asr_preprocess")
     asr_indent = is_included("asr_indent")
     asr_json = is_included("asr_json")
+    asr_openmp = is_included("asr_openmp")
     mod_to_asr = is_included("mod_to_asr")
     llvm = is_included("llvm")
     cpp = is_included("cpp")
@@ -149,7 +150,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             update_reference,
             verify_hash,
             extra_args)
-            
+
     if ast_disable_style:
         run_test(
             filename,
@@ -365,6 +366,16 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             filename,
             "asr_json",
             "lfortran --show-asr --no-indent --json {infile} -o {outfile}",
+            filename,
+            update_reference,
+            verify_hash,
+            extra_args)
+
+    if asr_openmp:
+        run_test(
+            filename,
+            "asr_openmp",
+            "lfortran --show-asr --no-color --openmp {infile} -o {outfile}",
             filename,
             update_reference,
             verify_hash,

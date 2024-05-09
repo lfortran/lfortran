@@ -172,21 +172,81 @@
         []
         []
         []
-        []
-        [(Pragma
-            0
-            OMPPragma
-            .false.
-            "parallel"
-            [(String
-                "private(partial_sum)"
+        [(Declaration
+            (AttrType
+                TypeInteger
+                []
+                ()
+                ()
+                None
             )
-            (String
-                "shared(total_sum)"
+            [(AttrIntent
+                In
             )]
+            [(n
+            []
+            []
+            ()
+            ()
+            None
+            ())]
             ()
         )
-        (Assignment
+        (Declaration
+            (AttrType
+                TypeInteger
+                []
+                ()
+                ()
+                None
+            )
+            [(AttrIntent
+                In
+            )]
+            [(a
+            [(()
+            ()
+            DimensionExpr)]
+            []
+            ()
+            ()
+            None
+            ())]
+            ()
+        )
+        (Declaration
+            (AttrType
+                TypeInteger
+                []
+                ()
+                ()
+                None
+            )
+            []
+            [(partial_sum
+            []
+            []
+            ()
+            ()
+            None
+            ())
+            (total_sum
+            []
+            []
+            ()
+            ()
+            None
+            ())
+            (i
+            []
+            []
+            ()
+            ()
+            None
+            ())]
+            ()
+        )]
+        [(Assignment
             0
             partial_sum
             0
@@ -201,6 +261,19 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
+        )
+        (Pragma
+            0
+            OMPPragma
+            .false.
+            "parallel"
+            [(String
+                "private(partial_sum)"
+            )
+            (String
+                "shared(total_sum)"
+            )]
+            ()
         )
         (Pragma
             0
@@ -246,30 +319,20 @@
             (TriviaNode
                 []
                 [(EndOfLine)
-                (EndOfLine)]
+                (EndOfLine)
+                (Comment
+                    "! TODO:"
+                )
+                (Comment
+                    "! !$omp critical"
+                )
+                (Comment
+                    "!     total_sum = total_sum + partial_sum"
+                )
+                (Comment
+                    "! !$omp end critical"
+                )]
             )
-        )
-        (Pragma
-            0
-            OMPPragma
-            .false.
-            "critical"
-            []
-            ()
-        )
-        (Assignment
-            0
-            total_sum
-            (+ total_sum partial_sum)
-            ()
-        )
-        (Pragma
-            0
-            OMPPragma
-            .true.
-            "critical"
-            []
-            ()
         )
         (Pragma
             0
