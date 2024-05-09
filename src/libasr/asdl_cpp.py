@@ -345,6 +345,7 @@ class ASTWalkVisitorVisitor(ASDLVisitor):
         self.emit("private:")
         self.emit("    StructType& self() { return static_cast<StructType&>(*this); }")
         self.emit("public:")
+        self.emit("    bool visit_compile_time_value = true;")
         super(ASTWalkVisitorVisitor, self).visitModule(mod)
         self.emit("};")
 
@@ -388,7 +389,10 @@ class ASTWalkVisitorVisitor(ASDLVisitor):
                 if field.type in products:
                     self.used = True
                     if field.opt:
-                        self.emit("if (x.m_%s)" % field.name, 2)
+                        if field.name == "value":
+                            self.emit("if (x.m_%s && visit_compile_time_value)" % field.name, 2)
+                        else:
+                            self.emit("if (x.m_%s)" % field.name, 2)
                         level = 3
                     if field.opt:
                         self.emit("self().visit_%s(*x.m_%s);" % (field.type, field.name), level)
@@ -398,7 +402,10 @@ class ASTWalkVisitorVisitor(ASDLVisitor):
                     if field.type != "symbol":
                         self.used = True
                         if field.opt:
-                            self.emit("if (x.m_%s)" % field.name, 2)
+                            if field.name == "value":
+                                self.emit("if (x.m_%s && visit_compile_time_value)" % field.name, 2)
+                            else:
+                                self.emit("if (x.m_%s)" % field.name, 2)
                             level = 3
                         self.emit("self().visit_%s(*x.m_%s);" % (field.type, field.name), level)
         elif field.type == "symbol_table" and field.name in["symtab",
@@ -517,7 +524,6 @@ class CallReplacerOnExpressionsVisitor(ASDLVisitor):
 
     def __init__(self, stream, data):
         self.current_expr_copy_variable_count = 0
-        self.insert_call_replacer_on_value_check = True
         super(CallReplacerOnExpressionsVisitor, self).__init__(stream, data)
 
     def visitModule(self, mod):
@@ -555,8 +561,6 @@ class CallReplacerOnExpressionsVisitor(ASDLVisitor):
         self.make_visitor(cons.name, cons.fields)
 
     def make_visitor(self, name, fields):
-        if name == "Assignment":
-            self.insert_call_replacer_on_value_check = False
         self.emit("void visit_%s(const %s_t &x) {" % (name, name), 1)
         is_symtab_present = False
         is_stmt_present = False
@@ -589,15 +593,15 @@ class CallReplacerOnExpressionsVisitor(ASDLVisitor):
             self.emit("current_scope = current_scope_copy;", 2)
         self.emit("}", 1)
 
-    def insert_call_replacer_code(self, name, level, index=""):
-        one_or_zero = name == "value" and self.insert_call_replacer_on_value_check
-        if name == "value" and self.insert_call_replacer_on_value_check:
+    def insert_call_replacer_code(self, name, level, opt, index=""):
+        one_or_zero = name == "value" and opt
+        if name == "value" and opt:
             self.emit("if (call_replacer_on_value) {", level)
         self.emit("ASR::expr_t** current_expr_copy_%d = current_expr;" % (self.current_expr_copy_variable_count), level + one_or_zero)
         self.emit("current_expr = const_cast<ASR::expr_t**>(&(x.m_%s%s));" % (name, index), level + one_or_zero)
         self.emit("self().call_replacer();", level + one_or_zero)
         self.emit("current_expr = current_expr_copy_%d;" % (self.current_expr_copy_variable_count), level + one_or_zero)
-        if name == "value" and self.insert_call_replacer_on_value_check:
+        if name == "value" and opt:
             self.emit("}", level)
         self.current_expr_copy_variable_count += 1
 
@@ -613,13 +617,13 @@ class CallReplacerOnExpressionsVisitor(ASDLVisitor):
                 self.emit("for (size_t i=0; i<x.n_%s; i++) {" % field.name, level)
                 if field.type in products:
                     if field.type == "expr":
-                        self.insert_call_replacer_code(field.name, level + 1, "[i]")
+                        self.insert_call_replacer_code(field.name, level + 1, field.opt, "[i]")
                         self.emit("if( x.m_%s[i] )" % (field.name), level)
                     self.emit("    self().visit_%s(x.m_%s[i]);" % (field.type, field.name), level)
                 else:
                     if field.type != "symbol":
                         if field.type == "expr":
-                            self.insert_call_replacer_code(field.name, level + 1, "[i]")
+                            self.insert_call_replacer_code(field.name, level + 1, field.opt, "[i]")
                             self.emit("if( x.m_%s[i] )" % (field.name), level + 1)
                         self.emit("    self().visit_%s(*x.m_%s[i]);" % (field.type, field.name), level)
                 self.emit("}", level)
@@ -630,7 +634,7 @@ class CallReplacerOnExpressionsVisitor(ASDLVisitor):
                         self.emit("if (x.m_%s) {" % field.name, 2)
                         level = 3
                         if field.type == "expr":
-                            self.insert_call_replacer_code(field.name, level)
+                            self.insert_call_replacer_code(field.name, level, field.opt)
                             self.emit("if( x.m_%s )" % (field.name), level)
                     if field.opt:
                         self.emit("self().visit_%s(*x.m_%s);" % (field.type, field.name), level)
@@ -644,7 +648,7 @@ class CallReplacerOnExpressionsVisitor(ASDLVisitor):
                             self.emit("if (x.m_%s) {" % field.name, 2)
                             level = 3
                         if field.type == "expr":
-                            self.insert_call_replacer_code(field.name, level)
+                            self.insert_call_replacer_code(field.name, level, field.opt)
                             self.emit("if( x.m_%s )" % (field.name), level)
                         self.emit("self().visit_%s(*x.m_%s);" % (field.type, field.name), level)
                         if field.opt:
