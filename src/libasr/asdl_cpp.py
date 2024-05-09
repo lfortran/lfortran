@@ -517,6 +517,7 @@ class CallReplacerOnExpressionsVisitor(ASDLVisitor):
 
     def __init__(self, stream, data):
         self.current_expr_copy_variable_count = 0
+        self.insert_call_replacer_on_value_check = True
         super(CallReplacerOnExpressionsVisitor, self).__init__(stream, data)
 
     def visitModule(self, mod):
@@ -554,6 +555,8 @@ class CallReplacerOnExpressionsVisitor(ASDLVisitor):
         self.make_visitor(cons.name, cons.fields)
 
     def make_visitor(self, name, fields):
+        if name == "Assignment":
+            self.insert_call_replacer_on_value_check = False
         self.emit("void visit_%s(const %s_t &x) {" % (name, name), 1)
         is_symtab_present = False
         is_stmt_present = False
@@ -569,6 +572,7 @@ class CallReplacerOnExpressionsVisitor(ASDLVisitor):
         if is_stmt_present and name not in ("Assignment", "ForAllSingle", "FileRead", "FileWrite"):
             self.emit("    %s_t& xx = const_cast<%s_t&>(x);" % (name, name), 1)
         self.used = False
+        self.insert_call_replacer_on_value_check = True
 
         if is_symtab_present:
             self.emit("SymbolTable* current_scope_copy = current_scope;", 2)
@@ -586,14 +590,14 @@ class CallReplacerOnExpressionsVisitor(ASDLVisitor):
         self.emit("}", 1)
 
     def insert_call_replacer_code(self, name, level, index=""):
-        one_or_zero = name == "value"
-        if name == "value":
+        one_or_zero = name == "value" and self.insert_call_replacer_on_value_check
+        if name == "value" and self.insert_call_replacer_on_value_check:
             self.emit("if (call_replacer_on_value) {", level)
         self.emit("ASR::expr_t** current_expr_copy_%d = current_expr;" % (self.current_expr_copy_variable_count), level + one_or_zero)
         self.emit("current_expr = const_cast<ASR::expr_t**>(&(x.m_%s%s));" % (name, index), level + one_or_zero)
         self.emit("self().call_replacer();", level + one_or_zero)
         self.emit("current_expr = current_expr_copy_%d;" % (self.current_expr_copy_variable_count), level + one_or_zero)
-        if name == "value":
+        if name == "value" and self.insert_call_replacer_on_value_check:
             self.emit("}", level)
         self.current_expr_copy_variable_count += 1
 
