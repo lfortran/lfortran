@@ -3199,53 +3199,39 @@ namespace Mvbits {
 
 namespace Mergebits {
 
+    static int compute_merge_bits(int a, int b, int mask, int total_bits) {
+        int result = 0;
+        int k = 0;
+        while (k < total_bits) {
+            if (mask & (1 << k)) {
+                result |= (a & (1 << k));
+            } else {
+                result |= (b & (1 << k));
+            }
+            k++;
+        }
+        return result;
+    }
+
     static ASR::expr_t *eval_Mergebits(Allocator &al, const Location &loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
-            int kind1 = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_type);
-            int kind2 = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_type);
-            int kind3 = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[2])->m_type);
-            if(kind1 != kind2){
-                append_error(diag, "The second argument of 'merge_bits' intrinsic must be the same type and kind as first argument", loc);
-                return nullptr;
-            }
-            else if(kind1 != kind3){
-                append_error(diag, "The third argument of 'merge_bits' intrinsic must be the same type and kind as first argument", loc);
-                return nullptr;
-            }
-            else if(kind1 == 4){
-                int32_t a = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
-                int32_t b = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
-                int32_t mask = ASR::down_cast<ASR::IntegerConstant_t>(args[2])->m_n;
-                int32_t result = 0;
-                int i = 0;
-                while(i<32){
-                    if(mask & (1 << i)){
-                        result |= (a & (1 << i));
-                    }
-                    else{
-                        result |= (b & (1 << i));
-                    }
-                    i++;
-                }
-                return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);
-            }
-            else{
-                int64_t a = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
-                int64_t b = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
-                int64_t mask = ASR::down_cast<ASR::IntegerConstant_t>(args[2])->m_n;
-                int64_t result = 0;
-                int i = 0;
-                while(i<64){
-                    if(mask & (1 << i)){
-                        result |= (a & (1 << i));
-                    }
-                    else{
-                        result |= (b & (1 << i));
-                    }
-                    i++;
-                }
-                return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);
-            }
+        ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
+        int kind1 = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_type);
+        int kind2 = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_type);
+        int kind3 = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[2])->m_type);
+        int a = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
+        int b = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
+        int mask = ASR::down_cast<ASR::IntegerConstant_t>(args[2])->m_n;
+        int result = 0;
+        if(kind1 != kind2) {
+            append_error(diag, "The second argument of 'merge_bits' intrinsic must be the same type and kind as first argument", loc);
+            return nullptr;
+        } else if(kind1 != kind3) {
+            append_error(diag, "The third argument of 'merge_bits' intrinsic must be the same type and kind as first argument", loc);
+            return nullptr;
+        } else{
+            result = compute_merge_bits(a, b, mask, kind1 * 8);
+            return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);
+        }
     }
 
     static inline ASR::expr_t* instantiate_Mergebits(Allocator &al, const Location &loc,
@@ -3284,7 +3270,6 @@ namespace Mergebits {
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
         return b.Call(f_sym, new_args, return_type, nullptr);
-
     }
 
 } // namespace Mergebits
