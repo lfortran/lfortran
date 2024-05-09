@@ -31,6 +31,12 @@ class ArrayVarAddressReplacer: public ASR::BaseExprReplacer<ArrayVarAddressRepla
         }
     }
 
+    void replace_StructInstanceMember(ASR::StructInstanceMember_t* x) {
+        if( ASRUtils::is_array(ASRUtils::symbol_type(x->m_m)) ) {
+            vars.push_back(al, current_expr);
+        }
+    }
+
 };
 
 class ArrayVarAddressCollector: public ASR::CallReplacerOnExpressionsVisitor<ArrayVarAddressCollector> {
