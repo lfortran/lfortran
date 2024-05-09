@@ -325,6 +325,8 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         if( !ASRUtils::is_array(ASRUtils::expr_type(x.m_target)) ) {
             return ;
         }
+        ASR::Assignment_t& xx = const_cast<ASR::Assignment_t&>(x);
+        xx.m_value = ASRUtils::get_past_array_broadcast(x.m_value);
         const Location loc = x.base.base.loc;
         if( call_replace_on_expr(x.m_value->type) ) {
             replacer.result_expr = x.m_target;
