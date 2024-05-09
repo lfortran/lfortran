@@ -3609,6 +3609,9 @@ public:
     }
 
     void visit_Pragma(const AST::Pragma_t &x) {
+        if ( !compiler_options.openmp ) {
+            return;
+        }
         Location loc = x.base.base.loc;
         if (x.m_type == AST::OMPPragma) {
             if (x.m_end) {
