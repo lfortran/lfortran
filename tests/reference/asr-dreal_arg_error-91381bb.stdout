@@ -1,0 +1,63 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            dreal_arg_error:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            a:
+                                (Variable
+                                    2
+                                    a
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Complex 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    dreal_arg_error
+                    []
+                    [(Assignment
+                        (Var 2 a)
+                        (ComplexConstructor
+                            (RealConstant
+                                1.000000
+                                (Real 4)
+                            )
+                            (RealConstant
+                                2.000000
+                                (Real 4)
+                            )
+                            (Complex 4)
+                            (ComplexConstant
+                                1.000000
+                                2.000000
+                                (Complex 4)
+                            )
+                        )
+                        ()
+                    )
+                    (Print
+                        [(IntrinsicElementalFunction
+                            Dreal
+                            [(Var 2 a)]
+                            0
+                            (Real 8)
+                            ()
+                        )]
+                        ()
+                        ()
+                    )]
+                )
+        })
+    []
+)

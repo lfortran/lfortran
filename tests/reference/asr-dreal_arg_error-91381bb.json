@@ -1,0 +1,13 @@
+{
+    "basename": "asr-dreal_arg_error-91381bb",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/dreal_arg_error.f90",
+    "infile_hash": "b3eef179f8004efffebeb00ee2a7cccd1d2c6c90cfaa04973a3e8d50",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-dreal_arg_error-91381bb.stdout",
+    "stdout_hash": "2fb2f7bc01ef79953f830ab2354434e5d731e01cfe9697dd72818e9f",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

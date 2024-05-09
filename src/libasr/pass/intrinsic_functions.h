@@ -1283,14 +1283,14 @@ namespace Dshiftl {
 namespace Dreal {
 
     static inline ASR::expr_t *eval_Dreal(Allocator &al, const Location &loc,
-            ASR::ttype_t *t, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
+        ASR::ttype_t *t, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
         ASRUtils::ASRBuilder b(al, loc);
         std::complex<double> crv;
         int kind = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::ComplexConstant_t>(args[0])->m_type);
-            if(kind == 4){
-                append_error(diag, "The argument of 'dreal' intrinsic must be of kind 8", loc);
-                return nullptr;
-            }
+        if(kind == 4){
+            append_error(diag, "The argument of 'dreal' intrinsic must be of kind 8", loc);
+            return nullptr;
+        }
         if( ASRUtils::extract_value(args[0], crv) ) {
             double result = std::real(crv);
             return make_ConstantWithType(make_RealConstant_t, result, t, loc);
