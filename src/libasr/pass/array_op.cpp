@@ -207,28 +207,13 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         }
     }
 
-    void visit_Assignment(const ASR::Assignment_t& x) {
-        const Location loc = x.base.base.loc;
-        if( call_replace_on_expr(x.m_value->type) ) {
-            replacer.result_expr = x.m_target;
-            ASR::expr_t** current_expr_copy = current_expr;
-            current_expr = const_cast<ASR::expr_t**>(&x.m_value);
-            this->call_replacer();
-            current_expr = current_expr_copy;
-            replacer.result_expr = nullptr;
-            return ;
-        }
-
-        Vec<ASR::expr_t**> vars;
-        Vec<ASR::expr_t*> vars_expr;
-        vars.reserve(al, 1); vars_expr.reserve(al, 1);
-        vars.push_back(al, const_cast<ASR::expr_t**>(&(x.m_target)));
-        ArrayVarAddressCollector var_collector(al, vars);
-        var_collector.current_expr = const_cast<ASR::expr_t**>(&(x.m_value));
-        var_collector.call_replacer();
-
+    template <typename T>
+    void generate_loop(const T& x, Vec<ASR::expr_t**>& vars,
+                       Vec<const ASR::expr_t*>& fix_types_args,
+                       const Location& loc) {
         Vec<size_t> var_ranks;
-        var_ranks.reserve(al, vars.size());
+        Vec<ASR::expr_t*> vars_expr;
+        var_ranks.reserve(al, vars.size()); vars_expr.reserve(al, vars.size());
         for( size_t i = 0; i < vars.size(); i++ ) {
             ASR::expr_t* expr = *vars[i];
             ASR::ttype_t* type = ASRUtils::expr_type(expr);
@@ -273,7 +258,9 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         }
 
         FixTypeVisitor fix_types(al);
-        fix_types.visit_expr(*x.m_value);
+        for( size_t i = 0; i < fix_types_args.size(); i++ ) {
+            fix_types.visit_expr(*fix_types_args[i]);
+        }
 
         size_t var_with_maxrank = 0;
         for( size_t i = 0; i < var_ranks.size(); i++ ) {
@@ -326,6 +313,57 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         for( size_t i = 0; i < do_loop_body.size(); i++ ) {
             pass_result.push_back(al, do_loop_body[i]);
         }
+    }
+
+    void visit_Assignment(const ASR::Assignment_t& x) {
+        if( !ASRUtils::is_array(ASRUtils::expr_type(x.m_target)) ) {
+            return ;
+        }
+        const Location loc = x.base.base.loc;
+        if( call_replace_on_expr(x.m_value->type) ) {
+            replacer.result_expr = x.m_target;
+            ASR::expr_t** current_expr_copy = current_expr;
+            current_expr = const_cast<ASR::expr_t**>(&x.m_value);
+            this->call_replacer();
+            current_expr = current_expr_copy;
+            replacer.result_expr = nullptr;
+            return ;
+        }
+
+        Vec<ASR::expr_t**> vars;
+        Vec<ASR::expr_t*> vars_expr;
+        vars.reserve(al, 1); vars_expr.reserve(al, 1);
+        vars.push_back(al, const_cast<ASR::expr_t**>(&(x.m_target)));
+        ArrayVarAddressCollector var_collector(al, vars);
+        var_collector.current_expr = const_cast<ASR::expr_t**>(&(x.m_value));
+        var_collector.call_replacer();
+
+        Vec<const ASR::expr_t*> fix_type_args;
+        fix_type_args.reserve(al, 1);
+        fix_type_args.push_back(al, x.m_value);
+
+        generate_loop(x, vars, fix_type_args, loc);
+    }
+
+    void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
+        if( !PassUtils::is_elemental(x.m_name) ) {
+            return ;
+        }
+        const Location loc = x.base.base.loc;
+
+        Vec<ASR::expr_t**> vars;
+        vars.reserve(al, 1);
+        for( size_t i = 0; i < x.n_args; i++ ) {
+            if( x.m_args[i].m_value != nullptr &&
+                ASRUtils::is_array(ASRUtils::expr_type(x.m_args[i].m_value)) ) {
+                vars.push_back(al, &(x.m_args[i].m_value));
+            }
+        }
+
+        Vec<const ASR::expr_t*> fix_type_args;
+        fix_type_args.reserve(al, 1);
+
+        generate_loop(x, vars, fix_type_args, loc);
     }
 
 };
