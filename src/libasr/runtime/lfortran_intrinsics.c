@@ -484,6 +484,17 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
     }
 }
 
+/**
+ * parse fortran format string by extracting individual 'format specifiers'
+ * (e.g. 'i', 't', '*' etc.) into an array of strings
+ *
+ * `char* format`: the string we need to split into format specifiers
+ * `int* count`  : store count of format specifiers (passed by reference from caller)
+ * `item_start`  :
+ *
+ * e.g. "(I5, F5.2, T10)" is split separately into "I5", "F5.2", "T10" as
+ * format specifiers
+*/
 char** parse_fortran_format(char* format, int *count, int *item_start) {
     char** format_values_2 = (char**)malloc((*count + 1) * sizeof(char*));
     int format_values_count = *count;
@@ -554,6 +565,19 @@ char** parse_fortran_format(char* format, int *count, int *item_start) {
                 while (format[index] != ')') index++;
                 format_values_2[format_values_count++] = substring(format, start, index+1);
                 *item_start = format_values_count;
+                break;
+            case 't' :
+                start = index++;
+                // raise error when "T" is specified itself or with non-positive width
+                if (!isdigit(format[index])) {
+                    printf("Error: Positive width required with 'T' descriptor in format string\n");
+                    exit(1);
+                }
+                while (isdigit(format[index])) {
+                    index++;
+                }
+                format_values_2[format_values_count++] = substring(format, start, index);
+                index--;
                 break;
             default :
                 if (
@@ -717,6 +741,23 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
                 char* val_str = va_arg(args, char*);
                 bool val = (strcmp(val_str, "True") == 0);
                 handle_logical(value, val, &result);
+            } else if (tolower(value[0]) == 't') {
+                if (count == 0) break;
+                int tab_position = atoi(value + 1);
+                int current_length = strlen(result);
+                int spaces_needed = tab_position - current_length - 1;
+                if (spaces_needed > 0) {
+                    char* spaces = (char*)malloc((spaces_needed + 1) * sizeof(char));
+                    memset(spaces, ' ', spaces_needed);
+                    spaces[spaces_needed] = '\0';
+                    result = append_to_string(result, spaces);
+                    free(spaces);
+                } else if (spaces_needed < 0) {
+                    // Truncate the string to the length specified by Tn if the current position exceeds it
+                    if (tab_position < current_length) {
+                        result[tab_position] = '\0';  // Truncate the string at the position specified by Tn
+                    }
+                }
             } else if (strlen(value) != 0) {
                 if ( count == 0 ) break;
                 count--;
