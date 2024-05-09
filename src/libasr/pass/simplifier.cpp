@@ -571,6 +571,13 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         replace_current_expr("_array_reshape_")
     }
 
+    void replace_ArrayItem(ASR::ArrayItem_t* x) {
+        if( ASR::is_a<ASR::StructInstanceMember_t>(*x->m_v) ) {
+            return ;
+        }
+        ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_ArrayItem(x);
+    }
+
     void replace_StructInstanceMember(ASR::StructInstanceMember_t* x) {
         replace_current_expr("_struct_instance_member_")
     }
@@ -644,6 +651,8 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         }
     }
 
+
+
 };
 
 class ReplaceExprWithTemporaryVisitor:
@@ -673,6 +682,24 @@ class ReplaceExprWithTemporaryVisitor:
 
     void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
         transform_stmts_impl
+    }
+
+    void visit_ArrayItem(const ASR::ArrayItem_t& x) {
+        if( ASR::is_a<ASR::StructInstanceMember_t>(*x.m_v) ) {
+            return ;
+        }
+        ASR::CallReplacerOnExpressionsVisitor<ReplaceExprWithTemporaryVisitor>::visit_ArrayItem(x);
+    }
+
+    void visit_Assignment(const ASR::Assignment_t &x) {
+        ASR::expr_t** current_expr_copy_9 = current_expr;
+        current_expr = const_cast<ASR::expr_t**>(&(x.m_value));
+        call_replacer();
+        current_expr = current_expr_copy_9;
+        visit_expr(*x.m_value);
+        if (x.m_overloaded) {
+            visit_stmt(*x.m_overloaded);
+        }
     }
 
 };
@@ -790,6 +817,10 @@ class VerifySimplifierASROutput:
 
     void visit_Assignment(const ASR::Assignment_t& x) {
         LCOMPILERS_ASSERT(!ASR::is_a<ASR::ArrayPhysicalCast_t>(*x.m_value));
+        visit_expr(*x.m_value);
+        if (x.m_overloaded) {
+            visit_stmt(*x.m_overloaded);
+        }
     }
 
     #define check_for_var_if_array(expr) if( expr && ASRUtils::is_array(ASRUtils::expr_type(expr)) ) { \
@@ -940,6 +971,13 @@ class VerifySimplifierASROutput:
         check_for_var_if_array(x.m_vector);
     }
 
+    void visit_ArrayItem(const ASR::ArrayItem_t& x) {
+        if( ASR::is_a<ASR::StructInstanceMember_t>(*x.m_v) ) {
+            return ;
+        }
+        ASR::BaseWalkVisitor<VerifySimplifierASROutput>::visit_ArrayItem(x);
+    }
+
     void visit_StructInstanceMember(const ASR::StructInstanceMember_t& x) {
         check_if_linked_to_target(x.base, x.m_type);
     }
@@ -1045,12 +1083,12 @@ void pass_simplifier(Allocator &al, ASR::TranslationUnit_t &unit,
     b.visit_TranslationUnit(unit);
     ReplaceExprWithTemporaryVisitor c(al, exprs_with_target);
     c.visit_TranslationUnit(unit);
-    // PassUtils::UpdateDependenciesVisitor d(al);
-    // d.visit_TranslationUnit(unit);
-    // #if defined(WITH_LFORTRAN_ASSERT)
-    // VerifySimplifierASROutput e(al, exprs_with_target);
-    // e.visit_TranslationUnit(unit);
-    // #endif
+    PassUtils::UpdateDependenciesVisitor d(al);
+    d.visit_TranslationUnit(unit);
+    #if defined(WITH_LFORTRAN_ASSERT)
+    VerifySimplifierASROutput e(al, exprs_with_target);
+    e.visit_TranslationUnit(unit);
+    #endif
 }
 
 
