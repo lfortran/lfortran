@@ -189,8 +189,8 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
     }
 
     void set_index_variables(std::unordered_map<size_t, Vec<ASR::expr_t*>>& var2indices,
-                             Vec<ASR::expr_t*>& vars_expr, size_t var_with_maxrank,
-                             int64_t loop_depth, const Location& loc) {
+                             Vec<ASR::expr_t*>& vars_expr, size_t var_with_maxrank, size_t max_rank,
+                             int64_t loop_depth, Vec<ASR::stmt_t*>& dest_vec, const Location& loc) {
         for( size_t i = 0; i < var2indices.size(); i++ ) {
             if( i == var_with_maxrank ) {
                 continue;
@@ -200,10 +200,10 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                 continue;
             }
             ASR::expr_t* lbound = PassUtils::get_bound(vars_expr[i],
-                loop_depth + vars_expr.size(), "lbound", al);
+                loop_depth + max_rank + 1, "lbound", al);
             ASR::stmt_t* set_index_var = ASRUtils::STMT(ASR::make_Assignment_t(
                 al, loc, index_var, lbound, nullptr));
-            pass_result.push_back(al, set_index_var);
+            dest_vec.push_back(al, set_index_var);
         }
     }
 
@@ -290,14 +290,42 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         do_loop_head.m_end = PassUtils::get_bound(vars_expr[var_with_maxrank],
             var_ranks[var_with_maxrank], "ubound", al);
         do_loop_head.m_increment = nullptr;
+        Vec<ASR::stmt_t*> parent_do_loop_body; parent_do_loop_body.reserve(al, 1);
         Vec<ASR::stmt_t*> do_loop_body; do_loop_body.reserve(al, 1);
-        set_index_variables(var2indices, vars_expr, var_with_maxrank, -1, loc);
+        set_index_variables(var2indices, vars_expr, var_with_maxrank,
+                            var_ranks[var_with_maxrank], -1, parent_do_loop_body, loc);
         do_loop_body.push_back(al, const_cast<ASR::stmt_t*>(&(x.base)));
         increment_index_variables(var2indices, var_with_maxrank, -1,
                                   do_loop_body, loc);
         ASR::stmt_t* do_loop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr,
             do_loop_head, do_loop_body.p, do_loop_body.size(), nullptr, 0));
-        pass_result.push_back(al, do_loop);
+        parent_do_loop_body.push_back(al, do_loop);
+        do_loop_body.from_pointer_n_copy(al, parent_do_loop_body.p, parent_do_loop_body.size());
+        parent_do_loop_body.reserve(al, 1);
+
+        for( int64_t i = -2; i >= -static_cast<int64_t>(var_ranks[var_with_maxrank]); i-- ) {
+            set_index_variables(var2indices, vars_expr, var_with_maxrank,
+                                var_ranks[var_with_maxrank], i, parent_do_loop_body, loc);
+            increment_index_variables(var2indices, var_with_maxrank, i,
+                                      do_loop_body, loc);
+            ASR::do_loop_head_t do_loop_head;
+            do_loop_head.loc = loc;
+            do_loop_head.m_v = at(var2indices[var_with_maxrank], i);
+            do_loop_head.m_start = PassUtils::get_bound(vars_expr[var_with_maxrank],
+                var_ranks[var_with_maxrank] + i + 1, "lbound", al);
+            do_loop_head.m_end = PassUtils::get_bound(vars_expr[var_with_maxrank],
+                var_ranks[var_with_maxrank] + i + 1, "ubound", al);
+            do_loop_head.m_increment = nullptr;
+            ASR::stmt_t* do_loop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr,
+                do_loop_head, do_loop_body.p, do_loop_body.size(), nullptr, 0));
+            parent_do_loop_body.push_back(al, do_loop);
+            do_loop_body.from_pointer_n_copy(al, parent_do_loop_body.p, parent_do_loop_body.size());
+            parent_do_loop_body.reserve(al, 1);
+        }
+
+        for( size_t i = 0; i < do_loop_body.size(); i++ ) {
+            pass_result.push_back(al, do_loop_body[i]);
+        }
     }
 
 };
