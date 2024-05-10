@@ -2638,12 +2638,25 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
         va_list args;
         va_start(args, format);
         const char* str = va_arg(args, const char*);
-
+        // size the size of `str_len` to bytes
         size_t str_len = strlen(str);
-        size_t written = fwrite(str, sizeof(char), str_len, filep);  // Write as binary data
+
+        // calculate record marker size
+        int32_t record_marker = (int32_t)str_len;
+
+        // write record marker before the data
+        fwrite(&record_marker, sizeof(record_marker), 1, filep);
+
+        size_t written = fwrite(str, sizeof(char), str_len, filep); // write as binary data
+
+        // write the record marker after the data
+        fwrite(&record_marker, sizeof(record_marker), 1, filep);
 
         if (written != str_len) {
-            *iostat = 1;
+            printf("Error writing data to file.\n");
+            // not sure what is the right value of "iostat" in this case
+            *iostat = -1;
+            exit(1);
         } else {
             *iostat = 0;
         }
