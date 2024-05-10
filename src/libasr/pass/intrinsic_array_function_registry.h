@@ -1473,10 +1473,6 @@ namespace Sum {
             &ArrIntrinsic::verify_array_int_real_cmplx);
     }
 
-// static inline ASR::expr_t *eval_ArrIntrinsic(Allocator & al,
-//     const Location & loc, ASR::ttype_t *, Vec<ASR::expr_t*>& args,
-//     diag::Diagnostics& /*diag*/, ASRUtils::IntrinsicArrayFunctions intrinsic_func_id) {
-
     static inline ASR::expr_t *eval_Sum(Allocator & al,
         const Location & loc, ASR::ttype_t *t, Vec<ASR::expr_t*>& args,
         diag::Diagnostics& diag) {
