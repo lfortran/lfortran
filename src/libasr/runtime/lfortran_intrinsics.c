@@ -2202,7 +2202,8 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status
     if (streql(form, "formatted")) {
         unit_file_bin = false;
     } else if (streql(form, "unformatted")) {
-        access_mode = "wb+";
+        access_mode = "rb";
+        // access_mode = "wb+";
         unit_file_bin = true;
     } else {
         printf("Runtime error: FORM specifier in OPEN statement has "
