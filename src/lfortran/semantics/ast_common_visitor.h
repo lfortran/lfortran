@@ -3044,6 +3044,8 @@ public:
                                 ASR::is_a<ASR::TypeInquiry_t>(*init_expr) ||
                                 ASR::is_a<ASR::StringLen_t>(*init_expr) ) {
                                 value = init_expr;
+                            } else if (ASR::is_a<ASR::IntegerBinOp_t>(*init_expr) || ASR::is_a<ASR::RealBinOp_t>(*init_expr)) {
+                                value = init_expr;
                             } else {
                                 throw SemanticError("Initialization of `" + std::string(x.m_syms[i].m_name) +
                                                     "` must reduce to a compile time constant.",
@@ -3108,7 +3110,6 @@ public:
                         {x.m_syms[i].loc},
                         "help: add explicit save attribute or initialize in a separate statement"
                     );
-
                 }
                 if( std::find(excluded_from_symtab.begin(), excluded_from_symtab.end(), sym) == excluded_from_symtab.end() ) {
                     if ( !is_implicitly_declared && !is_external) {
