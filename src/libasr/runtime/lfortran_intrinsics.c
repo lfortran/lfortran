@@ -2666,7 +2666,9 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
     bool unit_file_bin;
     FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin);
     if (!filep) {
-        filep = stdout;
+        // 'unit_num' isn't associated with any file or isn't open
+        *iostat = 0;
+        return;
     }
     if (unit_file_bin) {
         va_list args;
