@@ -2202,8 +2202,7 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status
     if (streql(form, "formatted")) {
         unit_file_bin = false;
     } else if (streql(form, "unformatted")) {
-        // TODO: Handle unformatted write to a file
-        access_mode = "rb";
+        access_mode = "wb+";
         unit_file_bin = true;
     } else {
         printf("Runtime error: FORM specifier in OPEN statement has "
@@ -2636,16 +2635,28 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
         filep = stdout;
     }
     if (unit_file_bin) {
-        printf("Binary content is not handled by write(..)\n");
-        exit(1);
-    }
-    va_list args;
-    va_start(args, format);
-    vfprintf(filep, format, args);
-    va_end(args);
+        va_list args;
+        va_start(args, format);
+        const char* str = va_arg(args, const char*);
 
+        size_t str_len = strlen(str);
+        size_t written = fwrite(str, sizeof(char), str_len, filep);  // Write as binary data
+
+        if (written != str_len) {
+            *iostat = 1;
+        } else {
+            *iostat = 0;
+        }
+
+        va_end(args);
+    } else {
+        va_list args;
+        va_start(args, format);
+        vfprintf(filep, format, args);
+        va_end(args);
+        *iostat = 0;
+    }
     (void)!ftruncate(fileno(filep), ftell(filep));
-    *iostat = 0;
 }
 
 LFORTRAN_API void _lfortran_string_write(char **str, int32_t* iostat, const char *format, ...) {
