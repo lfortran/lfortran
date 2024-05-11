@@ -2718,7 +2718,6 @@ LFORTRAN_API void _lfortran_string_write(char **str, int32_t* iostat, const char
 }
 
 LFORTRAN_API void _lfortran_string_read(char *str, char *format, int *i) {
-    printf("Hello god");
     sscanf(str, format, i);
 }
 
