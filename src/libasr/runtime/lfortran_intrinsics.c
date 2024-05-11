@@ -2405,7 +2405,42 @@ LFORTRAN_API void _lfortran_read_char(char **p, int32_t unit_num)
     int n = strlen(*p);
     *p = (char*)malloc(n * sizeof(char));
     if (unit_file_bin) {
-        (void)!fread(*p, sizeof(char), n, filep);
+        // read the record marker for data length
+        int32_t data_length;
+        if (fread(&data_length, sizeof(int32_t), 1, filep) != 1) {
+            printf("Error reading data length from file.\n");
+            exit(1);
+        }
+
+        // allocate memory for the data based on data length
+        *p = (char*)malloc((data_length + 1) * sizeof(char));
+        if (*p == NULL) {
+            printf("Memory allocation failed.\n");
+            exit(1);
+        }
+
+        // read the actual data
+        if (fread(*p, sizeof(char), data_length, filep) != data_length) {
+            printf("Error reading data from file.\n");
+            free(*p);
+            exit(1);
+        }
+        (*p)[data_length] = '\0';
+
+        // read the record marker after data
+        int32_t check_length;
+        if (fread(&check_length, sizeof(int32_t), 1, filep) != 1) {
+            printf("Error reading end data length from file.\n");
+            free(*p);
+            exit(1);
+        }
+
+        // verify that the start and end markers match
+        if (check_length != data_length) {
+            printf("Data length mismatch between start and end markers.\n");
+            free(*p);
+            exit(1);
+        }
     } else {
         (void)!fscanf(filep, "%s", *p);
     }
@@ -2631,7 +2666,19 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
     bool unit_file_bin;
     FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin);
     if (!filep) {
-        filep = stdout;
+        // if the standard or old codes require a different behavior, we can implement an
+        // optional compiler option to turn on some other behavior, but by default we should
+        // always give a runtime error. GFortran doesn't do anything and continues with
+        // execution of the program
+        //
+        // e.g program:
+        // ```fortran
+        // program main
+        //     write(1) "apple"
+        // end program main
+        // ```
+        printf("Can't write to non-open file descriptor\n");
+        exit(1);
     }
     if (unit_file_bin) {
         va_list args;
@@ -2683,6 +2730,7 @@ LFORTRAN_API void _lfortran_string_write(char **str, int32_t* iostat, const char
 }
 
 LFORTRAN_API void _lfortran_string_read(char *str, char *format, int *i) {
+    printf("Hello god");
     sscanf(str, format, i);
 }
 

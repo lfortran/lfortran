@@ -7459,6 +7459,7 @@ public:
         if (x.m_fmt) {
             std::vector<llvm::Value*> args;
             args.push_back(unit_val);
+            std::cout << "I am mother\n";
             args.push_back(iostat);
             args.push_back(read_size);
             this->visit_expr_wrapper(x.m_fmt, true);
@@ -7495,6 +7496,7 @@ public:
                 ASR::ttype_t* type = ASRUtils::expr_type(x.m_values[i]);
                 llvm::Function *fn;
                 if (is_string) {
+                    std::cout << "Am I here\n";
                     // TODO: Support multiple arguments and fmt
                     std::string runtime_func_name = "_lfortran_string_read";
                     llvm::Function *fn = module->getFunction(runtime_func_name);
