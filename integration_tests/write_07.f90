@@ -10,8 +10,4 @@ program write_07
 
     if (stat /= 0) error stop
 
-    write(1, iostat=stat) value
-    print *, stat
-    if (stat /= 0) error stop
-
 end program
