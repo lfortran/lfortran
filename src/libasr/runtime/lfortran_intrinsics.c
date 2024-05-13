@@ -2688,8 +2688,11 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
 
         if (written != str_len) {
             printf("Error writing data to file.\n");
-            // not sure what is the right value of "iostat" in this case
-            *iostat = -1;
+            // TODO: not sure what is the right value of "iostat" in this case
+            // it should be a positive value unique from other predefined iostat values
+            // like IOSTAT_INQUIRE_INTERNAL_UNIT, IOSTAT_END, and IOSTAT_EOR.
+            // currently, I've set it to 11
+            *iostat = 11;
             exit(1);
         } else {
             *iostat = 0;
