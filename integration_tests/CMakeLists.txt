@@ -1161,6 +1161,8 @@ RUN(NAME file_16       LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME file_17       LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME file_18       LABELS gfortran llvm llvm_wasm llvm_wasm_emcc COPY_TO_BIN file_18_data.txt)
 RUN(NAME file_19       LABELS gfortran llvm llvm_wasm llvm_wasm_emcc COPY_TO_BIN file_19_data.txt)
+# the below test case writes and reads that same file for testing purpose
+RUN(NAME file_20       LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME inquire_01    LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME test_backspace_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc COPY_TO_BIN file_01_data.txt)
