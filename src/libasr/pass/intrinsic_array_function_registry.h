@@ -379,7 +379,7 @@ static inline void verify_args(const ASR::IntrinsicArrayFunction_t& x, diag::Dia
 
 static inline ASR::expr_t *eval_ArrIntrinsic(Allocator & al,
     const Location & loc, ASR::ttype_t *t, Vec<ASR::expr_t*>& args,
-    diag::Diagnostics& diag, ASRUtils::IntrinsicArrayFunctions intrinsic_func_id) {
+    diag::Diagnostics& /*diag*/, ASRUtils::IntrinsicArrayFunctions intrinsic_func_id) {
     switch( intrinsic_func_id ) {
         case ASRUtils::IntrinsicArrayFunctions::Sum: {
             ASR::expr_t* array = args[0];
@@ -448,8 +448,74 @@ static inline ASR::expr_t *eval_ArrIntrinsic(Allocator & al,
             }
             return value;
         }
+        case ASRUtils::IntrinsicArrayFunctions::Product: {
+            ASR::expr_t* array = args[0];
+            ASR::expr_t* value = nullptr;
+            if (array && ASR::is_a<ASR::ArrayConstant_t>(*array)) {
+                ASR::ArrayConstant_t *a = ASR::down_cast<ASR::ArrayConstant_t>(array);
+                size_t size = ASRUtils::get_fixed_size_of_array(a->m_type);
+                ASR::expr_t *args_value0 = ASRUtils::fetch_ArrayConstant_value(al, a, 0);
+                int64_t kind = ASRUtils::extract_kind_from_ttype_t(t);
+                if (args_value0 && ASR::is_a<ASR::IntegerConstant_t>(*args_value0)) {
+                    int64_t result = 0;
+                    if (kind == 1) {
+                        for (size_t i = 0; i < size; i++) {
+                            result *= ((int8_t*)(a->m_data))[i];
+                        }
+                    } else if (kind == 2) {
+                        for (size_t i = 0; i < size; i++) {
+                            result *= ((int16_t*)(a->m_data))[i];
+                        }
+                    } else if (kind == 4) {
+                        for (size_t i = 0; i < size; i++) {
+                            result *= ((int32_t*)(a->m_data))[i];
+                        }
+                    } else if (kind == 8) {
+                        for (size_t i = 0; i < size; i++) {
+                            result *= ((int64_t*)(a->m_data))[i];
+                        }
+                    }
+                    value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al,
+                    loc, result, t));
+                } else if (args_value0 && ASR::is_a<ASR::RealConstant_t>(*args_value0)) {
+                    if (kind == 4) {
+                        float result = 0.0;
+                        for (size_t i = 0; i < size; i++) {
+                            result *= ((float*)(a->m_data))[i];
+                        }
+                        value = ASRUtils::EXPR(ASR::make_RealConstant_t(al,
+                        loc, result, t));
+                    } else {
+                        double result = 0.0;
+                        for (size_t i = 0; i < size; i++) {
+                            result *= ((double*)(a->m_data))[i];
+                        }
+                        value = ASRUtils::EXPR(ASR::make_RealConstant_t(al,
+                        loc, result, t));
+                    }
+                } else if (args_value0 && ASR::is_a<ASR::ComplexConstant_t>(*args_value0)) {
+                    if (ASRUtils::extract_kind_from_ttype_t(t) == 4) {
+                        std::complex<float> result = {0.0, 0.0};
+                        for (size_t i = 0; i < size; i++) {
+                            result.real(result.real() * *(((float*)(a->m_data)) + 2*i));
+                            result.imag(result.imag() * *(((float*)(a->m_data)) + 2*i + 1));
+                        }
+                        value = ASRUtils::EXPR(ASR::make_ComplexConstant_t(al,
+                        loc, result.real(), result.imag(), t));
+                    } else {
+                        std::complex<double> result = {0.0, 0.0};
+                        for (size_t i = 0; i < size; i++) {
+                            result.real(result.real() * *(((double*)(a->m_data)) + 2*i));
+                            result.imag(result.imag() * *(((double*)(a->m_data)) + 2*i + 1));
+                        }
+                        value = ASRUtils::EXPR(ASR::make_ComplexConstant_t(al,
+                        loc, result.real(), result.imag(), t));
+                    }
+                }
+            }
+            return value;
+        }
         default: {
-            append_error(diag, "Intrinsic function not implemented", loc);
             return nullptr;
         }
     }
@@ -1507,15 +1573,15 @@ namespace Product {
             &ArrIntrinsic::verify_array_int_real_cmplx);
     }
 
-    static inline ASR::expr_t *eval_Product(Allocator & /*al*/,
-        const Location & /*loc*/, ASR::ttype_t *, Vec<ASR::expr_t*>& /*args*/,
-        diag::Diagnostics& /*diag*/) {
-        return nullptr;
+    static inline ASR::expr_t *eval_Product(Allocator & al,
+        const Location & loc, ASR::ttype_t *t, Vec<ASR::expr_t*>& args,
+        diag::Diagnostics& diag) {
+        return ArrIntrinsic::eval_ArrIntrinsic(al, loc, t, args, diag,
+            IntrinsicArrayFunctions::Product);
     }
 
     static inline ASR::asr_t* create_Product(Allocator& al, const Location& loc,
-            Vec<ASR::expr_t*>& args,
-            diag::Diagnostics& diag) {
+            Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
         return ArrIntrinsic::create_ArrIntrinsic(al, loc, args, diag,
             IntrinsicArrayFunctions::Product);
     }
