@@ -1,4 +1,4 @@
-semantic error: `iostat` must be of type, Integer
+semantic error: `iostat` must be scalar
  --> tests/errors/iostat_non_scalar_value.f90:7:5
   |
 7 |     read(buffer, *, iostat=ios(1:1))
