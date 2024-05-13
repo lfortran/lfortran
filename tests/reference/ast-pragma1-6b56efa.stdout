@@ -94,17 +94,15 @@
             ()
             None
             ())]
-            ()
+            (TriviaNode
+                []
+                [(EndOfLine)
+                (Comment
+                    "!$OMP PARALLEL DO"
+                )]
+            )
         )]
-        [(Pragma
-            0
-            OMPPragma
-            .false.
-            "parallel do"
-            []
-            ()
-        )
-        (DoLoop
+        [(DoLoop
             0
             ()
             0
@@ -149,15 +147,13 @@
                 ()
             )]
             ()
-            ()
-        )
-        (Pragma
-            0
-            OMPPragma
-            .true.
-            "parallel do"
-            []
-            ()
+            (TriviaNode
+                []
+                [(EndOfLine)
+                (Comment
+                    "!$OMP END PARALLEL DO"
+                )]
+            )
         )]
         []
         []
@@ -259,29 +255,14 @@
             (TriviaNode
                 []
                 [(EndOfLine)
-                (EndOfLine)]
+                (EndOfLine)
+                (Comment
+                    "!$omp parallel private(partial_sum) shared(total_sum)"
+                )
+                (Comment
+                    "!$omp do"
+                )]
             )
-        )
-        (Pragma
-            0
-            OMPPragma
-            .false.
-            "parallel"
-            [(String
-                "private(partial_sum)"
-            )
-            (String
-                "shared(total_sum)"
-            )]
-            ()
-        )
-        (Pragma
-            0
-            OMPPragma
-            .false.
-            "do"
-            []
-            ()
         )
         (DoLoop
             0
@@ -308,17 +289,12 @@
                 ()
             )]
             ()
-            ()
-        )
-        (Pragma
-            0
-            OMPPragma
-            .true.
-            "do"
-            []
             (TriviaNode
                 []
                 [(EndOfLine)
+                (Comment
+                    "!$omp end do"
+                )
                 (EndOfLine)
                 (Comment
                     "! TODO:"
@@ -331,16 +307,11 @@
                 )
                 (Comment
                     "! !$omp end critical"
+                )
+                (Comment
+                    "!$omp end parallel"
                 )]
             )
-        )
-        (Pragma
-            0
-            OMPPragma
-            .true.
-            "parallel"
-            []
-            ()
         )]
         []
         []

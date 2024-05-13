@@ -121,13 +121,12 @@
                     [(Var 2 n)
                     (Var 2 a)
                     (Var 2 b)]
-                    [(DoConcurrentLoop
+                    [(DoLoop
+                        ()
                         ((Var 2 i)
                         (IntegerConstant 2 (Integer 4))
                         (Var 2 n)
                         ())
-                        []
-                        []
                         [(Assignment
                             (ArrayItem
                                 (Var 2 b)
@@ -183,6 +182,7 @@
                             )
                             ()
                         )]
+                        []
                     )]
                     ()
                     Public
@@ -315,13 +315,12 @@
                         (IntegerConstant 0 (Integer 4))
                         ()
                     )
-                    (DoConcurrentLoop
+                    (DoLoop
+                        ()
                         ((Var 3 i)
                         (IntegerConstant 1 (Integer 4))
                         (Var 3 n)
                         ())
-                        [(Var 3 total_sum)]
-                        [(Var 3 partial_sum)]
                         [(Assignment
                             (Var 3 partial_sum)
                             (IntegerBinOp
@@ -341,6 +340,7 @@
                             )
                             ()
                         )]
+                        []
                     )]
                     ()
                     Public
