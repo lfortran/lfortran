@@ -2786,6 +2786,29 @@ public:
             llvm_symtab[h] = ptr;
         } else if (x.m_type->type == ASR::ttypeType::TypeParameter) {
             // Ignore type variables
+        } else if (x.m_type->type == ASR::ttypeType::Allocatable) {
+            ASR::dimension_t* m_dims = nullptr;
+            int n_dims = -1, a_kind = -1;
+            bool is_array_type = ASRUtils::is_array(ASRUtils::type_get_past_allocatable(x.m_type));
+            bool is_malloc_array_type = false, is_list = false;
+            llvm::Type* x_ptr = llvm_utils->get_type_from_ttype_t(
+                x.m_type, nullptr, x.m_storage, is_array_type,
+                is_malloc_array_type, is_list,
+                m_dims, n_dims, a_kind, module.get());
+            llvm::Constant *ptr = module->getOrInsertGlobal(x.m_name,
+                x_ptr);
+            if (!external) {
+                if (init_value) {
+                    module->getNamedGlobal(x.m_name)->setInitializer(
+                            init_value);
+                } else {
+                    module->getNamedGlobal(x.m_name)->setInitializer(
+                            llvm::ConstantPointerNull::get(
+                                static_cast<llvm::PointerType*>(x_ptr))
+                            );
+                }
+            }
+            llvm_symtab[h] = ptr;
         } else {
             throw CodeGenError("Variable type not supported " + std::to_string(x.m_type->type), x.base.base.loc);
         }
