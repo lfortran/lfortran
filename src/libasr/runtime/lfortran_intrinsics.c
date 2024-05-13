@@ -2202,8 +2202,6 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status
     if (streql(form, "formatted")) {
         unit_file_bin = false;
     } else if (streql(form, "unformatted")) {
-        // TODO: Handle unformatted write to a file
-        access_mode = "rb";
         unit_file_bin = true;
     } else {
         printf("Runtime error: FORM specifier in OPEN statement has "
@@ -2407,7 +2405,42 @@ LFORTRAN_API void _lfortran_read_char(char **p, int32_t unit_num)
     int n = strlen(*p);
     *p = (char*)malloc(n * sizeof(char));
     if (unit_file_bin) {
-        (void)!fread(*p, sizeof(char), n, filep);
+        // read the record marker for data length
+        int32_t data_length;
+        if (fread(&data_length, sizeof(int32_t), 1, filep) != 1) {
+            printf("Error reading data length from file.\n");
+            exit(1);
+        }
+
+        // allocate memory for the data based on data length
+        *p = (char*)malloc((data_length + 1) * sizeof(char));
+        if (*p == NULL) {
+            printf("Memory allocation failed.\n");
+            exit(1);
+        }
+
+        // read the actual data
+        if (fread(*p, sizeof(char), data_length, filep) != data_length) {
+            printf("Error reading data from file.\n");
+            free(*p);
+            exit(1);
+        }
+        (*p)[data_length] = '\0';
+
+        // read the record marker after data
+        int32_t check_length;
+        if (fread(&check_length, sizeof(int32_t), 1, filep) != 1) {
+            printf("Error reading end data length from file.\n");
+            free(*p);
+            exit(1);
+        }
+
+        // verify that the start and end markers match
+        if (check_length != data_length) {
+            printf("Data length mismatch between start and end markers.\n");
+            free(*p);
+            exit(1);
+        }
     } else {
         (void)!fscanf(filep, "%s", *p);
     }
@@ -2636,16 +2669,44 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
         filep = stdout;
     }
     if (unit_file_bin) {
-        printf("Binary content is not handled by write(..)\n");
-        exit(1);
-    }
-    va_list args;
-    va_start(args, format);
-    vfprintf(filep, format, args);
-    va_end(args);
+        va_list args;
+        va_start(args, format);
+        const char* str = va_arg(args, const char*);
+        // size the size of `str_len` to bytes
+        size_t str_len = strlen(str);
 
+        // calculate record marker size
+        int32_t record_marker = (int32_t)str_len;
+
+        // write record marker before the data
+        fwrite(&record_marker, sizeof(record_marker), 1, filep);
+
+        size_t written = fwrite(str, sizeof(char), str_len, filep); // write as binary data
+
+        // write the record marker after the data
+        fwrite(&record_marker, sizeof(record_marker), 1, filep);
+
+        if (written != str_len) {
+            printf("Error writing data to file.\n");
+            // TODO: not sure what is the right value of "iostat" in this case
+            // it should be a positive value unique from other predefined iostat values
+            // like IOSTAT_INQUIRE_INTERNAL_UNIT, IOSTAT_END, and IOSTAT_EOR.
+            // currently, I've set it to 11
+            *iostat = 11;
+            exit(1);
+        } else {
+            *iostat = 0;
+        }
+
+        va_end(args);
+    } else {
+        va_list args;
+        va_start(args, format);
+        vfprintf(filep, format, args);
+        va_end(args);
+        *iostat = 0;
+    }
     (void)!ftruncate(fileno(filep), ftell(filep));
-    *iostat = 0;
 }
 
 LFORTRAN_API void _lfortran_string_write(char **str, int32_t* iostat, const char *format, ...) {
