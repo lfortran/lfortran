@@ -308,6 +308,58 @@ void handle_float(char* format, double val, char** result) {
     }
 }
 
+void handle_en(char* format, double val, int scale, char** result, char* c) {
+    int width = 0, decimal_digits = 0;
+    char *num_pos = format, *dot_pos = strchr(format, '.');
+    decimal_digits = atoi(++dot_pos);
+    while (!isdigit(*num_pos)) num_pos++;
+    width = atoi(num_pos);
+
+    int exponent = 0;
+    if (val != 0.0) {
+        exponent = (int)floor(log10(fabs(val)));
+        int remainder = exponent % 3;
+        // '%' behaves a little different in C compared to python
+        // or other languages, e.g. (-4) % 3 = -1 in C, while in
+        // python, it would be 2
+        if (remainder < 0) {
+            remainder += 3;
+        }
+        exponent -= remainder;
+    }
+
+    double scaled_val = val / pow(10, exponent);
+
+    char val_str[128];
+    sprintf(val_str, "%.*lf", decimal_digits, scaled_val);
+
+    // truncate unnecessary zeros after decimal point
+    char* ptr = strchr(val_str, '.');
+    if (ptr != NULL) {
+        char* end_ptr = ptr;
+        while (*end_ptr != '\0') end_ptr++;
+        end_ptr--;
+        while (*end_ptr == '0') end_ptr--;
+        *(end_ptr + 1) = '\0';
+    }
+
+    char formatted_value[128] = "";
+    snprintf(formatted_value, sizeof(formatted_value), "%s%s%+03d", val_str, c, exponent);
+
+    // handle width and padding
+    char final_result[128] = "";
+    int padding = width - strlen(formatted_value);
+    if (padding > 0) {
+        memset(final_result, ' ', padding);
+        strcat(final_result, formatted_value);
+    } else {
+        strncpy(final_result, formatted_value, width);
+        final_result[width] = '\0';
+    }
+
+    *result = strdup(final_result);
+}
+
 void handle_decimal(char* format, double val, int scale, char** result, char* c) {
     // Consider an example: write(*, "(es10.2)") 1.123e+10
     // format = "es10.2", val = 11230000128.00, scale = 0, c = "E"
@@ -534,9 +586,33 @@ char** parse_fortran_format(char* format, int *count, int *item_start) {
                 format_values_2[format_values_count++] = substring(format, start, index);
                 index--;
                 break;
+            case 'e' :
+                start = index++;
+                bool edot = false;
+                bool is_en_formatting = false;
+                if (tolower(format[index]) == 'n') {
+                    index++;  // move past the 'N'
+                    is_en_formatting = true;
+                }
+                if (tolower(format[index]) == 's') index++;
+                while (isdigit(format[index])) index++;
+                if (format[index] == '.') {
+                    edot = true;
+                    index++;
+                } else {
+                    printf("Error: Period required in format specifier\n");
+                    exit(1);
+                }
+                while (isdigit(format[index])) index++;
+                if (edot && (tolower(format[index]) == 'e' || tolower(format[index]) == 'n')) {
+                    index++;
+                    while (isdigit(format[index])) index++;
+                }
+                format_values_2[format_values_count++] = substring(format, start, index);
+                index--;
+                break;
             case 'i' :
             case 'd' :
-            case 'e' :
             case 'f' :
             case 'l' :
                 start = index++;
@@ -719,12 +795,19 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
                 double val = va_arg(args, double);
                 handle_decimal(value, val, scale, &result, "D");
             } else if (tolower(value[0]) == 'e') {
-                // E Editing E[w[.d][Ee]]
-                // Only (E[w[.d]]) has been implemented yet
-                if ( count == 0 ) break;
-                count--;
-                double val = va_arg(args, double);
-                handle_decimal(value, val, scale, &result, "E");
+                // Check if the next character is 'N' for EN format
+                char format_type = tolower(value[1]);
+                if (format_type == 'n') {
+                    if (count == 0) break;
+                    count--;
+                    double val = va_arg(args, double);
+                    handle_en(value, val, scale, &result, "E");
+                } else {
+                    if (count == 0) break;
+                    count--;
+                    double val = va_arg(args, double);
+                    handle_decimal(value, val, scale, &result, "E");
+                }
             } else if (tolower(value[0]) == 'f') {
                 if ( count == 0 ) break;
                 count--;
