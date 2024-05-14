@@ -50,6 +50,7 @@ inline std::string get_intrinsic_name(int64_t x) {
         INTRINSIC_NAME_CASE(Fix)
         INTRINSIC_NAME_CASE(Abs)
         INTRINSIC_NAME_CASE(Aimag)
+        INTRINSIC_NAME_CASE(Dreal)
         INTRINSIC_NAME_CASE(Exp)
         INTRINSIC_NAME_CASE(Exp2)
         INTRINSIC_NAME_CASE(Expm1)
@@ -357,6 +358,8 @@ namespace IntrinsicElementalFunctionRegistry {
             {&Abs::instantiate_Abs, &Abs::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Aimag),
             {&Aimag::instantiate_Aimag, &Aimag::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Dreal),
+            {&Dreal::instantiate_Dreal, &Dreal::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Partition),
             {&Partition::instantiate_Partition, &Partition::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::ListIndex),
@@ -538,6 +541,8 @@ namespace IntrinsicElementalFunctionRegistry {
             "abs"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Aimag),
             "aimag"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Dreal),
+            "dreal"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Exp),
             "exp"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Exp2),
@@ -834,6 +839,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"atanh", {&Atanh::create_Atanh, &Atanh::eval_Atanh}},
                 {"abs", {&Abs::create_Abs, &Abs::eval_Abs}},
                 {"aimag", {&Aimag::create_Aimag, &Aimag::eval_Aimag}},
+                {"dreal", {&Dreal::create_Dreal, &Dreal::eval_Dreal}},
                 {"exp", {&Exp::create_Exp, &Exp::eval_Exp}},
                 {"exp2", {&Exp2::create_Exp2, &Exp2::eval_Exp2}},
                 {"expm1", {&Expm1::create_Expm1, &Expm1::eval_Expm1}},

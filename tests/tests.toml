@@ -3909,6 +3909,10 @@ filename = "errors/sqrt_neg.f90"
 asr = true
 
 [[test]]
+filename = "errors/dreal_arg_error.f90"
+asr = true
+
+[[test]]
 filename = "errors/coarray_01.f90"
 asr = true
 

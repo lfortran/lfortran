@@ -2068,6 +2068,12 @@ static inline bool is_complex(ASR::ttype_t &x) {
                 type_get_past_pointer(&x))));
 }
 
+template <int32_t kind>
+static inline bool is_complex(ASR::ttype_t &x) {
+    return is_complex(x) && ASRUtils::extract_kind_from_ttype_t(&x) == kind;
+}
+
+
 static inline bool is_logical(ASR::ttype_t &x) {
     return ASR::is_a<ASR::Logical_t>(
         *type_get_past_array(
