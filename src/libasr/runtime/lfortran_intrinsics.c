@@ -246,67 +246,66 @@ void handle_logical(char* format, bool val, char** result) {
 void handle_float(char* format, double val, char** result) {
     int width = 0, decimal_digits = 0;
     long integer_part = (long)fabs(val);
-    double decimal_part = fabs(val) - labs(integer_part);
+    double decimal_part = fabs(val) - integer_part;
 
     int sign_width = (val < 0) ? 1 : 0;
-    int integer_length = (integer_part == 0) ? 1 : (int)log10(llabs(integer_part)) + 1;
+    int integer_length = (integer_part == 0) ? 1 : (int)log10(integer_part) + 1;
+
+    // parsing the format
+    char* dot_pos = strchr(format, '.');
+    if (dot_pos != NULL) {
+        decimal_digits = atoi(dot_pos + 1);
+        width = atoi(format + 1);
+    }
+
+    double rounding_factor = pow(10, -decimal_digits);
+    decimal_part = round(decimal_part / rounding_factor) * rounding_factor;
+
+    if (decimal_part >= 1.0) {
+        integer_part += 1;
+        decimal_part -= 1.0;
+    }
+
     char int_str[64];
     sprintf(int_str, "%ld", integer_part);
-    char dec_str[64];
+
     // TODO: This will work for up to `F65.60` but will fail for:
     // print "(F67.62)", 1.23456789101112e-62_8
-    sprintf(dec_str, "%.*lf", (60-integer_length), decimal_part);
-    memmove(dec_str,dec_str+2,strlen(dec_str));
+    char dec_str[64];
+    sprintf(dec_str, "%.*f", decimal_digits, decimal_part);
+    // removing the leading "0." from the formatted decimal part
+    memmove(dec_str, dec_str + 2, strlen(dec_str));
 
-    char* dot_pos = strchr(format, '.');
-    decimal_digits = atoi(++dot_pos);
-    width = atoi(format + 1);
-    if (dot_pos != NULL) {
-        if (width == 0) {
-            if (decimal_digits == 0) {
-                width = integer_length + sign_width + 1;
-            } else {
-                width = integer_length + sign_width + decimal_digits + 1;
-            }
-        }
+    // Determine total length needed
+    int total_length = sign_width + integer_length + 1 + decimal_digits;
+    if (width == 0) {
+        width = total_length;
     }
-    char formatted_value[64] = "";
-    int spaces = width - decimal_digits - sign_width - integer_length - 1;
+
+    char formatted_value[128] = "";
+    int spaces = width - total_length;
     for (int i = 0; i < spaces; i++) {
         strcat(formatted_value, " ");
     }
     if (val < 0) {
-        strcat(formatted_value,"-");
+        strcat(formatted_value, "-");
     }
-    if ((integer_part != 0 || (atoi(format + 1) != 0 || atoi(dot_pos) == 0))) {
-        strcat(formatted_value,int_str);
-    }
-    strcat(formatted_value,".");
-    if (decimal_part == 0) {
-        for(int i=0;i<decimal_digits;i++){
-            strcat(formatted_value, "0");
+    if ((width != 0 || integer_part != 0)) {
+        if (format[1] == '0') {
+            strcat(formatted_value, "");
+        } else {
+            strcat(formatted_value, int_str);
         }
-    // TODO: figure out a way to round decimals with value < 1e-15
-    } else if (decimal_digits < strlen(dec_str) && decimal_digits <= 15) {
-        dec_str[15] = '\0';
-        int zeros = 0;
-        while(dec_str[zeros] == '0') zeros++;
-        long long t = (long long)round((double)atoll(dec_str) / (long long)pow(10, (strlen(dec_str) - decimal_digits)));
-        sprintf(dec_str, "%lld", t);
-        int index = zeros;
-        while(index--) strcat(formatted_value, "0");
-        strncat(formatted_value, dec_str, decimal_digits - zeros);
     } else {
-        dec_str[decimal_digits] = '\0';
-        strcat(formatted_value, dec_str);
-        for(int i=0;i<decimal_digits - strlen(dec_str);i++){
-            strcat(formatted_value, "0");
-        }
+        strcat(formatted_value, "");
     }
+    strcat(formatted_value, ".");
+    strcat(formatted_value, dec_str);
 
+    // checking for overflow
     if (strlen(formatted_value) > width) {
-        for(int i=0; i<width; i++){
-            *result = append_to_string(*result,"*");
+        for (int i = 0; i < width; i++) {
+            *result = append_to_string(*result, "*");
         }
     } else {
         *result = append_to_string(*result, formatted_value);

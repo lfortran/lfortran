@@ -2,6 +2,7 @@ program format_04
 
 real :: a,b,c,d,e(6)
 double precision :: r,s,t
+real, parameter :: t1 = 3.47399991e-03, t2 = 3.47000011e-03
 integer :: f
 real(8) :: p,q
 a = 123.456
@@ -40,5 +41,7 @@ print '("x:", F4.2, " y:", ES7.1)', 1.123, 4.456
 print '("x:", ES10.2)', 0.999, 0.1
 print '("x:", ES15.5)', 0.102212
 print "(*(es15.5e2,1x))", e
+! test for issue: https://github.com/lfortran/lfortran/issues/4001
+print "(F10.3)", abs(t2-t1)
 
 end program
