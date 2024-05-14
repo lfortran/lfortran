@@ -3400,7 +3400,8 @@ public:
             }
         }
         for (auto &item : var_order) {
-            ASR::symbol_t* var_sym = x.m_symtab->get_symbol(item);
+            ASR::symbol_t* var_sym = ASRUtils::symbol_get_past_external(
+                                            x.m_symtab->resolve_symbol(item));
             if (is_a<ASR::Variable_t>(*var_sym)) {
                 ASR::Variable_t *v = down_cast<ASR::Variable_t>(var_sym);
                 uint32_t h = get_hash((ASR::asr_t*)v);
