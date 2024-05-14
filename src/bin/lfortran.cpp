@@ -359,6 +359,12 @@ int prompt(bool verbose, CompilerOptions &cu)
                 std::cout << std::setprecision(17) << "(" << r.c64.re << ", " << r.c64.im << ")" << std::endl;
                 break;
             }
+            case (LCompilers::FortranEvaluator::EvalResult::boolean) : {
+                if (verbose) std::cout << "Return type: logical" << std::endl;
+                if (verbose) section("Result:");
+                std::cout << (r.b ? "True" : "False") << std::endl;
+                break;
+            }
             case (LCompilers::FortranEvaluator::EvalResult::statement) : {
                 if (verbose) {
                     std::cout << "Return type: none" << std::endl;

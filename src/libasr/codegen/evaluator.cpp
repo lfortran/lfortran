@@ -106,6 +106,8 @@ std::string LLVMModule::get_return_type(const std::string &fn_name)
         return "real4";
     } else if (type->isDoubleTy()) {
         return "real8";
+    } else if (type->isIntegerTy(1)) {
+        return "logical";
     } else if (type->isIntegerTy(32)) {
         return "integer4";
     } else if (type->isIntegerTy(64)) {
