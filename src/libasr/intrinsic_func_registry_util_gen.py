@@ -436,7 +436,7 @@ intrinsic_funcs_args = {
     ],
     "Dreal": [
         {
-            "args": [("complex",)],
+            "args": [("complex64",)],
             "return": "real64",
         },
     ],
@@ -618,6 +618,7 @@ type_to_asr_type_check = {
     "bool": "is_logical",
     "char": "is_character",
     "complex": "is_complex",
+    "complex64": "is_complex<8>",
     "dict": "ASR::is_a<ASR::Dict_t>",
     "list": "ASR::is_a<ASR::List_t>",
     "tuple": "ASR::is_a<ASR::Tuple_t>"

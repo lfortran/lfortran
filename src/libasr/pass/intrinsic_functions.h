@@ -1305,9 +1305,6 @@ namespace Dreal {
         declare_basic_variables("_lcompilers_dreal_" + type_to_str_python(arg_types[0]));
         fill_func_arg("x", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
-        if (ASRUtils::extract_kind_from_ttype_t(arg_types[0]) == 4) {
-            throw LCompilersException("The argument of 'dreal' intrinsic must be of kind 8");
-        }
         body.push_back(al, b.Assignment(result, b.c2r_t(args[0], real64)));
         
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,

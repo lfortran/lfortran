@@ -5,9 +5,9 @@
     "infile_hash": "b3eef179f8004efffebeb00ee2a7cccd1d2c6c90cfaa04973a3e8d50",
     "outfile": null,
     "outfile_hash": null,
-    "stdout": "asr-dreal_arg_error-91381bb.stdout",
-    "stdout_hash": "2fb2f7bc01ef79953f830ab2354434e5d731e01cfe9697dd72818e9f",
-    "stderr": null,
-    "stderr_hash": null,
-    "returncode": 0
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-dreal_arg_error-91381bb.stderr",
+    "stderr_hash": "ab0ace5f803a78c7790287d4b8d2a54073815a3bb40e830cee3164f5",
+    "returncode": 2
 }
