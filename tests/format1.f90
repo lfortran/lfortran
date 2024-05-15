@@ -44,6 +44,7 @@ print '("x:", ES15.5)', 0.102212
 print "(*(es15.5e2,1x))", e
 ! test for issue: https://github.com/lfortran/lfortran/issues/4001
 print "(F10.3)", abs(t2-t1)
+print "(F10.3)", t2-t1
 print "(F0.6)", real_hundred
 
 end program
