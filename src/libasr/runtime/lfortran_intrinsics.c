@@ -309,55 +309,57 @@ void handle_float(char* format, double val, char** result) {
 }
 
 void handle_en(char* format, double val, int scale, char** result, char* c) {
-    int width = 0, decimal_digits = 0;
+    int width, decimal_digits;
     char *num_pos = format, *dot_pos = strchr(format, '.');
     decimal_digits = atoi(++dot_pos);
     while (!isdigit(*num_pos)) num_pos++;
     width = atoi(num_pos);
 
+    // Calculate exponent
     int exponent = 0;
     if (val != 0.0) {
         exponent = (int)floor(log10(fabs(val)));
         int remainder = exponent % 3;
-        // '%' behaves a little different in C compared to python
-        // or other languages, e.g. (-4) % 3 = -1 in C, while in
-        // python, it would be 2
-        if (remainder < 0) {
-            remainder += 3;
-        }
+        if (remainder < 0) remainder += 3;
         exponent -= remainder;
     }
 
     double scaled_val = val / pow(10, exponent);
 
+    // Prepare value string
     char val_str[128];
     sprintf(val_str, "%.*lf", decimal_digits, scaled_val);
 
-    // truncate unnecessary zeros after decimal point
+    // Truncate unnecessary zeros
     char* ptr = strchr(val_str, '.');
-    if (ptr != NULL) {
+    if (ptr) {
         char* end_ptr = ptr;
         while (*end_ptr != '\0') end_ptr++;
         end_ptr--;
-        while (*end_ptr == '0') end_ptr--;
+        while (*end_ptr == '0' && end_ptr > ptr) end_ptr--;
         *(end_ptr + 1) = '\0';
     }
 
-    char formatted_value[128] = "";
-    snprintf(formatted_value, sizeof(formatted_value), "%s%s%+03d", val_str, c, exponent);
+    // Allocate a larger buffer
+    char formatted_value[256];  // Increased size to accommodate larger exponent values
+    int n = snprintf(formatted_value, sizeof(formatted_value), "%s%s%+03d", val_str, c, exponent);
+    if (n >= sizeof(formatted_value)) {
+        fprintf(stderr, "Error: output was truncated. Needed %d characters.\n", n);
+    }
 
-    // handle width and padding
-    char final_result[128] = "";
+    // Handle width and padding
+    char* final_result = malloc(width + 1);
     int padding = width - strlen(formatted_value);
     if (padding > 0) {
         memset(final_result, ' ', padding);
-        strcat(final_result, formatted_value);
+        strcpy(final_result + padding, formatted_value);
     } else {
         strncpy(final_result, formatted_value, width);
         final_result[width] = '\0';
     }
 
-    *result = strdup(final_result);
+    // Assign the result to the output parameter
+    *result = final_result;
 }
 
 void handle_decimal(char* format, double val, int scale, char** result, char* c) {
