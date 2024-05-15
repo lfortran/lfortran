@@ -2,11 +2,11 @@
     "basename": "run-format1-04216cf",
     "cmd": "lfortran --no-color {infile}",
     "infile": "tests/format1.f90",
-    "infile_hash": "56d11844b327f77dc3b1a3b77724269540ff9da8efcb1cc61c561dc5",
+    "infile_hash": "c967420dd4254a7ae0726fb3e45aec3257550881b4f225d86c1f4bc6",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "run-format1-04216cf.stdout",
-    "stdout_hash": "093ce11616edef4128b9219e88d9810e4eae07b3e82b0f8ed9626306",
+    "stdout_hash": "0d726b6c4f41ce938ca3434db2dce460d157c1cc3c0c330153219027",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0

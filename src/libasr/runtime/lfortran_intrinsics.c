@@ -290,14 +290,10 @@ void handle_float(char* format, double val, char** result) {
     if (val < 0) {
         strcat(formatted_value, "-");
     }
-    if ((width != 0 || integer_part != 0)) {
-        if (format[1] == '0') {
-            strcat(formatted_value, "");
-        } else {
-            strcat(formatted_value, int_str);
-        }
-    } else {
+    if (integer_part == 0 && format[1] == '0') {
         strcat(formatted_value, "");
+    } else {
+        strcat(formatted_value, int_str);
     }
     strcat(formatted_value, ".");
     strcat(formatted_value, dec_str);
