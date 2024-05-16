@@ -377,56 +377,90 @@ static inline void verify_args(const ASR::IntrinsicArrayFunction_t& x, diag::Dia
     }
 }
 
+template<typename T>
+T find_sum(size_t size, T* data) {
+    T result = 0;
+    for (size_t i = 0; i < size; i++) {
+        result += data[i];
+    }
+    return result;
+}
+
+template<typename T>
+T find_product(size_t size, T* data) {
+    T result = 1;
+    for (size_t i = 0; i < size; i++) {
+        result *= data[i];
+    }
+    return result;
+}
+
+template<typename T>
+T find_minval(size_t size, T* data) {
+    T result = std::numeric_limits<T>::max();
+    for (size_t i = 0; i < size; i++) {
+        if (data[i] < result) {
+            result = data[i];
+        }
+    }
+    return result;
+}
+
+template<typename T>
+T find_maxval(size_t size, T* data) {
+    T result = std::numeric_limits<T>::min();
+    for (size_t i = 0; i < size; i++) {
+        if (data[i] > result) {
+            result = data[i];
+        }
+    }
+    return result;
+}
+
 static inline ASR::expr_t *eval_ArrIntrinsic(Allocator & al,
     const Location & loc, ASR::ttype_t *t, Vec<ASR::expr_t*>& args,
     diag::Diagnostics& /*diag*/, ASRUtils::IntrinsicArrayFunctions intrinsic_func_id) {
+    ASR::expr_t* array = args[0];
+    if (!array) return nullptr;
+    ASR::expr_t* value = nullptr, *args_value0 = nullptr;
+    ASR::ArrayConstant_t *a = nullptr;
+    size_t size = 0;
+    int64_t kind = ASRUtils::extract_kind_from_ttype_t(t);
+    if (ASR::is_a<ASR::ArrayConstant_t>(*array)) {
+        a = ASR::down_cast<ASR::ArrayConstant_t>(array);
+        size = ASRUtils::get_fixed_size_of_array(a->m_type);
+        args_value0 = ASRUtils::fetch_ArrayConstant_value(al, a, 0);
+        if (!args_value0) return nullptr;
+    } else {
+        return nullptr;
+    }
     switch( intrinsic_func_id ) {
         case ASRUtils::IntrinsicArrayFunctions::Sum: {
-            ASR::expr_t* array = args[0];
-            ASR::expr_t* value = nullptr;
-            if (array && ASR::is_a<ASR::ArrayConstant_t>(*array)) {
-                ASR::ArrayConstant_t *a = ASR::down_cast<ASR::ArrayConstant_t>(array);
-                size_t size = ASRUtils::get_fixed_size_of_array(a->m_type);
-                ASR::expr_t *args_value0 = ASRUtils::fetch_ArrayConstant_value(al, a, 0);
-                int64_t kind = ASRUtils::extract_kind_from_ttype_t(t);
-                if (args_value0 && ASR::is_a<ASR::IntegerConstant_t>(*args_value0)) {
+            if (ASR::is_a<ASR::ArrayConstant_t>(*array)) {
+                if (ASR::is_a<ASR::IntegerConstant_t>(*args_value0)) {
                     int64_t result = 0;
-                    if (kind == 1) {
-                        for (size_t i = 0; i < size; i++) {
-                            result += ((int8_t*)(a->m_data))[i];
-                        }
-                    } else if (kind == 2) {
-                        for (size_t i = 0; i < size; i++) {
-                            result += ((int16_t*)(a->m_data))[i];
-                        }
-                    } else if (kind == 4) {
-                        for (size_t i = 0; i < size; i++) {
-                            result += ((int32_t*)(a->m_data))[i];
-                        }
-                    } else if (kind == 8) {
-                        for (size_t i = 0; i < size; i++) {
-                            result += ((int64_t*)(a->m_data))[i];
-                        }
+                    switch (kind) {
+                        case 1: result = find_sum(size, (int8_t*)(a->m_data)); break;
+                        case 2: result = find_sum(size, (int16_t*)(a->m_data)); break;
+                        case 4: result = find_sum(size, (int32_t*)(a->m_data)); break;
+                        case 8: result = find_sum(size, (int64_t*)(a->m_data)); break;
+                        default: break;
                     }
                     value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al,
                     loc, result, t));
-                } else if (args_value0 && ASR::is_a<ASR::RealConstant_t>(*args_value0)) {
+                } else if (ASR::is_a<ASR::RealConstant_t>(*args_value0)) {
                     if (kind == 4) {
                         float result = 0.0;
-                        for (size_t i = 0; i < size; i++) {
-                            result += ((float*)(a->m_data))[i];
-                        }
+                        result += find_sum(size, (float*)(a->m_data));
                         value = ASRUtils::EXPR(ASR::make_RealConstant_t(al,
                         loc, result, t));
                     } else {
                         double result = 0.0;
-                        for (size_t i = 0; i < size; i++) {
-                            result += ((double*)(a->m_data))[i];
-                        }
+                        result += find_sum(size, (double*)(a->m_data));
                         value = ASRUtils::EXPR(ASR::make_RealConstant_t(al,
                         loc, result, t));
                     }
-                } else if (args_value0 && ASR::is_a<ASR::ComplexConstant_t>(*args_value0)) {
+                } else if (ASR::is_a<ASR::ComplexConstant_t>(*args_value0)) {
                     if (ASRUtils::extract_kind_from_ttype_t(t) == 4) {
                         std::complex<float> result = {0.0, 0.0};
                         for (size_t i = 0; i < size; i++) {
@@ -449,51 +483,31 @@ static inline ASR::expr_t *eval_ArrIntrinsic(Allocator & al,
             return value;
         }
         case ASRUtils::IntrinsicArrayFunctions::Product: {
-            ASR::expr_t* array = args[0];
-            ASR::expr_t* value = nullptr;
-            if (array && ASR::is_a<ASR::ArrayConstant_t>(*array)) {
-                ASR::ArrayConstant_t *a = ASR::down_cast<ASR::ArrayConstant_t>(array);
-                size_t size = ASRUtils::get_fixed_size_of_array(a->m_type);
-                ASR::expr_t *args_value0 = ASRUtils::fetch_ArrayConstant_value(al, a, 0);
-                int64_t kind = ASRUtils::extract_kind_from_ttype_t(t);
-                if (args_value0 && ASR::is_a<ASR::IntegerConstant_t>(*args_value0)) {
+            if (ASR::is_a<ASR::ArrayConstant_t>(*array)) {
+                if (ASR::is_a<ASR::IntegerConstant_t>(*args_value0)) {
                     int64_t result = 0;
-                    if (kind == 1) {
-                        for (size_t i = 0; i < size; i++) {
-                            result *= ((int8_t*)(a->m_data))[i];
-                        }
-                    } else if (kind == 2) {
-                        for (size_t i = 0; i < size; i++) {
-                            result *= ((int16_t*)(a->m_data))[i];
-                        }
-                    } else if (kind == 4) {
-                        for (size_t i = 0; i < size; i++) {
-                            result *= ((int32_t*)(a->m_data))[i];
-                        }
-                    } else if (kind == 8) {
-                        for (size_t i = 0; i < size; i++) {
-                            result *= ((int64_t*)(a->m_data))[i];
-                        }
+                    switch (kind) {
+                        case 1: result = find_product(size, (int8_t*)(a->m_data)); break;
+                        case 2: result = find_product(size, (int16_t*)(a->m_data)); break;
+                        case 4: result = find_product(size, (int32_t*)(a->m_data)); break;
+                        case 8: result = find_product(size, (int64_t*)(a->m_data)); break;
+                        default: break;
                     }
                     value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al,
                     loc, result, t));
-                } else if (args_value0 && ASR::is_a<ASR::RealConstant_t>(*args_value0)) {
+                } else if (ASR::is_a<ASR::RealConstant_t>(*args_value0)) {
                     if (kind == 4) {
                         float result = 0.0;
-                        for (size_t i = 0; i < size; i++) {
-                            result *= ((float*)(a->m_data))[i];
-                        }
+                        result = find_product(size, (float*)(a->m_data));
                         value = ASRUtils::EXPR(ASR::make_RealConstant_t(al,
                         loc, result, t));
                     } else {
                         double result = 0.0;
-                        for (size_t i = 0; i < size; i++) {
-                            result *= ((double*)(a->m_data))[i];
-                        }
+                        result = find_product(size, (double*)(a->m_data));
                         value = ASRUtils::EXPR(ASR::make_RealConstant_t(al,
                         loc, result, t));
                     }
-                } else if (args_value0 && ASR::is_a<ASR::ComplexConstant_t>(*args_value0)) {
+                } else if (ASR::is_a<ASR::ComplexConstant_t>(*args_value0)) {
                     if (ASRUtils::extract_kind_from_ttype_t(t) == 4) {
                         std::complex<float> result = {0.0, 0.0};
                         for (size_t i = 0; i < size; i++) {
@@ -514,9 +528,67 @@ static inline ASR::expr_t *eval_ArrIntrinsic(Allocator & al,
                 }
             }
             return value;
-        }
+        } 
+        case ASRUtils::IntrinsicArrayFunctions::MinVal: {
+            if (ASR::is_a<ASR::ArrayConstant_t>(*array)) {
+                if (ASR::is_a<ASR::IntegerConstant_t>(*args_value0)) {
+                    int64_t result = std::numeric_limits<int64_t>::max();
+                    switch (kind) {
+                        case 1: result = find_minval(size, (int8_t*)(a->m_data)); break;
+                        case 2: result = find_minval(size, (int16_t*)(a->m_data)); break;
+                        case 4: result = find_minval(size, (int32_t*)(a->m_data)); break;
+                        case 8: result = find_minval(size, (int64_t*)(a->m_data)); break;
+                        default: break;
+                    } 
+                    value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al,
+                    loc, result, t));
+                } else if (ASR::is_a<ASR::RealConstant_t>(*args_value0)) {
+                    if (kind == 4) {
+                        float result = std::numeric_limits<float>::max();
+                        result = find_minval(size, (float*)(a->m_data));
+                        value = ASRUtils::EXPR(ASR::make_RealConstant_t(al,
+                        loc, result, t));
+                    } else {
+                        double result = std::numeric_limits<double>::max();
+                        result = find_minval(size, (double*)(a->m_data));                       
+                        value = ASRUtils::EXPR(ASR::make_RealConstant_t(al,
+                        loc, result, t));
+                    }
+                }
+            }
+            return value;
+        } 
+        case ASRUtils::IntrinsicArrayFunctions::MaxVal: {
+            if (ASR::is_a<ASR::ArrayConstant_t>(*array)) {
+                if (ASR::is_a<ASR::IntegerConstant_t>(*args_value0)) {
+                    int64_t result = std::numeric_limits<int64_t>::min();
+                    switch (kind) {
+                        case 1: result = find_maxval(size, (int8_t*)(a->m_data)); break;
+                        case 2: result = find_maxval(size, (int16_t*)(a->m_data)); break;
+                        case 4: result = find_maxval(size, (int32_t*)(a->m_data)); break;
+                        case 8: result = find_maxval(size, (int64_t*)(a->m_data)); break;
+                        default: break;
+                    }
+                    value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al,
+                    loc, result, t));
+                } else if (ASR::is_a<ASR::RealConstant_t>(*args_value0)) {
+                    if (kind == 4) {
+                        float result = std::numeric_limits<float>::min();
+                        result = find_maxval(size, (float*)(a->m_data));
+                        value = ASRUtils::EXPR(ASR::make_RealConstant_t(al,
+                        loc, result, t));
+                    } else {
+                        double result = std::numeric_limits<double>::min();
+                        result = find_maxval(size, (double*)(a->m_data));                    
+                        value = ASRUtils::EXPR(ASR::make_RealConstant_t(al,
+                        loc, result, t));
+                    }
+                }
+            }
+            return value;
+        } 
         default: {
-            return nullptr;
+            return value;
         }
     }
     return nullptr;
@@ -1605,10 +1677,11 @@ namespace MaxVal {
             &ArrIntrinsic::verify_array_int_real);
     }
 
-    static inline ASR::expr_t *eval_MaxVal(Allocator & /*al*/,
-        const Location & /*loc*/, ASR::ttype_t *, Vec<ASR::expr_t*>& /*args*/,
-        diag::Diagnostics& /*diag*/) {
-        return nullptr;
+    static inline ASR::expr_t *eval_MaxVal(Allocator & al,
+        const Location & loc, ASR::ttype_t *t, Vec<ASR::expr_t*>& args,
+        diag::Diagnostics& diag) {
+        return ArrIntrinsic::eval_ArrIntrinsic(al, loc, t, args, diag,
+            IntrinsicArrayFunctions::MaxVal);
     }
 
     static inline ASR::asr_t* create_MaxVal(Allocator& al, const Location& loc,
@@ -1662,10 +1735,11 @@ namespace MinVal {
             &ArrIntrinsic::verify_array_int_real);
     }
 
-    static inline ASR::expr_t *eval_MinVal(Allocator & /*al*/,
-        const Location & /*loc*/, ASR::ttype_t *, Vec<ASR::expr_t*>& /*args*/,
-        diag::Diagnostics& /*diag*/) {
-        return nullptr;
+    static inline ASR::expr_t *eval_MinVal(Allocator & al,
+        const Location & loc, ASR::ttype_t *t, Vec<ASR::expr_t*>& args,
+        diag::Diagnostics& diag) {
+        return ArrIntrinsic::eval_ArrIntrinsic(al, loc, t, args, diag,
+            IntrinsicArrayFunctions::MinVal);
     }
 
     static inline ASR::asr_t* create_MinVal(Allocator& al, const Location& loc,
