@@ -42,7 +42,9 @@ enum class IntrinsicElementalFunctions : int64_t {
     Acosh,
     Atanh,
     Erf,
+    Derf,
     Erfc,
+    Derfc,
     Gamma,
     Log,
     Log10,
@@ -498,24 +500,7 @@ namespace X {                                                                   
             diag::Diagnostics& /*diag*/) {                                      \
         double rv = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;          \
         ASRUtils::ASRBuilder b(al, loc);                                        \
-        return b.f_t(std::eval_X(rv), t);                                         \
-    }                                                                           \
-    static inline ASR::asr_t* create_##X(Allocator &al, const Location &loc,    \
-        Vec<ASR::expr_t*> &args,                                                \
-        diag::Diagnostics& diag) {                                              \
-        ASR::ttype_t *type = ASRUtils::expr_type(args[0]);                      \
-        if (args.n != 1) {                                                      \
-            append_error(diag, "Intrinsic `"#X"` accepts exactly one argument", \
-                loc);                                                           \
-            return nullptr;                                                     \
-        } else if (!ASRUtils::is_real(*type)) {                                 \
-            append_error(diag, "`x` argument of `"#X"` must be real",           \
-                args[0]->base.loc);                                             \
-            return nullptr;                                                     \
-        }                                                                       \
-        return UnaryIntrinsicFunction::create_UnaryFunction(al, loc, args,      \
-                eval_##X, static_cast<int64_t>(IntrinsicElementalFunctions::X), \
-                0, type, diag);                                                 \
+        return b.f_t(std::eval_X(rv), t);                                       \
     }                                                                           \
     static inline ASR::expr_t* instantiate_##X (Allocator &al,                  \
             const Location &loc, SymbolTable *scope,                            \
@@ -531,7 +516,9 @@ create_unary_function(Gamma, tgamma, gamma)
 create_unary_function(LogGamma, lgamma, log_gamma)
 create_unary_function(Log10, log10, log10)
 create_unary_function(Erf, erf, erf)
+create_unary_function(Derf, erf, erf)
 create_unary_function(Erfc, erfc, erfc)
+create_unary_function(Derfc, erfc, erfc)
 
 namespace ObjectType {
 

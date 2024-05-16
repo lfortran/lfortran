@@ -41,7 +41,9 @@ inline std::string get_intrinsic_name(int64_t x) {
         INTRINSIC_NAME_CASE(Acosh)
         INTRINSIC_NAME_CASE(Atanh)
         INTRINSIC_NAME_CASE(Erf)
+        INTRINSIC_NAME_CASE(Derf)
         INTRINSIC_NAME_CASE(Erfc)
+        INTRINSIC_NAME_CASE(Derfc)
         INTRINSIC_NAME_CASE(Gamma)
         INTRINSIC_NAME_CASE(Log)
         INTRINSIC_NAME_CASE(Log10)
@@ -188,19 +190,21 @@ namespace IntrinsicElementalFunctionRegistry {
         {static_cast<int64_t>(IntrinsicElementalFunctions::ObjectType),
             {nullptr, &ObjectType::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Gamma),
-            {&Gamma::instantiate_Gamma, &UnaryIntrinsicFunction::verify_args}},
+            {&Gamma::instantiate_Gamma, &Gamma::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Log10),
-            {&Log10::instantiate_Log10, &UnaryIntrinsicFunction::verify_args}},
-        {static_cast<int64_t>(IntrinsicElementalFunctions::Log),
-            {&Log::instantiate_Log, &UnaryIntrinsicFunction::verify_args}},
+            {&Log10::instantiate_Log10, &Log10::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::LogGamma),
-            {&LogGamma::instantiate_LogGamma, &UnaryIntrinsicFunction::verify_args}},
+            {&LogGamma::instantiate_LogGamma, &LogGamma::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Erf),
-            {&Erf::instantiate_Erf, &UnaryIntrinsicFunction::verify_args}},
+            {&Erf::instantiate_Erf, &Erf::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Derf),
+            {&Derf::instantiate_Derf, &Derf::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Erfc),
-            {&Erfc::instantiate_Erfc, &UnaryIntrinsicFunction::verify_args}},
+            {&Erfc::instantiate_Erfc, &Erfc::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Derfc),
+            {&Derfc::instantiate_Derfc, &Derfc::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Trunc),
-            {&Trunc::instantiate_Trunc, &UnaryIntrinsicFunction::verify_args}},
+            {&Trunc::instantiate_Trunc, &Trunc::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Fix),
             {&Fix::instantiate_Fix, &UnaryIntrinsicFunction::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Sin),
@@ -249,6 +253,8 @@ namespace IntrinsicElementalFunctionRegistry {
             {&Acosh::instantiate_Acosh, &UnaryIntrinsicFunction::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Atanh),
             {&Atanh::instantiate_Atanh, &UnaryIntrinsicFunction::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Log),
+            {&Log::instantiate_Log, &UnaryIntrinsicFunction::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Exp),
             {&Exp::instantiate_Exp, &UnaryIntrinsicFunction::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Exp2),
@@ -514,8 +520,12 @@ namespace IntrinsicElementalFunctionRegistry {
             "log_gamma"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Erf),
             "erf"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Derf),
+            "derf"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Erfc),
             "erfc"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Derfc),
+            "derfc"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Trunc),
             "trunc"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Fix),
@@ -826,7 +836,9 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"log10", {&Log10::create_Log10, &Log10::eval_Log10}},
                 {"log_gamma", {&LogGamma::create_LogGamma, &LogGamma::eval_LogGamma}},
                 {"erf", {&Erf::create_Erf, &Erf::eval_Erf}},
+                {"derf", {&Derf::create_Derf, &Derf::eval_Derf}},
                 {"erfc", {&Erfc::create_Erfc, &Erfc::eval_Erfc}},
+                {"derfc", {&Derfc::create_Derfc, &Derfc::eval_Derfc}},
                 {"trunc", {&Trunc::create_Trunc, &Trunc::eval_Trunc}},
                 {"fix", {&Fix::create_Fix, &Fix::eval_Fix}},
                 {"sin", {&Sin::create_Sin, &Sin::eval_Sin}},
