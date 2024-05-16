@@ -308,6 +308,13 @@ void handle_float(char* format, double val, char** result) {
     }
 }
 
+/*
+`handle_en` - Formats a floating-point number using a Fortran-style "EN" format.
+
+NOTE: The function allocates memory for the formatted result, which is returned via
+the `result` parameter. It is the responsibility of the caller to free this memory
+using `free(*result)` after it is no longer needed.
+*/
 void handle_en(char* format, double val, int scale, char** result, char* c) {
     int width, decimal_digits;
     char *num_pos = format, *dot_pos = strchr(format, '.');
