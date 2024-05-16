@@ -3925,5 +3925,21 @@ filename = "errors/iostat_constant_integer.f90"
 asr = true
 
 [[test]]
+filename = "errors/ichar_arg_len_runtime.f90"
+run = true
+
+[[test]]
+filename = "errors/ichar_arg_len_compiletime.f90"
+asr = true
+
+[[test]]
+filename = "errors/iachar_arg_len_runtime.f90"
+run = true
+
+[[test]]
+filename = "errors/iachar_arg_len_compiletime.f90"
+asr = true
+
+[[test]]
 filename = "character_parameter_padding_trimming.f90"
 asr = true

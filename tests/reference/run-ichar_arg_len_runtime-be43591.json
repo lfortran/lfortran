@@ -1,0 +1,13 @@
+{
+    "basename": "run-ichar_arg_len_runtime-be43591",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/errors/ichar_arg_len_runtime.f90",
+    "infile_hash": "551ca1f9a9d3ed04290e0498fc5c44d2d5f8f572d05b24e5a10e2691",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "run-ichar_arg_len_runtime-be43591.stderr",
+    "stderr_hash": "b63ba29397f882b86c2824b0e4f1c26c7239bc2b355f3b4e3f5a4674",
+    "returncode": 1
+}
