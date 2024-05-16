@@ -10,6 +10,8 @@ program intrinsics_172
     integer(kind=int64) :: res_8
     integer, dimension(2,3) :: a, b
     logical, dimension(2,3) :: mask2
+    integer, parameter :: c1 = count([.true., .false., .true., .false.])
+    integer(8), parameter :: c2 = count([.true., .false., .true., .false., .true., .false.], kind = 8)
 
     mask = reshape([ .true., .false., .true., .false., &
                     .true., .false., .true., .false., &
@@ -97,11 +99,13 @@ program intrinsics_172
     print *
     print '(3i3)', count(mask2, 2)
 
-    print*, count([.true., .false., .true., .false.])
-    if (count([.true., .false., .true., .false.]) /= 2) error stop
+    print*, c1
+    if (c1 /= 2) error stop
 
-    print*, count([.true., .false., .true., .false., .true., .false.], kind = 8)
-    if (count([.true., .false., .true., .false., .true., .false.], kind = 8) /= 3) error stop
-    if (kind(count([.true., .false., .true., .false., .true., .false.], kind = 8)) /= 8) error stop
+    print*, c2
+    if (c2 /= 3) error stop
+
+    print*, kind(c2)
+    if (kind(c2) /= 8) error stop
 
 end program
