@@ -2064,15 +2064,23 @@ namespace Count {
             "cannot be nullptr", x.base.base.loc, diagnostics);
     }
 
-    static inline ASR::expr_t *eval_Count(Allocator &/*al*/,
-        const Location &/*loc*/, ASR::ttype_t */*return_type*/, Vec<ASR::expr_t*>& /*args*/, diag::Diagnostics& /*diag*/) {
-        // TODO
+    static inline ASR::expr_t *eval_Count(Allocator &al,
+        const Location &loc, ASR::ttype_t *return_type, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
+        ASR::expr_t* mask = args[0];
+        if (mask && ASR::is_a<ASR::ArrayConstant_t>(*mask)) {
+            ASR::ArrayConstant_t *mask_array = ASR::down_cast<ASR::ArrayConstant_t>(mask);
+            size_t size = ASRUtils::get_fixed_size_of_array(mask_array->m_type);
+            int64_t count = 0;
+            for (size_t i = 0; i < size; i++) {
+                count += int(((bool*)(mask_array->m_data))[i]);
+            }
+            return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, count, return_type));
+        } 
         return nullptr;
     }
 
     static inline ASR::asr_t* create_Count(Allocator& al, const Location& loc,
-            Vec<ASR::expr_t*>& args,
-            diag::Diagnostics& diag) {
+            Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
         int64_t id_mask = 0, id_mask_dim = 1;
         int64_t overload_id = id_mask;
 
@@ -2095,7 +2103,6 @@ namespace Count {
                     dim_->base.loc);
                 return nullptr;
             }
-
             overload_id = id_mask_dim;
         }
         if (array_rank == 1) {
@@ -2135,12 +2142,12 @@ namespace Count {
             return_type = ASRUtils::make_Array_t_util(al, loc,
                 int32, dims.p, dims.n, ASR::abiType::Source,
                 false);
-        } else if ( kind ) {
+        }
+        if ( kind ) {
             int kind_value = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(kind))->m_n;
             return_type = TYPE(ASR::make_Integer_t(al, loc, kind_value));
         }
-        // value = eval_Count(al, loc, return_type, arg_values, diag);
-        value = nullptr;
+        value = eval_Count(al, loc, return_type, arg_values, diag);
 
         Vec<ASR::expr_t*> arr_intrinsic_args; arr_intrinsic_args.reserve(al, 1);
         arr_intrinsic_args.push_back(al, mask);
