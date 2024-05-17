@@ -969,6 +969,9 @@ public:
     std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols;
     std::vector<ASR::stmt_t*> &data_structure;
 
+    // implied do loop nesting
+    int idl_nesting_level = 0;
+
     CommonVisitor(Allocator &al, SymbolTable *symbol_table,
             diag::Diagnostics &diagnostics, CompilerOptions &compiler_options,
             std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping,
@@ -5886,7 +5889,273 @@ public:
                                         type, nullptr);
     }
 
+    bool contains_loop_vars(ASR::expr_t* expr, std::vector<ASR::symbol_t*>& loop_vars) {
+
+        class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValuesVisitor> {
+            public:
+            std::vector<ASR::symbol_t*>& loop_vars;
+            bool &contain_loop_vars;
+
+            ImpliedDoLoopValuesVisitor(std::vector<ASR::symbol_t*>& loop_vars, bool &contain_loop_vars) :
+                loop_vars(loop_vars), contain_loop_vars(contain_loop_vars) {}
+
+            void visit_Var(const ASR::Var_t &x) {
+                ASR::symbol_t* sym = x.m_v;
+                if (std::find(loop_vars.begin(), loop_vars.end(), sym) != loop_vars.end()) {
+                    contain_loop_vars &= true;
+                    return;
+                }
+                ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
+                contain_loop_vars &= ASRUtils::is_value_constant(var->m_value);
+                return;
+            }
+
+            void visit_IntegerBinOp(const ASR::IntegerBinOp_t &x) {
+                this->visit_expr(*x.m_left);
+                if (!contain_loop_vars) return;
+                this->visit_expr(*x.m_right);
+                if (!contain_loop_vars) return;
+            }
+
+            void visit_RealBinOp(const ASR::RealBinOp_t &x) {
+                this->visit_expr(*x.m_left);
+                if (!contain_loop_vars) return;
+                this->visit_expr(*x.m_right);
+                if (!contain_loop_vars) return;
+            }
+
+            void visit_IntrinsicElementalFunction(const ASR::IntrinsicElementalFunction_t &x) {
+                for (size_t i = 0; i < x.n_args; i++) {
+                    this->visit_expr(*x.m_args[i]);
+                    if (!contain_loop_vars) return;
+                }
+            }
+        };
+
+        bool contain_loop_vars = false;
+        ImpliedDoLoopValuesVisitor visitor(loop_vars, contain_loop_vars);
+        visitor.visit_expr(*expr);
+        return contain_loop_vars;
+    }
+
+    bool is_compiletime_implied_do_loop(ASR::ImpliedDoLoop_t* idl, std::vector<ASR::symbol_t*>& loop_vars) {
+        if (!ASRUtils::is_value_constant(idl->m_start) ||
+            !ASRUtils::is_value_constant(idl->m_end) ||
+            (idl->m_increment != nullptr && !ASRUtils::is_value_constant(idl->m_increment))) {
+            return false;
+        }
+
+        for (size_t i = 0; i < idl->n_values; i++) {
+            ASR::expr_t* expr = idl->m_values[i];
+            if (ASR::is_a<ASR::ImpliedDoLoop_t>(*expr)) {
+                if (!is_compiletime_implied_do_loop(ASR::down_cast<ASR::ImpliedDoLoop_t>(expr), loop_vars)) {
+                    return false;
+                }
+            }
+            if (!ASRUtils::is_value_constant(expr)) {
+                // may be possible that it contains a loop variable
+                if (!contains_loop_vars(expr, loop_vars)) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    void fetch_implied_do_loop_variables(ASR::ImpliedDoLoop_t* idl, std::vector<ASR::symbol_t*>& loop_vars) {
+        ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(idl->m_var);
+        loop_vars.push_back(var->m_v);
+        for (size_t i = 0; i < idl->n_values; i++) {
+            ASR::expr_t* expr = idl->m_values[i];
+            if (ASR::is_a<ASR::ImpliedDoLoop_t>(*expr)) {
+                fetch_implied_do_loop_variables(ASR::down_cast<ASR::ImpliedDoLoop_t>(expr), loop_vars);
+            }
+        }
+        return;
+    }
+
+    int get_implied_do_loop_size(ASR::ImpliedDoLoop_t* idl) {
+        int current_size = 0;
+        for (size_t i = 0; i < idl->n_values; i++) {
+            if (ASR::is_a<ASR::ImpliedDoLoop_t>(*idl->m_values[i])) {
+                current_size += get_implied_do_loop_size(ASR::down_cast<ASR::ImpliedDoLoop_t>(idl->m_values[i]));
+            } else {
+                current_size += 1;
+            }
+        }
+        int end = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(idl->m_end))->m_n;
+        int start = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(idl->m_start))->m_n;
+        int increment = idl->m_increment ? ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(idl->m_increment))->m_n : 1;
+        return current_size * (end - start + 1) / increment;
+    }
+
+    template<typename T>
+    T get_constant_value(ASR::expr_t* expr, ASR::ttype_t* type, std::vector<ASR::symbol_t*> &loop_vars, std::vector<int> &loop_indices) {
+        class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValuesVisitor> {
+            Allocator &al;
+            std::vector<ASR::symbol_t*>& loop_vars;
+            std::vector<int>& loop_indices;
+            T& value;
+            ASR::ttype_t* type;
+            diag::Diagnostics& diag;
+
+            public:
+            ImpliedDoLoopValuesVisitor(Allocator& al, std::vector<ASR::symbol_t*>& loop_vars, std::vector<int>& loop_indices, T& value,
+                ASR::ttype_t* type, diag::Diagnostics& diag) :
+                al(al), loop_vars(loop_vars), loop_indices(loop_indices), value(value), type(type), diag(diag) {}
+
+            void visit_Var(const ASR::Var_t &x) {
+                int loop_var_index = std::find(loop_vars.begin(), loop_vars.end(), x.m_v) - loop_vars.begin();
+                // check if loop_var_index is valid
+                if (loop_var_index >= (int) loop_vars.size()) {
+                    // this is compiletime value
+                    ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(x.m_v);
+                    this->visit_expr(*var->m_value);
+                } else {
+                    value = loop_indices[loop_var_index];
+                }
+            }
+
+            void visit_IntegerConstant(const ASR::IntegerConstant_t &x) {
+                value = x.m_n;
+            }
+
+            void visit_RealConstant(const ASR::RealConstant_t &x) {
+                value = x.m_r;
+            }
+
+            void visit_LogicalConstant(const ASR::LogicalConstant_t &x) {
+                value = x.m_value;
+            }
+
+            void visit_ComplexConstant(const ASR::ComplexConstant_t &x) {
+                throw SemanticError("Complex constant in compiletime evaluation implied do loop not supported", x.base.base.loc);
+            }
+
+            void visit_StringConstant(const ASR::StringConstant_t &x) {
+                throw SemanticError("String constant in compiletime evaluation implied do loop not supported", x.base.base.loc);
+            }
+
+            void visit_IntegerBinOp(const ASR::IntegerBinOp_t &x) {
+                T left_val, right_val;
+                this->visit_expr(*x.m_left);
+                left_val = value;
+                this->visit_expr(*x.m_right);
+                right_val = value;
+                switch (x.m_op) {
+                    case ASR::binopType::Mul:
+                        value = left_val * right_val;
+                        break;
+                    case ASR::binopType::Add:
+                        value = left_val + right_val;
+                        break;
+                    case ASR::binopType::Sub:
+                        value = left_val - right_val;
+                        break;
+                    case ASR::binopType::Div:
+                        value = left_val / right_val;
+                        break;
+                    case ASR::binopType::Pow:
+                        value = std::pow(left_val, right_val);
+                        break;
+                    default:
+                        throw SemanticError("Unsupported binary operation in implied do loop", x.base.base.loc);
+                }
+            }
+
+            void visit_RealBinOp(const ASR::RealBinOp_t &x) {
+                T left_val, right_val;
+                this->visit_expr(*x.m_left);
+                left_val = value;
+                this->visit_expr(*x.m_right);
+                right_val = value;
+                switch (x.m_op) {
+                    case ASR::binopType::Mul:
+                        value = left_val * right_val;
+                        break;
+                    case ASR::binopType::Add:
+                        value = left_val + right_val;
+                        break;
+                    case ASR::binopType::Sub:
+                        value = left_val - right_val;
+                        break;
+                    case ASR::binopType::Div:
+                        value = left_val / right_val;
+                        break;
+                    case ASR::binopType::Pow:
+                        value = std::pow(left_val, right_val);
+                        break;
+                    default:
+                        throw SemanticError("Unsupported binary operation in implied do loop", x.base.base.loc);
+                }
+            }
+
+            // handle intrinsic elemental function
+            void visit_IntrinsicElementalFunction(const ASR::IntrinsicElementalFunction_t &x) {
+                Vec<ASR::expr_t*> args; args.reserve(al, x.n_args);
+                for (size_t i = 0; i < x.n_args; i++) {
+                    ASR::ttype_t* arg_type = ASRUtils::expr_type(x.m_args[i]);
+                    this->visit_expr(*x.m_args[i]);
+                    // TODO: handle multiple types
+                    if (ASRUtils::is_real(*arg_type)) {
+                        args.push_back(al, ASRUtils::EXPR(ASR::make_RealConstant_t(al, x.base.base.loc, value, arg_type)));
+                    } else if (ASRUtils::is_integer(*arg_type)) {
+                        args.push_back(al, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, value, arg_type)));
+                    } else {
+                        throw SemanticError("Unsupported argument type in compiletime evaluation of intrinsics in implied do loop", x.base.base.loc);
+                    }
+                }
+                ASRUtils::create_intrinsic_function create_func =
+                        ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function(to_lower(ASRUtils::get_intrinsic_name(x.m_intrinsic_id)));
+                ASR::expr_t* intrinsic_expr = ASRUtils::EXPR(create_func(al, x.base.base.loc, args, diag));
+                ASR::IntrinsicElementalFunction_t *intrinsic_func = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(intrinsic_expr);
+                this->visit_expr(*intrinsic_func->m_value);
+            }
+        };
+
+        T value;
+        ImpliedDoLoopValuesVisitor visitor(al, loop_vars, loop_indices, value, type, diag);
+        visitor.visit_expr(*expr);
+        return value;
+    }
+
+    template<typename T>
+    void populate_compiletime_array_for_idl(ASR::ImpliedDoLoop_t* idl, T *array, std::vector<ASR::symbol_t*> &loop_vars, std::vector<int> &loop_indices, int &curr_nesting_level, int &itr) {
+        /*
+        (j, (i * j, i=1, 3), j=1, 2)
+        gets translated via cpp code
+        int *array = new int[4*2]
+
+        int itr = 0;
+        for (int j = 1; j <= 2; j++) {
+            array[itr] = j;
+            itr++;
+            for (int i = 1; i <= 3; i++) {
+                array[itr] = i * j;
+                itr++;
+            }
+        }
+        */
+        int end = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(idl->m_end))->m_n;
+        int start = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(idl->m_start))->m_n;
+        int increment = idl->m_increment ? ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(idl->m_increment))->m_n : 1;
+
+        for ( int j = start; j <= end; j += increment ) {
+            loop_indices[curr_nesting_level] = j;
+            for ( size_t i = 0; i < idl->n_values; i++ ) {
+                if (ASR::is_a<ASR::ImpliedDoLoop_t>(*idl->m_values[i])) {
+                    curr_nesting_level++;
+                    populate_compiletime_array_for_idl(ASR::down_cast<ASR::ImpliedDoLoop_t>(idl->m_values[i]), array, loop_vars, loop_indices, curr_nesting_level, itr);
+                } else {
+                    array[itr++] = get_constant_value<T>(idl->m_values[i], idl->m_type, loop_vars, loop_indices);
+                }
+            }
+        }
+        curr_nesting_level--;
+    }
+
     void visit_ImpliedDoLoop(const AST::ImpliedDoLoop_t& x) {
+        idl_nesting_level++;
         Vec<ASR::expr_t*> a_values_vec;
         ASR::expr_t *a_start, *a_end, *a_increment;
         a_start = a_end = a_increment = nullptr;
@@ -5933,6 +6202,59 @@ public:
         tmp = ASR::make_ImpliedDoLoop_t(al, x.base.base.loc, a_values, n_values,
                                         a_var, a_start, a_end, a_increment,
                                         type, nullptr);
+        ASR::ImpliedDoLoop_t* idl = (ASR::ImpliedDoLoop_t*) tmp;
+
+        // fetch loop variables
+        std::vector<ASR::symbol_t*> loop_vars; fetch_implied_do_loop_variables(idl, loop_vars);
+
+        // check compiletime evaluation possibility
+        bool is_compiletime = is_compiletime_implied_do_loop(idl, loop_vars);
+
+        if (is_compiletime && idl_nesting_level == 1) {
+            int idl_size = get_implied_do_loop_size(idl);
+
+            Vec<ASR::dimension_t> dims; dims.reserve(al, 1);
+            ASR::dimension_t dim; dim.loc = x.base.base.loc;
+            dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4))));
+            dim.m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, idl_size, ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4))));
+            dims.push_back(al, dim);
+
+            ASR::ttype_t* array_type = ASRUtils::TYPE(ASR::make_Array_t(al, x.base.base.loc, type, dims.p, dims.n, ASR::array_physical_typeType::FixedSizeArray));
+
+            std::vector<int> loop_indices; // fill it with all zero
+            for (size_t i = 0; i < loop_vars.size(); i++) {
+                loop_indices.push_back(0);
+            }
+
+            void *data = nullptr;
+            int itr = 0, curr_nesting_level = 0;
+            // TODO: handle multiple types
+            if (ASRUtils::is_integer(*type)) {
+                int *array = al.allocate<int>(idl_size);
+                // populate compiletime array
+                populate_compiletime_array_for_idl(idl, array, loop_vars, loop_indices, curr_nesting_level, itr);
+                data = array;
+            } else if (ASRUtils::is_real(*type)) {
+                int kind = ASRUtils::extract_kind_from_ttype_t(type);
+
+                if (kind == 4) {
+                    float *array = al.allocate<float>(idl_size);
+                    populate_compiletime_array_for_idl(idl, array, loop_vars, loop_indices, curr_nesting_level, itr);
+                    data = array;
+                } else if (kind == 8) {
+                    double *array = al.allocate<double>(idl_size);
+                    populate_compiletime_array_for_idl(idl, array, loop_vars, loop_indices, curr_nesting_level, itr);
+                    data = array;
+                } else {
+                    throw SemanticError("Unsupported kind for real type in compiletime evaluation of implied do loop", x.base.base.loc);
+                }
+            }
+            if (data != nullptr) {
+                tmp = ASR::make_ArrayConstant_t(al, x.base.base.loc, idl_size * ASRUtils::extract_kind_from_ttype_t(type), data,
+                        array_type, ASR::arraystorageType::ColMajor);
+            }
+        }
+        idl_nesting_level--;
     }
 
     ASR::asr_t* create_Shifta(const Location &loc, Vec<ASR::call_arg_t> args) {

@@ -781,6 +781,7 @@ RUN(NAME parameter_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME parameter_07 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME parameter_08 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME parameter_09 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME parameter_10 LABELS gfortran llvm NOFAST)
 
 RUN(NAME modules_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran)
 RUN(NAME modules_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
