@@ -5934,6 +5934,11 @@ public:
                     if (!contain_loop_vars) return;
                 }
             }
+
+            void visit_IntrinsicArrayFunction(const ASR::IntrinsicArrayFunction_t &/*x*/) {
+                // TODO: will have to handle this
+                contain_loop_vars = false;
+            }
         };
 
         bool contain_loop_vars = true;
