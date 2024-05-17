@@ -60,6 +60,7 @@ inline std::string get_intrinsic_name(int64_t x) {
         INTRINSIC_NAME_CASE(Mod)
         INTRINSIC_NAME_CASE(Trailz)
         INTRINSIC_NAME_CASE(Nearest)
+        INTRINSIC_NAME_CASE(Spacing)
         INTRINSIC_NAME_CASE(Modulo)
         INTRINSIC_NAME_CASE(BesselJ0)
         INTRINSIC_NAME_CASE(BesselJ1)
@@ -266,6 +267,8 @@ namespace IntrinsicElementalFunctionRegistry {
             {&Trailz::instantiate_Trailz, &Trailz::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Nearest),
             {&Nearest::instantiate_Nearest, &Nearest::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Spacing),
+            {&Spacing::instantiate_Spacing, &Spacing::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Modulo),
             {&Modulo::instantiate_Modulo, &Modulo::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::BesselJN),
@@ -565,6 +568,8 @@ namespace IntrinsicElementalFunctionRegistry {
             "trailz"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Nearest),
             "nearest"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Spacing),
+            "spacing"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Modulo),
             "modulo"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Asin),
@@ -858,6 +863,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"mod", {&Mod::create_Mod, &Mod::eval_Mod}},
                 {"trailz", {&Trailz::create_Trailz, &Trailz::eval_Trailz}},
                 {"nearest", {&Nearest::create_Nearest, &Nearest::eval_Nearest}},
+                {"spacing", {&Spacing::create_Spacing, &Spacing::eval_Spacing}},
                 {"modulo", {&Modulo::create_Modulo, &Modulo::eval_Modulo}},
                 {"bessel_jn", {&BesselJN::create_BesselJN, &BesselJN::eval_BesselJN}},
                 {"bessel_yn", {&BesselYN::create_BesselYN, &BesselYN::eval_BesselYN}},
