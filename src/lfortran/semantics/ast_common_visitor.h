@@ -6227,33 +6227,23 @@ public:
             }
 
             void *data = nullptr;
+            int itr = 0, curr_nesting_level = 0;
             // TODO: handle multiple types
             if (ASRUtils::is_integer(*type)) {
-                int *array = new int[idl_size];
-
-                int itr = 0, curr_nesting_level = 0;
+                int *array = al.allocate<int>(idl_size);
                 // populate compiletime array
                 populate_compiletime_array_for_idl(idl, array, loop_vars, loop_indices, curr_nesting_level, itr);
-
                 data = array;
             } else if (ASRUtils::is_real(*type)) {
                 int kind = ASRUtils::extract_kind_from_ttype_t(type);
 
                 if (kind == 4) {
-                    float *array = new float[idl_size];
-
-                    int itr = 0, curr_nesting_level = 0;
-                    // populate compiletime array
+                    float *array = al.allocate<float>(idl_size);
                     populate_compiletime_array_for_idl(idl, array, loop_vars, loop_indices, curr_nesting_level, itr);
-
                     data = array;
                 } else if (kind == 8) {
-                    double *array = new double[idl_size];
-
-                    int itr = 0, curr_nesting_level = 0;
-                    // populate compiletime array
+                    double *array = al.allocate<double>(idl_size);
                     populate_compiletime_array_for_idl(idl, array, loop_vars, loop_indices, curr_nesting_level, itr);
-
                     data = array;
                 } else {
                     throw SemanticError("Unsupported kind for real type in compiletime evaluation of implied do loop", x.base.base.loc);
