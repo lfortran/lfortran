@@ -5936,7 +5936,7 @@ public:
             }
         };
 
-        bool contain_loop_vars = false;
+        bool contain_loop_vars = true;
         ImpliedDoLoopValuesVisitor visitor(loop_vars, contain_loop_vars);
         visitor.visit_expr(*expr);
         return contain_loop_vars;
