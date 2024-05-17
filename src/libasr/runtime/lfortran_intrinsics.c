@@ -2383,10 +2383,11 @@ LFORTRAN_API void _lfortran_read_array_int32(int32_t *p, int array_size, int32_t
 
 LFORTRAN_API void _lfortran_read_char(char **p, int32_t unit_num)
 {
+    int n = strlen(*p);
     if (unit_num == -1) {
         // Read from stdin
-        *p = (char*)malloc(strlen(*p) * sizeof(char));
-        (void)!scanf("%s", *p);
+        *p = (char*)malloc(n * sizeof(char));
+        (void)!fgets(*p, n + 1, stdin);
         return;
     }
 
@@ -2397,7 +2398,6 @@ LFORTRAN_API void _lfortran_read_char(char **p, int32_t unit_num)
         exit(1);
     }
 
-    int n = strlen(*p);
     *p = (char*)malloc(n * sizeof(char));
     if (unit_file_bin) {
         // read the record marker for data length
@@ -2437,7 +2437,8 @@ LFORTRAN_API void _lfortran_read_char(char **p, int32_t unit_num)
             exit(1);
         }
     } else {
-        (void)!fscanf(filep, "%s", *p);
+        *p = (char*)malloc((n + 1) * sizeof(char));
+        (void)!fread(*p, sizeof(char), n, filep);
     }
     if (streql(*p, "")) {
         printf("Runtime error: End of file!\n");
