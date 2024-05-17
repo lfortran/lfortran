@@ -67,7 +67,11 @@ ASR::expr_t* create_temporary_variable_for_array(Allocator& al,
     } else {
         var_type = create_array_type_with_empty_dims(al, value_n_dims, value_type);
         if( ASR::is_a<ASR::ArraySection_t>(*value) && is_pointer_required ) {
-            var_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, var_type->base.loc, var_type));
+            if( ASRUtils::is_simd_array(value) ) {
+                var_type = ASRUtils::expr_type(value);
+            } else {
+                var_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, var_type->base.loc, var_type));
+            }
         } else {
             var_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, var_type->base.loc, var_type));
         }
@@ -243,7 +247,8 @@ ASR::expr_t* create_and_allocate_temporary_variable_for_array(
         insert_allocate_stmt(al, array_var_temporary, array_expr, current_body);
         array_expr = ASRUtils::get_past_array_physical_cast(array_expr);
         exprs_with_target.insert(array_expr);
-        if( ASR::is_a<ASR::ArraySection_t>(*array_expr) && !is_pointer_required ) {
+        if( ASR::is_a<ASR::ArraySection_t>(*array_expr) && !is_pointer_required &&
+            !ASRUtils::is_simd_array(array_expr) ) {
             size_t value_n_dims = ASRUtils::extract_n_dims_from_ttype(
                 ASRUtils::expr_type(array_expr));
             ASR::ttype_t* tmp_type = create_array_type_with_empty_dims(
@@ -606,7 +611,8 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     }
 
     void replace_ArraySection(ASR::ArraySection_t* x) {
-        if( exprs_with_target.find(*current_expr) != exprs_with_target.end() ) {
+        if( exprs_with_target.find(*current_expr) != exprs_with_target.end() &&
+            !ASRUtils::is_simd_array(*current_expr) ) {
             const Location& loc = x->base.base.loc;
             size_t value_n_dims = ASRUtils::extract_n_dims_from_ttype(
                 ASRUtils::expr_type(*current_expr));
@@ -935,7 +941,9 @@ class VerifySimplifierASROutput:
     }
 
     void visit_Assignment(const ASR::Assignment_t& x) {
-        LCOMPILERS_ASSERT(!ASR::is_a<ASR::ArrayPhysicalCast_t>(*x.m_value));
+        if( !ASRUtils::is_simd_array(x.m_value) ) {
+            LCOMPILERS_ASSERT(!ASR::is_a<ASR::ArrayPhysicalCast_t>(*x.m_value));
+        }
         if( ASR::is_a<ASR::ArraySection_t>(*x.m_target) ) {
             visit_expr(*x.m_target);
         }
