@@ -1359,24 +1359,6 @@ namespace IanyIall {
         }
     }
 
-    // int64_t result = init_int_val;
-    //         if (logical_operation == "or") {
-    //             for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(arr->m_type); i++) {
-    //                 ASR::expr_t *args_value = ASRUtils::fetch_ArrayConstant_value(al, arr, i);
-    //                 if (args_value && ASR::is_a<ASR::IntegerConstant_t>(*args_value)) {
-    //                     result = result | ASR::down_cast<ASR::IntegerConstant_t>(args_value)->m_n;
-    //                 } else return nullptr;
-    //             }
-    //         } else if (logical_operation == "and") {
-    //             result = 1;
-    //             for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(arr->m_type); i++) {
-    //                 ASR::expr_t *args_value = ASRUtils::fetch_ArrayConstant_value(al, arr, i);
-    //                 if (args_value && ASR::is_a<ASR::IntegerConstant_t>(*args_value)) {
-    //                     result = result & ASR::down_cast<ASR::IntegerConstant_t>(args_value)->m_n;
-    //                 } else return nullptr;
-    //             }
-    //         }
-
     static inline ASR::expr_t *eval_IanyIall(Allocator & al,
         const Location & loc, ASR::ttype_t * t, Vec<ASR::expr_t*>& args,
         int64_t init_int_val, std::function<int64_t(int64_t, int64_t)> logical_operation) {
