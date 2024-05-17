@@ -6259,8 +6259,10 @@ public:
                     throw SemanticError("Unsupported kind for real type in compiletime evaluation of implied do loop", x.base.base.loc);
                 }
             }
-            tmp = ASR::make_ArrayConstant_t(al, x.base.base.loc, idl_size * ASRUtils::extract_kind_from_ttype_t(type), data,
-                    array_type, ASR::arraystorageType::ColMajor);
+            if (data != nullptr) {
+                tmp = ASR::make_ArrayConstant_t(al, x.base.base.loc, idl_size * ASRUtils::extract_kind_from_ttype_t(type), data,
+                        array_type, ASR::arraystorageType::ColMajor);
+            }
         }
         idl_nesting_level--;
     }
