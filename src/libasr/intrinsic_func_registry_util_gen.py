@@ -170,6 +170,12 @@ intrinsic_funcs_args = {
             "return": "int32"
         },
     ],
+    "Nearest": [
+        {
+            "args": [("real", "real")],
+            "ret_type_arg_idx": 0
+        },
+    ],
     "Adjustl": [
         {
             "args": [("char",)],

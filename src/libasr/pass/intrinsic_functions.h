@@ -59,6 +59,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     FlipSign,
     Mod,
     Trailz,
+    Nearest,
     Modulo,
     BesselJ0,
     BesselJ1,
@@ -3069,6 +3070,55 @@ namespace Trailz {
     }
 
 } // namespace Trailz
+
+namespace Nearest {
+
+    static ASR::expr_t *eval_Nearest(Allocator &al, const Location &loc,
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
+        int64_t kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[0]));
+        double s = ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r;
+        if (s == 0.0) {
+            append_error(diag, "`S` argument of nearest() must be non-zero", loc);
+            return nullptr;
+        }
+        if (kind == 4) {
+            float x = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
+            float result = 0.0;
+            if (s > 0) result = x + std::fabs(std::nextafterf(x, std::numeric_limits<float>::infinity()) - x);
+            else result = x - std::fabs(std::nextafterf(x, -std::numeric_limits<float>::infinity()) - x);
+            return make_ConstantWithType(make_RealConstant_t, result, t1, loc);
+        } else {
+            double x = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
+            double result = 0.0;
+            if (s > 0) result = x + std::fabs(std::nextafter(x, std::numeric_limits<double>::infinity()) - x);
+            else result = x - std::fabs(std::nextafter(x, -std::numeric_limits<double>::infinity()) - x);
+            return make_ConstantWithType(make_RealConstant_t, result, t1, loc);
+        }
+    }
+
+    static inline ASR::expr_t* instantiate_Nearest(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("_lcompilers_optimization_nearest_" + type_to_str_python(arg_types[0]));
+        fill_func_arg("x", arg_types[0]);
+        fill_func_arg("s", arg_types[1]);
+        auto result = declare(fn_name, arg_types[0], ReturnVar);
+        /*
+        function nearest(x, s) result(result)
+            real :: x, s
+            real :: result
+            result = ?
+        end function
+        */
+        throw LCompilersException("`Nearest` intrinsic is not yet implemented for runtime values");
+
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, nullptr);
+    }
+
+} // namespace Nearest
 
 namespace Modulo {
 
