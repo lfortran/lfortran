@@ -2505,32 +2505,40 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
 
         switch (type->type) {
             case ASR::ttypeType::Integer: {
-                if (kind == 1) {
-                    int8_t val = ((int8_t*)data)[i];
-                    m_wa.emit_i32_const(val);
-                } else if (kind == 2) {
-                    int16_t val = ((int16_t*)data)[i];
-                    m_wa.emit_i32_const(val);
-                } else if (kind == 4) {
-                    int32_t val = ((int32_t*)data)[i];
-                    m_wa.emit_i32_const(val);
-                } else if (kind == 8) {
-                    int64_t val = ((int64_t*)data)[i];
-                    m_wa.emit_i32_const(val);
-                } else {
-                    throw CodeGenError("process_ArrayConstant_value: Integer kind not supported");
+                switch (kind) {
+                    case 1: {
+                        int8_t val = ((int8_t*)data)[i];
+                        m_wa.emit_i32_const(val); break;
+                    }
+                    case 2: {
+                        int16_t val = ((int16_t*)data)[i];
+                        m_wa.emit_i32_const(val); break;
+                    }
+                    case 4: {
+                        int32_t val = ((int32_t*)data)[i];
+                        m_wa.emit_i32_const(val); break;
+                    }
+                    case 8: {
+                        int64_t val = ((int64_t*)data)[i];
+                        m_wa.emit_i32_const(val); break;
+                    }
+                    default: 
+                        throw CodeGenError("process_ArrayConstant_value: Integer kind not supported");
                 }
                 break;
             }
             case ASR::ttypeType::Real: {
-                if (kind == 4) {
-                    float val = ((float*)data)[i];
-                    m_wa.emit_f32_const(val);
-                } else if (kind == 8) {
-                    double val = ((double*)data)[i];
-                    m_wa.emit_f32_const(val);
-                } else {
-                    throw CodeGenError("process_ArrayConstant_value: Real kind not supported");
+                switch (kind) {
+                    case 4: {
+                        float val = ((float*)data)[i];
+                        m_wa.emit_f32_const(val); break;
+                    }
+                    case 8: {
+                        double val = ((double*)data)[i];
+                        m_wa.emit_f32_const(val); break;
+                    }
+                    default: 
+                        throw CodeGenError("process_ArrayConstant_value: Real kind not supported");
                 }
                 break;
             }
