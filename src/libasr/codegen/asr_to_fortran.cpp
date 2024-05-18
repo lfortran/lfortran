@@ -1266,6 +1266,7 @@ public:
             SET_INTRINSIC_NAME(SubstrIndex, "index");
             SET_INTRINSIC_NAME(Modulo, "modulo");
             SET_INTRINSIC_NAME(Poppar, "poppar");
+            SET_INTRINSIC_NAME(Merge, "merge");
             default : {
                 throw LCompilersException("IntrinsicElementalFunction: `"
                     + ASRUtils::get_intrinsic_name(x.m_intrinsic_id)
@@ -1309,19 +1310,6 @@ public:
                     out += src;
                 }
                 out += ")";
-                src = out;
-                out = "";
-                break;
-            }
-            case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Merge)) : {
-                // merge(size(x, 1), size(x, 2), mask=1<dim)
-                out += "merge";
-                visit_expr(*x.m_args[0]);
-                out += "(" + src + ", ";
-                visit_expr(*x.m_args[1]);
-                out += src + ", mask=";
-                visit_expr(*x.m_args[2]);
-                out += src + ")";
                 src = out;
                 out = "";
                 break;
