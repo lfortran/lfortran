@@ -74,6 +74,15 @@ compilation options, output options, link options and so on.
 * `--print-leading-space`, Print leading white space if format is unspecified
 * `--realloc-lhs`, Reallocate left hand side automatically
 * `--target <value>`, Generate code for the given target
+* `--backend` flag is used to specify the target backend for code generation in LFortran. The supported backends are:
+  
+  - `llvm`: The most advanced and default backend, used for generating LLVM IR or machine code through LLVM.
+  - `wasm`: A custom WebAssembly backend.
+  - `c`: For generating C code.
+  - `cpp`: For generating C++ code (requires the Kokkos library).
+  - `x86`: For generating x86 machine code directly (without LLVM).
+  - `fortran`: For generating Fortran code.
+  - `julia`: For generating Julia code.
 
 ### Compiler text outputs
 
