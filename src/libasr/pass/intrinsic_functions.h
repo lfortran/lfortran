@@ -66,6 +66,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     BesselY0,
     BesselY1,
     BesselYN,
+    Merge,
     Mvbits,
     Mergebits,
     Shiftr,
@@ -2940,6 +2941,75 @@ namespace Maskr {
     }
 
 }  // namespace Maskr
+
+namespace Merge {
+
+    static inline ASR::expr_t* eval_Merge(
+        Allocator &/*al*/, const Location &/*loc*/, ASR::ttype_t *,
+            Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
+        ASR::expr_t *tsource = args[0], *fsource = args[1], *mask = args[2];
+        bool mask_value = false;
+        if( ASRUtils::is_value_constant(mask, mask_value) ) {
+            if( mask_value ) {
+                return tsource;
+            } else {
+                return fsource;
+            }
+        }
+        return nullptr;
+    }
+
+    static inline ASR::expr_t* instantiate_Merge(Allocator &al,
+            const Location &loc, SymbolTable *scope,
+            Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        ASR::ttype_t *tsource_type = ASRUtils::duplicate_type(al, arg_types[0]);
+        ASR::ttype_t *fsource_type = ASRUtils::duplicate_type(al, arg_types[1]);
+        ASR::ttype_t *mask_type = ASRUtils::duplicate_type(al, arg_types[2]);
+        if( ASR::is_a<ASR::Character_t>(*tsource_type) ) {
+            ASR::Character_t* tsource_char = ASR::down_cast<ASR::Character_t>(tsource_type);
+            ASR::Character_t* fsource_char = ASR::down_cast<ASR::Character_t>(fsource_type);
+            tsource_char->m_len_expr = nullptr; fsource_char->m_len_expr = nullptr;
+            tsource_char->m_len = -2; fsource_char->m_len = -2;
+            ASR::Character_t* return_char = ASR::down_cast<ASR::Character_t>(
+                ASRUtils::type_get_past_allocatable(return_type));
+            return_char->m_len = -2; return_char->m_len_expr = nullptr;
+
+        }
+        std::string new_name = "_lcompilers_merge_" + get_type_code(tsource_type);
+
+        declare_basic_variables(new_name);
+        if (scope->get_symbol(new_name)) {
+            ASR::symbol_t *s = scope->get_symbol(new_name);
+            ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(s);
+            return b.Call(s, new_args, expr_type(f->m_return_var), nullptr);
+        }
+
+        auto tsource_arg = declare("tsource", tsource_type, In);
+        args.push_back(al, tsource_arg);
+        auto fsource_arg = declare("fsource", fsource_type, In);
+        args.push_back(al, fsource_arg);
+        auto mask_arg = declare("mask", mask_type, In);
+        args.push_back(al, mask_arg);
+        // TODO: In case of Character type, set len of ReturnVar to len(tsource) expression
+        auto result = declare("merge", type_get_past_allocatable(return_type), ReturnVar);
+
+        {
+            Vec<ASR::stmt_t *> if_body; if_body.reserve(al, 1);
+            if_body.push_back(al, b.Assignment(result, tsource_arg));
+            Vec<ASR::stmt_t *> else_body; else_body.reserve(al, 1);
+            else_body.push_back(al, b.Assignment(result, fsource_arg));
+            body.push_back(al, STMT(ASR::make_If_t(al, loc, mask_arg,
+                if_body.p, if_body.n, else_body.p, else_body.n)));
+        }
+
+        ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, new_symbol);
+        return b.Call(new_symbol, new_args, return_type, nullptr);
+    }
+
+} // namespace Merge
 
 namespace Trailz {
 
