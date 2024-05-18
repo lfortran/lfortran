@@ -672,7 +672,7 @@
                     )
                     (Assignment
                         (Var 2 ar1)
-                        (IntrinsicArrayFunction
+                        (IntrinsicElementalFunction
                             Merge
                             [(Var 2 tsource)
                             (Var 2 fsource)
