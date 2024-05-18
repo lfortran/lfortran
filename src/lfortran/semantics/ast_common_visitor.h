@@ -6259,8 +6259,10 @@ public:
                 }
             }
             if (data != nullptr) {
-                tmp = ASR::make_ArrayConstant_t(al, x.base.base.loc, idl_size * ASRUtils::extract_kind_from_ttype_t(type), data,
-                        array_type, ASR::arraystorageType::ColMajor);
+                ASR::expr_t* value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, x.base.base.loc, idl_size * ASRUtils::extract_kind_from_ttype_t(type), data,
+                        array_type, ASR::arraystorageType::ColMajor));
+                idl->m_value = value;
+                tmp = (ASR::asr_t*) idl;
             }
         }
         idl_nesting_level--;
