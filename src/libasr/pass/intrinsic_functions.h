@@ -3110,8 +3110,7 @@ namespace Nearest {
             result = ?
         end function
         */
-        // YET TO BE IMPLEMENTED
-        body.push_back(al, b.Assignment(result, b.f32(0)));
+        throw LCompilersException("`Nearest` intrinsic is not yet implemented for runtime values");
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
