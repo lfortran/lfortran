@@ -770,6 +770,7 @@ RUN(NAME intrinsics_220 LABELS gfortran llvm) # mergebits
 RUN(NAME intrinsics_221 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NOFAST) # sum
 RUN(NAME intrinsics_222 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # dreal
 RUN(NAME intrinsics_223 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # nearest
+RUN(NAME intrinsics_224 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # spacing
 RUN(NAME intrinsics_225 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # iany
 RUN(NAME intrinsics_226 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # iall
 
