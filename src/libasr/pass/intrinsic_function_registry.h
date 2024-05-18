@@ -59,6 +59,7 @@ inline std::string get_intrinsic_name(int64_t x) {
         INTRINSIC_NAME_CASE(FloorDiv)
         INTRINSIC_NAME_CASE(Mod)
         INTRINSIC_NAME_CASE(Trailz)
+        INTRINSIC_NAME_CASE(Nearest)
         INTRINSIC_NAME_CASE(Modulo)
         INTRINSIC_NAME_CASE(BesselJ0)
         INTRINSIC_NAME_CASE(BesselJ1)
@@ -67,6 +68,7 @@ inline std::string get_intrinsic_name(int64_t x) {
         INTRINSIC_NAME_CASE(BesselY1)
         INTRINSIC_NAME_CASE(BesselYN)
         INTRINSIC_NAME_CASE(Mvbits)
+        INTRINSIC_NAME_CASE(Merge)
         INTRINSIC_NAME_CASE(Mergebits)
         INTRINSIC_NAME_CASE(Shiftr)
         INTRINSIC_NAME_CASE(Rshift)
@@ -262,12 +264,16 @@ namespace IntrinsicElementalFunctionRegistry {
             {&Mod::instantiate_Mod, &Mod::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Trailz),
             {&Trailz::instantiate_Trailz, &Trailz::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Nearest),
+            {&Nearest::instantiate_Nearest, &Nearest::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Modulo),
             {&Modulo::instantiate_Modulo, &Modulo::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::BesselJN),
             {&BesselJN::instantiate_BesselJN, &BesselJN::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::BesselYN),
             {&BesselYN::instantiate_BesselYN, &BesselYN::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Merge),
+            {&Merge::instantiate_Merge, &Merge::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Mvbits),
             {&Mvbits::instantiate_Mvbits, &Mvbits::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Mergebits),
@@ -557,6 +563,8 @@ namespace IntrinsicElementalFunctionRegistry {
             "mod"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Trailz),
             "trailz"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Nearest),
+            "nearest"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Modulo),
             "modulo"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Asin),
@@ -583,6 +591,8 @@ namespace IntrinsicElementalFunctionRegistry {
             "bessel_jn"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::BesselYN),
             "bessel_yn"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Merge),
+            "merge"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Mvbits),
             "mvbits"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Mergebits),
@@ -847,9 +857,11 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"floordiv", {&FloorDiv::create_FloorDiv, &FloorDiv::eval_FloorDiv}},
                 {"mod", {&Mod::create_Mod, &Mod::eval_Mod}},
                 {"trailz", {&Trailz::create_Trailz, &Trailz::eval_Trailz}},
+                {"nearest", {&Nearest::create_Nearest, &Nearest::eval_Nearest}},
                 {"modulo", {&Modulo::create_Modulo, &Modulo::eval_Modulo}},
                 {"bessel_jn", {&BesselJN::create_BesselJN, &BesselJN::eval_BesselJN}},
                 {"bessel_yn", {&BesselYN::create_BesselYN, &BesselYN::eval_BesselYN}},
+                {"merge", {&Merge::create_Merge, &Merge::eval_Merge}},
                 {"mvbits", {&Mvbits::create_Mvbits, &Mvbits::eval_Mvbits}},
                 {"merge_bits", {&Mergebits::create_Mergebits, &Mergebits::eval_Mergebits}},
                 {"shiftr", {&Shiftr::create_Shiftr, &Shiftr::eval_Shiftr}},

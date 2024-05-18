@@ -59,6 +59,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     FlipSign,
     Mod,
     Trailz,
+    Nearest,
     Modulo,
     BesselJ0,
     BesselJ1,
@@ -66,6 +67,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     BesselY0,
     BesselY1,
     BesselYN,
+    Merge,
     Mvbits,
     Mergebits,
     Shiftr,
@@ -2941,6 +2943,75 @@ namespace Maskr {
 
 }  // namespace Maskr
 
+namespace Merge {
+
+    static inline ASR::expr_t* eval_Merge(
+        Allocator &/*al*/, const Location &/*loc*/, ASR::ttype_t *,
+            Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
+        ASR::expr_t *tsource = args[0], *fsource = args[1], *mask = args[2];
+        bool mask_value = false;
+        if( ASRUtils::is_value_constant(mask, mask_value) ) {
+            if( mask_value ) {
+                return tsource;
+            } else {
+                return fsource;
+            }
+        }
+        return nullptr;
+    }
+
+    static inline ASR::expr_t* instantiate_Merge(Allocator &al,
+            const Location &loc, SymbolTable *scope,
+            Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        ASR::ttype_t *tsource_type = ASRUtils::duplicate_type(al, arg_types[0]);
+        ASR::ttype_t *fsource_type = ASRUtils::duplicate_type(al, arg_types[1]);
+        ASR::ttype_t *mask_type = ASRUtils::duplicate_type(al, arg_types[2]);
+        if( ASR::is_a<ASR::Character_t>(*tsource_type) ) {
+            ASR::Character_t* tsource_char = ASR::down_cast<ASR::Character_t>(tsource_type);
+            ASR::Character_t* fsource_char = ASR::down_cast<ASR::Character_t>(fsource_type);
+            tsource_char->m_len_expr = nullptr; fsource_char->m_len_expr = nullptr;
+            tsource_char->m_len = -2; fsource_char->m_len = -2;
+            ASR::Character_t* return_char = ASR::down_cast<ASR::Character_t>(
+                ASRUtils::type_get_past_allocatable(return_type));
+            return_char->m_len = -2; return_char->m_len_expr = nullptr;
+
+        }
+        std::string new_name = "_lcompilers_merge_" + get_type_code(tsource_type);
+
+        declare_basic_variables(new_name);
+        if (scope->get_symbol(new_name)) {
+            ASR::symbol_t *s = scope->get_symbol(new_name);
+            ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(s);
+            return b.Call(s, new_args, expr_type(f->m_return_var), nullptr);
+        }
+
+        auto tsource_arg = declare("tsource", tsource_type, In);
+        args.push_back(al, tsource_arg);
+        auto fsource_arg = declare("fsource", fsource_type, In);
+        args.push_back(al, fsource_arg);
+        auto mask_arg = declare("mask", mask_type, In);
+        args.push_back(al, mask_arg);
+        // TODO: In case of Character type, set len of ReturnVar to len(tsource) expression
+        auto result = declare("merge", type_get_past_allocatable(return_type), ReturnVar);
+
+        {
+            Vec<ASR::stmt_t *> if_body; if_body.reserve(al, 1);
+            if_body.push_back(al, b.Assignment(result, tsource_arg));
+            Vec<ASR::stmt_t *> else_body; else_body.reserve(al, 1);
+            else_body.push_back(al, b.Assignment(result, fsource_arg));
+            body.push_back(al, STMT(ASR::make_If_t(al, loc, mask_arg,
+                if_body.p, if_body.n, else_body.p, else_body.n)));
+        }
+
+        ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, new_symbol);
+        return b.Call(new_symbol, new_args, return_type, nullptr);
+    }
+
+} // namespace Merge
+
 namespace Trailz {
 
     static ASR::expr_t *eval_Trailz(Allocator &al, const Location &loc,
@@ -2999,6 +3070,55 @@ namespace Trailz {
     }
 
 } // namespace Trailz
+
+namespace Nearest {
+
+    static ASR::expr_t *eval_Nearest(Allocator &al, const Location &loc,
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
+        int64_t kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[0]));
+        double s = ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r;
+        if (s == 0.0) {
+            append_error(diag, "`S` argument of nearest() must be non-zero", loc);
+            return nullptr;
+        }
+        if (kind == 4) {
+            float x = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
+            float result = 0.0;
+            if (s > 0) result = x + std::fabs(std::nextafterf(x, std::numeric_limits<float>::infinity()) - x);
+            else result = x - std::fabs(std::nextafterf(x, -std::numeric_limits<float>::infinity()) - x);
+            return make_ConstantWithType(make_RealConstant_t, result, t1, loc);
+        } else {
+            double x = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
+            double result = 0.0;
+            if (s > 0) result = x + std::fabs(std::nextafter(x, std::numeric_limits<double>::infinity()) - x);
+            else result = x - std::fabs(std::nextafter(x, -std::numeric_limits<double>::infinity()) - x);
+            return make_ConstantWithType(make_RealConstant_t, result, t1, loc);
+        }
+    }
+
+    static inline ASR::expr_t* instantiate_Nearest(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("_lcompilers_optimization_nearest_" + type_to_str_python(arg_types[0]));
+        fill_func_arg("x", arg_types[0]);
+        fill_func_arg("s", arg_types[1]);
+        auto result = declare(fn_name, arg_types[0], ReturnVar);
+        /*
+        function nearest(x, s) result(result)
+            real :: x, s
+            real :: result
+            result = ?
+        end function
+        */
+        throw LCompilersException("`Nearest` intrinsic is not yet implemented for runtime values");
+
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, nullptr);
+    }
+
+} // namespace Nearest
 
 namespace Modulo {
 
