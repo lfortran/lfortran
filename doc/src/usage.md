@@ -77,7 +77,7 @@ compilation options, output options, link options and so on.
 * `--backend` flag is used to specify the target backend for code generation in LFortran. The supported backends are:
   
   - `llvm`: The most advanced and default backend, used for generating LLVM IR or machine code through LLVM.
-  - `wasm` : A custom backend for generating WebAssembly.
+  - `wasm`: For generating `Webassembly` via our custom `wasm` backend.
   - `c`: For generating C code.
   - `cpp`: For generating C++ code (requires the Kokkos library).
   - `x86`: For generating x86 machine code directly (without LLVM).
