@@ -526,6 +526,12 @@ intrinsic_funcs_args = {
             "kind_arg": True
         }
     ],
+    "Merge": [
+        {
+            "args": [("any", "any", "bool")],
+            "ret_type_arg_idx": 0
+        }
+    ],
     "Mergebits": [
         {
             "args": [("int", "int", "int")],
