@@ -2947,11 +2947,7 @@ namespace Merge {
     static inline ASR::expr_t* eval_Merge(
         Allocator &/*al*/, const Location &/*loc*/, ASR::ttype_t *,
             Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
-        LCOMPILERS_ASSERT(args.size() == 3);
         ASR::expr_t *tsource = args[0], *fsource = args[1], *mask = args[2];
-        if( ASRUtils::is_array(ASRUtils::expr_type(mask)) ) {
-            return nullptr;
-        }
         bool mask_value = false;
         if( ASRUtils::is_value_constant(mask, mask_value) ) {
             if( mask_value ) {
@@ -2967,10 +2963,6 @@ namespace Merge {
             const Location &loc, SymbolTable *scope,
             Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        LCOMPILERS_ASSERT(arg_types.size() == 3);
-
-        // Array inputs should be elementalised in array_op pass already
-        LCOMPILERS_ASSERT( !ASRUtils::is_array(arg_types[2]) );
         ASR::ttype_t *tsource_type = ASRUtils::duplicate_type(al, arg_types[0]);
         ASR::ttype_t *fsource_type = ASRUtils::duplicate_type(al, arg_types[1]);
         ASR::ttype_t *mask_type = ASRUtils::duplicate_type(al, arg_types[2]);
