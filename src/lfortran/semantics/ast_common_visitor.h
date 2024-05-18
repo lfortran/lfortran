@@ -904,7 +904,7 @@ public:
     IntrinsicProcedures intrinsic_procedures;
     IntrinsicProceduresAsASRNodes intrinsic_procedures_as_asr_nodes;
     std::set<std::string> intrinsic_module_procedures_as_asr_nodes = {
-        "c_loc", "c_f_pointer", "c_associated"
+        "c_loc", "c_f_pointer", "c_associated", "c_funloc"
     };
 
     ASR::accessType dflt_access = ASR::Public;
@@ -3369,6 +3369,8 @@ public:
                 type = ASRUtils::make_Array_t_util(
                     al, loc, type, dims.p, dims.size(), abi, is_argument);
             } else if (v && ASRUtils::is_c_ptr(v, derived_type_name)) {
+                type = ASRUtils::TYPE(ASR::make_CPtr_t(al, loc));
+            } else if (v && ASRUtils::is_c_funptr(v, derived_type_name)) {
                 type = ASRUtils::TYPE(ASR::make_CPtr_t(al, loc));
             } else {
                 if (!v) {
@@ -6472,6 +6474,8 @@ public:
                         tmp = create_PointerToCptr(x);
                     } else if (var_name == "c_associated") {
                         tmp = create_Associated(x);
+                    } else if (var_name == "c_funloc") {
+                        tmp = create_PointerToCptr(x);
                     } else {
                         LCOMPILERS_ASSERT(false)
                     }

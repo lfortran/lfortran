@@ -110,6 +110,26 @@
                                     c_float_complex
                                     Public
                                 ),
+                            c_funloc:
+                                (ExternalSymbol
+                                    2
+                                    c_funloc
+                                    4 c_funloc
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_funloc
+                                    Public
+                                ),
+                            c_funptr:
+                                (ExternalSymbol
+                                    2
+                                    c_funptr
+                                    4 c_funptr
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_funptr
+                                    Public
+                                ),
                             c_int:
                                 (ExternalSymbol
                                     2

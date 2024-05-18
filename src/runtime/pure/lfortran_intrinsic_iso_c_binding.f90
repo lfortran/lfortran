@@ -5,6 +5,10 @@ type :: c_ptr
     integer ptr
 end type
 
+type :: c_funptr
+    integer ptr
+end type
+
 integer, parameter :: c_int8_t = 1
 integer, parameter :: c_int16_t = 2
 integer, parameter :: c_int32_t = 4
@@ -42,6 +46,13 @@ interface
     !type(c_ptr) function c_loc(x)
     integer function c_loc(x)
     import c_ptr
+    !type(*), intent(in) :: x
+    integer, intent(in) :: x
+    end function
+
+    !type(c_funptr) function c_funloc(x)
+    integer function c_funloc(x)
+    import c_funptr
     !type(*), intent(in) :: x
     integer, intent(in) :: x
     end function
