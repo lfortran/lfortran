@@ -6025,6 +6025,35 @@ public:
                 }
             }
 
+            void visit_IntegerCompare( const ASR::IntegerCompare_t &x ) {
+                this->visit_expr(*x.m_left);
+                T left_val = value;
+                this->visit_expr(*x.m_right);
+                T right_val = value;
+                switch (x.m_op) {
+                    case ASR::cmpopType::Eq:
+                        value = left_val == right_val;
+                        break;
+                    case ASR::cmpopType::NotEq:
+                        value = left_val != right_val;
+                        break;
+                    case ASR::cmpopType::Gt:
+                        value = left_val > right_val;
+                        break;
+                    case ASR::cmpopType::LtE:
+                        value = left_val <= right_val;
+                        break;
+                    case ASR::cmpopType::Lt:
+                        value = left_val < right_val;
+                        break;
+                    case ASR::cmpopType::GtE:
+                        value = left_val >= right_val;
+                        break;
+                    default:
+                        throw SemanticError("Unsupported comparison operation in implied do loop", x.base.base.loc);
+                }
+            }
+
             void visit_IntegerConstant(const ASR::IntegerConstant_t &x) {
                 value = x.m_n;
             }
@@ -6110,6 +6139,8 @@ public:
                         args.push_back(al, ASRUtils::EXPR(ASR::make_RealConstant_t(al, x.base.base.loc, value, arg_type)));
                     } else if (ASRUtils::is_integer(*arg_type)) {
                         args.push_back(al, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, value, arg_type)));
+                    } else if (ASRUtils::is_logical(*arg_type)) {
+                        args.push_back(al, ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, x.base.base.loc, value, arg_type)));
                     } else {
                         throw SemanticError("Unsupported argument type in compiletime evaluation of intrinsics in implied do loop", x.base.base.loc);
                     }
