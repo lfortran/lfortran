@@ -21,7 +21,7 @@
                                                 (Integer 4)
                                                 [((IntegerConstant 1 (Integer 4))
                                                 (IntegerConstant 3 (Integer 4)))]
-                                                FixedSizeArray
+                                                DescriptorArray
                                             )
                                             ColMajor
                                         )
@@ -82,7 +82,7 @@
                                                 (Integer 4)
                                                 [((IntegerConstant 1 (Integer 4))
                                                 (IntegerConstant 3 (Integer 4)))]
-                                                FixedSizeArray
+                                                DescriptorArray
                                             )
                                             ColMajor
                                         )
@@ -189,16 +189,39 @@
                         ()
                     )
                     (Print
-                        [(ArrayConstant
-                            48
-                            [1, 1, 2, ...., 3, 6, 9]
-                            (Array
+                        [(ImpliedDoLoop
+                            [(Var 2 i)
+                            (ImpliedDoLoop
+                                [(IntegerBinOp
+                                    (Var 2 i)
+                                    Mul
+                                    (Var 2 j)
+                                    (Integer 4)
+                                    ()
+                                )]
+                                (Var 2 j)
+                                (IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 3 (Integer 4))
+                                ()
                                 (Integer 4)
-                                [((IntegerConstant 1 (Integer 4))
-                                (IntegerConstant 12 (Integer 4)))]
-                                FixedSizeArray
+                                ()
+                            )]
+                            (Var 2 i)
+                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 3 (Integer 4))
+                            ()
+                            (Integer 4)
+                            (ArrayConstant
+                                48
+                                [1, 1, 2, ...., 3, 6, 9]
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 12 (Integer 4)))]
+                                    FixedSizeArray
+                                )
+                                ColMajor
                             )
-                            ColMajor
                         )]
                         ()
                         ()
@@ -212,16 +235,54 @@
                         ()
                     )
                     (Print
-                        [(ArrayConstant
-                            24
-                            [1.00000000, 2.00000000, 2.00000000, 4.00000000, 3.00000000, 6.00000000]
-                            (Array
+                        [(ImpliedDoLoop
+                            [(ImpliedDoLoop
+                                [(RealBinOp
+                                    (ArrayItem
+                                        (Var 2 a)
+                                        [(()
+                                        (Var 2 i)
+                                        ())]
+                                        (Real 4)
+                                        ColMajor
+                                        ()
+                                    )
+                                    Mul
+                                    (ArrayItem
+                                        (Var 2 b)
+                                        [(()
+                                        (Var 2 j)
+                                        ())]
+                                        (Real 4)
+                                        ColMajor
+                                        ()
+                                    )
+                                    (Real 4)
+                                    ()
+                                )]
+                                (Var 2 j)
+                                (IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 2 (Integer 4))
+                                ()
                                 (Real 4)
-                                [((IntegerConstant 1 (Integer 4))
-                                (IntegerConstant 6 (Integer 4)))]
-                                FixedSizeArray
+                                ()
+                            )]
+                            (Var 2 i)
+                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 3 (Integer 4))
+                            ()
+                            (Real 4)
+                            (ArrayConstant
+                                24
+                                [1.00000000, 2.00000000, 2.00000000, 4.00000000, 3.00000000, 6.00000000]
+                                (Array
+                                    (Real 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 6 (Integer 4)))]
+                                    FixedSizeArray
+                                )
+                                ColMajor
                             )
-                            ColMajor
                         )]
                         ()
                         ()
@@ -235,16 +296,54 @@
                         ()
                     )
                     (Print
-                        [(ArrayConstant
-                            24
-                            [1.00000000, 2.00000000, 3.00000000, 2.00000000, 4.00000000, 6.00000000]
-                            (Array
+                        [(ImpliedDoLoop
+                            [(ImpliedDoLoop
+                                [(RealBinOp
+                                    (ArrayItem
+                                        (Var 2 a)
+                                        [(()
+                                        (Var 2 i)
+                                        ())]
+                                        (Real 4)
+                                        ColMajor
+                                        ()
+                                    )
+                                    Mul
+                                    (ArrayItem
+                                        (Var 2 b)
+                                        [(()
+                                        (Var 2 j)
+                                        ())]
+                                        (Real 4)
+                                        ColMajor
+                                        ()
+                                    )
+                                    (Real 4)
+                                    ()
+                                )]
+                                (Var 2 i)
+                                (IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 3 (Integer 4))
+                                ()
                                 (Real 4)
-                                [((IntegerConstant 1 (Integer 4))
-                                (IntegerConstant 6 (Integer 4)))]
-                                FixedSizeArray
+                                ()
+                            )]
+                            (Var 2 j)
+                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 2 (Integer 4))
+                            ()
+                            (Real 4)
+                            (ArrayConstant
+                                24
+                                [1.00000000, 2.00000000, 3.00000000, 2.00000000, 4.00000000, 6.00000000]
+                                (Array
+                                    (Real 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 6 (Integer 4)))]
+                                    FixedSizeArray
+                                )
+                                ColMajor
                             )
-                            ColMajor
                         )]
                         ()
                         ()
@@ -258,16 +357,60 @@
                         ()
                     )
                     (Print
-                        [(ArrayConstant
-                            132
-                            [1, 2, 3, ...., 7, 8, 9]
-                            (Array
+                        [(ImpliedDoLoop
+                            [(Var 2 i)
+                            (ImpliedDoLoop
+                                [(IntegerBinOp
+                                    (Var 2 i)
+                                    Add
+                                    (Var 2 j)
+                                    (Integer 4)
+                                    ()
+                                )
+                                (ImpliedDoLoop
+                                    [(IntegerBinOp
+                                        (IntegerBinOp
+                                            (Var 2 i)
+                                            Add
+                                            (Var 2 j)
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        Add
+                                        (Var 2 k)
+                                        (Integer 4)
+                                        ()
+                                    )]
+                                    (Var 2 k)
+                                    (IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 4 (Integer 4))
+                                    ()
+                                    (Integer 4)
+                                    ()
+                                )]
+                                (Var 2 j)
+                                (IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 2 (Integer 4))
+                                ()
                                 (Integer 4)
-                                [((IntegerConstant 1 (Integer 4))
-                                (IntegerConstant 33 (Integer 4)))]
-                                FixedSizeArray
+                                ()
+                            )]
+                            (Var 2 i)
+                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 3 (Integer 4))
+                            ()
+                            (Integer 4)
+                            (ArrayConstant
+                                132
+                                [1, 2, 3, ...., 7, 8, 9]
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 33 (Integer 4)))]
+                                    FixedSizeArray
+                                )
+                                ColMajor
                             )
-                            ColMajor
                         )]
                         ()
                         ()
@@ -281,16 +424,60 @@
                         ()
                     )
                     (Print
-                        [(ArrayConstant
-                            132
-                            [1, 1, 2, ...., 8, 9, 10]
-                            (Array
+                        [(ImpliedDoLoop
+                            [(Var 2 i)
+                            (ImpliedDoLoop
+                                [(IntegerBinOp
+                                    (Var 2 i)
+                                    Mul
+                                    (Var 2 j)
+                                    (Integer 4)
+                                    ()
+                                )
+                                (ImpliedDoLoop
+                                    [(IntegerBinOp
+                                        (IntegerBinOp
+                                            (Var 2 i)
+                                            Mul
+                                            (Var 2 j)
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        Add
+                                        (Var 2 k)
+                                        (Integer 4)
+                                        ()
+                                    )]
+                                    (Var 2 k)
+                                    (IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 4 (Integer 4))
+                                    ()
+                                    (Integer 4)
+                                    ()
+                                )]
+                                (Var 2 j)
+                                (IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 2 (Integer 4))
+                                ()
                                 (Integer 4)
-                                [((IntegerConstant 1 (Integer 4))
-                                (IntegerConstant 33 (Integer 4)))]
-                                FixedSizeArray
+                                ()
+                            )]
+                            (Var 2 i)
+                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 3 (Integer 4))
+                            ()
+                            (Integer 4)
+                            (ArrayConstant
+                                132
+                                [1, 1, 2, ...., 8, 9, 10]
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 33 (Integer 4)))]
+                                    FixedSizeArray
+                                )
+                                ColMajor
                             )
-                            ColMajor
                         )]
                         ()
                         ()

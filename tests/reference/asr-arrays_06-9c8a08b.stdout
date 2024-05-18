@@ -118,7 +118,7 @@
                                 (Integer 4)
                                 [((IntegerConstant 1 (Integer 4))
                                 (IntegerConstant 6 (Integer 4)))]
-                                FixedSizeArray
+                                DescriptorArray
                             )
                             ColMajor
                         )
@@ -138,7 +138,7 @@
                                 (Integer 4)
                                 [((IntegerConstant 1 (Integer 4))
                                 (IntegerConstant 6 (Integer 4)))]
-                                FixedSizeArray
+                                DescriptorArray
                             )
                             ColMajor
                         )
@@ -158,7 +158,7 @@
                                 (Integer 4)
                                 [((IntegerConstant 1 (Integer 4))
                                 (IntegerConstant 6 (Integer 4)))]
-                                FixedSizeArray
+                                DescriptorArray
                             )
                             ColMajor
                         )
@@ -178,7 +178,7 @@
                                 (Integer 4)
                                 [((IntegerConstant 1 (Integer 4))
                                 (IntegerConstant 6 (Integer 4)))]
-                                FixedSizeArray
+                                DescriptorArray
                             )
                             ColMajor
                         )
