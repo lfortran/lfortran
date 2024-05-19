@@ -773,6 +773,7 @@ RUN(NAME intrinsics_223 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # nearest
 RUN(NAME intrinsics_224 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # spacing
 RUN(NAME intrinsics_225 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # iany
 RUN(NAME intrinsics_226 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # iall
+RUN(NAME intrinsics_227 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # norm2
 
 
 RUN(NAME parameter_01 LABELS gfortran)
