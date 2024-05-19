@@ -2,7 +2,7 @@
     (SymbolTable
         1
         {
-            test_any:
+            intrinsics_35:
                 (Program
                     (SymbolTable
                         2
@@ -271,7 +271,7 @@
                                     ()
                                 )
                         })
-                    test_any
+                    intrinsics_35
                     []
                     [(Assignment
                         (Var 2 l)
