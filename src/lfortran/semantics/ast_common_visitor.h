@@ -740,6 +740,7 @@ public:
         {"all", {IntrinsicSignature({"mask", "dim"}, 1, 2)}},
         {"iany", {IntrinsicSignature({"array", "dim", "mask"}, 1, 3)}},
         {"iall", {IntrinsicSignature({"array", "dim", "mask"}, 1, 3)}},
+        {"norm2", {IntrinsicSignature({"array", "dim"}, 1, 2)}},
         {"sum", {IntrinsicSignature({"array", "dim", "mask"}, 1, 3),
                 IntrinsicSignature({"array", "mask"}, 1, 2)}},
         {"product", {IntrinsicSignature({"array", "dim", "mask"}, 1, 3),

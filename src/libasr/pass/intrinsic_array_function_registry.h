@@ -22,6 +22,7 @@ enum class IntrinsicArrayFunctions : int64_t {
     All,
     Iany,
     Iall,
+    Norm2,
     MatMul,
     MaxLoc,
     MaxVal,
@@ -49,6 +50,7 @@ inline std::string get_array_intrinsic_name(int64_t x) {
         ARRAY_INTRINSIC_NAME_CASE(All)
         ARRAY_INTRINSIC_NAME_CASE(Iany)
         ARRAY_INTRINSIC_NAME_CASE(Iall)
+        ARRAY_INTRINSIC_NAME_CASE(Norm2)
         ARRAY_INTRINSIC_NAME_CASE(MatMul)
         ARRAY_INTRINSIC_NAME_CASE(MaxLoc)
         ARRAY_INTRINSIC_NAME_CASE(MaxVal)
@@ -2370,7 +2372,7 @@ namespace Count {
         }
         value = eval_Count(al, loc, return_type, arg_values, diag);
 
-        Vec<ASR::expr_t*> arr_intrinsic_args; arr_intrinsic_args.reserve(al, 1);
+        Vec<ASR::expr_t*> arr_intrinsic_args; arr_intrinsic_args.reserve(al, 2);
         arr_intrinsic_args.push_back(al, mask);
         if( dim_ && array_rank != 1 ) {
             arr_intrinsic_args.push_back(al, dim_);
@@ -2469,6 +2471,198 @@ namespace Count {
     }
 
 } // namespace Count
+
+namespace Norm2 {
+
+    static inline void verify_args(const ASR::IntrinsicArrayFunction_t &x,
+            diag::Diagnostics& diagnostics) {
+        require_impl(x.n_args == 1 || x.n_args == 2, "`norm2` intrinsic accepts "
+            "atleast 1 and atmost 2 arguments", x.base.base.loc, diagnostics);
+        require_impl(x.m_args[0], "`array` argument of `norm2` intrinsic "
+            "cannot be nullptr", x.base.base.loc, diagnostics);
+    }
+
+    static inline ASR::expr_t *eval_Norm2(Allocator &al,
+        const Location &loc, ASR::ttype_t *return_type, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
+        ASR::expr_t* array = args[0];
+        if (array && ASR::is_a<ASR::ArrayConstant_t>(*array)) {
+            ASR::ArrayConstant_t *arr = ASR::down_cast<ASR::ArrayConstant_t>(array);
+            size_t size = ASRUtils::get_fixed_size_of_array(arr->m_type);
+            int64_t kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(array));
+            if (kind == 4) {
+                float norm = 0.0;
+                for (size_t i = 0; i < size; i++) {
+                    norm += ((float*)(arr->m_data))[i] * ((float*)(arr->m_data))[i];
+                }
+                return ASRUtils::EXPR(ASR::make_RealConstant_t(al, loc, std::sqrt(norm), return_type));
+            } else {
+                double norm = 0.0;
+                for (size_t i = 0; i < size; i++) {
+                    norm += ((double*)(arr->m_data))[i] * ((double*)(arr->m_data))[i];
+                }
+                return ASRUtils::EXPR(ASR::make_RealConstant_t(al, loc, std::sqrt(norm), return_type));
+            }
+        } 
+        return nullptr;
+    }
+
+    static inline ASR::asr_t* create_Norm2(Allocator& al, const Location& loc,
+            Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
+        int64_t id_array = 0, id_array_dim = 1;
+        int64_t overload_id = id_array;
+
+        ASR::expr_t *array = args[0], *dim_ = nullptr;
+
+        if (args.size() == 2) {
+            dim_ = args[1];
+        }
+
+        ASR::dimension_t* array_dims = nullptr;
+        int64_t array_rank = extract_dimensions_from_ttype(ASRUtils::expr_type(args[0]), array_dims);
+
+        ASR::ttype_t* array_type = ASRUtils::expr_type(array);
+        if ( dim_ != nullptr ) {
+            size_t dim_rank = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(dim_));
+            if (dim_rank != 0) {
+                append_error(diag, "`dim` argument to `norm2` must be a scalar and must not be an array",
+                    dim_->base.loc);
+                return nullptr;
+            }
+            overload_id = id_array_dim;
+        }
+        if (array_rank == 1) {
+            overload_id = id_array;
+        }
+        
+        ASR::expr_t *value = nullptr;
+        Vec<ASR::expr_t*> arg_values; arg_values.reserve(al, 2);
+        ASR::expr_t *array_value = ASRUtils::expr_value(array);
+        arg_values.push_back(al, array_value);
+        if( array ) {
+            ASR::expr_t *array_value = ASRUtils::expr_value(array);
+            arg_values.push_back(al, array_value);
+        }
+        ASR::ttype_t* type = ASRUtils::type_get_past_allocatable(
+            ASRUtils::type_get_past_pointer(ASRUtils::expr_type(array)));
+        ASR::ttype_t* return_type = ASRUtils::duplicate_type_without_dims(
+                        al, type, loc);
+        if( overload_id == id_array_dim ) {
+            Vec<ASR::dimension_t> dims;
+            size_t n_dims = ASRUtils::extract_n_dims_from_ttype(array_type);
+            dims.reserve(al, (int) n_dims - 1);
+            for( int i = 0; i < (int) n_dims - 1; i++ ) {
+                ASR::dimension_t dim;
+                dim.loc = array->base.loc;
+                dim.m_length = nullptr;
+                dim.m_start = nullptr;
+                dims.push_back(al, dim);
+            }
+            return_type = ASRUtils::make_Array_t_util(al, loc,
+                return_type, dims.p, dims.n, ASR::abiType::Source,
+                false);
+        }
+
+        value = eval_Norm2(al, loc, return_type, arg_values, diag);
+        Vec<ASR::expr_t*> arr_intrinsic_args; arr_intrinsic_args.reserve(al, 2);
+        arr_intrinsic_args.push_back(al, array);
+        if( dim_ && array_rank != 1 ) {
+            arr_intrinsic_args.push_back(al, dim_);
+        }
+        return make_IntrinsicArrayFunction_t_util(al, loc,
+            static_cast<int64_t>(IntrinsicArrayFunctions::Norm2),
+            arr_intrinsic_args.p, arr_intrinsic_args.n, overload_id, return_type, value);
+    }
+
+    static inline ASR::expr_t *instantiate_Norm2(Allocator &al,
+            const Location &loc, SymbolTable *scope,
+            Vec<ASR::ttype_t*> &arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t> &m_args, int64_t overload_id) {
+        declare_basic_variables("_lcompilers_norm2");
+        fill_func_arg("array", duplicate_type_with_empty_dims(al, arg_types[0]));
+        if (overload_id == 0) {
+            ASR::expr_t *result = declare("result", return_type, ReturnVar);
+            /*
+                for array of rank 2, the following code is generated:
+                result = 0
+                do i = lbound(array, 2), ubound(array, 2)
+                    do j = lbound(array, 1), ubound(array, 1)
+                        result = result + array(j, i) * array(j, i)
+                    end do
+                end do
+                result = sqrt(result)
+            */
+            ASR::dimension_t* array_dims = nullptr;
+            int64_t array_rank = extract_dimensions_from_ttype(arg_types[0], array_dims);
+            std::vector<ASR::expr_t*> do_loop_variables;
+            for (int64_t i = 0; i < array_rank; i++) {
+                do_loop_variables.push_back(declare("i_" + std::to_string(i), int32, Local));
+            }
+            body.push_back(al, b.Assignment(result, b.f_t(0.0, return_type)));
+            ASR::stmt_t* do_loop = PassUtils::create_do_loop_helper_norm2(al, loc, do_loop_variables, args[0], result, array_rank);
+            ASR::expr_t* res = EXPR(ASR::make_RealSqrt_t(al, loc,
+                result, return_type, nullptr));
+            body.push_back(al, do_loop);
+            body.push_back(al, b.Assignment(result, res));
+            body.push_back(al, b.Return());
+            ASR::symbol_t *fn_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+                    body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+            scope->add_symbol(fn_name, fn_sym);
+            return b.Call(fn_sym, m_args, return_type, nullptr);
+        } else {
+            fill_func_arg("dim", duplicate_type_with_empty_dims(al, arg_types[1]));
+            ASR::expr_t *result = declare("result", return_type, Out);
+            args.push_back(al, result);
+            /*
+                for array of rank 3, the following code is generated:
+                dim == 2
+                do i = 1, ubound(mask, 1)
+                    do k = 1, ubound(mask, 3)
+                        c = 0
+                        do j = 1, ubound(mask, 2)
+                            c = c + mask(i, j, k) * mask(i, j, k)
+                        end do
+                        res(i, k) = sqrt(c)
+                    end do
+                end do
+            */
+            int64_t dim = ASR::down_cast<ASR::IntegerConstant_t>(m_args[1].m_value)->m_n;
+            ASR::dimension_t* array_dims = nullptr;
+            int64_t array_rank = extract_dimensions_from_ttype(arg_types[0], array_dims);
+            std::vector<ASR::expr_t*> res_idx;
+            for (int i = 0; i < array_rank - 1; i++) {
+                res_idx.push_back(declare("i_" + std::to_string(i), int32, Local));
+            }
+            ASR::expr_t* j = declare("j", int32, Local);
+            ASR::expr_t* c = declare("c", return_type, Local);
+
+            std::vector<ASR::expr_t*> idx; bool dim_found = false;
+            for (int i = 0; i < array_rank; i++) {
+                if (i == dim - 1) {
+                    idx.push_back(j);
+                    dim_found = true;
+                } else {
+                    dim_found ? idx.push_back(res_idx[i-1]):
+                                idx.push_back(res_idx[i]);
+                }
+            }
+            ASR::stmt_t* inner_most_do_loop = b.DoLoop(j, LBound(args[0], dim), UBound(args[0], dim), {
+                b.Assignment(c, b.Add(c, b.Mul(b.ArrayItem_01(args[0], idx), b.ArrayItem_01(args[0], idx)))),
+            });
+            ASR::stmt_t* do_loop = PassUtils::create_do_loop_helper_norm2_dim(al, loc,
+                                    idx, res_idx, inner_most_do_loop, c, args[0], result, 0, dim);
+            ASR::expr_t* res = EXPR(ASR::make_RealSqrt_t(al, loc,
+                result, return_type, nullptr));
+            body.push_back(al, do_loop);
+            body.push_back(al, b.Assignment(result, res));
+            body.push_back(al, b.Return());
+            ASR::symbol_t *fn_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+                    body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+            scope->add_symbol(fn_name, fn_sym);
+            return b.Call(fn_sym, m_args, return_type, nullptr);
+        }
+    }
+
+} // namespace Norm2
 
 namespace Pack {
 
@@ -3557,6 +3751,8 @@ namespace IntrinsicArrayFunctionRegistry {
             {&Iany::instantiate_Iany, &Iany::verify_args}},
         {static_cast<int64_t>(IntrinsicArrayFunctions::Iall),
             {&Iall::instantiate_Iall, &Iall::verify_args}},
+        {static_cast<int64_t>(IntrinsicArrayFunctions::Norm2),
+            {&Norm2::instantiate_Norm2, &Norm2::verify_args}},
         {static_cast<int64_t>(IntrinsicArrayFunctions::MatMul),
             {&MatMul::instantiate_MatMul, &MatMul::verify_args}},
         {static_cast<int64_t>(IntrinsicArrayFunctions::MaxLoc),
@@ -3591,6 +3787,7 @@ namespace IntrinsicArrayFunctionRegistry {
         {"all", {&All::create_All, &All::eval_All}},
         {"iany", {&Iany::create_Iany, &Iany::eval_Iany}},
         {"iall", {&Iall::create_Iall, &Iall::eval_Iall}},
+        {"norm2", {&Norm2::create_Norm2, &Norm2::eval_Norm2}},
         {"matmul", {&MatMul::create_MatMul, &MatMul::eval_MatMul}},
         {"maxloc", {&MaxLoc::create_MaxLoc, nullptr}},
         {"maxval", {&MaxVal::create_MaxVal, &MaxVal::eval_MaxVal}},
