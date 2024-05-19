@@ -1298,6 +1298,7 @@ public:
             SET_ARR_INTRINSIC_NAME(Shape, "shape");
             SET_ARR_INTRINSIC_NAME(MaxVal, "maxval");
             SET_ARR_INTRINSIC_NAME(MinVal, "minval");
+            SET_ARR_INTRINSIC_NAME(Norm2, "norm2");
             case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Pack)) : {
                 out += "pack";
                 visit_expr(*x.m_args[0]);
