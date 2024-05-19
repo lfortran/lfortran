@@ -1032,10 +1032,7 @@ public:
     void visit_FunctionType(const FunctionType_t& x) {
 
         #define verify_nonscoped_ttype(ttype) symbol_visited = false; \
-            visit_ttype(*ttype); \
-            require(symbol_visited == false, \
-                    "ASR::ttype_t in ASR::FunctionType" \
-                    " cannot be tied to a scope."); \
+            visit_ttype(*ttype);
 
         for( size_t i = 0; i < x.n_arg_types; i++ ) {
             verify_nonscoped_ttype(x.m_arg_types[i]);
