@@ -831,6 +831,8 @@ public:
         {"dcosh", {"cosh", "real8"}},
         {"dtanh", {"tanh", "real8"}},
         {"dsin", {"sin", "real8"}},
+        {"derf", {"erf", "real8"}},
+        {"derfc", {"erfc", "real8"}},
         {"csin", {"sin", "complex4"}},
         {"zsin", {"sin", "complex8"}},
         {"cdsin", {"sin", "complex8"}},

@@ -42,9 +42,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     Acosh,
     Atanh,
     Erf,
-    Derf,
     Erfc,
-    Derfc,
     Gamma,
     Log,
     Log10,
@@ -516,9 +514,7 @@ create_unary_function(Gamma, tgamma, gamma)
 create_unary_function(LogGamma, lgamma, log_gamma)
 create_unary_function(Log10, log10, log10)
 create_unary_function(Erf, erf, erf)
-create_unary_function(Derf, erf, erf)
 create_unary_function(Erfc, erfc, erfc)
-create_unary_function(Derfc, erfc, erfc)
 
 namespace ObjectType {
 
