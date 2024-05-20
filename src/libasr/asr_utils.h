@@ -4419,8 +4419,11 @@ ASR::asr_t* make_Cast_t_value(Allocator &al, const Location &a_loc,
         ASR::expr_t* a_arg, ASR::cast_kindType a_kind, ASR::ttype_t* a_type);
 
 static inline ASR::expr_t* compute_length_from_start_end(Allocator& al, ASR::expr_t* start, ASR::expr_t* end) {
-    ASR::expr_t* start_value = ASRUtils::expr_value(start);
+    ASR::expr_t* start_value = nullptr;
     ASR::expr_t* end_value = nullptr;
+    if (start != nullptr) {
+        start_value = ASRUtils::expr_value(start);
+    }
     if (end != nullptr) {
         end_value = ASRUtils::expr_value(end);
     }
