@@ -1020,7 +1020,7 @@ TEST_CASE("FortranEvaluator logical 3") {
     r = e.evaluate2("i .or. .true.");
     CHECK(r.ok);
     CHECK(r.result.type == FortranEvaluator::EvalResult::statement);
-    CHECK(!r.result.b);
+    CHECK(r.result.b);
 }
 
 TEST_CASE("FortranEvaluator logical 4") {
