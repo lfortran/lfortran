@@ -4420,7 +4420,10 @@ ASR::asr_t* make_Cast_t_value(Allocator &al, const Location &a_loc,
 
 static inline ASR::expr_t* compute_length_from_start_end(Allocator& al, ASR::expr_t* start, ASR::expr_t* end) {
     ASR::expr_t* start_value = ASRUtils::expr_value(start);
-    ASR::expr_t* end_value = ASRUtils::expr_value(end);
+    ASR::expr_t* end_value = nullptr;
+    if (end != nullptr) {
+        end_value = ASRUtils::expr_value(end);
+    }
 
     // If both start and end have compile time values
     // then length can be computed easily by extracting
