@@ -1217,6 +1217,7 @@ public:
             SET_INTRINSIC_NAME(Tiny,      "tiny"     );
             SET_INTRINSIC_NAME(BitSize,   "bit_size" );
             SET_INTRINSIC_NAME(NewLine,   "new_line" );
+            SET_INTRINSIC_NAME(Kind,      "kind"     );
             default : {
                 throw LCompilersException("TypeInquiry: `"
                     + ASRUtils::get_intrinsic_name(x.m_inquiry_id)
@@ -1267,6 +1268,8 @@ public:
             SET_INTRINSIC_NAME(Modulo, "modulo");
             SET_INTRINSIC_NAME(Poppar, "poppar");
             SET_INTRINSIC_NAME(Merge, "merge");
+            SET_INTRINSIC_NAME(Kind, "kind");
+            SET_INTRINSIC_NAME(Aimag, "aimag");
             default : {
                 throw LCompilersException("IntrinsicElementalFunction: `"
                     + ASRUtils::get_intrinsic_name(x.m_intrinsic_id)
@@ -1294,11 +1297,15 @@ public:
         switch (x.m_arr_intrinsic_id) {
             SET_ARR_INTRINSIC_NAME(Any, "any");
             SET_ARR_INTRINSIC_NAME(All, "all");
+            SET_ARR_INTRINSIC_NAME(Iany, "iany");
+            SET_ARR_INTRINSIC_NAME(Iall, "iall");
             SET_ARR_INTRINSIC_NAME(Sum, "sum");
+            SET_ARR_INTRINSIC_NAME(Product, "product");
             SET_ARR_INTRINSIC_NAME(Shape, "shape");
             SET_ARR_INTRINSIC_NAME(MaxVal, "maxval");
             SET_ARR_INTRINSIC_NAME(MinVal, "minval");
             SET_ARR_INTRINSIC_NAME(Norm2, "norm2");
+            SET_ARR_INTRINSIC_NAME(Transpose, "transpose");
             case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Pack)) : {
                 out += "pack";
                 visit_expr(*x.m_args[0]);
@@ -1310,6 +1317,20 @@ public:
                     visit_expr(*x.m_args[2]);
                     out += src;
                 }
+                out += ")";
+                src = out;
+                out = "";
+                break;
+            }
+            case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Unpack)) : {
+                out += "unpack";
+                visit_expr(*x.m_args[0]);
+                out += "(" + src + ", ";
+                visit_expr(*x.m_args[1]);
+                out += src;
+                out += ", ";
+                visit_expr(*x.m_args[2]);
+                out += src;
                 out += ")";
                 src = out;
                 out = "";
@@ -1328,6 +1349,84 @@ public:
                         out += ", ";
                         visit_expr(*x.m_args[2]);
                         out += src;
+                    }
+                }
+                out += ")";
+                src = out;
+                out = "";
+                break;
+            }
+            case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::DotProduct)) : {
+                out += "dot_product";
+                visit_expr(*x.m_args[0]);
+                out += "(" + src + ", ";
+                visit_expr(*x.m_args[1]);
+                out += src + ")";
+                src = out;
+                out = "";
+                break;
+            }
+            case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::MatMul)) : {
+                out += "matmul";
+                visit_expr(*x.m_args[0]);
+                out += "(" + src + ", ";
+                visit_expr(*x.m_args[1]);
+                out += src + ")";
+                src = out;
+                out = "";
+                break;
+            }
+            case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::MaxLoc)) : {
+                out += "maxloc";
+                visit_expr(*x.m_args[0]);
+                out += "(" + src;
+                if (x.n_args > 1) {
+                    out += ", ";
+                    visit_expr(*x.m_args[1]);
+                    out += src;
+                    if (x.n_args > 2) {
+                        out += ", ";
+                        visit_expr(*x.m_args[2]);
+                        out += src;
+                        if (x.n_args > 3) {
+                            out += ", ";
+                            visit_expr(*x.m_args[3]);
+                            out += src;
+                            if (x.n_args > 4) {
+                                out += ", ";
+                                visit_expr(*x.m_args[4]);
+                                out += src;
+                            }
+                        }
+                    }
+                }
+                out += ")";
+                src = out;
+                out = "";
+                break;
+            }
+            case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::MinLoc)) : {
+                out += "minloc";
+                visit_expr(*x.m_args[0]);
+                out += "(" + src;
+                if (x.n_args > 1) {
+                    out += ", ";
+                    visit_expr(*x.m_args[1]);
+                    out += src;
+                    if (x.n_args > 2) {
+                        out += ", ";
+                        visit_expr(*x.m_args[2]);
+                        out += src;
+                        if (x.n_args > 3) {
+                            out += ", ";
+                            visit_expr(*x.m_args[3]);
+                            out += src;
+                            if (x.n_args > 4) {
+                                out += ", ";
+                                visit_expr(*x.m_args[4]);
+                                out += src;
+                            }
+                        }
                     }
                 }
                 out += ")";
