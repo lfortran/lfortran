@@ -5934,9 +5934,14 @@ public:
                     if (!contain_loop_vars) return;
                 }
             }
+
+            void visit_IntrinsicArrayFunction(const ASR::IntrinsicArrayFunction_t &/*x*/) {
+                // TODO: will have to handle this
+                contain_loop_vars = false;
+            }
         };
 
-        bool contain_loop_vars = false;
+        bool contain_loop_vars = true;
         ImpliedDoLoopValuesVisitor visitor(loop_vars, contain_loop_vars);
         visitor.visit_expr(*expr);
         return contain_loop_vars;
@@ -6017,6 +6022,35 @@ public:
                     this->visit_expr(*var->m_value);
                 } else {
                     value = loop_indices[loop_var_index];
+                }
+            }
+
+            void visit_IntegerCompare( const ASR::IntegerCompare_t &x ) {
+                this->visit_expr(*x.m_left);
+                T left_val = value;
+                this->visit_expr(*x.m_right);
+                T right_val = value;
+                switch (x.m_op) {
+                    case ASR::cmpopType::Eq:
+                        value = left_val == right_val;
+                        break;
+                    case ASR::cmpopType::NotEq:
+                        value = left_val != right_val;
+                        break;
+                    case ASR::cmpopType::Gt:
+                        value = left_val > right_val;
+                        break;
+                    case ASR::cmpopType::LtE:
+                        value = left_val <= right_val;
+                        break;
+                    case ASR::cmpopType::Lt:
+                        value = left_val < right_val;
+                        break;
+                    case ASR::cmpopType::GtE:
+                        value = left_val >= right_val;
+                        break;
+                    default:
+                        throw SemanticError("Unsupported comparison operation in implied do loop", x.base.base.loc);
                 }
             }
 
@@ -6105,6 +6139,8 @@ public:
                         args.push_back(al, ASRUtils::EXPR(ASR::make_RealConstant_t(al, x.base.base.loc, value, arg_type)));
                     } else if (ASRUtils::is_integer(*arg_type)) {
                         args.push_back(al, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, value, arg_type)));
+                    } else if (ASRUtils::is_logical(*arg_type)) {
+                        args.push_back(al, ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, x.base.base.loc, value, arg_type)));
                     } else {
                         throw SemanticError("Unsupported argument type in compiletime evaluation of intrinsics in implied do loop", x.base.base.loc);
                     }
@@ -6254,8 +6290,10 @@ public:
                 }
             }
             if (data != nullptr) {
-                tmp = ASR::make_ArrayConstant_t(al, x.base.base.loc, idl_size * ASRUtils::extract_kind_from_ttype_t(type), data,
-                        array_type, ASR::arraystorageType::ColMajor);
+                ASR::expr_t* value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, x.base.base.loc, idl_size * ASRUtils::extract_kind_from_ttype_t(type), data,
+                        array_type, ASR::arraystorageType::ColMajor));
+                idl->m_value = value;
+                tmp = (ASR::asr_t*) idl;
             }
         }
         idl_nesting_level--;
