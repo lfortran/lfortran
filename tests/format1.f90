@@ -3,13 +3,15 @@ program format_04
 real :: a,b,c,d,e(6)
 double precision :: r,s,t,real_hundred
 real, parameter :: t1 = 3.47399991e-03, t2 = 3.47000011e-03
-integer :: f
+integer :: f,i,j
 real(8) :: p,q
 a = 123.456
 b = 123.45678
 c = 12.34
 d = 123.45
 f = 12345
+i = 19
+j = 21
 r = 12345678
 s = 23.5678
 t = 0.345678
@@ -46,5 +48,13 @@ print "(*(es15.5e2,1x))", e
 print "(F10.3)", abs(t2-t1)
 print "(F10.3)", t2-t1
 print "(F0.6)", real_hundred
+
+! test for issue: https://github.com/lfortran/lfortran/issues/4040
+print "(2 (I3))", i, j
+print "(2 (I 3))", i, j
+print 9, i, i + 1, j + 1, i + 2, j + 2
+! the below test also ensures that blank character
+! isn't removed from ' Dates: '
+9 FORMAT (I12, /, ' Dates: ', 2 (2I3, I5))
 
 end program
