@@ -1189,6 +1189,60 @@ public:
         return func_name;
     }
 
+    ASR::expr_t* get_transformed_function_call(ASR::symbol_t* end_sym, bool is_argument, ASR::expr_t* end) {
+        SymbolTable* symbol_scope = ASRUtils::symbol_parent_symtab(end_sym);
+        if (ASR::is_a<ASR::ExternalSymbol_t>(*end_sym) ||
+            (symbol_scope->counter != current_scope->counter && is_argument &&
+            ASRUtils::expr_value(end) == nullptr) ) {
+            /*
+                case: ./integration_tests/arrays_45.f90
+                subroutine a(cs)
+                use xx
+                real, dimension(nx), intent(in) :: cs
+                end subroutine
+
+                transform to:
+
+                pure integer function __lcompilers_get_nx()
+                use xx
+                get_nx = nx
+                end function
+
+                subroutine a(cs)
+                use xx
+                interface
+                    pure integer function __lcompilers_get_nx()
+                    end function
+                end interface
+                real, dimension(__lcompilers_get_nx()), intent(in) :: cs
+                end subroutine
+            */
+            std::string func_name = create_getter_function(end_sym->base.loc, end_sym);
+
+            ASRUtils::ASRBuilder b(al, end_sym->base.loc);
+            // create an interface
+            SymbolTable *current_scope_copy = current_scope;
+            current_scope = al.make_new<SymbolTable>(current_scope_copy);
+
+            ASR::expr_t* return_var_expr = b.Variable(current_scope, func_name, ASRUtils::symbol_type(end_sym),
+                    ASR::intentType::ReturnVar);
+
+            ASR::symbol_t* func_sym = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Function_t_util(al, end_sym->base.loc,
+                                    current_scope, s2c(al, func_name), nullptr, 0, nullptr, 0, nullptr, 0,
+                                    return_var_expr, ASR::abiType::Source,
+                                    ASR::accessType::Public, ASR::deftypeType::Interface,
+                                    nullptr, false, true, false, false, false, nullptr, 0, false, false, false, nullptr));
+
+            current_scope = current_scope_copy;
+            current_scope->add_symbol(func_name, func_sym);
+
+            ASR::expr_t* func_call = ASRUtils::EXPR(ASRUtils::make_FunctionCall_t_util(al, end_sym->base.loc,
+                                    func_sym, func_sym, nullptr, 0, ASRUtils::symbol_type(end_sym), nullptr, nullptr, false));
+            return func_call;
+        }
+        return nullptr;
+    }
+
     void process_dims(Allocator &al, Vec<ASR::dimension_t> &dims,
         AST::dimension_t *m_dim, size_t n_dim, bool &is_compile_time,
         bool is_char_type=false, bool is_argument=false) {
@@ -1211,121 +1265,37 @@ public:
                 if (ASR::is_a<ASR::Var_t>(*end)) {
                     ASR::Var_t* end_var = ASR::down_cast<ASR::Var_t>(end);
                     ASR::symbol_t* end_sym = end_var->m_v;
-                    SymbolTable* symbol_scope = ASRUtils::symbol_parent_symtab(end_sym);
-                    if (ASR::is_a<ASR::ExternalSymbol_t>(*end_sym) ||
-                        (symbol_scope->counter != current_scope->counter && is_argument &&
-                        ASRUtils::expr_value(end) == nullptr) ) {
-                        /*
-                            case: ./integration_tests/arrays_45.f90
-                            subroutine a(cs)
-                            use xx
-                            real, dimension(nx), intent(in) :: cs
-                            end subroutine
-
-                            transform to:
-
-                            pure integer function __lcompilers_get_nx()
-                            use xx
-                            get_nx = nx
-                            end function
-
-                            subroutine a(cs)
-                            use xx
-                            interface
-                                pure integer function __lcompilers_get_nx()
-                                end function
-                            end interface
-                            real, dimension(__lcompilers_get_nx()), intent(in) :: cs
-                            end subroutine
-                        */
-                        std::string func_name = create_getter_function(end_sym->base.loc, end_sym);
-
-                        ASRUtils::ASRBuilder b(al, end_sym->base.loc);
-                        // create an interface
-                        SymbolTable *current_scope_copy = current_scope;
-                        current_scope = al.make_new<SymbolTable>(current_scope_copy);
-
-                        ASR::expr_t* return_var_expr = b.Variable(current_scope, func_name, ASRUtils::symbol_type(end_sym),
-                                ASR::intentType::ReturnVar);
-
-                        ASR::symbol_t* func_sym = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Function_t_util(al, end_sym->base.loc,
-                                                current_scope, s2c(al, func_name), nullptr, 0, nullptr, 0, nullptr, 0,
-                                                return_var_expr, ASR::abiType::Source,
-                                                ASR::accessType::Public, ASR::deftypeType::Interface,
-                                                nullptr, false, true, false, false, false, nullptr, 0, false, false, false, nullptr));
-
-                        current_scope = current_scope_copy;
-                        current_scope->add_symbol(func_name, func_sym);
-
-                        ASR::expr_t* func_call = ASRUtils::EXPR(ASRUtils::make_FunctionCall_t_util(al, end_sym->base.loc,
-                                                func_sym, func_sym, nullptr, 0, ASRUtils::symbol_type(end_sym), nullptr, nullptr, false));
-                        end = func_call;
-                    }
+                    end = get_transformed_function_call(end_sym, is_argument, end);
                 } else if(ASR::is_a<ASR::IntegerBinOp_t>(*end)) {
                     ASR::IntegerBinOp_t* end_bin_op = ASR::down_cast<ASR::IntegerBinOp_t>(end);
-                    ASR::Var_t* end_var = nullptr;
-                    if (ASR::is_a<ASR::Var_t>(*end_bin_op->m_left)) {
-                        end_var = ASR::down_cast<ASR::Var_t>(end_bin_op->m_left);
-                    } else if (ASR::is_a<ASR::Var_t>(*end_bin_op->m_right)) {
-                        end_var = ASR::down_cast<ASR::Var_t>(end_bin_op->m_right);
-                    }
+                    ASR::symbol_t* end_sym = nullptr;
+                    ASR::symbol_t* first_end_sym = nullptr;
+                    ASR::symbol_t* second_end_sym = nullptr;
+                    if (ASR::is_a<ASR::Var_t>(*end_bin_op->m_left) && !ASR::is_a<ASR::Var_t>(*end_bin_op->m_right)) {
+                        ASR::Var_t* end_var = ASR::down_cast<ASR::Var_t>(end_bin_op->m_left);
+                        end_sym = end_var->m_v;
+                        end = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
+                            al, end->base.loc, get_transformed_function_call(end_sym, is_argument, end),
+                            end_bin_op->m_op, end_bin_op->m_right, end_bin_op->m_type,
+                            end_bin_op->m_value));
+                    } else if (!ASR::is_a<ASR::Var_t>(*end_bin_op->m_left) && ASR::is_a<ASR::Var_t>(*end_bin_op->m_right)) {
+                        ASR::Var_t* end_var = ASR::down_cast<ASR::Var_t>(end_bin_op->m_right);
+                        end_sym = end_var->m_v;
+                        end = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
+                            al, end->base.loc, end_bin_op->m_left, end_bin_op->m_op,
+                            get_transformed_function_call(end_sym, is_argument, end), end_bin_op->m_type,
+                            end_bin_op->m_value));
+                    } else if (ASR::is_a<ASR::Var_t>(*end_bin_op->m_left) && ASR::is_a<ASR::Var_t>(*end_bin_op->m_right)) {
+                        ASR::Var_t* first_end_var = ASR::down_cast<ASR::Var_t>(end_bin_op->m_left);
+                        ASR::Var_t* second_end_var = ASR::down_cast<ASR::Var_t>(end_bin_op->m_right);
 
-                    ASR::symbol_t* end_sym = end_var->m_v;
-                    SymbolTable* symbol_scope = ASRUtils::symbol_parent_symtab(end_sym);
-                    if (ASR::is_a<ASR::ExternalSymbol_t>(*end_sym) ||
-                        (symbol_scope->counter != current_scope->counter && is_argument &&
-                        ASRUtils::expr_value(end) == nullptr) ) {
-                        /*
-                            subroutine a(cs)
-                            use xx
-                            real, dimension(nx - 1), intent(in) :: cs
-                            end subroutine
-
-                            transform to:
-
-                            pure integer function __lcompilers_get_nx()
-                            use xx
-                            get_nx = nx
-                            end function
-
-                            subroutine a(cs)
-                            use xx
-                            interface
-                                pure integer function __lcompilers_get_nx()
-                                end function
-                            end interface
-                            real, dimension(__lcompilers_get_nx() - 1), intent(in) :: cs
-                            end subroutine
-                        */
-                        std::string func_name = create_getter_function(end_sym->base.loc, end_sym);
-
-                        ASRUtils::ASRBuilder b(al, end_sym->base.loc);
-                        // create an interface
-                        SymbolTable *current_scope_copy = current_scope;
-                        current_scope = al.make_new<SymbolTable>(current_scope_copy);
-
-                        ASR::expr_t* return_var_expr = b.Variable(current_scope, func_name, ASRUtils::symbol_type(end_sym),
-                                ASR::intentType::ReturnVar);
-
-                        ASR::symbol_t* func_sym = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Function_t_util(al, end_sym->base.loc,
-                                                current_scope, s2c(al, func_name), nullptr, 0, nullptr, 0, nullptr, 0,
-                                                return_var_expr, ASR::abiType::Source,
-                                                ASR::accessType::Public, ASR::deftypeType::Interface,
-                                                nullptr, false, true, false, false, false, nullptr, 0, false, false, false, nullptr));
-
-                        current_scope = current_scope_copy;
-                        current_scope->add_symbol(func_name, func_sym);
-
-                        ASR::expr_t* func_call = ASRUtils::EXPR(ASRUtils::make_FunctionCall_t_util(al, end_sym->base.loc,
-                                                func_sym, func_sym, nullptr, 0, ASRUtils::symbol_type(end_sym), nullptr, nullptr, false));
-                        if (ASR::is_a<ASR::Var_t>(*end_bin_op->m_left)) {
-                            end = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, end->base.loc, func_call, end_bin_op->m_op,
-                                end_bin_op->m_right, end_bin_op->m_type, end_bin_op->m_value));
-                        } else if (ASR::is_a<ASR::Var_t>(*end_bin_op->m_right)) {
-                            end = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, end->base.loc, end_bin_op->m_left, end_bin_op->m_op,
-                                func_call, end_bin_op->m_type, end_bin_op->m_value));
-                        }                        
-                    }
+                        first_end_sym = first_end_var->m_v;
+                        second_end_sym = second_end_var->m_v;
+                        end = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
+                            al, end->base.loc, get_transformed_function_call(first_end_sym, is_argument, end),
+                            end_bin_op->m_op, get_transformed_function_call(second_end_sym, is_argument, end),
+                            end_bin_op->m_type, end_bin_op->m_value));
+                    }                 
                 }
                 dim.m_length = ASRUtils::compute_length_from_start_end(al, dim.m_start,
                                     end);
