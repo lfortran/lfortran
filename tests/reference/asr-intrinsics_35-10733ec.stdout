@@ -280,7 +280,7 @@
                             [(ArrayPhysicalCast
                                 (ArrayConstant
                                     12
-                                    [1, 1, 1]
+                                    [.true., .true., .true.]
                                     (Array
                                         (Logical 4)
                                         [((IntegerConstant 1 (Integer 4))
