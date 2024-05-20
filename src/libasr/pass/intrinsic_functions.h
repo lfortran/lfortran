@@ -77,6 +77,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     Rshift,
     Shiftl,
     Dshiftl,
+    Dshiftr,
     Ishft,
     Bgt,
     Blt,
@@ -1149,8 +1150,8 @@ namespace Shiftl {
 
 namespace Dshiftl {
 
-        static ASR::expr_t *eval_Dshiftl(Allocator &al, const Location &loc,
-                ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
+    static ASR::expr_t *eval_Dshiftl(Allocator &al, const Location &loc,
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
         int64_t shift = ASR::down_cast<ASR::IntegerConstant_t>(args[2])->m_n;
@@ -1198,6 +1199,51 @@ namespace Dshiftl {
     }
 
 } // namespace Dshiftl
+
+namespace Dshiftr {
+
+    static ASR::expr_t *eval_Dshiftr(Allocator &al, const Location &loc,
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
+        int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
+        int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
+        int64_t shift = ASR::down_cast<ASR::IntegerConstant_t>(args[2])->m_n;
+        int kind1 = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_type);
+        int kind2 = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_type);
+        if(kind1 != kind2) {
+            append_error(diag, "The kind of first argument of 'dshiftr' intrinsic must be the same as second argument", loc);
+            return nullptr;
+        }
+        if(shift < 0){
+            append_error(diag, "The shift argument of 'dshiftr' intrinsic must be non-negative integer", loc);
+            return nullptr;
+        }
+        int64_t k_val = (kind1 == 8) ? 64 : 32;
+        if (shift > k_val) {
+            append_error(diag, "The shift argument of 'dshiftr' intrinsic must be less than or equal to the bit size of the integer", loc);
+            return nullptr;
+        }
+        int64_t rightmostI = val1 & ((1LL << shift) - 1);
+        int64_t result = rightmostI << (k_val - shift);
+        int64_t leftmostJ;
+        if (val2 < 0) {
+            leftmostJ = (val2 >> (k_val - shift)) & ((1LL << (k_val - shift)) - 1);
+        } else {
+            leftmostJ = val2 >> (k_val - shift);
+        }
+        result |= leftmostJ;
+        return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);
+    }
+
+
+    static inline ASR::expr_t* instantiate_Dshiftr(Allocator &/*al*/, const Location &/*loc*/,
+            SymbolTable */*scope*/, Vec<ASR::ttype_t*>& /*arg_types*/, ASR::ttype_t */*return_type*/,
+            Vec<ASR::call_arg_t>& /*new_args*/, int64_t /*overload_id*/) {
+        // TO DO: Implement the runtime function for ISHFTC
+        throw LCompilersException("Runtime implementation for `ishftc` is not yet implemented.");
+
+    }
+
+} // namespace Dshiftr
 
 namespace Dreal {
 

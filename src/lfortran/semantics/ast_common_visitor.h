@@ -816,6 +816,7 @@ public:
         {"set_exponent", {IntrinsicSignature({"X", "I"}, 2, 2)}},
         {"rrspacing", {IntrinsicSignature({"X"}, 1, 1)}},
         {"dshiftl", {IntrinsicSignature({"i", "j", "shift"}, 3, 3)}},
+        {"dshiftr", {IntrinsicSignature({"i", "j", "shift"}, 3, 3)}},
         {"random_number", {IntrinsicSignature({"r"}, 1, 1)}},
         {"mvbits", {IntrinsicSignature({"from", "frompos", "len", "to", "topos"}, 5, 5)}},
         {"modulo", {IntrinsicSignature({"a", "p"}, 2, 2)}},

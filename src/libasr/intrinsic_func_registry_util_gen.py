@@ -756,6 +756,12 @@ intrinsic_funcs_args = {
            "ret_type_arg_idx": 0
        },
    ],
+   "Dshiftr": [
+       {
+           "args": [("int", "int", "int",)],
+           "ret_type_arg_idx": 0
+       },
+   ],
    "Popcnt": [
        {
            "args": [("int",)],

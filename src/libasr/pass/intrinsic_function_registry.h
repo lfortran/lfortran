@@ -77,6 +77,7 @@ inline std::string get_intrinsic_name(int64_t x) {
         INTRINSIC_NAME_CASE(Rshift)
         INTRINSIC_NAME_CASE(Shiftl)
         INTRINSIC_NAME_CASE(Dshiftl)
+        INTRINSIC_NAME_CASE(Dshiftr)
         INTRINSIC_NAME_CASE(Ishft)
         INTRINSIC_NAME_CASE(Bgt)
         INTRINSIC_NAME_CASE(Blt)
@@ -303,6 +304,8 @@ namespace IntrinsicElementalFunctionRegistry {
             {&Shiftl::instantiate_Shiftl, &Shiftl::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Dshiftl),
            {&Dshiftl::instantiate_Dshiftl, &Dshiftl::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Dshiftr),
+            {&Dshiftr::instantiate_Dshiftr, &Dshiftr::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Ishft),
             {&Ishft::instantiate_Ishft, &Ishft::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Bgt),
@@ -628,6 +631,8 @@ namespace IntrinsicElementalFunctionRegistry {
             "shiftl"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Dshiftl),
            "dshiftl"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Dshiftr),
+            "dshiftr"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Ishft),
             "ishft"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Bgt),
@@ -887,6 +892,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"shiftl", {&Shiftl::create_Shiftl, &Shiftl::eval_Shiftl}},
                 {"lshift", {&Shiftl::create_Shiftl, &Shiftl::eval_Shiftl}},
                 {"dshiftl", {&Dshiftl::create_Dshiftl, &Dshiftl::eval_Dshiftl}},
+                {"dshiftr", {&Dshiftr::create_Dshiftr, &Dshiftr::eval_Dshiftr}},
                 {"ishft", {&Ishft::create_Ishft, &Ishft::eval_Ishft}},
                 {"bgt", {&Bgt::create_Bgt, &Bgt::eval_Bgt}},
                 {"blt", {&Blt::create_Blt, &Blt::eval_Blt}},
