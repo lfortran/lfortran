@@ -2112,6 +2112,11 @@ static inline bool is_logical(ASR::ttype_t &x) {
                 type_get_past_pointer(&x))));
 }
 
+static inline bool is_struct(ASR::ttype_t& x) {
+    return ASR::is_a<ASR::Struct_t>(
+        *type_get_past_array_pointer_allocatable(&x));
+}
+
 // Checking if the ttype 't' is a type parameter
 static inline bool is_type_parameter(ASR::ttype_t &x) {
     switch (x.type) {
