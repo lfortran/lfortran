@@ -147,7 +147,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
     void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
         Vec<ASR::stmt_t*> body;
         body.reserve(al, n_body);
-        for (size_t i=0; i<n_body; i++) {
+        for (size_t i = 0; i < n_body; i++) {
             pass_result.n = 0;
             pass_result.reserve(al, 1);
             visit_stmt(*m_body[i]);
