@@ -99,14 +99,16 @@ program format_04
     ! test for issue: https://github.com/lfortran/lfortran/issues/4040
     print "(2 (I3))", i, j
     print 25, i, j
-    25 FORMAT (F10.3)
+    25 FORMAT (I3)
     print "(2 (I 3))", i, j
     print 26, i, j
     26 FORMAT (2 (I3))
-    print 27, i, i + 1, j + 1, i + 2, j + 2
     ! the below test also ensures that blank character
     ! isn't removed from ' Dates: '
+    print 27, i, i + 1, j + 1, i + 2, j + 2
     27 FORMAT (I 12, /, ' Dates: ', 2 (2I3, I5))
     print 28, i, i + 1, j + 1, i + 2, j + 2
-    28 FORMAT (I 1 2, /, ' Dates: ', 2 (2 I 3, I 5))
+    28 FORMAT (I 12, /, ' Dates: ', 2 (2I3, I5))
+    print 29, i, i + 1, j + 1, i + 2, j + 2
+    29 FORMAT (I 1 2, /, ' Dates: ', 2 (2 I 3, I 5))
 end program
