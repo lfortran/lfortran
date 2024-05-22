@@ -753,31 +753,32 @@ void lex_format(unsigned char *&cur, Location &loc,
             re2c:yyfill:enable = 0;
             re2c:define:YYCTYPE = "unsigned char";
 
-            int = digit+;
+            int = digit (whitespace? digit)*;
             data_edit_desc
-                = 'I' int ('.' int)?
-                | 'B' int ('.' int)?
-                | 'O' int ('.' int)?
-                | 'Z' int ('.' int)?
-                | 'F' int '.' int
-                | 'E' int '.' int ('E' int)?
-                | 'EN' int '.' int ('E' int)?
-                | 'ES' int '.' int ('E' int)?
-                | 'EX' int '.' int ('E' int)?
-                | 'G' int ('.' int ('E' int)?)?
-                | 'L' int
-                | 'A' (int)?
-                | 'D' int '.' int
-                | 'PE' int '.' int
-                | 'PF' int '.' int
-                | 'P'
-                | 'X'
+                = whitespace? 'I' whitespace? int whitespace? (whitespace? '.' whitespace? int whitespace?)?
+                | whitespace? 'B' whitespace? int (whitespace? '.' whitespace? int)?
+                | whitespace? 'O' whitespace? int (whitespace? '.' whitespace? int)?
+                | whitespace? 'Z' whitespace? int (whitespace? '.' whitespace? int)?
+                | whitespace? 'F' whitespace? int whitespace? '.' whitespace? int
+                | whitespace? 'E' whitespace? int whitespace? '.' whitespace? int (whitespace? 'E' whitespace? int)?
+                | whitespace? 'E' whitespace? 'N' whitespace? int whitespace? '.' whitespace? int (whitespace? 'E' whitespace? int)?
+                | whitespace? 'E' whitespace? 'S' whitespace? int whitespace? '.' whitespace? int (whitespace? 'E' whitespace? int)?
+                | whitespace? 'E' whitespace? 'X' whitespace? int whitespace? '.' whitespace? int (whitespace? 'E' whitespace? int)?
+                | whitespace? 'G' whitespace? int (whitespace? '.' whitespace? int (whitespace? 'E' whitespace? int)?)?
+                | whitespace? 'L' whitespace? int
+                | whitespace? 'A' whitespace? (int)?
+                | whitespace? 'D' whitespace? int whitespace? '.' whitespace? int
+                | whitespace? 'P' whitespace? 'E' whitespace? int whitespace? '.' whitespace? int
+                | whitespace? 'P' whitespace? 'F' whitespace? int whitespace? '.' whitespace? int
+                | whitespace? 'P'
+                | whitespace? 'X'
                 ;
+
             position_edit_desc
-                = 'T' int
-                | 'TL' int
-                | 'TR' int
-                | int 'X'
+                = whitespace? 'T' whitespace? int
+                | whitespace? 'T' whitespace? 'L' whitespace? int
+                | whitespace 'T' whitespace? 'R' whitespace? int
+                | whitespace? int whitespace? 'X'
                 ;
             control_edit_desc
                 = position_edit_desc
