@@ -1284,7 +1284,6 @@ public:
             SET_INTRINSIC_NAME(Modulo, "modulo");
             SET_INTRINSIC_NAME(Poppar, "poppar");
             SET_INTRINSIC_NAME(Merge, "merge");
-            SET_INTRINSIC_NAME(Kind, "kind");
             SET_INTRINSIC_NAME(Aimag, "aimag");
             SET_INTRINSIC_NAME(SelectedIntKind, "selected_int_kind");
             SET_INTRINSIC_NAME(SelectedRealKind, "selected_real_kind");
