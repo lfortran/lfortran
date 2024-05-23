@@ -96,6 +96,35 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         }
     }
 
+    void replace_ArrayConstructor(ASR::ArrayConstructor_t* x) {
+        if( !ASRUtils::is_fixed_size_array(x->m_type) ) {
+            LCOMPILERS_ASSERT(false);
+        }
+
+        pass_result.reserve(al, x->n_args);
+        const Location& loc = x->base.base.loc;
+        LCOMPILERS_ASSERT(result_expr != nullptr);
+        ASR::ttype_t* result_type = ASRUtils::expr_type(result_expr);
+        ASR::ttype_t* result_element_type = ASRUtils::type_get_past_array_pointer_allocatable(result_type);
+        for( int64_t i = 0; i < ASRUtils::get_fixed_size_of_array(x->m_type); i++ ) {
+            ASR::expr_t* x_i = x->m_args[i];
+            LCOMPILERS_ASSERT(!ASRUtils::is_array(ASRUtils::expr_type(x_i)));
+            Vec<ASR::array_index_t> array_index_args;
+            array_index_args.reserve(al, 1);
+            ASR::array_index_t array_index_arg;
+            array_index_arg.loc = loc;
+            array_index_arg.m_left = nullptr;
+            array_index_arg.m_right = make_ConstantWithKind(
+                make_IntegerConstant_t, make_Integer_t, i + 1, 4, loc);
+            array_index_arg.m_step = nullptr;
+            array_index_args.push_back(al, array_index_arg);
+            ASR::expr_t* y_i = ASRUtils::EXPR(ASR::make_ArrayItem_t(al, loc,
+                result_expr, array_index_args.p, array_index_args.size(),
+                result_element_type, ASR::arraystorageType::ColMajor, nullptr));
+            pass_result.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(al, loc, y_i, x_i, nullptr)));
+        }
+    }
+
 };
 
 class FixTypeVisitor: public ASR::BaseWalkVisitor<FixTypeVisitor> {
@@ -165,7 +194,8 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
 
     bool call_replace_on_expr(ASR::exprType expr_type) {
         switch( expr_type ) {
-            case ASR::exprType::ArrayConstant: {
+            case ASR::exprType::ArrayConstant:
+            case ASR::exprType::ArrayConstructor: {
                 return true;
             }
             default: {
