@@ -2859,19 +2859,15 @@ namespace Maskr {
 
 namespace Merge {
 
-    static inline ASR::expr_t* eval_Merge(
-        Allocator &/*al*/, const Location &/*loc*/, ASR::ttype_t *,
-            Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
-        ASR::expr_t *tsource = args[0], *fsource = args[1], *mask = args[2];
-        bool mask_value = false;
-        if( ASRUtils::is_value_constant(mask, mask_value) ) {
-            if( mask_value ) {
-                return tsource;
-            } else {
-                return fsource;
-            }
+    static inline ASR::expr_t* eval_Merge(Allocator &, const Location &,
+            ASR::ttype_t *, Vec<ASR::expr_t*>& args, diag::Diagnostics &) {
+        bool mask = ASR::down_cast<ASR::LogicalConstant_t>(args[2])->m_value;
+        ASR::expr_t *tsource = args[0], *fsource = args[1];
+        if (mask) {
+            return tsource;
+        } else {
+            return fsource;
         }
-        return nullptr;
     }
 
     static inline ASR::expr_t* instantiate_Merge(Allocator &al,
