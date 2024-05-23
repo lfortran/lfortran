@@ -446,24 +446,6 @@ static inline ASR::expr_t* instantiate_functions(Allocator &al,
     return b.Call(new_symbol, new_args, return_type);
 }
 
-static inline ASR::asr_t* create_BinaryFunction(Allocator& al, const Location& loc,
-    Vec<ASR::expr_t*>& args, eval_intrinsic_function eval_function,
-    int64_t intrinsic_id, int64_t overload_id, ASR::ttype_t* type, diag::Diagnostics& diag) {
-    ASR::expr_t *value = nullptr;
-    ASR::expr_t *arg_value_1 = ASRUtils::expr_value(args[0]);
-    ASR::expr_t *arg_value_2 = ASRUtils::expr_value(args[1]);
-    if (arg_value_1 && arg_value_2) {
-        Vec<ASR::expr_t*> arg_values;
-        arg_values.reserve(al, 2);
-        arg_values.push_back(al, arg_value_1);
-        arg_values.push_back(al, arg_value_2);
-        value = eval_function(al, loc, type, arg_values, diag);
-    }
-
-    return ASRUtils::make_IntrinsicElementalFunction_t_util(al, loc, intrinsic_id,
-        args.p, args.n, overload_id, type, value);
-}
-
 static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x,
         diag::Diagnostics& diagnostics) {
     const Location& loc = x.base.base.loc;
@@ -579,23 +561,6 @@ namespace Fix {
             val = ceil(rv);
         }
         return make_ConstantWithType(make_RealConstant_t, val, t, loc);
-    }
-
-    static inline ASR::asr_t* create_Fix(Allocator& al, const Location& loc,
-        Vec<ASR::expr_t*>& args,
-        diag::Diagnostics& diag) {
-        ASR::ttype_t *type = ASRUtils::expr_type(args[0]);
-        if (args.n != 1) {
-            append_error(diag, "Intrinsic `fix` accepts exactly one argument", loc);
-            return nullptr;
-        } else if (!ASRUtils::is_real(*type)) {
-            append_error(diag, "`fix` argument of `fix` must be real",
-                args[0]->base.loc);
-            return nullptr;
-        }
-        return UnaryIntrinsicFunction::create_UnaryFunction(al, loc, args,
-                eval_Fix, static_cast<int64_t>(IntrinsicElementalFunctions::Fix),
-                0, type, diag);
     }
 
     static inline ASR::expr_t* instantiate_Fix (Allocator &al,
@@ -769,23 +734,6 @@ namespace Atan2 {
             return make_ConstantWithType(make_RealConstant_t, val, t, loc);
         }
         return nullptr;
-    }
-    static inline ASR::asr_t* create_Atan2(Allocator& al, const Location& loc,
-        Vec<ASR::expr_t*>& args,
-        diag::Diagnostics& diag)
-    {
-        ASR::ttype_t *type_1 = ASRUtils::expr_type(args[0]);
-        ASR::ttype_t *type_2 = ASRUtils::expr_type(args[1]);
-        if (!ASRUtils::is_real(*type_1)) {
-            append_error(diag, "`x` argument of \"atan2\" must be real",args[0]->base.loc);
-            return nullptr;
-        } else if (!ASRUtils::is_real(*type_2)) {
-            append_error(diag, "`y` argument of \"atan2\" must be real",args[1]->base.loc);
-            return nullptr;
-        }
-        return BinaryIntrinsicFunction::create_BinaryFunction(al, loc, args,
-                eval_Atan2, static_cast<int64_t>(IntrinsicElementalFunctions::Atan2),
-                0, type_1, diag);
     }
     static inline ASR::expr_t* instantiate_Atan2 (Allocator &al,
             const Location &loc, SymbolTable *scope,
@@ -4730,23 +4678,6 @@ namespace X {                                                                   
         }                                                                                 \
         return nullptr;                                                                   \
     }                                                                                     \
-    static inline ASR::asr_t* create_##X(Allocator& al, const Location& loc,              \
-            Vec<ASR::expr_t*>& args,                                                      \
-            diag::Diagnostics& diag) {                                                    \
-        if (args.size() != 1) {                                                           \
-            append_error(diag, "Intrinsic function `"#X"` accepts exactly 1 argument",    \
-                loc);                                                                     \
-            return nullptr;                                                               \
-        }                                                                                 \
-        ASR::ttype_t *type = ASRUtils::expr_type(args[0]);                                \
-        if (!ASRUtils::is_real(*type)) {                                                  \
-            append_error(diag, "Argument of the `"#X"` function must be either Real",     \
-                args[0]->base.loc);                                                       \
-            return nullptr;                                                               \
-        }                                                                                 \
-        return UnaryIntrinsicFunction::create_UnaryFunction(al, loc, args, eval_##X,      \
-            static_cast<int64_t>(IntrinsicElementalFunctions::X), 0, type, diag);         \
-    }                                                                                     \
 } // namespace X
 
 create_exp_macro(Exp2, exp2)
@@ -4770,24 +4701,6 @@ namespace Exp {
             }
         }
         return nullptr;
-    }
-
-    static inline ASR::asr_t* create_Exp(Allocator& al, const Location& loc,
-        Vec<ASR::expr_t*>& args,
-        diag::Diagnostics& diag) {
-        if (args.size() != 1) {
-            append_error(diag, "Intrinsic function `exp` accepts exactly 1 argument", loc);
-            return nullptr;
-        }
-        ASR::ttype_t *type = ASRUtils::expr_type(args[0]);
-        if (!ASRUtils::is_real(*type) && !is_complex(*type)) {
-            append_error(diag, "Argument of the `exp` function must be either Real or Complex",
-                args[0]->base.loc);
-            return nullptr;
-        }
-        return UnaryIntrinsicFunction::create_UnaryFunction(al, loc, args,
-            eval_Exp, static_cast<int64_t>(IntrinsicElementalFunctions::Exp),
-            0, type, diag);
     }
 
     static inline ASR::expr_t* instantiate_Exp(Allocator &al, const Location &loc,
