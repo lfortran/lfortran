@@ -5102,27 +5102,6 @@ public:
         return ASR::make_PointerAssociated_t(al, x.base.base.loc, ptr_, tgt_, associated_type_, nullptr);
     }
 
-    ASR::asr_t* create_Ichar(const AST::FuncCallOrArray_t& x) {
-        Vec<ASR::expr_t*> args;
-        std::vector<std::string> kwarg_names = {"C", "kind"};
-        handle_intrinsic_node_args(x, args, kwarg_names, 1, 2, "ichar");
-        ASR::expr_t *arg = args[0], *kind = args[1];
-        int64_t kind_value = handle_kind(kind);
-        ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, kind_value));
-        ASR::expr_t* ichar_value = nullptr;
-        ASR::expr_t* arg_value = ASRUtils::expr_value(arg);
-        if( arg_value ) {
-            std::string arg_str;
-            bool is_const_value = ASRUtils::is_value_constant(arg_value, arg_str);
-            if( is_const_value ) {
-                int64_t ascii_code = arg_str[0];
-                ichar_value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc,
-                                ascii_code, type));
-            }
-        }
-        return ASR::make_Ichar_t(al, x.base.base.loc, arg, type, ichar_value);
-    }
-
     ASR::asr_t* create_Iachar(const AST::FuncCallOrArray_t& x) {
         Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"C", "kind"};
@@ -5142,35 +5121,6 @@ public:
             }
         }
         return ASR::make_Iachar_t(al, x.base.base.loc, arg, type, iachar_value);
-    }
-
-    ASR::asr_t* create_StringChr(const AST::FuncCallOrArray_t& x) {
-        Vec<ASR::expr_t*> args;
-        std::vector<std::string> kwarg_names = {"I", "kind"};
-        handle_intrinsic_node_args(x, args, kwarg_names, 1, 2, "char");
-        ASR::expr_t *arg = args[0];
-        if (!is_integer(*ASRUtils::expr_type(arg))) {
-            throw SemanticError("`x` argument of `char()` must be an integer",
-                x.base.base.loc);
-        }
-        ASR::ttype_t* type = ASRUtils::TYPE(ASR::make_Character_t(al,
-            x.base.base.loc, 1, 1, nullptr));
-        ASR::expr_t* char_value = nullptr; int64_t ascii_code;
-        if( ASRUtils::extract_value(arg, ascii_code) ) {
-            ascii_code = (uint8_t) ascii_code;
-            if (! (ascii_code >= 0 && ascii_code <= 255) ) {
-                throw SemanticError("'x' argument of char(x) must be in the "
-                    "range 0 <= x <= 255", x.base.base.loc);
-            }
-            std::string cvalue;
-            cvalue += char(ascii_code);
-             char_value = ASRUtils::EXPR(ASR::make_StringConstant_t(al,
-                x.base.base.loc, s2c(al, cvalue), type));
-        }
-        ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al,
-            x.base.base.loc, compiler_options.po.default_integer_kind));
-        ImplicitCastRules::set_converted_value(al, x.base.base.loc, &arg, ASRUtils::expr_type(arg), int_type);
-        return ASR::make_StringChr_t(al, x.base.base.loc, arg, type, char_value);
     }
 
     ASR::asr_t* create_ScanVerify_util(const AST::FuncCallOrArray_t& x, std::string func_name) {
@@ -5619,12 +5569,8 @@ public:
                 tmp = create_Cmplx(x);
             } else if( var_name == "reshape" ) {
                 tmp = create_ArrayReshape(x);
-            } else if( var_name == "ichar" ) {
-                tmp = create_Ichar(x);
             } else if( var_name == "iachar" ) {
                 tmp = create_Iachar(x);
-            } else if( var_name == "char" ) {
-                tmp = create_StringChr(x);
             } else if( var_name == "len" ) {
                 tmp = create_StringLen(x);
             } else if( var_name == "null" ) {
