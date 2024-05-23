@@ -5133,7 +5133,8 @@ inline std::string fetch_ArrayConstant_value(void *data, ASR::ttype_t* type, int
             }
         }
         case ASR::ttypeType::Logical: {
-            return std::to_string(((bool*)data)[i]);
+            if (((bool*)data)[i] == 1) return ".true.";
+            return ".false.";
         }
         case ASR::ttypeType::Character: {
             ASR::Character_t* char_type = ASR::down_cast<ASR::Character_t>(type);
