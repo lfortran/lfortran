@@ -754,31 +754,31 @@ void lex_format(unsigned char *&cur, Location &loc,
             re2c:define:YYCTYPE = "unsigned char";
 
             int = digit (whitespace? digit)*;
+            dot_int = '.' whitespace? int;
+            E_int = 'E' whitespace? int;
             data_edit_desc
-                = whitespace? 'I' whitespace? int whitespace? (whitespace? '.' whitespace? int whitespace?)?
-                | whitespace? 'B' whitespace? int (whitespace? '.' whitespace? int)?
-                | whitespace? 'O' whitespace? int (whitespace? '.' whitespace? int)?
-                | whitespace? 'Z' whitespace? int (whitespace? '.' whitespace? int)?
-                | whitespace? 'F' whitespace? int whitespace? '.' whitespace? int
-                | whitespace? 'E' whitespace? int whitespace? '.' whitespace? int (whitespace? 'E' whitespace? int)?
-                | whitespace? 'E' whitespace? 'N' whitespace? int whitespace? '.' whitespace? int (whitespace? 'E' whitespace? int)?
-                | whitespace? 'E' whitespace? 'S' whitespace? int whitespace? '.' whitespace? int (whitespace? 'E' whitespace? int)?
-                | whitespace? 'E' whitespace? 'X' whitespace? int whitespace? '.' whitespace? int (whitespace? 'E' whitespace? int)?
-                | whitespace? 'G' whitespace? int (whitespace? '.' whitespace? int (whitespace? 'E' whitespace? int)?)?
-                | whitespace? 'L' whitespace? int
-                | whitespace? 'A' whitespace? (int)?
-                | whitespace? 'D' whitespace? int whitespace? '.' whitespace? int
-                | whitespace? 'P' whitespace? 'E' whitespace? int whitespace? '.' whitespace? int
-                | whitespace? 'P' whitespace? 'F' whitespace? int whitespace? '.' whitespace? int
-                | whitespace? 'P'
-                | whitespace? 'X'
+                = 'I' whitespace? int whitespace? dot_int?
+                | 'B' whitespace? int whitespace? dot_int?
+                | 'O' whitespace? int whitespace? dot_int?
+                | 'Z' whitespace? int whitespace? dot_int?
+                | 'F' whitespace? int whitespace? dot_int
+                | 'E' whitespace? int whitespace? dot_int whitespace? E_int?
+                | 'E' whitespace? 'N' whitespace? int whitespace? dot_int whitespace? E_int?
+                | 'E' whitespace? 'S' whitespace? int whitespace? dot_int whitespace? E_int?
+                | 'E' whitespace? 'X' whitespace? int whitespace? dot_int whitespace? E_int?
+                | 'G' whitespace? int whitespace? (dot_int whitespace? E_int?)?
+                | 'L' whitespace? int
+                | 'A' whitespace? (int)?
+                | 'D' whitespace? int whitespace? dot_int
+                | 'P' whitespace? 'E' whitespace? int whitespace? dot_int
+                | 'P' whitespace? 'F' whitespace? int whitespace? dot_int
+                | 'P'
+                | 'X'
                 ;
 
             position_edit_desc
-                = whitespace? 'T' whitespace? int
-                | whitespace? 'T' whitespace? 'L' whitespace? int
-                | whitespace 'T' whitespace? 'R' whitespace? int
-                | whitespace? int whitespace? 'X'
+                = 'T' whitespace? int ('L' | 'R')? whitespace? int
+                | int whitespace? 'X'
                 ;
             control_edit_desc
                 = position_edit_desc
@@ -832,7 +832,7 @@ void lex_format(unsigned char *&cur, Location &loc,
             '"' ('""'|[^"\x00])* '"' { continue; }
             "'" ("''"|[^'\x00])* "'" { continue; }
             '-' { continue; }
-            (int)? data_edit_desc { continue; }
+            (int)? whitespace? data_edit_desc { continue; }
             control_edit_desc { continue; }
         */
     }
