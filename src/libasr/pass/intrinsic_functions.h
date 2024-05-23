@@ -634,24 +634,6 @@ namespace X {                                                                   
         }                                                                       \
         return nullptr;                                                         \
     }                                                                           \
-    static inline ASR::asr_t* create_##X(Allocator& al, const Location& loc,    \
-        Vec<ASR::expr_t*>& args,                                                \
-        diag::Diagnostics& diag)                                                \
-    {                                                                           \
-        ASR::ttype_t *type = ASRUtils::expr_type(args[0]);                      \
-        if (args.n != 1) {                                                      \
-            append_error(diag, "Intrinsic `"#X"` accepts exactly one argument", \
-                loc);                                                           \
-            return nullptr;                                                     \
-        } else if (!ASRUtils::is_real(*type) && !ASRUtils::is_complex(*type)) { \
-            append_error(diag, "`x` argument of `"#X"` must be real or complex",\
-                args[0]->base.loc);                                             \
-            return nullptr;                                                     \
-        }                                                                       \
-        return UnaryIntrinsicFunction::create_UnaryFunction(al, loc, args,      \
-                eval_##X, static_cast<int64_t>(IntrinsicElementalFunctions::X), \
-                0, type, diag);                                                 \
-    }                                                                           \
     static inline ASR::expr_t* instantiate_##X (Allocator &al,                  \
             const Location &loc, SymbolTable *scope,                            \
             Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,           \

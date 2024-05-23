@@ -331,6 +331,84 @@ intrinsic_funcs_args = {
             "ret_type_arg_idx": 0
         },
     ],
+    "Sin": [
+        {
+            "args": [("real",), ("complex",)],
+            "ret_type_arg_idx": 0
+        },
+    ],
+    "Cos": [
+        {
+            "args": [("real",), ("complex",)],
+            "ret_type_arg_idx": 0
+        },
+    ],
+    "Tan": [
+        {
+            "args": [("real",), ("complex",)],
+            "ret_type_arg_idx": 0
+        },
+    ],
+    "Asin": [
+        {
+            "args": [("real",), ("complex",)],
+            "ret_type_arg_idx": 0
+        },
+    ],
+    "Acos": [
+        {
+            "args": [("real",), ("complex",)],
+            "ret_type_arg_idx": 0
+        },
+    ],
+    "Atan": [
+        {
+            "args": [("real",), ("complex",)],
+            "ret_type_arg_idx": 0
+        },
+    ],
+    "Sinh": [
+        {
+            "args": [("real",), ("complex",)],
+            "ret_type_arg_idx": 0
+        },
+    ],
+    "Cosh": [
+        {
+            "args": [("real",), ("complex",)],
+            "ret_type_arg_idx": 0
+        },
+    ],
+    "Tanh": [
+        {
+            "args": [("real",), ("complex",)],
+            "ret_type_arg_idx": 0
+        },
+    ],
+    "Asinh": [
+        {
+            "args": [("real",), ("complex",)],
+            "ret_type_arg_idx": 0
+        },
+    ],
+    "Acosh": [
+        {
+            "args": [("real",), ("complex",)],
+            "ret_type_arg_idx": 0
+        },
+    ],
+    "Atanh": [
+        {
+            "args": [("real",), ("complex",)],
+            "ret_type_arg_idx": 0
+        },
+    ],
+    "Log": [
+        {
+            "args": [("real",), ("complex",)],
+            "ret_type_arg_idx": 0
+        },
+    ],
     "Sngl": [
         {
             "args": [("real",)],
