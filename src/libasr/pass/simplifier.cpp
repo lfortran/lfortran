@@ -117,6 +117,7 @@ ASR::expr_t* create_temporary_variable_for_struct(Allocator& al,
 
 bool set_allocation_size(Allocator& al, ASR::expr_t* value, Vec<ASR::dimension_t>& allocate_dims) {
     LCOMPILERS_ASSERT(ASRUtils::is_array(ASRUtils::expr_type(value)));
+    const Location& loc = value->base.loc;
     switch( value->type ) {
         case ASR::exprType::FunctionCall: {
             ASR::FunctionCall_t* function_call = ASR::down_cast<ASR::FunctionCall_t>(value);
@@ -196,6 +197,30 @@ bool set_allocation_size(Allocator& al, ASR::expr_t* value, Vec<ASR::dimension_t
                 allocate_dim.m_length = ASRUtils::EXPR(ASR::make_ArraySize_t(
                     al, loc, selected_array, dim, ASRUtils::TYPE(
                         ASR::make_Integer_t(al, loc, 4)), nullptr));
+                allocate_dims.push_back(al, allocate_dim);
+            }
+            break;
+        }
+        case ASR::exprType::ArraySection: {
+            ASR::ArraySection_t* array_section_t = ASR::down_cast<ASR::ArraySection_t>(value);
+            allocate_dims.reserve(al, array_section_t->n_args);
+            ASR::expr_t* int32_one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
+            for( size_t i = 0; i < array_section_t->n_args; i++ ) {
+                ASR::expr_t* start = array_section_t->m_args[i].m_left;
+                ASR::expr_t* end = array_section_t->m_args[i].m_right;
+                ASR::expr_t* step = array_section_t->m_args[i].m_step;
+                ASR::expr_t* end_minus_start = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
+                    end, ASR::binopType::Sub, start, ASRUtils::expr_type(end), nullptr));
+                ASR::expr_t* by_step = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
+                    end_minus_start, ASR::binopType::Div, step, ASRUtils::expr_type(end_minus_start),
+                    nullptr));
+                ASR::expr_t* length = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
+                    by_step, ASR::binopType::Add, int32_one, ASRUtils::expr_type(by_step), nullptr));
+                ASR::dimension_t allocate_dim;
+                allocate_dim.loc = loc;
+                allocate_dim.m_start = int32_one;
+                allocate_dim.m_length = length;
                 allocate_dims.push_back(al, allocate_dim);
             }
             break;
