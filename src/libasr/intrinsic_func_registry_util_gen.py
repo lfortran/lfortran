@@ -122,6 +122,36 @@ intrinsic_funcs_args = {
             "ret_type_arg_idx": 0
         }
     ],
+    "Exp": [
+        {
+            "args": [("real",), ("complex",)],
+            "ret_type_arg_idx": 0
+        },
+    ],
+    "Atan2": [
+        {
+            "args": [("real", "real")],
+            "ret_type_arg_idx": 0
+        }
+    ],
+    "Fix": [
+        {
+            "args": [("real",)],
+            "ret_type_arg_idx": 0
+        }
+    ],
+    "Exp2": [
+        {
+            "args": [("real",)],
+            "ret_type_arg_idx": 0
+        }
+    ],
+    "Expm1": [
+        {
+            "args": [("real",)],
+            "ret_type_arg_idx": 0
+        }
+    ],
     "SelectedIntKind": [
         {
             "args": [("int",)],
