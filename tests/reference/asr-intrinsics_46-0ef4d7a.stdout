@@ -129,13 +129,13 @@
                                     dp
                                     []
                                     Local
-                                    (IntrinsicElementalFunction
+                                    (TypeInquiry
                                         Kind
-                                        [(RealConstant
+                                        (Real 8)
+                                        (RealConstant
                                             0.000000
                                             (Real 8)
-                                        )]
-                                        0
+                                        )
                                         (Integer 4)
                                         (IntegerConstant 8 (Integer 4))
                                     )
@@ -573,9 +573,10 @@
                     )
                     (If
                         (IntegerCompare
-                            (IntrinsicElementalFunction
+                            (TypeInquiry
                                 Kind
-                                [(ArrayItem
+                                (Integer 8)
+                                (ArrayItem
                                     (Var 2 int_res)
                                     [(()
                                     (IntegerConstant 1 (Integer 4))
@@ -583,15 +584,17 @@
                                     (Integer 8)
                                     ColMajor
                                     ()
-                                )]
-                                0
+                                )
                                 (Integer 4)
-                                ()
+                                (IntegerConstant 8 (Integer 4))
                             )
                             NotEq
                             (Var 2 dp)
                             (Logical 4)
-                            ()
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
                         )
                         [(ErrorStop
                             ()
@@ -626,9 +629,10 @@
                     )
                     (If
                         (IntegerCompare
-                            (IntrinsicElementalFunction
+                            (TypeInquiry
                                 Kind
-                                [(ArrayItem
+                                (Integer 8)
+                                (ArrayItem
                                     (Var 2 int_res)
                                     [(()
                                     (IntegerConstant 2 (Integer 4))
@@ -636,15 +640,17 @@
                                     (Integer 8)
                                     ColMajor
                                     ()
-                                )]
-                                0
+                                )
                                 (Integer 4)
-                                ()
+                                (IntegerConstant 8 (Integer 4))
                             )
                             NotEq
                             (Var 2 dp)
                             (Logical 4)
-                            ()
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
                         )
                         [(ErrorStop
                             ()
@@ -679,9 +685,10 @@
                     )
                     (If
                         (IntegerCompare
-                            (IntrinsicElementalFunction
+                            (TypeInquiry
                                 Kind
-                                [(ArrayItem
+                                (Integer 8)
+                                (ArrayItem
                                     (Var 2 int_res)
                                     [(()
                                     (IntegerConstant 3 (Integer 4))
@@ -689,15 +696,17 @@
                                     (Integer 8)
                                     ColMajor
                                     ()
-                                )]
-                                0
+                                )
                                 (Integer 4)
-                                ()
+                                (IntegerConstant 8 (Integer 4))
                             )
                             NotEq
                             (Var 2 dp)
                             (Logical 4)
-                            ()
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
                         )
                         [(ErrorStop
                             ()
@@ -732,9 +741,10 @@
                     )
                     (If
                         (IntegerCompare
-                            (IntrinsicElementalFunction
+                            (TypeInquiry
                                 Kind
-                                [(ArrayItem
+                                (Integer 8)
+                                (ArrayItem
                                     (Var 2 int_res)
                                     [(()
                                     (IntegerConstant 4 (Integer 4))
@@ -742,15 +752,17 @@
                                     (Integer 8)
                                     ColMajor
                                     ()
-                                )]
-                                0
+                                )
                                 (Integer 4)
-                                ()
+                                (IntegerConstant 8 (Integer 4))
                             )
                             NotEq
                             (Var 2 dp)
                             (Logical 4)
-                            ()
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
                         )
                         [(ErrorStop
                             ()
@@ -1279,103 +1291,16 @@
                         []
                     )
                     (Print
-                        [(IntrinsicElementalFunction
+                        [(TypeInquiry
                             Kind
-                            [(IntrinsicElementalFunction
+                            (Integer 4)
+                            (IntrinsicElementalFunction
                                 Ichar
                                 [(Var 2 a)]
                                 0
                                 (Integer 4)
                                 ()
-                            )]
-                            0
-                            (Integer 4)
-                            ()
-                        )]
-                        ()
-                        ()
-                    )
-                    (If
-                        (IntegerCompare
-                            (IntrinsicElementalFunction
-                                Kind
-                                [(IntrinsicElementalFunction
-                                    Ichar
-                                    [(Var 2 a)]
-                                    0
-                                    (Integer 4)
-                                    ()
-                                )]
-                                0
-                                (Integer 4)
-                                ()
                             )
-                            NotEq
-                            (IntegerConstant 4 (Integer 4))
-                            (Logical 4)
-                            ()
-                        )
-                        [(ErrorStop
-                            ()
-                        )]
-                        []
-                    )
-                    (Print
-                        [(IntrinsicElementalFunction
-                            Kind
-                            [(IntrinsicElementalFunction
-                                Ichar
-                                [(Var 2 a)]
-                                0
-                                (Integer 8)
-                                ()
-                            )]
-                            0
-                            (Integer 4)
-                            ()
-                        )]
-                        ()
-                        ()
-                    )
-                    (If
-                        (IntegerCompare
-                            (IntrinsicElementalFunction
-                                Kind
-                                [(IntrinsicElementalFunction
-                                    Ichar
-                                    [(Var 2 a)]
-                                    0
-                                    (Integer 8)
-                                    ()
-                                )]
-                                0
-                                (Integer 4)
-                                ()
-                            )
-                            NotEq
-                            (IntegerConstant 8 (Integer 4))
-                            (Logical 4)
-                            ()
-                        )
-                        [(ErrorStop
-                            ()
-                        )]
-                        []
-                    )
-                    (Print
-                        [(IntrinsicElementalFunction
-                            Kind
-                            [(IntrinsicElementalFunction
-                                Ichar
-                                [(StringConstant
-                                    "a"
-                                    (Character 1 1 ())
-                                )]
-                                0
-                                (Integer 4)
-                                (IntegerConstant 97 (Integer 4))
-                            )]
-                            0
                             (Integer 4)
                             (IntegerConstant 4 (Integer 4))
                         )]
@@ -1384,19 +1309,16 @@
                     )
                     (If
                         (IntegerCompare
-                            (IntrinsicElementalFunction
+                            (TypeInquiry
                                 Kind
-                                [(IntrinsicElementalFunction
+                                (Integer 4)
+                                (IntrinsicElementalFunction
                                     Ichar
-                                    [(StringConstant
-                                        "a"
-                                        (Character 1 1 ())
-                                    )]
+                                    [(Var 2 a)]
                                     0
                                     (Integer 4)
-                                    (IntegerConstant 97 (Integer 4))
-                                )]
-                                0
+                                    ()
+                                )
                                 (Integer 4)
                                 (IntegerConstant 4 (Integer 4))
                             )
@@ -1414,19 +1336,16 @@
                         []
                     )
                     (Print
-                        [(IntrinsicElementalFunction
+                        [(TypeInquiry
                             Kind
-                            [(IntrinsicElementalFunction
+                            (Integer 8)
+                            (IntrinsicElementalFunction
                                 Ichar
-                                [(StringConstant
-                                    "a"
-                                    (Character 1 1 ())
-                                )]
+                                [(Var 2 a)]
                                 0
                                 (Integer 8)
-                                (IntegerConstant 97 (Integer 8))
-                            )]
-                            0
+                                ()
+                            )
                             (Integer 4)
                             (IntegerConstant 8 (Integer 4))
                         )]
@@ -1435,9 +1354,109 @@
                     )
                     (If
                         (IntegerCompare
-                            (IntrinsicElementalFunction
+                            (TypeInquiry
                                 Kind
-                                [(IntrinsicElementalFunction
+                                (Integer 8)
+                                (IntrinsicElementalFunction
+                                    Ichar
+                                    [(Var 2 a)]
+                                    0
+                                    (Integer 8)
+                                    ()
+                                )
+                                (Integer 4)
+                                (IntegerConstant 8 (Integer 4))
+                            )
+                            NotEq
+                            (IntegerConstant 8 (Integer 4))
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Print
+                        [(TypeInquiry
+                            Kind
+                            (Integer 4)
+                            (IntrinsicElementalFunction
+                                Ichar
+                                [(StringConstant
+                                    "a"
+                                    (Character 1 1 ())
+                                )]
+                                0
+                                (Integer 4)
+                                (IntegerConstant 97 (Integer 4))
+                            )
+                            (Integer 4)
+                            (IntegerConstant 4 (Integer 4))
+                        )]
+                        ()
+                        ()
+                    )
+                    (If
+                        (IntegerCompare
+                            (TypeInquiry
+                                Kind
+                                (Integer 4)
+                                (IntrinsicElementalFunction
+                                    Ichar
+                                    [(StringConstant
+                                        "a"
+                                        (Character 1 1 ())
+                                    )]
+                                    0
+                                    (Integer 4)
+                                    (IntegerConstant 97 (Integer 4))
+                                )
+                                (Integer 4)
+                                (IntegerConstant 4 (Integer 4))
+                            )
+                            NotEq
+                            (IntegerConstant 4 (Integer 4))
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Print
+                        [(TypeInquiry
+                            Kind
+                            (Integer 8)
+                            (IntrinsicElementalFunction
+                                Ichar
+                                [(StringConstant
+                                    "a"
+                                    (Character 1 1 ())
+                                )]
+                                0
+                                (Integer 8)
+                                (IntegerConstant 97 (Integer 8))
+                            )
+                            (Integer 4)
+                            (IntegerConstant 8 (Integer 4))
+                        )]
+                        ()
+                        ()
+                    )
+                    (If
+                        (IntegerCompare
+                            (TypeInquiry
+                                Kind
+                                (Integer 8)
+                                (IntrinsicElementalFunction
                                     Ichar
                                     [(StringConstant
                                         "a"
@@ -1446,8 +1465,7 @@
                                     0
                                     (Integer 8)
                                     (IntegerConstant 97 (Integer 8))
-                                )]
-                                0
+                                )
                                 (Integer 4)
                                 (IntegerConstant 8 (Integer 4))
                             )

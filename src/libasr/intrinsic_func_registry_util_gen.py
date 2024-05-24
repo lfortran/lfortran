@@ -770,6 +770,7 @@ compile_time_only_fn = [
     "Huge",
     "BitSize",
     "NewLine",
+    "Kind",
 ]
 
 type_to_asr_type_check = {

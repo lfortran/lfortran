@@ -344,7 +344,7 @@ namespace IntrinsicElementalFunctionRegistry {
         {static_cast<int64_t>(IntrinsicElementalFunctions::Hypot),
             {&Hypot::instantiate_Hypot, &Hypot::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Kind),
-            {&Kind::instantiate_Kind, &Kind::verify_args}},
+            {nullptr, &Kind::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Rank),
             {nullptr, &Rank::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Digits),
