@@ -1328,8 +1328,6 @@ public:
             SET_INTRINSIC_NAME(LogGamma, "log_gamma");
             SET_INTRINSIC_NAME(Erf, "erf");
             SET_INTRINSIC_NAME(Erfc, "erfc");
-            SET_INTRINSIC_NAME(Trunc, "trunc");
-            SET_INTRINSIC_NAME(Fix, "fix");
             SET_INTRINSIC_NAME(Gamma, "gamma");
             SET_INTRINSIC_NAME(BesselJ0, "bessel_j0");
             SET_INTRINSIC_NAME(BesselJ1, "bessel_j1");
@@ -1346,22 +1344,12 @@ public:
             SET_INTRINSIC_NAME(Spacing, "spacing");
             SET_INTRINSIC_NAME(BesselJN, "bessel_jn");
             SET_INTRINSIC_NAME(BesselYN, "bessel_yn");
-            SET_INTRINSIC_NAME(Mvbits, "mvbits");
             SET_INTRINSIC_NAME(Mergebits, "merge_bits");
             SET_INTRINSIC_NAME(Exponent, "exponent");
             SET_INTRINSIC_NAME(Fraction, "fraction");
             SET_INTRINSIC_NAME(SetExponent, "set_exponent");
             SET_INTRINSIC_NAME(Leadz, "leadz");
-            SET_INTRINSIC_NAME(ToLowerCase, "_lfortran_tolowercase");
             SET_INTRINSIC_NAME(Hypot, "hypot");
-            SET_INTRINSIC_NAME(ListIndex, "list.index");
-            SET_INTRINSIC_NAME(ListReverse, "list.reverse");
-            SET_INTRINSIC_NAME(ListPop, "list.pop");
-            SET_INTRINSIC_NAME(ListReserve, "list.reserve");
-            SET_INTRINSIC_NAME(DictKeys, "dict.keys");
-            SET_INTRINSIC_NAME(DictValues, "dict.values");
-            SET_INTRINSIC_NAME(SetAdd, "set.add");
-            SET_INTRINSIC_NAME(SetRemove, "set.remove");
             SET_INTRINSIC_NAME(Radix, "radix");
             SET_INTRINSIC_NAME(Scale, "scale");
             SET_INTRINSIC_NAME(Dprod, "dprod");
@@ -1381,28 +1369,6 @@ public:
             SET_INTRINSIC_NAME(NewLine, "new_line");
             SET_INTRINSIC_NAME(Conjg, "conjg");
             SET_INTRINSIC_NAME(Huge, "huge");
-            SET_INTRINSIC_NAME(SymbolicAdd, "SymbolicAdd");
-            SET_INTRINSIC_NAME(SymbolicSub, "SymbolicSub");
-            SET_INTRINSIC_NAME(SymbolicMul, "SymbolicMul");
-            SET_INTRINSIC_NAME(SymbolicDiv, "SymbolicDiv");
-            SET_INTRINSIC_NAME(SymbolicPow, "SymbolicPow");
-            SET_INTRINSIC_NAME(SymbolicPi, "pi");
-            SET_INTRINSIC_NAME(SymbolicE, "E");
-            SET_INTRINSIC_NAME(SymbolicInteger, "SymbolicInteger");
-            SET_INTRINSIC_NAME(SymbolicDiff, "diff");
-            SET_INTRINSIC_NAME(SymbolicExpand, "expand");
-            SET_INTRINSIC_NAME(SymbolicSin, "SymbolicSin");
-            SET_INTRINSIC_NAME(SymbolicCos, "SymbolicCos");
-            SET_INTRINSIC_NAME(SymbolicLog, "SymbolicLog");
-            SET_INTRINSIC_NAME(SymbolicExp, "SymbolicExp");
-            SET_INTRINSIC_NAME(SymbolicAbs, "SymbolicAbs");
-            SET_INTRINSIC_NAME(SymbolicHasSymbolQ, "has");
-            SET_INTRINSIC_NAME(SymbolicAddQ, "AddQ");
-            SET_INTRINSIC_NAME(SymbolicMulQ, "MulQ");
-            SET_INTRINSIC_NAME(SymbolicPowQ, "PowQ");
-            SET_INTRINSIC_NAME(SymbolicLogQ, "LogQ");
-            SET_INTRINSIC_NAME(SymbolicSinQ, "SinQ");
-            SET_INTRINSIC_NAME(SymbolicGetArgument, "GetArgument");
             default : {
                 throw LCompilersException("IntrinsicElementalFunction: `"
                     + ASRUtils::get_intrinsic_name(x.m_intrinsic_id)
