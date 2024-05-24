@@ -22,6 +22,17 @@ logical :: mask_c(2, 4)
 complex :: field_c(2, 4), unity_c(2, 4)
 
 ! ! result: unity matrix
+integer, parameter :: unity_comp(4) = unpack([1, 2, 3, 4], [.true., .false., .true., .false.], [5, 6, 7, 8])
+real, parameter :: unity_comp_r(4) = unpack([23.12, 23.12, 23.12, 23.12], [.false., .true., .true., .false.],&
+    [681.31, 681.31, 681.31, 681.31])
+
+print *, unity_comp
+if (sum(unity_comp) /= 17) error stop
+
+print*, unity_comp_r
+print*, sum(unity_comp_r)
+if (abs(sum(unity_comp_r) - 1408.85999) > 1e-5) error stop
+
 field = 0
 mask = reshape([.true., .false., .false., .true.], shape(mask))
 unity = unpack(vector, mask, field)

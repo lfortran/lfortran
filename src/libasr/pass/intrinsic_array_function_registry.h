@@ -3119,7 +3119,7 @@ namespace Unpack {
         int kind = ASRUtils::extract_kind_from_ttype_t(type_a);
         int dim_mask = ASRUtils::get_fixed_size_of_array(type_mask);
         int dim_vector = ASRUtils::get_fixed_size_of_array(type_vector);
-
+        int k = 0;
         std::vector<bool> b(dim_mask);
         populate_vector(al, b, mask, dim_mask);
 
@@ -3129,10 +3129,10 @@ namespace Unpack {
                 populate_vector(al, a, vector, dim_vector);
                 populate_vector(al, c, field, dim_mask);
                 Vec<ASR::expr_t*> values; values.reserve(al, b.size());
-
                 for (int i = 0; i < dim_mask; i++) {
                     if (b[i]) {
-                        values.push_back(al, EXPR(ASR::make_RealConstant_t(al, loc, a[i], real32)));
+                        values.push_back(al, EXPR(ASR::make_RealConstant_t(al, loc, a[k], real32)));
+                        k++;
                     } else {
                         values.push_back(al, EXPR(ASR::make_RealConstant_t(al, loc, c[i], real32)));
                     }
@@ -3144,10 +3144,10 @@ namespace Unpack {
                 populate_vector(al, a, vector, dim_vector);
                 populate_vector(al, c, field, dim_mask);
                 Vec<ASR::expr_t*> values; values.reserve(al, b.size());
-
                 for (int i = 0; i < dim_mask; i++) {
                     if (b[i]) {
-                        values.push_back(al, EXPR(ASR::make_RealConstant_t(al, loc, a[i], real64)));
+                        values.push_back(al, EXPR(ASR::make_RealConstant_t(al, loc, a[k], real64)));
+                        k++;
                     } else {
                         values.push_back(al, EXPR(ASR::make_RealConstant_t(al, loc, c[i], real64)));
                     }
@@ -3163,10 +3163,10 @@ namespace Unpack {
                 populate_vector(al, a, vector, dim_vector);
                 populate_vector(al, c, field, dim_mask);
                 Vec<ASR::expr_t*> values; values.reserve(al, b.size());
-
                 for (int i = 0; i < dim_mask; i++) {
                     if (b[i]) {
-                        values.push_back(al, EXPR(ASR::make_IntegerConstant_t(al, loc, a[i], int32)));
+                        values.push_back(al, EXPR(ASR::make_IntegerConstant_t(al, loc, a[k], int32)));
+                        k++;
                     } else {
                         values.push_back(al, EXPR(ASR::make_IntegerConstant_t(al, loc, c[i], int32)));
                     }
@@ -3177,10 +3177,10 @@ namespace Unpack {
                 populate_vector(al, a, vector, dim_vector);
                 populate_vector(al, c, field, dim_mask);
                 Vec<ASR::expr_t*> values; values.reserve(al, b.size());
-
                 for (int i = 0; i < dim_mask; i++) {
                     if (b[i]) {
-                        values.push_back(al, EXPR(ASR::make_IntegerConstant_t(al, loc, a[i], int64)));
+                        values.push_back(al, EXPR(ASR::make_IntegerConstant_t(al, loc, a[k], int64)));
+                        k++;
                     } else {
                         values.push_back(al, EXPR(ASR::make_IntegerConstant_t(al, loc, c[i], int64)));
                     }
@@ -3198,7 +3198,8 @@ namespace Unpack {
 
             for (int i = 0; i < dim_mask; i++) {
                 if (b[i]) {
-                    values.push_back(al, EXPR(ASR::make_LogicalConstant_t(al, loc, a[i], logical)));
+                    values.push_back(al, EXPR(ASR::make_LogicalConstant_t(al, loc, a[k], logical)));
+                    k++;
                 } else {
                     values.push_back(al, EXPR(ASR::make_LogicalConstant_t(al, loc, c[i], logical)));
                 }
@@ -3214,7 +3215,8 @@ namespace Unpack {
 
                 for (int i = 0; i < dim_mask; i++) {
                     if (b[i]) {
-                        values.push_back(al, EXPR(ASR::make_ComplexConstant_t(al, loc, a[i].first, a[i].second, type_get_past_array(return_type))));
+                        values.push_back(al, EXPR(ASR::make_ComplexConstant_t(al, loc, a[k].first, a[k].second, type_get_past_array(return_type))));
+                        k++;
                     } else {
                         values.push_back(al, EXPR(ASR::make_ComplexConstant_t(al, loc, c[i].first, c[i].second, type_get_past_array(return_type))));
                     }
@@ -3228,7 +3230,8 @@ namespace Unpack {
 
                 for (int i = 0; i < dim_mask; i++) {
                     if (b[i]) {
-                        values.push_back(al, EXPR(ASR::make_ComplexConstant_t(al, loc, a[i].first, a[i].second, type_get_past_array(return_type))));
+                        values.push_back(al, EXPR(ASR::make_ComplexConstant_t(al, loc, a[k].first, a[k].second, type_get_past_array(return_type))));
+                        k++;
                     } else {
                         values.push_back(al, EXPR(ASR::make_ComplexConstant_t(al, loc, c[i].first, c[i].second, type_get_past_array(return_type))));
                     }
