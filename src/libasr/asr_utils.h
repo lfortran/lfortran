@@ -2829,12 +2829,9 @@ inline int extract_kind(ASR::expr_t* kind_expr, const Location& loc) {
         case ASR::exprType::IntrinsicElementalFunction: {
             ASR::IntrinsicElementalFunction_t* kind_isf =
                 ASR::down_cast<ASR::IntrinsicElementalFunction_t>(kind_expr);
-            if (kind_isf->m_intrinsic_id == 1 && kind_isf->m_value) {
-                // m_intrinsic_id: 1 -> kind intrinsic
-                LCOMPILERS_ASSERT( ASR::is_a<ASR::IntegerConstant_t>(*kind_isf->m_value) );
-                ASR::IntegerConstant_t* kind_ic =
-                    ASR::down_cast<ASR::IntegerConstant_t>(kind_isf->m_value);
-                return kind_ic->m_n;
+            if ( kind_isf->m_value &&
+                    ASR::is_a<ASR::IntegerConstant_t>(*kind_isf->m_value) ) {
+                return ASR::down_cast<ASR::IntegerConstant_t>(kind_isf->m_value)->m_n;
             } else {
                 throw SemanticError("Only Integer literals or expressions which "
                     "reduce to constant Integer are accepted as kind parameters.",
