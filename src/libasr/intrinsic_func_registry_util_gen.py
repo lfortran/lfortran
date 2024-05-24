@@ -898,7 +898,7 @@ def add_create_func_return_src(func_name):
     if kind_arg:
         src += indent * 2 + "if ( args[1] != nullptr ) {\n"
         src += indent * 3 +     "int kind = -1;\n"
-        src += indent * 3 +     "if (!ASR::is_a<ASR::Integer_t>(*expr_type(args[1])) || !extract_value(args[1], kind)) {\n"
+        src += indent * 3 +     "if (!ASR::is_a<ASR::Integer_t>(*expr_type(args[1])) || !extract_value(ASRUtils::expr_value(args[1]), kind)) {\n"
         src += indent * 4 +         f'append_error(diag, "`kind` argument of the `{func_name}` function must be a scalar Integer constant", args[1]->base.loc);\n'
         src += indent * 4 +         "return nullptr;\n"
         src += indent * 3 +     "}\n"
