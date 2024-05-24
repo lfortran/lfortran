@@ -1350,10 +1350,8 @@ public:
             SET_INTRINSIC_NAME(SetExponent, "set_exponent");
             SET_INTRINSIC_NAME(Leadz, "leadz");
             SET_INTRINSIC_NAME(Hypot, "hypot");
-            SET_INTRINSIC_NAME(Radix, "radix");
             SET_INTRINSIC_NAME(Scale, "scale");
             SET_INTRINSIC_NAME(Dprod, "dprod");
-            SET_INTRINSIC_NAME(Range, "range");
             SET_INTRINSIC_NAME(Sign, "sign");
             SET_INTRINSIC_NAME(Aint, "aint");
             SET_INTRINSIC_NAME(Popcnt, "popcnt");
@@ -1362,13 +1360,7 @@ public:
             SET_INTRINSIC_NAME(Dim, "dim");
             SET_INTRINSIC_NAME(Ifix, "ifix");
             SET_INTRINSIC_NAME(Idint, "idint");
-            SET_INTRINSIC_NAME(Epsilon, "epsilon");
-            SET_INTRINSIC_NAME(Precision, "precision");
-            SET_INTRINSIC_NAME(Tiny, "tiny");
-            SET_INTRINSIC_NAME(BitSize, "bit_size");
-            SET_INTRINSIC_NAME(NewLine, "new_line");
             SET_INTRINSIC_NAME(Conjg, "conjg");
-            SET_INTRINSIC_NAME(Huge, "huge");
             default : {
                 throw LCompilersException("IntrinsicElementalFunction: `"
                     + ASRUtils::get_intrinsic_name(x.m_intrinsic_id)
