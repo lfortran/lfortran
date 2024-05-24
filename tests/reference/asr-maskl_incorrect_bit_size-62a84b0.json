@@ -1,0 +1,13 @@
+{
+    "basename": "asr-maskl_incorrect_bit_size-62a84b0",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/maskl_incorrect_bit_size.f90",
+    "infile_hash": "a9e260d5d0f14e7862f20bfdd11a98f42090d32350340c8e7803fba8",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-maskl_incorrect_bit_size-62a84b0.stderr",
+    "stderr_hash": "de81b5dd7f2ba3554a00ac0c0560d33d48a0fcb1b3b04452cd1079fc",
+    "returncode": 2
+}
