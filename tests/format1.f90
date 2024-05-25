@@ -106,7 +106,7 @@ program format_04
     ! the below test also ensures that blank character
     ! isn't removed from ' Dates: '
     print 27, i, i + 1, j + 1, i + 2, j + 2
-    27 FORMAT (I 12, /, ' Dates: ', 2 (2I3, I5))
+    27 FORMAT (I12, /, ' Dates: ', 2 (2I3, I5))
     print 28, i, i + 1, j + 1, i + 2, j + 2
     28 FORMAT (I 12, /, ' Dates: ', 2 (2I3, I5))
     print 29, i, i + 1, j + 1, i + 2, j + 2
