@@ -2860,183 +2860,135 @@ public:
                                     ASR::Cast_t *cast = ASR::down_cast<ASR::Cast_t>(init_expr);
                                     if (cast->m_arg && ASR::is_a<ASR::ArrayConstant_t>(*cast->m_arg)) {
                                         ASR::cast_kindType cast_kind = cast->m_kind;
-                                        // TODO: handle other cases
+                                        bool is_convertible = false;
+                                        ASR::ArrayConstant_t *a = ASR::down_cast<ASR::ArrayConstant_t>(cast->m_arg);
+                                        ASR::ttype_t* cast_type = cast->m_type;
+                                        Vec<ASR::expr_t*> body;
+                                        body.reserve(al, ASRUtils::get_fixed_size_of_array(a->m_type));
                                         if (cast_kind == ASR::cast_kindType::IntegerToReal) {
-                                            bool is_int = true;
-                                            ASR::ArrayConstant_t *a = ASR::down_cast<ASR::ArrayConstant_t>(cast->m_arg);
-                                            ASR::ttype_t* real_type = cast->m_type;
-                                            Vec<ASR::expr_t*> body;
-                                            body.reserve(al, ASRUtils::get_fixed_size_of_array(a->m_type));
                                             for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(a->m_type); i++) {
                                                 ASR::expr_t *e = ASRUtils::fetch_ArrayConstant_value(al, a, i);
-                                                // it will be IntegerConstant_t convert it to RealConstant_t
                                                 if (ASR::is_a<ASR::IntegerConstant_t>(*e)) {
                                                     ASR::IntegerConstant_t *int_const = ASR::down_cast<ASR::IntegerConstant_t>(e);
                                                     double val = int_const->m_n;
                                                     ASR::expr_t *real_const = ASRUtils::EXPR(ASR::make_RealConstant_t(al, int_const->base.base.loc,
-                                                        val, ASRUtils::type_get_past_array(real_type)));
+                                                        val, ASRUtils::type_get_past_array(cast_type)));
                                                     body.push_back(al, real_const);
+                                                    is_convertible = true;
                                                 } else {
-                                                    is_int = false;
                                                     break;
                                                 }
                                             }
-                                            if (is_int) {
-                                                ASR::expr_t* array_const = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, a->base.base.loc, body.p, body.size(), real_type, a->m_storage_format));
-                                                cast->m_value = ASRUtils::expr_value(array_const);
-                                                value = cast->m_value;
-                                            }
                                         } else if (cast_kind == ASR::cast_kindType::RealToInteger) {
-                                            bool is_real = true;
-                                            ASR::ArrayConstant_t *a = ASR::down_cast<ASR::ArrayConstant_t>(cast->m_arg);
-                                            ASR::ttype_t* int_type = cast->m_type;
-                                            Vec<ASR::expr_t*> body;
-                                            body.reserve(al, ASRUtils::get_fixed_size_of_array(a->m_type));
                                             for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(a->m_type); i++) {
                                                 ASR::expr_t *e = ASRUtils::fetch_ArrayConstant_value(al, a, i);
-                                                // it will be RealConstant_t convert it to IntegerConstant_t
                                                 if (ASR::is_a<ASR::RealConstant_t>(*e)) {
                                                     ASR::RealConstant_t *real_const = ASR::down_cast<ASR::RealConstant_t>(e);
                                                     int64_t val = real_const->m_r;
                                                     ASR::expr_t *int_const = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, real_const->base.base.loc,
-                                                        val, ASRUtils::type_get_past_array(int_type)));
+                                                        val, ASRUtils::type_get_past_array(cast_type)));
                                                     body.push_back(al, int_const);
+                                                    is_convertible = true;
                                                 } else {
-                                                    is_real = false;
                                                     break;
                                                 }
                                             }
-                                            if (is_real) {
-                                                ASR::expr_t* array_const = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, a->base.base.loc, body.p, body.size(), int_type, a->m_storage_format));
-                                                cast->m_value = ASRUtils::expr_value(array_const);
-                                                value = cast->m_value;
-                                            }
                                         } else if (cast_kind == ASR::cast_kindType::RealToReal) {
-                                            bool is_real1 = true;
-                                            ASR::ArrayConstant_t *a = ASR::down_cast<ASR::ArrayConstant_t>(cast->m_arg);
-                                            ASR::ttype_t* real_type = cast->m_type;
-                                            Vec<ASR::expr_t*> body;
-                                            body.reserve(al, ASRUtils::get_fixed_size_of_array(a->m_type));
                                             for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(a->m_type); i++) {
                                                 ASR::expr_t *e = ASRUtils::fetch_ArrayConstant_value(al, a, i);
                                                 if (ASR::is_a<ASR::RealConstant_t>(*e)) {
                                                     ASR::RealConstant_t *real_const = ASR::down_cast<ASR::RealConstant_t>(e);
                                                     int64_t val = real_const->m_r;
                                                     ASR::expr_t *real_const2 = ASRUtils::EXPR(ASR::make_RealConstant_t(al, real_const->base.base.loc,
-                                                        val, ASRUtils::type_get_past_array(real_type)));
+                                                        val, ASRUtils::type_get_past_array(cast_type)));
                                                     body.push_back(al, real_const2);
+                                                    is_convertible = true;
                                                 } else {
-                                                    is_real1 = false;
                                                     break;
                                                 }
                                             }
-                                            if (is_real1) {
-                                                ASR::expr_t* array_const = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, a->base.base.loc, body.p, body.size(), real_type, a->m_storage_format));
-                                                cast->m_value = ASRUtils::expr_value(array_const);
-                                                value = cast->m_value;
-                                            }
                                         } else if (cast_kind == ASR::cast_kindType::ComplexToInteger) {
-                                            bool is_integer = true;
-                                            ASR::ArrayConstant_t *a = ASR::down_cast<ASR::ArrayConstant_t>(cast->m_arg);
-                                            ASR::ttype_t* integer_type = cast->m_type;
-                                            Vec<ASR::expr_t*> body;
-                                            body.reserve(al, ASRUtils::get_fixed_size_of_array(a->m_type));
                                             for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(a->m_type); i++) {
                                                 ASR::expr_t *e = ASRUtils::fetch_ArrayConstant_value(al, a, i);
-                                                // it will be ComplexConstant_t convert it to IntegerConstant_t
                                                 if (ASR::is_a<ASR::ComplexConstant_t>(*e)) {
                                                     ASR::ComplexConstant_t *complex_const = ASR::down_cast<ASR::ComplexConstant_t>(e);
                                                     int64_t val = complex_const->m_re;
                                                     ASR::expr_t *integer_const = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, complex_const->base.base.loc,
-                                                        val, ASRUtils::type_get_past_array(integer_type)));
+                                                        val, ASRUtils::type_get_past_array(cast_type)));
                                                     body.push_back(al, integer_const);
+                                                    is_convertible = true;
                                                 } else {
-                                                    is_integer = false;
                                                     break;
                                                 }
                                             }
-                                            if (is_integer) {
-                                                ASR::expr_t* array_const = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, a->base.base.loc, body.p, body.size(), integer_type, a->m_storage_format));
-                                                cast->m_value = ASRUtils::expr_value(array_const);
-                                                value = cast->m_value;
-                                            }
                                         } else if (cast_kind == ASR::cast_kindType::IntegerToComplex) {
-                                            bool is_complex = true;
-                                            ASR::ArrayConstant_t *a = ASR::down_cast<ASR::ArrayConstant_t>(cast->m_arg);
-                                            ASR::ttype_t* complex_type = cast->m_type;
-                                            Vec<ASR::expr_t*> body;
-                                            body.reserve(al, ASRUtils::get_fixed_size_of_array(a->m_type));
                                             for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(a->m_type); i++) {
                                                 ASR::expr_t *e = ASRUtils::fetch_ArrayConstant_value(al, a, i);
-                                                // it will be IntegerConstant_t convert it to ComplexConstant_t
                                                 if (ASR::is_a<ASR::IntegerConstant_t>(*e)) {
                                                     ASR::IntegerConstant_t *integer_const = ASR::down_cast<ASR::IntegerConstant_t>(e);
                                                     int64_t val = integer_const->m_n;
                                                     double y_val_ = 0.0;
                                                     ASR::expr_t *complex_const = ASRUtils::EXPR(ASR::make_ComplexConstant_t(al, integer_const->base.base.loc,
-                                                        val, y_val_, ASRUtils::type_get_past_array(complex_type)));
+                                                        val, y_val_, ASRUtils::type_get_past_array(cast_type)));
                                                     body.push_back(al, complex_const);
+                                                    is_convertible = true;
                                                 } else {
-                                                    is_complex = false;
                                                     break;
                                                 }
                                             }
-                                            if (is_complex) {
-                                                ASR::expr_t* array_const = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, a->base.base.loc, body.p, body.size(), complex_type, a->m_storage_format));
-                                                cast->m_value = ASRUtils::expr_value(array_const);
-                                                value = cast->m_value;
-                                            }
                                         } else if (cast_kind == ASR::cast_kindType::ComplexToReal) {
-                                            bool is_real = true;
-                                            ASR::ArrayConstant_t *a = ASR::down_cast<ASR::ArrayConstant_t>(cast->m_arg);
-                                            ASR::ttype_t* real_type = cast->m_type;
-                                            Vec<ASR::expr_t*> body;
-                                            body.reserve(al, ASRUtils::get_fixed_size_of_array(a->m_type));
                                             for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(a->m_type); i++) {
                                                 ASR::expr_t *e = ASRUtils::fetch_ArrayConstant_value(al, a, i);
-                                                // it will be ComplexConstant_t convert it to RealConstant_t
                                                 if (ASR::is_a<ASR::ComplexConstant_t>(*e)) {
                                                     ASR::ComplexConstant_t *complex_const = ASR::down_cast<ASR::ComplexConstant_t>(e);
                                                     int64_t val = complex_const->m_re;
                                                     ASR::expr_t *real_const = ASRUtils::EXPR(ASR::make_RealConstant_t(al, complex_const->base.base.loc,
-                                                        val, ASRUtils::type_get_past_array(real_type)));
+                                                        val, ASRUtils::type_get_past_array(cast_type)));
                                                     body.push_back(al, real_const);
+                                                    is_convertible = true;
                                                 } else {
-                                                    is_real = false;
                                                     break;
                                                 }
                                             }
-                                            if (is_real) {
-                                                ASR::expr_t* array_const = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, a->base.base.loc, body.p, body.size(), real_type, a->m_storage_format));
-                                                cast->m_value = ASRUtils::expr_value(array_const);
-                                                value = cast->m_value;
-                                            }
                                         } else if (cast_kind == ASR::cast_kindType::ComplexToComplex) {
-                                            bool is_complex = true;
-                                            ASR::ArrayConstant_t *a = ASR::down_cast<ASR::ArrayConstant_t>(cast->m_arg);
-                                            ASR::ttype_t* complex_type = cast->m_type;
-                                            Vec<ASR::expr_t*> body;
-                                            body.reserve(al, ASRUtils::get_fixed_size_of_array(a->m_type));
                                             for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(a->m_type); i++) {
                                                 ASR::expr_t *e = ASRUtils::fetch_ArrayConstant_value(al, a, i);
-                                                // it will be ComplexConstant_t convert it to ComplexConstant_t
                                                 if (ASR::is_a<ASR::ComplexConstant_t>(*e)) {
                                                     ASR::ComplexConstant_t *complex_const = ASR::down_cast<ASR::ComplexConstant_t>(e);
                                                     int64_t val1 = complex_const->m_re;
                                                     int64_t val2 = complex_const->m_im;
                                                     ASR::expr_t *complex_const2 = ASRUtils::EXPR(ASR::make_ComplexConstant_t(al, complex_const->base.base.loc,
-                                                        val1, val2, ASRUtils::type_get_past_array(complex_type)));
+                                                        val1, val2, ASRUtils::type_get_past_array(cast_type)));
                                                     body.push_back(al, complex_const2);
+                                                    is_convertible = true;
                                                 } else {
-                                                    is_complex = false;
                                                     break;
                                                 }
                                             }
-                                            if (is_complex) {
-                                                ASR::expr_t* array_const = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, a->base.base.loc, body.p, body.size(), complex_type, a->m_storage_format));
+                                        } else if (cast_kind == ASR::cast_kindType::IntegerToLogical) {
+                                            if (compiler_options.logical_casting) {
+                                                for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(a->m_type); i++) {
+                                                    ASR::expr_t *e = ASRUtils::fetch_ArrayConstant_value(al, a, i);
+                                                    if (ASR::is_a<ASR::IntegerConstant_t>(*e)) {
+                                                        ASR::IntegerConstant_t *int_const = ASR::down_cast<ASR::IntegerConstant_t>(e);
+                                                        bool val = int_const->m_n;
+                                                        ASR::expr_t *logical_const = ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, int_const->base.base.loc,
+                                                            val, ASRUtils::type_get_past_array(cast_type)));
+                                                        body.push_back(al, logical_const);
+                                                        is_convertible = true;
+                                                    } else {
+                                                        break;
+                                                    }
+                                                }
+                                            } else {
+                                                throw SemanticError("Type mismatch in array initialization.\n Enable logical casting by setting `--logical-casting = true`",
+                                                    x.base.base.loc);
+                                            }
+                                        } 
+                                        if (is_convertible) {
+                                                ASR::expr_t* array_const = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, a->base.base.loc, body.p, body.size(), cast_type, a->m_storage_format));
                                                 cast->m_value = ASRUtils::expr_value(array_const);
                                                 value = cast->m_value;
-                                            }
                                         } else {
                                             throw SemanticError("Type mismatch in array initialization",
                                                 x.base.base.loc);
