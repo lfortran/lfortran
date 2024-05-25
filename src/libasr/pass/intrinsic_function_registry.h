@@ -46,6 +46,7 @@ inline std::string get_intrinsic_name(int64_t x) {
         INTRINSIC_NAME_CASE(Gamma)
         INTRINSIC_NAME_CASE(Log)
         INTRINSIC_NAME_CASE(Log10)
+        INTRINSIC_NAME_CASE(Logical)
         INTRINSIC_NAME_CASE(LogGamma)
         INTRINSIC_NAME_CASE(Trunc)
         INTRINSIC_NAME_CASE(Fix)
@@ -254,6 +255,8 @@ namespace IntrinsicElementalFunctionRegistry {
             {&Atanh::instantiate_Atanh, &Atanh::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Log),
             {&Log::instantiate_Log, &Log::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Logical),
+            {&Logical::instantiate_Logical, &Logical::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Exp),
             {&Exp::instantiate_Exp, &Exp::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Exp2),
@@ -519,6 +522,8 @@ namespace IntrinsicElementalFunctionRegistry {
             "log"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Log10),
             "log10"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Logical),
+            "logical"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::LogGamma),
             "log_gamma"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Erf),
@@ -893,6 +898,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"lshift", {&Shiftl::create_Shiftl, &Shiftl::eval_Shiftl}},
                 {"dshiftl", {&Dshiftl::create_Dshiftl, &Dshiftl::eval_Dshiftl}},
                 {"dshiftr", {&Dshiftr::create_Dshiftr, &Dshiftr::eval_Dshiftr}},
+                {"logical", {&Logical::create_Logical, &Logical::eval_Logical}},
                 {"ishft", {&Ishft::create_Ishft, &Ishft::eval_Ishft}},
                 {"bgt", {&Bgt::create_Bgt, &Bgt::eval_Bgt}},
                 {"blt", {&Blt::create_Blt, &Blt::eval_Blt}},
