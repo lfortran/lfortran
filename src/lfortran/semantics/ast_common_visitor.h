@@ -1243,6 +1243,61 @@ public:
         return nullptr;
     }
 
+    ASR::expr_t* convert_integer_binop_to_function_call(ASR::expr_t* end, bool is_argument) {
+        ASR::IntegerBinOp_t* end_bin_op = ASR::down_cast<ASR::IntegerBinOp_t>(end);
+        ASR::expr_t* left = end_bin_op->m_left;
+        ASR::expr_t* right = end_bin_op->m_right;
+        if (ASR::is_a<ASR::Var_t>(*left) && !ASR::is_a<ASR::Var_t>(*right)) {
+            /* 
+            Handle expressions like `nx + a` where `a` can either be 
+            an integer or an `IntegerBinOp_t`.
+
+            Examples - nx + 1 and nx + ny * nz
+            */
+            ASR::Var_t* end_var = ASR::down_cast<ASR::Var_t>(left);
+            ASR::symbol_t* end_sym = end_var->m_v;
+            left = get_transformed_function_call(end_sym, is_argument, end);
+            if (ASR::is_a<ASR::IntegerBinOp_t>(*right)) {
+                right = convert_integer_binop_to_function_call(right, is_argument);
+            }
+        } else if (!ASR::is_a<ASR::Var_t>(*left) && ASR::is_a<ASR::Var_t>(*right)) {
+            /* 
+            Handle expressions like `a + nx` where `a` can either be 
+            an integer or an `IntegerBinOp_t`.
+
+            Examples - 1 + nx and ny * nz + nx
+            */
+            ASR::Var_t* end_var = ASR::down_cast<ASR::Var_t>(right);
+            ASR::symbol_t* end_sym = end_var->m_v;
+            right = get_transformed_function_call(end_sym, is_argument, end);
+            if (ASR::is_a<ASR::IntegerBinOp_t>(*left)) {
+                left = convert_integer_binop_to_function_call(left, is_argument);
+            }
+        } else if (ASR::is_a<ASR::Var_t>(*left) && ASR::is_a<ASR::Var_t>(*right)) {
+            // Handle expressions like `nx + ny` where both `nx` and `ny` are 
+            // external variables.
+            ASR::symbol_t* first_end_sym = (ASR::symbol_t*)ASR::down_cast<ASR::Var_t>(left)->m_v;
+            ASR::symbol_t* second_end_sym = (ASR::symbol_t*)ASR::down_cast<ASR::Var_t>(right)->m_v;
+            left = get_transformed_function_call(first_end_sym, is_argument, end);
+            right = get_transformed_function_call(second_end_sym, is_argument, end);
+        } else {
+            /* 
+            Handle expressions like `a + b` where both `a` and `b` can either be 
+            an integer or an `IntegerBinOp_t`.
+
+            Examples - 1 + 2 and 1 + nx + ny
+            */
+            if (ASR::is_a<ASR::IntegerBinOp_t>(*left)) {
+                left = convert_integer_binop_to_function_call(left, is_argument);
+            }
+            if (ASR::is_a<ASR::IntegerBinOp_t>(*right)) {
+                right = convert_integer_binop_to_function_call(right, is_argument);
+            }
+        }
+        return ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, end->base.loc,
+            left, end_bin_op->m_op, right, end_bin_op->m_type, end_bin_op->m_value));
+    }
+
     void process_dims(Allocator &al, Vec<ASR::dimension_t> &dims,
         AST::dimension_t *m_dim, size_t n_dim, bool &is_compile_time,
         bool is_char_type=false, bool is_argument=false) {
@@ -1267,35 +1322,7 @@ public:
                     ASR::symbol_t* end_sym = end_var->m_v;
                     end = get_transformed_function_call(end_sym, is_argument, end);
                 } else if(ASR::is_a<ASR::IntegerBinOp_t>(*end)) {
-                    ASR::IntegerBinOp_t* end_bin_op = ASR::down_cast<ASR::IntegerBinOp_t>(end);
-                    ASR::symbol_t* end_sym = nullptr;
-                    ASR::symbol_t* first_end_sym = nullptr;
-                    ASR::symbol_t* second_end_sym = nullptr;
-                    if (ASR::is_a<ASR::Var_t>(*end_bin_op->m_left) && !ASR::is_a<ASR::Var_t>(*end_bin_op->m_right)) {
-                        ASR::Var_t* end_var = ASR::down_cast<ASR::Var_t>(end_bin_op->m_left);
-                        end_sym = end_var->m_v;
-                        end = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
-                            al, end->base.loc, get_transformed_function_call(end_sym, is_argument, end),
-                            end_bin_op->m_op, end_bin_op->m_right, end_bin_op->m_type,
-                            end_bin_op->m_value));
-                    } else if (!ASR::is_a<ASR::Var_t>(*end_bin_op->m_left) && ASR::is_a<ASR::Var_t>(*end_bin_op->m_right)) {
-                        ASR::Var_t* end_var = ASR::down_cast<ASR::Var_t>(end_bin_op->m_right);
-                        end_sym = end_var->m_v;
-                        end = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
-                            al, end->base.loc, end_bin_op->m_left, end_bin_op->m_op,
-                            get_transformed_function_call(end_sym, is_argument, end), end_bin_op->m_type,
-                            end_bin_op->m_value));
-                    } else if (ASR::is_a<ASR::Var_t>(*end_bin_op->m_left) && ASR::is_a<ASR::Var_t>(*end_bin_op->m_right)) {
-                        ASR::Var_t* first_end_var = ASR::down_cast<ASR::Var_t>(end_bin_op->m_left);
-                        ASR::Var_t* second_end_var = ASR::down_cast<ASR::Var_t>(end_bin_op->m_right);
-
-                        first_end_sym = first_end_var->m_v;
-                        second_end_sym = second_end_var->m_v;
-                        end = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
-                            al, end->base.loc, get_transformed_function_call(first_end_sym, is_argument, end),
-                            end_bin_op->m_op, get_transformed_function_call(second_end_sym, is_argument, end),
-                            end_bin_op->m_type, end_bin_op->m_value));
-                    }                 
+                    end = convert_integer_binop_to_function_call(end, is_argument);
                 }
                 dim.m_length = ASRUtils::compute_length_from_start_end(al, dim.m_start,
                                     end);
