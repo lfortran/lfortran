@@ -1172,6 +1172,42 @@ end subroutine sa
     CHECK(r.result.i32 == 1);
 }
 
+TEST_CASE("FortranEvaluator asr verify 3") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    LCompilers::Result<FortranEvaluator::EvalResult>
+    r = e.evaluate2(R"(
+function add(x, y) result(r)
+    real, intent(in) :: x
+    real, intent(in) :: y
+    real :: r
+    r = x + y
+end function add
+)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::none);
+    r = e.evaluate2(R"(
+function sub(x, y) result(r)
+    real, intent(in) :: x
+    real, intent(in) :: y
+    real :: r
+    r = add(x, -y)
+end function sub
+)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::none);
+    r = e.evaluate2("add(2.0, 3.0)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::real4);
+    CHECK(r.result.f32 == 5.0);
+    r = e.evaluate2("sub(2.0, 3.0)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::real4);
+    CHECK(r.result.f32 == -1.0);
+}
+
 // This test does not work on Windows yet
 // https://github.com/lfortran/lfortran/issues/913
 #if !defined(_WIN32)
