@@ -3934,3 +3934,7 @@ asr = true
 [[test]]
 filename = "character_parameter_padding_trimming.f90"
 asr = true
+
+[[test]]
+filename = "errors/type_casting_01.f90"
+asr = true
