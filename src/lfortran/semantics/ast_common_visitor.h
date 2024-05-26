@@ -849,6 +849,7 @@ public:
         {"realpart", {"real", "complex"}},
         {"isign", {"sign", "int4"}},
         {"dsign", {"sign", "real8"}},
+        {"dgamma", {"gamma", "real8"}},
         {"dsqrt", {"sqrt", "real8"}},
         {"csqrt", {"sqrt", "complex4"}},
         {"zsqrt", {"sqrt", "complex8"}},
