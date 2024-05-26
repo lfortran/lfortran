@@ -38,6 +38,12 @@ intrinsic_funcs_args = {
             "ret_type_arg_idx": 0
         },
     ],
+    "Spacing": [
+        {
+            "args": [("real",)],
+            "ret_type_arg_idx": 0
+        },
+    ],
     "Modulo": [
         {
             "args": [("int", "int"), ("real", "real")],
@@ -77,6 +83,72 @@ intrinsic_funcs_args = {
     "Hypot": [
         {
             "args": [("real", "real")],
+            "ret_type_arg_idx": 0
+        }
+    ],
+    "Trunc": [
+        {
+            "args": [("real",)],
+            "ret_type_arg_idx": 0
+        }
+    ],
+    "Gamma": [
+        {
+            "args": [("real",)],
+            "ret_type_arg_idx": 0
+        }
+    ],
+    "LogGamma": [
+        {
+            "args": [("real",)],
+            "ret_type_arg_idx": 0
+        }
+    ],
+    "Log10": [
+        {
+            "args": [("real",)],
+            "ret_type_arg_idx": 0
+        }
+    ],
+    "Erf": [
+        {
+            "args": [("real",)],
+            "ret_type_arg_idx": 0
+        }
+    ],
+    "Erfc": [
+        {
+            "args": [("real",)],
+            "ret_type_arg_idx": 0
+        }
+    ],
+    "Exp": [
+        {
+            "args": [("real",), ("complex",)],
+            "ret_type_arg_idx": 0
+        },
+    ],
+    "Atan2": [
+        {
+            "args": [("real", "real")],
+            "ret_type_arg_idx": 0
+        }
+    ],
+    "Fix": [
+        {
+            "args": [("real",)],
+            "ret_type_arg_idx": 0
+        }
+    ],
+    "Exp2": [
+        {
+            "args": [("real",)],
+            "ret_type_arg_idx": 0
+        }
+    ],
+    "Expm1": [
+        {
+            "args": [("real",)],
             "ret_type_arg_idx": 0
         }
     ],
@@ -168,6 +240,12 @@ intrinsic_funcs_args = {
         {
             "args": [("int",), ("real",)],
             "return": "int32"
+        },
+    ],
+    "Nearest": [
+        {
+            "args": [("real", "real")],
+            "ret_type_arg_idx": 0
         },
     ],
     "Adjustl": [
@@ -278,6 +356,84 @@ intrinsic_funcs_args = {
         },
     ],
     "Sqrt": [
+        {
+            "args": [("real",), ("complex",)],
+            "ret_type_arg_idx": 0
+        },
+    ],
+    "Sin": [
+        {
+            "args": [("real",), ("complex",)],
+            "ret_type_arg_idx": 0
+        },
+    ],
+    "Cos": [
+        {
+            "args": [("real",), ("complex",)],
+            "ret_type_arg_idx": 0
+        },
+    ],
+    "Tan": [
+        {
+            "args": [("real",), ("complex",)],
+            "ret_type_arg_idx": 0
+        },
+    ],
+    "Asin": [
+        {
+            "args": [("real",), ("complex",)],
+            "ret_type_arg_idx": 0
+        },
+    ],
+    "Acos": [
+        {
+            "args": [("real",), ("complex",)],
+            "ret_type_arg_idx": 0
+        },
+    ],
+    "Atan": [
+        {
+            "args": [("real",), ("complex",)],
+            "ret_type_arg_idx": 0
+        },
+    ],
+    "Sinh": [
+        {
+            "args": [("real",), ("complex",)],
+            "ret_type_arg_idx": 0
+        },
+    ],
+    "Cosh": [
+        {
+            "args": [("real",), ("complex",)],
+            "ret_type_arg_idx": 0
+        },
+    ],
+    "Tanh": [
+        {
+            "args": [("real",), ("complex",)],
+            "ret_type_arg_idx": 0
+        },
+    ],
+    "Asinh": [
+        {
+            "args": [("real",), ("complex",)],
+            "ret_type_arg_idx": 0
+        },
+    ],
+    "Acosh": [
+        {
+            "args": [("real",), ("complex",)],
+            "ret_type_arg_idx": 0
+        },
+    ],
+    "Atanh": [
+        {
+            "args": [("real",), ("complex",)],
+            "ret_type_arg_idx": 0
+        },
+    ],
+    "Log": [
         {
             "args": [("real",), ("complex",)],
             "ret_type_arg_idx": 0
@@ -434,6 +590,12 @@ intrinsic_funcs_args = {
             "kind_arg": True
         },
     ],
+    "Dreal": [
+        {
+            "args": [("complex64",)],
+            "return": "real64",
+        },
+    ],
     "Rank": [
         {
             "args": [("any",)],
@@ -520,6 +682,12 @@ intrinsic_funcs_args = {
             "kind_arg": True
         }
     ],
+    "Merge": [
+        {
+            "args": [("any", "any", "bool")],
+            "ret_type_arg_idx": 0
+        }
+    ],
     "Mergebits": [
         {
             "args": [("int", "int", "int")],
@@ -602,6 +770,7 @@ compile_time_only_fn = [
     "Huge",
     "BitSize",
     "NewLine",
+    "Kind",
 ]
 
 type_to_asr_type_check = {
@@ -612,6 +781,7 @@ type_to_asr_type_check = {
     "bool": "is_logical",
     "char": "is_character",
     "complex": "is_complex",
+    "complex64": "is_complex<8>",
     "dict": "ASR::is_a<ASR::Dict_t>",
     "list": "ASR::is_a<ASR::List_t>",
     "tuple": "ASR::is_a<ASR::Tuple_t>"
@@ -728,7 +898,7 @@ def add_create_func_return_src(func_name):
     if kind_arg:
         src += indent * 2 + "if ( args[1] != nullptr ) {\n"
         src += indent * 3 +     "int kind = -1;\n"
-        src += indent * 3 +     "if (!ASR::is_a<ASR::Integer_t>(*expr_type(args[1])) || !extract_value(args[1], kind)) {\n"
+        src += indent * 3 +     "if (!ASR::is_a<ASR::Integer_t>(*expr_type(args[1])) || !extract_value(ASRUtils::expr_value(args[1]), kind)) {\n"
         src += indent * 4 +         f'append_error(diag, "`kind` argument of the `{func_name}` function must be a scalar Integer constant", args[1]->base.loc);\n'
         src += indent * 4 +         "return nullptr;\n"
         src += indent * 3 +     "}\n"

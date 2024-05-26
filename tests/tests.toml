@@ -1070,7 +1070,6 @@ asr = true
 filename = "../integration_tests/arrays_02.f90"
 ast = true
 ast_f90 = true
-julia = true
 
 [[test]]
 filename = "../integration_tests/arrays_03_func.f90"
@@ -1736,6 +1735,10 @@ ast_f90 = true
 
 [[test]]
 filename = "format1.f90"
+run = true
+
+[[test]]
+filename = "format3.f90"
 run = true
 
 [[test]]
@@ -3913,6 +3916,10 @@ filename = "errors/sqrt_neg.f90"
 asr = true
 
 [[test]]
+filename = "errors/dreal_arg_error.f90"
+asr = true
+
+[[test]]
 filename = "errors/coarray_01.f90"
 asr = true
 
@@ -3930,4 +3937,8 @@ asr = true
 
 [[test]]
 filename = "character_parameter_padding_trimming.f90"
+asr = true
+
+[[test]]
+filename = "errors/type_casting_01.f90"
 asr = true

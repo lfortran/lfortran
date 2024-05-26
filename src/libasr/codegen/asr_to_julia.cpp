@@ -1900,7 +1900,6 @@ public:
             SET_INTRINSIC_NAME(Expm1, "expm1");
             SET_INTRINSIC_NAME(Trunc, "trunc");
             SET_INTRINSIC_NAME(Fix, "fix");
-            SET_INTRINSIC_NAME(Kind, "kind");
             SET_INTRINSIC_NAME(StringContainsSet, "verify");
             SET_INTRINSIC_NAME(StringFindSet, "scan");
             SET_INTRINSIC_NAME(SubstrIndex, "index");
