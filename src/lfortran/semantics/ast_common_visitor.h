@@ -1237,7 +1237,7 @@ public:
         return func_call;
     }
 
-    ASR::expr_t* convert_integer_binop_to_function_call(ASR::expr_t* end) {
+    ASR::expr_t* convert_integer_binop_to_function_call(ASR::expr_t* end, bool is_argument) {
         ASR::IntegerBinOp_t* end_bin_op = ASR::down_cast<ASR::IntegerBinOp_t>(end);
         ASR::expr_t* left = end_bin_op->m_left;
         ASR::expr_t* right = end_bin_op->m_right;
@@ -1250,9 +1250,14 @@ public:
             */
             ASR::Var_t* end_var = ASR::down_cast<ASR::Var_t>(left);
             ASR::symbol_t* end_sym = end_var->m_v;
-            left = get_transformed_function_call(end_sym);
+            SymbolTable* symbol_scope = ASRUtils::symbol_parent_symtab(end_sym);
+            if (ASR::is_a<ASR::ExternalSymbol_t>(*end_sym) ||
+                (symbol_scope->counter != current_scope->counter && is_argument &&
+                ASRUtils::expr_value(end) == nullptr) ) {
+                left = get_transformed_function_call(end_sym);
+            }
             if (ASR::is_a<ASR::IntegerBinOp_t>(*right)) {
-                right = convert_integer_binop_to_function_call(right);
+                right = convert_integer_binop_to_function_call(right, is_argument);
             }
         } else if (!ASR::is_a<ASR::Var_t>(*left) && ASR::is_a<ASR::Var_t>(*right)) {
             /* 
@@ -1263,17 +1268,32 @@ public:
             */
             ASR::Var_t* end_var = ASR::down_cast<ASR::Var_t>(right);
             ASR::symbol_t* end_sym = end_var->m_v;
-            right = get_transformed_function_call(end_sym);
+            SymbolTable* symbol_scope = ASRUtils::symbol_parent_symtab(end_sym);
+            if (ASR::is_a<ASR::ExternalSymbol_t>(*end_sym) ||
+                (symbol_scope->counter != current_scope->counter && is_argument &&
+                ASRUtils::expr_value(end) == nullptr) ) {
+                right = get_transformed_function_call(end_sym);
+            }
             if (ASR::is_a<ASR::IntegerBinOp_t>(*left)) {
-                left = convert_integer_binop_to_function_call(left);
+                left = convert_integer_binop_to_function_call(left, is_argument);
             }
         } else if (ASR::is_a<ASR::Var_t>(*left) && ASR::is_a<ASR::Var_t>(*right)) {
             // Handle expressions like `nx + ny` where both `nx` and `ny` are 
             // external variables.
             ASR::symbol_t* first_end_sym = (ASR::symbol_t*)ASR::down_cast<ASR::Var_t>(left)->m_v;
             ASR::symbol_t* second_end_sym = (ASR::symbol_t*)ASR::down_cast<ASR::Var_t>(right)->m_v;
-            left = get_transformed_function_call(first_end_sym);
-            right = get_transformed_function_call(second_end_sym);
+            SymbolTable* first_symbol_scope = ASRUtils::symbol_parent_symtab(first_end_sym);
+            SymbolTable* second_symbol_scope = ASRUtils::symbol_parent_symtab(second_end_sym);
+            if (ASR::is_a<ASR::ExternalSymbol_t>(*first_end_sym) ||
+                (first_symbol_scope->counter != current_scope->counter && is_argument &&
+                ASRUtils::expr_value(end) == nullptr) ) {
+                left = get_transformed_function_call(first_end_sym);
+            }
+            if (ASR::is_a<ASR::ExternalSymbol_t>(*second_end_sym) ||
+                (second_symbol_scope->counter != current_scope->counter && is_argument &&
+                ASRUtils::expr_value(end) == nullptr) ) {
+                right = get_transformed_function_call(second_end_sym);
+            }
         } else {
             /* 
             Handle expressions like `a + b` where both `a` and `b` can either be 
@@ -1282,10 +1302,10 @@ public:
             Examples - 1 + 2 and 1 + nx + ny
             */
             if (ASR::is_a<ASR::IntegerBinOp_t>(*left)) {
-                left = convert_integer_binop_to_function_call(left);
+                left = convert_integer_binop_to_function_call(left, is_argument);
             }
             if (ASR::is_a<ASR::IntegerBinOp_t>(*right)) {
-                right = convert_integer_binop_to_function_call(right);
+                right = convert_integer_binop_to_function_call(right, is_argument);
             }
         }
         return ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, end->base.loc,
@@ -1321,7 +1341,7 @@ public:
                             end = get_transformed_function_call(end_sym);
                         }
                 } else if(ASR::is_a<ASR::IntegerBinOp_t>(*end)) {
-                    end = convert_integer_binop_to_function_call(end);
+                    end = convert_integer_binop_to_function_call(end, is_argument);
                 }
                 dim.m_length = ASRUtils::compute_length_from_start_end(al, dim.m_start,
                                     end);
