@@ -2,9 +2,7 @@
     (SymbolTable
         1
         {
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin),
-            test_ichar:
+            intrinsics_46:
                 (Program
                     (SymbolTable
                         2
@@ -30,16 +28,6 @@
                                     Public
                                     Required
                                     .false.
-                                ),
-                            achar:
-                                (ExternalSymbol
-                                    2
-                                    achar
-                                    4 achar
-                                    lfortran_intrinsic_builtin
-                                    []
-                                    achar
-                                    Private
                                 ),
                             b:
                                 (Variable
@@ -308,7 +296,7 @@
                                     .false.
                                 )
                         })
-                    test_ichar
+                    intrinsics_46
                     []
                     [(Assignment
                         (Var 2 i)
@@ -822,17 +810,15 @@
                     )
                     (Assignment
                         (Var 2 c_1)
-                        (FunctionCall
-                            2 achar
-                            ()
-                            [((IntegerConstant 100 (Integer 4)))
-                            (())]
+                        (IntrinsicElementalFunction
+                            Achar
+                            [(IntegerConstant 100 (Integer 4))]
+                            0
                             (Character 1 1 ())
                             (StringConstant
                                 "d"
                                 (Character 1 1 ())
                             )
-                            ()
                         )
                         ()
                     )
@@ -854,13 +840,11 @@
                     )
                     (Assignment
                         (Var 2 c_1)
-                        (FunctionCall
-                            2 achar
-                            ()
-                            [((Var 2 c))
-                            (())]
+                        (IntrinsicElementalFunction
+                            Achar
+                            [(Var 2 c)]
+                            0
                             (Character 1 1 ())
-                            ()
                             ()
                         )
                         ()

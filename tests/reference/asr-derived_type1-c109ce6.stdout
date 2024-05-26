@@ -22,33 +22,21 @@
                                     (SymbolTable
                                         3
                                         {
-                                            achar:
-                                                (ExternalSymbol
-                                                    3
-                                                    achar
-                                                    5 achar
-                                                    lfortran_intrinsic_builtin
-                                                    []
-                                                    achar
-                                                    Private
-                                                ),
                                             newline:
                                                 (Variable
                                                     3
                                                     newline
-                                                    [tfc]
+                                                    []
                                                     Local
-                                                    (FunctionCall
-                                                        3 achar
-                                                        ()
-                                                        [((IntegerConstant 10 (Integer 4)))
-                                                        ((Var 2 tfc))]
+                                                    (IntrinsicElementalFunction
+                                                        Achar
+                                                        [(IntegerConstant 10 (Integer 4))]
+                                                        0
                                                         (Character 1 1 ())
                                                         (StringConstant
                                                             "\n"
                                                             (Character 1 1 ())
                                                         )
-                                                        ()
                                                     )
                                                     (StringConstant
                                                         "\n"
@@ -164,12 +152,10 @@
                                 )
                         })
                     derived_type1
-                    [lfortran_intrinsic_builtin]
+                    []
                     .false.
                     .false.
-                ),
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin)
+                )
         })
     []
 )
