@@ -420,8 +420,7 @@ public:
     }
 
     void visit_Function(const Function_t &x) {
-        ASR::FunctionType_t* x_func_type = ASR::down_cast<ASR::FunctionType_t>(x.m_function_signature);
-        if (x_func_type->m_abi == abiType::Interactive) {
+        if (ASRUtils::get_FunctionType(&x)->m_abi == abiType::Interactive) {
             require(x.n_body == 0,
             "The Function::n_body should be 0 if abi set to Interactive");
         }
