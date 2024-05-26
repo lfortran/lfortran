@@ -1,4 +1,4 @@
-program test_ichar
+program intrinsics_46
 
     implicit none
     ! Compile_time
@@ -103,4 +103,4 @@ program test_ichar
     if (any(ichar(e) /= x)) error stop
 
 
-end program test_ichar
+end program intrinsics_46

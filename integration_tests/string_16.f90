@@ -15,6 +15,20 @@ program string_16
     character :: small_z = achar(122)
     character :: right_brace = achar(125)
 
+    integer :: a1 = 35
+    integer :: a2(3) = [39, 63, 66]
+
+    print*, achar(65)
+    if (achar(65) /= 'A') error stop
+
+    print*, achar(a1)
+    if (achar(a1) /= '#') error stop
+
+    print*, achar(a2)
+    if (achar(a2(1)) /= "'") error stop
+    if (achar(a2(2)) /= '?') error stop
+    if (achar(a2(3)) /= 'B') error stop
+    
     if(exclamation /= '!') error stop
     if(dollar /= '$') error stop
     if(left_parenthesis /= '(') error stop
