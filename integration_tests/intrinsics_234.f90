@@ -1,10 +1,16 @@
 program intrinsics_234
 
+<<<<<<< HEAD
     implicit none
     logical :: mask(3, 4)
     logical :: mask_(6, 9)
     logical :: mask_3(3, 4, 3)
     logical :: mask_4(4, 5, 3, 1)
+=======
+    ! x = 971.72820_sp 
+    y = 23.82920_sp
+    z = 62.739713_sp
+>>>>>>> f805b0083 (tests: added error tests)
 
     logical :: res
     integer, dimension(2,3) :: a, b
