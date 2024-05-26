@@ -223,6 +223,10 @@ class ASRBuilder {
         return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::ComplexToReal, t, nullptr));
     }
 
+    inline ASR::expr_t* c2i_t(ASR::expr_t* x, ASR::ttype_t* t) {
+        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::ComplexToInteger, t, nullptr));
+    }
+
     // Binop -------------------------------------------------------------------
 
     inline ASR::expr_t* BitRshift(ASR::expr_t* n, ASR::expr_t* bits, ASR::ttype_t* t) {
