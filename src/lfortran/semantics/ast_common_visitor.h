@@ -745,6 +745,8 @@ public:
                 IntrinsicSignature({"array", "mask"}, 1, 2)}},
         {"product", {IntrinsicSignature({"array", "dim", "mask"}, 1, 3),
                 IntrinsicSignature({"array", "mask"}, 1, 2)}},
+        {"iparity", {IntrinsicSignature({"array", "dim", "mask"}, 1, 3),
+                IntrinsicSignature({"array", "mask"}, 1, 2)}},
         {"matmul", {IntrinsicSignature({"matrix_a", "matrix_b"}, 2, 2)}},
         {"dot_product", {IntrinsicSignature({"vector_a", "vector_b"}, 2, 2)}},
         {"pack", {IntrinsicSignature({"array", "mask", "vector"}, 2, 3)}},

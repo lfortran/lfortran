@@ -31,6 +31,7 @@ enum class IntrinsicArrayFunctions : int64_t {
     Product,
     Shape,
     Sum,
+    Iparity,
     Transpose,
     Pack,
     Unpack,
@@ -60,6 +61,7 @@ inline std::string get_array_intrinsic_name(int64_t x) {
         ARRAY_INTRINSIC_NAME_CASE(Product)
         ARRAY_INTRINSIC_NAME_CASE(Shape)
         ARRAY_INTRINSIC_NAME_CASE(Sum)
+        ARRAY_INTRINSIC_NAME_CASE(Iparity)
         ARRAY_INTRINSIC_NAME_CASE(Transpose)
         ARRAY_INTRINSIC_NAME_CASE(Pack)
         ARRAY_INTRINSIC_NAME_CASE(Unpack)
@@ -228,6 +230,15 @@ T find_product(size_t size, T* data) {
 }
 
 template<typename T>
+T find_iparity(size_t size, T* data) {
+    T result = 0;
+    for (size_t i = 0; i < size; i++) {
+        result ^= data[i];
+    }
+    return result;
+}
+
+template<typename T>
 T find_minval(size_t size, T* data) {
     T result = std::numeric_limits<T>::max();
     for (size_t i = 0; i < size; i++) {
@@ -361,6 +372,21 @@ static inline ASR::expr_t *eval_ArrIntrinsic(Allocator & al,
             }
             return value;
         } 
+        case ASRUtils::IntrinsicArrayFunctions::Iparity: {
+            if (ASR::is_a<ASR::ArrayConstant_t>(*array)) {
+                    int64_t result = 0;
+                    switch (kind) {
+                        case 1: result = find_iparity(size, (int8_t*)(a->m_data)); break;
+                        case 2: result = find_iparity(size, (int16_t*)(a->m_data)); break;
+                        case 4: result = find_iparity(size, (int32_t*)(a->m_data)); break;
+                        case 8: result = find_iparity(size, (int64_t*)(a->m_data)); break;
+                        default: break;
+                    }
+                    value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al,
+                    loc, result, t));
+            }
+            return value;
+        }
         case ASRUtils::IntrinsicArrayFunctions::MinVal: {
             if (ASR::is_a<ASR::ArrayConstant_t>(*array)) {
                 if (ASR::is_a<ASR::IntegerConstant_t>(*args_value0)) {
@@ -1890,6 +1916,38 @@ namespace Product {
         return ArrIntrinsic::instantiate_ArrIntrinsic(al, loc, scope, arg_types,
             return_type, new_args, overload_id, IntrinsicArrayFunctions::Product,
             &get_constant_one_with_given_type, &ASRBuilder::Mul);
+    }
+
+} // namespace Product
+
+namespace Iparity {
+
+    static inline void verify_args(const ASR::IntrinsicArrayFunction_t& x,
+            diag::Diagnostics& diagnostics) {
+        ArrIntrinsic::verify_args(x, diagnostics, IntrinsicArrayFunctions::Iparity,
+            &ArrIntrinsic::verify_array_int_real_cmplx);
+    }
+
+    static inline ASR::expr_t *eval_Iparity(Allocator & al,
+        const Location & loc, ASR::ttype_t *t, Vec<ASR::expr_t*>& args,
+        diag::Diagnostics& diag) {
+        return ArrIntrinsic::eval_ArrIntrinsic(al, loc, t, args, diag,
+            IntrinsicArrayFunctions::Iparity);
+    }
+
+    static inline ASR::asr_t* create_Iparity(Allocator& al, const Location& loc,
+            Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
+        return ArrIntrinsic::create_ArrIntrinsic(al, loc, args, diag,
+            IntrinsicArrayFunctions::Iparity);
+    }
+
+    static inline ASR::expr_t* instantiate_Iparity(Allocator &al,
+            const Location &loc, SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types,
+            ASR::ttype_t *return_type, Vec<ASR::call_arg_t>& new_args,
+            int64_t overload_id) {
+        return ArrIntrinsic::instantiate_ArrIntrinsic(al, loc, scope, arg_types,
+            return_type, new_args, overload_id, IntrinsicArrayFunctions::Iparity,
+            &get_constant_zero_with_given_type, &ASRBuilder::Xor);
     }
 
 } // namespace Product
@@ -3952,6 +4010,8 @@ namespace IntrinsicArrayFunctionRegistry {
             {&Shape::instantiate_Shape, &Shape::verify_args}},
         {static_cast<int64_t>(IntrinsicArrayFunctions::Sum),
             {&Sum::instantiate_Sum, &Sum::verify_args}},
+        {static_cast<int64_t>(IntrinsicArrayFunctions::Iparity),
+            {&Iparity::instantiate_Iparity, &Iparity::verify_args}},
         {static_cast<int64_t>(IntrinsicArrayFunctions::Transpose),
             {&Transpose::instantiate_Transpose, &Transpose::verify_args}},
         {static_cast<int64_t>(IntrinsicArrayFunctions::Pack),
@@ -3981,6 +4041,7 @@ namespace IntrinsicArrayFunctionRegistry {
         {"product", {&Product::create_Product, &Product::eval_Product}},
         {"shape", {&Shape::create_Shape, &Shape::eval_Shape}},
         {"sum", {&Sum::create_Sum, &Sum::eval_Sum}},
+        {"iparity", {&Iparity::create_Iparity, &Iparity::eval_Iparity}},
         {"transpose", {&Transpose::create_Transpose, &Transpose::eval_Transpose}},
         {"pack", {&Pack::create_Pack, &Pack::eval_Pack}},
         {"unpack", {&Unpack::create_Unpack, &Unpack::eval_Unpack}},
@@ -4022,6 +4083,7 @@ namespace IntrinsicArrayFunctionRegistry {
             id == IntrinsicArrayFunctions::All ||
             id == IntrinsicArrayFunctions::Sum ||
             id == IntrinsicArrayFunctions::Product ||
+            id == IntrinsicArrayFunctions::Iparity ||
             id == IntrinsicArrayFunctions::MaxVal ||
             id == IntrinsicArrayFunctions::MinVal ||
             id == IntrinsicArrayFunctions::Count ||
