@@ -2445,7 +2445,14 @@ LFORTRAN_API void _lfortran_read_char(char **p, int32_t unit_num)
         }
     } else {
         *p = (char*)malloc((n + 1) * sizeof(char));
-        (void)!fread(*p, sizeof(char), n, filep);
+        size_t i = 0;
+        int ch;
+        while ((ch = fgetc(filep)) != EOF && i < n) {
+            if (!isspace(ch)) {
+                (*p)[i++] = ch;
+            }
+        }
+        (*p)[i] = '\0';
     }
     if (streql(*p, "")) {
         printf("Runtime error: End of file!\n");
