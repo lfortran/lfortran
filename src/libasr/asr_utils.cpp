@@ -95,17 +95,16 @@ std::vector<std::string> determine_variable_declaration_order(
          SymbolTable* symtab) {
     std::map<std::string, std::vector<std::string>> var_dep_graph;
     for( auto itr: symtab->get_scope() ) {
-        ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(itr.second);
-        if( ASR::is_a<ASR::Variable_t>(*sym) ) {
+        if (ASR::is_a<ASR::Variable_t>(*itr.second)) {
             std::vector<std::string> deps;
-            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
+            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(itr.second);
             for( size_t i = 0; i < var->n_dependencies; i++ ) {
                 std::string dep = var->m_dependencies[i];
                 // Check if the dependent variable is present in the symtab.
                 // This will help us to include only local dependencies, and we
                 // assume that dependencies in the parent symtab are already declared
                 // earlier.
-                if (symtab->resolve_symbol(dep) != nullptr)
+                if (symtab->get_symbol(dep) != nullptr)
                     deps.push_back(dep);
             }
             var_dep_graph[itr.first] = deps;
