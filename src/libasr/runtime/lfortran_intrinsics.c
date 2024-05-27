@@ -2388,6 +2388,13 @@ LFORTRAN_API void _lfortran_read_char(char **p, int32_t unit_num)
         // Read from stdin
         *p = (char*)malloc(n * sizeof(char));
         (void)!fgets(*p, n + 1, stdin);
+        (*p)[strcspn(*p, "\n")] = 0;
+        char space = ' ';
+        size_t input_length = strlen(*p);
+        while (input_length < n) {
+            strncat(*p, &space, 1);
+            input_length++;
+        }
         return;
     }
 
