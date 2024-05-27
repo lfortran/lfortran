@@ -1280,8 +1280,8 @@ public:
         } else if (ASR::is_a<ASR::Var_t>(*left) && ASR::is_a<ASR::Var_t>(*right)) {
             // Handle expressions like `nx + ny` where both `nx` and `ny` are 
             // external variables.
-            ASR::symbol_t* first_end_sym = (ASR::symbol_t*)ASR::down_cast<ASR::Var_t>(left)->m_v;
-            ASR::symbol_t* second_end_sym = (ASR::symbol_t*)ASR::down_cast<ASR::Var_t>(right)->m_v;
+            ASR::symbol_t* first_end_sym = ASR::down_cast<ASR::Var_t>(left)->m_v;
+            ASR::symbol_t* second_end_sym = ASR::down_cast<ASR::Var_t>(right)->m_v;
             SymbolTable* first_symbol_scope = ASRUtils::symbol_parent_symtab(first_end_sym);
             SymbolTable* second_symbol_scope = ASRUtils::symbol_parent_symtab(second_end_sym);
             if (ASR::is_a<ASR::ExternalSymbol_t>(*first_end_sym) ||
