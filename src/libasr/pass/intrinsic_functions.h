@@ -1704,7 +1704,7 @@ namespace Ieor {
         * r = ieor(x, y)
         * r = x ^ y
         */
-        body.push_back(al, b.Assignment(result, b.BitXor(args[0], args[1], return_type)));
+        body.push_back(al, b.Assignment(result, b.Xor(args[0], args[1])));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
