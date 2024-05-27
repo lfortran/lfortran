@@ -35,6 +35,7 @@ enum class IntrinsicArrayFunctions : int64_t {
     Pack,
     Unpack,
     Count,
+    Parity,
     DotProduct,
     // ...
 };
@@ -63,6 +64,7 @@ inline std::string get_array_intrinsic_name(int64_t x) {
         ARRAY_INTRINSIC_NAME_CASE(Pack)
         ARRAY_INTRINSIC_NAME_CASE(Unpack)
         ARRAY_INTRINSIC_NAME_CASE(Count)
+        ARRAY_INTRINSIC_NAME_CASE(Parity)
         ARRAY_INTRINSIC_NAME_CASE(DotProduct)
         default : {
             throw LCompilersException("pickle: intrinsic_id not implemented");
@@ -2472,6 +2474,184 @@ namespace Count {
 
 } // namespace Count
 
+namespace Parity {
+
+    static inline void verify_args(const ASR::IntrinsicArrayFunction_t &x,
+            diag::Diagnostics& diagnostics) {
+        require_impl(x.n_args == 1 || x.n_args == 2, "`parity` intrinsic accepts "
+            "atmost two arguments", x.base.base.loc, diagnostics);
+        require_impl(x.m_args[0], "`mask` argument of `parity` intrinsic "
+            "cannot be nullptr", x.base.base.loc, diagnostics);
+    }
+
+    static inline ASR::expr_t *eval_Parity(Allocator &al,
+        const Location &loc, ASR::ttype_t *return_type, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
+        ASR::expr_t* mask = args[0];
+        if (mask && ASR::is_a<ASR::ArrayConstant_t>(*mask)) {
+            ASR::ArrayConstant_t *mask_array = ASR::down_cast<ASR::ArrayConstant_t>(mask);
+            size_t size = ASRUtils::get_fixed_size_of_array(mask_array->m_type);
+            bool parity = false;
+            for (size_t i = 0; i < size; i++) {
+                parity ^= ((bool*)(mask_array->m_data))[i];
+            }
+            return ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, loc, parity, return_type));
+        } 
+        return nullptr;
+    }
+
+    static inline ASR::asr_t* create_Parity(Allocator& al, const Location& loc,
+            Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
+        int64_t id_mask = 0, id_mask_dim = 1;
+        int64_t overload_id = id_mask;
+
+        ASR::expr_t *mask = args[0], *dim_ = nullptr;
+
+        if (args.size() == 2) {
+            dim_ = args[1];
+        }
+        ASR::dimension_t* array_dims = nullptr;
+        int array_rank = extract_dimensions_from_ttype(ASRUtils::expr_type(args[0]), array_dims);
+
+        ASR::ttype_t* mask_type = ASRUtils::expr_type(mask);
+        if ( dim_ != nullptr ) {
+            size_t dim_rank = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(dim_));
+            if (dim_rank != 0) {
+                append_error(diag, "dim argument to `parity` must be a scalar and must not be an array",
+                    dim_->base.loc);
+                return nullptr;
+            }
+            overload_id = id_mask_dim;
+        }
+        if (array_rank == 1) {
+            overload_id = id_mask;
+        }
+        ASR::expr_t *value = nullptr;
+        Vec<ASR::expr_t*> arg_values; arg_values.reserve(al, 2);
+        ASR::expr_t *mask_value = ASRUtils::expr_value(mask);
+        arg_values.push_back(al, mask_value);
+        if( mask ) {
+            ASR::expr_t *mask_value = ASRUtils::expr_value(mask);
+            arg_values.push_back(al, mask_value);
+        }
+
+        ASR::ttype_t* return_type = nullptr;
+        if( overload_id == id_mask ) {
+            return_type = logical;
+        } else if( overload_id == id_mask_dim ) {
+            Vec<ASR::dimension_t> dims;
+            size_t n_dims = ASRUtils::extract_n_dims_from_ttype(mask_type);
+            dims.reserve(al, (int) n_dims - 1);
+            for( int i = 0; i < (int) n_dims - 1; i++ ) {
+                ASR::dimension_t dim;
+                dim.loc = mask->base.loc;
+                dim.m_length = nullptr;
+                dim.m_start = nullptr;
+                dims.push_back(al, dim);
+            }
+            return_type = ASRUtils::make_Array_t_util(al, loc,
+                logical, dims.p, dims.n, ASR::abiType::Source,
+                false);
+        }
+        value = eval_Parity(al, loc, return_type, arg_values, diag);
+
+        Vec<ASR::expr_t*> arr_intrinsic_args; arr_intrinsic_args.reserve(al, 2);
+        arr_intrinsic_args.push_back(al, mask);
+        if( dim_ && array_rank != 1 ) {
+            arr_intrinsic_args.push_back(al, dim_);
+        }
+        return make_IntrinsicArrayFunction_t_util(al, loc,
+            static_cast<int64_t>(IntrinsicArrayFunctions::Parity),
+            arr_intrinsic_args.p, arr_intrinsic_args.n, overload_id, return_type, value);
+    }
+
+    static inline ASR::expr_t *instantiate_Parity(Allocator &al,
+            const Location &loc, SymbolTable *scope,
+            Vec<ASR::ttype_t*> &arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t> &m_args, int64_t overload_id) {
+        declare_basic_variables("_lcompilers_parity");
+        fill_func_arg("mask", duplicate_type_with_empty_dims(al, arg_types[0]));
+        if (overload_id == 0) {
+            ASR::expr_t *result = declare("result", return_type, ReturnVar);
+            /*
+                for array of rank 2, the following code is generated:
+                result = false
+                do i = lbound(mask, 2), ubound(mask, 2)
+                    do j = lbound(mask, 1), ubound(mask, 1)
+                        if (mask(j, i)) then
+                            result = result | mask(j, i)
+                        end if
+                    end do
+                end do
+            */
+            ASR::dimension_t* array_dims = nullptr;
+            int array_rank = extract_dimensions_from_ttype(arg_types[0], array_dims);
+            std::vector<ASR::expr_t*> do_loop_variables;
+            for (int i = 0; i < array_rank; i++) {
+                do_loop_variables.push_back(declare("i_" + std::to_string(i), int32, Local));
+            }
+            body.push_back(al, b.Assignment(result, b.bool_t(0, return_type)));
+            ASR::stmt_t* do_loop = PassUtils::create_do_loop_helper_parity(al, loc, do_loop_variables, args[0], result, array_rank);
+            body.push_back(al, do_loop);
+            body.push_back(al, b.Return());
+            ASR::symbol_t *fn_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+                    body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+            scope->add_symbol(fn_name, fn_sym);
+            return b.Call(fn_sym, m_args, return_type, nullptr);
+        } else {
+            fill_func_arg("dim", duplicate_type_with_empty_dims(al, arg_types[1]));
+            ASR::expr_t *result = declare("result", return_type, Out);
+            args.push_back(al, result);
+            /*
+                for array of rank 3, the following code is generated:
+                dim == 2
+                do i = 1, ubound(mask, 1)
+                    do k = 1, ubound(mask, 3)
+                        c = 0
+                        do j = 1, ubound(mask, 2)
+                                c = c | mask(i, j, k)
+                            end if
+                        end do
+                        res(i, k) = c
+                    end do
+                end do
+            */
+            int dim = ASR::down_cast<ASR::IntegerConstant_t>(m_args[1].m_value)->m_n;
+            ASR::dimension_t* array_dims = nullptr;
+            int array_rank = extract_dimensions_from_ttype(arg_types[0], array_dims);
+            std::vector<ASR::expr_t*> res_idx;
+            for (int i = 0; i < array_rank - 1; i++) {
+                res_idx.push_back(declare("i_" + std::to_string(i), int32, Local));
+            }
+            ASR::expr_t* j = declare("j", int32, Local);
+            ASR::expr_t* c = declare("c", logical, Local);
+
+            std::vector<ASR::expr_t*> idx; bool dim_found = false;
+            for (int i = 0; i < array_rank; i++) {
+                if (i == dim - 1) {
+                    idx.push_back(j);
+                    dim_found = true;
+                } else {
+                    dim_found ? idx.push_back(res_idx[i-1]):
+                                idx.push_back(res_idx[i]);
+                }
+            }
+            ASR::stmt_t* inner_most_do_loop = b.DoLoop(j, LBound(args[0], dim), UBound(args[0], dim), {
+                b.Assignment(c, b.Xor(c, b.ArrayItem_01(args[0], idx)))
+            });
+            
+            ASR::stmt_t* do_loop = PassUtils::create_do_loop_helper_parity_dim(al, loc,
+                                    idx, res_idx, inner_most_do_loop, c, args[0], result, 0, dim);
+            body.push_back(al, do_loop);
+            body.push_back(al, b.Return());
+            ASR::symbol_t *fn_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+                    body, nullptr, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+            scope->add_symbol(fn_name, fn_sym);
+            return b.Call(fn_sym, m_args, return_type, nullptr);
+        }
+    }
+
+} // namespace Parity
+
 namespace Norm2 {
 
     static inline void verify_args(const ASR::IntrinsicArrayFunction_t &x,
@@ -3780,6 +3960,8 @@ namespace IntrinsicArrayFunctionRegistry {
             {&Unpack::instantiate_Unpack, &Unpack::verify_args}},
         {static_cast<int64_t>(IntrinsicArrayFunctions::Count),
             {&Count::instantiate_Count, &Count::verify_args}},
+        {static_cast<int64_t>(IntrinsicArrayFunctions::Parity),
+            {&Parity::instantiate_Parity, &Parity::verify_args}},
         {static_cast<int64_t>(IntrinsicArrayFunctions::DotProduct),
             {&DotProduct::instantiate_DotProduct, &DotProduct::verify_args}},
     };
@@ -3803,6 +3985,7 @@ namespace IntrinsicArrayFunctionRegistry {
         {"pack", {&Pack::create_Pack, &Pack::eval_Pack}},
         {"unpack", {&Unpack::create_Unpack, &Unpack::eval_Unpack}},
         {"count", {&Count::create_Count, &Count::eval_Count}},
+        {"parity", {&Parity::create_Parity, &Parity::eval_Parity}},
         {"dot_product", {&DotProduct::create_DotProduct, &DotProduct::eval_DotProduct}},
     };
 
@@ -3841,7 +4024,8 @@ namespace IntrinsicArrayFunctionRegistry {
             id == IntrinsicArrayFunctions::Product ||
             id == IntrinsicArrayFunctions::MaxVal ||
             id == IntrinsicArrayFunctions::MinVal ||
-            id == IntrinsicArrayFunctions::Count) {
+            id == IntrinsicArrayFunctions::Count ||
+            id == IntrinsicArrayFunctions::Parity) {
             return 1; // dim argument index
         } else if( id == IntrinsicArrayFunctions::MatMul || id == IntrinsicArrayFunctions::Transpose || id == IntrinsicArrayFunctions::Pack ||
             id == IntrinsicArrayFunctions::Unpack ) {

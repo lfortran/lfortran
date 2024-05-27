@@ -750,6 +750,7 @@ public:
         {"pack", {IntrinsicSignature({"array", "mask", "vector"}, 2, 3)}},
         {"unpack", {IntrinsicSignature({"vector", "mask", "field"}, 3, 3)}},
         {"count", {IntrinsicSignature({"mask", "dim", "kind"}, 1, 3)}},
+        {"parity", {IntrinsicSignature({"mask", "dim"}, 1, 2)}},
         {"maxval", {IntrinsicSignature({"array", "dim", "mask"}, 1, 3),
                 IntrinsicSignature({"array", "mask"}, 1, 2)}},
         {"maxloc", {IntrinsicSignature({"array", "dim", "mask", "kind", "back"}, 1, 5),

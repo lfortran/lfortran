@@ -1447,6 +1447,20 @@ public:
                 out = "";
                 break;
             }
+            case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Parity)) : {
+                out += "parity";
+                visit_expr(*x.m_args[0]);
+                out += "(" + src;
+                if (x.n_args > 1) {
+                    out += ", ";
+                    visit_expr(*x.m_args[1]);
+                    out += src;
+                }
+                out += ")";
+                src = out;
+                out = "";
+                break;
+            }
             case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::DotProduct)) : {
                 out += "dot_product";
                 visit_expr(*x.m_args[0]);

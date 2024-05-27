@@ -233,10 +233,6 @@ class ASRBuilder {
         return EXPR(ASR::make_IntegerBinOp_t(al, loc, n, ASR::binopType::BitLShift, bits, t, nullptr));
     }
 
-    inline ASR::expr_t* BitXor(ASR::expr_t* i, ASR::expr_t* j, ASR::ttype_t* t) {
-        return EXPR(ASR::make_IntegerBinOp_t(al, loc, i, ASR::binopType::BitXor, j, t, nullptr));
-    }
-
     ASR::expr_t *And(ASR::expr_t *left, ASR::expr_t *right) {
         LCOMPILERS_ASSERT(check_equal_type(expr_type(left), expr_type(right)));
         ASR::ttype_t *type = expr_type(left);
@@ -266,6 +262,25 @@ class ASRBuilder {
             }
             case ASR::ttypeType::Logical: {
                 return EXPR(ASR::make_LogicalBinOp_t(al, loc, left, ASR::logicalbinopType::Or, right, logical, nullptr));
+            }
+            default: {
+                throw LCompilersException("Expression type, " +
+                    std::to_string(expr_type(left)->type) + " not yet supported");
+                return nullptr;
+            }
+        }
+    }
+
+    ASR::expr_t *Xor(ASR::expr_t *left, ASR::expr_t *right) {
+        LCOMPILERS_ASSERT(check_equal_type(expr_type(left), expr_type(right)));
+        ASR::ttype_t *type = expr_type(left);
+        ASRUtils::make_ArrayBroadcast_t_util(al, loc, left, right);
+        switch (type->type) {
+            case ASR::ttypeType::Integer: {
+                return EXPR(ASR::make_IntegerBinOp_t(al, loc, left, ASR::binopType::BitXor, right, type, nullptr));
+            }
+            case ASR::ttypeType::Logical: {
+                return EXPR(ASR::make_LogicalBinOp_t(al, loc, left, ASR::logicalbinopType::Xor, right, logical, nullptr));
             }
             default: {
                 throw LCompilersException("Expression type, " +
