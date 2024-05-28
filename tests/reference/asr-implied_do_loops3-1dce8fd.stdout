@@ -11,17 +11,51 @@
                                 (Variable
                                     2
                                     a
-                                    []
+                                    [j]
                                     Local
                                     (Cast
-                                        (ArrayConstant
-                                            12
-                                            [3, 6, 9]
+                                        (ArrayConstructor
+                                            [(ImpliedDoLoop
+                                                [(IntegerBinOp
+                                                    (Var 2 j)
+                                                    Mul
+                                                    (IntegerConstant 3 (Integer 4))
+                                                    (Integer 4)
+                                                    ()
+                                                )]
+                                                (Var 2 j)
+                                                (IntegerConstant 1 (Integer 4))
+                                                (IntegerConstant 3 (Integer 4))
+                                                ()
+                                                (Integer 4)
+                                                (ArrayConstant
+                                                    12
+                                                    [3, 6, 9]
+                                                    (Array
+                                                        (Integer 4)
+                                                        [((IntegerConstant 1 (Integer 4))
+                                                        (IntegerConstant 3 (Integer 4)))]
+                                                        FixedSizeArray
+                                                    )
+                                                    ColMajor
+                                                )
+                                            )]
                                             (Array
                                                 (Integer 4)
                                                 [((IntegerConstant 1 (Integer 4))
-                                                (IntegerConstant 3 (Integer 4)))]
+                                                ())]
                                                 DescriptorArray
+                                            )
+                                            (ArrayConstant
+                                                12
+                                                [3, 6, 9]
+                                                (Array
+                                                    (Integer 4)
+                                                    [((IntegerConstant 1 (Integer 4))
+                                                    (IntegerConstant 3 (Integer 4)))]
+                                                    DescriptorArray
+                                                )
+                                                ColMajor
                                             )
                                             ColMajor
                                         )
@@ -72,17 +106,51 @@
                                 (Variable
                                     2
                                     b
-                                    []
+                                    [j]
                                     Local
                                     (Cast
-                                        (ArrayConstant
-                                            12
-                                            [2, 4, 6]
+                                        (ArrayConstructor
+                                            [(ImpliedDoLoop
+                                                [(IntegerBinOp
+                                                    (Var 2 j)
+                                                    Mul
+                                                    (IntegerConstant 2 (Integer 4))
+                                                    (Integer 4)
+                                                    ()
+                                                )]
+                                                (Var 2 j)
+                                                (IntegerConstant 1 (Integer 4))
+                                                (IntegerConstant 3 (Integer 4))
+                                                ()
+                                                (Integer 4)
+                                                (ArrayConstant
+                                                    12
+                                                    [2, 4, 6]
+                                                    (Array
+                                                        (Integer 4)
+                                                        [((IntegerConstant 1 (Integer 4))
+                                                        (IntegerConstant 3 (Integer 4)))]
+                                                        FixedSizeArray
+                                                    )
+                                                    ColMajor
+                                                )
+                                            )]
                                             (Array
                                                 (Integer 4)
                                                 [((IntegerConstant 1 (Integer 4))
-                                                (IntegerConstant 3 (Integer 4)))]
+                                                ())]
                                                 DescriptorArray
+                                            )
+                                            (ArrayConstant
+                                                12
+                                                [2, 4, 6]
+                                                (Array
+                                                    (Integer 4)
+                                                    [((IntegerConstant 1 (Integer 4))
+                                                    (IntegerConstant 3 (Integer 4)))]
+                                                    DescriptorArray
+                                                )
+                                                ColMajor
                                             )
                                             ColMajor
                                         )
