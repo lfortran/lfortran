@@ -1377,129 +1377,77 @@ public:
         src = out;
     }
 
-    #define SET_ARR_INTRINSIC_NAME(X, func_name)                                \
-        case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::X)) : {   \
-            visit_expr(*x.m_args[0]);                                           \
-            out += func_name; break;                                            \
+    void setArrIntrinsicName(std::string &out, std::string func_name, const ASR::IntrinsicArrayFunction_t &x) {
+        out += func_name;
+        visit_expr(*x.m_args[0]);
+        out += "(" + src;
+        for (size_t i = 1; i < x.n_args; i++) {
+            out += ", ";
+            visit_expr(*x.m_args[i]);
+            out += src;
         }
+        out += ")";
+        src = out;
+        out = "";
+    }
 
     void visit_IntrinsicArrayFunction(const ASR::IntrinsicArrayFunction_t &x) {
         std::string out;
         switch (x.m_arr_intrinsic_id) {
-            SET_ARR_INTRINSIC_NAME(Any, "any");
-            SET_ARR_INTRINSIC_NAME(All, "all");
-            SET_ARR_INTRINSIC_NAME(Iany, "iany");
-            SET_ARR_INTRINSIC_NAME(Iall, "iall");
-            SET_ARR_INTRINSIC_NAME(Sum, "sum");
-            SET_ARR_INTRINSIC_NAME(Product, "product");
-            SET_ARR_INTRINSIC_NAME(Shape, "shape");
-            SET_ARR_INTRINSIC_NAME(MaxVal, "maxval");
-            SET_ARR_INTRINSIC_NAME(MinVal, "minval");
-            SET_ARR_INTRINSIC_NAME(Norm2, "norm2");
-            SET_ARR_INTRINSIC_NAME(Transpose, "transpose");
-            case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Pack)) : {
-                out += "pack";
-                visit_expr(*x.m_args[0]);
-                out += "(" + src + ", ";
-                visit_expr(*x.m_args[1]);
-                out += src;
-                if (x.n_args == 3) {
-                    out += ", ";
-                    visit_expr(*x.m_args[2]);
-                    out += src;
-                }
-                out += ")";
-                src = out;
-                out = "";
+            case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Any)) :
+                setArrIntrinsicName(out, "any", x);
                 break;
-            }
-            case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Unpack)) : {
-                out += "unpack";
-                visit_expr(*x.m_args[0]);
-                out += "(" + src + ", ";
-                visit_expr(*x.m_args[1]);
-                out += src;
-                out += ", ";
-                visit_expr(*x.m_args[2]);
-                out += src;
-                out += ")";
-                src = out;
-                out = "";
+            case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::All)) :
+                setArrIntrinsicName(out, "all", x);
                 break;
-            }
-            case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Iparity)) : {
-                out += "iparity";
-                visit_expr(*x.m_args[0]);
-                out += "(" + src;
-                if (x.n_args > 1) {
-                    out += ", ";
-                    visit_expr(*x.m_args[1]);
-                    out += src;
-                    if (x.n_args == 3) {
-                        out += ", ";
-                        visit_expr(*x.m_args[2]);
-                        out += src;
-                    }
-                }
-                out += ")";
-                src = out;
-                out = "";
+            case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Iany)) :
+                setArrIntrinsicName(out, "iany", x);
                 break;
-            }
-            case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Count)) : {
-                // count(mask, dim, kind)
-                out += "count";
-                visit_expr(*x.m_args[0]);
-                out += "(" + src;
-                if (x.n_args > 1) {
-                    out += ", ";
-                    visit_expr(*x.m_args[1]);
-                    out += src;
-                    if (x.n_args == 3) {
-                        out += ", ";
-                        visit_expr(*x.m_args[2]);
-                        out += src;
-                    }
-                }
-                out += ")";
-                src = out;
-                out = "";
+            case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Iall)) :
+                setArrIntrinsicName(out, "iall", x);
                 break;
-            }
-            case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Parity)) : {
-                out += "parity";
-                visit_expr(*x.m_args[0]);
-                out += "(" + src;
-                if (x.n_args > 1) {
-                    out += ", ";
-                    visit_expr(*x.m_args[1]);
-                    out += src;
-                }
-                out += ")";
-                src = out;
-                out = "";
+            case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Sum)) :
+                setArrIntrinsicName(out, "sum", x);
                 break;
-            }
-            case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::DotProduct)) : {
-                out += "dot_product";
-                visit_expr(*x.m_args[0]);
-                out += "(" + src + ", ";
-                visit_expr(*x.m_args[1]);
-                out += src + ")";
-                src = out;
-                out = "";
+            case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Product)) :
+                setArrIntrinsicName(out, "product", x);
                 break;
-            }
-            case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::MatMul)) : {
-                out += "matmul";
-                visit_expr(*x.m_args[0]);
-                out += "(" + src + ", ";
-                visit_expr(*x.m_args[1]);
-                out += src + ")";
-                src = out;
-                out = "";
+            case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Shape)) :
+                setArrIntrinsicName(out, "shape", x);
                 break;
-            }
+            case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::MaxVal)) :
+                setArrIntrinsicName(out, "maxval", x);
+                break;
+            case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::MinVal)) :
+                setArrIntrinsicName(out, "minval", x);
+                break;
+            case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Norm2)) :
+                setArrIntrinsicName(out, "norm2", x);
+                break;
+            case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Transpose)) :
+                setArrIntrinsicName(out, "transpose", x);
+                break;
+            case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Pack)) :
+                setArrIntrinsicName(out, "pack", x);
+                break;
+            case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Unpack)) :
+                setArrIntrinsicName(out, "unpack", x);
+                break;
+            case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Iparity)) :
+                setArrIntrinsicName(out, "iparity", x);
+                break;
+            case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Count)) :
+                setArrIntrinsicName(out, "count", x);
+                break;
+            case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Parity)) :
+                setArrIntrinsicName(out, "parity", x);
+                break;
+            case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::DotProduct)) :
+                setArrIntrinsicName(out, "dot_product", x);
+                break;
+            case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::MatMul)) :
+                setArrIntrinsicName(out, "matmul", x);
+                break;
             case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::MaxLoc)) : {
                 out += "maxloc";
                 visit_expr(*x.m_args[0]);
