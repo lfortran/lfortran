@@ -605,7 +605,7 @@ intrinsic_funcs_args = {
     "BitSize": [
         {
             "args": [("int",)],
-            "return": "int32"
+            "ret_type_arg_idx": 0
         }
     ],
     "NewLine": [
