@@ -6,10 +6,10 @@ contains
 
 elemental real(8) function dabs(x) result(r)
     real(8), intent(in) :: x
-    if (x > real(0, kind=8)) then
+    if (x > 0.0000000000000000d0) then
         r = x
     else
-        r = real(0, kind=8) - x
+        r = 0.0000000000000000d0 - x
     end if
 end function dabs
 

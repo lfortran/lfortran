@@ -11,7 +11,7 @@ elemental complex(8) function dabs(x) result(r)
     if (x /= cmplx(zero, 0.0, kind=8)) then
         r = x
     else
-        r = cmplx(0, 0.0, kind=8) - x
+        r = (0.000000, 0.000000) - x
     end if
 end function dabs
 
