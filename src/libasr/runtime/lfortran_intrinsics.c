@@ -1097,11 +1097,11 @@ LFORTRAN_API double _lfortran_dlog(double x)
     return log(x);
 }
 
-LFORTRAN_API bool _lfortran_rsp_is_nan(float x) {
+LFORTRAN_API bool _lfortran_sis_nan(float x) {
     return isnan(x);
 }
 
-LFORTRAN_API bool _lfortran_rdp_is_nan(double x) {
+LFORTRAN_API bool _lfortran_dis_nan(double x) {
     return isnan(x);
 }
 

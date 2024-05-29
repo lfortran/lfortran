@@ -267,6 +267,12 @@ intrinsic_funcs_args = {
             "kind_arg": True
         }
     ],
+    "Isnan": [
+        {
+            "args": [("real",)],
+            "return": "logical",
+        }
+    ],
     "Nint": [
         {
             "args": [("real",)],
