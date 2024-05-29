@@ -825,6 +825,7 @@ public:
         {"merge_bits", {IntrinsicSignature({"i", "j", "mask"}, 3, 3)}},
         {"logical", {IntrinsicSignature({"i", "kind"}, 1, 2)}},
         {"cshift", {IntrinsicSignature({"array", "shift", "dim"}, 2, 3)}},
+        {"same_type_as", {IntrinsicSignature({"a", "b"}, 2, 2)}},
     };
 
     std::map<std::string, std::pair<std::string, std::string>> intrinsic_mapping = {

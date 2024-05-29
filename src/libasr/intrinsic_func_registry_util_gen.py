@@ -633,6 +633,12 @@ intrinsic_funcs_args = {
             "return": "character(-1)"
         }
     ],
+    "SameTypeAs": [
+        {
+            "args": [("any", "any")],
+            "return": "logical"
+        }
+    ],
     "Range": [
         {
             "args": [("int",), ("real",), ("complex",)],
@@ -794,6 +800,7 @@ compile_time_only_fn = [
     "Tiny",
     "Huge",
     "BitSize",
+    "SameTypeAs",
     "NewLine",
     "Kind",
 ]
