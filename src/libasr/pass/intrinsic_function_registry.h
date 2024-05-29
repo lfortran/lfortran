@@ -59,6 +59,7 @@ inline std::string get_intrinsic_name(int64_t x) {
         INTRINSIC_NAME_CASE(FloorDiv)
         INTRINSIC_NAME_CASE(Mod)
         INTRINSIC_NAME_CASE(Trailz)
+        INTRINSIC_NAME_CASE(Isnan)
         INTRINSIC_NAME_CASE(Nearest)
         INTRINSIC_NAME_CASE(Spacing)
         INTRINSIC_NAME_CASE(Modulo)
@@ -265,6 +266,8 @@ namespace IntrinsicElementalFunctionRegistry {
             {&Mod::instantiate_Mod, &Mod::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Trailz),
             {&Trailz::instantiate_Trailz, &Trailz::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Isnan),
+            {&Isnan::instantiate_Isnan, &Isnan::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Nearest),
             {&Nearest::instantiate_Nearest, &Nearest::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Spacing),
@@ -566,6 +569,8 @@ namespace IntrinsicElementalFunctionRegistry {
             "mod"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Trailz),
             "trailz"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Isnan),
+            "isnan"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Nearest),
             "nearest"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Spacing),
@@ -862,6 +867,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"floordiv", {&FloorDiv::create_FloorDiv, &FloorDiv::eval_FloorDiv}},
                 {"mod", {&Mod::create_Mod, &Mod::eval_Mod}},
                 {"trailz", {&Trailz::create_Trailz, &Trailz::eval_Trailz}},
+                {"isnan", {&Isnan::create_Isnan, &Isnan::eval_Isnan}},
                 {"nearest", {&Nearest::create_Nearest, &Nearest::eval_Nearest}},
                 {"spacing", {&Spacing::create_Spacing, &Spacing::eval_Spacing}},
                 {"modulo", {&Modulo::create_Modulo, &Modulo::eval_Modulo}},
