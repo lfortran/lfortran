@@ -1,11 +1,11 @@
 ! Checking global scope of f allocatable array.
-module a
+module mod_test_allocatable_02
     implicit none
     integer, allocatable, dimension(:,:) :: f
- end module a
+ end module mod_test_allocatable_02
 
 subroutine r
-    use a
+    use mod_test_allocatable_02
     implicit none
     logical :: ret
     ret  = all (f(1,:) == [1,2,3,4])
@@ -16,7 +16,7 @@ subroutine r
 end subroutine r
 
  program mm
-    use a
+    use mod_test_allocatable_02
     implicit none
     allocate(f(4,4))
     f(1,:) = [1, 2, 3, 4]

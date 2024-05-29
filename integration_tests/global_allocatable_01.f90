@@ -1,11 +1,11 @@
-module a
+module mod_test_allocatable_01
     implicit none
     integer, allocatable, dimension(:) :: f
- end module a
+ end module mod_test_allocatable_01
 
 
  program mm
-    use a
+    use mod_test_allocatable_01
     implicit none
     allocate(f(4))
     f = [1, 2, 3, 4]
