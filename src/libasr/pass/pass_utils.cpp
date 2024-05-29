@@ -546,6 +546,44 @@ namespace LCompilers {
             }
         }
 
+        ASR::stmt_t* create_do_loop_helper_parity(Allocator &al, const Location &loc, std::vector<ASR::expr_t*> do_loop_variables, ASR::expr_t* mask, ASR::expr_t* res, int curr_idx) {
+            ASRUtils::ASRBuilder b(al, loc);
+
+            if (curr_idx == 1) {
+                std::vector<ASR::expr_t*> vars;
+                for (size_t i = 0; i < do_loop_variables.size(); i++) {
+                    vars.push_back(do_loop_variables[i]);
+                }
+                return b.DoLoop(do_loop_variables[curr_idx - 1], LBound(mask, curr_idx), UBound(mask, curr_idx), {
+                    b.Assignment(res, b.Xor(res, b.ArrayItem_01(mask, vars)))
+                }, nullptr);
+            }
+            return b.DoLoop(do_loop_variables[curr_idx - 1], LBound(mask, curr_idx), UBound(mask, curr_idx), {
+                create_do_loop_helper_parity(al, loc, do_loop_variables, mask, res, curr_idx - 1)
+            }, nullptr);
+        }
+
+        ASR::stmt_t* create_do_loop_helper_parity_dim(Allocator &al, const Location &loc, std::vector<ASR::expr_t*> do_loop_variables,
+                    std::vector<ASR::expr_t*> res_idx, ASR::stmt_t* inner_most_do_loop,
+                    ASR::expr_t* c, ASR::expr_t* mask, ASR::expr_t* res, int curr_idx, int dim) {
+            ASRUtils::ASRBuilder b(al, loc);
+
+            if (curr_idx == (int) do_loop_variables.size() - 1) {
+                return b.DoLoop(do_loop_variables[curr_idx], LBound(mask, curr_idx + 1), UBound(mask, curr_idx + 1), {
+                    b.Assignment(c, ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, loc, 0, ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4))))),
+                    inner_most_do_loop,
+                    b.Assignment(b.ArrayItem_01(res, {res_idx}), c)
+                });
+            }
+            if (curr_idx != dim - 1) {
+                return b.DoLoop(do_loop_variables[curr_idx], LBound(mask, curr_idx + 1), UBound(mask, curr_idx + 1), {
+                    create_do_loop_helper_parity_dim(al, loc, do_loop_variables, res_idx, inner_most_do_loop, c, mask, res, curr_idx + 1, dim)
+                });
+            } else {
+                return create_do_loop_helper_parity_dim(al, loc, do_loop_variables, res_idx, inner_most_do_loop, c, mask, res, curr_idx + 1, dim);
+            }
+        }
+
         ASR::stmt_t* create_do_loop_helper_norm2(Allocator &al, const Location &loc, std::vector<ASR::expr_t*> do_loop_variables, ASR::expr_t* array, ASR::expr_t* res, int curr_idx) {
             ASRUtils::ASRBuilder b(al, loc);
 
