@@ -1325,6 +1325,7 @@ public:
             SET_INTRINSIC_NAME(Sngl, "sngl");
             SET_INTRINSIC_NAME(Log, "log");
             SET_INTRINSIC_NAME(Log10, "log10");
+            SET_INTRINSIC_NAME(Isnan, "isnan");
             SET_INTRINSIC_NAME(LogGamma, "log_gamma");
             SET_INTRINSIC_NAME(Erf, "erf");
             SET_INTRINSIC_NAME(Erfc, "erfc");
