@@ -974,24 +974,6 @@ public:
                 }
             }
             ASR::symbol_t *var = current_scope->get_symbol(arg_s);
-            if (ASR::is_a<ASR::Variable_t>(*var)) {
-                ASR::Variable_t* arg_var = ASR::down_cast<ASR::Variable_t>(var);
-                bool is_external_dependency = false;
-                for (size_t n_dep = 0; n_dep < arg_var->n_dependencies; n_dep++) {
-                    if (current_scope->get_symbol(arg_var->m_dependencies[n_dep]) == nullptr) {
-                        is_external_dependency = true;
-                        break;
-                    }
-                }
-                if (ASR::is_a<ASR::Array_t>(*arg_var->m_type) && is_external_dependency) {
-                    arg_var->m_dependencies = nullptr;
-                    arg_var->n_dependencies = 0;
-                    
-                    ASR::Array_t* arr_var = ASR::down_cast<ASR::Array_t>(arg_var->m_type);
-                    arr_var->m_dims->m_start = nullptr;
-                    arr_var->m_dims->m_length = nullptr;
-                }                
-            }
             args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
                 var)));
         }
