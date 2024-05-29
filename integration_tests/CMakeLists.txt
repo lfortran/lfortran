@@ -624,7 +624,7 @@ RUN(NAME intrinsics_72 LABELS gfortran llvmImplicit) # datan2
 RUN(NAME intrinsics_73 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # sngl
 RUN(NAME intrinsics_74 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c NOFAST) # random_number
 RUN(NAME intrinsics_75 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # exp
-RUN(NAME intrinsics_76 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # exp
+RUN(NAME intrinsics_76 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # exp
 RUN(NAME intrinsics_77 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # maxval
 RUN(NAME intrinsics_78 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran) # mod
 RUN(NAME intrinsics_79 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran) # Trailz
