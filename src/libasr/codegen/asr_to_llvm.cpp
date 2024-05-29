@@ -2750,8 +2750,10 @@ public:
             llvm::Constant *ptr = module->getOrInsertGlobal(x.m_name,
                 x_ptr);
             if (x.m_type->type == ASR::ttypeType::Allocatable){
+                llvm::Type* type_ = llvm_utils->get_type_from_ttype_t_util(
+                            ASRUtils::type_get_past_allocatable(x.m_type), module.get(), x.m_abi);
                 allocatable_array_details.push_back({ptr,
-                        ((llvm::PointerType*)x_ptr)->getElementType(),
+                        type_,
                         x.m_type,
                         (down_cast<ASR::Array_t>((down_cast<ASR::Allocatable_t>(x.m_type))->m_type))->n_dims});
             }
