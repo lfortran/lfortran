@@ -1913,10 +1913,6 @@ public:
     // void visit_OverloadedUnaryMinus(const ASR::OverloadedUnaryMinus_t &x) {}
 
     void visit_Cast(const ASR::Cast_t &x) {
-        if (x.m_value != nullptr) {
-            visit_expr(*x.m_value);
-            return;
-        }
         visit_expr(*x.m_arg);
         int dest_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
         std::string type_str;
