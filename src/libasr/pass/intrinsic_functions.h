@@ -1704,7 +1704,7 @@ namespace Ieor {
         * r = ieor(x, y)
         * r = x ^ y
         */
-        body.push_back(al, b.Assignment(result, b.BitXor(args[0], args[1], return_type)));
+        body.push_back(al, b.Assignment(result, b.Xor(args[0], args[1])));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -3763,9 +3763,9 @@ namespace Rank {
 namespace BitSize {
 
     static ASR::expr_t *eval_BitSize(Allocator &al, const Location &loc,
-            ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[0]));
-        return make_ConstantWithType(make_IntegerConstant_t, 8*kind, int32, loc);
+        return make_ConstantWithType(make_IntegerConstant_t, 8*kind, t1, loc);
     }
 
 } // namespace BitSize

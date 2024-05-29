@@ -3912,6 +3912,10 @@ filename = "errors/sqrt_neg.f90"
 asr = true
 
 [[test]]
+filename = "errors/dlgama_arg.f90"
+asr = true
+
+[[test]]
 filename = "errors/dreal_arg_error.f90"
 asr = true
 
