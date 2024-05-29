@@ -1093,7 +1093,7 @@
                                             )
                                             (ArrayConstant
                                                 12
-                                                [0.00000000, 0.00000000, 0.00000000]
+                                                [0.000000, 0.000000, 0.000000]
                                                 (Array
                                                     (Real 4)
                                                     [((IntegerConstant 1 (Integer 4))

@@ -71,7 +71,7 @@
                                         (Var 3 reldiff)
                                         (ArrayConstant
                                             8
-                                            [0.00000000, 0.00000000]
+                                            [0.000000, 0.000000]
                                             (Array
                                                 (Real 4)
                                                 [((IntegerConstant 1 (Integer 4))
@@ -355,7 +355,7 @@
                                         (Var 4 x)
                                         (ArrayConstant
                                             8
-                                            [0.10000000, 0.10000000]
+                                            [0.100000, 0.100000]
                                             (Array
                                                 (Real 4)
                                                 [((IntegerConstant 1 (Integer 4))

@@ -68,14 +68,57 @@
                     [(Assignment
                         (Var 2 array)
                         (ArrayReshape
-                            (ArrayConstant
-                                60
-                                [1, 2, 3, ...., 5, 6, 7]
+                            (ArrayConstructor
+                                [(ImpliedDoLoop
+                                    [(Var 2 i)
+                                    (ImpliedDoLoop
+                                        [(IntegerBinOp
+                                            (Var 2 i)
+                                            Add
+                                            (Var 2 j)
+                                            (Integer 4)
+                                            ()
+                                        )]
+                                        (Var 2 j)
+                                        (IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 4 (Integer 4))
+                                        ()
+                                        (Integer 4)
+                                        ()
+                                    )]
+                                    (Var 2 i)
+                                    (IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 3 (Integer 4))
+                                    ()
+                                    (Integer 4)
+                                    (ArrayConstant
+                                        60
+                                        [1, 2, 3, ...., 5, 6, 7]
+                                        (Array
+                                            (Integer 4)
+                                            [((IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 15 (Integer 4)))]
+                                            FixedSizeArray
+                                        )
+                                        ColMajor
+                                    )
+                                )]
                                 (Array
                                     (Integer 4)
                                     [((IntegerConstant 1 (Integer 4))
-                                    (IntegerConstant 15 (Integer 4)))]
+                                    ())]
                                     DescriptorArray
+                                )
+                                (ArrayConstant
+                                    60
+                                    [1, 2, 3, ...., 5, 6, 7]
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 15 (Integer 4)))]
+                                        DescriptorArray
+                                    )
+                                    ColMajor
                                 )
                                 ColMajor
                             )
