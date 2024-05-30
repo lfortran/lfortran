@@ -2,12 +2,12 @@
     "basename": "asr-maskl_negative-c92502f",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/errors/maskl_negative.f90",
-    "infile_hash": "bf3c0fabd8ab5f31e8b012d6390941a9c0ec7c6fed93516cb8619a1a",
+    "infile_hash": "fa8d94b48863d7ea376ca60d38da0c718a2279a551ddd80e22482ae1",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
     "stderr": "asr-maskl_negative-c92502f.stderr",
-    "stderr_hash": "3aea28042891d560bd8dba98e83cd6731c348a223908f7b808e9dbe8",
+    "stderr_hash": "9a2147feaabf5d9848200d0e5b64655c2d4629c9fd23a58730edc2b8",
     "returncode": 2
 }
