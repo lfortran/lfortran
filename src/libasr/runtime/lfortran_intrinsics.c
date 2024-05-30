@@ -2445,7 +2445,7 @@ LFORTRAN_API void _lfortran_read_char(char **p, int32_t unit_num)
     } else {
         char tmp_buffer[n + 1];
         (void)!fscanf(filep, "%s", tmp_buffer);
-        strlcpy(*p, tmp_buffer, n + 1);
+        strncpy(*p, tmp_buffer, n);
     }
     if (streql(*p, "")) {
         printf("Runtime error: End of file!\n");
