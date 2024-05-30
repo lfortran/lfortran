@@ -831,7 +831,7 @@ static inline ASR::expr_t *eval_MaxMinLoc(Allocator &al, const Location &loc,
     if (all_args_evaluated(args) &&
             extract_n_dims_from_ttype(expr_type(args[0])) == 1) {
         // Only supported for arrays with rank 1
-        ASR::ArrayConstant_t *arr = ASR::down_cast<ASR::ArrayConstant_t>(args[0]);
+        ASR::ArrayConstant_t *arr = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(args[0]));
         std::vector<double> m_eles;
         for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(arr->m_type); i++) {
             double ele = 0;
@@ -1048,8 +1048,9 @@ namespace Shape {
 
     static ASR::expr_t *eval_Shape(Allocator &al, const Location &loc,
             ASR::ttype_t *type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+        ASR::expr_t* arg_value = expr_value(args[0]);
         ASR::dimension_t *m_dims;
-        size_t n_dims = extract_dimensions_from_ttype(expr_type(args[0]), m_dims);
+        size_t n_dims = extract_dimensions_from_ttype(expr_type(arg_value ? arg_value : args[0]), m_dims);
         Vec<ASR::expr_t *> m_shapes; m_shapes.reserve(al, n_dims);
         if( n_dims == 0 ){
             return EXPR(ASRUtils::make_ArrayConstructor_t_util(al, loc, m_shapes.p, 0,
@@ -2920,6 +2921,7 @@ namespace Pack {
         if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*vector_a)) {
             vector_a = ASR::down_cast<ASR::ArrayPhysicalCast_t>(vector_a)->m_arg;
         }
+        vector_a = ASRUtils::expr_value(vector_a);
         LCOMPILERS_ASSERT(ASR::is_a<ASR::ArrayConstant_t>(*vector_a));
         ASR::ArrayConstant_t *a_const = ASR::down_cast<ASR::ArrayConstant_t>(vector_a);
 
@@ -2944,6 +2946,7 @@ namespace Pack {
         if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*vector_a)) {
             vector_a = ASR::down_cast<ASR::ArrayPhysicalCast_t>(vector_a)->m_arg;
         }
+        vector_a = ASRUtils::expr_value(vector_a);
         LCOMPILERS_ASSERT(ASR::is_a<ASR::ArrayConstant_t>(*vector_a));
         ASR::ArrayConstant_t *a_const = ASR::down_cast<ASR::ArrayConstant_t>(vector_a);
 
@@ -3305,6 +3308,7 @@ namespace Unpack {
         if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*vector_a)) {
             vector_a = ASR::down_cast<ASR::ArrayPhysicalCast_t>(vector_a)->m_arg;
         }
+        vector_a = ASRUtils::expr_value(vector_a);
         LCOMPILERS_ASSERT(ASR::is_a<ASR::ArrayConstant_t>(*vector_a));
         ASR::ArrayConstant_t *a_const = ASR::down_cast<ASR::ArrayConstant_t>(vector_a);
 
@@ -3329,6 +3333,7 @@ namespace Unpack {
         if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*vector_a)) {
             vector_a = ASR::down_cast<ASR::ArrayPhysicalCast_t>(vector_a)->m_arg;
         }
+        vector_a = ASRUtils::expr_value(vector_a);
         LCOMPILERS_ASSERT(ASR::is_a<ASR::ArrayConstant_t>(*vector_a));
         ASR::ArrayConstant_t *a_const = ASR::down_cast<ASR::ArrayConstant_t>(vector_a);
 
@@ -3614,6 +3619,8 @@ namespace DotProduct {
 
     template<typename T>
     void populate_vector_complex(Allocator &al, std::vector<T> &a, std::vector<T>& b, ASR::expr_t *vector_a, ASR::expr_t* vector_b, int dim) {
+        vector_a = ASRUtils::expr_value(vector_a);
+        vector_b = ASRUtils::expr_value(vector_b);
         if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*vector_a)) {
             vector_a = ASR::down_cast<ASR::ArrayPhysicalCast_t>(vector_a)->m_arg;
         }
@@ -3648,6 +3655,8 @@ namespace DotProduct {
 
     template<typename T>
     void populate_vector(Allocator &al, std::vector<T> &a, std::vector<T>& b, ASR::expr_t *vector_a, ASR::expr_t* vector_b, int dim) {
+        vector_a = ASRUtils::expr_value(vector_a);
+        vector_b = ASRUtils::expr_value(vector_b);
         if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*vector_a)) {
             vector_a = ASR::down_cast<ASR::ArrayPhysicalCast_t>(vector_a)->m_arg;
         }

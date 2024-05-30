@@ -59,6 +59,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     FlipSign,
     Mod,
     Trailz,
+    Isnan,
     Nearest,
     Spacing,
     Modulo,
@@ -497,6 +498,7 @@ create_unary_function(LogGamma, lgamma, log_gamma)
 create_unary_function(Log10, log10, log10)
 create_unary_function(Erf, erf, erf)
 create_unary_function(Erfc, erfc, erfc)
+create_unary_function(Isnan, isnan, is_nan)
 
 namespace ObjectType {
 

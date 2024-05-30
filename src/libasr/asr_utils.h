@@ -5120,7 +5120,9 @@ inline std::string fetch_ArrayConstant_value(void *data, ASR::ttype_t* type, int
         }
         case ASR::ttypeType::Real: {
             switch (kind) {
-                case 4: return to_string_with_precision(((float*)data)[i], 8);
+                // Precision reduced to 6 for float, to avoid line truncation issues
+                // in the generated Fortran code, revert to 8 once the issue is resolved.
+                case 4: return to_string_with_precision(((float*)data)[i], 6);
                 case 8: return to_string_with_precision(((double*)data)[i], 16);
                 default:
                     throw LCompilersException("Unsupported kind for real array constant.");
@@ -5411,6 +5413,14 @@ inline ASR::asr_t* make_ArrayConstructor_t_util(Allocator &al, const Location &a
 
     LCOMPILERS_ASSERT(ASRUtils::is_array(a_type));
     bool all_expr_evaluated = n_args > 0;
+    bool is_array_item_constant = n_args > 0 && (ASR::is_a<ASR::IntegerConstant_t>(*a_args[0]) ||
+                                ASR::is_a<ASR::RealConstant_t>(*a_args[0]) ||
+                                ASR::is_a<ASR::ComplexConstant_t>(*a_args[0]) ||
+                                ASR::is_a<ASR::LogicalConstant_t>(*a_args[0]) ||
+                                ASR::is_a<ASR::StringConstant_t>(*a_args[0]) ||
+                                ASR::is_a<ASR::IntegerUnaryMinus_t>(*a_args[0]) ||
+                                ASR::is_a<ASR::RealUnaryMinus_t>(*a_args[0]));
+    ASR::expr_t* value = nullptr;
     for (size_t i = 0; i < n_args; i++) {
         ASR::expr_t* a_value = ASRUtils::expr_value(a_args[i]);
         if (!is_value_constant(a_value)) {
@@ -5437,10 +5447,11 @@ inline ASR::asr_t* make_ArrayConstructor_t_util(Allocator &al, const Location &a
         if (is_character(*a_type_->m_type)) {
             n_data = curr_idx * ASR::down_cast<ASR::Character_t>(a_type_->m_type)->m_len;
         }
-        return ASR::make_ArrayConstant_t(al, a_loc, n_data, data, new_type, a_storage_format);
-    } else {
-        return ASR::make_ArrayConstructor_t(al, a_loc, a_args, n_args, a_type, nullptr, a_storage_format);
+        value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, a_loc, n_data, data, new_type, a_storage_format));
     }
+    return is_array_item_constant && all_expr_evaluated ? (ASR::asr_t*) value :
+            ASR::make_ArrayConstructor_t(al, a_loc, a_args, n_args, a_type,
+            value, a_storage_format);
 }
 
 void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,

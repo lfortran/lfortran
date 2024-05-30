@@ -3093,7 +3093,10 @@ public:
                                 ASR::is_a<ASR::TypeInquiry_t>(*init_expr) ||
                                 ASR::is_a<ASR::StringLen_t>(*init_expr) ) {
                                 value = init_expr;
-                            } else if (ASR::is_a<ASR::IntegerBinOp_t>(*init_expr) || ASR::is_a<ASR::RealBinOp_t>(*init_expr)) {
+                            } else if (ASR::is_a<ASR::IntegerBinOp_t>(*init_expr) || ASR::is_a<ASR::RealBinOp_t>(*init_expr) ||
+                                        ASR::is_a<ASR::ComplexBinOp_t>(*init_expr)) {
+                                value = init_expr;
+                            } else if (ASR::is_a<ASR::ArrayReshape_t>(*init_expr)) {
                                 value = init_expr;
                             } else {
                                 throw SemanticError("Initialization of `" + std::string(x.m_syms[i].m_name) +
@@ -3715,6 +3718,7 @@ public:
                         ASR::expr_t *val = ASRUtils::expr_value(v_Var);
                         ASR::expr_t *index = ASRUtils::expr_value(arg.m_right);
                         if (val && index) {
+                            val = ASRUtils::expr_value(val);
                             ASR::ArrayConstant_t *val2 = ASR::down_cast<ASR::ArrayConstant_t>(val);
                             ASR::IntegerConstant_t *index2 = ASR::down_cast<ASR::IntegerConstant_t>(index);
                             int based_indexing = get_based_indexing(v);
