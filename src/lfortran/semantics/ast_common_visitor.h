@@ -5999,11 +5999,12 @@ public:
             T& value;
             ASR::ttype_t* type;
             diag::Diagnostics& diag;
+            std::map<std::string, std::vector<IntrinsicSignature>> name2signature;
 
             public:
             ImpliedDoLoopValuesVisitor(Allocator& al, std::vector<ASR::symbol_t*>& loop_vars, std::vector<int>& loop_indices, T& value,
-                ASR::ttype_t* type, diag::Diagnostics& diag) :
-                al(al), loop_vars(loop_vars), loop_indices(loop_indices), value(value), type(type), diag(diag) {}
+                ASR::ttype_t* type, std::map<std::string, std::vector<IntrinsicSignature>> name2signature, diag::Diagnostics& diag) :
+                al(al), loop_vars(loop_vars), loop_indices(loop_indices), value(value), type(type), diag(diag), name2signature(name2signature) {}
 
             void visit_Var(const ASR::Var_t &x) {
                 int loop_var_index = std::find(loop_vars.begin(), loop_vars.end(), x.m_v) - loop_vars.begin();
@@ -6120,6 +6121,12 @@ public:
                 }
             }
 
+            std::vector<IntrinsicSignature> get_intrinsic_signature(std::string& var_name) {
+                if( name2signature.find(var_name) == name2signature.end() ) {
+                    return {IntrinsicSignature({}, 1, 1)};
+                }
+                return name2signature[var_name];
+            }
             // handle intrinsic elemental function
             void visit_IntrinsicElementalFunction(const ASR::IntrinsicElementalFunction_t &x) {
                 Vec<ASR::expr_t*> args; args.reserve(al, x.n_args);
@@ -6137,8 +6144,12 @@ public:
                         throw SemanticError("Unsupported argument type in compiletime evaluation of intrinsics in implied do loop", x.base.base.loc);
                     }
                 }
+                std::string intrinsic_name = to_lower(ASRUtils::get_intrinsic_name(x.m_intrinsic_id));
+                std::vector<IntrinsicSignature> signatures = get_intrinsic_signature(intrinsic_name);
+                size_t max_args = signatures[0].max_args;
+                for (size_t i = x.n_args; i < max_args; i++) args.push_back(al, nullptr);
                 ASRUtils::create_intrinsic_function create_func =
-                        ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function(to_lower(ASRUtils::get_intrinsic_name(x.m_intrinsic_id)));
+                        ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function(intrinsic_name);
                 ASR::expr_t* intrinsic_expr = ASRUtils::EXPR(create_func(al, x.base.base.loc, args, diag));
                 ASR::IntrinsicElementalFunction_t *intrinsic_func = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(intrinsic_expr);
                 this->visit_expr(*intrinsic_func->m_value);
@@ -6146,7 +6157,7 @@ public:
         };
 
         T value;
-        ImpliedDoLoopValuesVisitor visitor(al, loop_vars, loop_indices, value, type, diag);
+        ImpliedDoLoopValuesVisitor visitor(al, loop_vars, loop_indices, value, type, name2signature, diag);
         visitor.visit_expr(*expr);
         return value;
     }
