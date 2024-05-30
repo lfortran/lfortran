@@ -1,5 +1,3 @@
-func name: len_trim
-func name: trim
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
 
