@@ -204,7 +204,13 @@ public:
     std::vector<llvm::Value*> heap_arrays;
     std::map<llvm::Value*, llvm::Value*> strings_to_be_allocated; // (array, size)
     Vec<llvm::Value*> strings_to_be_deallocated;
-
+    struct to_be_allocated_array{ // struct to hold details for the initializing pointer_to_array_type later inside main function.
+        llvm::Constant* pointer_to_array_type;
+        llvm::Type* array_type;
+        LCompilers::ASR::ttype_t* var_type;
+        size_t n_dims;
+    };
+    std::vector<to_be_allocated_array> allocatable_array_details;
     ASRToLLVMVisitor(Allocator &al, llvm::LLVMContext &context, std::string infile,
         CompilerOptions &compiler_options_, diag::Diagnostics &diagnostics) :
     diag{diagnostics},
@@ -2732,7 +2738,8 @@ public:
                 }
                 llvm_symtab[h] = ptr;
             }
-        } else if(x.m_type->type == ASR::ttypeType::Pointer) {
+        } else if(x.m_type->type == ASR::ttypeType::Pointer ||
+                    x.m_type->type == ASR::ttypeType::Allocatable) {
             ASR::dimension_t* m_dims = nullptr;
             int n_dims = -1, a_kind = -1;
             bool is_array_type = false, is_malloc_array_type = false, is_list = false;
@@ -2742,6 +2749,14 @@ public:
                 m_dims, n_dims, a_kind, module.get());
             llvm::Constant *ptr = module->getOrInsertGlobal(x.m_name,
                 x_ptr);
+            if (x.m_type->type == ASR::ttypeType::Allocatable){
+                llvm::Type* type_ = llvm_utils->get_type_from_ttype_t_util(
+                            ASRUtils::type_get_past_allocatable(x.m_type), module.get(), x.m_abi);
+                allocatable_array_details.push_back({ptr,
+                        type_,
+                        x.m_type,
+                        (down_cast<ASR::Array_t>((down_cast<ASR::Allocatable_t>(x.m_type))->m_type))->n_dims});
+            }
             if (!external) {
                 if (init_value) {
                     module->getNamedGlobal(x.m_name)->setInitializer(
@@ -3045,7 +3060,10 @@ public:
             }
             builder->CreateCall(fn, args);
         }
-
+        for(to_be_allocated_array array : allocatable_array_details){
+                    fill_array_details_(array.pointer_to_array_type, array.array_type, nullptr, array.n_dims,
+                true, true, false, array.var_type);
+        }
         declare_vars(x);
         for(auto &value: strings_to_be_allocated) {
             llvm::Value *init_value = LLVM::lfortran_malloc(context, *module,
