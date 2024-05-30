@@ -1329,6 +1329,7 @@ public:
             SET_INTRINSIC_NAME(LogGamma, "log_gamma");
             SET_INTRINSIC_NAME(Erf, "erf");
             SET_INTRINSIC_NAME(Erfc, "erfc");
+            SET_INTRINSIC_NAME(ErfcScaled, "erfc_scaled");
             SET_INTRINSIC_NAME(Gamma, "gamma");
             SET_INTRINSIC_NAME(BesselJ0, "bessel_j0");
             SET_INTRINSIC_NAME(BesselJ1, "bessel_j1");
