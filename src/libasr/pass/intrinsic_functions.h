@@ -2785,8 +2785,8 @@ namespace Maskl {
             ASR::ttype_t* t1, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
         int32_t kind = ASRUtils::extract_kind_from_ttype_t(t1);
         int64_t i = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
-        if (((kind == 4) && i > 32) || (kind == 8 && i > 64)) {
-            diag.semantic_error_label("`I` must be less than or equal to the BIT_SIZE of INTEGER(KIND=" 
+        if ((kind == 4 && i > 32) || (kind == 8 && i > 64)) {
+            diag.semantic_error_label(" first argument of `maskl` must be less than or equal to the BIT_SIZE of INTEGER(KIND=" 
             + std::to_string(kind) + ")", {loc}, "");
             return nullptr;
         } else if (i < 0) {
