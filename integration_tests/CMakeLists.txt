@@ -785,6 +785,7 @@ RUN(NAME intrinsics_233 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) #
 RUN(NAME intrinsics_234 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NOFAST fortran) # parity
 RUN(NAME intrinsics_235 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # lgamma algama dlgama
 RUN(NAME intrinsics_236 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # bit_size, huge
+RUN(NAME intrinsics_238 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # maskl, idl
 
 RUN(NAME parameter_01 LABELS gfortran)
 RUN(NAME parameter_02 LABELS gfortran)
