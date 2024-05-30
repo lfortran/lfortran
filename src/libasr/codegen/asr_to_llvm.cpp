@@ -2801,6 +2801,42 @@ public:
                 llvm::ConstantStruct::get(set_type,
                 llvm::Constant::getNullValue(set_type)));
             llvm_symtab[h] = ptr;
+        } else if (x.m_type->type == ASR::ttypeType::Complex) {
+            int a_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+
+            llvm::Constant* re;
+            llvm::Constant* im;
+            llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(x.m_type, module.get());;
+            llvm::Constant* ptr = module->getOrInsertGlobal(x.m_name, type);
+
+            if (!external) {
+                if (init_value) {
+                    module->getNamedGlobal(x.m_name)->setInitializer(init_value);
+                } else {
+                    switch (a_kind) {
+                        case 4: {
+                            re = llvm::ConstantFP::get(context, llvm::APFloat((float) 0.0));
+                            im = llvm::ConstantFP::get(context, llvm::APFloat((float) 0.0));
+                            type = complex_type_4;
+                            break;
+                        }
+                        case 8: {
+                            re = llvm::ConstantFP::get(context, llvm::APFloat((double) 0.0));
+                            im = llvm::ConstantFP::get(context, llvm::APFloat((double) 0.0));
+                            type = complex_type_8;
+                            break;
+                        }
+                        default: {
+                            throw CodeGenError("kind type is not supported");
+                        }
+                    }
+                    // Create a constant structure to represent the complex number
+                    std::vector<llvm::Constant*> elements = { re, im };
+                    llvm::Constant* complex_init = llvm::ConstantStruct::get(static_cast<llvm::StructType*>(type), elements);
+                    module->getNamedGlobal(x.m_name)->setInitializer(complex_init);
+                }
+            }
+            llvm_symtab[h] = ptr;
         } else if (x.m_type->type == ASR::ttypeType::TypeParameter) {
             // Ignore type variables
         } else {
