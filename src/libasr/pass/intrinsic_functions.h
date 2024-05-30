@@ -2790,7 +2790,7 @@ namespace Maskl {
             + std::to_string(kind) + ")", {loc}, "");
             return nullptr;
         } else if (i < 0) {
-            diag.semantic_error_label("`I` must be nonnegative", {loc}, "");
+            diag.semantic_error_label("first argument of `maskl` must be nonnegative", {loc}, "");
             return nullptr;
         } else {
             int64_t one = 1;
