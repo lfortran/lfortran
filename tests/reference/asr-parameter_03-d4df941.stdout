@@ -13,13 +13,13 @@
                                     l_knd
                                     []
                                     Local
-                                    (IntrinsicElementalFunction
+                                    (TypeInquiry
                                         Kind
-                                        [(LogicalConstant
+                                        (Logical 4)
+                                        (LogicalConstant
                                             .true.
                                             (Logical 4)
-                                        )]
-                                        0
+                                        )
                                         (Integer 4)
                                         (IntegerConstant 4 (Integer 4))
                                     )

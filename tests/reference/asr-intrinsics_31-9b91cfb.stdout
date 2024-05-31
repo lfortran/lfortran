@@ -13,13 +13,13 @@
                                     dp
                                     []
                                     Local
-                                    (IntrinsicElementalFunction
+                                    (TypeInquiry
                                         Kind
-                                        [(RealConstant
+                                        (Real 8)
+                                        (RealConstant
                                             0.000000
                                             (Real 8)
-                                        )]
-                                        0
+                                        )
                                         (Integer 4)
                                         (IntegerConstant 8 (Integer 4))
                                     )

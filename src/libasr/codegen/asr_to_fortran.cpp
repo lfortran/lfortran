@@ -1183,7 +1183,7 @@ public:
         std::string re = src;
         visit_expr(*x.m_im);
         std::string im = src;
-        src = "(" + re + ", " + im + ")";
+        src = "cmplx(" + re + ", " + im + ")";
     }
 
     // void visit_NamedExpr(const ASR::NamedExpr_t &x) {}
@@ -1217,6 +1217,7 @@ public:
             SET_INTRINSIC_NAME(Tiny,      "tiny"     );
             SET_INTRINSIC_NAME(BitSize,   "bit_size" );
             SET_INTRINSIC_NAME(NewLine,   "new_line" );
+            SET_INTRINSIC_NAME(Kind,      "kind"     );
             default : {
                 throw LCompilersException("TypeInquiry: `"
                     + ASRUtils::get_intrinsic_name(x.m_inquiry_id)
@@ -1260,12 +1261,108 @@ public:
             SET_INTRINSIC_NAME(Mod, "mod");
             SET_INTRINSIC_NAME(Sin, "sin");
             SET_INTRINSIC_NAME(Cos, "cos");
+            SET_INTRINSIC_NAME(Tan, "tan");
+            SET_INTRINSIC_NAME(Sind, "sind");
+            SET_INTRINSIC_NAME(Cosd, "cosd");
+            SET_INTRINSIC_NAME(Tand, "tand");
+            SET_INTRINSIC_NAME(Asin, "asin");
+            SET_INTRINSIC_NAME(Acos, "acos");
+            SET_INTRINSIC_NAME(Atan, "atan");
+            SET_INTRINSIC_NAME(Asind, "asind");
+            SET_INTRINSIC_NAME(Acosd, "acosd");
+            SET_INTRINSIC_NAME(Atand, "atand");
+            SET_INTRINSIC_NAME(Sinh, "sinh");
+            SET_INTRINSIC_NAME(Cosh, "cosh");
+            SET_INTRINSIC_NAME(Tanh, "tanh");
+            SET_INTRINSIC_NAME(Asinh, "asinh");
+            SET_INTRINSIC_NAME(Acosh, "acosh");
+            SET_INTRINSIC_NAME(Atanh, "atanh");
             SET_INTRINSIC_NAME(Char, "char");
             SET_INTRINSIC_NAME(StringContainsSet, "verify");
             SET_INTRINSIC_NAME(StringFindSet, "scan");
             SET_INTRINSIC_NAME(SubstrIndex, "index");
             SET_INTRINSIC_NAME(Modulo, "modulo");
             SET_INTRINSIC_NAME(Poppar, "poppar");
+            SET_INTRINSIC_NAME(Merge, "merge");
+            SET_INTRINSIC_NAME(Aimag, "aimag");
+            SET_INTRINSIC_NAME(SelectedIntKind, "selected_int_kind");
+            SET_INTRINSIC_NAME(SelectedRealKind, "selected_real_kind");
+            SET_INTRINSIC_NAME(SelectedCharKind, "selected_char_kind");
+            SET_INTRINSIC_NAME(Bgt, "bgt");
+            SET_INTRINSIC_NAME(Blt, "blt");
+            SET_INTRINSIC_NAME(Bge, "bge");
+            SET_INTRINSIC_NAME(Ble, "ble");
+            SET_INTRINSIC_NAME(Lgt, "lgt");
+            SET_INTRINSIC_NAME(Llt, "llt");
+            SET_INTRINSIC_NAME(Lge, "lge");
+            SET_INTRINSIC_NAME(Lle, "lle");
+            SET_INTRINSIC_NAME(Iand, "iand");
+            SET_INTRINSIC_NAME(Ior, "ior");
+            SET_INTRINSIC_NAME(Ieor, "ieor");
+            SET_INTRINSIC_NAME(Ibclr, "ibclr");
+            SET_INTRINSIC_NAME(Ibset, "ibset");
+            SET_INTRINSIC_NAME(Btest, "btest");
+            SET_INTRINSIC_NAME(Ibits, "ibits");
+            SET_INTRINSIC_NAME(Not, "not");
+            SET_INTRINSIC_NAME(Digits, "digits");
+            SET_INTRINSIC_NAME(Rrspacing, "rrspacing");
+            SET_INTRINSIC_NAME(Repeat, "repeat");
+            SET_INTRINSIC_NAME(Adjustl, "adjustl");
+            SET_INTRINSIC_NAME(Adjustr, "adjustr");
+            SET_INTRINSIC_NAME(Ichar, "ichar");
+            SET_INTRINSIC_NAME(MaxExponent, "maxexponent");
+            SET_INTRINSIC_NAME(MinExponent, "minexponent");
+            SET_INTRINSIC_NAME(Shiftr, "shiftr");
+            SET_INTRINSIC_NAME(Rshift, "rshift");
+            SET_INTRINSIC_NAME(Shiftl, "shiftl");
+            SET_INTRINSIC_NAME(Dshiftl, "dshiftl");
+            SET_INTRINSIC_NAME(Ishft, "ishft");
+            SET_INTRINSIC_NAME(Ishftc, "ishftc");
+            SET_INTRINSIC_NAME(Floor, "floor");
+            SET_INTRINSIC_NAME(Ceiling, "ceiling");
+            SET_INTRINSIC_NAME(Maskr, "maskr");
+            SET_INTRINSIC_NAME(Maskl, "maskl");
+            SET_INTRINSIC_NAME(Sngl, "sngl");
+            SET_INTRINSIC_NAME(Log, "log");
+            SET_INTRINSIC_NAME(Log10, "log10");
+            SET_INTRINSIC_NAME(Isnan, "isnan");
+            SET_INTRINSIC_NAME(LogGamma, "log_gamma");
+            SET_INTRINSIC_NAME(Erf, "erf");
+            SET_INTRINSIC_NAME(Erfc, "erfc");
+            SET_INTRINSIC_NAME(ErfcScaled, "erfc_scaled");
+            SET_INTRINSIC_NAME(Gamma, "gamma");
+            SET_INTRINSIC_NAME(BesselJ0, "bessel_j0");
+            SET_INTRINSIC_NAME(BesselJ1, "bessel_j1");
+            SET_INTRINSIC_NAME(BesselY0, "bessel_y0");
+            SET_INTRINSIC_NAME(BesselY1, "bessel_y1");
+            SET_INTRINSIC_NAME(Atan2, "atan2");
+            SET_INTRINSIC_NAME(Dreal, "dreal");
+            SET_INTRINSIC_NAME(Exp2, "exp2");
+            SET_INTRINSIC_NAME(Expm1, "expm1");
+            SET_INTRINSIC_NAME(FMA, "fma");
+            SET_INTRINSIC_NAME(FloorDiv, "floordiv");
+            SET_INTRINSIC_NAME(Trailz, "trailz");
+            SET_INTRINSIC_NAME(Nearest, "nearest");
+            SET_INTRINSIC_NAME(Spacing, "spacing");
+            SET_INTRINSIC_NAME(BesselJN, "bessel_jn");
+            SET_INTRINSIC_NAME(BesselYN, "bessel_yn");
+            SET_INTRINSIC_NAME(Mergebits, "merge_bits");
+            SET_INTRINSIC_NAME(Exponent, "exponent");
+            SET_INTRINSIC_NAME(Fraction, "fraction");
+            SET_INTRINSIC_NAME(SetExponent, "set_exponent");
+            SET_INTRINSIC_NAME(Leadz, "leadz");
+            SET_INTRINSIC_NAME(Hypot, "hypot");
+            SET_INTRINSIC_NAME(Scale, "scale");
+            SET_INTRINSIC_NAME(Dprod, "dprod");
+            SET_INTRINSIC_NAME(Sign, "sign");
+            SET_INTRINSIC_NAME(Aint, "aint");
+            SET_INTRINSIC_NAME(Popcnt, "popcnt");
+            SET_INTRINSIC_NAME(Nint, "nint");
+            SET_INTRINSIC_NAME(Anint, "anint");
+            SET_INTRINSIC_NAME(Dim, "dim");
+            SET_INTRINSIC_NAME(Ifix, "ifix");
+            SET_INTRINSIC_NAME(Idint, "idint");
+            SET_INTRINSIC_NAME(Conjg, "conjg");
             default : {
                 throw LCompilersException("IntrinsicElementalFunction: `"
                     + ASRUtils::get_intrinsic_name(x.m_intrinsic_id)
@@ -1282,63 +1379,128 @@ public:
         src = out;
     }
 
-    #define SET_ARR_INTRINSIC_NAME(X, func_name)                                \
-        case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::X)) : {   \
-            visit_expr(*x.m_args[0]);                                           \
-            out += func_name; break;                                            \
+    void setArrIntrinsicName(std::string &out, std::string func_name, const ASR::IntrinsicArrayFunction_t &x) {
+        out += func_name;
+        visit_expr(*x.m_args[0]);
+        out += "(" + src;
+        for (size_t i = 1; i < x.n_args; i++) {
+            out += ", ";
+            visit_expr(*x.m_args[i]);
+            out += src;
         }
+        out += ")";
+        src = out;
+        out = "";
+    }
 
     void visit_IntrinsicArrayFunction(const ASR::IntrinsicArrayFunction_t &x) {
         std::string out;
         switch (x.m_arr_intrinsic_id) {
-            SET_ARR_INTRINSIC_NAME(Any, "any");
-            SET_ARR_INTRINSIC_NAME(All, "all");
-            SET_ARR_INTRINSIC_NAME(Sum, "sum");
-            SET_ARR_INTRINSIC_NAME(Shape, "shape");
-            SET_ARR_INTRINSIC_NAME(MaxVal, "maxval");
-            SET_ARR_INTRINSIC_NAME(MinVal, "minval");
-            case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Pack)) : {
-                out += "pack";
-                visit_expr(*x.m_args[0]);
-                out += "(" + src + ", ";
-                visit_expr(*x.m_args[1]);
-                out += src;
-                if (x.n_args == 3) {
-                    out += ", ";
-                    visit_expr(*x.m_args[2]);
-                    out += src;
-                }
-                out += ")";
-                src = out;
-                out = "";
+            case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Any)) :
+                setArrIntrinsicName(out, "any", x);
                 break;
-            }
-            case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Merge)) : {
-                // merge(size(x, 1), size(x, 2), mask=1<dim)
-                out += "merge";
-                visit_expr(*x.m_args[0]);
-                out += "(" + src + ", ";
-                visit_expr(*x.m_args[1]);
-                out += src + ", mask=";
-                visit_expr(*x.m_args[2]);
-                out += src + ")";
-                src = out;
-                out = "";
+            case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::All)) :
+                setArrIntrinsicName(out, "all", x);
                 break;
-            }
-            case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Count)) : {
-                // count(mask, dim, kind)
-                out += "count";
+            case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Iany)) :
+                setArrIntrinsicName(out, "iany", x);
+                break;
+            case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Iall)) :
+                setArrIntrinsicName(out, "iall", x);
+                break;
+            case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Sum)) :
+                setArrIntrinsicName(out, "sum", x);
+                break;
+            case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Product)) :
+                setArrIntrinsicName(out, "product", x);
+                break;
+            case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Shape)) :
+                setArrIntrinsicName(out, "shape", x);
+                break;
+            case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::MaxVal)) :
+                setArrIntrinsicName(out, "maxval", x);
+                break;
+            case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::MinVal)) :
+                setArrIntrinsicName(out, "minval", x);
+                break;
+            case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Norm2)) :
+                setArrIntrinsicName(out, "norm2", x);
+                break;
+            case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Transpose)) :
+                setArrIntrinsicName(out, "transpose", x);
+                break;
+            case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Pack)) :
+                setArrIntrinsicName(out, "pack", x);
+                break;
+            case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Unpack)) :
+                setArrIntrinsicName(out, "unpack", x);
+                break;
+            case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Iparity)) :
+                setArrIntrinsicName(out, "iparity", x);
+                break;
+            case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Count)) :
+                setArrIntrinsicName(out, "count", x);
+                break;
+            case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Parity)) :
+                setArrIntrinsicName(out, "parity", x);
+                break;
+            case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::DotProduct)) :
+                setArrIntrinsicName(out, "dot_product", x);
+                break;
+            case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::MatMul)) :
+                setArrIntrinsicName(out, "matmul", x);
+                break;
+            case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::MaxLoc)) : {
+                out += "maxloc";
                 visit_expr(*x.m_args[0]);
                 out += "(" + src;
                 if (x.n_args > 1) {
                     out += ", ";
                     visit_expr(*x.m_args[1]);
                     out += src;
-                    if (x.n_args == 3) {
+                    if (x.n_args > 2) {
                         out += ", ";
                         visit_expr(*x.m_args[2]);
                         out += src;
+                        if (x.n_args > 3) {
+                            out += ", ";
+                            visit_expr(*x.m_args[3]);
+                            out += src;
+                            if (x.n_args > 4) {
+                                out += ", ";
+                                visit_expr(*x.m_args[4]);
+                                out += src;
+                            }
+                        }
+                    }
+                }
+                out += ")";
+                src = out;
+                out = "";
+                break;
+            }
+            case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::MinLoc)) : {
+                out += "minloc";
+                visit_expr(*x.m_args[0]);
+                out += "(" + src;
+                if (x.n_args > 1) {
+                    out += ", ";
+                    visit_expr(*x.m_args[1]);
+                    out += src;
+                    if (x.n_args > 2) {
+                        out += ", ";
+                        visit_expr(*x.m_args[2]);
+                        out += src;
+                        if (x.n_args > 3) {
+                            out += ", ";
+                            visit_expr(*x.m_args[3]);
+                            out += src;
+                            if (x.n_args > 4) {
+                                out += ", ";
+                                visit_expr(*x.m_args[4]);
+                                out += src;
+                            }
+                        }
                     }
                 }
                 out += ")";
@@ -1375,7 +1537,13 @@ public:
 
     // void visit_UnionTypeConstructor(const ASR::UnionTypeConstructor_t &x) {}
 
-    // void visit_ImpliedDoLoop(const ASR::ImpliedDoLoop_t &x) {}
+    void visit_ImpliedDoLoop(const ASR::ImpliedDoLoop_t &x) {
+        if (x.m_value) {
+            visit_expr(*x.m_value);
+            return;
+        }
+        return;
+    }
 
     void visit_IntegerConstant(const ASR::IntegerConstant_t &x) {
         src = std::to_string(x.m_n);

@@ -1,0 +1,6 @@
+semantic error: Type mismatch in array initialization.
+ Enable logical casting by setting `--logical-casting = true`
+ --> tests/errors/type_casting_01.f90:3:5
+  |
+3 |     logical :: x(3) = [1, 1, 0]
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^ 

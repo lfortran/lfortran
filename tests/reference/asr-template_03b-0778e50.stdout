@@ -589,13 +589,13 @@
                                                     dp
                                                     []
                                                     Local
-                                                    (IntrinsicElementalFunction
+                                                    (TypeInquiry
                                                         Kind
-                                                        [(RealConstant
+                                                        (Real 8)
+                                                        (RealConstant
                                                             1.000000
                                                             (Real 8)
-                                                        )]
-                                                        0
+                                                        )
                                                         (Integer 4)
                                                         (IntegerConstant 8 (Integer 4))
                                                     )
@@ -614,13 +614,13 @@
                                                     sp
                                                     []
                                                     Local
-                                                    (IntrinsicElementalFunction
+                                                    (TypeInquiry
                                                         Kind
-                                                        [(RealConstant
+                                                        (Real 4)
+                                                        (RealConstant
                                                             1.000000
                                                             (Real 4)
-                                                        )]
-                                                        0
+                                                        )
                                                         (Integer 4)
                                                         (IntegerConstant 4 (Integer 4))
                                                     )
@@ -1062,13 +1062,13 @@
                                                     dp
                                                     []
                                                     Local
-                                                    (IntrinsicElementalFunction
+                                                    (TypeInquiry
                                                         Kind
-                                                        [(RealConstant
+                                                        (Real 8)
+                                                        (RealConstant
                                                             1.000000
                                                             (Real 8)
-                                                        )]
-                                                        0
+                                                        )
                                                         (Integer 4)
                                                         (IntegerConstant 8 (Integer 4))
                                                     )
@@ -1103,13 +1103,13 @@
                                                     sp
                                                     []
                                                     Local
-                                                    (IntrinsicElementalFunction
+                                                    (TypeInquiry
                                                         Kind
-                                                        [(RealConstant
+                                                        (Real 4)
+                                                        (RealConstant
                                                             1.000000
                                                             (Real 4)
-                                                        )]
-                                                        0
+                                                        )
                                                         (Integer 4)
                                                         (IntegerConstant 4 (Integer 4))
                                                     )
@@ -1191,13 +1191,13 @@
                                                     dp
                                                     []
                                                     Local
-                                                    (IntrinsicElementalFunction
+                                                    (TypeInquiry
                                                         Kind
-                                                        [(RealConstant
+                                                        (Real 8)
+                                                        (RealConstant
                                                             1.000000
                                                             (Real 8)
-                                                        )]
-                                                        0
+                                                        )
                                                         (Integer 4)
                                                         (IntegerConstant 8 (Integer 4))
                                                     )
@@ -1216,13 +1216,13 @@
                                                     sp
                                                     []
                                                     Local
-                                                    (IntrinsicElementalFunction
+                                                    (TypeInquiry
                                                         Kind
-                                                        [(RealConstant
+                                                        (Real 4)
+                                                        (RealConstant
                                                             1.000000
                                                             (Real 4)
-                                                        )]
-                                                        0
+                                                        )
                                                         (Integer 4)
                                                         (IntegerConstant 4 (Integer 4))
                                                     )
@@ -1401,13 +1401,13 @@
                                                     sp
                                                     []
                                                     Local
-                                                    (IntrinsicElementalFunction
+                                                    (TypeInquiry
                                                         Kind
-                                                        [(RealConstant
+                                                        (Real 4)
+                                                        (RealConstant
                                                             1.000000
                                                             (Real 4)
-                                                        )]
-                                                        0
+                                                        )
                                                         (Integer 4)
                                                         (IntegerConstant 4 (Integer 4))
                                                     )

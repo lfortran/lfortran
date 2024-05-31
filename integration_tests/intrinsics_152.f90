@@ -5,6 +5,7 @@ program intrinsics_152
     integer :: k4= 8
     integer :: k5 = 9
     integer :: k6 = 2
+    integer :: m90_quad
 
     integer, parameter :: sp = selected_real_kind(6,37)
     integer, parameter :: dp = selected_real_kind(15,307)
@@ -61,5 +62,9 @@ program intrinsics_152
     if (selected_real_kind(50,10,2) /= -1) error stop
     print*, selected_real_kind(45,16)
     if (selected_real_kind(50,10,2) /= -1) error stop
+
+    m90_quad =  selected_real_kind(p=digits(1.d0)+1)
+    print*, m90_quad
+    if (m90_quad /= -1) error stop
 
 end

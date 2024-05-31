@@ -56,7 +56,7 @@ module lfortran_intrinsic_ieee_arithmetic
         real(sp), intent(in) :: x
         logical :: r
         interface
-        pure logical function c_rsp_is_nan(x) bind(c, name="_lfortran_rsp_is_nan")
+        pure logical function c_rsp_is_nan(x) bind(c, name="_lfortran_sis_nan")
             import :: sp
             real(sp), intent(in), value :: x
             end function
@@ -68,7 +68,7 @@ module lfortran_intrinsic_ieee_arithmetic
         real(dp), intent(in) :: x
         logical :: r
         interface
-        pure logical function c_rdp_is_nan(x) bind(c, name="_lfortran_rdp_is_nan")
+        pure logical function c_rdp_is_nan(x) bind(c, name="_lfortran_dis_nan")
             import :: dp
             real(dp), intent(in), value :: x
             end function

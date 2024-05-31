@@ -268,7 +268,7 @@
                     )
                     (Assignment
                         (Var 2 result)
-                        (IntrinsicArrayFunction
+                        (IntrinsicElementalFunction
                             Merge
                             [(Var 2 tsource)
                             (Var 2 fsource)

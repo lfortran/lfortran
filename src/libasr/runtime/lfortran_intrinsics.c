@@ -308,6 +308,67 @@ void handle_float(char* format, double val, char** result) {
     }
 }
 
+/*
+`handle_en` - Formats a floating-point number using a Fortran-style "EN" format.
+
+NOTE: The function allocates memory for the formatted result, which is returned via
+the `result` parameter. It is the responsibility of the caller to free this memory
+using `free(*result)` after it is no longer needed.
+*/
+void handle_en(char* format, double val, int scale, char** result, char* c) {
+    int width, decimal_digits;
+    char *num_pos = format, *dot_pos = strchr(format, '.');
+    decimal_digits = atoi(++dot_pos);
+    while (!isdigit(*num_pos)) num_pos++;
+    width = atoi(num_pos);
+
+    // Calculate exponent
+    int exponent = 0;
+    if (val != 0.0) {
+        exponent = (int)floor(log10(fabs(val)));
+        int remainder = exponent % 3;
+        if (remainder < 0) remainder += 3;
+        exponent -= remainder;
+    }
+
+    double scaled_val = val / pow(10, exponent);
+
+    // Prepare value string
+    char val_str[128];
+    sprintf(val_str, "%.*lf", decimal_digits, scaled_val);
+
+    // Truncate unnecessary zeros
+    char* ptr = strchr(val_str, '.');
+    if (ptr) {
+        char* end_ptr = ptr;
+        while (*end_ptr != '\0') end_ptr++;
+        end_ptr--;
+        while (*end_ptr == '0' && end_ptr > ptr) end_ptr--;
+        *(end_ptr + 1) = '\0';
+    }
+
+    // Allocate a larger buffer
+    char formatted_value[256];  // Increased size to accommodate larger exponent values
+    int n = snprintf(formatted_value, sizeof(formatted_value), "%s%s%+03d", val_str, c, exponent);
+    if (n >= sizeof(formatted_value)) {
+        fprintf(stderr, "Error: output was truncated. Needed %d characters.\n", n);
+    }
+
+    // Handle width and padding
+    char* final_result = malloc(width + 1);
+    int padding = width - strlen(formatted_value);
+    if (padding > 0) {
+        memset(final_result, ' ', padding);
+        strcpy(final_result + padding, formatted_value);
+    } else {
+        strncpy(final_result, formatted_value, width);
+        final_result[width] = '\0';
+    }
+
+    // Assign the result to the output parameter
+    *result = final_result;
+}
+
 void handle_decimal(char* format, double val, int scale, char** result, char* c) {
     // Consider an example: write(*, "(es10.2)") 1.123e+10
     // format = "es10.2", val = 11230000128.00, scale = 0, c = "E"
@@ -479,6 +540,47 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
     }
 }
 
+/*
+Ignore blank space characters within format specification, except
+within character string edit descriptor
+
+E.g.; "('Number : ', I 2, 5 X, A)" becomes '('Number : ', I2, 5X, A)'
+*/
+char* remove_spaces_except_quotes(const char* format) {
+    int len = strlen(format);
+    char* cleaned_format = malloc(len + 1);
+
+    int i = 0, j = 0;
+    // don't remove blank spaces from within character
+    // string editor descriptor
+    bool in_quotes = false;
+    char current_quote = '\0';
+
+    while (format[i] != '\0') {
+        char c = format[i];
+        if (c == '"' || c == '\'') {
+            if (i == 0 || format[i - 1] != '\\') {
+                // toggle in_quotes and set current_quote on entering or exiting quotes
+                if (!in_quotes) {
+                    in_quotes = true;
+                    current_quote = c;
+                } else if (current_quote == c) {
+                    in_quotes = false;
+                }
+            }
+        }
+
+        if (!isspace(c) || in_quotes) {
+            cleaned_format[j++] = c; // copy non-space characters or any character within quotes
+        }
+
+        i++;
+    }
+
+    cleaned_format[j] = '\0';
+    return cleaned_format;
+}
+
 /**
  * parse fortran format string by extracting individual 'format specifiers'
  * (e.g. 'i', 't', '*' etc.) into an array of strings
@@ -534,9 +636,33 @@ char** parse_fortran_format(char* format, int *count, int *item_start) {
                 format_values_2[format_values_count++] = substring(format, start, index);
                 index--;
                 break;
+            case 'e' :
+                start = index++;
+                bool edot = false;
+                bool is_en_formatting = false;
+                if (tolower(format[index]) == 'n') {
+                    index++;  // move past the 'N'
+                    is_en_formatting = true;
+                }
+                if (tolower(format[index]) == 's') index++;
+                while (isdigit(format[index])) index++;
+                if (format[index] == '.') {
+                    edot = true;
+                    index++;
+                } else {
+                    printf("Error: Period required in format specifier\n");
+                    exit(1);
+                }
+                while (isdigit(format[index])) index++;
+                if (edot && (tolower(format[index]) == 'e' || tolower(format[index]) == 'n')) {
+                    index++;
+                    while (isdigit(format[index])) index++;
+                }
+                format_values_2[format_values_count++] = substring(format, start, index);
+                index--;
+                break;
             case 'i' :
             case 'd' :
-            case 'e' :
             case 'f' :
             case 'l' :
                 start = index++;
@@ -622,11 +748,16 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
 {
     va_list args;
     va_start(args, format);
-    int len = strlen(format);
+    char* cleaned_format = remove_spaces_except_quotes(format);
+    if (!cleaned_format) {
+        va_end(args);
+        return NULL;
+    }
+    int len = strlen(cleaned_format);
     char* modified_input_string = (char*)malloc((len+1) * sizeof(char));
-    strncpy(modified_input_string, format, len);
+    strncpy(modified_input_string, cleaned_format, len);
     modified_input_string[len] = '\0';
-    if (format[0] == '(' && format[len-1] == ')') {
+    if (cleaned_format[0] == '(' && cleaned_format[len-1] == ')') {
         memmove(modified_input_string, modified_input_string + 1, strlen(modified_input_string));
         modified_input_string[len-2] = '\0';
     }
@@ -719,12 +850,19 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
                 double val = va_arg(args, double);
                 handle_decimal(value, val, scale, &result, "D");
             } else if (tolower(value[0]) == 'e') {
-                // E Editing E[w[.d][Ee]]
-                // Only (E[w[.d]]) has been implemented yet
-                if ( count == 0 ) break;
-                count--;
-                double val = va_arg(args, double);
-                handle_decimal(value, val, scale, &result, "E");
+                // Check if the next character is 'N' for EN format
+                char format_type = tolower(value[1]);
+                if (format_type == 'n') {
+                    if (count == 0) break;
+                    count--;
+                    double val = va_arg(args, double);
+                    handle_en(value, val, scale, &result, "E");
+                } else {
+                    if (count == 0) break;
+                    count--;
+                    double val = va_arg(args, double);
+                    handle_decimal(value, val, scale, &result, "E");
+                }
             } else if (tolower(value[0]) == 'f') {
                 if ( count == 0 ) break;
                 count--;
@@ -959,11 +1097,11 @@ LFORTRAN_API double _lfortran_dlog(double x)
     return log(x);
 }
 
-LFORTRAN_API bool _lfortran_rsp_is_nan(float x) {
+LFORTRAN_API bool _lfortran_sis_nan(float x) {
     return isnan(x);
 }
 
-LFORTRAN_API bool _lfortran_rdp_is_nan(double x) {
+LFORTRAN_API bool _lfortran_dis_nan(double x) {
     return isnan(x);
 }
 

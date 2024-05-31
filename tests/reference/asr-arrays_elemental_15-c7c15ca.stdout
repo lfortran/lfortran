@@ -156,20 +156,7 @@
                                         (RealBinOp
                                             (IntrinsicElementalFunction
                                                 Cos
-                                                [(ArrayPhysicalCast
-                                                    (Var 7 array2d)
-                                                    FixedSizeArray
-                                                    DescriptorArray
-                                                    (Array
-                                                        (Real 8)
-                                                        [((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 256 (Integer 4)))
-                                                        ((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 64 (Integer 4)))]
-                                                        DescriptorArray
-                                                    )
-                                                    ()
-                                                )]
+                                                [(Var 7 array2d)]
                                                 0
                                                 (Array
                                                     (Real 8)
@@ -460,37 +447,15 @@
                                         (Var 6 sin1d)
                                         (IntrinsicElementalFunction
                                             Sin
-                                            [(ArrayPhysicalCast
-                                                (IntrinsicElementalFunction
-                                                    Sin
-                                                    [(ArrayPhysicalCast
-                                                        (Var 6 array1d)
-                                                        FixedSizeArray
-                                                        DescriptorArray
-                                                        (Array
-                                                            (Real 8)
-                                                            [((IntegerConstant 1 (Integer 4))
-                                                            (IntegerConstant 256 (Integer 4)))]
-                                                            DescriptorArray
-                                                        )
-                                                        ()
-                                                    )]
-                                                    0
-                                                    (Array
-                                                        (Real 8)
-                                                        [((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 256 (Integer 4)))]
-                                                        FixedSizeArray
-                                                    )
-                                                    ()
-                                                )
-                                                FixedSizeArray
-                                                DescriptorArray
+                                            [(IntrinsicElementalFunction
+                                                Sin
+                                                [(Var 6 array1d)]
+                                                0
                                                 (Array
                                                     (Real 8)
                                                     [((IntegerConstant 1 (Integer 4))
                                                     (IntegerConstant 256 (Integer 4)))]
-                                                    DescriptorArray
+                                                    FixedSizeArray
                                                 )
                                                 ()
                                             )]
@@ -600,22 +565,7 @@
                                         (RealBinOp
                                             (IntrinsicElementalFunction
                                                 Sin
-                                                [(ArrayPhysicalCast
-                                                    (Var 6 arraynd)
-                                                    FixedSizeArray
-                                                    DescriptorArray
-                                                    (Array
-                                                        (Real 8)
-                                                        [((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 256 (Integer 4)))
-                                                        ((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 64 (Integer 4)))
-                                                        ((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 16 (Integer 4)))]
-                                                        DescriptorArray
-                                                    )
-                                                    ()
-                                                )]
+                                                [(Var 6 arraynd)]
                                                 0
                                                 (Array
                                                     (Real 8)
@@ -1021,24 +971,7 @@
                                             (RealBinOp
                                                 (IntrinsicElementalFunction
                                                     Sin
-                                                    [(ArrayPhysicalCast
-                                                        (Var 8 arraynd)
-                                                        FixedSizeArray
-                                                        DescriptorArray
-                                                        (Array
-                                                            (Real 8)
-                                                            [((IntegerConstant 1 (Integer 4))
-                                                            (IntegerConstant 64 (Integer 4)))
-                                                            ((IntegerConstant 1 (Integer 4))
-                                                            (IntegerConstant 32 (Integer 4)))
-                                                            ((IntegerConstant 1 (Integer 4))
-                                                            (IntegerConstant 8 (Integer 4)))
-                                                            ((IntegerConstant 1 (Integer 4))
-                                                            (IntegerConstant 4 (Integer 4)))]
-                                                            DescriptorArray
-                                                        )
-                                                        ()
-                                                    )]
+                                                    [(Var 8 arraynd)]
                                                     0
                                                     (Array
                                                         (Real 8)
@@ -1108,24 +1041,7 @@
                                             (RealBinOp
                                                 (IntrinsicElementalFunction
                                                     Cos
-                                                    [(ArrayPhysicalCast
-                                                        (Var 8 arraynd)
-                                                        FixedSizeArray
-                                                        DescriptorArray
-                                                        (Array
-                                                            (Real 8)
-                                                            [((IntegerConstant 1 (Integer 4))
-                                                            (IntegerConstant 64 (Integer 4)))
-                                                            ((IntegerConstant 1 (Integer 4))
-                                                            (IntegerConstant 32 (Integer 4)))
-                                                            ((IntegerConstant 1 (Integer 4))
-                                                            (IntegerConstant 8 (Integer 4)))
-                                                            ((IntegerConstant 1 (Integer 4))
-                                                            (IntegerConstant 4 (Integer 4)))]
-                                                            DescriptorArray
-                                                        )
-                                                        ()
-                                                    )]
+                                                    [(Var 8 arraynd)]
                                                     0
                                                     (Array
                                                         (Real 8)

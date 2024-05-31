@@ -997,6 +997,20 @@ TEST_CASE("FortranEvaluator integer kind 2") {
     CHECK(r.result.i64 == 5);
 }
 
+TEST_CASE("FortranEvaluator Array 1") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    LCompilers::Result<FortranEvaluator::EvalResult>
+    r = e.evaluate2("integer :: i(10)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::none);
+    r = e.evaluate2("print *, i");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::statement);
+}
+
 TEST_CASE("FortranEvaluator re-declaration 1") {
     CompilerOptions cu;
     cu.interactive = true;

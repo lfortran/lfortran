@@ -42,6 +42,9 @@ program intrinsics_151
     print *, kind(result)
     if (kind(result) /= 8) error stop
 
+    print*, maskl(55, kind = kind(0.0d0))
+    if (maskl(55, kind = kind(0.0d0)) /= -512) error stop
+
     print *, kind(maskl(10,8))
     if (kind(maskl(10,8)) /= 8) error stop
 
