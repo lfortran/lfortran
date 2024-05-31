@@ -3928,6 +3928,22 @@ filename = "errors/atomic_01.f90"
 asr = true
 
 [[test]]
+filename = "errors/ichar_arg_len_runtime.f90"
+run = true
+
+[[test]]
+filename = "errors/ichar_arg_len_compiletime.f90"
+asr = true
+
+[[test]]
+filename = "errors/iachar_arg_len_runtime.f90"
+run = true
+
+[[test]]
+filename = "errors/iachar_arg_len_compiletime.f90"
+asr = true
+
+[[test]]
 filename = "errors/iostat_non_scalar_value.f90"
 asr = true
 

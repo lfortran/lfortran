@@ -1,0 +1,13 @@
+{
+    "basename": "asr-iachar_arg_len_compiletime-1ecf087",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/iachar_arg_len_compiletime.f90",
+    "infile_hash": "b4665176437f82ba71ab537205e6414ba879c11f849f07097542ed99",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-iachar_arg_len_compiletime-1ecf087.stderr",
+    "stderr_hash": "0216be68f8f08d46a15cc8980fb621b7da83ead97126729d390d8b44",
+    "returncode": 2
+}

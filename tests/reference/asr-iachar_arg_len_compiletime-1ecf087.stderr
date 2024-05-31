@@ -1,0 +1,5 @@
+semantic error: first argument to iachar must be of length one
+ --> tests/errors/iachar_arg_len_compiletime.f90:2:20
+  |
+2 |    print *, iachar("Hello")
+  |                    ^^^^^^^ 
