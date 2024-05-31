@@ -2810,19 +2810,25 @@ public:
             llvm::Constant* ptr = module->getOrInsertGlobal(x.m_name, type);
 
             if (!external) {
+                double x_re = 0.0, x_im = 0.0;
+                if (x.m_value) {
+                    LCOMPILERS_ASSERT(ASR::is_a<ASR::ComplexConstant_t>(*x.m_value));
+                    ASR::ComplexConstant_t* x_cc = ASR::down_cast<ASR::ComplexConstant_t>(x.m_value);
+                    x_re = x_cc->m_re; x_im = x_cc->m_im;
+                }
                 if (init_value) {
                     module->getNamedGlobal(x.m_name)->setInitializer(init_value);
                 } else {
                     switch (a_kind) {
                         case 4: {
-                            re = llvm::ConstantFP::get(context, llvm::APFloat((float) 0.0));
-                            im = llvm::ConstantFP::get(context, llvm::APFloat((float) 0.0));
+                            re = llvm::ConstantFP::get(context, llvm::APFloat((float) x_re));
+                            im = llvm::ConstantFP::get(context, llvm::APFloat((float) x_im));
                             type = complex_type_4;
                             break;
                         }
                         case 8: {
-                            re = llvm::ConstantFP::get(context, llvm::APFloat((double) 0.0));
-                            im = llvm::ConstantFP::get(context, llvm::APFloat((double) 0.0));
+                            re = llvm::ConstantFP::get(context, llvm::APFloat((double) x_re));
+                            im = llvm::ConstantFP::get(context, llvm::APFloat((double) x_im));
                             type = complex_type_8;
                             break;
                         }
