@@ -2,7 +2,7 @@
     "basename": "asr-maskr_negative-89183d3",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/errors/maskr_negative.f90",
-    "infile_hash": "ad0b574e7683c077afda3e3fbb9980d85b1c4bc68afd965b5f5bd424",
+    "infile_hash": "f49d8a5ebf8050f22484de61b993732e9fa5fab18faeee525c4579d1",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
