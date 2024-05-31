@@ -5159,6 +5159,9 @@ public:
             std::string arg_str;
             bool is_const_value = ASRUtils::is_value_constant(arg_value, arg_str);
             if( is_const_value ) {
+                if (arg_str.length() != 1) {
+                    throw SemanticError("first argument to iachar must be of length one", arg->base.loc);
+                }
                 int64_t ascii_code = uint8_t(arg_str[0]);
                 iachar_value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc,
                                 ascii_code, type));

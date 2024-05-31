@@ -3936,8 +3936,11 @@ namespace Adjustr {
 namespace Ichar {
 
     static ASR::expr_t *eval_Ichar(Allocator &al, const Location &loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         char* str = ASR::down_cast<ASR::StringConstant_t>(args[0])->m_s;
+        if (strlen(str) != 1) {
+            diag.semantic_error_label("first argument to `ichar` must be of length one", {args[0]->base.loc}, "");
+        }
         char first_char = str[0];
         int result = (int)first_char;
         return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);
@@ -3952,8 +3955,7 @@ namespace Ichar {
         auto itr = declare("i", int32, Local);
         body.push_back(al, b.Assignment(itr, b.i32(1)));
         body.push_back(al, b.Assignment(result, b.i2i_t(
-            ASRUtils::EXPR(ASR::make_Ichar_t(al, loc, ASRUtils::EXPR(ASR::make_StringItem_t(al, loc, args[0], itr,
-            ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -1, nullptr)), nullptr)), int32, nullptr)),
+            ASRUtils::EXPR(ASR::make_Ichar_t(al, loc, args[0], int32, nullptr)),
             return_type)));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
