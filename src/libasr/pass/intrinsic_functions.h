@@ -43,6 +43,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     Atanh,
     Erf,
     Erfc,
+    ErfcScaled,
     Gamma,
     Log,
     Log10,
@@ -4703,6 +4704,39 @@ namespace Exp {
     }
 
 } // namespace Exp
+
+namespace ErfcScaled {
+
+    static inline ASR::expr_t* eval_ErfcScaled(Allocator &al, const Location &loc,
+            ASR::ttype_t *t, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+        LCOMPILERS_ASSERT(ASRUtils::all_args_evaluated(args));
+        double val = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
+        double result = std::exp(std::pow(val, 2)) * std::erfc(val);
+        return make_ConstantWithType(make_RealConstant_t, result, t, loc);
+    }
+
+    static inline ASR::expr_t* instantiate_ErfcScaled(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("_lcompilers_erfc_scaled_" + type_to_str_python(arg_types[0]));
+        fill_func_arg("x", arg_types[0]);
+        auto result = declare(fn_name, return_type, ReturnVar);
+        /*
+        * r = erfc_scaled(x)
+        * r = exp(x**2) * erfc(x)
+        */
+
+        body.push_back(al, b.Assignment(result, b.Mul(
+            b.CallIntrinsic(scope, {arg_types[0]}, {b.Pow(args[0], b.f_t(2, arg_types[0]))}, arg_types[0], 0, Exp::instantiate_Exp),
+            b.CallIntrinsic(scope, {arg_types[0]}, {args[0]}, arg_types[0], 0, Erfc::instantiate_Erfc))));
+        
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args, body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, nullptr);
+
+    }
+
+} // namespace ErfcScaled
 
 namespace ListIndex {
 
