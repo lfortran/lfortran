@@ -105,8 +105,8 @@ LFORTRAN_API float_complex_t _lfortran_cexp(float_complex_t x);
 LFORTRAN_API double_complex_t _lfortran_zexp(double_complex_t x);
 LFORTRAN_API float _lfortran_slog(float x);
 LFORTRAN_API double _lfortran_dlog(double x);
-LFORTRAN_API bool _lfortran_rsp_is_nan(float x);
-LFORTRAN_API bool _lfortran_rdp_is_nan(double x);
+LFORTRAN_API bool _lfortran_sis_nan(float x);
+LFORTRAN_API bool _lfortran_dis_nan(double x);
 LFORTRAN_API float_complex_t _lfortran_clog(float_complex_t x);
 LFORTRAN_API double_complex_t _lfortran_zlog(double_complex_t x);
 LFORTRAN_API float _lfortran_serf(float x);
@@ -220,7 +220,7 @@ LFORTRAN_API int64_t _lfortran_mvbits64(int64_t from, int32_t frompos,
                                         int32_t len, int64_t to, int32_t topos);
 LFORTRAN_API int32_t _lfortran_ibits32(int32_t i, int32_t pos, int32_t len);
 LFORTRAN_API int64_t _lfortran_ibits64(int64_t i, int32_t pos, int32_t len);
-LFORTRAN_API void _lfortran_cpu_time(double *t);
+LFORTRAN_API void _lfortran_d_cpu_time(double *t);
 LFORTRAN_API void _lfortran_i32sys_clock(
         int32_t *count, int32_t *rate, int32_t *max);
 LFORTRAN_API void _lfortran_i64sys_clock(

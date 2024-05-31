@@ -9,6 +9,14 @@ real(dp), parameter :: dx = (b-a)/N
 integer :: i
 real(dp), parameter :: X(N) = [(sin(a+(b-a)*i/N), i = 1, N)]
 real(dp), parameter :: S = sum(X)*dx
+logical, parameter :: l = S < 2
+real(kind=merge(sp, dp, l)) :: y
+
+print *, (kind(y) == sp)
+if (kind(y) /= sp) then
+    error stop
+end if
+
 print *, S
 if (abs(S - 1.9835235375094546_dp) > 1e-14) error stop
 end program

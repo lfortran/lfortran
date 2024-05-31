@@ -43,6 +43,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     Atanh,
     Erf,
     Erfc,
+    ErfcScaled,
     Gamma,
     Log,
     Log10,
@@ -59,6 +60,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     FlipSign,
     Mod,
     Trailz,
+    Isnan,
     Nearest,
     Spacing,
     Modulo,
@@ -446,24 +448,6 @@ static inline ASR::expr_t* instantiate_functions(Allocator &al,
     return b.Call(new_symbol, new_args, return_type);
 }
 
-static inline ASR::asr_t* create_BinaryFunction(Allocator& al, const Location& loc,
-    Vec<ASR::expr_t*>& args, eval_intrinsic_function eval_function,
-    int64_t intrinsic_id, int64_t overload_id, ASR::ttype_t* type, diag::Diagnostics& diag) {
-    ASR::expr_t *value = nullptr;
-    ASR::expr_t *arg_value_1 = ASRUtils::expr_value(args[0]);
-    ASR::expr_t *arg_value_2 = ASRUtils::expr_value(args[1]);
-    if (arg_value_1 && arg_value_2) {
-        Vec<ASR::expr_t*> arg_values;
-        arg_values.reserve(al, 2);
-        arg_values.push_back(al, arg_value_1);
-        arg_values.push_back(al, arg_value_2);
-        value = eval_function(al, loc, type, arg_values, diag);
-    }
-
-    return ASRUtils::make_IntrinsicElementalFunction_t_util(al, loc, intrinsic_id,
-        args.p, args.n, overload_id, type, value);
-}
-
 static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x,
         diag::Diagnostics& diagnostics) {
     const Location& loc = x.base.base.loc;
@@ -498,24 +482,7 @@ namespace X {                                                                   
             diag::Diagnostics& /*diag*/) {                                      \
         double rv = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;          \
         ASRUtils::ASRBuilder b(al, loc);                                        \
-        return b.f_t(std::eval_X(rv), t);                                         \
-    }                                                                           \
-    static inline ASR::asr_t* create_##X(Allocator &al, const Location &loc,    \
-        Vec<ASR::expr_t*> &args,                                                \
-        diag::Diagnostics& diag) {                                              \
-        ASR::ttype_t *type = ASRUtils::expr_type(args[0]);                      \
-        if (args.n != 1) {                                                      \
-            append_error(diag, "Intrinsic `"#X"` accepts exactly one argument", \
-                loc);                                                           \
-            return nullptr;                                                     \
-        } else if (!ASRUtils::is_real(*type)) {                                 \
-            append_error(diag, "`x` argument of `"#X"` must be real",           \
-                args[0]->base.loc);                                             \
-            return nullptr;                                                     \
-        }                                                                       \
-        return UnaryIntrinsicFunction::create_UnaryFunction(al, loc, args,      \
-                eval_##X, static_cast<int64_t>(IntrinsicElementalFunctions::X), \
-                0, type, diag);                                                 \
+        return b.f_t(std::eval_X(rv), t);                                       \
     }                                                                           \
     static inline ASR::expr_t* instantiate_##X (Allocator &al,                  \
             const Location &loc, SymbolTable *scope,                            \
@@ -532,6 +499,7 @@ create_unary_function(LogGamma, lgamma, log_gamma)
 create_unary_function(Log10, log10, log10)
 create_unary_function(Erf, erf, erf)
 create_unary_function(Erfc, erfc, erfc)
+create_unary_function(Isnan, isnan, is_nan)
 
 namespace ObjectType {
 
@@ -598,23 +566,6 @@ namespace Fix {
         return make_ConstantWithType(make_RealConstant_t, val, t, loc);
     }
 
-    static inline ASR::asr_t* create_Fix(Allocator& al, const Location& loc,
-        Vec<ASR::expr_t*>& args,
-        diag::Diagnostics& diag) {
-        ASR::ttype_t *type = ASRUtils::expr_type(args[0]);
-        if (args.n != 1) {
-            append_error(diag, "Intrinsic `fix` accepts exactly one argument", loc);
-            return nullptr;
-        } else if (!ASRUtils::is_real(*type)) {
-            append_error(diag, "`fix` argument of `fix` must be real",
-                args[0]->base.loc);
-            return nullptr;
-        }
-        return UnaryIntrinsicFunction::create_UnaryFunction(al, loc, args,
-                eval_Fix, static_cast<int64_t>(IntrinsicElementalFunctions::Fix),
-                0, type, diag);
-    }
-
     static inline ASR::expr_t* instantiate_Fix (Allocator &al,
             const Location &loc, SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types,
             ASR::ttype_t *return_type, Vec<ASR::call_arg_t>& new_args,
@@ -650,24 +601,6 @@ namespace X {                                                                   
             }                                                                   \
         }                                                                       \
         return nullptr;                                                         \
-    }                                                                           \
-    static inline ASR::asr_t* create_##X(Allocator& al, const Location& loc,    \
-        Vec<ASR::expr_t*>& args,                                                \
-        diag::Diagnostics& diag)                                                \
-    {                                                                           \
-        ASR::ttype_t *type = ASRUtils::expr_type(args[0]);                      \
-        if (args.n != 1) {                                                      \
-            append_error(diag, "Intrinsic `"#X"` accepts exactly one argument", \
-                loc);                                                           \
-            return nullptr;                                                     \
-        } else if (!ASRUtils::is_real(*type) && !ASRUtils::is_complex(*type)) { \
-            append_error(diag, "`x` argument of `"#X"` must be real or complex",\
-                args[0]->base.loc);                                             \
-            return nullptr;                                                     \
-        }                                                                       \
-        return UnaryIntrinsicFunction::create_UnaryFunction(al, loc, args,      \
-                eval_##X, static_cast<int64_t>(IntrinsicElementalFunctions::X), \
-                0, type, diag);                                                 \
     }                                                                           \
     static inline ASR::expr_t* instantiate_##X (Allocator &al,                  \
             const Location &loc, SymbolTable *scope,                            \
@@ -804,23 +737,6 @@ namespace Atan2 {
             return make_ConstantWithType(make_RealConstant_t, val, t, loc);
         }
         return nullptr;
-    }
-    static inline ASR::asr_t* create_Atan2(Allocator& al, const Location& loc,
-        Vec<ASR::expr_t*>& args,
-        diag::Diagnostics& diag)
-    {
-        ASR::ttype_t *type_1 = ASRUtils::expr_type(args[0]);
-        ASR::ttype_t *type_2 = ASRUtils::expr_type(args[1]);
-        if (!ASRUtils::is_real(*type_1)) {
-            append_error(diag, "`x` argument of \"atan2\" must be real",args[0]->base.loc);
-            return nullptr;
-        } else if (!ASRUtils::is_real(*type_2)) {
-            append_error(diag, "`y` argument of \"atan2\" must be real",args[1]->base.loc);
-            return nullptr;
-        }
-        return BinaryIntrinsicFunction::create_BinaryFunction(al, loc, args,
-                eval_Atan2, static_cast<int64_t>(IntrinsicElementalFunctions::Atan2),
-                0, type_1, diag);
     }
     static inline ASR::expr_t* instantiate_Atan2 (Allocator &al,
             const Location &loc, SymbolTable *scope,
@@ -1791,7 +1707,7 @@ namespace Ieor {
         * r = ieor(x, y)
         * r = x ^ y
         */
-        body.push_back(al, b.Assignment(result, b.BitXor(args[0], args[1], return_type)));
+        body.push_back(al, b.Assignment(result, b.Xor(args[0], args[1])));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -2946,19 +2862,15 @@ namespace Maskr {
 
 namespace Merge {
 
-    static inline ASR::expr_t* eval_Merge(
-        Allocator &/*al*/, const Location &/*loc*/, ASR::ttype_t *,
-            Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
-        ASR::expr_t *tsource = args[0], *fsource = args[1], *mask = args[2];
-        bool mask_value = false;
-        if( ASRUtils::is_value_constant(mask, mask_value) ) {
-            if( mask_value ) {
-                return tsource;
-            } else {
-                return fsource;
-            }
+    static inline ASR::expr_t* eval_Merge(Allocator &, const Location &,
+            ASR::ttype_t *, Vec<ASR::expr_t*>& args, diag::Diagnostics &) {
+        bool mask = ASR::down_cast<ASR::LogicalConstant_t>(args[2])->m_value;
+        ASR::expr_t *tsource = args[0], *fsource = args[1];
+        if (mask) {
+            return tsource;
+        } else {
+            return fsource;
         }
-        return nullptr;
     }
 
     static inline ASR::expr_t* instantiate_Merge(Allocator &al,
@@ -3839,20 +3751,6 @@ namespace Kind {
         return make_ConstantWithType(make_IntegerConstant_t, result, int32, loc);
     }
 
-    static inline ASR::expr_t* instantiate_Kind(Allocator &al, const Location &loc,
-            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
-            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_optimization_kind_" + type_to_str_python(arg_types[0]));
-        fill_func_arg("x", arg_types[0]);
-        auto result = declare(fn_name, int32, ReturnVar);
-        body.push_back(al, b.Assignment(result, b.i32(ASRUtils::extract_kind_from_ttype_t(arg_types[0]))));
-
-        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
-            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
-        scope->add_symbol(fn_name, f_sym);
-        return b.Call(f_sym, new_args, return_type, nullptr);
-    }
-
 } // namespace Kind
 
 namespace Rank {
@@ -3868,9 +3766,9 @@ namespace Rank {
 namespace BitSize {
 
     static ASR::expr_t *eval_BitSize(Allocator &al, const Location &loc,
-            ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[0]));
-        return make_ConstantWithType(make_IntegerConstant_t, 8*kind, int32, loc);
+        return make_ConstantWithType(make_IntegerConstant_t, 8*kind, t1, loc);
     }
 
 } // namespace BitSize
@@ -4765,23 +4663,6 @@ namespace X {                                                                   
         }                                                                                 \
         return nullptr;                                                                   \
     }                                                                                     \
-    static inline ASR::asr_t* create_##X(Allocator& al, const Location& loc,              \
-            Vec<ASR::expr_t*>& args,                                                      \
-            diag::Diagnostics& diag) {                                                    \
-        if (args.size() != 1) {                                                           \
-            append_error(diag, "Intrinsic function `"#X"` accepts exactly 1 argument",    \
-                loc);                                                                     \
-            return nullptr;                                                               \
-        }                                                                                 \
-        ASR::ttype_t *type = ASRUtils::expr_type(args[0]);                                \
-        if (!ASRUtils::is_real(*type)) {                                                  \
-            append_error(diag, "Argument of the `"#X"` function must be either Real",     \
-                args[0]->base.loc);                                                       \
-            return nullptr;                                                               \
-        }                                                                                 \
-        return UnaryIntrinsicFunction::create_UnaryFunction(al, loc, args, eval_##X,      \
-            static_cast<int64_t>(IntrinsicElementalFunctions::X), 0, type, diag);         \
-    }                                                                                     \
 } // namespace X
 
 create_exp_macro(Exp2, exp2)
@@ -4807,24 +4688,6 @@ namespace Exp {
         return nullptr;
     }
 
-    static inline ASR::asr_t* create_Exp(Allocator& al, const Location& loc,
-        Vec<ASR::expr_t*>& args,
-        diag::Diagnostics& diag) {
-        if (args.size() != 1) {
-            append_error(diag, "Intrinsic function `exp` accepts exactly 1 argument", loc);
-            return nullptr;
-        }
-        ASR::ttype_t *type = ASRUtils::expr_type(args[0]);
-        if (!ASRUtils::is_real(*type) && !is_complex(*type)) {
-            append_error(diag, "Argument of the `exp` function must be either Real or Complex",
-                args[0]->base.loc);
-            return nullptr;
-        }
-        return UnaryIntrinsicFunction::create_UnaryFunction(al, loc, args,
-            eval_Exp, static_cast<int64_t>(IntrinsicElementalFunctions::Exp),
-            0, type, diag);
-    }
-
     static inline ASR::expr_t* instantiate_Exp(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t overload_id) {
@@ -4841,6 +4704,39 @@ namespace Exp {
     }
 
 } // namespace Exp
+
+namespace ErfcScaled {
+
+    static inline ASR::expr_t* eval_ErfcScaled(Allocator &al, const Location &loc,
+            ASR::ttype_t *t, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+        LCOMPILERS_ASSERT(ASRUtils::all_args_evaluated(args));
+        double val = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
+        double result = std::exp(std::pow(val, 2)) * std::erfc(val);
+        return make_ConstantWithType(make_RealConstant_t, result, t, loc);
+    }
+
+    static inline ASR::expr_t* instantiate_ErfcScaled(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("_lcompilers_erfc_scaled_" + type_to_str_python(arg_types[0]));
+        fill_func_arg("x", arg_types[0]);
+        auto result = declare(fn_name, return_type, ReturnVar);
+        /*
+        * r = erfc_scaled(x)
+        * r = exp(x**2) * erfc(x)
+        */
+
+        body.push_back(al, b.Assignment(result, b.Mul(
+            b.CallIntrinsic(scope, {arg_types[0]}, {b.Pow(args[0], b.f_t(2, arg_types[0]))}, arg_types[0], 0, Exp::instantiate_Exp),
+            b.CallIntrinsic(scope, {arg_types[0]}, {args[0]}, arg_types[0], 0, Erfc::instantiate_Erfc))));
+        
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args, body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, nullptr);
+
+    }
+
+} // namespace ErfcScaled
 
 namespace ListIndex {
 

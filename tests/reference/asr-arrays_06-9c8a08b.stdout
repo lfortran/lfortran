@@ -125,7 +125,17 @@
                                 (IntegerConstant 6 (Integer 4))
                                 ()
                                 (Integer 4)
-                                ()
+                                (ArrayConstant
+                                    24
+                                    [2, 4, 6, 8, 10, 12]
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 6 (Integer 4)))]
+                                        FixedSizeArray
+                                    )
+                                    ColMajor
+                                )
                             )]
                             (Array
                                 (Integer 4)
@@ -133,7 +143,17 @@
                                 ())]
                                 DescriptorArray
                             )
-                            ()
+                            (ArrayConstant
+                                24
+                                [2, 4, 6, 8, 10, 12]
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 6 (Integer 4)))]
+                                    DescriptorArray
+                                )
+                                ColMajor
+                            )
                             ColMajor
                         )
                         ()
@@ -166,7 +186,17 @@
                                 (IntegerConstant 3 (Integer 4))
                                 ()
                                 (Integer 4)
-                                ()
+                                (ArrayConstant
+                                    24
+                                    [2, 2, 3, 4, 4, 6]
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 6 (Integer 4)))]
+                                        FixedSizeArray
+                                    )
+                                    ColMajor
+                                )
                             )]
                             (Array
                                 (Integer 4)
@@ -174,7 +204,17 @@
                                 ())]
                                 DescriptorArray
                             )
-                            ()
+                            (ArrayConstant
+                                24
+                                [2, 2, 3, 4, 4, 6]
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 6 (Integer 4)))]
+                                    DescriptorArray
+                                )
+                                ColMajor
+                            )
                             ColMajor
                         )
                         ()
@@ -214,7 +254,17 @@
                                 (IntegerConstant 2 (Integer 4))
                                 ()
                                 (Integer 4)
-                                ()
+                                (ArrayConstant
+                                    24
+                                    [2, 1, 2, 3, 4, 4]
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 6 (Integer 4)))]
+                                        FixedSizeArray
+                                    )
+                                    ColMajor
+                                )
                             )]
                             (Array
                                 (Integer 4)
@@ -222,7 +272,17 @@
                                 ())]
                                 DescriptorArray
                             )
-                            ()
+                            (ArrayConstant
+                                24
+                                [2, 1, 2, 3, 4, 4]
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 6 (Integer 4)))]
+                                    DescriptorArray
+                                )
+                                ColMajor
+                            )
                             ColMajor
                         )
                         ()
@@ -283,7 +343,17 @@
                                 (IntegerConstant 2 (Integer 4))
                                 ()
                                 (Integer 4)
-                                ()
+                                (ArrayConstant
+                                    24
+                                    [4, 6, 8, 3, 4, 4]
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 6 (Integer 4)))]
+                                        FixedSizeArray
+                                    )
+                                    ColMajor
+                                )
                             )]
                             (Array
                                 (Integer 4)
@@ -291,7 +361,17 @@
                                 ())]
                                 DescriptorArray
                             )
-                            ()
+                            (ArrayConstant
+                                24
+                                [4, 6, 8, 3, 4, 4]
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 6 (Integer 4)))]
+                                    DescriptorArray
+                                )
+                                ColMajor
+                            )
                             ColMajor
                         )
                         ()

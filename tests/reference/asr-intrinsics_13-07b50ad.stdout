@@ -13,10 +13,10 @@
                                     p
                                     []
                                     Local
-                                    (IntrinsicElementalFunction
+                                    (TypeInquiry
                                         Kind
-                                        [(IntegerConstant 5 (Integer 4))]
-                                        0
+                                        (Integer 4)
+                                        (IntegerConstant 5 (Integer 4))
                                         (Integer 4)
                                         (IntegerConstant 4 (Integer 4))
                                     )
@@ -35,10 +35,10 @@
                                     p1
                                     []
                                     Local
-                                    (IntrinsicElementalFunction
+                                    (TypeInquiry
                                         Kind
-                                        [(IntegerConstant 5 (Integer 4))]
-                                        0
+                                        (Integer 4)
+                                        (IntegerConstant 5 (Integer 4))
                                         (Integer 4)
                                         (IntegerConstant 4 (Integer 4))
                                     )
@@ -57,10 +57,10 @@
                                     p2
                                     []
                                     Local
-                                    (IntrinsicElementalFunction
+                                    (TypeInquiry
                                         Kind
-                                        [(IntegerConstant 5 (Integer 8))]
-                                        0
+                                        (Integer 8)
+                                        (IntegerConstant 5 (Integer 8))
                                         (Integer 4)
                                         (IntegerConstant 8 (Integer 4))
                                     )
@@ -79,13 +79,13 @@
                                     p3
                                     []
                                     Local
-                                    (IntrinsicElementalFunction
+                                    (TypeInquiry
                                         Kind
-                                        [(RealConstant
+                                        (Real 8)
+                                        (RealConstant
                                             0.000000
                                             (Real 8)
-                                        )]
-                                        0
+                                        )
                                         (Integer 4)
                                         (IntegerConstant 8 (Integer 4))
                                     )
@@ -104,13 +104,13 @@
                                     p4
                                     []
                                     Local
-                                    (IntrinsicElementalFunction
+                                    (TypeInquiry
                                         Kind
-                                        [(RealConstant
+                                        (Real 4)
+                                        (RealConstant
                                             0.000000
                                             (Real 4)
-                                        )]
-                                        0
+                                        )
                                         (Integer 4)
                                         (IntegerConstant 4 (Integer 4))
                                     )
@@ -129,13 +129,13 @@
                                     p5
                                     []
                                     Local
-                                    (IntrinsicElementalFunction
+                                    (TypeInquiry
                                         Kind
-                                        [(RealConstant
+                                        (Real 4)
+                                        (RealConstant
                                             5.000000
                                             (Real 4)
-                                        )]
-                                        0
+                                        )
                                         (Integer 4)
                                         (IntegerConstant 4 (Integer 4))
                                     )
@@ -154,13 +154,13 @@
                                     p6
                                     []
                                     Local
-                                    (IntrinsicElementalFunction
+                                    (TypeInquiry
                                         Kind
-                                        [(RealConstant
+                                        (Real 8)
+                                        (RealConstant
                                             5.000000
                                             (Real 8)
-                                        )]
-                                        0
+                                        )
                                         (Integer 4)
                                         (IntegerConstant 8 (Integer 4))
                                     )
@@ -179,13 +179,13 @@
                                     p7
                                     []
                                     Local
-                                    (IntrinsicElementalFunction
+                                    (TypeInquiry
                                         Kind
-                                        [(LogicalConstant
+                                        (Logical 4)
+                                        (LogicalConstant
                                             .true.
                                             (Logical 4)
-                                        )]
-                                        0
+                                        )
                                         (Integer 4)
                                         (IntegerConstant 4 (Integer 4))
                                     )

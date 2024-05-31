@@ -2798,10 +2798,8 @@ template <typename SemanticError>
 inline int extract_kind(ASR::expr_t* kind_expr, const Location& loc) {
     switch( kind_expr->type ) {
         case ASR::exprType::Var: {
-            ASR::Var_t* kind_var =
-                ASR::down_cast<ASR::Var_t>(kind_expr);
-            ASR::Variable_t* kind_variable =
-                ASR::down_cast<ASR::Variable_t>(
+            ASR::Var_t* kind_var = ASR::down_cast<ASR::Var_t>(kind_expr);
+            ASR::Variable_t* kind_variable = ASR::down_cast<ASR::Variable_t>(
                     symbol_get_past_external(kind_var->m_v));
             bool is_parent_enum = false;
             if (kind_variable->m_parent_symtab->asr_owner != nullptr) {
@@ -2829,12 +2827,20 @@ inline int extract_kind(ASR::expr_t* kind_expr, const Location& loc) {
         case ASR::exprType::IntrinsicElementalFunction: {
             ASR::IntrinsicElementalFunction_t* kind_isf =
                 ASR::down_cast<ASR::IntrinsicElementalFunction_t>(kind_expr);
-            if (kind_isf->m_intrinsic_id == 1 && kind_isf->m_value) {
-                // m_intrinsic_id: 1 -> kind intrinsic
-                LCOMPILERS_ASSERT( ASR::is_a<ASR::IntegerConstant_t>(*kind_isf->m_value) );
-                ASR::IntegerConstant_t* kind_ic =
-                    ASR::down_cast<ASR::IntegerConstant_t>(kind_isf->m_value);
-                return kind_ic->m_n;
+            if ( kind_isf->m_value &&
+                    ASR::is_a<ASR::IntegerConstant_t>(*kind_isf->m_value) ) {
+                return ASR::down_cast<ASR::IntegerConstant_t>(kind_isf->m_value)->m_n;
+            } else {
+                throw SemanticError("Only Integer literals or expressions which "
+                    "reduce to constant Integer are accepted as kind parameters.",
+                    loc);
+            }
+        }
+        case ASR::exprType::TypeInquiry: {
+            ASR::TypeInquiry_t* kind_ti =
+                ASR::down_cast<ASR::TypeInquiry_t>(kind_expr);
+            if (kind_ti->m_value) {
+                return ASR::down_cast<ASR::IntegerConstant_t>(kind_ti->m_value)->m_n;
             } else {
                 throw SemanticError("Only Integer literals or expressions which "
                     "reduce to constant Integer are accepted as kind parameters.",
@@ -4413,8 +4419,14 @@ ASR::asr_t* make_Cast_t_value(Allocator &al, const Location &a_loc,
         ASR::expr_t* a_arg, ASR::cast_kindType a_kind, ASR::ttype_t* a_type);
 
 static inline ASR::expr_t* compute_length_from_start_end(Allocator& al, ASR::expr_t* start, ASR::expr_t* end) {
-    ASR::expr_t* start_value = ASRUtils::expr_value(start);
-    ASR::expr_t* end_value = ASRUtils::expr_value(end);
+    ASR::expr_t* start_value = nullptr;
+    ASR::expr_t* end_value = nullptr;
+    if (start != nullptr) {
+        start_value = ASRUtils::expr_value(start);
+    }
+    if (end != nullptr) {
+        end_value = ASRUtils::expr_value(end);
+    }
 
     // If both start and end have compile time values
     // then length can be computed easily by extracting
@@ -5108,7 +5120,9 @@ inline std::string fetch_ArrayConstant_value(void *data, ASR::ttype_t* type, int
         }
         case ASR::ttypeType::Real: {
             switch (kind) {
-                case 4: return to_string_with_precision(((float*)data)[i], 8);
+                // Precision reduced to 6 for float, to avoid line truncation issues
+                // in the generated Fortran code, revert to 8 once the issue is resolved.
+                case 4: return to_string_with_precision(((float*)data)[i], 6);
                 case 8: return to_string_with_precision(((double*)data)[i], 16);
                 default:
                     throw LCompilersException("Unsupported kind for real array constant.");
@@ -5133,7 +5147,8 @@ inline std::string fetch_ArrayConstant_value(void *data, ASR::ttype_t* type, int
             }
         }
         case ASR::ttypeType::Logical: {
-            return std::to_string(((bool*)data)[i]);
+            if (((bool*)data)[i] == 1) return ".true.";
+            return ".false.";
         }
         case ASR::ttypeType::Character: {
             ASR::Character_t* char_type = ASR::down_cast<ASR::Character_t>(type);
@@ -5398,6 +5413,14 @@ inline ASR::asr_t* make_ArrayConstructor_t_util(Allocator &al, const Location &a
 
     LCOMPILERS_ASSERT(ASRUtils::is_array(a_type));
     bool all_expr_evaluated = n_args > 0;
+    bool is_array_item_constant = n_args > 0 && (ASR::is_a<ASR::IntegerConstant_t>(*a_args[0]) ||
+                                ASR::is_a<ASR::RealConstant_t>(*a_args[0]) ||
+                                ASR::is_a<ASR::ComplexConstant_t>(*a_args[0]) ||
+                                ASR::is_a<ASR::LogicalConstant_t>(*a_args[0]) ||
+                                ASR::is_a<ASR::StringConstant_t>(*a_args[0]) ||
+                                ASR::is_a<ASR::IntegerUnaryMinus_t>(*a_args[0]) ||
+                                ASR::is_a<ASR::RealUnaryMinus_t>(*a_args[0]));
+    ASR::expr_t* value = nullptr;
     for (size_t i = 0; i < n_args; i++) {
         ASR::expr_t* a_value = ASRUtils::expr_value(a_args[i]);
         if (!is_value_constant(a_value)) {
@@ -5424,10 +5447,11 @@ inline ASR::asr_t* make_ArrayConstructor_t_util(Allocator &al, const Location &a
         if (is_character(*a_type_->m_type)) {
             n_data = curr_idx * ASR::down_cast<ASR::Character_t>(a_type_->m_type)->m_len;
         }
-        return ASR::make_ArrayConstant_t(al, a_loc, n_data, data, new_type, a_storage_format);
-    } else {
-        return ASR::make_ArrayConstructor_t(al, a_loc, a_args, n_args, a_type, nullptr, a_storage_format);
+        value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, a_loc, n_data, data, new_type, a_storage_format));
     }
+    return is_array_item_constant && all_expr_evaluated ? (ASR::asr_t*) value :
+            ASR::make_ArrayConstructor_t(al, a_loc, a_args, n_args, a_type,
+            value, a_storage_format);
 }
 
 void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,

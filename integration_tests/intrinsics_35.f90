@@ -1,4 +1,4 @@
-program test_any
+program intrinsics_35
 logical l
 l = any((/.true., .true., .true./))
 print *, l
@@ -14,4 +14,4 @@ subroutine section()
     print *, any(a == b, 1)
     print *, any(a == b, 2)
 end subroutine section
-end program test_any
+end program intrinsics_35

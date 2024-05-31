@@ -540,6 +540,47 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c)
     }
 }
 
+/*
+Ignore blank space characters within format specification, except
+within character string edit descriptor
+
+E.g.; "('Number : ', I 2, 5 X, A)" becomes '('Number : ', I2, 5X, A)'
+*/
+char* remove_spaces_except_quotes(const char* format) {
+    int len = strlen(format);
+    char* cleaned_format = malloc(len + 1);
+
+    int i = 0, j = 0;
+    // don't remove blank spaces from within character
+    // string editor descriptor
+    bool in_quotes = false;
+    char current_quote = '\0';
+
+    while (format[i] != '\0') {
+        char c = format[i];
+        if (c == '"' || c == '\'') {
+            if (i == 0 || format[i - 1] != '\\') {
+                // toggle in_quotes and set current_quote on entering or exiting quotes
+                if (!in_quotes) {
+                    in_quotes = true;
+                    current_quote = c;
+                } else if (current_quote == c) {
+                    in_quotes = false;
+                }
+            }
+        }
+
+        if (!isspace(c) || in_quotes) {
+            cleaned_format[j++] = c; // copy non-space characters or any character within quotes
+        }
+
+        i++;
+    }
+
+    cleaned_format[j] = '\0';
+    return cleaned_format;
+}
+
 /**
  * parse fortran format string by extracting individual 'format specifiers'
  * (e.g. 'i', 't', '*' etc.) into an array of strings
@@ -707,11 +748,16 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
 {
     va_list args;
     va_start(args, format);
-    int len = strlen(format);
+    char* cleaned_format = remove_spaces_except_quotes(format);
+    if (!cleaned_format) {
+        va_end(args);
+        return NULL;
+    }
+    int len = strlen(cleaned_format);
     char* modified_input_string = (char*)malloc((len+1) * sizeof(char));
-    strncpy(modified_input_string, format, len);
+    strncpy(modified_input_string, cleaned_format, len);
     modified_input_string[len] = '\0';
-    if (format[0] == '(' && format[len-1] == ')') {
+    if (cleaned_format[0] == '(' && cleaned_format[len-1] == ')') {
         memmove(modified_input_string, modified_input_string + 1, strlen(modified_input_string));
         modified_input_string[len-2] = '\0';
     }
@@ -1051,11 +1097,11 @@ LFORTRAN_API double _lfortran_dlog(double x)
     return log(x);
 }
 
-LFORTRAN_API bool _lfortran_rsp_is_nan(float x) {
+LFORTRAN_API bool _lfortran_sis_nan(float x) {
     return isnan(x);
 }
 
-LFORTRAN_API bool _lfortran_rdp_is_nan(double x) {
+LFORTRAN_API bool _lfortran_dis_nan(double x) {
     return isnan(x);
 }
 

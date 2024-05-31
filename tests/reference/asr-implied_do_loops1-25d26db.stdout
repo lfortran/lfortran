@@ -21,7 +21,17 @@
                                             (IntegerConstant 10 (Integer 4))
                                             ()
                                             (Integer 4)
-                                            ()
+                                            (ArrayConstant
+                                                40
+                                                [1, 2, 3, ...., 8, 9, 10]
+                                                (Array
+                                                    (Integer 4)
+                                                    [((IntegerConstant 1 (Integer 4))
+                                                    (IntegerConstant 10 (Integer 4)))]
+                                                    FixedSizeArray
+                                                )
+                                                ColMajor
+                                            )
                                         )]
                                         (Array
                                             (Integer 4)
@@ -29,26 +39,28 @@
                                             ())]
                                             DescriptorArray
                                         )
-                                        ()
+                                        (ArrayConstant
+                                            40
+                                            [1, 2, 3, ...., 8, 9, 10]
+                                            (Array
+                                                (Integer 4)
+                                                [((IntegerConstant 1 (Integer 4))
+                                                (IntegerConstant 10 (Integer 4)))]
+                                                DescriptorArray
+                                            )
+                                            ColMajor
+                                        )
                                         ColMajor
                                     )
-                                    (ArrayConstructor
-                                        [(ImpliedDoLoop
-                                            [(Var 2 j)]
-                                            (Var 2 j)
-                                            (IntegerConstant 1 (Integer 4))
-                                            (IntegerConstant 10 (Integer 4))
-                                            ()
-                                            (Integer 4)
-                                            ()
-                                        )]
+                                    (ArrayConstant
+                                        40
+                                        [1, 2, 3, ...., 8, 9, 10]
                                         (Array
                                             (Integer 4)
                                             [((IntegerConstant 1 (Integer 4))
-                                            ())]
+                                            (IntegerConstant 10 (Integer 4)))]
                                             DescriptorArray
                                         )
-                                        ()
                                         ColMajor
                                     )
                                     Save
@@ -112,7 +124,17 @@
                                             (IntegerConstant 3 (Integer 4))
                                             ()
                                             (Integer 4)
-                                            ()
+                                            (ArrayConstant
+                                                12
+                                                [1, 2, 3]
+                                                (Array
+                                                    (Integer 4)
+                                                    [((IntegerConstant 1 (Integer 4))
+                                                    (IntegerConstant 3 (Integer 4)))]
+                                                    FixedSizeArray
+                                                )
+                                                ColMajor
+                                            )
                                         )]
                                         ()
                                         ()
@@ -148,7 +170,17 @@
                             (IntegerConstant 10 (Integer 4))
                             ()
                             (Integer 4)
-                            ()
+                            (ArrayConstant
+                                40
+                                [1, 2, 3, ...., 8, 9, 10]
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 10 (Integer 4)))]
+                                    FixedSizeArray
+                                )
+                                ColMajor
+                            )
                         )]
                         ()
                         ()

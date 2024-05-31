@@ -1618,6 +1618,9 @@ void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,
             }
             value = EXPR(ASRUtils::make_ArrayConstructor_t_util(al, loc, values.p,
                 values.size(), value_type, ASR::arraystorageType::ColMajor));
+            if (ASR::is_a<ASR::ArrayConstructor_t>(*value) && ASRUtils::expr_value(value)) {
+                value = ASRUtils::expr_value(value);
+            }
             ret_type = value_type;
         }
     } else {
