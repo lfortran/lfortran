@@ -2582,12 +2582,11 @@ LFORTRAN_API void _lfortran_read_char(char **p, int32_t unit_num)
             exit(1);
         }
     } else {
-        char tmp_buffer[n + 1];
+        char *tmp_buffer = (char*)malloc((n + 1) * sizeof(char));
         (void)!fscanf(filep, "%s", tmp_buffer);
         size_t input_length = strlen(tmp_buffer);
-        for (size_t i = 0; i < input_length; i++) {
-            (*p)[i] = tmp_buffer[i];
-        }
+        strcpy(*p, tmp_buffer);
+        free(tmp_buffer);
         while (input_length < n) {
             strncat(*p, &SPACE, 1);
             input_length++;
