@@ -2521,18 +2521,19 @@ LFORTRAN_API void _lfortran_read_array_int32(int32_t *p, int array_size, int32_t
 
 LFORTRAN_API void _lfortran_read_char(char **p, int32_t unit_num)
 {
+    const char SPACE = ' ';
     int n = strlen(*p);
     if (unit_num == -1) {
         // Read from stdin
         *p = (char*)malloc(n * sizeof(char));
         (void)!fgets(*p, n + 1, stdin);
         (*p)[strcspn(*p, "\n")] = 0;
-        char space = ' ';
         size_t input_length = strlen(*p);
         while (input_length < n) {
-            strncat(*p, &space, 1);
+            strncat(*p, &SPACE, 1);
             input_length++;
         }
+        (*p)[n] = '\0';
         return;
     }
 
@@ -2583,10 +2584,15 @@ LFORTRAN_API void _lfortran_read_char(char **p, int32_t unit_num)
     } else {
         char tmp_buffer[n + 1];
         (void)!fscanf(filep, "%s", tmp_buffer);
-        for (size_t i = 0; i < n; i++) {
+        size_t input_length = strlen(tmp_buffer);
+        for (size_t i = 0; i < input_length; i++) {
             (*p)[i] = tmp_buffer[i];
         }
-        (*p)[n + 1] = '\0';
+        while (input_length < n) {
+            strncat(*p, &SPACE, 1);
+            input_length++;
+        }
+        (*p)[n] = '\0';
     }
     if (streql(*p, "")) {
         printf("Runtime error: End of file!\n");
