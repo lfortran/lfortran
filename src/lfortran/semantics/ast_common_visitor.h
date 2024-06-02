@@ -2722,7 +2722,9 @@ public:
                     if (s.m_dim[0].m_end_star == AST::dimension_typeType::DimensionStar) {
                         is_dimension_star = true;
                     }
-                    process_dims(al, dims, s.m_dim, s.n_dim, is_compile_time, is_char_type);
+                    process_dims(al, dims, s.m_dim, s.n_dim, is_compile_time, is_char_type,
+                        (s_intent == ASRUtils::intent_in || s_intent == ASRUtils::intent_out ||
+                        s_intent == ASRUtils::intent_inout));
                 }
                 ASR::symbol_t *type_declaration;
                 ASR::ttype_t *type = determine_type(x.base.base.loc, sym, x.m_vartype, is_pointer,
