@@ -5120,9 +5120,7 @@ inline std::string fetch_ArrayConstant_value(void *data, ASR::ttype_t* type, int
         }
         case ASR::ttypeType::Real: {
             switch (kind) {
-                // Precision reduced to 6 for float, to avoid line truncation issues
-                // in the generated Fortran code, revert to 8 once the issue is resolved.
-                case 4: return to_string_with_precision(((float*)data)[i], 6);
+                case 4: return to_string_with_precision(((float*)data)[i], 8);
                 case 8: return to_string_with_precision(((double*)data)[i], 16);
                 default:
                     throw LCompilersException("Unsupported kind for real array constant.");
