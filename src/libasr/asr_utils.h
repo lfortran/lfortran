@@ -5100,7 +5100,7 @@ template <typename T>
 inline std::string to_string_with_precision(const T a_value, const int n) {
     std::ostringstream out;
     out.precision(n);
-    out << std::fixed << a_value;
+    out << std::scientific << a_value;
     return std::move(out).str();
 }
 
@@ -5120,9 +5120,7 @@ inline std::string fetch_ArrayConstant_value(void *data, ASR::ttype_t* type, int
         }
         case ASR::ttypeType::Real: {
             switch (kind) {
-                // Precision reduced to 6 for float, to avoid line truncation issues
-                // in the generated Fortran code, revert to 8 once the issue is resolved.
-                case 4: return to_string_with_precision(((float*)data)[i], 6);
+                case 4: return to_string_with_precision(((float*)data)[i], 8);
                 case 8: return to_string_with_precision(((double*)data)[i], 16);
                 default:
                     throw LCompilersException("Unsupported kind for real array constant.");
