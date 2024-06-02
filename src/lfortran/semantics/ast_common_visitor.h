@@ -5156,7 +5156,9 @@ public:
         ASR::expr_t* iachar_value = nullptr;
         ASR::expr_t* arg_value = ASRUtils::expr_value(arg);
         ASR::ttype_t* arg_type = ASRUtils::expr_type(arg);
-        if (ASR::is_a<ASR::Character_t>(*arg_type) && !ASR::is_a<ASR::StringSection_t>(*arg)) {
+        if (ASR::is_a<ASR::Character_t>(*arg_type) 
+            && !ASR::is_a<ASR::StringSection_t>(*arg)
+            && !ASRUtils::is_allocatable(arg_type)) {
             ASR::Character_t* char_type = ASR::down_cast<ASR::Character_t>(arg_type);
             if (char_type->m_len != 1) {
                 throw SemanticError("first argument to `iachar` must be of length one",
