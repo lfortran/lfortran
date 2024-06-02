@@ -823,6 +823,7 @@ public:
         {"bessel_jn", {IntrinsicSignature({"n", "x"}, 2, 2)}},
         {"bessel_yn", {IntrinsicSignature({"n", "x"}, 2, 2)}},
         {"merge_bits", {IntrinsicSignature({"i", "j", "mask"}, 3, 3)}},
+        {"logical", {IntrinsicSignature({"i", "kind"}, 1, 2)}},
     };
 
     std::map<std::string, std::pair<std::string, std::string>> intrinsic_mapping = {
@@ -6763,6 +6764,10 @@ public:
 
     bool is_complex(ASR::ttype_t &t) {
         return ASR::is_a<ASR::Complex_t>(*ASRUtils::type_get_past_pointer(&t));
+    }
+
+    bool is_logical(ASR::ttype_t &t) {
+        return ASR::is_a<ASR::Logical_t>(*ASRUtils::type_get_past_pointer(&t));
     }
 
     bool assignment_types_agree(ASR::ttype_t *target, ASR::ttype_t *value) {

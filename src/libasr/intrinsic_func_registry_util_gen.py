@@ -176,6 +176,13 @@ intrinsic_funcs_args = {
             "return": "int32"
         }
     ],
+    "Logical": [
+        {
+            "args": [("bool", )],
+            "ret_type_arg_idx": 0, 
+            "kind_arg": True
+        }
+    ],
     "Digits": [
         {
             "args": [("int",), ("real",)],
