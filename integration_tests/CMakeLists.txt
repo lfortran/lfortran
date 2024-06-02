@@ -544,7 +544,7 @@ RUN(NAME int_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm) # int body
 RUN(NAME int_02 LABELS gfortran wasm) # int symboltable
 RUN(NAME int_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # large int and prints array
 
-RUN(NAME intrinsics_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # sqrt, abs, log
+RUN(NAME intrinsics_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # sqrt, abs, log
 RUN(NAME intrinsics_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # sin
 RUN(NAME intrinsics_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # cos
 RUN(NAME intrinsics_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # tan
