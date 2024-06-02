@@ -779,7 +779,6 @@ public:
         {"verify", {IntrinsicSignature({"string", "set", "back", "kind"}, 2, 4)}},
         {"scan", {IntrinsicSignature({"string", "set", "back", "kind"}, 2, 4)}},
         {"index", {IntrinsicSignature({"string", "substring", "back", "kind"}, 2, 4)}},
-        {"adjustl", {IntrinsicSignature({"string"}, 1, 1)}},
         {"hypot", {IntrinsicSignature({"x", "y"}, 2, 2)}},
         {"shiftr", {IntrinsicSignature({"i", "shift"}, 2, 2)}},
         {"rshift", {IntrinsicSignature({"i", "shift"}, 2, 2)}},
@@ -794,6 +793,7 @@ public:
         {"llt", {IntrinsicSignature({"string_A", "string_B"}, 2, 2)}},
         {"lge", {IntrinsicSignature({"string_A", "string_B"}, 2, 2)}},
         {"lle", {IntrinsicSignature({"string_A", "string_B"}, 2, 2)}},
+        {"len_trim", {IntrinsicSignature({"String", "Kind"}, 1, 2)}},
         {"iand", {IntrinsicSignature({"i", "j"}, 2, 2)}},
         {"ior", {IntrinsicSignature({"i", "j"}, 2, 2)}},
         {"ieor", {IntrinsicSignature({"i", "j"}, 2, 2)}},
@@ -814,9 +814,7 @@ public:
         {"ichar", {IntrinsicSignature({"C", "kind"}, 1, 2)}},
         {"char", {IntrinsicSignature({"I", "kind"}, 1, 2)}},
         {"set_exponent", {IntrinsicSignature({"X", "I"}, 2, 2)}},
-        {"rrspacing", {IntrinsicSignature({"X"}, 1, 1)}},
         {"dshiftl", {IntrinsicSignature({"i", "j", "shift"}, 3, 3)}},
-        {"random_number", {IntrinsicSignature({"r"}, 1, 1)}},
         {"mvbits", {IntrinsicSignature({"from", "frompos", "len", "to", "topos"}, 5, 5)}},
         {"modulo", {IntrinsicSignature({"a", "p"}, 2, 2)}},
         {"bessel_jn", {IntrinsicSignature({"n", "x"}, 2, 2)}},
@@ -5165,61 +5163,6 @@ public:
             }
         }
         return ASR::make_Iachar_t(al, x.base.base.loc, arg, type, iachar_value);
-    }
-
-    ASR::asr_t* create_ScanVerify_util(const AST::FuncCallOrArray_t& x, std::string func_name) {
-        ASR::expr_t *string, *set, *back, *kind;
-        ASR::ttype_t *type;
-        string = nullptr, set = nullptr, back = nullptr;
-        type = nullptr, kind = nullptr;
-        Vec<ASR::expr_t*> args;
-        std::vector<std::string> kwarg_names = {"string", "set", "back", "kind"};
-        handle_intrinsic_node_args(x, args, kwarg_names, 2, 4, func_name);
-        string = args[0], set = args[1];
-        back = kind = nullptr;
-        if (args.size() >= 3) {
-            back = args[2];
-            if (args.size() == 4) {
-                kind = args[3];
-            }
-        }
-        int64_t kind_value = handle_kind(kind);
-        type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, kind_value));
-        std::string function_name = func_name + "_kind" + std::to_string(kind_value);
-
-        ASR::call_arg_t string_arg, set_arg, back_arg;
-        string_arg.loc = string->base.loc;
-        string_arg.m_value = string;
-        set_arg.loc = set->base.loc;
-        set_arg.m_value = set;
-        back_arg.loc = x.base.base.loc;
-        if (back) {
-            back_arg.loc = back->base.loc;
-        }
-        back_arg.m_value = back;
-
-        Vec<ASR::call_arg_t> func_args;
-        func_args.reserve(al, 3);
-        func_args.push_back(al, string_arg);
-        func_args.push_back(al, set_arg);
-        func_args.push_back(al, back_arg);
-
-        ASR::symbol_t* function = current_scope->resolve_symbol(function_name);
-        if( !function ) {
-            function = resolve_intrinsic_function(x.base.base.loc, function_name);
-            ASR::Module_t* function_module = ASRUtils::get_sym_module(ASRUtils::symbol_get_past_external(function));
-            if( function_module ) {
-                char* module_name = function_module->m_name;
-                current_module_dependencies.push_back(al, module_name);
-            }
-        }
-        if (ASRUtils::symbol_parent_symtab(function)->get_counter() != current_scope->get_counter()) {
-            ADD_ASR_DEPENDENCIES_WITH_NAME(current_scope, function, current_function_dependencies, s2c(al, function_name));
-
-        }
-        ASRUtils::insert_module_dependency(function, al, current_module_dependencies);
-        return ASRUtils::make_FunctionCall_t_util(al, x.base.base.loc, function, nullptr, func_args.p,
-            func_args.size(), type, nullptr, nullptr, false);
     }
 
     ASR::asr_t* create_Complex(const AST::FuncCallOrArray_t& x) {

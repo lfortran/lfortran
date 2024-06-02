@@ -1363,6 +1363,8 @@ public:
             SET_INTRINSIC_NAME(Ifix, "ifix");
             SET_INTRINSIC_NAME(Idint, "idint");
             SET_INTRINSIC_NAME(Conjg, "conjg");
+            SET_INTRINSIC_NAME(StringLenTrim, "len_trim");
+            SET_INTRINSIC_NAME(StringTrim, "trim");
             default : {
                 throw LCompilersException("IntrinsicElementalFunction: `"
                     + ASRUtils::get_intrinsic_name(x.m_intrinsic_id)
