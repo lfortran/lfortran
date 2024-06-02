@@ -47,7 +47,6 @@ enum class IntrinsicElementalFunctions : int64_t {
     Gamma,
     Log,
     Log10,
-    Logical,
     LogGamma,
     Trunc,
     Fix,
@@ -135,6 +134,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     Range,
     Sign,
     SignFromValue,
+    Logical,
     Nint,
     Aint,
     Anint,
@@ -2032,15 +2032,14 @@ namespace Logical {
         declare_basic_variables("_lcompilers_logical_" + type_to_str_python(arg_types[0]));
         fill_func_arg("x", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
-        body.push_back(al,b.Assignment(result, args[0]));
+        body.push_back(al,b.Assignment(result, b.bool_t(args[0], return_type)));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
         return b.Call(f_sym, new_args, return_type, nullptr);
     }
-} // namespace Nint
-
+} // namespace Logical
 
 namespace Floor {
 
