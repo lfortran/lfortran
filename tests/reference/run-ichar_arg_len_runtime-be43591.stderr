@@ -1,1 +1,5 @@
-Error: first argument to ichar must be of length one
+semantic error: Unexpected args, Ichar expects (char of length 1) as arguments
+ --> tests/errors/ichar_arg_len_runtime.f90:3:12
+  |
+3 |    print*, ichar(x)
+  |            ^^^^^^^^ 

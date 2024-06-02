@@ -1,5 +1,5 @@
-semantic error: first argument to `ichar` must be of length one
- --> tests/errors/ichar_arg_len_compiletime.f90:2:19
+semantic error: Unexpected args, Ichar expects (char of length 1) as arguments
+ --> tests/errors/ichar_arg_len_compiletime.f90:2:13
   |
 2 |    print *, ichar("Hello")
-  |                   ^^^^^^^ 
+  |             ^^^^^^^^^^^^^^ 
