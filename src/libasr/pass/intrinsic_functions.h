@@ -1226,7 +1226,7 @@ namespace Dshiftr {
         int64_t result = rightmostI << (k_val - shift);
         int64_t leftmostJ;
         if (val2 < 0) {
-            leftmostJ = (val2 >> (k_val - shift)) & ((1LL << (k_val - shift)) - 1);
+            leftmostJ = (val2 >> (k_val - shift)) & ((1LL << (k_val - shift)) - 1LL);
         } else {
             leftmostJ = val2 >> (k_val - shift);
         }
@@ -1235,11 +1235,35 @@ namespace Dshiftr {
     }
 
 
-    static inline ASR::expr_t* instantiate_Dshiftr(Allocator &/*al*/, const Location &/*loc*/,
-            SymbolTable */*scope*/, Vec<ASR::ttype_t*>& /*arg_types*/, ASR::ttype_t */*return_type*/,
-            Vec<ASR::call_arg_t>& /*new_args*/, int64_t /*overload_id*/) {
-        // TO DO: Implement the runtime function for ISHFTC
-        throw LCompilersException("Runtime implementation for `ishftc` is not yet implemented.");
+    static inline ASR::expr_t* instantiate_Dshiftr(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("_lcompilers_dshiftr_" + type_to_str_python(arg_types[0]));
+        fill_func_arg("i", arg_types[0]);
+        fill_func_arg("j", arg_types[1]);
+        fill_func_arg("shift", arg_types[2]);
+        auto final_result = declare("x", int64, Local);
+        auto result = declare(fn_name , return_type, ReturnVar);
+
+        body.push_back(al, b.Assignment(final_result, b.BitLshift(b.And(b.i2i_t(args[0], int64), 
+            b.Sub(b.BitLshift(b.i64(1), b.i2i_t(args[2], int64), int64), b.i64(1))),
+            b.Sub(b.Mul(b.i64(extract_kind_from_ttype_t(arg_types[0])), b.i64(8)), b.i2i_t(args[2], int64)), int64)));
+
+        body.push_back(al, b.If(b.Lt(b.i2i_t(args[1], int64), b.i64(0)), {
+            b.Assignment(final_result, b.Or(final_result, b.And(b.BitRshift(b.i2i_t(args[1], int64), 
+            b.Sub(b.Mul((b.i64(extract_kind_from_ttype_t(arg_types[0]))), b.i64(8)), b.i2i_t(args[2], int64)), int64),
+            b.Sub(b.BitLshift(b.i64(1), b.Sub(b.Mul((b.i64(extract_kind_from_ttype_t(arg_types[0]))), b.i64(8)), 
+            b.i2i_t(args[2], int64)), int64), b.i64(1)))))
+        }, {
+            b.Assignment(final_result, b.Or(final_result, b.BitRshift(b.i2i_t(args[1], int64), 
+            b.Sub(b.Mul((b.i64(extract_kind_from_ttype_t(arg_types[0]))), b.i64(8)), b.i2i_t(args[2], int64)), int64)))
+        }));
+        body.push_back(al, b.Assignment(result, b.i2i_t(final_result, return_type)));
+
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, nullptr);
 
     }
 
