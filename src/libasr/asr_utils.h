@@ -2076,6 +2076,12 @@ static inline bool is_character(ASR::ttype_t &x) {
                 type_get_past_pointer(&x))));
 }
 
+static inline bool is_character_of_length(ASR::ttype_t &x, int length) {
+    return is_character(x) && ASR::down_cast<ASR::Character_t>(type_get_past_array(
+                                type_get_past_allocatable(
+                                    type_get_past_pointer(&x))))->m_len == length;
+}
+
 static inline bool is_complex(ASR::ttype_t &x) {
     return ASR::is_a<ASR::Complex_t>(
         *type_get_past_array(

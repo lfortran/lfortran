@@ -5155,12 +5155,20 @@ public:
         ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, kind_value));
         ASR::expr_t* iachar_value = nullptr;
         ASR::expr_t* arg_value = ASRUtils::expr_value(arg);
+        ASR::ttype_t* arg_type = ASRUtils::expr_type(arg);
+        if (ASR::is_a<ASR::Character_t>(*arg_type) && !ASR::is_a<ASR::StringSection_t>(*arg)) {
+            ASR::Character_t* char_type = ASR::down_cast<ASR::Character_t>(arg_type);
+            if (char_type->m_len != 1) {
+                throw SemanticError("first argument to `iachar` must be of length one",
+                                    arg->base.loc);
+            }
+        }
         if( arg_value ) {
             std::string arg_str;
             bool is_const_value = ASRUtils::is_value_constant(arg_value, arg_str);
             if( is_const_value ) {
                 if (arg_str.length() != 1) {
-                    throw SemanticError("first argument to iachar must be of length one", arg->base.loc);
+                    throw SemanticError("first argument to `iachar` must be of length one", arg->base.loc);
                 }
                 int64_t ascii_code = uint8_t(arg_str[0]);
                 iachar_value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc,

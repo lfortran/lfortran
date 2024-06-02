@@ -714,7 +714,7 @@ intrinsic_funcs_args = {
     ],
     "Ichar": [
         {
-            "args": [("char",)],
+            "args": [(("char", 1), )],
             "return": "int32",
             "kind_arg": True
         },
@@ -823,8 +823,13 @@ def compute_arg_condition(no_of_args, args_lists):
         subcond_in_msg = []
         for i in range(no_of_args):
             arg = arg_list[i]
-            subcond.append(f"{type_to_asr_type_check[arg]}(*arg_type{i})")
-            subcond_in_msg.append(arg)
+            if (type(arg) == tuple):
+                subcond.append(f"{type_to_asr_type_check[arg[0]]}(*arg_type{i})")
+                subcond.append(f"ASRUtils::is_character_of_length(*arg_type{i}, {arg[1]})")
+                subcond_in_msg.append(arg[0] + " of length " + str(arg[1]))
+            else:
+                subcond.append(f"{type_to_asr_type_check[arg]}(*arg_type{i})")
+                subcond_in_msg.append(arg)
         condition.append(" && ".join(subcond))
         cond_in_msg.append(", ".join(subcond_in_msg))
     return (f"({') || ('.join(condition)})", f"({') or ('.join(cond_in_msg)})")

@@ -1376,20 +1376,6 @@ public:
         }
         this->visit_expr_wrapper(x.m_arg, true);
         llvm::Value *c = tmp;
-        if (!ASRUtils::is_allocatable(ASRUtils::expr_type(x.m_arg))) {
-            llvm::AllocaInst *parg = builder->CreateAlloca(character_type, nullptr);
-            builder->CreateStore(tmp, parg);
-            llvm::Value *is_len_not_one = builder->CreateICmpNE(lfortran_str_len(parg), builder->getInt32(1));
-            llvm_utils->create_if_else(is_len_not_one, [&]() {
-                llvm::Value *fmt_ptr = builder->CreateGlobalStringPtr("Error: first argument to ichar must be of length one\n");
-                    print_error(context, *module, *builder, {fmt_ptr});
-                int exit_code_int = 1;
-                llvm::Value *exit_code = llvm::ConstantInt::get(context,
-                        llvm::APInt(32, exit_code_int));
-                exit(context, *module, *builder, exit_code);
-            },
-            []() {});
-        }
         std::string runtime_func_name = "_lfortran_ichar";
         llvm::Function *fn = module->getFunction(runtime_func_name);
         if (!fn) {
@@ -1413,20 +1399,6 @@ public:
         this->visit_expr(*x.m_arg);
         ptr_loads = ptr_loads_copy;
         llvm::Value *c = tmp;
-        if (!ASRUtils::is_allocatable(ASRUtils::expr_type(x.m_arg))) {
-            llvm::AllocaInst *parg = builder->CreateAlloca(character_type, nullptr);
-            builder->CreateStore(tmp, parg);
-            llvm::Value *is_len_not_one = builder->CreateICmpNE(lfortran_str_len(parg), builder->getInt32(1));
-            llvm_utils->create_if_else(is_len_not_one, [&]() {
-                llvm::Value *fmt_ptr = builder->CreateGlobalStringPtr("Error: first argument to iachar must be of length one\n");
-                    print_error(context, *module, *builder, {fmt_ptr});
-                int exit_code_int = 1;
-                llvm::Value *exit_code = llvm::ConstantInt::get(context,
-                        llvm::APInt(32, exit_code_int));
-                exit(context, *module, *builder, exit_code);
-            },
-            []() {});
-        }
         std::string runtime_func_name = "_lfortran_iachar";
         llvm::Function *fn = module->getFunction(runtime_func_name);
         if (!fn) {
