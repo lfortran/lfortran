@@ -82,18 +82,12 @@ struct IntrinsicProcedures {
             {"get_environment_variable", {m_builtin, &not_implemented, false}},
             {"newunit", {m_custom, &not_implemented, false}},
 
-            // These will fail if used in symbol table visitor, but will be
-            // left unevaluated in body visitor
-            {"trim", {m_string, &not_implemented, false}},
-            {"len_trim", {m_string, &not_implemented, false}},
-
             // Subroutines
             {"cpu_time", {m_math, &not_implemented, false}},
             {"achar", {m_builtin, &eval_achar, true}},
             {"move_alloc", {m_builtin, &not_implemented, false}},
             {"present", {m_builtin, &not_implemented, false}},
             {"system_clock", {m_math, &not_implemented, false}},
-            {"random_number", {m_math, &not_implemented, false}},
             {"srand", {m_math, &not_implemented, false}},
             {"date_and_time", {m_string, &not_implemented, false}},
 
