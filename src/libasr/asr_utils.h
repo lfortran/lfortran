@@ -2998,7 +2998,7 @@ inline bool expr_equal(ASR::expr_t* x, ASR::expr_t* y) {
         case ASR::exprType::Var: {
             ASR::Var_t* var_x = ASR::down_cast<ASR::Var_t>(x);
             ASR::Var_t* var_y = ASR::down_cast<ASR::Var_t>(y);
-            return var_x->m_v == var_y->m_v;
+            return var_x->class_type == var_y->class_type;
         }
         case ASR::exprType::IntegerConstant: {
             ASR::IntegerConstant_t* intconst_x = ASR::down_cast<ASR::IntegerConstant_t>(x);
