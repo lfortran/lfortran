@@ -1226,7 +1226,7 @@ public:
         src = out;
     }
 
-    void setElementalIntrinsicName(std::string &out, std::string func_name, const ASR::IntrinsicElementalFunction_t &x) {
+    void visit_IntrinsicElementalFunction_helper(std::string &out, std::string func_name, const ASR::IntrinsicElementalFunction_t &x) {
         out += func_name;
         visit_expr(*x.m_args[0]);
         out += "(" + src;
@@ -1251,10 +1251,10 @@ public:
         else if(intrinsic_func_name == "LogGamma") intrinsic_func_name = "log_gamma";
         else if(intrinsic_func_name == "SetExponent") intrinsic_func_name = "set_exponent";
         else if(intrinsic_func_name == "Mergebits") intrinsic_func_name = "merge_bits";
-        setElementalIntrinsicName(out, intrinsic_func_name, x);
+        visit_IntrinsicElementalFunction_helper(out, intrinsic_func_name, x);
     }
 
-    void setInquiryTypeIntrinsicName(std::string &out, std::string func_name, const ASR::TypeInquiry_t &x) {
+    void visit_TypeInquiry_helper(std::string &out, std::string func_name, const ASR::TypeInquiry_t &x) {
         out += func_name;
         visit_expr(*x.m_arg);
         out += "(" + src + ")";
@@ -1266,10 +1266,10 @@ public:
         std::string intrinsic_func_name = ASRUtils::get_intrinsic_name(static_cast<int64_t>(x.m_inquiry_id));
         if(intrinsic_func_name == "BitSize") intrinsic_func_name = "bit_size";
         else if(intrinsic_func_name == "NewLine") intrinsic_func_name = "new_line";
-        setInquiryTypeIntrinsicName(out, intrinsic_func_name, x);
+        visit_TypeInquiry_helper(out, intrinsic_func_name, x);
     }
 
-    void setArrIntrinsicName(std::string &out, std::string func_name, const ASR::IntrinsicArrayFunction_t &x) {
+    void visit_IntrinsicArrayFunction_helper(std::string &out, std::string func_name, const ASR::IntrinsicArrayFunction_t &x) {
         out += func_name;
         visit_expr(*x.m_args[0]);
         out += "(" + src;
@@ -1286,7 +1286,7 @@ public:
         std::string out;
         std::string intrinsic_func_name = ASRUtils::get_array_intrinsic_name(static_cast<int64_t>(x.m_arr_intrinsic_id));
         if(intrinsic_func_name == "DotProduct") intrinsic_func_name = "dot_product";
-        setArrIntrinsicName(out, intrinsic_func_name, x);
+        visit_IntrinsicArrayFunction_helper(out, intrinsic_func_name, x);
     }
 
     // void visit_IntrinsicImpureFunction(const ASR::IntrinsicImpureFunction_t &x) {}
