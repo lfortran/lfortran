@@ -1,0 +1,5 @@
+semantic error: Result of `nint` overflows its kind(4)
+ --> tests/errors/nint_overflow.f90:2:13
+  |
+2 |     print*, nint(1e12_8)
+  |             ^^^^^^^^^^^^ 
