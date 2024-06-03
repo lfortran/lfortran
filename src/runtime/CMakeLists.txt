@@ -38,6 +38,9 @@ add_dependencies(lfortran_intrinsic_ieee_arithmetic lfortran_intrinsic_iso_fortr
 lfortran_compile_runtime(lfortran_intrinsic_iso_c_binding pure)
 add_dependencies(lfortran_intrinsic_iso_c_binding lfortran_intrinsic_builtin)
 
+lfortran_compile_runtime(omp_lib openmp)
+add_dependencies(omp_lib lfortran_intrinsic_iso_c_binding)
+
 lfortran_compile_runtime(lfortran_intrinsic_string pure)
 add_dependencies(lfortran_intrinsic_string lfortran_intrinsic_builtin)
 add_dependencies(lfortran_intrinsic_string lfortran_intrinsic_iso_fortran_env)
@@ -59,6 +62,7 @@ install(
   ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_iso_fortran_env.mod
   ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_ieee_arithmetic.mod
   ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_iso_c_binding.mod
+  ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_omp_lib.mod
   ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_math.mod
   ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_string.mod
   DESTINATION ${CMAKE_INSTALL_LIBDIR}
