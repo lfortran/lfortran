@@ -2645,14 +2645,42 @@ public:
             }
             llvm_symtab[h] = ptr;
         } else if (x.m_type->type == ASR::ttypeType::Array) {
-            // Using approach same as ASR::ttypeType::List
             llvm::StructType* array_type = static_cast<llvm::StructType*>(
                 llvm_utils->get_type_from_ttype_t_util(x.m_type, module.get()));
             llvm::Constant *ptr = module->getOrInsertGlobal(x.m_name, array_type);
             if (!external) {
-                module->getNamedGlobal(x.m_name)->setInitializer(
-                    llvm::ConstantStruct::get(array_type,
-                    llvm::Constant::getNullValue(array_type)));
+                if (x.m_value) {
+                    LCOMPILERS_ASSERT(ASR::is_a<ASR::ArrayConstant_t>(*x.m_value));
+                    ASR::ArrayConstant_t* arr_const = ASR::down_cast<ASR::ArrayConstant_t>(x.m_value);
+                    std::vector<llvm::Constant*> arr_elements;
+                    size_t arr_const_size = (size_t) ASRUtils::get_fixed_size_of_array(arr_const->m_type);
+                    arr_elements.reserve(arr_const_size);
+                    int a_kind;
+                    for (size_t i = 0; i < arr_const_size; i++) {
+                        ASR::expr_t* elem = ASRUtils::fetch_ArrayConstant_value(al, arr_const, i);
+                        a_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(elem));
+                        if (ASR::is_a<ASR::IntegerConstant_t>(*elem)) {
+                            ASR::IntegerConstant_t* int_const = ASR::down_cast<ASR::IntegerConstant_t>(elem);
+                            arr_elements.push_back(llvm::ConstantInt::get(
+                                context, llvm::APInt(8 * a_kind, int_const->m_n)));
+                        } else if (ASR::is_a<ASR::RealConstant_t>(*elem)) {
+                            ASR::RealConstant_t* real_const = ASR::down_cast<ASR::RealConstant_t>(elem);
+                            if (8 * a_kind == 32) {
+                                arr_elements.push_back(llvm::ConstantFP::get(
+                                    context, llvm::APFloat((float) real_const->m_r)));
+                            } else if (8 * a_kind == 64) {
+                                arr_elements.push_back(llvm::ConstantFP::get(
+                                    context, llvm::APFloat((double) real_const->m_r)));
+                            }
+                        }
+                    }
+                    llvm::Constant* array_const_init = llvm::ConstantStruct::get(array_type, arr_elements);
+                    module->getNamedGlobal(x.m_name)->setInitializer(array_const_init);
+                } else {
+                    module->getNamedGlobal(x.m_name)->setInitializer(
+                            llvm::ConstantStruct::get(
+                            array_type, llvm::Constant::getNullValue(array_type)));
+                }
             }
             llvm_symtab[h] = ptr;
         } else if (x.m_type->type == ASR::ttypeType::Logical) {
