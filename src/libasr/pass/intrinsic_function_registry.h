@@ -108,6 +108,7 @@ inline std::string get_intrinsic_name(int64_t x) {
         INTRINSIC_NAME_CASE(StringFindSet)
         INTRINSIC_NAME_CASE(SubstrIndex)
         INTRINSIC_NAME_CASE(Range)
+        INTRINSIC_NAME_CASE(Radix)
         INTRINSIC_NAME_CASE(Hypot)
         INTRINSIC_NAME_CASE(SelectedIntKind)
         INTRINSIC_NAME_CASE(SelectedRealKind)
