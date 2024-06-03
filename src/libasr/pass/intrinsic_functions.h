@@ -1992,9 +1992,23 @@ namespace Anint {
 namespace Nint {
 
     static ASR::expr_t *eval_Nint(Allocator &al, const Location &loc,
-            ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+            ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
+        int kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
         double rv = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
         double near_integer = std::round(rv);
+
+        if (kind == 4) {
+            if (near_integer < std::numeric_limits<int32_t>::min() || near_integer > std::numeric_limits<int32_t>::max()) {
+                diag.semantic_error_label("Result of `nint` overflows its kind(" + std::to_string(kind) + ")", {loc}, "");
+            }
+        } else if (kind == 8) {
+            if (near_integer < std::numeric_limits<int64_t>::min() || near_integer > std::numeric_limits<int64_t>::max()) {
+                diag.semantic_error_label("Result of `nint` overflows its kind(" + std::to_string(kind) + ")", {loc}, "");
+            }
+        } else {
+            diag.semantic_error_label("Unsupported integer kind", {loc}, "");
+        }
+
         int64_t result = int64_t(near_integer);
         return make_ConstantWithType(make_IntegerConstant_t, result, arg_type, loc);
     }
