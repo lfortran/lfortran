@@ -62,7 +62,7 @@ install(
   ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_iso_fortran_env.mod
   ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_ieee_arithmetic.mod
   ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_iso_c_binding.mod
-  ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_omp_lib.mod
+  ${CMAKE_Fortran_MODULE_DIRECTORY}/omp_lib.mod
   ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_math.mod
   ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_string.mod
   DESTINATION ${CMAKE_INSTALL_LIBDIR}
