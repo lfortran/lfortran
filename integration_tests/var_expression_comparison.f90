@@ -1,14 +1,14 @@
 ! This integration test tests for the comparison of `Var_t` expressions
-! at runtime. 
+! at runtime.
 !
 ! The test is framed such that it checks if a variable passed from
 ! one subroutine to another for setting the dimension of an array works.
 !
 ! The underlying idea is that when a variable is used to set the dimension
-! of an array in a subroutine, the passed variable is internally checked for 
+! of an array in a subroutine, the passed variable is internally checked for
 ! equality of expression with the parameter variable. If the variable
 ! expressions are equal, the program will execute, else it will fail.
-! 
+!
 !
 ! This means that for a subroutine
 !
@@ -19,7 +19,7 @@
 !       INTEGER, INTENT(IN) ::  nx
 !
 !    END SUBROUTINE subroutine_1
-! 
+!
 ! and another subroutine
 !
 !    SUBROUTINE subroutine_2 ( arr_2, ny )
@@ -30,14 +30,18 @@
 !
 !       CALL subroutine_1 ( arr_2, ny )
 !
-!    END SUBROUTINE subroutine_2   
+!    END SUBROUTINE subroutine_2
 !
 !
-! the expression type of the argument variable `ny` to `subroutine_1` must be equal to 
+! the expression type of the argument variable `ny` to `subroutine_1` must be equal to
 ! the parameter variable `nx`.
 
 
 MODULE test_var_expression_comparison_module
+
+   INTERFACE sub
+      MODULE PROCEDURE subroutine_1
+   END INTERFACE sub
 
 CONTAINS
 
