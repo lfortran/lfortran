@@ -3000,7 +3000,7 @@ inline bool expr_equal(ASR::expr_t* x, ASR::expr_t* y) {
         case ASR::exprType::Var: {
             ASR::Var_t* var_x = ASR::down_cast<ASR::Var_t>(x);
             ASR::Var_t* var_y = ASR::down_cast<ASR::Var_t>(y);
-            return check_equal_type(expr_type(&var_x->base), expr_type(&var_y->base));
+            return check_equal_type(expr_type(&var_x->base), expr_type(&var_y->base), true);
         }
         case ASR::exprType::IntegerConstant: {
             ASR::IntegerConstant_t* intconst_x = ASR::down_cast<ASR::IntegerConstant_t>(x);
