@@ -37,7 +37,7 @@
 ! the parameter variable `nx`.
 
 
-MODULE test_var_expression_comparison_module
+MODULE module_interface_16
 
    INTERFACE sub
       MODULE PROCEDURE subroutine_1
@@ -70,11 +70,11 @@ CONTAINS
 
    END SUBROUTINE subroutine_2
 
-END MODULE test_var_expression_comparison_module
+END MODULE module_interface_16
 
 
-PROGRAM test_var_expression_comparison_program
-   USE test_var_expression_comparison_module
+PROGRAM interface_16
+   USE module_interface_16
    IMPLICIT NONE
 
    INTEGER :: n
@@ -85,5 +85,5 @@ PROGRAM test_var_expression_comparison_program
 
    CALL subroutine_2( test_arr, n )
 
-END PROGRAM test_var_expression_comparison_program
+END PROGRAM interface_16
 
