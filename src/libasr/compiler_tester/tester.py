@@ -314,7 +314,12 @@ def run_test(testname, basename, cmd, infile, update_reference=False,
         raise FileNotFoundError(
             f"The output json file '{jo}' for {testname} does not exist")
 
-    do = json.load(open(jo))
+    try:
+        do = json.load(open(jo))
+    except json.decoder.JSONDecodeError:
+        print("JSON failed to be decoded")
+        print(f"Filename: {jo}")
+        raise
     if update_reference:
         do_update_reference(jo, jr, do)
         return
