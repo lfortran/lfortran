@@ -848,6 +848,8 @@ def add_verify_arg_type_src(func_name):
         src += 3 * indent + f'ASRUtils::require_impl(x.m_overload_id == {i}, "Overload Id for {func_name} expected to be {i}, found " + std::to_string(x.m_overload_id), x.base.base.loc, diagnostics);\n'
         compute_arg_types(3 * indent, no_of_args, "x.m_args")
         condition, cond_in_msg = compute_arg_condition(no_of_args, args_lists)
+        if (func_name == "Ichar"):
+            condition = "ASR::is_a<ASR::StringSection_t>(*x.m_args[0]) || ASRUtils::is_allocatable(arg_type0) || " + condition
         src += 3 * indent + f'ASRUtils::require_impl({condition}, "Unexpected args, {func_name} expects {cond_in_msg} as arguments", x.base.base.loc, diagnostics);\n'
         src += 2 * indent + "}\n"
     src += 2 * indent + "else {\n"
@@ -885,7 +887,11 @@ def add_create_func_arg_type_src(func_name):
         src += 2 * indent + f"{else_if} (args.size() == {no_of_args + int(kind_arg)}) " + " {\n"
         compute_arg_types(3 * indent, no_of_args, "args")
         condition, cond_in_msg = compute_arg_condition(no_of_args, args_lists)
-        src += 3 * indent + f'if(!({condition}))' + ' {\n'
+        if (func_name == "Ichar"):
+            condition = "!ASR::is_a<ASR::StringSection_t>(*args[0]) && !ASRUtils::is_allocatable(arg_type0) && " + f"!{condition}"
+            src += 3 * indent + f'if({condition})' + ' {\n'
+        else:
+            src += 3 * indent + f'if(!({condition}))' + ' {\n'
         src += 4 * indent + f'append_error(diag, "Unexpected args, {func_name} expects {cond_in_msg} as arguments", loc);\n'
         src += 4 * indent + f'return nullptr;\n'
         src += 3 * indent + '}\n'
