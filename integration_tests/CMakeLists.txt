@@ -1579,3 +1579,4 @@ RUN(NAME module_function_with_nopass LABELS gfortran llvm llvm_wasm llvm_wasm_em
 RUN(NAME module_function_without_nopass LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME polymorphic_argument LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME var_expression_comparison LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
