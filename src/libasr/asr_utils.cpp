@@ -304,6 +304,7 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
         }
     }
     LCOMPILERS_ASSERT(symtab->parent == nullptr);
+    std::vector<std::pair<ASR::TranslationUnit_t*,std::string>> all_imported_mod_files; // It holds all the mod files and their names, so we can apply asr_verify() on them later on. 
     ASR::TranslationUnit_t *mod1 = find_and_load_module(al, module_name,
             *symtab, intrinsic, pass_options);
     if (mod1 == nullptr && !intrinsic) {
@@ -319,6 +320,7 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
         err("Module '" + module_name + "' not declared in the current source and the modfile was not found",
             loc);
     }
+    all_imported_mod_files.push_back({mod1,module_name});
     ASR::Module_t *mod2 = extract_module(*mod1);
     symtab->add_symbol(module_name, (ASR::symbol_t*)mod2);
     mod2->m_symtab->parent = symtab;
@@ -362,6 +364,7 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
                 if (mod1 == nullptr) {
                     err("Module '" + item + "' modfile was not found", loc);
                 }
+                all_imported_mod_files.push_back({mod1,item});
                 ASR::Module_t *mod2 = extract_module(*mod1);
                 symtab->add_symbol(item, (ASR::symbol_t*)mod2);
                 mod2->m_symtab->parent = symtab;
@@ -387,6 +390,16 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
     if (run_verify) {
 #if defined(WITH_LFORTRAN_ASSERT)
         diag::Diagnostics diagnostics;
+        for(auto &mod_to_verify : all_imported_mod_files){
+            ASR::TranslationUnit_t* trans_node = mod_to_verify.first;
+            ASR::Module_t *inbodied_mod = extract_module(*trans_node);
+            inbodied_mod->m_symtab->parent = trans_node->m_symtab; // set parent of module to its original TranslationUnit symtab.
+            if (!asr_verify(*trans_node, false, diagnostics)) {
+            std::cerr << diagnostics.render2();
+            throw LCompilersException("Verify failed in mod file " + mod_to_verify.second);
+            };
+            inbodied_mod->m_symtab->parent = symtab; // set parent back to the symtab we're currently building.
+        }
         if (!asr_verify(*tu, true, diagnostics)) {
             std::cerr << diagnostics.render2();
             throw LCompilersException("Verify failed");
