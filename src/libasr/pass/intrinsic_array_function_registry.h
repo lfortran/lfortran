@@ -821,44 +821,126 @@ static inline void verify_MaxMinLoc_args(const ASR::IntrinsicArrayFunction_t& x,
         diag::Diagnostics& diagnostics) {
     std::string intrinsic_name = get_array_intrinsic_name(
         static_cast<int64_t>(x.m_arr_intrinsic_id));
-    require_impl(x.n_args >= 1, "`"+ intrinsic_name +"` intrinsic "
-        "must accept at least one argument", x.base.base.loc, diagnostics);
+    require_impl(x.n_args >= 1 && x.n_args <= 5, "`"+ intrinsic_name +"` intrinsic "
+        "takes at least one argument", x.base.base.loc, diagnostics);
     require_impl(x.m_args[0], "`array` argument of `"+ intrinsic_name
-        + "` intrinsic cannot be nullptr", x.base.base.loc, diagnostics);
-    require_impl(x.m_args[1], "`dim` argument of `" + intrinsic_name
         + "` intrinsic cannot be nullptr", x.base.base.loc, diagnostics);
 }
 
 static inline ASR::expr_t *eval_MaxMinLoc(Allocator &al, const Location &loc,
         ASR::ttype_t *type, Vec<ASR::expr_t*> &args, ASRUtils::IntrinsicArrayFunctions intrinsic_func_id) {
     ASRBuilder b(al, loc);
-    if (all_args_evaluated(args) &&
-            extract_n_dims_from_ttype(expr_type(args[0])) == 1) {
-        // Only supported for arrays with rank 1
+    if (all_args_evaluated(args) && extract_n_dims_from_ttype(expr_type(args[0])) == 1) {
         ASR::ArrayConstant_t *arr = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(args[0]));
-        std::vector<double> m_eles;
-        for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(arr->m_type); i++) {
-            double ele = 0;
-            if(extract_value(ASRUtils::fetch_ArrayConstant_value(al, arr, i), ele)) {
-                m_eles.push_back(ele);
+        ASR::ArrayConstant_t *mask = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(args[2]));
+        int index = 0;
+        int cnt = 0;
+        int mask_size = ASRUtils::get_fixed_size_of_array(mask->m_type);
+        int arr_size = ASRUtils::get_fixed_size_of_array(arr->m_type);
+        for (int j = 0; j < mask_size; j++) {
+            if (((bool*)mask->m_data)[j] != 0) {
+                index = j;
+                break;
+            } else {
+                cnt++;
             }
         }
-        int index = 0;
+        if (cnt == mask_size) {
+            return b.i_t(0, type);
+        }
         if (static_cast<int64_t>(IntrinsicArrayFunctions::MaxLoc) == static_cast<int64_t>(intrinsic_func_id)) {
-            index = std::distance(m_eles.begin(),
-                std::max_element(m_eles.begin(), m_eles.end())) + 1;
+            if (is_character(*expr_type(args[0]))) {
+                std::string ele = ASR::down_cast<ASR::StringConstant_t>(ASRUtils::fetch_ArrayConstant_value(al, arr, index))->m_s;
+                for (int i = index+1; i < arr_size; i++) {
+                    if (((bool*)mask->m_data)[i] != 0) {
+                        std::string ele2 = ASR::down_cast<ASR::StringConstant_t>(ASRUtils::fetch_ArrayConstant_value(al, arr, i))->m_s;
+                        if (args[4]) {
+                            if (ele.compare(ele2) <= 0) {
+                                ele = ele2;
+                                index = i;
+                            }
+                        } else {
+                            if (ele.compare(ele2) < 0) {
+                                ele = ele2;
+                                index = i;
+                            }
+                        }
+                    }
+                }
+            } else {
+                double ele = 0;
+                if (extract_value(ASRUtils::fetch_ArrayConstant_value(al, arr, index), ele)) {
+                    for (int i = index+1; i < arr_size; i++) {
+                        if (((bool*)mask->m_data)[i] != 0) {
+                            double ele2 = 0;
+                            if (extract_value(ASRUtils::fetch_ArrayConstant_value(al, arr, i), ele2)) {
+                                if (args[4]) {
+                                    if (ele <= ele2) {
+                                        ele = ele2;
+                                        index = i;
+                                    }
+                                } else {
+                                    if (ele < ele2) {
+                                        ele = ele2;
+                                        index = i;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         } else {
-            index = std::distance(m_eles.begin(),
-                std::min_element(m_eles.begin(), m_eles.end())) + 1;
+            if (is_character(*expr_type(args[0]))) {
+                std::string ele = ASR::down_cast<ASR::StringConstant_t>(ASRUtils::fetch_ArrayConstant_value(al, arr, index))->m_s;
+                for (int i = index+1; i < arr_size; i++) {
+                    if (((bool*)mask->m_data)[i] != 0) {
+                        std::string ele2 = ASR::down_cast<ASR::StringConstant_t>(ASRUtils::fetch_ArrayConstant_value(al, arr, i))->m_s;
+                        if (args[4]) {
+                            if (ele.compare(ele2) >= 0) {
+                                ele = ele2;
+                                index = i;
+                            }
+                        } else {
+                            if (ele.compare(ele2) > 0) {
+                                ele = ele2;
+                                index = i;
+                            }
+                        }
+                    }
+                }
+            } else {
+                double ele = 0;
+                if (extract_value(ASRUtils::fetch_ArrayConstant_value(al, arr, index), ele)) {
+                    for (int i = index+1; i < arr_size; i++) {
+                        if (((bool*)mask->m_data)[i] != 0) {
+                            double ele2 = 0;
+                            if (extract_value(ASRUtils::fetch_ArrayConstant_value(al, arr, i), ele2)) {
+                                if (args[4]) {
+                                    if (ele >= ele2) {
+                                        ele = ele2;
+                                        index = i;
+                                    }
+                                } else {
+                                    if (ele > ele2) {
+                                        ele = ele2;
+                                        index = i;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
         if (!is_array(type)) {
-            return b.i_t(index, type);
+            return b.i_t(index + 1, type);
         } else {
-            return b.ArrayConstant({b.i32(index)}, extract_type(type), false);
-        }
+            return b.ArrayConstant({b.i32(index + 1)}, extract_type(type), false);
+        } 
     } else {
-        return nullptr;
-    }
+            return nullptr;
+        }
 }
 
 static inline ASR::asr_t* create_MaxMinLoc(Allocator& al, const Location& loc,
@@ -870,28 +952,19 @@ static inline ASR::asr_t* create_MaxMinLoc(Allocator& al, const Location& loc,
     if ( !is_array(array_type) ) {
         append_error(diag, "`array` argument of `"+ intrinsic_name +"` must be an array", loc);
         return nullptr;
-    } else if ( !is_integer(*array_type) && !is_real(*array_type) ) {
-        append_error(diag, "`array` argument of `"+ intrinsic_name +"` must be integer or "
-            "real for now", loc);
-        return nullptr;
-    } else if ( args[2] || args[4] ) {
-        append_error(diag, "`mask` and `back` keyword argument is not supported yet", loc);
+    } else if ( !is_integer(*array_type) && !is_real(*array_type) && !is_character(*array_type)) {
+        append_error(diag, "`array` argument of `"+ intrinsic_name +"` must be integer, "
+            "real or character", loc);
         return nullptr;
     }
     ASR::ttype_t *return_type = nullptr;
-    Vec<ASR::expr_t *> m_args; m_args.reserve(al, 1);
+    Vec<ASR::expr_t *> m_args; m_args.reserve(al, 5);
     m_args.push_back(al, args[0]);
     Vec<ASR::dimension_t> result_dims; result_dims.reserve(al, 1);
     ASR::dimension_t *m_dims;
     int n_dims = extract_dimensions_from_ttype(array_type, m_dims);
     int dim = 0, kind = 4; // default kind
-    if (args[3]) {
-        if (!extract_value(expr_value(args[3]), kind)) {
-            append_error(diag, "Runtime value for `kind` argument is not supported yet", loc);
-            return nullptr;
-        }
-    }
-    if ( args[1] ) {
+    if (args[1]) {
         if ( !ASR::is_a<ASR::Integer_t>(*expr_type(args[1])) ) {
             append_error(diag, "`dim` should be a scalar integer type", loc);
             return nullptr;
@@ -899,7 +972,7 @@ static inline ASR::asr_t* create_MaxMinLoc(Allocator& al, const Location& loc,
             append_error(diag, "Runtime values for `dim` argument is not supported yet", loc);
             return nullptr;
         }
-        if ( 1 > dim || dim > n_dims ) {
+        if ( dim < 1 || dim > n_dims ) {
             append_error(diag, "`dim` argument of `"+ intrinsic_name +"` is out of "
                 "array index range", loc);
             return nullptr;
@@ -925,6 +998,34 @@ static inline ASR::asr_t* create_MaxMinLoc(Allocator& al, const Location& loc,
         tmp_dim.m_start = b.i32(1);
         tmp_dim.m_length = b.i32(n_dims);
         result_dims.push_back(al, tmp_dim);
+        m_args.push_back(al, b.i32(1));
+    }
+    if (args[2]) {
+        if (!is_array(expr_type(args[2])) || !is_logical(*expr_type(args[2]))) {
+            append_error(diag, "`mask` argument of `"+ intrinsic_name +"` must be a logical array", loc);
+            return nullptr;
+        }
+        m_args.push_back(al, args[2]);
+    } else {
+        m_args.push_back(al, b.ArrayConstant({b.bool_t(1, logical)}, logical, false));
+    }
+    if (args[3]) {
+        if (!extract_value(expr_value(args[3]), kind)) {
+            append_error(diag, "Runtime value for `kind` argument is not supported yet", loc);
+            return nullptr;
+        }
+        m_args.push_back(al, args[3]);
+    } else {
+        m_args.push_back(al, b.i32(4));
+    }
+    if (args[4]) {
+        if (!ASR::is_a<ASR::Logical_t>(*expr_type(args[4]))) {
+            append_error(diag, "`back` argument of `"+ intrinsic_name +"` must be a logical scalar", loc);
+            return nullptr;
+        }
+        m_args.push_back(al, args[4]);
+    } else {
+        m_args.push_back(al, b.bool_t(0, logical));
     }
     if ( !return_type ) {
         return_type = duplicate_type(al, TYPE(
@@ -940,6 +1041,7 @@ static inline ASR::expr_t *instantiate_MaxMinLoc(Allocator &al,
         const Location &loc, SymbolTable *scope, ASRUtils::IntrinsicArrayFunctions intrinsic_func_id,
         Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
         Vec<ASR::call_arg_t>& m_args, int64_t /*overload_id*/) {
+            std::cout<<"instantiate_MaxMinLoc"<<std::endl;
     std::string intrinsic_name = get_array_intrinsic_name(static_cast<int64_t>(intrinsic_func_id));
     declare_basic_variables("_lcompilers_" + intrinsic_name)
     /*
