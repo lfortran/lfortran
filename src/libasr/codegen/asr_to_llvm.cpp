@@ -3555,7 +3555,17 @@ public:
                             ptr = module->getOrInsertGlobal(global_name, type);
                             llvm::GlobalVariable *gptr = module->getNamedGlobal(global_name);
                             gptr->setLinkage(llvm::GlobalValue::InternalLinkage);
-                            llvm::Constant *init_value = llvm::Constant::getNullValue(type);
+                            llvm::Constant* init_value;
+                            if (v->m_value && ASR::is_a<ASR::Function_t>(x.base)) {
+                                if (!ASRUtils::is_value_constant(v->m_value)) {
+                                    // a semantic error should be raises instead
+                                    throw CodeGenError("Expected a constant value");
+                                }
+                                this->visit_expr_wrapper(v->m_value, true);
+                                init_value = llvm::dyn_cast<llvm::Constant>(tmp);
+                            } else {
+                                init_value = llvm::Constant::getNullValue(type);
+                            }
                             gptr->setInitializer(init_value);
                         } else {
                             ptr = builder->CreateAlloca(type, array_size, v->m_name);
@@ -3632,7 +3642,7 @@ public:
                         }
                     }
                     if( init_expr != nullptr &&
-                        !is_list) {
+                        !is_list && (v->m_storage != ASR::storage_typeType::Save || !ASR::is_a<ASR::Function_t>(x.base))) {
                         target_var = ptr;
                         tmp = nullptr;
                         if (v->m_value != nullptr) {

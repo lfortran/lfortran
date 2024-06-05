@@ -1,0 +1,13 @@
+{
+    "basename": "llvm-save_09-6802f57",
+    "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/save_09.f90",
+    "infile_hash": "c16322a261583d0bf1a92a1387df8f1dd7b983a6f27c450354642c5a",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "llvm-save_09-6802f57.stdout",
+    "stdout_hash": "164dd0b42fbb6c072b7ea80f75c0f2d5516bc0e4b484c17ab9c712ed",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

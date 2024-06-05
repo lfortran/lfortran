@@ -3344,6 +3344,11 @@ filename = "../integration_tests/save_03.f90"
 asr = true
 
 [[test]]
+filename = "../integration_tests/save_09.f90"
+llvm = true
+run = true
+
+[[test]]
 filename = "allow_implicit_interface3.f90"
 asr_implicit_interface = true
 
