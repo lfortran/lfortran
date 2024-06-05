@@ -3638,12 +3638,15 @@ public:
                     std::string clause = AST::down_cast<AST::String_t>(
                         x.m_clauses[i])->m_s;
                     std::string clause_name = clause.substr(0, clause.find('('));
-                    if (clause_name != "private" && clause_name != "shared") {
-                        throw SemanticError("The cluase "+ clause_name
+                    if (clause_name != "private" && clause_name != "shared" && clause_name != "reduction") {
+                        throw SemanticError("The clause "+ clause_name
                             +" is not supported yet", loc);
                     }
                     std::string list = clause.substr(clause.find('(')+1,
                         clause.size()-clause_name.size()-2);
+                    if (clause_name == "reduction") {
+                        list = list.substr(list.find(':')+1);
+                    }
                     for (auto &s: LCompilers::string_split(list, ",", false)) {
                         ASR::symbol_t *sym = current_scope->get_symbol(s);
                         if (sym) {
@@ -3652,7 +3655,7 @@ public:
                                     " in the clause for now", loc);
                             }
                             ASR::expr_t *v = ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym));
-                            if (clause_name == "private") {
+                            if (clause_name == "private" || clause_name == "reduction") {
                                 m_local.push_back(al, v);
                             } else {
                                 m_shared.push_back(al, v);
