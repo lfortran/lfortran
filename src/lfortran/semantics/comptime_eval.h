@@ -100,6 +100,14 @@ struct IntrinsicProcedures {
             // IEEE Arithmetic
             {"ieee_value", {m_ieee_arithmetic, &not_implemented, false}},
             {"ieee_is_nan", {m_ieee_arithmetic, &not_implemented, false}},
+            {"ieee_is_finite", {m_ieee_arithmetic, &not_implemented, false}},
+            {"ieee_is_negative", {m_ieee_arithmetic, &not_implemented, false}},
+            {"ieee_copy_sign", {m_ieee_arithmetic, &not_implemented, false}},
+            {"ieee_support_datatype", {m_ieee_arithmetic, &not_implemented, false}},
+            {"ieee_is_normal", {m_ieee_arithmetic, &not_implemented, false}},
+            {"ieee_unordered", {m_ieee_arithmetic, &not_implemented, false}},
+            {"ieee_logb", {m_ieee_arithmetic, &not_implemented, false}},
+            {"ieee_rem", {m_ieee_arithmetic, &not_implemented, false}},
         };
     }
 
