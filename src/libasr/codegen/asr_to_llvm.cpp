@@ -2680,9 +2680,7 @@ public:
                     llvm::ArrayType* arr_type = llvm::ArrayType::get(type, arr_const_size);
                     module->getNamedGlobal(x.m_name)->setInitializer(llvm::ConstantArray::get(arr_type, arr_elements));
                 } else {
-                    module->getNamedGlobal(x.m_name)->setInitializer(
-                            llvm::ConstantArray::get(llvm::ArrayType::get(type, 0),
-                            llvm::Constant::getNullValue(type)));
+                    module->getNamedGlobal(x.m_name)->setInitializer(llvm::ConstantArray::getNullValue(type));
                 }
             }
             llvm_symtab[h] = ptr;
