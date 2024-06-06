@@ -1222,8 +1222,8 @@ public:
                     "Allocate should only be called with  Allocatable or Pointer type inputs, found " +
                     std::string(ASRUtils::get_type_code(ASRUtils::expr_type(x.m_args[i].m_a))));
             }
-            BaseWalkVisitor<VerifyVisitor>::visit_Allocate(x);
         }
+        BaseWalkVisitor<VerifyVisitor>::visit_Allocate(x);
     }
 
     void visit_DoConcurrentLoop(const DoConcurrentLoop_t &x) {
