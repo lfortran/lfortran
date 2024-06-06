@@ -1637,6 +1637,13 @@ int link_executable(const std::vector<std::string> &infiles,
                 compile_cmd += extra_linker_flags;
             }
             compile_cmd += " -l" + runtime_lib + " -lm";
+            if (compiler_options.openmp) {
+                std::string openmp_shared_library = compiler_options.openmp_lib_dir;
+                std::string omp_cmd =  " -L" + openmp_shared_library + " -Wl,-rpath," + openmp_shared_library + " -lomp";
+                if (!openmp_shared_library.empty()) {
+                    compile_cmd += omp_cmd;
+                }
+            }
             run_cmd = "./" + outfile;
         }
         if (verbose) {
@@ -2071,6 +2078,7 @@ int main_app(int argc, char *argv[]) {
     app.add_option("--error-format", compiler_options.error_format, "Control how errors are produced (human, short)")->capture_default_str();
     app.add_option("--backend", arg_backend, "Select a backend (llvm, c, cpp, x86, wasm, fortran)")->capture_default_str();
     app.add_flag("--openmp", compiler_options.openmp, "Enable openmp");
+    app.add_flag("--openmp-lib-dir", compiler_options.openmp_lib_dir, "Pass path to openmp library")->capture_default_str();
     app.add_flag("--generate-object-code", compiler_options.generate_object_code, "Generate object code into .o files");
     app.add_flag("--rtlib", compiler_options.rtlib, "Include the full runtime library in the LLVM output");
     app.add_flag("--use-loop-variable-after-loop", compiler_options.po.use_loop_variable_after_loop, "Allow using loop variable after the loop");

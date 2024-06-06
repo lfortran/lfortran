@@ -81,6 +81,7 @@ struct CompilerOptions {
     bool visualize = false;
     bool fast = false;
     bool openmp = false;
+    std::string openmp_lib_dir = "";
     bool generate_object_code = false;
     bool no_warnings = false;
     bool disable_style = false;
