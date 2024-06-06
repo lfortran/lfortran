@@ -2667,7 +2667,7 @@ public:
                             if (a_kind == 4) {
                                 arr_elements.push_back(llvm::ConstantFP::get(
                                     context, llvm::APFloat((float) real_const->m_r)));
-                            } else if (8 * a_kind == 64) {
+                            } else if (a_kind == 8) {
                                 arr_elements.push_back(llvm::ConstantFP::get(
                                     context, llvm::APFloat((double) real_const->m_r)));
                             }
