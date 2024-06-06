@@ -2143,6 +2143,8 @@ int main_app(int argc, char *argv[]) {
     CLI11_PARSE(app, argc, argv);
     lcompilers_unique_ID = compiler_options.generate_object_code ? get_unique_ID() : "";
 
+    compiler_options.po.openmp = compiler_options.openmp;
+
     if (arg_version) {
         std::string version = LFORTRAN_VERSION;
         std::cout << "LFortran version: " << version << std::endl;
