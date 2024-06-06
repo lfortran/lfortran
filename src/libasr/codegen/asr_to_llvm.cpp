@@ -2664,7 +2664,7 @@ public:
                                 context, llvm::APInt(8 * a_kind, int_const->m_n)));
                         } else if (ASR::is_a<ASR::RealConstant_t>(*elem)) {
                             ASR::RealConstant_t* real_const = ASR::down_cast<ASR::RealConstant_t>(elem);
-                            if (8 * a_kind == 32) {
+                            if (a_kind == 4) {
                                 arr_elements.push_back(llvm::ConstantFP::get(
                                     context, llvm::APFloat((float) real_const->m_r)));
                             } else if (8 * a_kind == 64) {
