@@ -3929,3 +3929,7 @@ asr = true
 [[test]]
 filename = "errors/type_casting_01.f90"
 asr = true
+
+[[test]]
+filename = "openmp1.f90"
+asr_openmp = true
