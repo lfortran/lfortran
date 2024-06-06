@@ -2645,9 +2645,8 @@ public:
             }
             llvm_symtab[h] = ptr;
         } else if (x.m_type->type == ASR::ttypeType::Array) {
-            llvm::StructType* array_type = static_cast<llvm::StructType*>(
-                llvm_utils->get_type_from_ttype_t_util(x.m_type, module.get()));
-            llvm::Constant *ptr = module->getOrInsertGlobal(x.m_name, array_type);
+            llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(x.m_type, module.get());
+            llvm::Constant *ptr = module->getOrInsertGlobal(x.m_name, type);
             if (!external) {
                 if (x.m_value) {
                     LCOMPILERS_ASSERT(ASR::is_a<ASR::ArrayConstant_t>(*x.m_value));
@@ -2672,14 +2671,18 @@ public:
                                 arr_elements.push_back(llvm::ConstantFP::get(
                                     context, llvm::APFloat((double) real_const->m_r)));
                             }
+                        } else if (ASR::is_a<ASR::LogicalConstant_t>(*elem)) {
+                            ASR::LogicalConstant_t* logical_const = ASR::down_cast<ASR::LogicalConstant_t>(elem);
+                            arr_elements.push_back(llvm::ConstantInt::get(
+                                context, llvm::APInt(1, logical_const->m_value)));
                         }
                     }
-                    llvm::Constant* array_const_init = llvm::ConstantStruct::get(array_type, arr_elements);
-                    module->getNamedGlobal(x.m_name)->setInitializer(array_const_init);
+                    llvm::ArrayType* arr_type = llvm::ArrayType::get(type, arr_const_size);
+                    module->getNamedGlobal(x.m_name)->setInitializer(llvm::ConstantArray::get(arr_type, arr_elements));
                 } else {
                     module->getNamedGlobal(x.m_name)->setInitializer(
-                            llvm::ConstantStruct::get(
-                            array_type, llvm::Constant::getNullValue(array_type)));
+                            llvm::ConstantArray::get(llvm::ArrayType::get(type, 0),
+                            llvm::Constant::getNullValue(type)));
                 }
             }
             llvm_symtab[h] = ptr;
