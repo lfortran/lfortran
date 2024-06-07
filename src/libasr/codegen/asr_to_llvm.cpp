@@ -3560,11 +3560,7 @@ public:
                             ptr = module->getOrInsertGlobal(global_name, type);
                             llvm::GlobalVariable *gptr = module->getNamedGlobal(global_name);
                             gptr->setLinkage(llvm::GlobalValue::InternalLinkage);
-                            if (v->m_value && ASR::is_a<ASR::Function_t>(x.base)) {
-                                if (!ASRUtils::is_value_constant(v->m_value)) {
-                                    // a semantic error should be raises instead
-                                    throw CodeGenError("Expected a constant value");
-                                }
+                            if (v->m_value && ASR::is_a<ASR::Function_t>(x.base) && ASRUtils::is_value_constant(v->m_value)) {
                                 this->visit_expr_wrapper(v->m_value, true);
                                 if (ASR::is_a<ASR::ArrayConstant_t>(*v->m_value)) {
                                     initialize_GlobalConstantArray(*v, global_name);
