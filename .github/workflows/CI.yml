@@ -698,7 +698,7 @@ jobs:
             cmake --build . -j16 --target install
 
       - name: Test Linux
-        if: ! contains(matrix.llvm-version, '17')
+        if: contains(matrix.llvm-version, '17') == false
         shell: bash -e -l {0}
         run: |
             cd integration_tests
