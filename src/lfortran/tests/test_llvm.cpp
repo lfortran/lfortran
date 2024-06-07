@@ -961,6 +961,93 @@ TEST_CASE("FortranEvaluator 9 double complex") {
     }
 }
 
+TEST_CASE("FortranEvaluator logical 1") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    LCompilers::Result<FortranEvaluator::EvalResult>
+    r = e.evaluate2("logical :: i");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::none);
+    r = e.evaluate2("i = .true.");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::statement);
+    r = e.evaluate2("i");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::boolean);
+    CHECK(r.result.b);
+}
+
+TEST_CASE("FortranEvaluator logical 2") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    LCompilers::Result<FortranEvaluator::EvalResult>
+    r = e.evaluate2("logical :: i");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::none);
+    r = e.evaluate2("i = .false.");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::statement);
+    r = e.evaluate2("i");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::boolean);
+    CHECK(!r.result.b);
+}
+
+TEST_CASE("FortranEvaluator logical 3") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    LCompilers::Result<FortranEvaluator::EvalResult>
+    r = e.evaluate2(".false. .or. .true.");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::boolean);
+    CHECK(r.result.b);
+    r = e.evaluate2(".false. .and. .true.");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::boolean);
+    CHECK(!r.result.b);
+    r = e.evaluate2("logical :: i");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::none);
+    r = e.evaluate2("i = .false.");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::statement);
+    r = e.evaluate2("i .or. .true.");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::boolean);
+    CHECK(r.result.b);
+}
+
+TEST_CASE("FortranEvaluator logical 4") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    LCompilers::Result<FortranEvaluator::EvalResult>
+    r = e.evaluate2(R"(
+function is_even(n) result(result)
+integer, intent(in) :: n
+logical :: result
+result = mod(n, 2) == 0
+end function is_even
+)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::none);
+    r = e.evaluate2("is_even(3)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::boolean);
+    CHECK(!r.result.b);
+    r = e.evaluate2("is_even(4)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::boolean);
+    CHECK(r.result.b);
+}
+
 TEST_CASE("FortranEvaluator integer kind 1") {
     CompilerOptions cu;
     cu.interactive = true;
