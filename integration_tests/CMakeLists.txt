@@ -800,7 +800,10 @@ RUN(NAME intrinsics_239 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # erfc_sc
 RUN(NAME intrinsics_240 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # dshiftr
 RUN(NAME intrinsics_241 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # logical
 RUN(NAME intrinsics_242 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # nint
-RUN(NAME intrinsics_243 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # sqrt, abs, log (all kind of real)
+RUN(NAME intrinsics_243 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # sqrt, abs, log (all kind)
+RUN(NAME intrinsics_244 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # sin, cos, tan (all kind)
+RUN(NAME intrinsics_245 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # besJ0, besJ1
+RUN(NAME intrinsics_246 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # besY0, besY1
 
 RUN(NAME parameter_01 LABELS gfortran)
 RUN(NAME parameter_02 LABELS gfortran)
