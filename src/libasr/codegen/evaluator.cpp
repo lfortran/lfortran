@@ -36,7 +36,6 @@
 #include <llvm/Transforms/Vectorize.h>
 #include <llvm/Transforms/IPO.h>
 #include <llvm/Transforms/IPO/AlwaysInliner.h>
-#include <llvm/Transforms/IPO/PassManagerBuilder.h>
 #include <llvm/Transforms/Instrumentation/AddressSanitizer.h>
 #include <llvm/Transforms/Instrumentation/ThreadSanitizer.h>
 #include <llvm/Transforms/InstCombine/InstCombine.h>
@@ -48,14 +47,19 @@
 #include <llvm/Support/SourceMgr.h>
 #include <llvm/ADT/StringRef.h>
 #include <llvm/Target/TargetOptions.h>
+#include <llvm/Support/Host.h>
 #if LLVM_VERSION_MAJOR >= 14
 #    include <llvm/MC/TargetRegistry.h>
 #else
 #    include <llvm/Support/TargetRegistry.h>
 #endif
-#include <llvm/Support/Host.h>
-#include <libasr/codegen/KaleidoscopeJIT.h>
+#if LLVM_VERSION_MAJOR >= 17
+    // TODO: removed from LLVM 17
+#else
+#    include <llvm/Transforms/IPO/PassManagerBuilder.h>
+#endif
 
+#include <libasr/codegen/KaleidoscopeJIT.h>
 #include <libasr/codegen/evaluator.h>
 #include <libasr/codegen/asr_to_llvm.h>
 #include <libasr/codegen/asr_to_cpp.h>
@@ -378,6 +382,9 @@ void LLVMEvaluator::opt(llvm::Module &m) {
 
     int optLevel = 3;
     int sizeLevel = 0;
+#if LLVM_VERSION_MAJOR >= 17
+    // TODO: https://llvm.org/docs/NewPassManager.html
+#else
     llvm::PassManagerBuilder builder;
     builder.OptLevel = optLevel;
     builder.SizeLevel = sizeLevel;
@@ -388,6 +395,7 @@ void LLVMEvaluator::opt(llvm::Module &m) {
     builder.SLPVectorize = true;
     builder.populateFunctionPassManager(fpm);
     builder.populateModulePassManager(mpm);
+#endif
 
     fpm.doInitialization();
     for (llvm::Function &func : m) {
