@@ -335,7 +335,11 @@ void write_file(const std::string &filename, const std::string &contents)
 std::string LLVMEvaluator::get_asm(llvm::Module &m)
 {
     llvm::legacy::PassManager pass;
+#if LLVM_VERSION_MAJOR >= 18
     llvm::CodeGenFileType ft = llvm::CodeGenFileType::AssemblyFile;
+#else
+    llvm::CodeGenFileType ft = llvm::CGFT_AssemblyFile;
+#endif
     llvm::SmallVector<char, 128> buf;
     llvm::raw_svector_ostream dest(buf);
     if (TM->addPassesToEmitFile(pass, dest, nullptr, ft)) {
@@ -355,7 +359,11 @@ void LLVMEvaluator::save_object_file(llvm::Module &m, const std::string &filenam
     m.setDataLayout(TM->createDataLayout());
 
     llvm::legacy::PassManager pass;
+#if LLVM_VERSION_MAJOR >= 18
     llvm::CodeGenFileType ft = llvm::CodeGenFileType::ObjectFile;
+#else
+    llvm::CodeGenFileType ft = llvm::CGFT_AssemblyFile;
+#endif
     std::error_code EC;
     llvm::raw_fd_ostream dest(filename, EC, llvm::sys::fs::OF_None);
     if (EC) {
