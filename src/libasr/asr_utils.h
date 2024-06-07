@@ -2085,6 +2085,10 @@ static inline bool is_complex(ASR::ttype_t &x) {
                 type_get_past_pointer(&x))));
 }
 
+static inline bool is_boz(ASR::ttype_t &x) {
+    return ASR::is_a<ASR::IntegerBOZ_t>(*type_get_past_array(type_get_past_allocatable(type_get_past_pointer(&x))));
+}
+
 template <int32_t kind>
 static inline bool is_complex(ASR::ttype_t &x) {
     return is_complex(x) && ASRUtils::extract_kind_from_ttype_t(&x) == kind;
@@ -5275,7 +5279,11 @@ inline ASR::expr_t* fetch_ArrayConstant_value(Allocator &al, const ASR::ArrayCon
 template<typename T>
 T* set_data_int(T* data, ASR::expr_t** a_args, size_t n_args) {
     for (size_t i = 0; i < n_args; i++) {
-        data[i] = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(a_args[i]))->m_n;
+        if( ASR::is_a<ASR::IntegerConstant_t>(*a_args[i]) ) {
+            data[i] = ASR::down_cast<ASR::IntegerConstant_t>(a_args[i])->m_n;
+        } else if( ASR::is_a<ASR::RealConstant_t>(*a_args[i]) ) {
+            data[i] = ASR::down_cast<ASR::RealConstant_t>(ASRUtils::expr_value(a_args[i]))->m_r;
+        }
     }
     return data;
 }

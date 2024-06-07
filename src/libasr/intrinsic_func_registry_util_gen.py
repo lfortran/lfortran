@@ -275,7 +275,7 @@ intrinsic_funcs_args = {
     ],
     "Int": [
         {
-            "args": [("int",), ("real",), ("complex",)],
+            "args": [("int",), ("real",), ("complex",), ("boz",)],
             "return": "int32",
             "kind_arg": True
         }
@@ -808,6 +808,7 @@ compile_time_only_fn = [
 type_to_asr_type_check = {
     "any": "!ASR::is_a<ASR::TypeParameter_t>",
     "int": "is_integer",
+    "boz": "is_boz",
     "uint": "is_unsigned_integer",
     "real": "is_real",
     "bool": "is_logical",

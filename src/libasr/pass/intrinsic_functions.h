@@ -1930,7 +1930,7 @@ namespace Int {
             ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         ASRUtils::ASRBuilder b(al, loc);
         if (is_integer(*ASRUtils::expr_type(args[0]))) {
-            return b.i_t(ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n, arg_type);
+            return b.i2i_t(args[0], arg_type);
         } else if (is_real(*ASRUtils::expr_type(args[0]))) {
             return b.r2i_t(args[0], arg_type);
         } else if (is_complex(*ASRUtils::expr_type(args[0]))) {
@@ -1943,7 +1943,7 @@ namespace Int {
     static inline ASR::expr_t* instantiate_Int(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_anint_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_int_" + type_to_str_python(arg_types[0]));
         fill_func_arg("a", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
         if (is_integer(*arg_types[0])) {
