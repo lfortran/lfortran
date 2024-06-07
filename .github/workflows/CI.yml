@@ -664,7 +664,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        llvm-version: ["10", "14", "15", "16"]
+        llvm-version: ["10", "14", "15", "16", "17"]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -698,6 +698,7 @@ jobs:
             cmake --build . -j16 --target install
 
       - name: Test Linux
+        if: ! contains(matrix.llvm-version, '17')
         shell: bash -e -l {0}
         run: |
             cd integration_tests
