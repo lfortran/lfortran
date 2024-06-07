@@ -33,11 +33,15 @@
 #include <llvm/Support/TargetSelect.h>
 #include <llvm/Target/TargetMachine.h>
 #include <llvm/Transforms/Scalar.h>
-#include <llvm/Transforms/Vectorize.h>
 #include <llvm/ExecutionEngine/ObjectCache.h>
 #include <llvm/Support/FileSystem.h>
 #include <llvm/Support/Path.h>
 #include <llvm/IR/DIBuilder.h>
+
+#if LLVM_VERSION_MAJOR >= 18
+#else
+#    include <llvm/Transforms/Vectorize.h>
+#endif
 
 #include <libasr/asr.h>
 #include <libasr/containers.h>
