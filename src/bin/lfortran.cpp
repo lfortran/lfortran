@@ -2194,6 +2194,8 @@ int main_app(int argc, char *argv[]) {
     compiler_options.use_colors = !arg_no_color;
     compiler_options.indent = !arg_no_indent;
     compiler_options.prescan = !arg_no_prescan;
+    // set openmp in pass options
+    compiler_options.po.openmp = compiler_options.openmp;
 
     for (auto &f_flag : f_flags) {
         if (f_flag == "PIC") {

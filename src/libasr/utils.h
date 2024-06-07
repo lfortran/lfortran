@@ -58,6 +58,7 @@ struct PassOptions {
     bool tree = false;
     bool with_intrinsic_mods = false;
     bool c_mangling = false;
+    bool openmp = false;
 };
 
 struct CompilerOptions {
