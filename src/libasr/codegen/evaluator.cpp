@@ -57,7 +57,7 @@
 #    include <llvm/Transforms/IPO/PassManagerBuilder.h>
 #endif
 #if LLVM_VERSION_MAJOR >= 18
-#    include "llvm/Support/TargetSelect.h"
+#    include <llvm/Support/TargetSelect.h>
 #else
 #    include <llvm/Transforms/Vectorize.h>
 #    include <llvm/Support/Host.h>
@@ -362,7 +362,7 @@ void LLVMEvaluator::save_object_file(llvm::Module &m, const std::string &filenam
 #if LLVM_VERSION_MAJOR >= 18
     llvm::CodeGenFileType ft = llvm::CodeGenFileType::ObjectFile;
 #else
-    llvm::CodeGenFileType ft = llvm::CGFT_AssemblyFile;
+    llvm::CodeGenFileType ft = llvm::CGFT_ObjectFile;
 #endif
     std::error_code EC;
     llvm::raw_fd_ostream dest(filename, EC, llvm::sys::fs::OF_None);
