@@ -109,7 +109,11 @@ public:
   }
 
   Expected<JITEvaluatedSymbol> lookup(StringRef Name) {
+#if LLVM_VERSION_MAJOR >= 17
+    // TODO
+#else
     return ES->lookup({&JITDL}, Mangle(Name.str()));
+#endif
   }
 };
 
