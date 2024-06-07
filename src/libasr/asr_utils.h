@@ -2085,10 +2085,6 @@ static inline bool is_complex(ASR::ttype_t &x) {
                 type_get_past_pointer(&x))));
 }
 
-static inline bool is_boz(ASR::ttype_t &x) {
-    return ASR::is_a<ASR::IntegerBOZ_t>(*type_get_past_array(type_get_past_allocatable(type_get_past_pointer(&x))));
-}
-
 template <int32_t kind>
 static inline bool is_complex(ASR::ttype_t &x) {
     return is_complex(x) && ASRUtils::extract_kind_from_ttype_t(&x) == kind;
