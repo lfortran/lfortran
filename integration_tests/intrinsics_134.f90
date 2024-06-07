@@ -1,4 +1,6 @@
 program intrinsics_134
+
+    character(4), parameter :: y = adjustl("okay")
     character(len=5) :: x
     character(len=20) :: str = '   gfortran'
     str = adjustl(str)
@@ -16,4 +18,6 @@ program intrinsics_134
     print *, adjustl("     ")
     if (adjustl("     ") /= "     ") error stop
     if (adjustl(x) /= "     ") error stop
+    if (y /= "okay") error stop
+    
 end program

@@ -264,13 +264,13 @@ intrinsic_funcs_args = {
     "Adjustl": [
         {
             "args": [("char",)],
-            "return": "character(-1)"
+            "ret_type_arg_idx": 0
         }
     ],
     "Adjustr": [
         {
             "args": [("char",)],
-            "return": "character(-1)"
+            "ret_type_arg_idx": 0
         }
     ],
     "Aint": [
