@@ -30,6 +30,17 @@ import :: c_int
 integer(c_int) :: omp_get_thread_num
 end function omp_get_thread_num
 
+subroutine omp_set_num_threads(n) bind(c, name="omp_set_num_threads")
+import :: c_int
+integer(c_int), value :: n
+end subroutine omp_set_num_threads
+
+subroutine GOMP_atomic_start() bind(C, name="GOMP_atomic_start")
+end subroutine
+
+subroutine GOMP_atomic_end() bind(C, name="GOMP_atomic_end")
+end subroutine
+
 end interface
 
 end module
