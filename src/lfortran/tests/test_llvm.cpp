@@ -1077,6 +1077,137 @@ end function
 */
 }
 
+TEST_CASE("FortranEvaluator asr verify 1") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    LCompilers::Result<FortranEvaluator::EvalResult>
+    r = e.evaluate2(R"(
+pure function double(x) result(r)
+    integer, intent(in) :: x
+    integer :: r
+    r = 2 * x
+end function double
+)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::none);
+    r = e.evaluate2(R"(
+subroutine s(n, x)
+    integer, intent(in) :: n
+    integer, intent(inout) :: x
+    x = double(n)
+end subroutine s
+)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::none);
+    r = e.evaluate2("integer :: x");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::none);
+    r = e.evaluate2("x = double(1)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::statement);
+    r = e.evaluate2("x");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 2);
+    r = e.evaluate2("call s(x, x)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::statement);
+    r = e.evaluate2("x");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 4);
+}
+
+TEST_CASE("FortranEvaluator asr verify 2") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    LCompilers::Result<FortranEvaluator::EvalResult>
+    r = e.evaluate2(R"(
+pure function id(x) result(r)
+    integer, intent(in) :: x
+    integer :: r
+    r = x
+end function id
+)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::none);
+    r = e.evaluate2(R"(
+subroutine sa(l, a)
+    integer, intent(in) :: l
+    integer, intent(inout) :: a(id(l))
+    
+    integer :: i
+    
+    do i = 1, size(a)
+        a(i) = a(i) + 1
+    end do
+end subroutine sa
+)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::none);
+    r = e.evaluate2("integer :: arr(3)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::none);
+    r = e.evaluate2("arr = 0");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::statement);
+    r = e.evaluate2("call sa(3, arr)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::statement);
+    r = e.evaluate2("arr(1)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 1);
+    r = e.evaluate2("arr(2)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 1);
+    r = e.evaluate2("arr(3)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 1);
+}
+
+TEST_CASE("FortranEvaluator asr verify 3") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    LCompilers::Result<FortranEvaluator::EvalResult>
+    r = e.evaluate2(R"(
+function add(x, y) result(r)
+    real, intent(in) :: x
+    real, intent(in) :: y
+    real :: r
+    r = x + y
+end function add
+)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::none);
+    r = e.evaluate2(R"(
+function sub(x, y) result(r)
+    real, intent(in) :: x
+    real, intent(in) :: y
+    real :: r
+    r = add(x, -y)
+end function sub
+)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::none);
+    r = e.evaluate2("add(2.0, 3.0)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::real4);
+    CHECK(r.result.f32 == 5.0);
+    r = e.evaluate2("sub(2.0, 3.0)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::real4);
+    CHECK(r.result.f32 == -1.0);
+}
+
 // This test does not work on Windows yet
 // https://github.com/lfortran/lfortran/issues/913
 #if !defined(_WIN32)
