@@ -3648,6 +3648,7 @@ public:
                         list = list.substr(list.find(':')+1);
                     }
                     for (auto &s: LCompilers::string_split(list, ",", false)) {
+                        s.erase(0, s.find_first_not_of(" "));
                         ASR::symbol_t *sym = current_scope->get_symbol(s);
                         if (sym) {
                             if (!ASR::is_a<ASR::Variable_t>(*sym)) {

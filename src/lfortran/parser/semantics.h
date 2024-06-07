@@ -1654,7 +1654,7 @@ static inline void repeat_list_add(Vec<ast_t*> &v, Allocator &al,
 
 static inline ast_t* OMP_PRAGMA2(Allocator &al,
         Location &loc, std::string omp_str) {
-    std::vector<std::string> omp_stmt = LCompilers::string_split(omp_str, " ");
+    std::vector<std::string> omp_stmt = LCompilers::string_split_avoid_parentheses(omp_str);
     size_t i = 1;
     bool m_end = false;
     std::string construct_name = omp_stmt[i++];
