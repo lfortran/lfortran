@@ -155,9 +155,7 @@ struct IntrinsicProcedures {
                 return cb(al, loc, expr_args, compiler_options);
             }
         } else {
-            throw SemanticError("Intrinsic function '" + name
-                + "' compile time evaluation is not implemented yet",
-                loc);
+            return nullptr;
         }
     }
 
