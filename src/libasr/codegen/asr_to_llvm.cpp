@@ -3645,7 +3645,13 @@ public:
                         }
                     }
                     if( init_expr != nullptr &&
-                        !is_list && (v->m_storage != ASR::storage_typeType::Save || !ASR::is_a<ASR::Function_t>(x.base))) {
+                        !is_list &&
+                        (v->m_storage != ASR::storage_typeType::Save || !ASR::is_a<ASR::Function_t>(x.base)
+                        // Currently, we initialize static (i.e. 'Save' ArrayReshape) via below (which is incorrect)
+                        // TODO: remove condition for ArrayReshape, once compile-time evaluation
+                        // of ArrayReshape is handled in [issue #3742](https://github.com/lfortran/lfortran/issues/3742)
+                        || ASR::is_a<ASR::ArrayReshape_t>(*v->m_symbolic_value))
+                    ) {
                         target_var = ptr;
                         tmp = nullptr;
                         if (v->m_value != nullptr) {
