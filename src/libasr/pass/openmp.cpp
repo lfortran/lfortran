@@ -40,6 +40,35 @@ class DoConcurrentStatementVisitor : public ASR::CallReplacerOnExpressionsVisito
         replacer.current_scope = current_scope;
         replacer.replace_expr(*current_expr);
     }
+
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        ASR::FunctionCall_t* x_copy = const_cast<ASR::FunctionCall_t*>(&x);
+        ASR::symbol_t* func_sym = current_scope->get_symbol(ASRUtils::symbol_name(x.m_name));
+        LCOMPILERS_ASSERT(func_sym != nullptr);
+        x_copy->m_name = func_sym;
+        x_copy->m_original_name = func_sym;
+
+        for (size_t i=0; i<x.n_args; i++) {
+            visit_call_arg(x.m_args[i]);
+        }
+        visit_ttype(*x.m_type);
+        if (x.m_value) {
+            ASR::expr_t** current_expr_copy_123 = current_expr;
+            current_expr = const_cast<ASR::expr_t**>(&(x.m_value));
+            call_replacer();
+            current_expr = current_expr_copy_123;
+            if( x.m_value )
+            visit_expr(*x.m_value);
+        }
+        if (x.m_dt) {
+            ASR::expr_t** current_expr_copy_124 = current_expr;
+            current_expr = const_cast<ASR::expr_t**>(&(x.m_dt));
+            call_replacer();
+            current_expr = current_expr_copy_124;
+            if( x.m_dt )
+            visit_expr(*x.m_dt);
+        }
+    }
 };
 
 class InvolvedSymbolsCollector:
