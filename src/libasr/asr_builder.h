@@ -204,7 +204,20 @@ class ASRBuilder {
     // Cast --------------------------------------------------------------------
 
     inline ASR::expr_t* r2i_t(ASR::expr_t* x, ASR::ttype_t* t) {
-        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::RealToInteger, t, nullptr));
+        ASR::expr_t* value = nullptr;
+        if (is_value_constant(x)) {
+            LCOMPILERS_ASSERT(ASR::is_a<ASR::RealConstant_t>(*x));
+            double val = ASR::down_cast<ASR::RealConstant_t>(x)->m_r;
+            int kind = extract_kind_from_ttype_t(t);
+            if (kind == 4) {
+                value = f_t(val, real32);
+            } else if (kind == 8) {
+                value = f_t(val, real64);
+            } else {
+                throw LCompilersException("Kind, " + std::to_string(kind) + " not yet supported");
+            }
+        }
+        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::RealToInteger, t, value));
     }
 
     inline ASR::expr_t* i2r_t(ASR::expr_t* x, ASR::ttype_t* t) {
@@ -212,7 +225,24 @@ class ASRBuilder {
     }
 
     inline ASR::expr_t* i2i_t(ASR::expr_t* x, ASR::ttype_t* t) {
-        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::IntegerToInteger, t, nullptr));
+        ASR::expr_t* value = nullptr;
+        if (is_value_constant(x)) {
+            LCOMPILERS_ASSERT(ASR::is_a<ASR::IntegerConstant_t>(*x));
+            int64_t val = ASR::down_cast<ASR::IntegerConstant_t>(x)->m_n;
+            int kind = extract_kind_from_ttype_t(t);
+            if (kind == 1) {
+                value = i_t(val, int8);
+            } else if (kind == 2) {
+                value = i_t(val, int16);
+            } else if (kind == 4) {
+                value = i_t(val, int32);
+            } else if (kind == 8) {
+                value = i_t(val, int64);
+            } else {
+                throw LCompilersException("Kind, " + std::to_string(kind) + " not yet supported");
+            }
+        }
+        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::IntegerToInteger, t, value));
     }
 
     inline ASR::expr_t* r2r_t(ASR::expr_t* x, ASR::ttype_t* t) {
@@ -221,6 +251,23 @@ class ASRBuilder {
 
     inline ASR::expr_t* c2r_t(ASR::expr_t* x, ASR::ttype_t* t) {
         return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::ComplexToReal, t, nullptr));
+    }
+
+    inline ASR::expr_t* c2i_t(ASR::expr_t* x, ASR::ttype_t* t) {
+        ASR::expr_t* value = nullptr;
+        if (is_value_constant(x)) {
+            LCOMPILERS_ASSERT(ASR::is_a<ASR::ComplexConstant_t>(*x));
+            double re = ASR::down_cast<ASR::ComplexConstant_t>(x)->m_re;
+            int kind = extract_kind_from_ttype_t(t);
+            if (kind == 4) {
+                value = f32(re);
+            } else if (kind == 8) {
+                value = f64(re);
+            } else {
+                throw LCompilersException("Kind, " + std::to_string(kind) + " not yet supported");
+            }
+        }
+        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::ComplexToInteger, t, value));
     }
 
     // Binop -------------------------------------------------------------------
