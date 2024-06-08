@@ -51,7 +51,7 @@ struct Label {
     Label(const std::string &message, const std::vector<Location> &locations,
             bool primary=true) : primary{primary}, message{message} {
         for (auto &loc : locations) {
-            spans.push_back(Span(loc));
+            spans.emplace_back(loc);
         }
     }
 };

@@ -336,7 +336,7 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm3(
     ASR::TranslationUnit_t &/*asr*/, LCompilers::PassManager &/*pass_manager*/,
     diag::Diagnostics &/*diagnostics*/
 #endif
-, const std::string &infile)
+, [[maybe_unused]] const std::string &infile)
 {
 #ifdef HAVE_LFORTRAN_LLVM
     eval_count++;
