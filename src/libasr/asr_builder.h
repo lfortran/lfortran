@@ -724,6 +724,10 @@ class ASRBuilder {
         return STMT(ASR::make_Assignment_t(al, loc, lhs, rhs, nullptr));
     }
 
+    ASR::stmt_t* CPtrToPointer(ASR::expr_t* cptr, ASR::expr_t* ptr, ASR::expr_t* shape = nullptr, ASR::expr_t* lower_bounds = nullptr) {
+        return STMT(ASR::make_CPtrToPointer_t(al, loc, cptr, ptr, shape, lower_bounds));
+    }
+
     template <typename T>
     ASR::stmt_t *Assign_Constant(ASR::expr_t *lhs, T init_value) {
         ASR::ttype_t *type = expr_type(lhs);

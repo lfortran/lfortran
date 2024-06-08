@@ -21,6 +21,7 @@ the code size.
 enum class IntrinsicElementalFunctions : int64_t {
     ObjectType,
     Kind, // if kind is reordered, update `extract_kind` in `asr_utils.h`
+    Mod, // if mod is reordered, update `pass/openmp.cpp`
     Rank,
     Sin,
     Cos,
@@ -58,7 +59,6 @@ enum class IntrinsicElementalFunctions : int64_t {
     Expm1,
     FMA,
     FlipSign,
-    Mod,
     Trailz,
     Isnan,
     Nearest,
