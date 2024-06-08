@@ -70,4 +70,4 @@ program intrinsic_230
     if (abs(res1_yn(1) - 0.39357815895597936) > 1e-6) error stop
     if (abs(res1_yn(2) - 0.13456148643731775) > 1e-6) error stop
 
-end
+end program
