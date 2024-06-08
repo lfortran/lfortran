@@ -273,6 +273,13 @@ intrinsic_funcs_args = {
             "ret_type_arg_idx": 0
         }
     ],
+    "Int": [
+        {
+            "args": [("int",), ("real",), ("complex",)],
+            "return": "int32",
+            "kind_arg": True
+        }
+    ],
     "Aint": [
         {
             "args": [("real",)],
