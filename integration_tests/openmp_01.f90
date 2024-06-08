@@ -6,7 +6,7 @@ integer :: i
 !$omp parallel private(i) shared(n)
 !$omp do
 do i = 1, n
-    ! print *, "xyz"
+    print *, "xyz"
 end do
 !$omp end do
 !$omp end parallel
