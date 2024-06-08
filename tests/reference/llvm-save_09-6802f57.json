@@ -2,11 +2,11 @@
     "basename": "llvm-save_09-6802f57",
     "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
     "infile": "tests/../integration_tests/save_09.f90",
-    "infile_hash": "2ec9ec77cb437ee3e91cb0b0836001403cd96b6f2f3776c474e5b5d5",
+    "infile_hash": "7b94a2e3811733b586508f9873d6d3d0636fa5d65b34792bf1368108",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "llvm-save_09-6802f57.stdout",
-    "stdout_hash": "383c1530bb7e5e0f8bcaa217e3ac3d13f100189cd861bdd7860b9a8e",
+    "stdout_hash": "5097965a512c878c16e07d639ceb0bcac0b2ec2d118415758c0c4ee7",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0

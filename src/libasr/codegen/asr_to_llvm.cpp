@@ -3697,7 +3697,9 @@ public:
                             builder->CreateStore(init_value, target_var);
                         }
                     } else {
-                        if (is_a<ASR::Character_t>(*v->m_type) && !is_array_type && !is_list) {
+                        if (is_a<ASR::Character_t>(*v->m_type) && !is_array_type && !is_list &&
+                            (v->m_storage != ASR::storage_typeType::Save || !ASR::is_a<ASR::Function_t>(x.base))
+                        ) {
                             ASR::Character_t *t = down_cast<ASR::Character_t>(v->m_type);
                             target_var = ptr;
                             int strlen = t->m_len;

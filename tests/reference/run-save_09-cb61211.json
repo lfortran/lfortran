@@ -2,11 +2,11 @@
     "basename": "run-save_09-cb61211",
     "cmd": "lfortran --no-color {infile}",
     "infile": "tests/../integration_tests/save_09.f90",
-    "infile_hash": "2ec9ec77cb437ee3e91cb0b0836001403cd96b6f2f3776c474e5b5d5",
+    "infile_hash": "7b94a2e3811733b586508f9873d6d3d0636fa5d65b34792bf1368108",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "run-save_09-cb61211.stdout",
-    "stdout_hash": "a329cc3501888412bc7c888e1ea843baab4cde742b804c8db24baa04",
+    "stdout_hash": "4aa0ac0edf12c6f1eb56f81b69b52bacb4649f00403c1b0b3e40a072",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0
