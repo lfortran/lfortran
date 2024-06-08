@@ -10,9 +10,10 @@
 #
 #     0.6.0-37-g3878937f-dirty
 #
+# In case of a fresh clone without any tag information, a default version is returned.
 
 set -ex
 
-version=$(git describe --tags --dirty)
+version=$(git describe --tags --dirty || echo "-0.0.0-devel")
 version="${version:1}"
 echo $version > version
