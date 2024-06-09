@@ -2404,6 +2404,12 @@ public:
         if (ASR::is_a<ASR::Function_t>(*t) &&
             ASR::down_cast<ASR::Function_t>(t)->m_return_var == nullptr) {
             if (current_scope->get_symbol(local_sym) != nullptr) {
+                diag.add(Diagnostic(
+                    "Symbol '" + local_sym + "' from module '" + m->m_name + "' shadows '" + local_sym + "' in the current scope",
+                    Level::Warning, Stage::Semantic, {
+                        Label("", {loc})
+                    }
+                ));
                 // if the symbol exists in the current scope, we erase it
                 // and write the new symbol which points to the new module
                 current_scope->erase_symbol(local_sym);
@@ -2439,6 +2445,12 @@ public:
                 }
             }
             if( is_already_defined ) {
+                diag.add(Diagnostic(
+                    "Symbol '" + local_sym + "' from module '" + m->m_name + "' shadows '" + local_sym + "' in the current scope",
+                    Level::Warning, Stage::Semantic, {
+                        Label("", {loc})
+                    }
+                ));
                 // if the symbol exists in the current scope, we erase it
                 // and write the new symbol which points to the new module
                 current_scope->erase_symbol(local_sym);
@@ -2460,6 +2472,12 @@ public:
             current_scope->add_or_overwrite_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(fn));
         } else if (ASR::is_a<ASR::Variable_t>(*t)) {
             if (current_scope->get_symbol(local_sym) != nullptr) {
+                diag.add(Diagnostic(
+                    "Symbol '" + local_sym + "' from module '" + m->m_name + "' shadows '" + local_sym + "' in the current scope",
+                    Level::Warning, Stage::Semantic, {
+                        Label("", {loc})
+                    }
+                ));
                 // if the symbol exists in the current scope, we erase it
                 // and write the new symbol which points to the new module
                 current_scope->erase_symbol(local_sym);
@@ -2490,6 +2508,12 @@ public:
                 if( imported_struct_type == t ) {
                     return ;
                 }
+                diag.add(Diagnostic(
+                    "Symbol '" + local_sym + "' from module '" + m->m_name + "' shadows '" + local_sym + "' in the current scope",
+                    Level::Warning, Stage::Semantic, {
+                        Label("", {loc})
+                    }
+                ));
                 // if the symbol exists in the current scope, we erase it
                 // and write the new symbol which points to the new module
                 current_scope->erase_symbol(local_sym);
