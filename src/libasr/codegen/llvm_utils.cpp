@@ -10,9 +10,15 @@ namespace LCompilers {
         llvm::Value* CreateLoad(llvm::IRBuilder<> &builder, llvm::Value *x) {
             llvm::Type *t = x->getType();
             LCOMPILERS_ASSERT(t->isPointerTy());
+            LCOMPILERS_ASSERT(t->getNumContainedTypes() > 0);
             llvm::Type *t2 = t->getContainedType(0);
             return builder.CreateLoad(t2, x);
         }
+
+        llvm::Value* CreateLoad2(llvm::IRBuilder<> &builder, llvm::Type *t, llvm::Value *x) {
+            return builder.CreateLoad(t, x);
+        }
+
 
         llvm::Value* CreateStore(llvm::IRBuilder<> &builder, llvm::Value *x, llvm::Value *y) {
             LCOMPILERS_ASSERT(y->getType()->isPointerTy());

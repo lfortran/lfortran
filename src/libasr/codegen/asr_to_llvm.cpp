@@ -263,6 +263,12 @@ public:
         return LLVM::CreateLoad(*builder, x);
     }
 
+    llvm::Value* CreateLoad2(ASR::ttype_t *type, llvm::Value *x) {
+        llvm::Type* el_type = llvm_utils->get_type_from_ttype_t_util(
+            ASRUtils::extract_type(type), module.get());
+        return LLVM::CreateLoad2(*builder, el_type, x);
+    }
+
 
     llvm::Value* CreateGEP(llvm::Value *x, std::vector<llvm::Value *> &idx) {
         return LLVM::CreateGEP(*builder, x, idx);
@@ -6759,7 +6765,7 @@ public:
             tmp = x_v;
             // Load only once since its a value
             if( ptr_loads > 0 ) {
-                tmp = CreateLoad(tmp);
+                tmp = CreateLoad2(x->m_type, tmp);
             }
         }
     }
