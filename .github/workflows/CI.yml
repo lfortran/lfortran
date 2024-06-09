@@ -697,7 +697,7 @@ jobs:
 
             cmake --build . -j16 --target install
 
-      - name: Test Linux
+      - name: Test Linux LLVM 10-16
         if: contains(matrix.llvm-version, '17') == false
         shell: bash -e -l {0}
         run: |
@@ -706,7 +706,7 @@ jobs:
             ./run_tests.py -b llvm llvmImplicit -f
 
       # In LLVM 17 we can only compile a subset for now
-      - name: Test Linux
+      - name: Test Linux LLVM 17
         if: contains(matrix.llvm-version, '17') == true
         shell: bash -e -l {0}
         run: |
