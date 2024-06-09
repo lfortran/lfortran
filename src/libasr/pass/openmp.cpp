@@ -567,6 +567,19 @@ class DoConcurrentVisitor :
             current_scope = current_scope_copy;
         }
 
+        void visit_Program(const ASR::Program_t &x) {
+            ASR::Program_t& xx = const_cast<ASR::Program_t&>(x);
+            SymbolTable* current_scope_copy = current_scope;
+            current_scope = xx.m_symtab;
+
+            for (auto &a : xx.m_symtab->get_scope()) {
+                this->visit_symbol(*a.second);
+            }
+
+            transform_stmts(xx.m_body, xx.n_body);
+            current_scope = current_scope_copy;
+        }
+
 };
 
 void pass_replace_openmp(Allocator &al, ASR::TranslationUnit_t &unit,
