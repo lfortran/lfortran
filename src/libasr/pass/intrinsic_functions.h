@@ -2892,11 +2892,16 @@ namespace Popcnt {
 
 namespace Maskl {
     static ASR::expr_t* eval_Maskl(Allocator& al, const Location& loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
+            ASR::ttype_t* t1, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
         int32_t kind = ASRUtils::extract_kind_from_ttype_t(t1);
         int64_t i = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
-        if (((kind == 4) && i > 32) || (kind == 8 && i > 64) || i < 0) {
-                return nullptr;
+        if ((kind == 4 && i > 32) || (kind == 8 && i > 64)) {
+            diag.semantic_error_label(" first argument of `maskl` must be less than or equal to the BIT_SIZE of INTEGER(KIND=" 
+            + std::to_string(kind) + ")", {loc}, "");
+            return nullptr;
+        } else if (i < 0) {
+            diag.semantic_error_label("first argument of `maskl` must be nonnegative", {loc}, "");
+            return nullptr;
         } else {
             int64_t one = 1;
             int64_t minus_one = -1;
@@ -2931,11 +2936,16 @@ namespace Maskl {
 
 namespace Maskr {
     static ASR::expr_t* eval_Maskr(Allocator& al, const Location& loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
+            ASR::ttype_t* t1, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
         int32_t kind = ASRUtils::extract_kind_from_ttype_t(t1);
         int64_t i = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
-        if (((kind == 4) && i > 32) || (kind == 8 && i > 64) || i < 0) {
-                return nullptr;
+        if (((kind == 4) && i > 32) || (kind == 8 && i > 64)) {
+            diag.semantic_error_label("first argument of `maskr` must be less than or equal to the BIT_SIZE of INTEGER(KIND=" 
+            + std::to_string(kind) + ")", {loc}, "");
+            return nullptr;
+        } else if (i < 0) {
+            diag.semantic_error_label("first argument of `maskr` must be nonnegative", {loc}, "");
+            return nullptr;
         }
         if(i == 64){
             return make_ConstantWithType(make_IntegerConstant_t, -1, t1, loc);

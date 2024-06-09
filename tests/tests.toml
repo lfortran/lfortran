@@ -405,6 +405,22 @@ filename = "errors/template_error_07.f90"
 asr = true
 
 [[test]]
+filename = "errors/maskl_incorrect_bit_size.f90"
+asr = true
+
+[[test]]
+filename = "errors/maskr_incorrect_bit_size.f90"
+asr = true
+
+[[test]]
+filename = "errors/maskl_negative.f90"
+asr = true
+
+[[test]]
+filename = "errors/maskr_negative.f90"
+asr = true
+
+[[test]]
 filename = "errors/nint_overflow.f90"
 asr = true
 

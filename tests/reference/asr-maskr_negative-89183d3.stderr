@@ -1,0 +1,5 @@
+semantic error: first argument of `maskr` must be nonnegative
+ --> tests/errors/maskr_negative.f90:2:12
+  |
+2 |    print*, maskr(-24)
+  |            ^^^^^^^^^^ 

@@ -1,0 +1,5 @@
+semantic error: first argument of `maskl` must be nonnegative
+ --> tests/errors/maskl_negative.f90:2:12
+  |
+2 |    print*, maskl(-24)
+  |            ^^^^^^^^^^ 
