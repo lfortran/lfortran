@@ -166,6 +166,7 @@ namespace LCompilers {
     namespace LLVM {
 
         llvm::Value* CreateLoad(llvm::IRBuilder<> &builder, llvm::Value *x);
+        llvm::Value* CreateLoad2(llvm::IRBuilder<> &builder, llvm::Type *t, llvm::Value *x);
         llvm::Value* CreateStore(llvm::IRBuilder<> &builder, llvm::Value *x, llvm::Value *y);
         llvm::Value* CreateGEP(llvm::IRBuilder<> &builder, llvm::Value *x, std::vector<llvm::Value *> &idx);
         llvm::Value* CreateInBoundsGEP(llvm::IRBuilder<> &builder, llvm::Value *x, std::vector<llvm::Value *> &idx);
