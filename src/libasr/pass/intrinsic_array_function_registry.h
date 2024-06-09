@@ -1494,6 +1494,19 @@ namespace Eoshift {
                 result[i] = array[j]
                 i = i + 1
             end for
+
+            if (k shift= 0) then
+                i = size(array)
+                i = i - shift
+                i = i + 1
+            else
+                i = 1
+            end if
+
+            do j = 1, shift
+                result(i) = boundary
+                i = i + 1
+            end do
         */
         if( !ASRUtils::is_fixed_size_array(return_type) ) {
             bool is_allocatable = ASRUtils::is_allocatable(return_type);
@@ -1516,12 +1529,18 @@ namespace Eoshift {
         args.push_back(al, result);
         ASR::expr_t *i = declare("i", int32, Local);
         ASR::expr_t *j = declare("j", int32, Local);
-        ASR::expr_t* shift_val = args[1];
-        ASR::expr_t* abs_shift = args[1];
+        ASR::expr_t* abs_shift = declare("z", int32, Local);
+        ASR::expr_t* abs_shift_val = declare("k", int32, Local);
+        ASR::expr_t* shift_val = declare("shift_val", int32, Local);;
         ASR::expr_t* boundary = args[2];
+
+        body.push_back(al, b.Assignment(shift_val, b.i2i_t(args[1], int32)));
+        body.push_back(al, b.Assignment(abs_shift, b.i2i_t(shift_val, int32)));
+        body.push_back(al, b.Assignment(abs_shift_val, b.i2i_t(shift_val, int32)));
+        
         body.push_back(al, b.If(b.Lt(args[1], b.i32(0)), {
             b.Assignment(shift_val, b.Add(shift_val, UBound(args[0], 1))),
-            b.Assignment(shift_val, b.Mul(shift_val, b.i32(-1)))
+            b.Assignment(abs_shift, b.Mul(abs_shift, b.i32(-1)))
         }, {
             b.Assignment(shift_val, shift_val)
         }
@@ -1537,12 +1556,12 @@ namespace Eoshift {
         }, nullptr));
 
 
-        body.push_back(al, b.If(b.Lt(args[1], b.i32(0)), {
-            b.Assignment(i, b.i32(2))
-        }, {
+        body.push_back(al, b.If(b.GtE(abs_shift_val, b.i32(0)), {
             b.Assignment(i, UBound(args[0], 1)),
             b.Assignment(i, b.Sub(i, abs_shift)),
             b.Assignment(i, b.Add(i, b.i32(1)))
+        }, {
+            b.Assignment(i, b.i32(1))
         }
         ));
         body.push_back(al, b.DoLoop(j, b.i32(1), abs_shift, {
@@ -1550,8 +1569,6 @@ namespace Eoshift {
             b.Assignment(i, b.Add(i, b.i32(1))),
         }, nullptr));
 
-        
-        
 
         body.push_back(al, b.Return());
         ASR::symbol_t *fn_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
