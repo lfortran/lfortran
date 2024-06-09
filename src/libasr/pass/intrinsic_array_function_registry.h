@@ -39,6 +39,7 @@ enum class IntrinsicArrayFunctions : int64_t {
     Parity,
     DotProduct,
     Cshift,
+    Eoshift,
     // ...
 };
 
@@ -70,6 +71,7 @@ inline std::string get_array_intrinsic_name(int64_t x) {
         ARRAY_INTRINSIC_NAME_CASE(Parity)
         ARRAY_INTRINSIC_NAME_CASE(DotProduct)
         ARRAY_INTRINSIC_NAME_CASE(Cshift)
+        ARRAY_INTRINSIC_NAME_CASE(Eoshift)
         default : {
             throw LCompilersException("pickle: intrinsic_id not implemented");
         }
@@ -1317,6 +1319,248 @@ namespace Cshift {
     }
 
 } // namespace Cshift
+
+namespace Eoshift {
+    static inline void verify_args(const ASR::IntrinsicArrayFunction_t &x,
+            diag::Diagnostics &diagnostics) {
+        ASRUtils::require_impl(x.n_args == 2 || x.n_args == 3 || x.n_args == 4,
+            "`eoshift` intrinsic accepts 2 or 3 or 4 arguments",
+            x.base.base.loc, diagnostics);
+        ASRUtils::require_impl(x.m_args[0], "`array` argument of `eoshift` "
+            "cannot be nullptr", x.base.base.loc, diagnostics);
+        ASRUtils::require_impl(x.m_args[1], "`shift` argument of `eoshift` "
+            "cannot be nullptr", x.base.base.loc, diagnostics);
+    }
+
+    static ASR::expr_t *eval_Eoshift(Allocator &al, const Location &loc,
+            ASR::ttype_t *type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+        ASRBuilder b(al, loc);
+        if (all_args_evaluated(args) &&
+            extract_n_dims_from_ttype(expr_type(args[0])) == 1) {
+        ASR::ArrayConstant_t *arr = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(args[0]));
+        ASR::ttype_t* arr_type = expr_type(args[0]);
+        std::vector<ASR::expr_t *> m_eles;
+        if (is_integer(*arr_type)) {
+            for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(arr->m_type); i++) {
+                int ele = 0;
+                if(extract_value(ASRUtils::fetch_ArrayConstant_value(al, arr, i), ele)) {
+                    m_eles.push_back(b.i_t(ele, arr_type));
+                }
+            }
+        } else if (is_real(*arr_type)) {
+            for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(arr->m_type); i++) {
+                double ele = 0;
+                if(extract_value(ASRUtils::fetch_ArrayConstant_value(al, arr, i), ele)) {
+                    m_eles.push_back(b.f_t(ele, arr_type));
+                }
+            }
+        } else if (is_logical(*arr_type)) {
+            for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(arr->m_type); i++) {
+                bool ele = false;
+                if(extract_value(ASRUtils::fetch_ArrayConstant_value(al, arr, i), ele)) {
+                    m_eles.push_back(b.bool_t(ele, arr_type));
+                }
+            }
+        } else if (is_character(*arr_type)) {
+            for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(arr->m_type); i++) {
+                std::string str = "";
+                str = ASR::down_cast<ASR::StringConstant_t>(ASRUtils::fetch_ArrayConstant_value(al, arr, i))->m_s;
+                m_eles.push_back(b.StringConstant(str, arr_type));
+            }  
+        }
+        int shift = 0;
+        if (extract_value(expr_value(args[1]), shift)) {
+            if (shift < 0) {
+                shift = m_eles.size() + shift;
+            }
+            std::rotate(m_eles.begin(), m_eles.begin() + shift, m_eles.end());
+        }
+        if (extract_value(expr_value(args[1]), shift)){
+        ASR::expr_t *final_boundary = args[2];
+            if(shift > 0){
+                int i = m_eles.size() - 1;
+                for(int j = 0; j < shift; j++){
+                    m_eles[i] = final_boundary;
+                    i--;
+                }
+            }
+            else{
+                for(int j = 0; j < (-1*shift); j++){
+                    m_eles[j] = final_boundary;
+                }
+            }
+        }
+        return b.ArrayConstant(m_eles, extract_type(type), false);
+        
+    } else {
+        return nullptr;
+        }   
+    }
+
+    static inline ASR::asr_t* create_Eoshift(Allocator& al, const Location& loc,
+            Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
+        ASR::expr_t *array = args[0], *shift = args[1], *boundary = args[2], *dim = args[3];
+        bool is_type_allocatable = false;
+        bool is_boundary_present = false;
+        bool is_dim_present = false;
+        if (ASRUtils::is_allocatable(array)) {
+            is_type_allocatable = true;
+        }
+        if (boundary) {
+            is_boundary_present = true;
+        }
+        if (dim) {
+            is_dim_present = true;
+        }
+        ASR::ttype_t *type_array = expr_type(array);
+        ASR::ttype_t *type_shift = expr_type(shift);
+        ASR::ttype_t *type_boundary = nullptr;
+        if(is_boundary_present){
+            type_boundary = expr_type(boundary);
+        }
+        ASR::ttype_t *ret_type = expr_type(array);
+        if ( !is_array(type_array) ) {
+            append_error(diag, "The argument `array` in `eoshift` must be of type Array", array->base.loc);
+            return nullptr;
+        }
+        if( !is_integer(*type_shift) ) {
+            append_error(diag, "The argument `shift` in `eoshift` must be of type Integer", shift->base.loc);
+            return nullptr;
+        }
+        if( is_boundary_present && (!ASRUtils::check_equal_type(type_boundary, type_array))) {
+            append_error(diag, "'boundary' argument of 'eoshift' intrinsic must be a scalar of same type as array type", boundary->base.loc);
+            return nullptr;
+        }
+        ASR::dimension_t* array_dims = nullptr;
+        int array_rank = extract_dimensions_from_ttype(type_array, array_dims);
+        int array_dim = -1;
+        extract_value(array_dims[0].m_length, array_dim);
+        ASRUtils::require_impl(array_rank > 0, "The argument `array` in `eoshift` must be of rank > 0", array->base.loc, diag);
+        ASRBuilder b(al, loc);
+        Vec<ASR::dimension_t> result_dims; result_dims.reserve(al, 1);
+        int overload_id = 2;
+        if (!is_dim_present) {
+            result_dims.push_back(al, b.set_dim(array_dims[0].m_start, array_dims[0].m_length));
+            ret_type = ASRUtils::duplicate_type(al, ret_type, &result_dims);
+        } else {
+            result_dims.push_back(al, b.set_dim(dim, dim));
+            ret_type = ASRUtils::duplicate_type(al, ret_type, &result_dims);
+        }
+        if (is_type_allocatable) {
+            ret_type = TYPE(ASR::make_Allocatable_t(al, loc, ret_type));
+        }
+        ASR::expr_t *final_boundary = nullptr;
+        if(is_boundary_present){
+            final_boundary = boundary;
+        }
+        else{
+            if(is_integer(*type_array))
+                final_boundary = b.i_t(0, int32);
+            else if(is_real(*type_array))
+                final_boundary = b.f_t(0.0, real32);
+            else if(is_logical(*type_array))
+                final_boundary = b.bool_t(false, logical);
+            else if(is_character(*type_array))
+                final_boundary = b.StringConstant("", type_array);
+        }
+        Vec<ASR::expr_t*> m_args; m_args.reserve(al, 3);
+        m_args.push_back(al, array); m_args.push_back(al, shift); m_args.push_back(al, final_boundary);
+        ASR::expr_t *value = nullptr;
+        if (all_args_evaluated(m_args)) {
+            value = eval_Eoshift(al, loc, ret_type, m_args, diag);
+        }
+        return make_IntrinsicArrayFunction_t_util(al, loc,
+            static_cast<int64_t>(IntrinsicArrayFunctions::Eoshift),
+            m_args.p, m_args.n, overload_id, ret_type, value);
+    }
+
+    static inline ASR::expr_t* instantiate_Eoshift(Allocator &al,
+            const Location &loc, SymbolTable *scope,
+            Vec<ASR::ttype_t*> &arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t> &m_args, int64_t /*overload_id*/) {
+        declare_basic_variables("_lcompilers_eoshift");
+        fill_func_arg("array", duplicate_type_with_empty_dims(al, arg_types[0]));
+        fill_func_arg("shift", arg_types[1]);
+        fill_func_arg("boundary", arg_types[2]);
+        ASR::ttype_t* return_type_ = return_type;
+        /*
+            Eoshift(array, shift, dim)
+            int i = 0
+            for j = shift, size(array)
+                result[i] = array[j]
+                i = i + 1
+            end for
+            for j = 1, shift
+                result[i] = array[j]
+                i = i + 1
+            end for
+        */
+        if( !ASRUtils::is_fixed_size_array(return_type) ) {
+            bool is_allocatable = ASRUtils::is_allocatable(return_type);
+            Vec<ASR::dimension_t> empty_dims;
+            empty_dims.reserve(al, 2);
+            for( int idim = 0; idim < 2; idim++ ) {
+                ASR::dimension_t empty_dim;
+                empty_dim.loc = loc;
+                empty_dim.m_start = nullptr;
+                empty_dim.m_length = nullptr;
+                empty_dims.push_back(al, empty_dim);
+            }
+            return_type_ = ASRUtils::make_Array_t_util(al, loc,
+                ASRUtils::extract_type(return_type_), empty_dims.p, empty_dims.size());
+            if( is_allocatable ) {
+                return_type_ = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc, return_type_));
+            }
+        }
+        ASR::expr_t *result = declare("result", return_type_, Out);
+        args.push_back(al, result);
+        ASR::expr_t *i = declare("i", int32, Local);
+        ASR::expr_t *j = declare("j", int32, Local);
+        ASR::expr_t* shift_val = args[1];
+        ASR::expr_t* abs_shift = args[1];
+        ASR::expr_t* boundary = args[2];
+        body.push_back(al, b.If(b.Lt(args[1], b.i32(0)), {
+            b.Assignment(shift_val, b.Add(shift_val, UBound(args[0], 1))),
+            b.Assignment(shift_val, b.Mul(shift_val, b.i32(-1)))
+        }, {
+            b.Assignment(shift_val, shift_val)
+        }
+        ));
+        body.push_back(al, b.Assignment(i, b.i32(1)));
+        body.push_back(al, b.DoLoop(j, b.Add(shift_val, b.i32(1)), UBound(args[0], 1), {
+            b.Assignment(b.ArrayItem_01(result, {i}), b.ArrayItem_01(args[0], {j})),
+            b.Assignment(i, b.Add(i, b.i32(1))),
+        }, nullptr));
+        body.push_back(al, b.DoLoop(j, LBound(args[0], 1), b.Add(shift_val, b.i32(1)), {
+            b.Assignment(b.ArrayItem_01(result, {i}), b.ArrayItem_01(args[0], {j})),
+            b.Assignment(i, b.Add(i, b.i32(1))),
+        }, nullptr));
+
+
+        body.push_back(al, b.If(b.Lt(args[1], b.i32(0)), {
+            b.Assignment(i, b.i32(2))
+        }, {
+            b.Assignment(i, UBound(args[0], 1)),
+            b.Assignment(i, b.Sub(i, abs_shift)),
+            b.Assignment(i, b.Add(i, b.i32(1)))
+        }
+        ));
+        body.push_back(al, b.DoLoop(j, b.i32(1), abs_shift, {
+            b.Assignment(b.ArrayItem_01(result, {i}), boundary),
+            b.Assignment(i, b.Add(i, b.i32(1))),
+        }, nullptr));
+
+        
+        
+
+        body.push_back(al, b.Return());
+        ASR::symbol_t *fn_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+                body, nullptr, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, fn_sym);
+        return b.Call(fn_sym, m_args, return_type, nullptr);
+    }
+
+} // namespace Eoshift
 
 
 namespace IanyIall {
@@ -4220,6 +4464,8 @@ namespace IntrinsicArrayFunctionRegistry {
             {&DotProduct::instantiate_DotProduct, &DotProduct::verify_args}},
         {static_cast<int64_t>(IntrinsicArrayFunctions::Cshift),
             {&Cshift::instantiate_Cshift, &Cshift::verify_args}},
+        {static_cast<int64_t>(IntrinsicArrayFunctions::Eoshift),
+            {&Eoshift::instantiate_Eoshift, &Eoshift::verify_args}},
     };
 
     static const std::map<std::string, std::tuple<create_intrinsic_function,
@@ -4239,6 +4485,7 @@ namespace IntrinsicArrayFunctionRegistry {
         {"sum", {&Sum::create_Sum, &Sum::eval_Sum}},
         {"iparity", {&Iparity::create_Iparity, &Iparity::eval_Iparity}},
         {"cshift", {&Cshift::create_Cshift, &Cshift::eval_Cshift}},
+        {"eoshift", {&Eoshift::create_Eoshift, &Eoshift::eval_Eoshift}},
         {"transpose", {&Transpose::create_Transpose, &Transpose::eval_Transpose}},
         {"pack", {&Pack::create_Pack, &Pack::eval_Pack}},
         {"unpack", {&Unpack::create_Unpack, &Unpack::eval_Unpack}},
@@ -4290,6 +4537,7 @@ namespace IntrinsicArrayFunctionRegistry {
             id == IntrinsicArrayFunctions::Transpose || 
             id == IntrinsicArrayFunctions::Pack ||
             id == IntrinsicArrayFunctions::Cshift ||
+            id == IntrinsicArrayFunctions::Eoshift ||
             id == IntrinsicArrayFunctions::Unpack ) {
             return 2; // return variable index
         } else {
