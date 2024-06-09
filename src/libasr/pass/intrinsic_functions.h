@@ -3920,7 +3920,7 @@ namespace Adjustl {
     static inline ASR::expr_t* instantiate_Adjustl(Allocator &al, const Location &loc,
         SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
         Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_optimization_adjustl_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_adjustl_" + type_to_str_python(arg_types[0]));
         fill_func_arg("str", ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -1, nullptr)));
         return_type = TYPE(ASR::make_Character_t(al, loc, 1, -3, EXPR(ASR::make_StringLen_t(al, loc, args[0], int32, nullptr))));
         auto result = declare("result", return_type, ReturnVar);
@@ -3997,7 +3997,7 @@ namespace Adjustr {
     static inline ASR::expr_t* instantiate_Adjustr(Allocator &al, const Location &loc,
         SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
         Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_optimization_adjustr_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_adjustr_" + type_to_str_python(arg_types[0]));
         fill_func_arg("str", ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -1, nullptr)));
         return_type = TYPE(ASR::make_Character_t(al, loc, 1, -3, EXPR(ASR::make_StringLen_t(al, loc, args[0], int32, nullptr))));
         auto result = declare("result", return_type, ReturnVar);
@@ -4098,7 +4098,7 @@ namespace Char {
     static inline ASR::expr_t* instantiate_Char(Allocator &al, const Location &loc,
         SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
         Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("");
+        declare_basic_variables("_lcompilers_char_" + type_to_str_python(arg_types[0]));
         fill_func_arg("i", arg_types[0]);
         auto result = declare("result", return_type, ReturnVar);
 
@@ -4128,13 +4128,10 @@ namespace Achar {
     static inline ASR::expr_t* instantiate_Achar(Allocator &al, const Location &loc,
         SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
         Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("");
+        declare_basic_variables("_lcompilers_achar_" + type_to_str_python(arg_types[0]));
         fill_func_arg("i", arg_types[0]);
         auto result = declare("result", return_type, ReturnVar);
-
-        ASR::expr_t* achar_node = ASRUtils::EXPR(ASR::make_StringChr_t(al, loc, args[0], return_type, nullptr));
-
-        body.push_back(al, b.Assignment(result, achar_node));
+        body.push_back(al, b.Assignment(result, ASRUtils::EXPR(ASR::make_StringChr_t(al, loc, args[0], return_type, nullptr))));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
