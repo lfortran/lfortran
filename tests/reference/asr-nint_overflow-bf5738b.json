@@ -1,0 +1,13 @@
+{
+    "basename": "asr-nint_overflow-bf5738b",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/nint_overflow.f90",
+    "infile_hash": "887b0d5e99be9d33310deee68d28e0b7207e7e7c2ac8ede95f302925",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-nint_overflow-bf5738b.stderr",
+    "stderr_hash": "3dfc23e5fabee4c3980707d1c40d9c9f9e241ca9c769becaa9c86f13",
+    "returncode": 2
+}

@@ -128,6 +128,12 @@ intrinsic_funcs_args = {
             "ret_type_arg_idx": 0
         },
     ],
+    "ErfcScaled": [
+        {
+            "args": [("real",)],
+            "ret_type_arg_idx": 0
+        },
+    ],
     "Atan2": [
         {
             "args": [("real", "real")],
@@ -168,6 +174,13 @@ intrinsic_funcs_args = {
         {
             "args": [("char",)],
             "return": "int32"
+        }
+    ],
+    "Logical": [
+        {
+            "args": [("bool", )],
+            "ret_type_arg_idx": 0, 
+            "kind_arg": True
         }
     ],
     "Digits": [
@@ -251,13 +264,13 @@ intrinsic_funcs_args = {
     "Adjustl": [
         {
             "args": [("char",)],
-            "return": "character(-1)"
+            "ret_type_arg_idx": 0
         }
     ],
     "Adjustr": [
         {
             "args": [("char",)],
-            "return": "character(-1)"
+            "ret_type_arg_idx": 0
         }
     ],
     "Aint": [
@@ -265,6 +278,12 @@ intrinsic_funcs_args = {
             "args": [("real",)],
             "ret_type_arg_idx": 0,
             "kind_arg": True
+        }
+    ],
+    "Isnan": [
+        {
+            "args": [("real",)],
+            "return": "logical",
         }
     ],
     "Nint": [
@@ -605,7 +624,7 @@ intrinsic_funcs_args = {
     "BitSize": [
         {
             "args": [("int",)],
-            "return": "int32"
+            "ret_type_arg_idx": 0
         }
     ],
     "NewLine": [
@@ -739,6 +758,12 @@ intrinsic_funcs_args = {
         },
     ],
     "Dshiftl": [
+       {
+           "args": [("int", "int", "int",)],
+           "ret_type_arg_idx": 0
+       },
+   ],
+   "Dshiftr": [
        {
            "args": [("int", "int", "int",)],
            "ret_type_arg_idx": 0

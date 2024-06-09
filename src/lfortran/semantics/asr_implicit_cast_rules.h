@@ -153,7 +153,41 @@ public:
                     value = (ASR::expr_t *)ASR::make_IntegerConstant_t(al, a_loc,
                         i, dest_type2);
                 } else {
-                    value = nullptr;
+                  LCOMPILERS_ASSERT(ASR::is_a<ASR::ArrayConstant_t>(*value));
+                  ASR::ArrayConstant_t* array = ASR::down_cast<ASR::ArrayConstant_t>(value);
+                  ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(array->m_type);
+                  void *data = array->m_data;
+                  size_t array_size = ASRUtils::get_fixed_size_of_array(array->m_type);
+                  int kind = ASRUtils::extract_kind_from_ttype_t(array->m_type);
+                  int dest_kind = ASRUtils::extract_kind_from_ttype_t(dest_type2);
+                  void *new_data = nullptr;
+                  if (dest_kind == 4) {
+                    int *new_array = al.allocate<int>(array_size);
+                    for (size_t i = 0; i < array_size; i++) {
+                      if ( kind == 4 ) {
+                        new_array[i] = ((float*) data)[i];
+                      } else {
+                        new_array[i] = ((double*) data)[i];
+                      }
+                    }
+                    new_data = new_array;
+                  } else if (dest_kind == 8) {
+                    int64_t *new_array = al.allocate<int64_t>(array_size);
+                    for (size_t i = 0; i < array_size; i++) {
+                      if ( kind == 4 ) {
+                        new_array[i] = ((float*) data)[i];
+                      } else {
+                        new_array[i] = ((double*) data)[i];
+                      }
+                    }
+                    new_data = new_array;
+                  }
+                  if (new_data) {
+                    ASR::ttype_t* new_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, dest_type2->base.loc, dest_type2,
+                                              array_type->m_dims, array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray));
+                    value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, value->base.loc, array_size * dest_kind,
+                            new_data, new_array_type, array->m_storage_format));
+                  }
                 }
             }
         } else if ((ASR::cast_kindType)cast_kind == ASR::cast_kindType::IntegerToReal) {
@@ -168,9 +202,48 @@ public:
                     value = (ASR::expr_t *)ASR::make_RealConstant_t(al, a_loc,
                                                                  rval, dest_type2);
                 } else {
-                  // TODO: Handle cases where this is say, a constant Array
-                  // See https://gitlab.com/lfortran/lfortran/-/merge_requests/1162#note_647992506
-                    value = nullptr; // Reset
+                    LCOMPILERS_ASSERT(ASR::is_a<ASR::ArrayConstant_t>(*value));
+                    ASR::ArrayConstant_t* array = ASR::down_cast<ASR::ArrayConstant_t>(value);
+                    ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(array->m_type);
+                    int kind = ASRUtils::extract_kind_from_ttype_t(array->m_type);
+                    void *data = array->m_data;
+                    size_t array_size = ASRUtils::get_fixed_size_of_array(array->m_type);
+                    int dest_kind = ASRUtils::extract_kind_from_ttype_t(dest_type2);
+                    void *new_data = nullptr;
+                    if (dest_kind == 4) {
+                        float *new_array = al.allocate<float>(array_size);
+                        for (size_t i = 0; i < array_size; i++) {
+                          if ( kind == 4) {
+                            new_array[i] = float(((int*) data)[i]);
+                          } else if ( kind == 8 ) {
+                            new_array[i] = float(((int64_t*) data)[i]);
+                          } else if ( kind == 2 ) {
+                            new_array[i] = float(((int16_t*) data)[i]);
+                          } else if ( kind == 1 ) {
+                            new_array[i] = float(((int8_t*) data)[i]);
+                          }
+                        }
+                        new_data = new_array;
+                    } else if ( dest_kind == 8 ) {
+                        double *new_array = al.allocate<double>(array_size);
+                        for (size_t i = 0; i < array_size; i++) {
+                          if ( kind == 4) {
+                            new_array[i] = double(((int*) data)[i]);
+                          } else if ( kind == 8 ) {
+                            new_array[i] = double(((int64_t*) data)[i]);
+                          } else if ( kind == 2 ) {
+                            new_array[i] = double(((int16_t*) data)[i]);
+                          } else if ( kind == 1 ) {
+                            new_array[i] = double(((int8_t*) data)[i]);
+                          }
+                        }
+                    }
+                    if (new_data) {
+                        ASR::ttype_t* new_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, dest_type2->base.loc, dest_type2,
+                                                  array_type->m_dims, array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray));
+                        value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, value->base.loc, array_size * dest_kind,
+                                new_data, new_array_type, array->m_storage_format));
+                    }
                 }
             }
         } else if ((ASR::cast_kindType)cast_kind == ASR::cast_kindType::RealToReal) {
@@ -184,7 +257,32 @@ public:
                     value = (ASR::expr_t *)ASR::make_RealConstant_t(al, a_loc,
                         rval, dest_type2);
               } else {
-                    value = nullptr;
+                  LCOMPILERS_ASSERT(ASR::is_a<ASR::ArrayConstant_t>(*value));
+                  ASR::ArrayConstant_t* array = ASR::down_cast<ASR::ArrayConstant_t>(value);
+                  ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(array->m_type);
+                  void *data = array->m_data;
+                  size_t array_size = ASRUtils::get_fixed_size_of_array(array->m_type);
+                  int dest_kind = ASRUtils::extract_kind_from_ttype_t(dest_type2);
+                  void *new_data = nullptr;
+                  if (dest_kind == 4) {
+                      float *new_array = al.allocate<float>(array_size);
+                      for (size_t i = 0; i < array_size; i++) {
+                        new_array[i] = ((double*) data)[i];
+                      }
+                      new_data = new_array;
+                  } else if (dest_kind == 8) {
+                      double *new_array = al.allocate<double>(array_size);
+                      for (size_t i = 0; i < array_size; i++) {
+                        new_array[i] = ((float*) data)[i];
+                      }
+                      new_data = new_array;
+                  }
+                  if (new_data) {
+                      ASR::ttype_t* new_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, dest_type2->base.loc, dest_type2,
+                                                array_type->m_dims, array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray));
+                      value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, value->base.loc, array_size * dest_kind,
+                              new_data, new_array_type, array->m_storage_format));
+                  }
               }
             }
         } else if ((ASR::cast_kindType)cast_kind == ASR::cast_kindType::RealToComplex) {
@@ -238,6 +336,46 @@ public:
                     int64_t ival = i->m_n;
                     value = (ASR::expr_t *)ASR::make_IntegerConstant_t(al, a_loc,
                         ival, dest_type2);
+                } else {
+                    LCOMPILERS_ASSERT(ASR::is_a<ASR::ArrayConstant_t>(*value));
+                    ASR::ArrayConstant_t* array = ASR::down_cast<ASR::ArrayConstant_t>(value);
+                    ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(array->m_type);
+                    int kind = ASRUtils::extract_kind_from_ttype_t(array->m_type);
+                    void *data = array->m_data;
+                    size_t array_size = ASRUtils::get_fixed_size_of_array(array->m_type);
+                    int dest_kind = ASRUtils::extract_kind_from_ttype_t(dest_type2);
+                    void *new_data = nullptr;
+                    if (dest_kind == 4) {
+                        int *new_array = al.allocate<int>(array_size);
+                        for (size_t i = 0; i < array_size; i++) {
+                          if ( kind == 8 ) {
+                            new_array[i] = ((int64_t*) data)[i];
+                          } else if ( kind == 2 ) {
+                            new_array[i] = ((int16_t*) data)[i];
+                          } else if ( kind == 1 ) {
+                            new_array[i] = ((int8_t*) data)[i];
+                          }
+                        }
+                        new_data = new_array;
+                    } else if (dest_kind == 8) {
+                        int64_t *new_array = al.allocate<int64_t>(array_size);
+                        for (size_t i = 0; i < array_size; i++) {
+                          if ( kind == 4) {
+                            new_array[i] = ((int*) data)[i];
+                          } else if ( kind == 2 ) {
+                            new_array[i] = ((int16_t*) data)[i];
+                          } else if ( kind == 1 ) {
+                            new_array[i] = ((int8_t*) data)[i];
+                          }
+                        }
+                        new_data = new_array;
+                    }
+                    if (new_data) {
+                        ASR::ttype_t* new_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, dest_type2->base.loc, dest_type2,
+                                                  array_type->m_dims, array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray));
+                        value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, value->base.loc, array_size * dest_kind,
+                                new_data, new_array_type, array->m_storage_format));
+                    }
                 }
             }
         } else if ((ASR::cast_kindType)cast_kind == ASR::cast_kindType::IntegerToComplex) {

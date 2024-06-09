@@ -1097,11 +1097,11 @@ LFORTRAN_API double _lfortran_dlog(double x)
     return log(x);
 }
 
-LFORTRAN_API bool _lfortran_rsp_is_nan(float x) {
+LFORTRAN_API bool _lfortran_sis_nan(float x) {
     return isnan(x);
 }
 
-LFORTRAN_API bool _lfortran_rdp_is_nan(double x) {
+LFORTRAN_API bool _lfortran_dis_nan(double x) {
     return isnan(x);
 }
 
@@ -2521,10 +2521,19 @@ LFORTRAN_API void _lfortran_read_array_int32(int32_t *p, int array_size, int32_t
 
 LFORTRAN_API void _lfortran_read_char(char **p, int32_t unit_num)
 {
+    const char SPACE = ' ';
+    int n = strlen(*p);
     if (unit_num == -1) {
         // Read from stdin
-        *p = (char*)malloc(strlen(*p) * sizeof(char));
-        (void)!scanf("%s", *p);
+        *p = (char*)malloc(n * sizeof(char));
+        (void)!fgets(*p, n + 1, stdin);
+        (*p)[strcspn(*p, "\n")] = 0;
+        size_t input_length = strlen(*p);
+        while (input_length < n) {
+            strncat(*p, &SPACE, 1);
+            input_length++;
+        }
+        (*p)[n] = '\0';
         return;
     }
 
@@ -2535,8 +2544,6 @@ LFORTRAN_API void _lfortran_read_char(char **p, int32_t unit_num)
         exit(1);
     }
 
-    int n = strlen(*p);
-    *p = (char*)malloc(n * sizeof(char));
     if (unit_file_bin) {
         // read the record marker for data length
         int32_t data_length;
@@ -2575,7 +2582,16 @@ LFORTRAN_API void _lfortran_read_char(char **p, int32_t unit_num)
             exit(1);
         }
     } else {
-        (void)!fscanf(filep, "%s", *p);
+        char *tmp_buffer = (char*)malloc((n + 1) * sizeof(char));
+        (void)!fscanf(filep, "%s", tmp_buffer);
+        size_t input_length = strlen(tmp_buffer);
+        strcpy(*p, tmp_buffer);
+        free(tmp_buffer);
+        while (input_length < n) {
+            strncat(*p, &SPACE, 1);
+            input_length++;
+        }
+        (*p)[n] = '\0';
     }
     if (streql(*p, "")) {
         printf("Runtime error: End of file!\n");

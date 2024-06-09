@@ -2463,8 +2463,8 @@ public:
                         // ASRUtils::set_ArrayConstant_value(ac, arg, i);
                         args.push_back(al, arg);
                     }
-                    ac = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, ac->base.base.loc,
-                            args.p, args.n, ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(target_type)), ac->m_storage_format)));
+                    ac = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, ac->base.base.loc,
+                            args.p, args.n, ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(target_type)), ac->m_storage_format))));
                     value = ASRUtils::EXPR((ASR::asr_t*) ac);
                     LCOMPILERS_ASSERT(ASRUtils::is_array(ac->m_type));
                     if( ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_pointer(
@@ -3638,13 +3638,17 @@ public:
                     std::string clause = AST::down_cast<AST::String_t>(
                         x.m_clauses[i])->m_s;
                     std::string clause_name = clause.substr(0, clause.find('('));
-                    if (clause_name != "private" && clause_name != "shared") {
-                        throw SemanticError("The cluase "+ clause_name
+                    if (clause_name != "private" && clause_name != "shared" && clause_name != "reduction") {
+                        throw SemanticError("The clause "+ clause_name
                             +" is not supported yet", loc);
                     }
                     std::string list = clause.substr(clause.find('(')+1,
                         clause.size()-clause_name.size()-2);
+                    if (clause_name == "reduction") {
+                        list = list.substr(list.find(':')+1);
+                    }
                     for (auto &s: LCompilers::string_split(list, ",", false)) {
+                        s.erase(0, s.find_first_not_of(" "));
                         ASR::symbol_t *sym = current_scope->get_symbol(s);
                         if (sym) {
                             if (!ASR::is_a<ASR::Variable_t>(*sym)) {
@@ -3652,7 +3656,7 @@ public:
                                     " in the clause for now", loc);
                             }
                             ASR::expr_t *v = ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym));
-                            if (clause_name == "private") {
+                            if (clause_name == "private" || clause_name == "reduction") {
                                 m_local.push_back(al, v);
                             } else {
                                 m_shared.push_back(al, v);

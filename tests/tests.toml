@@ -42,10 +42,6 @@ ast = true
 asr = true
 
 [[test]]
-filename = "../integration_tests/template_add_01b.f90"
-asr = true
-
-[[test]]
 filename = "../integration_tests/template_travel_01.f90"
 ast = true
 asr = true
@@ -425,6 +421,10 @@ filename = "errors/maskr_negative.f90"
 asr = true
 
 [[test]]
+filename = "errors/nint_overflow.f90"
+asr = true
+
+[[test]]
 filename = "warnings/dim_assgn_test.f90"
 asr = true
 
@@ -729,13 +729,6 @@ wat = true
 julia = true
 
 [[test]]
-filename = "../integration_tests/doloop_04.f90"
-asr = true
-llvm = true
-pass = "do_loops"
-
-
-[[test]]
 filename = "../integration_tests/doloop_02.f90"
 asr = true
 llvm = true
@@ -754,6 +747,8 @@ filename = "../integration_tests/doloop_04.f90"
 ast = true
 ast_f90 = true
 asr = true
+llvm = true
+pass = "do_loops"
 
 [[test]]
 filename = "../integration_tests/doloop_05.f90"
@@ -1002,10 +997,6 @@ asr = true
 
 [[test]]
 filename = "../integration_tests/array_01_pack.f90"
-asr = true
-
-[[test]]
-filename = "../integration_tests/array_01_transfer.f90"
 asr = true
 
 [[test]]
@@ -1265,10 +1256,6 @@ asr = true
 
 [[test]]
 filename = "../integration_tests/derived_types_11.f90"
-asr = true
-
-[[test]]
-filename = "../integration_tests/derived_types_15.f90"
 asr = true
 
 [[test]]
@@ -3928,6 +3915,10 @@ filename = "errors/sqrt_neg.f90"
 asr = true
 
 [[test]]
+filename = "errors/dlgama_arg.f90"
+asr = true
+
+[[test]]
 filename = "errors/dreal_arg_error.f90"
 asr = true
 
@@ -3950,3 +3941,11 @@ asr = true
 [[test]]
 filename = "character_parameter_padding_trimming.f90"
 asr = true
+
+[[test]]
+filename = "errors/type_casting_01.f90"
+asr = true
+
+[[test]]
+filename = "openmp1.f90"
+asr_openmp = true

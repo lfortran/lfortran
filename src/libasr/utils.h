@@ -58,6 +58,7 @@ struct PassOptions {
     bool tree = false;
     bool with_intrinsic_mods = false;
     bool c_mangling = false;
+    bool openmp = false;
 };
 
 struct CompilerOptions {
@@ -81,9 +82,11 @@ struct CompilerOptions {
     bool visualize = false;
     bool fast = false;
     bool openmp = false;
+    std::string openmp_lib_dir = "";
     bool generate_object_code = false;
     bool no_warnings = false;
     bool disable_style = false;
+    bool logical_casting = false;
     bool no_error_banner = false;
     bool enable_bounds_checking = false;
     std::string error_format = "human";

@@ -745,11 +745,14 @@ public:
                 IntrinsicSignature({"array", "mask"}, 1, 2)}},
         {"product", {IntrinsicSignature({"array", "dim", "mask"}, 1, 3),
                 IntrinsicSignature({"array", "mask"}, 1, 2)}},
+        {"iparity", {IntrinsicSignature({"array", "dim", "mask"}, 1, 3),
+                IntrinsicSignature({"array", "mask"}, 1, 2)}},
         {"matmul", {IntrinsicSignature({"matrix_a", "matrix_b"}, 2, 2)}},
         {"dot_product", {IntrinsicSignature({"vector_a", "vector_b"}, 2, 2)}},
         {"pack", {IntrinsicSignature({"array", "mask", "vector"}, 2, 3)}},
         {"unpack", {IntrinsicSignature({"vector", "mask", "field"}, 3, 3)}},
         {"count", {IntrinsicSignature({"mask", "dim", "kind"}, 1, 3)}},
+        {"parity", {IntrinsicSignature({"mask", "dim"}, 1, 2)}},
         {"maxval", {IntrinsicSignature({"array", "dim", "mask"}, 1, 3),
                 IntrinsicSignature({"array", "mask"}, 1, 2)}},
         {"maxloc", {IntrinsicSignature({"array", "dim", "mask", "kind", "back"}, 1, 5),
@@ -813,12 +816,15 @@ public:
         {"set_exponent", {IntrinsicSignature({"X", "I"}, 2, 2)}},
         {"rrspacing", {IntrinsicSignature({"X"}, 1, 1)}},
         {"dshiftl", {IntrinsicSignature({"i", "j", "shift"}, 3, 3)}},
+        {"dshiftr", {IntrinsicSignature({"i", "j", "shift"}, 3, 3)}},
         {"random_number", {IntrinsicSignature({"r"}, 1, 1)}},
         {"mvbits", {IntrinsicSignature({"from", "frompos", "len", "to", "topos"}, 5, 5)}},
         {"modulo", {IntrinsicSignature({"a", "p"}, 2, 2)}},
         {"bessel_jn", {IntrinsicSignature({"n", "x"}, 2, 2)}},
         {"bessel_yn", {IntrinsicSignature({"n", "x"}, 2, 2)}},
         {"merge_bits", {IntrinsicSignature({"i", "j", "mask"}, 3, 3)}},
+        {"logical", {IntrinsicSignature({"i", "kind"}, 1, 2)}},
+        {"cshift", {IntrinsicSignature({"array", "shift", "dim"}, 2, 3)}},
     };
 
     std::map<std::string, std::pair<std::string, std::string>> intrinsic_mapping = {
@@ -833,6 +839,9 @@ public:
         {"dsin", {"sin", "real8"}},
         {"derf", {"erf", "real8"}},
         {"derfc", {"erfc", "real8"}},
+        {"lgamma", {"log_gamma", "real"}},
+        {"algama", {"log_gamma", "real"}},
+        {"dlgama", {"log_gamma", "real8"}},
         {"csin", {"sin", "complex4"}},
         {"zsin", {"sin", "complex8"}},
         {"cdsin", {"sin", "complex8"}},
@@ -849,6 +858,7 @@ public:
         {"realpart", {"real", "complex"}},
         {"isign", {"sign", "int4"}},
         {"dsign", {"sign", "real8"}},
+        {"dgamma", {"gamma", "real8"}},
         {"dsqrt", {"sqrt", "real8"}},
         {"csqrt", {"sqrt", "complex4"}},
         {"zsqrt", {"sqrt", "complex8"}},
@@ -1187,6 +1197,129 @@ public:
         return func_name;
     }
 
+    ASR::expr_t* get_transformed_function_call(ASR::symbol_t* end_sym) {
+        /*
+            case: ./integration_tests/arrays_45.f90
+            subroutine a(cs)
+            use xx
+            real, dimension(nx), intent(in) :: cs
+            end subroutine
+
+            transform to:
+
+            pure integer function __lcompilers_get_nx()
+            use xx
+            get_nx = nx
+            end function
+
+            subroutine a(cs)
+            use xx
+            interface
+                pure integer function __lcompilers_get_nx()
+                end function
+            end interface
+            real, dimension(__lcompilers_get_nx()), intent(in) :: cs
+            end subroutine
+        */
+        std::string func_name = create_getter_function(end_sym->base.loc, end_sym);
+
+        ASRUtils::ASRBuilder b(al, end_sym->base.loc);
+        // create an interface
+        SymbolTable *current_scope_copy = current_scope;
+        current_scope = al.make_new<SymbolTable>(current_scope_copy);
+
+        ASR::expr_t* return_var_expr = b.Variable(current_scope, func_name, ASRUtils::symbol_type(end_sym),
+                ASR::intentType::ReturnVar);
+
+        ASR::symbol_t* func_sym = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Function_t_util(al, end_sym->base.loc,
+                                current_scope, s2c(al, func_name), nullptr, 0, nullptr, 0, nullptr, 0,
+                                return_var_expr, ASR::abiType::Source,
+                                ASR::accessType::Public, ASR::deftypeType::Interface,
+                                nullptr, false, true, false, false, false, nullptr, 0, false, false, false, nullptr));
+
+        current_scope = current_scope_copy;
+        current_scope->add_symbol(func_name, func_sym);
+
+        ASR::expr_t* func_call = ASRUtils::EXPR(ASRUtils::make_FunctionCall_t_util(al, end_sym->base.loc,
+                                func_sym, func_sym, nullptr, 0, ASRUtils::symbol_type(end_sym), nullptr, nullptr, false));
+        return func_call;
+    }
+
+    ASR::expr_t* convert_integer_binop_to_function_call(ASR::expr_t* end, bool is_argument) {
+        ASR::IntegerBinOp_t* end_bin_op = ASR::down_cast<ASR::IntegerBinOp_t>(end);
+        ASR::expr_t* left = end_bin_op->m_left;
+        ASR::expr_t* right = end_bin_op->m_right;
+        if (ASR::is_a<ASR::Var_t>(*left) && !ASR::is_a<ASR::Var_t>(*right)) {
+            /* 
+            Handle expressions like `nx + a` where `a` can either be 
+            an integer or an `IntegerBinOp_t`.
+
+            Examples - nx + 1 and nx + ny * nz
+            */
+            ASR::Var_t* end_var = ASR::down_cast<ASR::Var_t>(left);
+            ASR::symbol_t* end_sym = end_var->m_v;
+            SymbolTable* symbol_scope = ASRUtils::symbol_parent_symtab(end_sym);
+            if (ASR::is_a<ASR::ExternalSymbol_t>(*end_sym) ||
+                (symbol_scope->counter != current_scope->counter && is_argument &&
+                ASRUtils::expr_value(end) == nullptr) ) {
+                left = get_transformed_function_call(end_sym);
+            }
+            if (ASR::is_a<ASR::IntegerBinOp_t>(*right)) {
+                right = convert_integer_binop_to_function_call(right, is_argument);
+            }
+        } else if (!ASR::is_a<ASR::Var_t>(*left) && ASR::is_a<ASR::Var_t>(*right)) {
+            /* 
+            Handle expressions like `a + nx` where `a` can either be 
+            an integer or an `IntegerBinOp_t`.
+
+            Examples - 1 + nx and ny * nz + nx
+            */
+            ASR::Var_t* end_var = ASR::down_cast<ASR::Var_t>(right);
+            ASR::symbol_t* end_sym = end_var->m_v;
+            SymbolTable* symbol_scope = ASRUtils::symbol_parent_symtab(end_sym);
+            if (ASR::is_a<ASR::ExternalSymbol_t>(*end_sym) ||
+                (symbol_scope->counter != current_scope->counter && is_argument &&
+                ASRUtils::expr_value(end) == nullptr) ) {
+                right = get_transformed_function_call(end_sym);
+            }
+            if (ASR::is_a<ASR::IntegerBinOp_t>(*left)) {
+                left = convert_integer_binop_to_function_call(left, is_argument);
+            }
+        } else if (ASR::is_a<ASR::Var_t>(*left) && ASR::is_a<ASR::Var_t>(*right)) {
+            // Handle expressions like `nx + ny` where both `nx` and `ny` are 
+            // external variables.
+            ASR::symbol_t* first_end_sym = ASR::down_cast<ASR::Var_t>(left)->m_v;
+            ASR::symbol_t* second_end_sym = ASR::down_cast<ASR::Var_t>(right)->m_v;
+            SymbolTable* first_symbol_scope = ASRUtils::symbol_parent_symtab(first_end_sym);
+            SymbolTable* second_symbol_scope = ASRUtils::symbol_parent_symtab(second_end_sym);
+            if (ASR::is_a<ASR::ExternalSymbol_t>(*first_end_sym) ||
+                (first_symbol_scope->counter != current_scope->counter && is_argument &&
+                ASRUtils::expr_value(end) == nullptr) ) {
+                left = get_transformed_function_call(first_end_sym);
+            }
+            if (ASR::is_a<ASR::ExternalSymbol_t>(*second_end_sym) ||
+                (second_symbol_scope->counter != current_scope->counter && is_argument &&
+                ASRUtils::expr_value(end) == nullptr) ) {
+                right = get_transformed_function_call(second_end_sym);
+            }
+        } else {
+            /* 
+            Handle expressions like `a + b` where both `a` and `b` can either be 
+            an integer or an `IntegerBinOp_t`.
+
+            Examples - 1 + 2 and 1 + nx + ny
+            */
+            if (ASR::is_a<ASR::IntegerBinOp_t>(*left)) {
+                left = convert_integer_binop_to_function_call(left, is_argument);
+            }
+            if (ASR::is_a<ASR::IntegerBinOp_t>(*right)) {
+                right = convert_integer_binop_to_function_call(right, is_argument);
+            }
+        }
+        return ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, end->base.loc,
+            left, end_bin_op->m_op, right, end_bin_op->m_type, end_bin_op->m_value));
+    }
+
     void process_dims(Allocator &al, Vec<ASR::dimension_t> &dims,
         AST::dimension_t *m_dim, size_t n_dim, bool &is_compile_time,
         bool is_char_type=false, bool is_argument=false) {
@@ -1213,52 +1346,10 @@ public:
                     if (ASR::is_a<ASR::ExternalSymbol_t>(*end_sym) ||
                         (symbol_scope->counter != current_scope->counter && is_argument &&
                         ASRUtils::expr_value(end) == nullptr) ) {
-                        /*
-                            case: ./integration_tests/arrays_45.f90
-                            subroutine a(cs)
-                            use xx
-                            real, dimension(nx), intent(in) :: cs
-                            end subroutine
-
-                            transform to:
-
-                            pure integer function __lcompilers_get_nx()
-                            use xx
-                            get_nx = nx
-                            end function
-
-                            subroutine a(cs)
-                            use xx
-                            interface
-                                pure integer function __lcompilers_get_nx()
-                                end function
-                            end interface
-                            real, dimension(__lcompilers_get_nx()), intent(in) :: cs
-                            end subroutine
-                        */
-                        std::string func_name = create_getter_function(end_sym->base.loc, end_sym);
-
-                        ASRUtils::ASRBuilder b(al, end_sym->base.loc);
-                        // create an interface
-                        SymbolTable *current_scope_copy = current_scope;
-                        current_scope = al.make_new<SymbolTable>(current_scope_copy);
-
-                        ASR::expr_t* return_var_expr = b.Variable(current_scope, func_name, ASRUtils::symbol_type(end_sym),
-                                ASR::intentType::ReturnVar);
-
-                        ASR::symbol_t* func_sym = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Function_t_util(al, end_sym->base.loc,
-                                                current_scope, s2c(al, func_name), nullptr, 0, nullptr, 0, nullptr, 0,
-                                                return_var_expr, ASR::abiType::Source,
-                                                ASR::accessType::Public, ASR::deftypeType::Interface,
-                                                nullptr, false, true, false, false, false, nullptr, 0, false, false, false, nullptr));
-
-                        current_scope = current_scope_copy;
-                        current_scope->add_symbol(func_name, func_sym);
-
-                        ASR::expr_t* func_call = ASRUtils::EXPR(ASRUtils::make_FunctionCall_t_util(al, end_sym->base.loc,
-                                                func_sym, func_sym, nullptr, 0, ASRUtils::symbol_type(end_sym), nullptr, nullptr, false));
-                        end = func_call;
-                    }
+                            end = get_transformed_function_call(end_sym);
+                        }
+                } else if(ASR::is_a<ASR::IntegerBinOp_t>(*end)) {
+                    end = convert_integer_binop_to_function_call(end, is_argument);
                 }
                 dim.m_length = ASRUtils::compute_length_from_start_end(al, dim.m_start,
                                     end);
@@ -2634,7 +2725,9 @@ public:
                     if (s.m_dim[0].m_end_star == AST::dimension_typeType::DimensionStar) {
                         is_dimension_star = true;
                     }
-                    process_dims(al, dims, s.m_dim, s.n_dim, is_compile_time, is_char_type);
+                    process_dims(al, dims, s.m_dim, s.n_dim, is_compile_time, is_char_type,
+                        (s_intent == ASRUtils::intent_in || s_intent == ASRUtils::intent_out ||
+                        s_intent == ASRUtils::intent_inout));
                 }
                 ASR::symbol_t *type_declaration;
                 ASR::ttype_t *type = determine_type(x.base.base.loc, sym, x.m_vartype, is_pointer,
@@ -2860,183 +2953,135 @@ public:
                                     ASR::Cast_t *cast = ASR::down_cast<ASR::Cast_t>(init_expr);
                                     if (cast->m_arg && ASR::is_a<ASR::ArrayConstant_t>(*cast->m_arg)) {
                                         ASR::cast_kindType cast_kind = cast->m_kind;
-                                        // TODO: handle other cases
+                                        bool is_convertible = false;
+                                        ASR::ArrayConstant_t *a = ASR::down_cast<ASR::ArrayConstant_t>(cast->m_arg);
+                                        ASR::ttype_t* cast_type = cast->m_type;
+                                        Vec<ASR::expr_t*> body;
+                                        body.reserve(al, ASRUtils::get_fixed_size_of_array(a->m_type));
                                         if (cast_kind == ASR::cast_kindType::IntegerToReal) {
-                                            bool is_int = true;
-                                            ASR::ArrayConstant_t *a = ASR::down_cast<ASR::ArrayConstant_t>(cast->m_arg);
-                                            ASR::ttype_t* real_type = cast->m_type;
-                                            Vec<ASR::expr_t*> body;
-                                            body.reserve(al, ASRUtils::get_fixed_size_of_array(a->m_type));
                                             for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(a->m_type); i++) {
                                                 ASR::expr_t *e = ASRUtils::fetch_ArrayConstant_value(al, a, i);
-                                                // it will be IntegerConstant_t convert it to RealConstant_t
                                                 if (ASR::is_a<ASR::IntegerConstant_t>(*e)) {
                                                     ASR::IntegerConstant_t *int_const = ASR::down_cast<ASR::IntegerConstant_t>(e);
                                                     double val = int_const->m_n;
                                                     ASR::expr_t *real_const = ASRUtils::EXPR(ASR::make_RealConstant_t(al, int_const->base.base.loc,
-                                                        val, ASRUtils::type_get_past_array(real_type)));
+                                                        val, ASRUtils::type_get_past_array(cast_type)));
                                                     body.push_back(al, real_const);
+                                                    is_convertible = true;
                                                 } else {
-                                                    is_int = false;
                                                     break;
                                                 }
                                             }
-                                            if (is_int) {
-                                                ASR::expr_t* array_const = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, a->base.base.loc, body.p, body.size(), real_type, a->m_storage_format));
-                                                cast->m_value = ASRUtils::expr_value(array_const);
-                                                value = cast->m_value;
-                                            }
                                         } else if (cast_kind == ASR::cast_kindType::RealToInteger) {
-                                            bool is_real = true;
-                                            ASR::ArrayConstant_t *a = ASR::down_cast<ASR::ArrayConstant_t>(cast->m_arg);
-                                            ASR::ttype_t* int_type = cast->m_type;
-                                            Vec<ASR::expr_t*> body;
-                                            body.reserve(al, ASRUtils::get_fixed_size_of_array(a->m_type));
                                             for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(a->m_type); i++) {
                                                 ASR::expr_t *e = ASRUtils::fetch_ArrayConstant_value(al, a, i);
-                                                // it will be RealConstant_t convert it to IntegerConstant_t
                                                 if (ASR::is_a<ASR::RealConstant_t>(*e)) {
                                                     ASR::RealConstant_t *real_const = ASR::down_cast<ASR::RealConstant_t>(e);
                                                     int64_t val = real_const->m_r;
                                                     ASR::expr_t *int_const = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, real_const->base.base.loc,
-                                                        val, ASRUtils::type_get_past_array(int_type)));
+                                                        val, ASRUtils::type_get_past_array(cast_type)));
                                                     body.push_back(al, int_const);
+                                                    is_convertible = true;
                                                 } else {
-                                                    is_real = false;
                                                     break;
                                                 }
                                             }
-                                            if (is_real) {
-                                                ASR::expr_t* array_const = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, a->base.base.loc, body.p, body.size(), int_type, a->m_storage_format));
-                                                cast->m_value = ASRUtils::expr_value(array_const);
-                                                value = cast->m_value;
-                                            }
                                         } else if (cast_kind == ASR::cast_kindType::RealToReal) {
-                                            bool is_real1 = true;
-                                            ASR::ArrayConstant_t *a = ASR::down_cast<ASR::ArrayConstant_t>(cast->m_arg);
-                                            ASR::ttype_t* real_type = cast->m_type;
-                                            Vec<ASR::expr_t*> body;
-                                            body.reserve(al, ASRUtils::get_fixed_size_of_array(a->m_type));
                                             for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(a->m_type); i++) {
                                                 ASR::expr_t *e = ASRUtils::fetch_ArrayConstant_value(al, a, i);
                                                 if (ASR::is_a<ASR::RealConstant_t>(*e)) {
                                                     ASR::RealConstant_t *real_const = ASR::down_cast<ASR::RealConstant_t>(e);
                                                     int64_t val = real_const->m_r;
                                                     ASR::expr_t *real_const2 = ASRUtils::EXPR(ASR::make_RealConstant_t(al, real_const->base.base.loc,
-                                                        val, ASRUtils::type_get_past_array(real_type)));
+                                                        val, ASRUtils::type_get_past_array(cast_type)));
                                                     body.push_back(al, real_const2);
+                                                    is_convertible = true;
                                                 } else {
-                                                    is_real1 = false;
                                                     break;
                                                 }
                                             }
-                                            if (is_real1) {
-                                                ASR::expr_t* array_const = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, a->base.base.loc, body.p, body.size(), real_type, a->m_storage_format));
-                                                cast->m_value = ASRUtils::expr_value(array_const);
-                                                value = cast->m_value;
-                                            }
                                         } else if (cast_kind == ASR::cast_kindType::ComplexToInteger) {
-                                            bool is_integer = true;
-                                            ASR::ArrayConstant_t *a = ASR::down_cast<ASR::ArrayConstant_t>(cast->m_arg);
-                                            ASR::ttype_t* integer_type = cast->m_type;
-                                            Vec<ASR::expr_t*> body;
-                                            body.reserve(al, ASRUtils::get_fixed_size_of_array(a->m_type));
                                             for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(a->m_type); i++) {
                                                 ASR::expr_t *e = ASRUtils::fetch_ArrayConstant_value(al, a, i);
-                                                // it will be ComplexConstant_t convert it to IntegerConstant_t
                                                 if (ASR::is_a<ASR::ComplexConstant_t>(*e)) {
                                                     ASR::ComplexConstant_t *complex_const = ASR::down_cast<ASR::ComplexConstant_t>(e);
                                                     int64_t val = complex_const->m_re;
                                                     ASR::expr_t *integer_const = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, complex_const->base.base.loc,
-                                                        val, ASRUtils::type_get_past_array(integer_type)));
+                                                        val, ASRUtils::type_get_past_array(cast_type)));
                                                     body.push_back(al, integer_const);
+                                                    is_convertible = true;
                                                 } else {
-                                                    is_integer = false;
                                                     break;
                                                 }
                                             }
-                                            if (is_integer) {
-                                                ASR::expr_t* array_const = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, a->base.base.loc, body.p, body.size(), integer_type, a->m_storage_format));
-                                                cast->m_value = ASRUtils::expr_value(array_const);
-                                                value = cast->m_value;
-                                            }
                                         } else if (cast_kind == ASR::cast_kindType::IntegerToComplex) {
-                                            bool is_complex = true;
-                                            ASR::ArrayConstant_t *a = ASR::down_cast<ASR::ArrayConstant_t>(cast->m_arg);
-                                            ASR::ttype_t* complex_type = cast->m_type;
-                                            Vec<ASR::expr_t*> body;
-                                            body.reserve(al, ASRUtils::get_fixed_size_of_array(a->m_type));
                                             for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(a->m_type); i++) {
                                                 ASR::expr_t *e = ASRUtils::fetch_ArrayConstant_value(al, a, i);
-                                                // it will be IntegerConstant_t convert it to ComplexConstant_t
                                                 if (ASR::is_a<ASR::IntegerConstant_t>(*e)) {
                                                     ASR::IntegerConstant_t *integer_const = ASR::down_cast<ASR::IntegerConstant_t>(e);
                                                     int64_t val = integer_const->m_n;
                                                     double y_val_ = 0.0;
                                                     ASR::expr_t *complex_const = ASRUtils::EXPR(ASR::make_ComplexConstant_t(al, integer_const->base.base.loc,
-                                                        val, y_val_, ASRUtils::type_get_past_array(complex_type)));
+                                                        val, y_val_, ASRUtils::type_get_past_array(cast_type)));
                                                     body.push_back(al, complex_const);
+                                                    is_convertible = true;
                                                 } else {
-                                                    is_complex = false;
                                                     break;
                                                 }
                                             }
-                                            if (is_complex) {
-                                                ASR::expr_t* array_const = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, a->base.base.loc, body.p, body.size(), complex_type, a->m_storage_format));
-                                                cast->m_value = ASRUtils::expr_value(array_const);
-                                                value = cast->m_value;
-                                            }
                                         } else if (cast_kind == ASR::cast_kindType::ComplexToReal) {
-                                            bool is_real = true;
-                                            ASR::ArrayConstant_t *a = ASR::down_cast<ASR::ArrayConstant_t>(cast->m_arg);
-                                            ASR::ttype_t* real_type = cast->m_type;
-                                            Vec<ASR::expr_t*> body;
-                                            body.reserve(al, ASRUtils::get_fixed_size_of_array(a->m_type));
                                             for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(a->m_type); i++) {
                                                 ASR::expr_t *e = ASRUtils::fetch_ArrayConstant_value(al, a, i);
-                                                // it will be ComplexConstant_t convert it to RealConstant_t
                                                 if (ASR::is_a<ASR::ComplexConstant_t>(*e)) {
                                                     ASR::ComplexConstant_t *complex_const = ASR::down_cast<ASR::ComplexConstant_t>(e);
                                                     int64_t val = complex_const->m_re;
                                                     ASR::expr_t *real_const = ASRUtils::EXPR(ASR::make_RealConstant_t(al, complex_const->base.base.loc,
-                                                        val, ASRUtils::type_get_past_array(real_type)));
+                                                        val, ASRUtils::type_get_past_array(cast_type)));
                                                     body.push_back(al, real_const);
+                                                    is_convertible = true;
                                                 } else {
-                                                    is_real = false;
                                                     break;
                                                 }
                                             }
-                                            if (is_real) {
-                                                ASR::expr_t* array_const = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, a->base.base.loc, body.p, body.size(), real_type, a->m_storage_format));
-                                                cast->m_value = ASRUtils::expr_value(array_const);
-                                                value = cast->m_value;
-                                            }
                                         } else if (cast_kind == ASR::cast_kindType::ComplexToComplex) {
-                                            bool is_complex = true;
-                                            ASR::ArrayConstant_t *a = ASR::down_cast<ASR::ArrayConstant_t>(cast->m_arg);
-                                            ASR::ttype_t* complex_type = cast->m_type;
-                                            Vec<ASR::expr_t*> body;
-                                            body.reserve(al, ASRUtils::get_fixed_size_of_array(a->m_type));
                                             for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(a->m_type); i++) {
                                                 ASR::expr_t *e = ASRUtils::fetch_ArrayConstant_value(al, a, i);
-                                                // it will be ComplexConstant_t convert it to ComplexConstant_t
                                                 if (ASR::is_a<ASR::ComplexConstant_t>(*e)) {
                                                     ASR::ComplexConstant_t *complex_const = ASR::down_cast<ASR::ComplexConstant_t>(e);
                                                     int64_t val1 = complex_const->m_re;
                                                     int64_t val2 = complex_const->m_im;
                                                     ASR::expr_t *complex_const2 = ASRUtils::EXPR(ASR::make_ComplexConstant_t(al, complex_const->base.base.loc,
-                                                        val1, val2, ASRUtils::type_get_past_array(complex_type)));
+                                                        val1, val2, ASRUtils::type_get_past_array(cast_type)));
                                                     body.push_back(al, complex_const2);
+                                                    is_convertible = true;
                                                 } else {
-                                                    is_complex = false;
                                                     break;
                                                 }
                                             }
-                                            if (is_complex) {
-                                                ASR::expr_t* array_const = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, a->base.base.loc, body.p, body.size(), complex_type, a->m_storage_format));
+                                        } else if (cast_kind == ASR::cast_kindType::IntegerToLogical) {
+                                            if (compiler_options.logical_casting) {
+                                                for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(a->m_type); i++) {
+                                                    ASR::expr_t *e = ASRUtils::fetch_ArrayConstant_value(al, a, i);
+                                                    if (ASR::is_a<ASR::IntegerConstant_t>(*e)) {
+                                                        ASR::IntegerConstant_t *int_const = ASR::down_cast<ASR::IntegerConstant_t>(e);
+                                                        bool val = int_const->m_n;
+                                                        ASR::expr_t *logical_const = ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, int_const->base.base.loc,
+                                                            val, ASRUtils::type_get_past_array(cast_type)));
+                                                        body.push_back(al, logical_const);
+                                                        is_convertible = true;
+                                                    } else {
+                                                        break;
+                                                    }
+                                                }
+                                            } else {
+                                                throw SemanticError("Type mismatch in array initialization.\n Enable logical casting by setting `--logical-casting = true`",
+                                                    x.base.base.loc);
+                                            }
+                                        } 
+                                        if (is_convertible) {
+                                                ASR::expr_t* array_const = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, a->base.base.loc, body.p, body.size(), cast_type, a->m_storage_format));
                                                 cast->m_value = ASRUtils::expr_value(array_const);
                                                 value = cast->m_value;
-                                            }
                                         } else {
                                             throw SemanticError("Type mismatch in array initialization",
                                                 x.base.base.loc);
@@ -3053,7 +3098,10 @@ public:
                                 ASR::is_a<ASR::TypeInquiry_t>(*init_expr) ||
                                 ASR::is_a<ASR::StringLen_t>(*init_expr) ) {
                                 value = init_expr;
-                            } else if (ASR::is_a<ASR::IntegerBinOp_t>(*init_expr) || ASR::is_a<ASR::RealBinOp_t>(*init_expr)) {
+                            } else if (ASR::is_a<ASR::IntegerBinOp_t>(*init_expr) || ASR::is_a<ASR::RealBinOp_t>(*init_expr) ||
+                                        ASR::is_a<ASR::ComplexBinOp_t>(*init_expr)) {
+                                value = init_expr;
+                            } else if (ASR::is_a<ASR::ArrayReshape_t>(*init_expr)) {
                                 value = init_expr;
                             } else {
                                 throw SemanticError("Initialization of `" + std::string(x.m_syms[i].m_name) +
@@ -3675,6 +3723,7 @@ public:
                         ASR::expr_t *val = ASRUtils::expr_value(v_Var);
                         ASR::expr_t *index = ASRUtils::expr_value(arg.m_right);
                         if (val && index) {
+                            val = ASRUtils::expr_value(val);
                             ASR::ArrayConstant_t *val2 = ASR::down_cast<ASR::ArrayConstant_t>(val);
                             ASR::IntegerConstant_t *index2 = ASR::down_cast<ASR::IntegerConstant_t>(index);
                             int based_indexing = get_based_indexing(v);
@@ -5955,11 +6004,12 @@ public:
             T& value;
             ASR::ttype_t* type;
             diag::Diagnostics& diag;
+            std::map<std::string, std::vector<IntrinsicSignature>> name2signature;
 
             public:
             ImpliedDoLoopValuesVisitor(Allocator& al, std::vector<ASR::symbol_t*>& loop_vars, std::vector<int>& loop_indices, T& value,
-                ASR::ttype_t* type, diag::Diagnostics& diag) :
-                al(al), loop_vars(loop_vars), loop_indices(loop_indices), value(value), type(type), diag(diag) {}
+                ASR::ttype_t* type, std::map<std::string, std::vector<IntrinsicSignature>> name2signature, diag::Diagnostics& diag) :
+                al(al), loop_vars(loop_vars), loop_indices(loop_indices), value(value), type(type), diag(diag), name2signature(name2signature) {}
 
             void visit_Var(const ASR::Var_t &x) {
                 int loop_var_index = std::find(loop_vars.begin(), loop_vars.end(), x.m_v) - loop_vars.begin();
@@ -6076,6 +6126,12 @@ public:
                 }
             }
 
+            std::vector<IntrinsicSignature> get_intrinsic_signature(std::string& var_name) {
+                if( name2signature.find(var_name) == name2signature.end() ) {
+                    return {IntrinsicSignature({}, 1, 1)};
+                }
+                return name2signature[var_name];
+            }
             // handle intrinsic elemental function
             void visit_IntrinsicElementalFunction(const ASR::IntrinsicElementalFunction_t &x) {
                 Vec<ASR::expr_t*> args; args.reserve(al, x.n_args);
@@ -6093,8 +6149,12 @@ public:
                         throw SemanticError("Unsupported argument type in compiletime evaluation of intrinsics in implied do loop", x.base.base.loc);
                     }
                 }
+                std::string intrinsic_name = to_lower(ASRUtils::get_intrinsic_name(x.m_intrinsic_id));
+                std::vector<IntrinsicSignature> signatures = get_intrinsic_signature(intrinsic_name);
+                size_t max_args = signatures[0].max_args;
+                for (size_t i = x.n_args; i < max_args; i++) args.push_back(al, nullptr);
                 ASRUtils::create_intrinsic_function create_func =
-                        ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function(to_lower(ASRUtils::get_intrinsic_name(x.m_intrinsic_id)));
+                        ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function(intrinsic_name);
                 ASR::expr_t* intrinsic_expr = ASRUtils::EXPR(create_func(al, x.base.base.loc, args, diag));
                 ASR::IntrinsicElementalFunction_t *intrinsic_func = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(intrinsic_expr);
                 this->visit_expr(*intrinsic_func->m_value);
@@ -6102,7 +6162,7 @@ public:
         };
 
         T value;
-        ImpliedDoLoopValuesVisitor visitor(al, loop_vars, loop_indices, value, type, diag);
+        ImpliedDoLoopValuesVisitor visitor(al, loop_vars, loop_indices, value, type, name2signature, diag);
         visitor.visit_expr(*expr);
         return value;
     }
@@ -6705,6 +6765,10 @@ public:
 
     bool is_complex(ASR::ttype_t &t) {
         return ASR::is_a<ASR::Complex_t>(*ASRUtils::type_get_past_pointer(&t));
+    }
+
+    bool is_logical(ASR::ttype_t &t) {
+        return ASR::is_a<ASR::Logical_t>(*ASRUtils::type_get_past_pointer(&t));
     }
 
     bool assignment_types_agree(ASR::ttype_t *target, ASR::ttype_t *value) {

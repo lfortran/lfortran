@@ -61,6 +61,8 @@ ASR::asr_t* make_Binop_util(Allocator &al, const Location& loc, ASR::binopType b
 ASR::asr_t* make_Cmpop_util(Allocator &al, const Location& loc, ASR::cmpopType cmpop,
                         ASR::expr_t* lexpr, ASR::expr_t* rexpr, ASR::ttype_t* ttype);
 
+inline bool check_equal_type(ASR::ttype_t* x, ASR::ttype_t* y, bool check_for_dimensions=false);
+
 static inline  double extract_real(const char *s) {
     // TODO: this is inefficient. We should
     // convert this in the tokenizer where we know most information
@@ -2998,7 +3000,7 @@ inline bool expr_equal(ASR::expr_t* x, ASR::expr_t* y) {
         case ASR::exprType::Var: {
             ASR::Var_t* var_x = ASR::down_cast<ASR::Var_t>(x);
             ASR::Var_t* var_y = ASR::down_cast<ASR::Var_t>(y);
-            return var_x->m_v == var_y->m_v;
+            return check_equal_type(expr_type(&var_x->base), expr_type(&var_y->base), true);
         }
         case ASR::exprType::IntegerConstant: {
             ASR::IntegerConstant_t* intconst_x = ASR::down_cast<ASR::IntegerConstant_t>(x);
@@ -3432,7 +3434,7 @@ inline bool types_equal_with_substitution(ASR::ttype_t *a, ASR::ttype_t *b,
     return false;
 }
 
-inline bool check_equal_type(ASR::ttype_t* x, ASR::ttype_t* y, bool check_for_dimensions=false) {
+inline bool check_equal_type(ASR::ttype_t* x, ASR::ttype_t* y, bool check_for_dimensions) {
     ASR::ttype_t *x_underlying, *y_underlying;
     x_underlying = nullptr;
     y_underlying = nullptr;
@@ -4419,8 +4421,14 @@ ASR::asr_t* make_Cast_t_value(Allocator &al, const Location &a_loc,
         ASR::expr_t* a_arg, ASR::cast_kindType a_kind, ASR::ttype_t* a_type);
 
 static inline ASR::expr_t* compute_length_from_start_end(Allocator& al, ASR::expr_t* start, ASR::expr_t* end) {
-    ASR::expr_t* start_value = ASRUtils::expr_value(start);
-    ASR::expr_t* end_value = ASRUtils::expr_value(end);
+    ASR::expr_t* start_value = nullptr;
+    ASR::expr_t* end_value = nullptr;
+    if (start != nullptr) {
+        start_value = ASRUtils::expr_value(start);
+    }
+    if (end != nullptr) {
+        end_value = ASRUtils::expr_value(end);
+    }
 
     // If both start and end have compile time values
     // then length can be computed easily by extracting
@@ -5094,7 +5102,7 @@ template <typename T>
 inline std::string to_string_with_precision(const T a_value, const int n) {
     std::ostringstream out;
     out.precision(n);
-    out << std::fixed << a_value;
+    out << std::scientific << a_value;
     return std::move(out).str();
 }
 
@@ -5405,6 +5413,14 @@ inline ASR::asr_t* make_ArrayConstructor_t_util(Allocator &al, const Location &a
 
     LCOMPILERS_ASSERT(ASRUtils::is_array(a_type));
     bool all_expr_evaluated = n_args > 0;
+    bool is_array_item_constant = n_args > 0 && (ASR::is_a<ASR::IntegerConstant_t>(*a_args[0]) ||
+                                ASR::is_a<ASR::RealConstant_t>(*a_args[0]) ||
+                                ASR::is_a<ASR::ComplexConstant_t>(*a_args[0]) ||
+                                ASR::is_a<ASR::LogicalConstant_t>(*a_args[0]) ||
+                                ASR::is_a<ASR::StringConstant_t>(*a_args[0]) ||
+                                ASR::is_a<ASR::IntegerUnaryMinus_t>(*a_args[0]) ||
+                                ASR::is_a<ASR::RealUnaryMinus_t>(*a_args[0]));
+    ASR::expr_t* value = nullptr;
     for (size_t i = 0; i < n_args; i++) {
         ASR::expr_t* a_value = ASRUtils::expr_value(a_args[i]);
         if (!is_value_constant(a_value)) {
@@ -5431,10 +5447,11 @@ inline ASR::asr_t* make_ArrayConstructor_t_util(Allocator &al, const Location &a
         if (is_character(*a_type_->m_type)) {
             n_data = curr_idx * ASR::down_cast<ASR::Character_t>(a_type_->m_type)->m_len;
         }
-        return ASR::make_ArrayConstant_t(al, a_loc, n_data, data, new_type, a_storage_format);
-    } else {
-        return ASR::make_ArrayConstructor_t(al, a_loc, a_args, n_args, a_type, nullptr, a_storage_format);
+        value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, a_loc, n_data, data, new_type, a_storage_format));
     }
+    return is_array_item_constant && all_expr_evaluated ? (ASR::asr_t*) value :
+            ASR::make_ArrayConstructor_t(al, a_loc, a_args, n_args, a_type,
+            value, a_storage_format);
 }
 
 void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,

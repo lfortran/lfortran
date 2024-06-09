@@ -171,7 +171,7 @@ def process_raw_instructions(instructions_raw):
     return instructions
 
 def get_func_name(func, emit = False):
-    splitted_name = re.split("[\._]", func)
+    splitted_name = re.split("[._]", func)
     if emit:
         return "_".join(splitted_name)
     return "".join(map(lambda name_sub_part: name_sub_part.capitalize(), splitted_name))

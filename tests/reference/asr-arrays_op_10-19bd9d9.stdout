@@ -238,7 +238,7 @@
                                         (Var 4 x)
                                         (ArrayConstant
                                             8
-                                            [1.00000000, 1.00000000]
+                                            [1.00000000e+00, 1.00000000e+00]
                                             (Array
                                                 (Real 4)
                                                 [((IntegerConstant 1 (Integer 4))

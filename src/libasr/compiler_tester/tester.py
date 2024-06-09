@@ -125,6 +125,14 @@ def _compare_eq_dict(
         )
     return explanation
 
+def test_for_duplicates(test_data):
+    tests = test_data["test"]
+    filenames = [t["filename"] for t in tests]
+    if len(set(filenames)) != len(filenames):
+        print("There are duplicate test filenames:")
+        duplicates = [item for item in set(filenames) if filenames.count(item) > 1]
+        print(duplicates)
+        sys.exit(1)
 
 def fixdir(s: bytes) -> bytes:
     local_dir = os.getcwd()
@@ -314,7 +322,12 @@ def run_test(testname, basename, cmd, infile, update_reference=False,
         raise FileNotFoundError(
             f"The output json file '{jo}' for {testname} does not exist")
 
-    do = json.load(open(jo))
+    try:
+        do = json.load(open(jo))
+    except json.decoder.JSONDecodeError:
+        print("JSON failed to be decoded")
+        print(f"Filename: {jo}")
+        raise
     if update_reference:
         do_update_reference(jo, jr, do)
         return
@@ -420,6 +433,7 @@ def tester_main(compiler, single_test, is_lcompilers_executable_installed=False)
         os.environ["PATH"] = os.path.join(SRC_DIR, "bin") \
             + os.pathsep + os.environ["PATH"]
     test_data = toml.load(open(os.path.join(ROOT_DIR, "tests", "tests.toml")))
+    test_for_duplicates(test_data)
     filtered_tests = test_data["test"]
     if specific_tests:
         filtered_tests = [test for test in filtered_tests if any(

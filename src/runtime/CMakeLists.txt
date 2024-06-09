@@ -38,6 +38,9 @@ add_dependencies(lfortran_intrinsic_ieee_arithmetic lfortran_intrinsic_iso_fortr
 lfortran_compile_runtime(lfortran_intrinsic_iso_c_binding pure)
 add_dependencies(lfortran_intrinsic_iso_c_binding lfortran_intrinsic_builtin)
 
+lfortran_compile_runtime(omp_lib openmp)
+add_dependencies(omp_lib lfortran_intrinsic_iso_c_binding)
+
 lfortran_compile_runtime(lfortran_intrinsic_string pure)
 add_dependencies(lfortran_intrinsic_string lfortran_intrinsic_builtin)
 add_dependencies(lfortran_intrinsic_string lfortran_intrinsic_iso_fortran_env)
@@ -46,12 +49,6 @@ lfortran_compile_runtime(lfortran_intrinsic_math impure)
 add_dependencies(lfortran_intrinsic_math lfortran_intrinsic_iso_c_binding)
 add_dependencies(lfortran_intrinsic_math lfortran_intrinsic_builtin)
 add_dependencies(lfortran_intrinsic_math lfortran_intrinsic_iso_fortran_env)
-
-lfortran_compile_runtime(lfortran_intrinsic_sin impure)
-add_dependencies(lfortran_intrinsic_sin lfortran_intrinsic_iso_c_binding)
-add_dependencies(lfortran_intrinsic_sin lfortran_intrinsic_builtin)
-add_dependencies(lfortran_intrinsic_sin lfortran_intrinsic_iso_fortran_env)
-add_dependencies(lfortran_intrinsic_sin lfortran_intrinsic_math)
 
 # Ideally this should be a target based install, not file based:
 # install(DIRECTORY ${CMAKE_Fortran_MODULE_DIRECTORY}/ DESTINATION ${CMAKE_INSTALL_LIBDIR})
@@ -65,8 +62,8 @@ install(
   ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_iso_fortran_env.mod
   ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_ieee_arithmetic.mod
   ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_iso_c_binding.mod
+  ${CMAKE_Fortran_MODULE_DIRECTORY}/omp_lib.mod
   ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_math.mod
-  ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_sin.mod
   ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_string.mod
   DESTINATION ${CMAKE_INSTALL_LIBDIR}
   )

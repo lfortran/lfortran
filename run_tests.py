@@ -50,6 +50,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     asr_indent = is_included("asr_indent")
     asr_json = is_included("asr_json")
     asr_openmp = is_included("asr_openmp")
+    asr_logical_casting = is_included("asr_logical_casting")
     mod_to_asr = is_included("mod_to_asr")
     llvm = is_included("llvm")
     cpp = is_included("cpp")
@@ -381,6 +382,16 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             verify_hash,
             extra_args)
 
+    if asr_logical_casting:
+        run_test(
+            filename,
+            "asr_logical_casting",
+            "lfortran --show-asr --logical-casting --no-color {infile} -o {outfile}",
+            filename,
+            update_reference,
+            verify_hash,
+            extra_args)
+        
     if mod_to_asr:
         run_test(
             filename,

@@ -56,6 +56,26 @@ std::vector<std::string> string_split(const std::string &s,
     return result;
 }
 
+std::vector<std::string> string_split_avoid_parentheses(const std::string &str, bool strs_to_lower) {
+    std::vector<std::string> result;
+    std::string word;
+    bool in_brackets = false;
+    for (char ch : str) {
+        if (ch == ' ' && !in_brackets) {
+            if (!word.empty()) {
+                result.push_back(strs_to_lower ? LCompilers::to_lower(word) : word);
+                word.clear();
+            }
+        } else {
+            if (ch == '(') in_brackets = true;
+            if (ch == ')') in_brackets = false;
+            word += ch;
+        }
+    }
+    if (!word.empty()) result.push_back(strs_to_lower ? LCompilers::to_lower(word) : word);
+    return result;
+}
+
 // Splits the string `s` using any space or newline
 std::vector<std::string> split(const std::string &s)
 {

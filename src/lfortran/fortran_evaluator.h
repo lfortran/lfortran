@@ -41,9 +41,10 @@ public:
 
     struct EvalResult {
         enum {
-            integer4, integer8, real4, real8, complex4, complex8, statement, none
+            integer4, integer8, real4, real8, complex4, complex8, boolean, statement, none
         } type;
         union {
+            bool b;
             int32_t i32;
             int64_t i64;
             float f32;

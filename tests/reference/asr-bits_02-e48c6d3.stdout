@@ -71,10 +71,15 @@
                                     block_size
                                     []
                                     Local
-                                    (TypeInquiry
-                                        BitSize
-                                        (Integer 8)
-                                        (IntegerConstant 0 (Integer 8))
+                                    (Cast
+                                        (TypeInquiry
+                                            BitSize
+                                            (Integer 8)
+                                            (IntegerConstant 0 (Integer 8))
+                                            (Integer 8)
+                                            (IntegerConstant 64 (Integer 8))
+                                        )
+                                        IntegerToInteger
                                         (Integer 4)
                                         (IntegerConstant 64 (Integer 4))
                                     )

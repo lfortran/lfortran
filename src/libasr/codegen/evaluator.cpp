@@ -36,7 +36,6 @@
 #include <llvm/Transforms/Vectorize.h>
 #include <llvm/Transforms/IPO.h>
 #include <llvm/Transforms/IPO/AlwaysInliner.h>
-#include <llvm/Transforms/IPO/PassManagerBuilder.h>
 #include <llvm/Transforms/Instrumentation/AddressSanitizer.h>
 #include <llvm/Transforms/Instrumentation/ThreadSanitizer.h>
 #include <llvm/Transforms/InstCombine/InstCombine.h>
@@ -48,14 +47,19 @@
 #include <llvm/Support/SourceMgr.h>
 #include <llvm/ADT/StringRef.h>
 #include <llvm/Target/TargetOptions.h>
+#include <llvm/Support/Host.h>
 #if LLVM_VERSION_MAJOR >= 14
 #    include <llvm/MC/TargetRegistry.h>
 #else
 #    include <llvm/Support/TargetRegistry.h>
 #endif
-#include <llvm/Support/Host.h>
-#include <libasr/codegen/KaleidoscopeJIT.h>
+#if LLVM_VERSION_MAJOR >= 17
+    // TODO: removed from LLVM 17
+#else
+#    include <llvm/Transforms/IPO/PassManagerBuilder.h>
+#endif
 
+#include <libasr/codegen/KaleidoscopeJIT.h>
 #include <libasr/codegen/evaluator.h>
 #include <libasr/codegen/asr_to_llvm.h>
 #include <libasr/codegen/asr_to_cpp.h>
@@ -102,6 +106,8 @@ std::string LLVMModule::get_return_type(const std::string &fn_name)
         return "real4";
     } else if (type->isDoubleTy()) {
         return "real8";
+    } else if (type->isIntegerTy(1)) {
+        return "logical";
     } else if (type->isIntegerTy(32)) {
         return "integer4";
     } else if (type->isIntegerTy(64)) {
@@ -206,7 +212,7 @@ std::unique_ptr<llvm::Module> LLVMEvaluator::parse_module(const std::string &sou
         throw LCompilersException("parse_module(): module failed verification.");
     };
     module->setTargetTriple(target_triple);
-    module->setDataLayout(jit->getTargetMachine().createDataLayout());
+    module->setDataLayout(jit->getDataLayout());
     return module;
 }
 
@@ -228,7 +234,7 @@ void LLVMEvaluator::add_module(std::unique_ptr<llvm::Module> mod) {
     // cases when the Module was constructed directly, not via parse_module().
     mod->setTargetTriple(target_triple);
     mod->setDataLayout(jit->getDataLayout());
-    llvm::Error err = jit->addModule(std::move(mod));
+    llvm::Error err = jit->addModule(std::move(mod), context);
     if (err) {
         llvm::SmallVector<char, 128> buf;
         llvm::raw_svector_ostream dest(buf);
@@ -330,7 +336,7 @@ std::string LLVMEvaluator::get_asm(llvm::Module &m)
     llvm::CodeGenFileType ft = llvm::CGFT_AssemblyFile;
     llvm::SmallVector<char, 128> buf;
     llvm::raw_svector_ostream dest(buf);
-    if (jit->getTargetMachine().addPassesToEmitFile(pass, dest, nullptr, ft)) {
+    if (TM->addPassesToEmitFile(pass, dest, nullptr, ft)) {
         throw std::runtime_error("TargetMachine can't emit a file of this type");
     }
     pass.run(m);
@@ -378,6 +384,9 @@ void LLVMEvaluator::opt(llvm::Module &m) {
 
     int optLevel = 3;
     int sizeLevel = 0;
+#if LLVM_VERSION_MAJOR >= 17
+    // TODO: https://llvm.org/docs/NewPassManager.html
+#else
     llvm::PassManagerBuilder builder;
     builder.OptLevel = optLevel;
     builder.SizeLevel = sizeLevel;
@@ -388,6 +397,7 @@ void LLVMEvaluator::opt(llvm::Module &m) {
     builder.SLPVectorize = true;
     builder.populateFunctionPassManager(fpm);
     builder.populateModulePassManager(mpm);
+#endif
 
     fpm.doInitialization();
     for (llvm::Function &func : m) {

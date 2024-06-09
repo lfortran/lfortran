@@ -664,7 +664,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        llvm-version: ["10", "14", "15", "16"]
+        llvm-version: ["10", "14", "15", "16", "17"]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -698,6 +698,7 @@ jobs:
             cmake --build . -j16 --target install
 
       - name: Test Linux
+        if: contains(matrix.llvm-version, '17') == false
         shell: bash -e -l {0}
         run: |
             cd integration_tests
@@ -801,6 +802,49 @@ jobs:
         run: |
             cd integration_tests
             ./run_tests.py -b gfortran
+
+  lfortran_openmp:
+    name: Test OpenMP integration tests
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: mamba-org/setup-micromamba@v1.8.0
+        with:
+          environment-file: ci/environment_linux.yml
+          create-args: >-
+            llvm-openmp
+
+      - uses: hendrikmuhs/ccache-action@main
+        with:
+          variant: sccache
+          key: ${{ github.job }}-${{ matrix.os }}
+
+      - name: Build Linux
+        shell: bash -e -l {0}
+        run: |
+            ./build0.sh
+            cmake . -GNinja \
+              -DCMAKE_BUILD_TYPE=Debug \
+              -DWITH_LLVM=yes \
+              -DLFORTRAN_BUILD_ALL=yes \
+              -DWITH_STACKTRACE=no \
+              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
+              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
+              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+
+            cmake --build . -j16 --target install
+
+      - name: Test Linux
+        shell: bash -e -l {0}
+        run: |
+            cd integration_tests
+            ./run_tests.py -b llvm_omp
 
   test_without_llvm:
     name: Test without LLVM Backend

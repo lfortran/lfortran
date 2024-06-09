@@ -1,5 +1,6 @@
 passes = [
         "replace_arr_slice",
+        "replace_openmp",
         "replace_function_call_in_declaration",
         "replace_array_op",
         "replace_class_constructor",

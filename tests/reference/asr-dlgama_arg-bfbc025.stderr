@@ -1,0 +1,5 @@
+semantic error: Argument 1 of dlgama must be of double precision real type
+ --> tests/errors/dlgama_arg.f90:2:14
+  |
+2 |     print *, dlgama(2.7)
+  |              ^^^^^^^^^^^ 

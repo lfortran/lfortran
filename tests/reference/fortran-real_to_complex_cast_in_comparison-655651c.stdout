@@ -2,7 +2,7 @@ program expr2
 implicit none
 integer(4), parameter :: dp = 8
 real(8) :: zero
-zero = 0.0000000000000000d0
+zero = 0.0000000000000000e+00_8
 
 contains
 

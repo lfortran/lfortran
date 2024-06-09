@@ -359,6 +359,12 @@ int prompt(bool verbose, CompilerOptions &cu)
                 std::cout << std::setprecision(17) << "(" << r.c64.re << ", " << r.c64.im << ")" << std::endl;
                 break;
             }
+            case (LCompilers::FortranEvaluator::EvalResult::boolean) : {
+                if (verbose) std::cout << "Return type: logical" << std::endl;
+                if (verbose) section("Result:");
+                std::cout << (r.b ? "True" : "False") << std::endl;
+                break;
+            }
             case (LCompilers::FortranEvaluator::EvalResult::statement) : {
                 if (verbose) {
                     std::cout << "Return type: none" << std::endl;
@@ -1637,6 +1643,13 @@ int link_executable(const std::vector<std::string> &infiles,
                 compile_cmd += extra_linker_flags;
             }
             compile_cmd += " -l" + runtime_lib + " -lm";
+            if (compiler_options.openmp) {
+                std::string openmp_shared_library = compiler_options.openmp_lib_dir;
+                std::string omp_cmd =  " -L" + openmp_shared_library + " -Wl,-rpath," + openmp_shared_library + " -lomp";
+                if (!openmp_shared_library.empty()) {
+                    compile_cmd += omp_cmd;
+                }
+            }
             run_cmd = "./" + outfile;
         }
         if (verbose) {
@@ -2064,12 +2077,14 @@ int main_app(int argc, char *argv[]) {
     app.add_flag("--time-report", time_report, "Show compilation time report");
     app.add_flag("--static", static_link, "Create a static executable");
     app.add_flag("--shared", shared_link, "Create a shared executable");
+    app.add_flag("--logical-casting", compiler_options.logical_casting, "Allow logical casting");
     app.add_flag("--no-warnings", compiler_options.no_warnings, "Turn off all warnings");
     app.add_flag("--no-style-warnings", compiler_options.disable_style, "Turn off style suggestions");
     app.add_flag("--no-error-banner", compiler_options.no_error_banner, "Turn off error banner");
     app.add_option("--error-format", compiler_options.error_format, "Control how errors are produced (human, short)")->capture_default_str();
     app.add_option("--backend", arg_backend, "Select a backend (llvm, c, cpp, x86, wasm, fortran)")->capture_default_str();
     app.add_flag("--openmp", compiler_options.openmp, "Enable openmp");
+    app.add_flag("--openmp-lib-dir", compiler_options.openmp_lib_dir, "Pass path to openmp library")->capture_default_str();
     app.add_flag("--generate-object-code", compiler_options.generate_object_code, "Generate object code into .o files");
     app.add_flag("--rtlib", compiler_options.rtlib, "Include the full runtime library in the LLVM output");
     app.add_flag("--use-loop-variable-after-loop", compiler_options.po.use_loop_variable_after_loop, "Allow using loop variable after the loop");
@@ -2162,6 +2177,7 @@ int main_app(int argc, char *argv[]) {
         compiler_options.implicit_argument_casting = true;
         compiler_options.implicit_interface = true;
         compiler_options.print_leading_space = true;
+        compiler_options.logical_casting = false;
     } else if (arg_standard == "legacy") {
         // f23
         compiler_options.disable_style = true;
@@ -2169,6 +2185,7 @@ int main_app(int argc, char *argv[]) {
         compiler_options.implicit_argument_casting = true;
         compiler_options.implicit_interface = true;
         compiler_options.print_leading_space = true;
+        compiler_options.logical_casting = false;
 
         // legacy options
         compiler_options.fixed_form = true;
@@ -2183,6 +2200,8 @@ int main_app(int argc, char *argv[]) {
     compiler_options.use_colors = !arg_no_color;
     compiler_options.indent = !arg_no_indent;
     compiler_options.prescan = !arg_no_prescan;
+    // set openmp in pass options
+    compiler_options.po.openmp = compiler_options.openmp;
 
     for (auto &f_flag : f_flags) {
         if (f_flag == "PIC") {

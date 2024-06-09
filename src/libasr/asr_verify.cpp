@@ -420,6 +420,10 @@ public:
     }
 
     void visit_Function(const Function_t &x) {
+        if (ASRUtils::get_FunctionType(&x)->m_abi == abiType::Interactive) {
+            require(x.n_body == 0,
+            "The Function::n_body should be 0 if abi set to Interactive");
+        }
         std::vector<std::string> function_dependencies_copy = function_dependencies;
         function_dependencies.clear();
         function_dependencies.reserve(x.n_dependencies);
@@ -890,11 +894,13 @@ public:
             require(x.m_new != x.m_old, "ArrayPhysicalCast is redundant, "
                 "the old physical type and new physical type must be different.");
         }
-        require(x.m_new == ASRUtils::extract_physical_type(x.m_type),
-            "Destination physical type conflicts with the physical type of target");
-        require(x.m_old == ASRUtils::extract_physical_type(ASRUtils::expr_type(x.m_arg)),
-            "Old physical type conflicts with the physical type of argument " + std::to_string(x.m_old)
-            + " " + std::to_string(ASRUtils::extract_physical_type(ASRUtils::expr_type(x.m_arg))));
+        if(check_external){
+            require(x.m_new == ASRUtils::extract_physical_type(x.m_type),
+                "Destination physical type conflicts with the physical type of target");
+            require(x.m_old == ASRUtils::extract_physical_type(ASRUtils::expr_type(x.m_arg)),
+                "Old physical type conflicts with the physical type of argument " + std::to_string(x.m_old)
+                + " " + std::to_string(ASRUtils::extract_physical_type(ASRUtils::expr_type(x.m_arg))));
+        }
     }
 
     void visit_SubroutineCall(const SubroutineCall_t &x) {
@@ -1161,16 +1167,20 @@ public:
 
     void visit_dimension(const dimension_t &x) {
         if (x.m_start) {
-            require_with_loc(ASRUtils::is_integer(
-                *ASRUtils::expr_type(x.m_start)),
-                "Start dimension must be a signed integer", x.loc);
+            if(check_external){
+                require_with_loc(ASRUtils::is_integer(
+                    *ASRUtils::expr_type(x.m_start)),
+                    "Start dimension must be a signed integer", x.loc);
+            }
             visit_expr(*x.m_start);
         }
 
         if (x.m_length) {
-            require_with_loc(ASRUtils::is_integer(
-                *ASRUtils::expr_type(x.m_length)),
-                "Length dimension must be a signed integer", x.loc);
+            if(check_external){
+                require_with_loc(ASRUtils::is_integer(
+                    *ASRUtils::expr_type(x.m_length)),
+                    "Length dimension must be a signed integer", x.loc);
+            }
             visit_expr(*x.m_length);
         }
     }
@@ -1209,11 +1219,13 @@ public:
     }
 
     void visit_Allocate(const Allocate_t &x) {
-        for( size_t i = 0; i < x.n_args; i++ ) {
-            require(ASR::is_a<ASR::Allocatable_t>(*ASRUtils::expr_type(x.m_args[i].m_a)) ||
-                    ASR::is_a<ASR::Pointer_t>(*ASRUtils::expr_type(x.m_args[i].m_a)),
-                "Allocate should only be called with  Allocatable or Pointer type inputs, found " +
-                std::string(ASRUtils::get_type_code(ASRUtils::expr_type(x.m_args[i].m_a))));
+        if(check_external){
+            for( size_t i = 0; i < x.n_args; i++ ) {
+                require(ASR::is_a<ASR::Allocatable_t>(*ASRUtils::expr_type(x.m_args[i].m_a)) ||
+                        ASR::is_a<ASR::Pointer_t>(*ASRUtils::expr_type(x.m_args[i].m_a)),
+                    "Allocate should only be called with  Allocatable or Pointer type inputs, found " +
+                    std::string(ASRUtils::get_type_code(ASRUtils::expr_type(x.m_args[i].m_a))));
+            }
         }
         BaseWalkVisitor<VerifyVisitor>::visit_Allocate(x);
     }

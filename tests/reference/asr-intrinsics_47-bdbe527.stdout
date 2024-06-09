@@ -234,14 +234,43 @@
                         (IntrinsicArrayFunction
                             All
                             [(ArrayPhysicalCast
-                                (ArrayConstant
-                                    8
-                                    [.false., .true.]
+                                (ArrayConstructor
+                                    [(IntegerCompare
+                                        (IntegerConstant 1 (Integer 4))
+                                        Eq
+                                        (IntegerConstant 2 (Integer 4))
+                                        (Logical 4)
+                                        (LogicalConstant
+                                            .false.
+                                            (Logical 4)
+                                        )
+                                    )
+                                    (IntegerCompare
+                                        (IntegerConstant 0 (Integer 4))
+                                        Eq
+                                        (IntegerConstant 0 (Integer 4))
+                                        (Logical 4)
+                                        (LogicalConstant
+                                            .true.
+                                            (Logical 4)
+                                        )
+                                    )]
                                     (Array
                                         (Logical 4)
                                         [((IntegerConstant 1 (Integer 4))
                                         (IntegerConstant 2 (Integer 4)))]
                                         FixedSizeArray
+                                    )
+                                    (ArrayConstant
+                                        8
+                                        [.false., .true.]
+                                        (Array
+                                            (Logical 4)
+                                            [((IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 2 (Integer 4)))]
+                                            FixedSizeArray
+                                        )
+                                        ColMajor
                                     )
                                     ColMajor
                                 )

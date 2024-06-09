@@ -150,6 +150,10 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
         result.type = EvalResult::complex8;
         result.c64.re = r.real();
         result.c64.im = r.imag();
+    } else if (return_type == "logical") {
+        bool r = e->boolfn(run_fn);
+        result.type = EvalResult::boolean;
+        result.b = r;
     } else if (return_type == "void") {
         e->voidfn(run_fn);
         result.type = EvalResult::statement;
@@ -332,7 +336,7 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm3(
     ASR::TranslationUnit_t &/*asr*/, LCompilers::PassManager &/*pass_manager*/,
     diag::Diagnostics &/*diagnostics*/
 #endif
-, const std::string &infile)
+, [[maybe_unused]] const std::string &infile)
 {
 #ifdef HAVE_LFORTRAN_LLVM
     eval_count++;

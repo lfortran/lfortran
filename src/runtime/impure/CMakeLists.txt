@@ -6,6 +6,5 @@ add_library(lfortran_runtime_impure
     STATIC
     lfortran_intrinsics.c
     lfortran_intrinsic_math.f90
-    lfortran_intrinsic_sin.f90
     lfortran_intrinsic_sin_c.c
 )

@@ -21,6 +21,7 @@ the code size.
 enum class IntrinsicElementalFunctions : int64_t {
     ObjectType,
     Kind, // if kind is reordered, update `extract_kind` in `asr_utils.h`
+    Mod, // if mod is reordered, update `pass/openmp.cpp`
     Rank,
     Sin,
     Cos,
@@ -43,6 +44,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     Atanh,
     Erf,
     Erfc,
+    ErfcScaled,
     Gamma,
     Log,
     Log10,
@@ -57,8 +59,8 @@ enum class IntrinsicElementalFunctions : int64_t {
     Expm1,
     FMA,
     FlipSign,
-    Mod,
     Trailz,
+    Isnan,
     Nearest,
     Spacing,
     Modulo,
@@ -75,6 +77,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     Rshift,
     Shiftl,
     Dshiftl,
+    Dshiftr,
     Ishft,
     Bgt,
     Blt,
@@ -131,6 +134,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     Range,
     Sign,
     SignFromValue,
+    Logical,
     Nint,
     Aint,
     Anint,
@@ -497,6 +501,7 @@ create_unary_function(LogGamma, lgamma, log_gamma)
 create_unary_function(Log10, log10, log10)
 create_unary_function(Erf, erf, erf)
 create_unary_function(Erfc, erfc, erfc)
+create_unary_function(Isnan, isnan, is_nan)
 
 namespace ObjectType {
 
@@ -1146,8 +1151,8 @@ namespace Shiftl {
 
 namespace Dshiftl {
 
-        static ASR::expr_t *eval_Dshiftl(Allocator &al, const Location &loc,
-                ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
+    static ASR::expr_t *eval_Dshiftl(Allocator &al, const Location &loc,
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
         int64_t shift = ASR::down_cast<ASR::IntegerConstant_t>(args[2])->m_n;
@@ -1195,6 +1200,75 @@ namespace Dshiftl {
     }
 
 } // namespace Dshiftl
+
+namespace Dshiftr {
+
+    static ASR::expr_t *eval_Dshiftr(Allocator &al, const Location &loc,
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
+        int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
+        int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
+        int64_t shift = ASR::down_cast<ASR::IntegerConstant_t>(args[2])->m_n;
+        int kind1 = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_type);
+        int kind2 = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_type);
+        if(kind1 != kind2) {
+            append_error(diag, "The kind of first argument of 'dshiftr' intrinsic must be the same as second argument", loc);
+            return nullptr;
+        }
+        if(shift < 0){
+            append_error(diag, "The shift argument of 'dshiftr' intrinsic must be non-negative integer", loc);
+            return nullptr;
+        }
+        int64_t k_val = (kind1 == 8) ? 64 : 32;
+        if (shift > k_val) {
+            append_error(diag, "The shift argument of 'dshiftr' intrinsic must be less than or equal to the bit size of the integer", loc);
+            return nullptr;
+        }
+        int64_t rightmostI = val1 & ((1LL << shift) - 1);
+        int64_t result = rightmostI << (k_val - shift);
+        int64_t leftmostJ;
+        if (val2 < 0) {
+            leftmostJ = (val2 >> (k_val - shift)) & ((1LL << (k_val - shift)) - 1LL);
+        } else {
+            leftmostJ = val2 >> (k_val - shift);
+        }
+        result |= leftmostJ;
+        return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);
+    }
+
+
+    static inline ASR::expr_t* instantiate_Dshiftr(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("_lcompilers_dshiftr_" + type_to_str_python(arg_types[0]));
+        fill_func_arg("i", arg_types[0]);
+        fill_func_arg("j", arg_types[1]);
+        fill_func_arg("shift", arg_types[2]);
+        auto final_result = declare("x", int64, Local);
+        auto result = declare(fn_name , return_type, ReturnVar);
+
+        body.push_back(al, b.Assignment(final_result, b.BitLshift(b.And(b.i2i_t(args[0], int64), 
+            b.Sub(b.BitLshift(b.i64(1), b.i2i_t(args[2], int64), int64), b.i64(1))),
+            b.Sub(b.Mul(b.i64(extract_kind_from_ttype_t(arg_types[0])), b.i64(8)), b.i2i_t(args[2], int64)), int64)));
+
+        body.push_back(al, b.If(b.Lt(b.i2i_t(args[1], int64), b.i64(0)), {
+            b.Assignment(final_result, b.Or(final_result, b.And(b.BitRshift(b.i2i_t(args[1], int64), 
+            b.Sub(b.Mul((b.i64(extract_kind_from_ttype_t(arg_types[0]))), b.i64(8)), b.i2i_t(args[2], int64)), int64),
+            b.Sub(b.BitLshift(b.i64(1), b.Sub(b.Mul((b.i64(extract_kind_from_ttype_t(arg_types[0]))), b.i64(8)), 
+            b.i2i_t(args[2], int64)), int64), b.i64(1)))))
+        }, {
+            b.Assignment(final_result, b.Or(final_result, b.BitRshift(b.i2i_t(args[1], int64), 
+            b.Sub(b.Mul((b.i64(extract_kind_from_ttype_t(arg_types[0]))), b.i64(8)), b.i2i_t(args[2], int64)), int64)))
+        }));
+        body.push_back(al, b.Assignment(result, b.i2i_t(final_result, return_type)));
+
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, nullptr);
+
+    }
+
+} // namespace Dshiftr
 
 namespace Dreal {
 
@@ -1704,7 +1778,7 @@ namespace Ieor {
         * r = ieor(x, y)
         * r = x ^ y
         */
-        body.push_back(al, b.Assignment(result, b.BitXor(args[0], args[1], return_type)));
+        body.push_back(al, b.Assignment(result, b.Xor(args[0], args[1])));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -1918,9 +1992,23 @@ namespace Anint {
 namespace Nint {
 
     static ASR::expr_t *eval_Nint(Allocator &al, const Location &loc,
-            ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+            ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
+        int kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
         double rv = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
         double near_integer = std::round(rv);
+
+        if (kind == 4) {
+            if (near_integer < std::numeric_limits<int32_t>::min() || near_integer > std::numeric_limits<int32_t>::max()) {
+                diag.semantic_error_label("Result of `nint` overflows its kind(" + std::to_string(kind) + ")", {loc}, "");
+            }
+        } else if (kind == 8) {
+            if (near_integer < std::numeric_limits<int64_t>::min() || near_integer > std::numeric_limits<int64_t>::max()) {
+                diag.semantic_error_label("Result of `nint` overflows its kind(" + std::to_string(kind) + ")", {loc}, "");
+            }
+        } else {
+            diag.semantic_error_label("Unsupported integer kind", {loc}, "");
+        }
+
         int64_t result = int64_t(near_integer);
         return make_ConstantWithType(make_IntegerConstant_t, result, arg_type, loc);
     }
@@ -1944,6 +2032,28 @@ namespace Nint {
     }
 } // namespace Nint
 
+namespace Logical {
+
+    static ASR::expr_t *eval_Logical(Allocator &al, const Location &loc,
+            ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+        bool result = ASR::down_cast<ASR::LogicalConstant_t>(args[0])->m_value;
+        return make_ConstantWithType(make_IntegerConstant_t, result, arg_type, loc);
+    }
+
+    static inline ASR::expr_t* instantiate_Logical(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("_lcompilers_logical_" + type_to_str_python(arg_types[0]));
+        fill_func_arg("x", arg_types[0]);
+        auto result = declare(fn_name, return_type, ReturnVar);
+        body.push_back(al,b.Assignment(result, b.bool_t(args[0], return_type)));
+
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, nullptr);
+    }
+} // namespace Logical
 
 namespace Floor {
 
@@ -3773,9 +3883,9 @@ namespace Rank {
 namespace BitSize {
 
     static ASR::expr_t *eval_BitSize(Allocator &al, const Location &loc,
-            ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[0]));
-        return make_ConstantWithType(make_IntegerConstant_t, 8*kind, int32, loc);
+        return make_ConstantWithType(make_IntegerConstant_t, 8*kind, t1, loc);
     }
 
 } // namespace BitSize
@@ -4711,6 +4821,39 @@ namespace Exp {
     }
 
 } // namespace Exp
+
+namespace ErfcScaled {
+
+    static inline ASR::expr_t* eval_ErfcScaled(Allocator &al, const Location &loc,
+            ASR::ttype_t *t, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+        LCOMPILERS_ASSERT(ASRUtils::all_args_evaluated(args));
+        double val = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
+        double result = std::exp(std::pow(val, 2)) * std::erfc(val);
+        return make_ConstantWithType(make_RealConstant_t, result, t, loc);
+    }
+
+    static inline ASR::expr_t* instantiate_ErfcScaled(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("_lcompilers_erfc_scaled_" + type_to_str_python(arg_types[0]));
+        fill_func_arg("x", arg_types[0]);
+        auto result = declare(fn_name, return_type, ReturnVar);
+        /*
+        * r = erfc_scaled(x)
+        * r = exp(x**2) * erfc(x)
+        */
+
+        body.push_back(al, b.Assignment(result, b.Mul(
+            b.CallIntrinsic(scope, {arg_types[0]}, {b.Pow(args[0], b.f_t(2, arg_types[0]))}, arg_types[0], 0, Exp::instantiate_Exp),
+            b.CallIntrinsic(scope, {arg_types[0]}, {args[0]}, arg_types[0], 0, Erfc::instantiate_Erfc))));
+        
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args, body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, nullptr);
+
+    }
+
+} // namespace ErfcScaled
 
 namespace ListIndex {
 

@@ -42,9 +42,11 @@ inline std::string get_intrinsic_name(int64_t x) {
         INTRINSIC_NAME_CASE(Atanh)
         INTRINSIC_NAME_CASE(Erf)
         INTRINSIC_NAME_CASE(Erfc)
+        INTRINSIC_NAME_CASE(ErfcScaled)
         INTRINSIC_NAME_CASE(Gamma)
         INTRINSIC_NAME_CASE(Log)
         INTRINSIC_NAME_CASE(Log10)
+        INTRINSIC_NAME_CASE(Logical)
         INTRINSIC_NAME_CASE(LogGamma)
         INTRINSIC_NAME_CASE(Trunc)
         INTRINSIC_NAME_CASE(Fix)
@@ -59,6 +61,7 @@ inline std::string get_intrinsic_name(int64_t x) {
         INTRINSIC_NAME_CASE(FloorDiv)
         INTRINSIC_NAME_CASE(Mod)
         INTRINSIC_NAME_CASE(Trailz)
+        INTRINSIC_NAME_CASE(Isnan)
         INTRINSIC_NAME_CASE(Nearest)
         INTRINSIC_NAME_CASE(Spacing)
         INTRINSIC_NAME_CASE(Modulo)
@@ -75,6 +78,7 @@ inline std::string get_intrinsic_name(int64_t x) {
         INTRINSIC_NAME_CASE(Rshift)
         INTRINSIC_NAME_CASE(Shiftl)
         INTRINSIC_NAME_CASE(Dshiftl)
+        INTRINSIC_NAME_CASE(Dshiftr)
         INTRINSIC_NAME_CASE(Ishft)
         INTRINSIC_NAME_CASE(Bgt)
         INTRINSIC_NAME_CASE(Blt)
@@ -104,6 +108,7 @@ inline std::string get_intrinsic_name(int64_t x) {
         INTRINSIC_NAME_CASE(StringFindSet)
         INTRINSIC_NAME_CASE(SubstrIndex)
         INTRINSIC_NAME_CASE(Range)
+        INTRINSIC_NAME_CASE(Radix)
         INTRINSIC_NAME_CASE(Hypot)
         INTRINSIC_NAME_CASE(SelectedIntKind)
         INTRINSIC_NAME_CASE(SelectedRealKind)
@@ -197,6 +202,8 @@ namespace IntrinsicElementalFunctionRegistry {
             {&Erf::instantiate_Erf, &Erf::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Erfc),
             {&Erfc::instantiate_Erfc, &Erfc::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::ErfcScaled),
+            {&ErfcScaled::instantiate_ErfcScaled, &ErfcScaled::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Trunc),
             {&Trunc::instantiate_Trunc, &Trunc::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Fix),
@@ -249,6 +256,8 @@ namespace IntrinsicElementalFunctionRegistry {
             {&Atanh::instantiate_Atanh, &Atanh::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Log),
             {&Log::instantiate_Log, &Log::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Logical),
+            {&Logical::instantiate_Logical, &Logical::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Exp),
             {&Exp::instantiate_Exp, &Exp::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Exp2),
@@ -265,6 +274,8 @@ namespace IntrinsicElementalFunctionRegistry {
             {&Mod::instantiate_Mod, &Mod::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Trailz),
             {&Trailz::instantiate_Trailz, &Trailz::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Isnan),
+            {&Isnan::instantiate_Isnan, &Isnan::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Nearest),
             {&Nearest::instantiate_Nearest, &Nearest::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Spacing),
@@ -297,6 +308,8 @@ namespace IntrinsicElementalFunctionRegistry {
             {&Shiftl::instantiate_Shiftl, &Shiftl::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Dshiftl),
            {&Dshiftl::instantiate_Dshiftl, &Dshiftl::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Dshiftr),
+            {&Dshiftr::instantiate_Dshiftr, &Dshiftr::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Ishft),
             {&Ishft::instantiate_Ishft, &Ishft::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Bgt),
@@ -510,12 +523,16 @@ namespace IntrinsicElementalFunctionRegistry {
             "log"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Log10),
             "log10"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Logical),
+            "logical"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::LogGamma),
             "log_gamma"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Erf),
             "erf"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Erfc),
             "erfc"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::ErfcScaled),
+            "erfc_scaled"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Trunc),
             "trunc"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Fix),
@@ -566,6 +583,8 @@ namespace IntrinsicElementalFunctionRegistry {
             "mod"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Trailz),
             "trailz"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Isnan),
+            "isnan"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Nearest),
             "nearest"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Spacing),
@@ -618,6 +637,8 @@ namespace IntrinsicElementalFunctionRegistry {
             "shiftl"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Dshiftl),
            "dshiftl"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Dshiftr),
+            "dshiftr"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Ishft),
             "ishft"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Bgt),
@@ -827,6 +848,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"log_gamma", {&LogGamma::create_LogGamma, &LogGamma::eval_LogGamma}},
                 {"erf", {&Erf::create_Erf, &Erf::eval_Erf}},
                 {"erfc", {&Erfc::create_Erfc, &Erfc::eval_Erfc}},
+                {"erfc_scaled", {&ErfcScaled::create_ErfcScaled, &ErfcScaled::eval_ErfcScaled}},
                 {"trunc", {&Trunc::create_Trunc, &Trunc::eval_Trunc}},
                 {"fix", {&Fix::create_Fix, &Fix::eval_Fix}},
                 {"sin", {&Sin::create_Sin, &Sin::eval_Sin}},
@@ -862,6 +884,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"floordiv", {&FloorDiv::create_FloorDiv, &FloorDiv::eval_FloorDiv}},
                 {"mod", {&Mod::create_Mod, &Mod::eval_Mod}},
                 {"trailz", {&Trailz::create_Trailz, &Trailz::eval_Trailz}},
+                {"isnan", {&Isnan::create_Isnan, &Isnan::eval_Isnan}},
                 {"nearest", {&Nearest::create_Nearest, &Nearest::eval_Nearest}},
                 {"spacing", {&Spacing::create_Spacing, &Spacing::eval_Spacing}},
                 {"modulo", {&Modulo::create_Modulo, &Modulo::eval_Modulo}},
@@ -875,6 +898,8 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"shiftl", {&Shiftl::create_Shiftl, &Shiftl::eval_Shiftl}},
                 {"lshift", {&Shiftl::create_Shiftl, &Shiftl::eval_Shiftl}},
                 {"dshiftl", {&Dshiftl::create_Dshiftl, &Dshiftl::eval_Dshiftl}},
+                {"dshiftr", {&Dshiftr::create_Dshiftr, &Dshiftr::eval_Dshiftr}},
+                {"logical", {&Logical::create_Logical, &Logical::eval_Logical}},
                 {"ishft", {&Ishft::create_Ishft, &Ishft::eval_Ishft}},
                 {"bgt", {&Bgt::create_Bgt, &Bgt::eval_Bgt}},
                 {"blt", {&Blt::create_Blt, &Blt::eval_Blt}},

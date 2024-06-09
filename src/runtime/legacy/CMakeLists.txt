@@ -1,5 +1,5 @@
 set(SRC
-    ../../../src/libasr/runtime/lfortran_intrinsics.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../src/libasr/runtime/lfortran_intrinsics.c
 )
 
 if(WIN32)
@@ -33,28 +33,28 @@ if(WITH_TARGET_WASM)
     endif()
 
     if (DEFINED ENV{EMSDK_PATH})
-        add_custom_command(OUTPUT lfortran_runtime_wasm_emcc.o
+        add_custom_command(OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/lfortran_runtime_wasm_emcc.o
             COMMAND $ENV{EMSDK_PATH}/upstream/emscripten/emcc -I${libasr_SOURCE_DIR}/.. -DCOMPILE_TO_WASM
-                -c --target=wasm32-unknown-emscripten ${SRC} -o lfortran_runtime_wasm_emcc.o
-            COMMENT "Cross compiling lfortran_intrinscs.c to lfortran_runtime_wasm_emcc.o"
+                -c --target=wasm32-unknown-emscripten ${SRC} -o ${CMAKE_CURRENT_SOURCE_DIR}/lfortran_runtime_wasm_emcc.o
+            COMMENT "Cross compiling lfortran_intrinscs.c to ${CMAKE_CURRENT_SOURCE_DIR}/lfortran_runtime_wasm_emcc.o"
             DEPENDS ${SRC})
-        add_custom_target(lfortran_runtime_wasm_emcc ALL DEPENDS lfortran_runtime_wasm_emcc.o)
-        install(FILES lfortran_runtime_wasm_emcc.o
+        add_custom_target(lfortran_runtime_wasm_emcc ALL DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/lfortran_runtime_wasm_emcc.o)
+        install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/lfortran_runtime_wasm_emcc.o
             DESTINATION ${CMAKE_INSTALL_LIBDIR})
-        install(FILES lfortran_runtime_wasm_emcc.o
+        install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/lfortran_runtime_wasm_emcc.o
             DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/..)
     endif()
 
     if (DEFINED ENV{WASI_SDK_PATH})
-        add_custom_command(OUTPUT lfortran_runtime_wasm_wasi.o
+        add_custom_command(OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/lfortran_runtime_wasm_wasi.o
             COMMAND $ENV{WASI_SDK_PATH}/bin/clang -I${libasr_SOURCE_DIR}/.. -DCOMPILE_TO_WASM
-                -D_WASI_EMULATED_PROCESS_CLOCKS -c --target=wasm32-wasi ${SRC} -o lfortran_runtime_wasm_wasi.o
-            COMMENT "Cross compiling lfortran_intrinscs.c to lfortran_runtime_wasm_wasi.o"
+                -D_WASI_EMULATED_PROCESS_CLOCKS -c --target=wasm32-wasi ${SRC} -o ${CMAKE_CURRENT_SOURCE_DIR}/lfortran_runtime_wasm_wasi.o
+            COMMENT "Cross compiling lfortran_intrinscs.c to ${CMAKE_CURRENT_SOURCE_DIR}/lfortran_runtime_wasm_wasi.o"
             DEPENDS ${SRC})
-        add_custom_target(lfortran_runtime_wasm_wasi ALL DEPENDS lfortran_runtime_wasm_wasi.o)
-        install(FILES lfortran_runtime_wasm_wasi.o
+        add_custom_target(lfortran_runtime_wasm_wasi ALL DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/lfortran_runtime_wasm_wasi.o)
+        install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/lfortran_runtime_wasm_wasi.o
             DESTINATION ${CMAKE_INSTALL_LIBDIR})
-        install(FILES lfortran_runtime_wasm_wasi.o
+        install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/lfortran_runtime_wasm_wasi.o
             DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/..)
     endif()
 endif()
