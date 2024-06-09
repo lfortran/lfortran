@@ -3370,7 +3370,7 @@ public:
         head.m_end = end;
         head.m_increment = increment;
         head.loc = head.m_v->base.loc;
-        tmp = ASR::make_DoConcurrentLoop_t(al, x.base.base.loc, head, nullptr, 0, nullptr, 0, body.p,
+        tmp = ASR::make_DoConcurrentLoop_t(al, x.base.base.loc, head, nullptr, 0, nullptr, 0, nullptr, 0, body.p,
                 body.size());
     }
 
@@ -3632,8 +3632,8 @@ public:
                     }
                 }
 
-                Vec<ASR::expr_t *> m_local, m_shared;
-                m_local.reserve(al, 1); m_shared.reserve(al, 1);
+                Vec<ASR::expr_t *> m_local, m_shared; Vec<ASR::reduction_expr_t> m_reduction;
+                m_local.reserve(al, 1); m_shared.reserve(al, 1); m_reduction.reserve(al, 1);
                 for (size_t i = 0; i < x.n_clauses; i++) {
                     std::string clause = AST::down_cast<AST::String_t>(
                         x.m_clauses[i])->m_s;
@@ -3644,7 +3644,9 @@ public:
                     }
                     std::string list = clause.substr(clause.find('(')+1,
                         clause.size()-clause_name.size()-2);
+                    std::string op = ""; // required for reduction
                     if (clause_name == "reduction") {
+                        op = list.substr(0, list.find(':'));
                         list = list.substr(list.find(':')+1);
                     }
                     for (auto &s: LCompilers::string_split(list, ",", false)) {
@@ -3656,8 +3658,12 @@ public:
                                     " in the clause for now", loc);
                             }
                             ASR::expr_t *v = ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym));
-                            if (clause_name == "private" || clause_name == "reduction") {
+                            if (clause_name == "private") {
                                 m_local.push_back(al, v);
+                            } else if (clause_name == "reduction") {
+                                LCOMPILERS_ASSERT(op != "");
+                                ASR::reduction_expr_t re; re.loc = loc; re.m_arg = v; re.m_op = s2c(al, op);
+                                m_reduction.push_back(al, re);
                             } else {
                                 m_shared.push_back(al, v);
                             }
@@ -3670,7 +3676,7 @@ public:
                 ASR::do_loop_head_t head{};
                 omp_constructs.push_back(ASR::down_cast2<ASR::DoConcurrentLoop_t>(
                     ASR::make_DoConcurrentLoop_t(al,loc, head, m_shared.p,
-                    m_shared.n, m_local.p, m_local.n, nullptr, 0)));
+                    m_shared.n, m_local.p, m_local.n, m_reduction.p, m_reduction.n, nullptr, 0)));
             } else if ( strcmp(x.m_construct_name, "do") == 0 ) {
                 // pass
             } else {
