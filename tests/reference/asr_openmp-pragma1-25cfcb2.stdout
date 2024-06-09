@@ -128,6 +128,7 @@
                         ())
                         []
                         []
+                        []
                         [(Assignment
                             (ArrayItem
                                 (Var 2 b)
@@ -322,6 +323,7 @@
                         ())
                         [(Var 3 total_sum)]
                         [(Var 3 partial_sum)]
+                        []
                         [(Assignment
                             (Var 3 partial_sum)
                             (IntegerBinOp
