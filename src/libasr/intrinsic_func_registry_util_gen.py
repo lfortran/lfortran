@@ -824,6 +824,7 @@ def compute_arg_condition(no_of_args, args_lists):
         for i in range(no_of_args):
             arg = arg_list[i]
             if (type(arg) == tuple):
+                assert (arg[0] == "char")
                 subcond.append(f"{type_to_asr_type_check[arg[0]]}(*arg_type{i})")
                 subcond.append(f"ASRUtils::is_character_of_length(*arg_type{i}, {arg[1]})")
                 subcond_in_msg.append(arg[0] + " of length " + str(arg[1]))
