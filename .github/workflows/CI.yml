@@ -705,6 +705,15 @@ jobs:
             ./run_tests.py -b llvm llvmImplicit
             ./run_tests.py -b llvm llvmImplicit -f
 
+      # In LLVM 17 we can only compile a subset for now
+      - name: Test Linux
+        if: contains(matrix.llvm-version, '17') == true
+        shell: bash -e -l {0}
+        run: |
+            src/bin/lfortran --show-llvm examples/expr2.f90
+            src/bin/lfortran examples/expr2.f90
+            ./expr2.out
+
   test_llvm_wasm:
     name: Test LLVM->WASM ${{ matrix.llvm-version }}
     runs-on: ubuntu-latest
