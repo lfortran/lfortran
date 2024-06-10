@@ -1262,14 +1262,14 @@ namespace Cshift {
         /*
             cshift(array, shift, dim)
             int i = 0
-            for j = shift, size(array)
+            do j = shift, size(array)
                 result[i] = array[j]
                 i = i + 1
             end for
-            for j = 1, shift
+            do j = 1, shift
                 result[i] = array[j]
                 i = i + 1
-            end for
+            end do
         */
         if( !ASRUtils::is_fixed_size_array(return_type) ) {
             bool is_allocatable = ASRUtils::is_allocatable(return_type);
@@ -1324,7 +1324,7 @@ namespace Eoshift {
     static inline void verify_args(const ASR::IntrinsicArrayFunction_t &x,
             diag::Diagnostics &diagnostics) {
         ASRUtils::require_impl(x.n_args == 2 || x.n_args == 3 || x.n_args == 4,
-            "`eoshift` intrinsic accepts 2 or 3 or 4 arguments",
+            "`eoshift` intrinsic accepts atleast 2 and atmost 4 arguments",
             x.base.base.loc, diagnostics);
         ASRUtils::require_impl(x.m_args[0], "`array` argument of `eoshift` "
             "cannot be nullptr", x.base.base.loc, diagnostics);
@@ -1375,17 +1375,17 @@ namespace Eoshift {
             }
             std::rotate(m_eles.begin(), m_eles.begin() + shift, m_eles.end());
         }
-        if (extract_value(expr_value(args[1]), shift)){
-        ASR::expr_t *final_boundary = args[2];
-            if(shift > 0){
+        if (extract_value(expr_value(args[1]), shift)) {
+            ASR::expr_t *final_boundary = args[2];
+            if(shift > 0) {
                 int i = m_eles.size() - 1;
-                for(int j = 0; j < shift; j++){
+                for(int j = 0; j < shift; j++) {
                     m_eles[i] = final_boundary;
                     i--;
                 }
             }
-            else{
-                for(int j = 0; j < (-1*shift); j++){
+            else {
+                for(int j = 0; j < (-1*shift); j++) {
                     m_eles[j] = final_boundary;
                 }
             }
@@ -1484,21 +1484,19 @@ namespace Eoshift {
         fill_func_arg("boundary", arg_types[2]);
         ASR::ttype_t* return_type_ = return_type;
         /*
-            Eoshift(array, shift, dim)
+            Eoshift(array, shift, boundary, dim)
             int i = 0
-            for j = shift, size(array)
+            do j = shift, size(array)
                 result[i] = array[j]
                 i = i + 1
-            end for
-            for j = 1, shift
+            end do
+            do j = 1, shift
                 result[i] = array[j]
                 i = i + 1
-            end for
+            end do
 
-            if (k shift= 0) then
-                i = size(array)
-                i = i - shift
-                i = i + 1
+            if (shift >= 0) then
+                i = size(array) - shift + 1
             else
                 i = 1
             end if
@@ -1534,9 +1532,9 @@ namespace Eoshift {
         ASR::expr_t* shift_val = declare("shift_val", int32, Local);;
         ASR::expr_t* boundary = args[2];
 
-        body.push_back(al, b.Assignment(shift_val, b.i2i_t(args[1], int32)));
-        body.push_back(al, b.Assignment(abs_shift, b.i2i_t(shift_val, int32)));
-        body.push_back(al, b.Assignment(abs_shift_val, b.i2i_t(shift_val, int32)));
+        body.push_back(al, b.Assignment(shift_val, args[1]));
+        body.push_back(al, b.Assignment(abs_shift, shift_val));
+        body.push_back(al, b.Assignment(abs_shift_val, shift_val));
         
         body.push_back(al, b.If(b.Lt(args[1], b.i32(0)), {
             b.Assignment(shift_val, b.Add(shift_val, UBound(args[0], 1))),
