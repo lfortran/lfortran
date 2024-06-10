@@ -7,16 +7,6 @@
                     (SymbolTable
                         2
                         {
-                            int:
-                                (ExternalSymbol
-                                    2
-                                    int
-                                    4 int
-                                    lfortran_intrinsic_builtin
-                                    []
-                                    int
-                                    Private
-                                ),
                             x1:
                                 (Variable
                                     2
@@ -61,13 +51,36 @@
                                     y1
                                     [x1]
                                     Local
+                                    (IntrinsicElementalFunction
+                                        Int
+                                        [(Var 2 x1)]
+                                        0
+                                        (Integer 4)
+                                        (Cast
+                                            (RealConstant
+                                                3.300000
+                                                (Real 4)
+                                            )
+                                            RealToInteger
+                                            (Integer 4)
+                                            (RealConstant
+                                                3.300000
+                                                (Real 4)
+                                            )
+                                        )
+                                    )
                                     (Cast
-                                        (Var 2 x1)
+                                        (RealConstant
+                                            3.300000
+                                            (Real 4)
+                                        )
                                         RealToInteger
                                         (Integer 4)
-                                        (IntegerConstant 3 (Integer 4))
+                                        (RealConstant
+                                            3.300000
+                                            (Real 4)
+                                        )
                                     )
-                                    (IntegerConstant 3 (Integer 4))
                                     Parameter
                                     (Integer 4)
                                     ()
@@ -82,8 +95,24 @@
                                     y2
                                     [x2]
                                     Local
-                                    (Var 2 x2)
-                                    (IntegerConstant 7 (Integer 4))
+                                    (IntrinsicElementalFunction
+                                        Int
+                                        [(Var 2 x2)]
+                                        0
+                                        (Integer 4)
+                                        (Cast
+                                            (IntegerConstant 7 (Integer 4))
+                                            IntegerToInteger
+                                            (Integer 4)
+                                            (IntegerConstant 7 (Integer 4))
+                                        )
+                                    )
+                                    (Cast
+                                        (IntegerConstant 7 (Integer 4))
+                                        IntegerToInteger
+                                        (Integer 4)
+                                        (IntegerConstant 7 (Integer 4))
+                                    )
                                     Parameter
                                     (Integer 4)
                                     ()
@@ -94,16 +123,14 @@
                                 )
                         })
                     intrinsics_15
-                    [lfortran_intrinsic_builtin]
+                    []
                     [(Print
                         [(Var 2 y1)
                         (Var 2 y2)]
                         ()
                         ()
                     )]
-                ),
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin)
+                )
         })
     []
 )

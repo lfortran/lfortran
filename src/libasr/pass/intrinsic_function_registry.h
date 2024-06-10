@@ -134,6 +134,7 @@ inline std::string get_intrinsic_name(int64_t x) {
         INTRINSIC_NAME_CASE(Min)
         INTRINSIC_NAME_CASE(Sign)
         INTRINSIC_NAME_CASE(SignFromValue)
+        INTRINSIC_NAME_CASE(Int)
         INTRINSIC_NAME_CASE(Nint)
         INTRINSIC_NAME_CASE(Aint)
         INTRINSIC_NAME_CASE(Popcnt)
@@ -417,6 +418,8 @@ namespace IntrinsicElementalFunctionRegistry {
             {&Dprod::instantiate_Dprod, &Dprod::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Range),
             {nullptr, &Range::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Int),
+            {&Int::instantiate_Int, &Int::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Aint),
             {&Aint::instantiate_Aint, &Aint::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Popcnt),
@@ -750,6 +753,8 @@ namespace IntrinsicElementalFunctionRegistry {
             "range"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Sign),
             "sign"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Int),
+            "int"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Aint),
             "aint"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Popcnt),
@@ -964,6 +969,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"dprod", {&Dprod::create_Dprod, &Dprod::eval_Dprod}},
                 {"range", {&Range::create_Range, &Range::eval_Range}},
                 {"sign", {&Sign::create_Sign, &Sign::eval_Sign}},
+                {"int", {&Int::create_Int, &Int::eval_Int}},
                 {"aint", {&Aint::create_Aint, &Aint::eval_Aint}},
                 {"popcnt", {&Popcnt::create_Popcnt, &Popcnt::eval_Popcnt}},
                 {"poppar", {&Poppar::create_Poppar, &Poppar::eval_Poppar}},

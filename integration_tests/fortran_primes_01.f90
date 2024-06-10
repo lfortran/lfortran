@@ -14,7 +14,8 @@ elemental function witnesses_for_64(n) result(i)
    integer(WP) :: i             ! Output integer with kind parameter WP
 
    ! Compute the number of Miller-Rabin witnesses for n using bitwise XOR, left shift, and multiplication
-   i = ieor(shifta(n, 32_WP), n) * int(z'45d9f3b3335b369', WP)
+   ! i = ieor(shifta(n, 32_WP), n) * int(z'45d9f3b3335b369', WP)    TODO: add boz constant support for int intrinsic
+   i = ieor(shifta(n, 32_WP), n) * 314582625596846953_WP
 
 end function witnesses_for_64
 
