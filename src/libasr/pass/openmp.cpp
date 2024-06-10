@@ -1,3 +1,4 @@
+#include <limits.h>
 #include <libasr/asr.h>
 #include <libasr/containers.h>
 #include <libasr/exception.h>
@@ -8,6 +9,50 @@
 #include <libasr/pass/replace_openmp.h>
 
 namespace LCompilers {
+
+
+class ReplaceReductionVariable: public ASR::BaseExprReplacer<ReplaceReductionVariable> {
+    private:
+        Allocator& al;
+    public:
+        ASR::expr_t* data_expr;
+        SymbolTable* current_scope;
+        std::vector<std::string> reduction_variables;
+
+        ReplaceReductionVariable(Allocator& al_) :
+            al(al_) {}
+
+        void replace_Var(ASR::Var_t* x) {
+            if (std::find(reduction_variables.begin(), reduction_variables.end(), ASRUtils::symbol_name(x->m_v)) != reduction_variables.end()) {
+                ASR::symbol_t* sym = current_scope->get_symbol("thread_data_" + std::string(ASRUtils::symbol_name(x->m_v)));
+                LCOMPILERS_ASSERT(sym != nullptr);
+                *current_expr = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, x->base.base.loc, data_expr, sym, ASRUtils::symbol_type(sym), nullptr));
+            }
+        }
+};
+
+class ReductionVariableVisitor: public ASR::CallReplacerOnExpressionsVisitor<ReductionVariableVisitor> {
+    private:
+        ASR::expr_t* data_expr;
+        SymbolTable* current_scope;
+        ReplaceReductionVariable replacer;
+        std::vector<std::string> reduction_variables;
+
+    public:
+        ReductionVariableVisitor(Allocator &al_, SymbolTable* current_scope_, ASR::expr_t* data_expr_,
+            std::vector<std::string> reduction_variables_) :
+            data_expr(data_expr_), current_scope(current_scope_), replacer(al_) {
+                reduction_variables = reduction_variables_;
+            }
+
+        void call_replacer() {
+            replacer.data_expr = data_expr;
+            replacer.current_expr = current_expr;
+            replacer.current_scope = current_scope;
+            replacer.reduction_variables = reduction_variables;
+            replacer.replace_expr(*current_expr);
+        }
+};
 
 class ReplaceExpression: public ASR::BaseExprReplacer<ReplaceExpression> {
     private:
@@ -95,6 +140,9 @@ class DoConcurrentVisitor :
         Vec<ASR::stmt_t*> pass_result;
         SymbolTable* current_scope;
         PassOptions pass_options;
+        int current_stmt_index = -1;
+        ASR::stmt_t** current_m_body; size_t current_n_body;
+        std::vector<std::string> reduction_variables;
     public:
         DoConcurrentVisitor(Allocator& al_, PassOptions pass_options_) :
         al(al_), remove_original_statement(false), pass_options(pass_options_) {
@@ -105,8 +153,11 @@ class DoConcurrentVisitor :
             bool remove_original_statement_copy = remove_original_statement;
             Vec<ASR::stmt_t*> body;
             body.reserve(al, n_body);
+            current_m_body = m_body;
+            current_n_body = n_body;
             for (size_t i=0; i<n_body; i++) {
                 pass_result.n = 0;
+                current_stmt_index = i;
                 pass_result.reserve(al, 1);
                 remove_original_statement = false;
                 visit_stmt(*m_body[i]);
@@ -119,6 +170,8 @@ class DoConcurrentVisitor :
             }
             m_body = body.p;
             n_body = body.size();
+            current_m_body = nullptr;
+            current_n_body = 0;
             pass_result.n = 0;
             remove_original_statement = remove_original_statement_copy;
         }
@@ -384,6 +437,7 @@ class DoConcurrentVisitor :
 
             // update all expr present in DoConcurrent to use the new symbols
             DoConcurrentStatementVisitor v(al, current_scope);
+            v.current_expr = nullptr;
             v.visit_DoConcurrentLoop(do_loop);
 
             ASR::do_loop_head_t loop_head = do_loop.m_head;
@@ -420,6 +474,51 @@ class DoConcurrentVisitor :
 
             // Partioning logic ends
 
+            // initialize reduction variables
+            for ( size_t i = 0; i < do_loop.n_reduction; i++ ) {
+                ASR::reduction_expr_t red = do_loop.m_reduction[i];
+                reduction_variables.push_back(ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(red.m_arg)->m_v));
+                switch (red.m_op) {
+                    case ASR::reduction_opType::ReduceAdd : {
+                        body.push_back(al, b.Assignment(red.m_arg, b.constant_t(0.0, ASRUtils::expr_type(red.m_arg))));
+                        break;
+                    }
+                    case ASR::reduction_opType::ReduceMul : {
+                        body.push_back(al, b.Assignment(red.m_arg, b.constant_t(1.0, ASRUtils::expr_type(red.m_arg))));
+                        break;
+                    }
+                    case ASR::reduction_opType::ReduceSub : {
+                        body.push_back(al, b.Assignment(red.m_arg, b.constant_t(0.0, ASRUtils::expr_type(red.m_arg))));
+                        break;
+                    }
+                    case ASR::reduction_opType::ReduceMAX : {
+                        if (ASRUtils::is_integer(*ASRUtils::expr_type(red.m_arg))) {
+                            body.push_back(al, b.Assignment(red.m_arg, b.i_t(INT_MIN, ASRUtils::expr_type(red.m_arg))));
+                        } else if (ASRUtils::is_real(*ASRUtils::expr_type(red.m_arg))) {
+                            body.push_back(al, b.Assignment(red.m_arg, b.f_t(std::numeric_limits<double>::min(), ASRUtils::expr_type(red.m_arg))));
+                        } else {
+                            // handle other types
+                            LCOMPILERS_ASSERT(false);
+                        }
+                        break;
+                    }
+                    case ASR::reduction_opType::ReduceMIN : {
+                        if (ASRUtils::is_integer(*ASRUtils::expr_type(red.m_arg))) {
+                            body.push_back(al, b.Assignment(red.m_arg, b.i_t(INT_MAX, ASRUtils::expr_type(red.m_arg))));
+                        } else if (ASRUtils::is_real(*ASRUtils::expr_type(red.m_arg))) {
+                            body.push_back(al, b.Assignment(red.m_arg, b.f_t(std::numeric_limits<double>::max(), ASRUtils::expr_type(red.m_arg))));
+                        } else {
+                            // handle other types
+                            LCOMPILERS_ASSERT(false);
+                        }
+                        break;
+                    }
+                    default: {
+                        LCOMPILERS_ASSERT(false);
+                    }
+                }
+            }
+
             std::vector<ASR::stmt_t*> loop_body;
             for (size_t i = 0; i < do_loop.n_body; i++) {
                 loop_body.push_back(do_loop.m_body[i]);
@@ -427,6 +526,45 @@ class DoConcurrentVisitor :
             body.push_back(al, b.DoLoop(loop_head.m_v, b.Add(start, b.i32(1)), end, loop_body, loop_head.m_increment));
 
             body.push_back(al, ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc, current_scope->get_symbol("gomp_barrier"), nullptr, nullptr, 0, nullptr)));
+
+            /*
+                handle reduction variables if any then:
+                call gomp_atomic_start()
+                => perform atomic operation
+                call gomp_atomic_end()
+            */
+            if (do_loop.n_reduction > 0) {
+                body.push_back(al, ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc,
+                        current_scope->get_symbol("gomp_atomic_start"), nullptr, nullptr, 0, nullptr)));
+            }
+            for ( size_t i = 0; i < do_loop.n_reduction; i++ ) {
+                ASR::reduction_expr_t red = do_loop.m_reduction[i];
+                ASR::symbol_t* red_sym = current_scope->get_symbol("thread_data_" + std::string(ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(red.m_arg)->m_v)));
+                ASR::expr_t* lhs = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc, tdata_expr, red_sym, ASRUtils::symbol_type(red_sym), nullptr));
+
+                switch (red.m_op) {
+                    case ASR::reduction_opType::ReduceAdd : {
+                        body.push_back(al, b.Assignment(lhs, b.Add(lhs, red.m_arg)));
+                        break;
+                    }
+                    case ASR::reduction_opType::ReduceSub : {
+                        body.push_back(al, b.Assignment(lhs, b.Sub(lhs, red.m_arg)));
+                        break;
+                    }
+                    case ASR::reduction_opType::ReduceMul : {
+                        body.push_back(al, b.Assignment(lhs, b.Mul(lhs, red.m_arg)));
+                        break;
+                    }
+                    default : {
+                        // TODO: support ReduceMAX, ReduceMIN
+                        LCOMPILERS_ASSERT(false);
+                    }
+                }
+            }
+            if (do_loop.n_reduction > 0) {
+                body.push_back(al, ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc,
+                        current_scope->get_symbol("gomp_atomic_end"), nullptr, nullptr, 0, nullptr)));
+            }
 
             ASR::symbol_t* function = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Function_t_util(al, loc, current_scope, s2c(al, current_scope->parent->get_unique_name("lcompilers_function")),
                 nullptr, 0,
@@ -547,6 +685,13 @@ class DoConcurrentVisitor :
 
             pass_result.push_back(al, ASRUtils::STMT(ASR::make_SubroutineCall_t(al, x.base.base.loc, current_scope->get_symbol("gomp_parallel"), nullptr,
                                 call_args.p, call_args.n, nullptr)));
+
+            // update all reduction variables in statements after this.
+            ReductionVariableVisitor rvv(al, current_scope, data_expr, reduction_variables);
+            for (size_t i = current_stmt_index + 1; i < current_n_body; i++) {
+                rvv.visit_stmt(*current_m_body[i]);
+            }
+            reduction_variables.clear();
 
             remove_original_statement = true;
             return;
