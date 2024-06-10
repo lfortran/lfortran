@@ -164,6 +164,24 @@ class ASRBuilder {
         return EXPR(ASR::make_ComplexConstant_t(al, loc, x, y, complex64));
     }
 
+    inline ASR::expr_t* constant_t(double x, ASR::ttype_t* t, double y = 0.0) {
+        if (ASRUtils::is_integer(*t)) {
+            return i_t(x, t);
+        } else if (ASRUtils::is_real(*t)) {
+            return f_t(x, t);
+        } else if (ASRUtils::is_complex(*t)) {
+            return complex_t(x, y, t);
+        } else if (ASRUtils::is_logical(*t)) {
+            if (x == 0.0) {
+                return bool_t(false, t);
+            } else {
+                return bool_t(true, t);
+            }
+        } else {
+            throw LCompilersException("Type not supported");
+        }
+    }
+
     inline ASR::expr_t* ListItem(ASR::expr_t* x, ASR::expr_t* pos, ASR::ttype_t* type) {
         return EXPR(ASR::make_ListItem_t(al, loc, x, pos, type, nullptr));
     }
