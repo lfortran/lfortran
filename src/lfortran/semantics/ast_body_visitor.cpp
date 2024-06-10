@@ -3644,9 +3644,23 @@ public:
                     }
                     std::string list = clause.substr(clause.find('(')+1,
                         clause.size()-clause_name.size()-2);
-                    std::string op = ""; // required for reduction
+                    ASR::reduction_opType op = ASR::reduction_opType::ReduceAdd; // required for reduction
                     if (clause_name == "reduction") {
-                        op = list.substr(0, list.find(':'));
+                        std::string reduction_op = list.substr(0, list.find(':'));
+                        if ( reduction_op == "+" ) {
+                            op = ASR::reduction_opType::ReduceAdd;
+                        } else if ( reduction_op == "-" ) {
+                            op = ASR::reduction_opType::ReduceSub;
+                        } else if ( reduction_op == "*" ) {
+                            op = ASR::reduction_opType::ReduceMul;
+                        } else if ( reduction_op == "max" ) {
+                            op = ASR::reduction_opType::ReduceMAX;
+                        } else if ( reduction_op == "min" ) {
+                            op = ASR::reduction_opType::ReduceMIN;
+                        } else {
+                            throw SemanticError("The reduction operator "+ reduction_op
+                                +" is not supported yet", loc);
+                        }
                         list = list.substr(list.find(':')+1);
                     }
                     for (auto &s: LCompilers::string_split(list, ",", false)) {
@@ -3661,8 +3675,7 @@ public:
                             if (clause_name == "private") {
                                 m_local.push_back(al, v);
                             } else if (clause_name == "reduction") {
-                                LCOMPILERS_ASSERT(op != "");
-                                ASR::reduction_expr_t re; re.loc = loc; re.m_arg = v; re.m_op = s2c(al, op);
+                                ASR::reduction_expr_t re; re.loc = loc; re.m_arg = v; re.m_op = op;
                                 m_reduction.push_back(al, re);
                             } else {
                                 m_shared.push_back(al, v);

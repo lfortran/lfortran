@@ -98,7 +98,7 @@
                         ())
                         []
                         [(Var 2 i)]
-                        [("+"
+                        [(ReduceAdd
                         (Var 2 local_ctr))]
                         [(Assignment
                             (Var 2 local_ctr)
