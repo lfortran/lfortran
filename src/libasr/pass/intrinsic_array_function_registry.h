@@ -1290,7 +1290,9 @@ namespace Cshift {
         args.push_back(al, result);
         ASR::expr_t *i = declare("i", int32, Local);
         ASR::expr_t *j = declare("j", int32, Local);
-        ASR::expr_t* shift_val = args[1];
+        ASR::expr_t* shift_val = declare("shift_val", int32, Local);;
+        body.push_back(al, b.Assignment(shift_val, args[1]));
+        
         body.push_back(al, b.If(b.Lt(args[1], b.i32(0)), {
             b.Assignment(shift_val, b.Add(shift_val, UBound(args[0], 1)))
         }, {

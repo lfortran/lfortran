@@ -9,6 +9,7 @@ program intrinsics_244
     logical :: z(4) = [.true., .false., .true., .false.]
     character(len=2) :: c(4) = ["ab", "bc", "cd", "de"]
     integer :: shift(4) = [1, -2, -3, 2]
+    integer :: shift_val = -2
 
     print*, cshift(x, shift(1))
     if (any(cshift(x, shift(1)) /= [2, 3, 4, 1])) error stop
@@ -25,6 +26,12 @@ program intrinsics_244
     if (any(y1 /= [3.0, 4.0, 1.0, 2.0])) error stop
     print*, z1
     if (z1(1) .neqv. .false. .or. z1(2) .neqv. .true. .or. z1(3) .neqv. .false. .or. z1(4) .neqv. .true.) error stop
+
+    print *, cshift(x, shift_val)
+    if (any(y1 /= [3.0, 4.0, 1.0, 2.0])) error stop
+
+    print *, shift_val
+    if (shift_val /= -2) error stop
     ! print*, c1 ! gives segfault
 
 end program
