@@ -5105,9 +5105,9 @@ public:
                 const ASR::expr_t* imag_part_expr = complex_expr->m_im;
 
                 if (!ASR::is_a<ASR::RealConstant_t>(*real_part_expr)) {
-                    throw SemanticError("Expected a right parenthesis in expression", x.base.base.loc);
+                    throw SemanticError("Expected a real constant for the real part", x.base.base.loc);
                 } else if (!ASR::is_a<ASR::RealConstant_t>(*imag_part_expr)) {
-                    throw SemanticError("Syntax error in `complex` constant", x.base.base.loc);
+                    throw SemanticError("Expected a real constant for the imaginary part", x.base.base.loc);
                 }
             }
             return (ASR::asr_t*) x_;
