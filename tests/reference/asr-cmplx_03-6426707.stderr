@@ -1,0 +1,5 @@
+semantic error: Expected a real constant for the imaginary part
+ --> tests/errors/cmplx_03.f90:2:13
+  |
+2 |     print*, cmplx((1.00000000, real(0, kind=4)), kind=8)
+  |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
