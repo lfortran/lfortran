@@ -5907,8 +5907,8 @@ public:
                     contain_loop_vars &= true;
                     return;
                 }
-                sym = ASRUtils::symbol_get_past_external(sym);
-                ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
+                ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(
+                                            ASRUtils::symbol_get_past_external(sym));
                 contain_loop_vars &= ASRUtils::is_value_constant(var->m_value);
                 return;
             }
@@ -6018,8 +6018,8 @@ public:
                 // check if loop_var_index is valid
                 if (loop_var_index >= (int) loop_vars.size()) {
                     // this is compiletime value
-
-                    ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(x.m_v));
+                    ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(
+                                                ASRUtils::symbol_get_past_external(x.m_v));
                     this->visit_expr(*var->m_value);
                 } else {
                     value = loop_indices[loop_var_index];
