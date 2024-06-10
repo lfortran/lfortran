@@ -437,6 +437,7 @@ class DoConcurrentVisitor :
 
             // update all expr present in DoConcurrent to use the new symbols
             DoConcurrentStatementVisitor v(al, current_scope);
+            v.current_expr = nullptr;
             v.visit_DoConcurrentLoop(do_loop);
 
             ASR::do_loop_head_t loop_head = do_loop.m_head;
