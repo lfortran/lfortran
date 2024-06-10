@@ -4116,13 +4116,8 @@ namespace Achar {
     static ASR::expr_t *eval_Achar(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int64_t i = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
-        char str = i;
-        std::string svalue;
-        svalue += str;
-        Str s;
-        s.from_str_view(svalue);
-        char *result = s.c_str(al);
-        return make_ConstantWithType(make_StringConstant_t, result, t1, loc);
+        std::string svalue(1, static_cast<char>(i));
+        return make_ConstantWithType(make_StringConstant_t, s2c(al, svalue), t1, loc);
     }
 
     static inline ASR::expr_t* instantiate_Achar(Allocator &al, const Location &loc,
