@@ -1,4 +1,4 @@
-semantic error: Expected a right parenthesis in expression
+semantic error: Expected a real constant for the real part
  --> tests/errors/cmplx_02.f90:2:13
   |
 2 |     print*, cmplx((real(1, kind=4), 0.00000000), kind=8)
