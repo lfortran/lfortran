@@ -153,6 +153,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     Precision,
     Tiny,
     BitSize,
+    SameTypeAs,
     NewLine,
     Conjg,
     Huge,
@@ -3890,6 +3891,16 @@ namespace BitSize {
     }
 
 } // namespace BitSize
+
+namespace SameTypeAs {
+
+    static ASR::expr_t *eval_SameTypeAs(Allocator &al, const Location &loc,
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+        bool same_type = ASRUtils::types_equal(ASRUtils::expr_type(args[0]), ASRUtils::expr_type(args[1]));
+        return make_ConstantWithType(make_LogicalConstant_t, same_type, t1, loc);
+    }
+
+} // namespace SameTypeAs
 
 namespace NewLine {
 
