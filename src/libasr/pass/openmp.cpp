@@ -1,3 +1,4 @@
+#include <limits.h>
 #include <libasr/asr.h>
 #include <libasr/containers.h>
 #include <libasr/exception.h>
