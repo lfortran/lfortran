@@ -26,11 +26,6 @@ interface
     integer, optional, intent(in) :: x
     end function
 
-    character(len=1) function achar(i, kind)
-    integer, intent(in) :: i
-    integer, optional :: kind
-    end function
-
     logical function is_iostat_eor(i) result(r)
     integer, intent(in) :: i
     end function

@@ -89,7 +89,6 @@ struct IntrinsicProcedures {
 
             // Subroutines
             {"cpu_time", {m_math, &not_implemented, false}},
-            {"achar", {m_builtin, &eval_achar, true}},
             {"move_alloc", {m_builtin, &not_implemented, false}},
             {"present", {m_builtin, &not_implemented, false}},
             {"system_clock", {m_math, &not_implemented, false}},
@@ -282,28 +281,6 @@ struct IntrinsicProcedures {
     static ASR::expr_t *not_implemented(Allocator &/*al*/, const Location &/*loc*/, Vec<ASR::expr_t*> &/*args*/, const CompilerOptions &/*compiler_options*/) {
         // This intrinsic is not evaluated at compile time yet
         return nullptr;
-    }
-
-    static ASR::expr_t *eval_achar(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &) {
-        LCOMPILERS_ASSERT(ASRUtils::all_args_evaluated(args));
-        ASR::expr_t* int_expr = args[0];
-        ASR::ttype_t* int_type = ASRUtils::expr_type(int_expr);
-        if (ASR::is_a<ASR::Integer_t>(*int_type)) {
-            int64_t c = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(int_expr))->m_n;
-            ASR::ttype_t* str_type =
-                ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, 1, nullptr));
-            char cc = c;
-            std::string svalue;
-            svalue += cc;
-            Str s;
-            s.from_str_view(svalue);
-            char *str_val = s.c_str(al);
-            return ASR::down_cast<ASR::expr_t>(
-                ASR::make_StringConstant_t(al, loc,
-                str_val, str_type));
-        } else {
-            throw SemanticError("achar() must have one integer argument", loc);
-        }
     }
 
 }; // ComptimeEval

@@ -2,8 +2,6 @@
     (SymbolTable
         1
         {
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin),
             template_matrix_01:
                 (Program
                     (SymbolTable
@@ -18,16 +16,6 @@
                                     []
                                     elements
                                     Public
-                                ),
-                            achar:
-                                (ExternalSymbol
-                                    11
-                                    achar
-                                    18 achar
-                                    lfortran_intrinsic_builtin
-                                    []
-                                    achar
-                                    Private
                                 ),
                             am:
                                 (Variable
@@ -1183,17 +1171,15 @@
                             ColMajor
                             ()
                         )
-                        (FunctionCall
-                            11 achar
-                            ()
-                            [((IntegerConstant 10 (Integer 4)))
-                            (())]
+                        (IntrinsicElementalFunction
+                            Achar
+                            [(IntegerConstant 10 (Integer 4))]
+                            0
                             (Character 1 1 ())
                             (StringConstant
                                 "\n"
                                 (Character 1 1 ())
                             )
-                            ()
                         )]
                         ()
                         ()

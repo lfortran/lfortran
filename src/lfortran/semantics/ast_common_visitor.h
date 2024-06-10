@@ -813,6 +813,7 @@ public:
         {"ishftc", {IntrinsicSignature({"i", "shift"}, 2, 2)}},
         {"ichar", {IntrinsicSignature({"C", "kind"}, 1, 2)}},
         {"char", {IntrinsicSignature({"I", "kind"}, 1, 2)}},
+        {"achar", {IntrinsicSignature({"I", "kind"}, 1, 2)}},
         {"set_exponent", {IntrinsicSignature({"X", "I"}, 2, 2)}},
         {"rrspacing", {IntrinsicSignature({"X"}, 1, 1)}},
         {"dshiftl", {IntrinsicSignature({"i", "j", "shift"}, 3, 3)}},
