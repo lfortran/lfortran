@@ -1,0 +1,13 @@
+{
+    "basename": "asr-cmplx_03-6426707",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/cmplx_03.f90",
+    "infile_hash": "20d38686e1c0b08e83731b13995ea390ac379958c2eaea9a03bebf87",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-cmplx_03-6426707.stderr",
+    "stderr_hash": "b4ec448100aff185a1210c311a330fc865fb1865aae64efde5d1293a",
+    "returncode": 2
+}
