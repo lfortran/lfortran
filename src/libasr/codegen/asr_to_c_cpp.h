@@ -1071,7 +1071,10 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             ASR::expr_t* call_arg = m_args[i].m_value;
             self().visit_expr(*call_arg);
             ASR::ttype_t* type = ASRUtils::expr_type(call_arg);
-            if (ASR::is_a<ASR::Var_t>(*call_arg)) {
+            if (ASR::is_a<ASR::Var_t>(*call_arg) 
+                && ASR::is_a<ASR::Variable_t>(
+                    *ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::Var_t>(m_args[i].m_value)->m_v))) {
                 ASR::Variable_t* param = ASRUtils::EXPR2VAR(f->m_args[i]);
                 if( (is_c && (param->m_intent == ASRUtils::intent_inout
                     || param->m_intent == ASRUtils::intent_out)
