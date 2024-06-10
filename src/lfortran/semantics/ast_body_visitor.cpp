@@ -3644,7 +3644,7 @@ public:
                     }
                     std::string list = clause.substr(clause.find('(')+1,
                         clause.size()-clause_name.size()-2);
-                    ASR::reduction_opType op; // required for reduction
+                    ASR::reduction_opType op = ASR::reduction_opType::ReduceAdd; // required for reduction
                     if (clause_name == "reduction") {
                         std::string reduction_op = list.substr(0, list.find(':'));
                         if ( reduction_op == "+" ) {
