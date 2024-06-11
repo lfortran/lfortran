@@ -2705,6 +2705,10 @@ public:
                                     x.base.base.loc);
                         }
                     }
+                    if (s_intent == ASRUtils::intent_out && value_attr) {
+                        throw SemanticError("`value` attribute conflicts with `intent(out)` attribute",
+                            x.base.base.loc);
+                    }
                     if (!s.m_initializer && s_intent == ASRUtils::intent_local
                             && storage_type == ASR::storage_typeType::Parameter) {
                         throw SemanticError("Variable `" + std::string(s.m_name) +
