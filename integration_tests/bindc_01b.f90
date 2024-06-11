@@ -10,7 +10,7 @@ interface
 
     ! same as `ret_ptr`, except, the only difference being "unspecified"
     ! intent of `p` in `ret_ptr_unspecified_intent`
-    subroutine ret_ptr_unspecified_intent(p) bind(c, name="ret_ptr_c1")
+    subroutine ret_ptr_unspecified_intent(p) bind(c, name="ret_ptr_c")
     import :: c_ptr
     type(c_ptr) :: p
     end subroutine

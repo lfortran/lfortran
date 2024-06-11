@@ -2,7 +2,6 @@
 #define BINDC_01C
 
 void ret_ptr_c(void **p);
-void ret_ptr_c1(void **p);
 void print_ptr_c(int n, void *p);
 
 #endif // BINDC_01C
