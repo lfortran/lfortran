@@ -8731,11 +8731,13 @@ public:
                     builder->CreateBitCast(dt, llvm::Type::getVoidTy(context)->getPointerTo()),
                     polymorphic_addr);
                 llvm::Value* type_id_addr = llvm_utils->create_gep(abstract_, 0);
-                ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(arg_type);
-                ASR::symbol_t* struct_sym = ASRUtils::symbol_get_past_external(struct_t->m_derived_type);
-                llvm::Value* hash = llvm::ConstantInt::get(llvm_utils->getIntType(8),
-                    llvm::APInt(64, get_class_hash(struct_sym)));
-                builder->CreateStore(hash, type_id_addr);
+                if (ASR::is_a<ASR::Struct_t>(*arg_type)) {
+                    ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(arg_type);
+                    ASR::symbol_t* struct_sym = ASRUtils::symbol_get_past_external(struct_t->m_derived_type);
+                    llvm::Value* hash = llvm::ConstantInt::get(llvm_utils->getIntType(8),
+                        llvm::APInt(64, get_class_hash(struct_sym)));
+                    builder->CreateStore(hash, type_id_addr);
+                }
                 return abstract_;
             }
         } else if( ASR::is_a<ASR::Struct_t>(*ASRUtils::type_get_past_array(arg_type)) ) {
