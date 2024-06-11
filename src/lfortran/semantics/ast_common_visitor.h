@@ -2592,13 +2592,16 @@ public:
                     }
                 }
                 ASR::intentType s_intent;
+                bool is_argument = false;
                 if (std::find(current_procedure_args.begin(),
                         current_procedure_args.end(), to_lower(s.m_name)) !=
                         current_procedure_args.end()) {
                     s_intent = ASRUtils::intent_unspecified;
+                    is_argument = true;
                 } else {
                     s_intent = ASRUtils::intent_local;
                 }
+                ASR::abiType s_abi = is_argument ? current_procedure_abi_type : ASR::abiType::Source;
                 Vec<ASR::dimension_t> dims;
                 dims.reserve(al, 0);
                 // location for dimension(...) if present
@@ -2699,7 +2702,7 @@ public:
                             dims_attr_loc = ad->base.base.loc;
                             process_dims(al, dims, ad->m_dim, ad->n_dim, is_compile_time, is_char_type,
                                 (s_intent == ASRUtils::intent_in || s_intent == ASRUtils::intent_out ||
-                                s_intent == ASRUtils::intent_inout));
+                                s_intent == ASRUtils::intent_inout) || is_argument);
                         } else {
                             throw SemanticError("Attribute type not implemented yet",
                                     x.base.base.loc);
@@ -2736,8 +2739,8 @@ public:
                 }
                 ASR::symbol_t *type_declaration;
                 ASR::ttype_t *type = determine_type(x.base.base.loc, sym, x.m_vartype, is_pointer,
-                    is_allocatable, dims, type_declaration, current_procedure_abi_type,
-                    s_intent != ASRUtils::intent_local, is_dimension_star);
+                    is_allocatable, dims, type_declaration, s_abi,
+                    (s_intent != ASRUtils::intent_local) || is_argument, is_dimension_star);
                 current_variable_type_ = type;
 
                 ASR::expr_t* init_expr = nullptr;
@@ -3181,7 +3184,7 @@ public:
                         ASR::asr_t *v = ASR::make_Variable_t(al, s.loc, current_scope,
                                 s2c(al, to_lower(s.m_name)), variable_dependencies_vec.p,
                                 variable_dependencies_vec.size(), s_intent, init_expr, value,
-                                storage_type, type, type_declaration, current_procedure_abi_type, s_access, s_presence,
+                                storage_type, type, type_declaration, s_abi, s_access, s_presence,
                                 value_attr);
                         current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(v));
                         if( is_derived_type ) {
