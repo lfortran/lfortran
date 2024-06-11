@@ -910,7 +910,7 @@ namespace LCompilers {
                 } else {
                     type = type_original;
                 }
-                if( (arg->m_intent == ASRUtils::intent_out || arg->m_intent == ASRUtils::intent_unspecified) &&
+                if( (arg->m_intent == ASRUtils::intent_out || (arg->m_intent == ASRUtils::intent_unspecified && !arg->m_value_attr)) &&
                     ASR::is_a<ASR::CPtr_t>(*arg->m_type) ) {
                     type = type->getPointerTo();
                 }
