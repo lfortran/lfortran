@@ -1,5 +1,5 @@
 program intrinsics_185
-
+    implicit none
     character(7) :: fortran = "FORTRAN"
     character(2) :: af = "AF"
     character(3) :: foo = "FOO"
@@ -9,7 +9,30 @@ program intrinsics_185
     integer :: arr2(2)
     character(len=5) :: string = "hello"
     character(len=1) :: set(2) = ["l", "h"]
-  
+    integer, parameter :: i1 = verify("FORTRAN", "AF", .true., 4)
+    ! integer, parameter :: i2 = verify("FORTRAN", "FOO", kind = 8) ! does not work yet #4226
+    integer, parameter :: i3 = verify("FORTRAN", "C++", .true.)
+    integer, parameter :: i4 = verify("FORTR", "N")
+    integer, parameter :: i5 = verify("FORTRAN", "FORTRAN", .true.)
+    integer, parameter :: ar1(2) = verify(["FORTRAN", "GORTRAN"], ["FO", "GR"])
+    integer, parameter :: ar2(2) = verify(["FORTRAN", "GORTRAN"], ["FN", "NA"], .TRUE.)
+
+    print*, i1
+    if (i1 /= 7) error stop
+    ! print*, i2
+    ! if (i2 /= 3_8) error stop
+    print*, i3
+    if (i3 /= 7) error stop
+    print*, i4
+    if (i4 /= 1) error stop
+    print*, i5
+    if (i5 /= 0) error stop
+
+    print*, ar1
+    if (any(ar1 /= [3, 2])) error stop
+    print*, ar2
+    if (any(ar2 /= [6, 5])) error stop
+
     print*, verify("FORTRAN", "AF", .true., 4)    
     if ( verify("FORTRAN", "AF", .true., 4) /= 7 ) error stop   
     print*, verify("FORTRAN", "FOO", kind = 8)
@@ -34,20 +57,18 @@ program intrinsics_185
 
     ! make sure that broadcasting is done correctly for `verify`
     arr2 = verify(["FORTRAN", "GORTRAN"], ["FO", "GR"])
-    if (arr2(1) /= 3) error stop
-    if (arr2(2) /= 2) error stop
+    print*, arr2
+    if (any(arr2 /= [3, 2])) error stop
 
     arr2 = verify(["FORTRAN", "GORTRAN"], ["FN", "NA"], .TRUE.)
-    if (arr2(1) /= 6) error stop
-    if (arr2(2) /= 5) error stop
+    print*, arr2
+    if (any(arr2 /= [6, 5])) error stop
 
     arr2 = verify(string, set)
     print*, arr2
-    if (arr2(1) /= 1) error stop
-    if (arr2(2) /= 2) error stop
+    if (any(arr2 /= [1, 2])) error stop
 
     arr2 = verify(string, set, .TRUE., 4)
     print*, arr2
-    if (arr2(1) /= 5) error stop
-    if (arr2(2) /= 5) error stop
+    if (any(arr2 /= [5, 5])) error stop
 end program
