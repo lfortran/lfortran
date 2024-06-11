@@ -4338,11 +4338,10 @@ namespace Repeat {
 namespace StringContainsSet {
 
     static ASR::expr_t *eval_StringContainsSet(Allocator &al, const Location &loc,
-            ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         char* string = ASR::down_cast<ASR::StringConstant_t>(args[0])->m_s;
         char* set = ASR::down_cast<ASR::StringConstant_t>(args[1])->m_s;
         bool back = ASR::down_cast<ASR::LogicalConstant_t>(args[2])->m_value;
-        int64_t kind = ASR::down_cast<ASR::IntegerConstant_t>(args[3])->m_n;
         size_t len = std::strlen(string);
         int64_t result = 0;
         if (back) {
@@ -4360,9 +4359,7 @@ namespace StringContainsSet {
                 }
             }
         }
-
-        ASR::ttype_t* return_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, kind));
-        return make_ConstantWithType(make_IntegerConstant_t, result, return_type, loc);
+        return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);
     }
 
     static inline ASR::expr_t* instantiate_StringContainsSet(Allocator &al, const Location &loc,
@@ -4472,11 +4469,10 @@ namespace StringContainsSet {
 namespace StringFindSet {
 
     static ASR::expr_t *eval_StringFindSet(Allocator &al, const Location &loc,
-            ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         char* string = ASR::down_cast<ASR::StringConstant_t>(args[0])->m_s;
         char* set = ASR::down_cast<ASR::StringConstant_t>(args[1])->m_s;
         bool back = ASR::down_cast<ASR::LogicalConstant_t>(args[2])->m_value;
-        int64_t kind = ASR::down_cast<ASR::IntegerConstant_t>(args[3])->m_n;
         size_t len = std::strlen(string);
         int64_t result = 0;
         if (back) {
@@ -4494,9 +4490,7 @@ namespace StringFindSet {
                 }
             }
         }
-
-        ASR::ttype_t* return_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, kind));
-        return make_ConstantWithType(make_IntegerConstant_t, result, return_type, loc);
+        return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);
     }
 
     static inline ASR::expr_t* instantiate_StringFindSet(Allocator &al, const Location &loc,
