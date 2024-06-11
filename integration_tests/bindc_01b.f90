@@ -8,6 +8,11 @@ interface
     type(c_ptr), intent(out) :: p
     end subroutine
 
+    subroutine ret_ptr1(p) bind(c, name="ret_ptr_c")
+    import :: c_ptr
+    type(c_ptr) :: p
+    end subroutine
+
     subroutine print_ptr(n, p) bind(c, name="print_ptr_c")
     import :: c_ptr, c_int
     integer(c_int), value, intent(in) :: n
