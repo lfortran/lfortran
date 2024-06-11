@@ -1,7 +1,7 @@
 ! Tests c_ptr, c_f_pointer, c_loc
 program bindc_01
 use iso_c_binding, only: c_ptr, c_loc, c_f_pointer
-use bindc_01b, only: ret_ptr, ret_ptr1, print_ptr
+use bindc_01b, only: ret_ptr, ret_ptr_unspecified_intent, print_ptr
 implicit none
 type(c_ptr) :: cptr
 type(c_ptr) :: cptr1
@@ -17,7 +17,7 @@ end do
 
 call print_ptr(12, c_loc(a))
 
-call ret_ptr1(cptr1)
+call ret_ptr_unspecified_intent(cptr1)
 call c_f_pointer(cptr1, a1, [12])
 do i = 1, size(a1)
     a1(i) = i

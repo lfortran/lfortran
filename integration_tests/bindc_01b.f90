@@ -8,7 +8,9 @@ interface
     type(c_ptr), intent(out) :: p
     end subroutine
 
-    subroutine ret_ptr1(p) bind(c, name="ret_ptr_c")
+    ! same as `ret_ptr`, except, the only difference being "unspecified"
+    ! intent of `p` in `ret_ptr_unspecified_intent`
+    subroutine ret_ptr_unspecified_intent(p) bind(c, name="ret_ptr_c1")
     import :: c_ptr
     type(c_ptr) :: p
     end subroutine

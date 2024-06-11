@@ -7,6 +7,11 @@ void ret_ptr_c(void **p) {
     *p = malloc(sizeof(float)*12);
 }
 
+// same as `ret_ptr_c` above
+void ret_ptr_c1(void **p) {
+    *p = malloc(sizeof(float)*12);
+}
+
 void print_ptr_c(int n, void *p) {
     float *a = p;
     printf("[ ");
