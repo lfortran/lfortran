@@ -1,10 +1,10 @@
-MODULE implied_do_loops5
+MODULE module_implied_do_loops5
    INTEGER, DIMENSION(5) :: fixup_counter
    INTEGER :: n
-END MODULE implied_do_loops5
+END MODULE module_implied_do_loops5
 
-PROGRAM test
-   USE implied_do_loops5
+PROGRAM implied_do_loops5
+   USE module_implied_do_loops5
    IMPLICIT NONE
    INTEGER, DIMENSION(5) :: result_array
 
@@ -13,4 +13,4 @@ PROGRAM test
 
    if (all(result_array /= [1, 2, 3, 4, 5])) ERROR STOP
 
-END PROGRAM test
+END PROGRAM implied_do_loops5
