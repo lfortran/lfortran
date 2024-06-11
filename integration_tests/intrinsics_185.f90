@@ -10,7 +10,7 @@ program intrinsics_185
     character(len=5) :: string = "hello"
     character(len=1) :: set(2) = ["l", "h"]
     integer, parameter :: i1 = verify("FORTRAN", "AF", .true., 4)
-    ! integer, parameter :: i2 = verify("FORTRAN", "FOO", kind = 8) ! does not work yet #4226
+    integer, parameter :: i2 = verify("FORTRAN", "FOO", kind = 8)
     integer, parameter :: i3 = verify("FORTRAN", "C++", .true.)
     integer, parameter :: i4 = verify("FORTR", "N")
     integer, parameter :: i5 = verify("FORTRAN", "FORTRAN", .true.)
@@ -19,8 +19,8 @@ program intrinsics_185
 
     print*, i1
     if (i1 /= 7) error stop
-    ! print*, i2
-    ! if (i2 /= 3_8) error stop
+    print*, i2
+    if (i2 /= 3_8) error stop
     print*, i3
     if (i3 /= 7) error stop
     print*, i4
