@@ -17,4 +17,3 @@ program intrinsics_249
     res = sum(sum(abs(x), dim))
     end function var_2_iint8_dp
 end program
-    
