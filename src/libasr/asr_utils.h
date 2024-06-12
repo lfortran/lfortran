@@ -3032,7 +3032,6 @@ inline bool dimension_expr_equal(
     if (!(dim_a && dim_b)) {
         return true;
     }
-
     int dim_a_int {-1};
     int dim_b_int {-1};
 
@@ -3047,24 +3046,49 @@ inline bool dimension_expr_equal(
 
     return true;
 }
-
-inline bool dimensions_equal(ASR::dimension_t* dims_a, size_t n_dims_a,
-    ASR::dimension_t* dims_b, size_t n_dims_b
-) {
-    // unequal ranks means dimensions aren't equal
-    if (n_dims_a != n_dims_b) {
-        return false;
-    }
-
-    for( size_t i = 0; i < n_dims_a; i++ ) {
-        ASR::dimension_t dim_a = dims_a[i];
-        ASR::dimension_t dim_b = dims_b[i];
-        if( !dimension_expr_equal(dim_a.m_length, dim_b.m_length) ||
-            !dimension_expr_equal(dim_a.m_start, dim_b.m_start) ) {
-            return false;
+inline int get_array_size(ASR::dimension_t* dims, size_t n_dims){
+    int dim_value {-1};
+    int total = 1;
+    for(size_t i =0; i < n_dims; i++ ){
+        ASR::expr_t* dim_len = dims[i].m_length;
+        if(!dim_len){
+            return 0;
+        }
+        ASR::expr_t* value_node = ASRUtils::expr_value(dim_len); 
+        if(!value_node){ // non-constant dimension
+            return 0;
+        } else {
+            ASRUtils::extract_value(value_node,dim_value);
+            total *= dim_value; 
         }
     }
-    return true;
+    return total;
+}
+
+inline bool dimensions_equal(ASR::dimension_t* dims_a, size_t n_dims_a,
+    ASR::dimension_t* dims_b, size_t n_dims_b,
+    bool check_n_dims=true ,bool get_dimensions_total=false)
+    {
+    // unequal ranks means dimensions aren't equal
+    if ((n_dims_a != n_dims_b) && check_n_dims) {
+        return false;
+    }
+    if(!get_dimensions_total){ // check strict equality for each dimension
+        for( size_t i = 0; i < n_dims_a; i++ ) {
+            ASR::dimension_t dim_a = dims_a[i];
+            ASR::dimension_t dim_b = dims_b[i];
+            if( !dimension_expr_equal(dim_a.m_length, dim_b.m_length) ||
+                !dimension_expr_equal(dim_a.m_start, dim_b.m_start) ) {
+                return false;
+            }
+        }
+        return true;
+    } else {
+        int total_a = get_array_size(dims_a,n_dims_a);
+        int total_b = get_array_size(dims_a,n_dims_a);
+        return (total_a == 0) || (total_b == 0) || (total_a >= total_b);
+        
+    }
 }
 
 inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b,
@@ -3100,7 +3124,7 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b,
 
                 return ASRUtils::dimensions_equal(
                             a2->m_dims, a2->n_dims,
-                            b2->m_dims, b2->n_dims);
+                            b2->m_dims, b2->n_dims,true,true);
             }
             case (ASR::ttypeType::TypeParameter) : {
                 ASR::TypeParameter_t* left_tp = ASR::down_cast<ASR::TypeParameter_t>(a);
@@ -5610,6 +5634,11 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                     dimension_.from_pointer_n_copy(al, orig_arg_array_t->m_dims, orig_arg_array_t->n_dims);
                     dimensions = &dimension_;
                 }
+                //TO DO : Add appropriate errors in 'asr_uttils.h'. 
+                LCOMPILERS_ASSERT_MSG(dimensions_equal(arg_array_t->m_dims, arg_array_t->n_dims,
+                    orig_arg_array_t->m_dims, orig_arg_array_t->n_dims, false,true),
+                    "Incompatible dimensions passed to " + (std::string)(ASR::down_cast<ASR::Function_t>(a_name_)->m_name) 
+                    + "(" + std::to_string(get_array_size(arg_array_t->m_dims,arg_array_t->n_dims)) + "/" + std::to_string(get_array_size(orig_arg_array_t->m_dims,orig_arg_array_t->n_dims))+")");
 
                 physical_cast_arg.m_value = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
                     al, arg->base.loc, arg, arg_array_t->m_physical_type, orig_arg_array_t->m_physical_type,
