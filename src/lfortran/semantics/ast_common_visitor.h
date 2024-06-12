@@ -3173,7 +3173,7 @@ public:
                     diag.semantic_warning_label(
                         "Assuming implicit save attribute for variable declaration",
                         {x.m_syms[i].loc},
-                        "help: add explicit save attribute or initialize in a separate statement"
+                        "help: add explicit save attribute or parameter attribute or initialize in a separate statement"
                     );
                 }
                 if( std::find(excluded_from_symtab.begin(), excluded_from_symtab.end(), sym) == excluded_from_symtab.end() ) {
