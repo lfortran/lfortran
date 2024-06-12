@@ -3760,10 +3760,22 @@ public:
                     // * Variable (`integer :: x`)
                     ASR::Variable_t *arg = EXPR2VAR(x.m_args[i]);
                     LCOMPILERS_ASSERT(is_arg_dummy(arg->m_intent));
+
+                    llvm::Value* llvm_sym = &llvm_arg;
+
+                    // Under BindC convention, characters are passed as i8*,
+                    // but they are passed as i8** otherwise. Handle conversion
+                    // from bindC convention back to regular convention here.
+                    if (ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::BindC) {
+                      if (ASR::is_a<ASR::Character_t>(*arg->m_type)) {
+                        llvm_sym = builder->CreateAlloca(llvm_arg.getType());
+                        builder->CreateStore(&llvm_arg, llvm_sym);
+                      }
+                    }
                     uint32_t h = get_hash((ASR::asr_t*)arg);
                     std::string arg_s = arg->m_name;
                     llvm_arg.setName(arg_s);
-                    llvm_symtab[h] = &llvm_arg;
+                    llvm_symtab[h] = llvm_sym;
                 }
             }
             if (is_a<ASR::Function_t>(*s)) {
@@ -8343,6 +8355,9 @@ public:
                                         target_type, nullptr, "call_arg_value_ptr");
                                     builder->CreateStore(tmp, target);
                                     tmp = target;
+                                }
+                                if (ASR::is_a<ASR::Character_t>(*arg->m_type)) {
+                                    tmp = CreateLoad2(arg->m_type, tmp);
                                 }
                             } else {
                                 if( orig_arg &&
