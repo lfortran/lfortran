@@ -2,16 +2,16 @@ warning: Assuming implicit save attribute for variable declaration
   --> tests/../integration_tests/template_array_03.f90:87:24
    |
 87 |             integer :: x = 1, y = 1, z = 1
-   |                        ^^^^^ help: add explicit save attribute or initialize in a separate statement
+   |                        ^^^^^ help: add explicit save attribute or parameter attribute or initialize in a separate statement
 
 warning: Assuming implicit save attribute for variable declaration
   --> tests/../integration_tests/template_array_03.f90:87:31
    |
 87 |             integer :: x = 1, y = 1, z = 1
-   |                               ^^^^^ help: add explicit save attribute or initialize in a separate statement
+   |                               ^^^^^ help: add explicit save attribute or parameter attribute or initialize in a separate statement
 
 warning: Assuming implicit save attribute for variable declaration
   --> tests/../integration_tests/template_array_03.f90:87:38
    |
 87 |             integer :: x = 1, y = 1, z = 1
-   |                                      ^^^^^ help: add explicit save attribute or initialize in a separate statement
+   |                                      ^^^^^ help: add explicit save attribute or parameter attribute or initialize in a separate statement
