@@ -1339,6 +1339,8 @@ namespace Eoshift {
             extract_n_dims_from_ttype(expr_type(args[0])) == 1) {
         ASR::ArrayConstant_t *arr = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(args[0]));
         ASR::ttype_t* arr_type = expr_type(args[0]);
+        ASR::expr_t *final_boundary = args[2];
+        ASR::ttype_t* boundary_type = expr_type(args[2]);
         std::vector<ASR::expr_t *> m_eles;
         if (is_integer(*arr_type)) {
             for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(arr->m_type); i++) {
@@ -1362,11 +1364,19 @@ namespace Eoshift {
                 }
             }
         } else if (is_character(*arr_type)) {
+            std::string str = "";
             for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(arr->m_type); i++) {
-                std::string str = "";
                 str = ASR::down_cast<ASR::StringConstant_t>(ASRUtils::fetch_ArrayConstant_value(al, arr, i))->m_s;
                 m_eles.push_back(b.StringConstant(str, arr_type));
             }  
+            int len_str = str.length();
+            str = "";
+            for(int i = 0; i < len_str; i++){
+                str += " ";
+            }
+            if(is_logical(*boundary_type)){
+                final_boundary = b.StringConstant(str, arr_type);
+            }
         }
         int shift = 0;
         if (extract_value(expr_value(args[1]), shift)) {
@@ -1376,7 +1386,6 @@ namespace Eoshift {
             std::rotate(m_eles.begin(), m_eles.begin() + shift, m_eles.end());
         }
         if (extract_value(expr_value(args[1]), shift)) {
-            ASR::expr_t *final_boundary = args[2];
             if(shift > 0) {
                 int i = m_eles.size() - 1;
                 for(int j = 0; j < shift; j++) {
@@ -1455,13 +1464,14 @@ namespace Eoshift {
         }
         else{
             if(is_integer(*type_array))
-                final_boundary = b.i_t(0, int32);
+                final_boundary = b.i_t(0, type_array);
             else if(is_real(*type_array))
-                final_boundary = b.f_t(0.0, real32);
+                final_boundary = b.f_t(0.0, type_array);
             else if(is_logical(*type_array))
-                final_boundary = b.bool_t(false, logical);
-            else if(is_character(*type_array))
-                final_boundary = b.StringConstant("", type_array);
+                final_boundary = b.bool_t(false, type_array);
+            else if(is_character(*type_array)){
+                final_boundary = b.StringConstant("  ", type_array);
+            }
         }
         Vec<ASR::expr_t*> m_args; m_args.reserve(al, 3);
         m_args.push_back(al, array); m_args.push_back(al, shift); m_args.push_back(al, final_boundary);
@@ -1530,6 +1540,7 @@ namespace Eoshift {
         ASR::expr_t* abs_shift = declare("z", int32, Local);
         ASR::expr_t* abs_shift_val = declare("k", int32, Local);
         ASR::expr_t* shift_val = declare("shift_val", int32, Local);;
+        ASR::expr_t* final_boundary = declare("final_boundary", character(2), Local);   //TODO: It does not handle character type
         ASR::expr_t* boundary = args[2];
 
         body.push_back(al, b.Assignment(shift_val, args[1]));
@@ -1553,7 +1564,6 @@ namespace Eoshift {
             b.Assignment(i, b.Add(i, b.i32(1))),
         }, nullptr));
 
-
         body.push_back(al, b.If(b.GtE(abs_shift_val, b.i32(0)), {
             b.Assignment(i, UBound(args[0], 1)),
             b.Assignment(i, b.Sub(i, abs_shift)),
@@ -1562,11 +1572,21 @@ namespace Eoshift {
             b.Assignment(i, b.i32(1))
         }
         ));
-        body.push_back(al, b.DoLoop(j, b.i32(1), abs_shift, {
-            b.Assignment(b.ArrayItem_01(result, {i}), boundary),
+
+        if(is_character(*expr_type(b.ArrayItem_01(args[0], {b.i32(1)}))) && is_logical(*expr_type(args[2]))){
+            body.push_back(al, b.Assignment(final_boundary, b.StringConstant("  ", expr_type(b.ArrayItem_01(args[0], {b.i32(1)})))));
+            body.push_back(al, b.DoLoop(j, b.i32(1), abs_shift, {
+            b.Assignment(b.ArrayItem_01(result, {i}), final_boundary),
             b.Assignment(i, b.Add(i, b.i32(1))),
         }, nullptr));
 
+        }
+        else{
+            body.push_back(al, b.DoLoop(j, b.i32(1), abs_shift, {
+            b.Assignment(b.ArrayItem_01(result, {i}), boundary),
+            b.Assignment(i, b.Add(i, b.i32(1))),
+        }, nullptr));
+        }
 
         body.push_back(al, b.Return());
         ASR::symbol_t *fn_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
