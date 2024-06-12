@@ -4172,6 +4172,10 @@ public:
             ptr_loads = 1 - reduce_loads;
             this->visit_expr(*cptr);
             llvm::Value* llvm_cptr = tmp;
+            if (ASR::is_a<ASR::StructInstanceMember_t>(*cptr)) {
+                // TOOD: remove this in future, it is hacky
+                llvm_cptr = CreateLoad(llvm_cptr);
+            }
             ptr_loads = 0;
             this->visit_expr(*fptr);
             llvm::Value* llvm_fptr = tmp;
