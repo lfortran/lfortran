@@ -3046,24 +3046,6 @@ inline bool dimension_expr_equal(
 
     return true;
 }
-inline int get_array_size(ASR::dimension_t* dims, size_t n_dims){
-    int dim_value {-1};
-    int total = 1;
-    for(size_t i =0; i < n_dims; i++ ){
-        ASR::expr_t* dim_len = dims[i].m_length;
-        if(!dim_len){
-            return 0;
-        }
-        ASR::expr_t* value_node = ASRUtils::expr_value(dim_len); 
-        if(!value_node){ // non-constant dimension
-            return 0;
-        } else {
-            ASRUtils::extract_value(value_node,dim_value);
-            total *= dim_value; 
-        }
-    }
-    return total;
-}
 
 inline bool dimensions_equal(ASR::dimension_t* dims_a, size_t n_dims_a,
     ASR::dimension_t* dims_b, size_t n_dims_b,
@@ -3084,10 +3066,10 @@ inline bool dimensions_equal(ASR::dimension_t* dims_a, size_t n_dims_a,
         }
         return true;
     } else {
-        int total_a = get_array_size(dims_a,n_dims_a);
-        int total_b = get_array_size(dims_a,n_dims_a);
-        return (total_a == 0) || (total_b == 0) || (total_a >= total_b);
-        
+        int total_a = get_fixed_size_of_array(dims_a,n_dims_a);
+        int total_b = get_fixed_size_of_array(dims_b,n_dims_b);
+        // -1 means found dimension with no value at compile time, then return true anyway.
+        return (total_a == -1) || (total_b == -1) || (total_a >= total_b);
     }
 }
 
@@ -5638,7 +5620,7 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                 LCOMPILERS_ASSERT_MSG(dimensions_equal(arg_array_t->m_dims, arg_array_t->n_dims,
                     orig_arg_array_t->m_dims, orig_arg_array_t->n_dims, false,true),
                     "Incompatible dimensions passed to " + (std::string)(ASR::down_cast<ASR::Function_t>(a_name_)->m_name) 
-                    + "(" + std::to_string(get_array_size(arg_array_t->m_dims,arg_array_t->n_dims)) + "/" + std::to_string(get_array_size(orig_arg_array_t->m_dims,orig_arg_array_t->n_dims))+")");
+                    + "(" + std::to_string(get_fixed_size_of_array(arg_array_t->m_dims,arg_array_t->n_dims)) + "/" + std::to_string(get_fixed_size_of_array(orig_arg_array_t->m_dims,orig_arg_array_t->n_dims))+")");
 
                 physical_cast_arg.m_value = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
                     al, arg->base.loc, arg, arg_array_t->m_physical_type, orig_arg_array_t->m_physical_type,
