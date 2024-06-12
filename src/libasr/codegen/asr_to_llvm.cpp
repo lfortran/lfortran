@@ -4173,7 +4173,8 @@ public:
             this->visit_expr(*cptr);
             llvm::Value* llvm_cptr = tmp;
             if (ASR::is_a<ASR::StructInstanceMember_t>(*cptr)) {
-                // TOOD: remove this in future, it is hacky
+                // `type(c_ptr)` requires an extra load here
+                // TODO: be more explicit about ptr_loads: https://github.com/lfortran/lfortran/issues/4245
                 llvm_cptr = CreateLoad(llvm_cptr);
             }
             ptr_loads = 0;
