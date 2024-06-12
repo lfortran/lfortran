@@ -1,4 +1,4 @@
-MODULE input_module
+MODULE module_interface_18
     implicit none
     INTERFACE test_01_interface
        MODULE PROCEDURE test_01
@@ -39,8 +39,6 @@ MODULE input_module
         INTEGER, DIMENSION(ilen + func() + 10),intent(in) :: value
         print *,size(value)
     END SUBROUTINE test_03
-
-
     SUBROUTINE input_var_bcast
         implicit none
        INTEGER :: ilen = 20
@@ -50,13 +48,10 @@ MODULE input_module
        CALL test_02_interface (ilen,ipak)
        CALL test_03_interface (ilen,ipak)
     END SUBROUTINE input_var_bcast
+ END MODULE module_interface_18
 
-
-
- END MODULE input_module
-
- program name
-    use input_module
+ program interface_18
+    use module_interface_18
     implicit none
     call input_var_bcast
- end program name 
+ end program interface_18 
