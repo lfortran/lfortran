@@ -689,34 +689,6 @@ inline static void visit_BoolOp(Allocator &al, const AST::BoolOp_t &x,
     }
   }
 
-static ASR::asr_t* comptime_intrinsic_real(ASR::expr_t *A,
-        ASR::expr_t * kind,
-        Allocator &al, const Location &loc,
-        SetChar& current_function_dependencies) {
-    int kind_int = 4;
-    if (kind) {
-        ASR::expr_t* kind_value = ASRUtils::expr_value(kind);
-        if (kind_value) {
-            if (ASR::is_a<ASR::IntegerConstant_t>(*kind_value)) {
-                kind_int = ASR::down_cast<ASR::IntegerConstant_t>(kind_value)->m_n;
-                current_function_dependencies.erase(s2c(al, "kind"));
-            } else {
-                throw SemanticError("kind argument to real(a, kind) is not a constant integer", loc);
-            }
-        } else {
-            throw SemanticError("kind argument to real(a, kind) is not constant", loc);
-        }
-    }
-    ASR::expr_t *result = A;
-    ASR::ttype_t *dest_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, kind_int));
-    ASR::ttype_t *source_type = ASRUtils::type_get_past_allocatable(
-        ASRUtils::expr_type(A));
-
-    // TODO: this is implicit cast, use ExplicitCast
-    ImplicitCastRules::set_converted_value(al, loc, &result,
-                                           source_type, dest_type);
-    return (ASR::asr_t*)result;
-}
 
 static ASR::asr_t* comptime_intrinsic_int(ASR::expr_t *A,
         ASR::expr_t * kind,
@@ -884,6 +856,7 @@ public:
         {"logical", {IntrinsicSignature({"i", "kind"}, 1, 2)}},
         {"cshift", {IntrinsicSignature({"array", "shift", "dim"}, 2, 3)}},
         {"eoshift", {IntrinsicSignature({"array", "shift", "boundary", "dim"}, 2, 4)}},
+        {"real", {IntrinsicSignature({"a", "kind"}, 1, 2)}},
     };
 
     std::map<std::string, std::pair<std::string, std::vector<std::string>>> intrinsic_mapping = {
@@ -4132,19 +4105,7 @@ public:
     // real/int (result in `tmp`), false otherwise (`tmp` unchanged)
     ASR::asr_t* intrinsic_function_transformation(Allocator &al, const Location &loc,
             const std::string &fn_name, Vec<ASR::call_arg_t>& args) {
-        // real(), int() are represented using ExplicitCast (for now we use
-        // ImplicitCast) in ASR, so we save them to tmp and exit:
-        if (fn_name == "real") {
-            ASR::expr_t *arg1;
-            if (args.size() == 1) {
-                arg1 = nullptr;
-            } else if (args.size() == 2) {
-                arg1 = args[1].m_value;
-            } else {
-                throw SemanticError("real(...) must have 1 or 2 arguments", loc);
-            }
-            return LFortran::CommonVisitorMethods::comptime_intrinsic_real(args[0].m_value, arg1, al, loc, current_function_dependencies);
-        } else if (fn_name == "int") {
+        if (fn_name == "int") {
             ASR::expr_t *arg1;
             if (args.size() == 1) {
                 arg1 = nullptr;
