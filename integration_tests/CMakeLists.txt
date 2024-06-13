@@ -1502,10 +1502,10 @@ RUN(NAME specfun_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc
     EXTRA_ARGS --use-loop-variable-after-loop --implicit-typing)
 
 RUN(NAME cpp_pre_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c
-    EXTRA_ARGS --cpp
+    EXTRA_ARGS -cpp
     GFORTRAN_ARGS -cpp)
 RUN(NAME cpp_pre_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c wasm
-    EXTRA_ARGS --cpp
+    EXTRA_ARGS -cpp
     GFORTRAN_ARGS -cpp)
 RUN(NAME cpp_pre_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c wasm
     EXTRA_ARGS --cpp

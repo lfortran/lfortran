@@ -1950,7 +1950,19 @@ EMSCRIPTEN_KEEPALIVE char* emit_wasm_from_source(char *input) {
 
 #endif
 
-int main_app(int argc, char *argv[]) {
+// Patch CLI arguments to match gfortran behavior while remaining compatible
+// with CLI11.
+static void patch_cli_arguments(int argc, const char *argv[]) {
+  for(int i = 1; i < argc; ++i) {
+    // Arguments with one dash and multiple characters are not valid for CLI11,
+    // but that flag is supported by gfortran.
+    if(strcmp(argv[i], "-cpp") == 0) {
+      argv[i] = "--cpp";
+    }
+  }
+}
+
+int main_app(int argc, const char *argv[]) {
     int dirname_length;
     LCompilers::LFortran::get_executable_path(LCompilers::binary_executable_path, dirname_length);
     LCompilers::LFortran::set_exec_path_and_mode(LCompilers::binary_executable_path, dirname_length);
@@ -2146,6 +2158,8 @@ int main_app(int argc, char *argv[]) {
 
     app.get_formatter()->column_width(25);
     app.require_subcommand(0, 1);
+
+    patch_cli_arguments(argc, argv);
     CLI11_PARSE(app, argc, argv);
     lcompilers_unique_ID = compiler_options.generate_object_code ? get_unique_ID() : "";
 
@@ -2471,7 +2485,7 @@ int main_app(int argc, char *argv[]) {
     return 0;
 }
 
-int main(int argc, char *argv[])
+int main(int argc, const char *argv[])
 {
     LCompilers::initialize();
 #if defined(HAVE_LFORTRAN_STACKTRACE)
