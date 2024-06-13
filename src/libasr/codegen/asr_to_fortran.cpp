@@ -1669,7 +1669,7 @@ public:
         src = r;
     }
 
-    // void visit_StructTypeStaticMember(const ASR::StructTypeStaticMember_t &x) {}
+    // void visit_StructStaticMember(const ASR::StructStaticMember_t &x) {}
 
     // void visit_EnumStaticMember(const ASR::EnumStaticMember_t &x) {}
 
