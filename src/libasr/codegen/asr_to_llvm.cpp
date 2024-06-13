@@ -3760,10 +3760,22 @@ public:
                     // * Variable (`integer :: x`)
                     ASR::Variable_t *arg = EXPR2VAR(x.m_args[i]);
                     LCOMPILERS_ASSERT(is_arg_dummy(arg->m_intent));
+
+                    llvm::Value* llvm_sym = &llvm_arg;
+
+                    // Under BindC convention, characters are passed as i8*,
+                    // but they are passed as i8** otherwise. Handle conversion
+                    // from bindC convention back to regular convention here.
+                    if (ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::BindC) {
+                      if (ASR::is_a<ASR::Character_t>(*arg->m_type)) {
+                        llvm_sym = builder->CreateAlloca(llvm_arg.getType());
+                        builder->CreateStore(&llvm_arg, llvm_sym);
+                      }
+                    }
                     uint32_t h = get_hash((ASR::asr_t*)arg);
                     std::string arg_s = arg->m_name;
                     llvm_arg.setName(arg_s);
-                    llvm_symtab[h] = &llvm_arg;
+                    llvm_symtab[h] = llvm_sym;
                 }
             }
             if (is_a<ASR::Function_t>(*s)) {
@@ -4172,6 +4184,11 @@ public:
             ptr_loads = 1 - reduce_loads;
             this->visit_expr(*cptr);
             llvm::Value* llvm_cptr = tmp;
+            if (ASR::is_a<ASR::StructInstanceMember_t>(*cptr)) {
+                // `type(c_ptr)` requires an extra load here
+                // TODO: be more explicit about ptr_loads: https://github.com/lfortran/lfortran/issues/4245
+                llvm_cptr = CreateLoad(llvm_cptr);
+            }
             ptr_loads = 0;
             this->visit_expr(*fptr);
             llvm::Value* llvm_fptr = tmp;
@@ -8344,6 +8361,9 @@ public:
                                     builder->CreateStore(tmp, target);
                                     tmp = target;
                                 }
+                                if (ASR::is_a<ASR::Character_t>(*arg->m_type)) {
+                                    tmp = CreateLoad2(arg->m_type, tmp);
+                                }
                             } else {
                                 if( orig_arg &&
                                     !LLVM::is_llvm_pointer(*orig_arg->m_type) &&
@@ -8731,11 +8751,13 @@ public:
                     builder->CreateBitCast(dt, llvm::Type::getVoidTy(context)->getPointerTo()),
                     polymorphic_addr);
                 llvm::Value* type_id_addr = llvm_utils->create_gep(abstract_, 0);
-                ASR::StructType_t* struct_t = ASR::down_cast<ASR::StructType_t>(arg_type);
-                ASR::symbol_t* struct_sym = ASRUtils::symbol_get_past_external(struct_t->m_derived_type);
-                llvm::Value* hash = llvm::ConstantInt::get(llvm_utils->getIntType(8),
+                if (ASR::is_a<ASR::StructType_t>(*arg_type)) {
+                    ASR::StructType_t* struct_t = ASR::down_cast<ASR::StructType_t>(arg_type);
+                    ASR::symbol_t* struct_sym = ASRUtils::symbol_get_past_external(struct_t->m_derived_type);
+                    llvm::Value* hash = llvm::ConstantInt::get(llvm_utils->getIntType(8),
                     llvm::APInt(64, get_class_hash(struct_sym)));
-                builder->CreateStore(hash, type_id_addr);
+                    builder->CreateStore(hash, type_id_addr);
+                }
                 return abstract_;
             }
         } else if( ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_array(arg_type)) ) {

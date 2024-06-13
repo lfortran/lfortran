@@ -1,7 +1,8 @@
 program intrinsic_186
-    
+    implicit none
     character(7) :: string
     print*, verify(maybe(string), "foo")
+    if (verify(maybe(string), "foo") /= 3) error stop
     contains
 
     function maybe(string) result(maybe_string)

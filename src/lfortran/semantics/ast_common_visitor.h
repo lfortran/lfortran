@@ -826,6 +826,7 @@ public:
         {"merge_bits", {IntrinsicSignature({"i", "j", "mask"}, 3, 3)}},
         {"logical", {IntrinsicSignature({"i", "kind"}, 1, 2)}},
         {"cshift", {IntrinsicSignature({"array", "shift", "dim"}, 2, 3)}},
+        {"eoshift", {IntrinsicSignature({"array", "shift", "boundary", "dim"}, 2, 4)}},
     };
 
     std::map<std::string, std::pair<std::string, std::string>> intrinsic_mapping = {
@@ -2592,13 +2593,16 @@ public:
                     }
                 }
                 ASR::intentType s_intent;
+                bool is_argument = false;
                 if (std::find(current_procedure_args.begin(),
                         current_procedure_args.end(), to_lower(s.m_name)) !=
                         current_procedure_args.end()) {
                     s_intent = ASRUtils::intent_unspecified;
+                    is_argument = true;
                 } else {
                     s_intent = ASRUtils::intent_local;
                 }
+                ASR::abiType s_abi = is_argument ? current_procedure_abi_type : ASR::abiType::Source;
                 Vec<ASR::dimension_t> dims;
                 dims.reserve(al, 0);
                 // location for dimension(...) if present
@@ -2699,11 +2703,15 @@ public:
                             dims_attr_loc = ad->base.base.loc;
                             process_dims(al, dims, ad->m_dim, ad->n_dim, is_compile_time, is_char_type,
                                 (s_intent == ASRUtils::intent_in || s_intent == ASRUtils::intent_out ||
-                                s_intent == ASRUtils::intent_inout));
+                                s_intent == ASRUtils::intent_inout) || is_argument);
                         } else {
                             throw SemanticError("Attribute type not implemented yet",
                                     x.base.base.loc);
                         }
+                    }
+                    if (s_intent == ASRUtils::intent_out && value_attr) {
+                        throw SemanticError("`value` attribute conflicts with `intent(out)` attribute",
+                            x.base.base.loc);
                     }
                     if (!s.m_initializer && s_intent == ASRUtils::intent_local
                             && storage_type == ASR::storage_typeType::Parameter) {
@@ -2732,8 +2740,8 @@ public:
                 }
                 ASR::symbol_t *type_declaration;
                 ASR::ttype_t *type = determine_type(x.base.base.loc, sym, x.m_vartype, is_pointer,
-                    is_allocatable, dims, type_declaration, current_procedure_abi_type,
-                    s_intent != ASRUtils::intent_local, is_dimension_star);
+                    is_allocatable, dims, type_declaration, s_abi,
+                    (s_intent != ASRUtils::intent_local) || is_argument, is_dimension_star);
                 current_variable_type_ = type;
 
                 ASR::expr_t* init_expr = nullptr;
@@ -3166,7 +3174,7 @@ public:
                     diag.semantic_warning_label(
                         "Assuming implicit save attribute for variable declaration",
                         {x.m_syms[i].loc},
-                        "help: add explicit save attribute or initialize in a separate statement"
+                        "help: add explicit save attribute or parameter attribute or initialize in a separate statement"
                     );
                 }
                 if( std::find(excluded_from_symtab.begin(), excluded_from_symtab.end(), sym) == excluded_from_symtab.end() ) {
@@ -3177,7 +3185,7 @@ public:
                         ASR::asr_t *v = ASR::make_Variable_t(al, s.loc, current_scope,
                                 s2c(al, to_lower(s.m_name)), variable_dependencies_vec.p,
                                 variable_dependencies_vec.size(), s_intent, init_expr, value,
-                                storage_type, type, type_declaration, current_procedure_abi_type, s_access, s_presence,
+                                storage_type, type, type_declaration, s_abi, s_access, s_presence,
                                 value_attr);
                         current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(v));
                         if( is_derived_type ) {
@@ -5462,7 +5470,8 @@ public:
     void is_coarray_or_atomic(std::string intrinsic_name, const Location& loc){
         std::vector<std::string> coarray_intrinsics, atomic_intrinsics;
         coarray_intrinsics = {"co_broadcast", "co_max", "co_min", "co_reduce", "co_sum", "lcobound", "ucobound", "failed_images",
-            "image_status", "get_team", "image_index", "num_images", "stopped_images", "team_number", "this_image", "coshape", "corank"};
+            "image_status", "get_team", "image_index", "num_images", "stopped_images", "team_number", "this_image", "coshape", "corank",
+            "event_query"};
         atomic_intrinsics = {"atomic_add", "atomic_and", "atomic_cas", "atomic_define", "atomic_fetch_add", "atomic_fetch_and",
             "atomic_fetch_or", "atomic_fetch_xor", "atomic_or", "atomic_ref", "atomic_xor"};
         if (std::find(coarray_intrinsics.begin(), coarray_intrinsics.end(), intrinsic_name) != coarray_intrinsics.end()) {

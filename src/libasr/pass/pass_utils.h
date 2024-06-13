@@ -181,19 +181,25 @@ namespace LCompilers {
                         ASR::FunctionCall_t* func_call = ASR::down_cast<ASR::FunctionCall_t>(func_call_merge);
                         if (ASR::is_a<ASR::ArraySize_t>(*func_call->m_args[0].m_value)) {
                             ASR::ArraySize_t *array_size = ASR::down_cast<ASR::ArraySize_t>(func_call->m_args[0].m_value);
-                            array_size->m_v = ASR::down_cast<ASR::ArrayPhysicalCast_t>(new_args[map[0]].m_value)->m_arg;
+                            if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*new_args[map[0]].m_value)) {
+                                array_size->m_v = ASR::down_cast<ASR::ArrayPhysicalCast_t>(new_args[map[0]].m_value)->m_arg;
+                            } else {
+                                array_size->m_v = new_args[map[0]].m_value;
+                            }
                             func_call->m_args[0].m_value = ASRUtils::EXPR((ASR::asr_t*) array_size);
                         }
                         if (ASR::is_a<ASR::ArraySize_t>(*func_call->m_args[1].m_value)) {
                             ASR::ArraySize_t *array_size = ASR::down_cast<ASR::ArraySize_t>(func_call->m_args[1].m_value);
-                            array_size->m_v = ASR::down_cast<ASR::ArrayPhysicalCast_t>(new_args[map[1]].m_value)->m_arg;
-
+                            if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*new_args[map[1]].m_value))
+                                array_size->m_v = ASR::down_cast<ASR::ArrayPhysicalCast_t>(new_args[map[1]].m_value)->m_arg;
+                            else {
+                                array_size->m_v = new_args[map[1]].m_value;
+                            }
                             func_call->m_args[1].m_value = ASRUtils::EXPR((ASR::asr_t*) array_size);
                         }
                         if (ASR::is_a<ASR::IntegerCompare_t>(*func_call->m_args[2].m_value)) {
                             ASR::IntegerCompare_t *integer_compare = ASR::down_cast<ASR::IntegerCompare_t>(func_call->m_args[2].m_value);
                             integer_compare->m_right = new_args[map[2]].m_value;
-
                             func_call->m_args[2].m_value = ASRUtils::EXPR((ASR::asr_t*) integer_compare);
                         }
                         res_arr->m_dims[i].m_length = func_call_merge;
