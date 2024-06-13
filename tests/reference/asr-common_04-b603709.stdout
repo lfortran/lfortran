@@ -178,7 +178,7 @@
                     main
                     []
                     [(Assignment
-                        (StructTypeInstanceMember
+                        (StructInstanceMember
                             (Var 2 struct_instance_block_1)
                             2 1_block_1_a
                             (Integer 4)
@@ -188,7 +188,7 @@
                         ()
                     )
                     (Assignment
-                        (StructTypeInstanceMember
+                        (StructInstanceMember
                             (Var 2 struct_instance_block_1)
                             2 1_block_1_b
                             (Integer 4)
@@ -199,7 +199,7 @@
                     )
                     (Assignment
                         (Var 2 d)
-                        (StructTypeInstanceMember
+                        (StructInstanceMember
                             (Var 2 struct_instance_block_1)
                             2 1_block_1_b
                             (Integer 4)
@@ -208,7 +208,7 @@
                         ()
                     )
                     (Assignment
-                        (StructTypeInstanceMember
+                        (StructInstanceMember
                             (Var 2 struct_instance_block_1)
                             2 1_block_1_c
                             (Array
@@ -254,7 +254,7 @@
                     )
                     (Assignment
                         (ArrayItem
-                            (StructTypeInstanceMember
+                            (StructInstanceMember
                                 (Var 2 struct_instance_block_1)
                                 2 1_block_1_c
                                 (Array
@@ -276,14 +276,14 @@
                         ()
                     )
                     (Assignment
-                        (StructTypeInstanceMember
+                        (StructInstanceMember
                             (Var 2 struct_instance_block_1)
                             2 1_block_1_b
                             (Integer 4)
                             ()
                         )
                         (ArrayItem
-                            (StructTypeInstanceMember
+                            (StructInstanceMember
                                 (Var 2 struct_instance_block_1)
                                 2 1_block_1_c
                                 (Array
@@ -305,7 +305,7 @@
                     )
                     (If
                         (IntegerCompare
-                            (StructTypeInstanceMember
+                            (StructInstanceMember
                                 (Var 2 struct_instance_block_1)
                                 2 1_block_1_a
                                 (Integer 4)
@@ -323,7 +323,7 @@
                     )
                     (If
                         (IntegerCompare
-                            (StructTypeInstanceMember
+                            (StructInstanceMember
                                 (Var 2 struct_instance_block_1)
                                 2 1_block_1_b
                                 (Integer 4)
@@ -342,7 +342,7 @@
                     (If
                         (IntegerCompare
                             (ArrayItem
-                                (StructTypeInstanceMember
+                                (StructInstanceMember
                                     (Var 2 struct_instance_block_1)
                                     2 1_block_1_c
                                     (Array
@@ -373,7 +373,7 @@
                     (If
                         (IntegerCompare
                             (ArrayItem
-                                (StructTypeInstanceMember
+                                (StructInstanceMember
                                     (Var 2 struct_instance_block_1)
                                     2 1_block_1_c
                                     (Array
@@ -404,7 +404,7 @@
                     (If
                         (IntegerCompare
                             (ArrayItem
-                                (StructTypeInstanceMember
+                                (StructInstanceMember
                                     (Var 2 struct_instance_block_1)
                                     2 1_block_1_c
                                     (Array
@@ -435,7 +435,7 @@
                     (If
                         (IntegerCompare
                             (ArrayItem
-                                (StructTypeInstanceMember
+                                (StructInstanceMember
                                     (Var 2 struct_instance_block_1)
                                     2 1_block_1_c
                                     (Array
@@ -466,7 +466,7 @@
                     (If
                         (IntegerCompare
                             (ArrayItem
-                                (StructTypeInstanceMember
+                                (StructInstanceMember
                                     (Var 2 struct_instance_block_1)
                                     2 1_block_1_c
                                     (Array
@@ -508,19 +508,19 @@
                         []
                     )
                     (Print
-                        [(StructTypeInstanceMember
+                        [(StructInstanceMember
                             (Var 2 struct_instance_block_1)
                             2 1_block_1_a
                             (Integer 4)
                             ()
                         )
-                        (StructTypeInstanceMember
+                        (StructInstanceMember
                             (Var 2 struct_instance_block_1)
                             2 1_block_1_b
                             (Integer 4)
                             ()
                         )
-                        (StructTypeInstanceMember
+                        (StructInstanceMember
                             (Var 2 struct_instance_block_1)
                             2 1_block_1_c
                             (Array
@@ -532,7 +532,7 @@
                             ()
                         )
                         (ArrayItem
-                            (StructTypeInstanceMember
+                            (StructInstanceMember
                                 (Var 2 struct_instance_block_1)
                                 2 1_block_1_c
                                 (Array

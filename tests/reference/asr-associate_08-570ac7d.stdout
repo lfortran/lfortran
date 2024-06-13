@@ -96,9 +96,9 @@
                         ()
                     )
                     (Print
-                        [(StructTypeInstanceMember
+                        [(StructInstanceMember
                             (ArrayItem
-                                (StructTypeInstanceMember
+                                (StructInstanceMember
                                     (Var 7 type_1)
                                     7 1_t_2_type_2
                                     (Pointer
@@ -185,9 +185,9 @@
                                                     associate_block
                                                     [(Assignment
                                                         (Var 8 target)
-                                                        (StructTypeInstanceMember
+                                                        (StructInstanceMember
                                                             (ArrayItem
-                                                                (StructTypeInstanceMember
+                                                                (StructInstanceMember
                                                                     (Var 5 type_1)
                                                                     5 1_t_2_type_2
                                                                     (Pointer
@@ -280,7 +280,7 @@
                                     [(Var 5 type_1)
                                     (Var 5 i)]
                                     [(Allocate
-                                        [((StructTypeInstanceMember
+                                        [((StructInstanceMember
                                             (Var 5 type_1)
                                             5 1_t_2_type_2
                                             (Pointer
@@ -388,9 +388,9 @@
                                                         ()
                                                     )
                                                     (Assignment
-                                                        (StructTypeInstanceMember
+                                                        (StructInstanceMember
                                                             (ArrayItem
-                                                                (StructTypeInstanceMember
+                                                                (StructInstanceMember
                                                                     (Var 9 target)
                                                                     9 1_t_2_type_2
                                                                     (Pointer
@@ -475,7 +475,7 @@
                                     []
                                     [(Var 6 progress)]
                                     [(Allocate
-                                        [((StructTypeInstanceMember
+                                        [((StructInstanceMember
                                             (ArrayItem
                                                 (Var 6 progress)
                                                 [(()

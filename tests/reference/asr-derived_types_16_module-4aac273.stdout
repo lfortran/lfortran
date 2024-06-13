@@ -100,7 +100,7 @@
                     )
                     (If
                         (IntegerCompare
-                            (StructTypeInstanceMember
+                            (StructInstanceMember
                                 (Var 5 settings)
                                 5 1_fpm_run_settings_int
                                 (Integer 4)
@@ -121,7 +121,7 @@
                             (IntrinsicElementalFunction
                                 Abs
                                 [(RealBinOp
-                                    (StructTypeInstanceMember
+                                    (StructInstanceMember
                                         (Var 5 settings)
                                         5 1_fpm_run_settings_float
                                         (Real 4)
@@ -154,7 +154,7 @@
                     )
                     (If
                         (LogicalBinOp
-                            (StructTypeInstanceMember
+                            (StructInstanceMember
                                 (Var 5 settings)
                                 5 1_fpm_run_settings_bool
                                 (Logical 4)

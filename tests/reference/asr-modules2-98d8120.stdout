@@ -231,7 +231,7 @@
                                     [(If
                                         (IntrinsicImpureFunction
                                             Allocated
-                                            [(StructTypeInstanceMember
+                                            [(StructInstanceMember
                                                 (Var 15 self)
                                                 15 1_toml_value_key
                                                 (Allocatable
@@ -244,7 +244,7 @@
                                             ()
                                         )
                                         [(ExplicitDeallocate
-                                            [(StructTypeInstanceMember
+                                            [(StructInstanceMember
                                                 (Var 15 self)
                                                 15 1_toml_value_key
                                                 (Allocatable
@@ -258,7 +258,7 @@
                                     (If
                                         (IntrinsicImpureFunction
                                             Allocated
-                                            [(StructTypeInstanceMember
+                                            [(StructInstanceMember
                                                 (Var 15 self)
                                                 15 1_toml_array_list
                                                 (Allocatable
@@ -276,7 +276,7 @@
                                             15 1_destroy
                                             ()
                                             []
-                                            (StructTypeInstanceMember
+                                            (StructInstanceMember
                                                 (Var 15 self)
                                                 15 1_toml_array_list
                                                 (Allocatable
@@ -288,7 +288,7 @@
                                             )
                                         )
                                         (ExplicitDeallocate
-                                            [(StructTypeInstanceMember
+                                            [(StructInstanceMember
                                                 (Var 15 self)
                                                 15 1_toml_array_list
                                                 (Allocatable

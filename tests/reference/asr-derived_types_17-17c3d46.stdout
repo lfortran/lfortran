@@ -86,21 +86,21 @@
                                     []
                                     []
                                     [(Assignment
-                                        (StructTypeInstanceMember
+                                        (StructInstanceMember
                                             (Var 4 self)
                                             4 1_t_1_num
                                             (Integer 4)
                                             ()
                                         )
                                         (IntegerBinOp
-                                            (StructTypeInstanceMember
+                                            (StructInstanceMember
                                                 (Var 4 self)
                                                 4 1_t_1_num
                                                 (Integer 4)
                                                 ()
                                             )
                                             Add
-                                            (StructTypeInstanceMember
+                                            (StructInstanceMember
                                                 (Var 4 self)
                                                 4 1_t_1_num
                                                 (Integer 4)
@@ -171,21 +171,21 @@
                                     []
                                     []
                                     [(Assignment
-                                        (StructTypeInstanceMember
+                                        (StructInstanceMember
                                             (Var 5 self)
                                             5 1_t_1_num
                                             (Integer 4)
                                             ()
                                         )
                                         (IntegerBinOp
-                                            (StructTypeInstanceMember
+                                            (StructInstanceMember
                                                 (Var 5 self)
                                                 5 1_t_1_num
                                                 (Integer 4)
                                                 ()
                                             )
                                             Mul
-                                            (StructTypeInstanceMember
+                                            (StructInstanceMember
                                                 (Var 5 self)
                                                 5 1_t_1_num
                                                 (Integer 4)

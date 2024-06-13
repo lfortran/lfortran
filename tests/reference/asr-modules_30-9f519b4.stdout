@@ -99,7 +99,7 @@
                                     [(Var 9 self)
                                     (Var 9 name)]
                                     [(Assignment
-                                        (StructTypeInstanceMember
+                                        (StructInstanceMember
                                             (Var 9 self)
                                             9 1_executable_config_name
                                             (Allocatable
@@ -111,7 +111,7 @@
                                         ()
                                     )
                                     (Assignment
-                                        (StructTypeInstanceMember
+                                        (StructInstanceMember
                                             (Var 9 self)
                                             9 1_executable_config_source_dir
                                             (Allocatable
@@ -126,7 +126,7 @@
                                         ()
                                     )
                                     (Assignment
-                                        (StructTypeInstanceMember
+                                        (StructInstanceMember
                                             (Var 9 self)
                                             9 1_executable_config_main
                                             (Allocatable
@@ -342,7 +342,7 @@
                                     [(Var 10 package)
                                     (Var 10 root)]
                                     [(Allocate
-                                        [((StructTypeInstanceMember
+                                        [((StructInstanceMember
                                             (Var 10 package)
                                             10 1_package_config_t_executable
                                             (Allocatable
@@ -369,7 +369,7 @@
                                         2 default_executable
                                         ()
                                         [((ArrayItem
-                                            (StructTypeInstanceMember
+                                            (StructInstanceMember
                                                 (Var 10 package)
                                                 10 1_package_config_t_executable
                                                 (Allocatable
@@ -393,7 +393,7 @@
                                             ColMajor
                                             ()
                                         ))
-                                        ((StructTypeInstanceMember
+                                        ((StructInstanceMember
                                             (Var 10 package)
                                             10 1_package_config_t_name
                                             (Allocatable

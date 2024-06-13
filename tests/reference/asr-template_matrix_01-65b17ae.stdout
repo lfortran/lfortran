@@ -211,7 +211,7 @@
                                     [(Var 15 a)
                                     (Var 15 b)]
                                     [(Assignment
-                                        (StructTypeInstanceMember
+                                        (StructInstanceMember
                                             (Var 15 r)
                                             15 1_int_matrix_elements
                                             (Array
@@ -227,7 +227,7 @@
                                         (FunctionCall
                                             11 ~add_intrinsic
                                             ()
-                                            [((StructTypeInstanceMember
+                                            [((StructInstanceMember
                                                 (Var 15 a)
                                                 15 1_int_matrix_elements
                                                 (Array
@@ -240,7 +240,7 @@
                                                 )
                                                 ()
                                             ))
-                                            ((StructTypeInstanceMember
+                                            ((StructInstanceMember
                                                 (Var 15 b)
                                                 15 1_int_matrix_elements
                                                 (Array
@@ -511,7 +511,7 @@
                                                     11 ~mul_intrinsic
                                                     ()
                                                     [((ArraySection
-                                                        (StructTypeInstanceMember
+                                                        (StructInstanceMember
                                                             (Var 16 a)
                                                             16 1_int_matrix_elements
                                                             (Array
@@ -528,7 +528,7 @@
                                                         (Var 16 i)
                                                         ())
                                                         ((ArrayBound
-                                                            (StructTypeInstanceMember
+                                                            (StructInstanceMember
                                                                 (Var 16 a)
                                                                 16 1_int_matrix_elements
                                                                 (Array
@@ -547,7 +547,7 @@
                                                             (IntegerConstant 1 (Integer 4))
                                                         )
                                                         (ArrayBound
-                                                            (StructTypeInstanceMember
+                                                            (StructInstanceMember
                                                                 (Var 16 a)
                                                                 16 1_int_matrix_elements
                                                                 (Array
@@ -575,7 +575,7 @@
                                                         ()
                                                     ))
                                                     ((ArraySection
-                                                        (StructTypeInstanceMember
+                                                        (StructInstanceMember
                                                             (Var 16 b)
                                                             16 1_int_matrix_elements
                                                             (Array
@@ -589,7 +589,7 @@
                                                             ()
                                                         )
                                                         [((ArrayBound
-                                                            (StructTypeInstanceMember
+                                                            (StructInstanceMember
                                                                 (Var 16 b)
                                                                 16 1_int_matrix_elements
                                                                 (Array
@@ -608,7 +608,7 @@
                                                             (IntegerConstant 1 (Integer 4))
                                                         )
                                                         (ArrayBound
-                                                            (StructTypeInstanceMember
+                                                            (StructInstanceMember
                                                                 (Var 16 b)
                                                                 16 1_int_matrix_elements
                                                                 (Array
@@ -693,7 +693,7 @@
                                             )
                                             (Assignment
                                                 (ArrayItem
-                                                    (StructTypeInstanceMember
+                                                    (StructInstanceMember
                                                         (Var 16 r)
                                                         16 1_int_matrix_elements
                                                         (Array
@@ -982,7 +982,7 @@
                             ())
                             [(Assignment
                                 (ArrayItem
-                                    (StructTypeInstanceMember
+                                    (StructInstanceMember
                                         (Var 11 am)
                                         11 1_int_matrix_elements
                                         (Array
@@ -1010,7 +1010,7 @@
                             )
                             (Assignment
                                 (ArrayItem
-                                    (StructTypeInstanceMember
+                                    (StructInstanceMember
                                         (Var 11 bm)
                                         11 1_int_matrix_elements
                                         (Array
@@ -1072,7 +1072,7 @@
                     )
                     (Print
                         [(ArrayItem
-                            (StructTypeInstanceMember
+                            (StructInstanceMember
                                 (Var 11 cm)
                                 11 1_int_matrix_elements
                                 (Array
@@ -1096,7 +1096,7 @@
                             ()
                         )
                         (ArrayItem
-                            (StructTypeInstanceMember
+                            (StructInstanceMember
                                 (Var 11 cm)
                                 11 1_int_matrix_elements
                                 (Array
@@ -1124,7 +1124,7 @@
                     )
                     (Print
                         [(ArrayItem
-                            (StructTypeInstanceMember
+                            (StructInstanceMember
                                 (Var 11 cm)
                                 11 1_int_matrix_elements
                                 (Array
@@ -1148,7 +1148,7 @@
                             ()
                         )
                         (ArrayItem
-                            (StructTypeInstanceMember
+                            (StructInstanceMember
                                 (Var 11 cm)
                                 11 1_int_matrix_elements
                                 (Array
@@ -1186,7 +1186,7 @@
                     )
                     (Print
                         [(ArrayItem
-                            (StructTypeInstanceMember
+                            (StructInstanceMember
                                 (Var 11 dm)
                                 11 1_int_matrix_elements
                                 (Array
@@ -1210,7 +1210,7 @@
                             ()
                         )
                         (ArrayItem
-                            (StructTypeInstanceMember
+                            (StructInstanceMember
                                 (Var 11 dm)
                                 11 1_int_matrix_elements
                                 (Array
@@ -1238,7 +1238,7 @@
                     )
                     (Print
                         [(ArrayItem
-                            (StructTypeInstanceMember
+                            (StructInstanceMember
                                 (Var 11 dm)
                                 11 1_int_matrix_elements
                                 (Array
@@ -1262,7 +1262,7 @@
                             ()
                         )
                         (ArrayItem
-                            (StructTypeInstanceMember
+                            (StructInstanceMember
                                 (Var 11 dm)
                                 11 1_int_matrix_elements
                                 (Array
@@ -1516,7 +1516,7 @@
                                                     [(Var 9 a)
                                                     (Var 9 b)]
                                                     [(Assignment
-                                                        (StructTypeInstanceMember
+                                                        (StructInstanceMember
                                                             (Var 9 r)
                                                             9 1_matrix_elements
                                                             (Array
@@ -1534,7 +1534,7 @@
                                                         (FunctionCall
                                                             5 plus
                                                             ()
-                                                            [((StructTypeInstanceMember
+                                                            [((StructInstanceMember
                                                                 (Var 9 a)
                                                                 9 1_matrix_elements
                                                                 (Array
@@ -1549,7 +1549,7 @@
                                                                 )
                                                                 ()
                                                             ))
-                                                            ((StructTypeInstanceMember
+                                                            ((StructInstanceMember
                                                                 (Var 9 b)
                                                                 9 1_matrix_elements
                                                                 (Array
@@ -1830,7 +1830,7 @@
                                                                     5 times
                                                                     ()
                                                                     [((ArraySection
-                                                                        (StructTypeInstanceMember
+                                                                        (StructInstanceMember
                                                                             (Var 10 a)
                                                                             10 1_matrix_elements
                                                                             (Array
@@ -1849,7 +1849,7 @@
                                                                         (Var 10 i)
                                                                         ())
                                                                         ((ArrayBound
-                                                                            (StructTypeInstanceMember
+                                                                            (StructInstanceMember
                                                                                 (Var 10 a)
                                                                                 10 1_matrix_elements
                                                                                 (Array
@@ -1870,7 +1870,7 @@
                                                                             (IntegerConstant 1 (Integer 4))
                                                                         )
                                                                         (ArrayBound
-                                                                            (StructTypeInstanceMember
+                                                                            (StructInstanceMember
                                                                                 (Var 10 a)
                                                                                 10 1_matrix_elements
                                                                                 (Array
@@ -1902,7 +1902,7 @@
                                                                         ()
                                                                     ))
                                                                     ((ArraySection
-                                                                        (StructTypeInstanceMember
+                                                                        (StructInstanceMember
                                                                             (Var 10 b)
                                                                             10 1_matrix_elements
                                                                             (Array
@@ -1918,7 +1918,7 @@
                                                                             ()
                                                                         )
                                                                         [((ArrayBound
-                                                                            (StructTypeInstanceMember
+                                                                            (StructInstanceMember
                                                                                 (Var 10 b)
                                                                                 10 1_matrix_elements
                                                                                 (Array
@@ -1939,7 +1939,7 @@
                                                                             (IntegerConstant 1 (Integer 4))
                                                                         )
                                                                         (ArrayBound
-                                                                            (StructTypeInstanceMember
+                                                                            (StructInstanceMember
                                                                                 (Var 10 b)
                                                                                 10 1_matrix_elements
                                                                                 (Array
@@ -2036,7 +2036,7 @@
                                                             )
                                                             (Assignment
                                                                 (ArrayItem
-                                                                    (StructTypeInstanceMember
+                                                                    (StructInstanceMember
                                                                         (Var 10 r)
                                                                         10 1_matrix_elements
                                                                         (Array

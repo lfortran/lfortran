@@ -162,7 +162,7 @@
                                             (Var 2 pi)
                                             Mul
                                             (RealBinOp
-                                                (StructTypeInstanceMember
+                                                (StructInstanceMember
                                                     (Var 4 this)
                                                     4 1_circle_radius
                                                     (Real 4)
@@ -288,7 +288,7 @@
                                             "Circle: r = "
                                             (Character 1 12 ())
                                         )
-                                        (StructTypeInstanceMember
+                                        (StructInstanceMember
                                             (Var 5 this)
                                             5 1_circle_radius
                                             (Real 4)
@@ -385,7 +385,7 @@
                                         ()
                                     )
                                     (Assignment
-                                        (StructTypeInstanceMember
+                                        (StructInstanceMember
                                             (Var 6 c)
                                             6 1_circle_radius
                                             (Real 4)

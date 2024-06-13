@@ -1085,7 +1085,7 @@
                                         5 1_add
                                         [((Var 5 package))
                                         ((Var 5 error))]
-                                        (StructTypeInstanceMember
+                                        (StructInstanceMember
                                             (Var 5 model)
                                             5 1_fpm_model_t_deps
                                             (StructType

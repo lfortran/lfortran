@@ -159,7 +159,7 @@
                                         ()
                                         ((Var 13 i)
                                         (IntegerConstant 1 (Integer 4))
-                                        (StructTypeInstanceMember
+                                        (StructInstanceMember
                                             (Var 13 self)
                                             13 1_toml_vector_n
                                             (Integer 4)
@@ -169,9 +169,9 @@
                                         [(If
                                             (IntrinsicImpureFunction
                                                 Allocated
-                                                [(StructTypeInstanceMember
+                                                [(StructInstanceMember
                                                     (ArrayItem
-                                                        (StructTypeInstanceMember
+                                                        (StructInstanceMember
                                                             (Var 13 self)
                                                             13 1_toml_vector_lst
                                                             (Allocatable
@@ -214,9 +214,9 @@
                                                     [((Var 13 key))]
                                                     (Logical 4)
                                                     ()
-                                                    (StructTypeInstanceMember
+                                                    (StructInstanceMember
                                                         (ArrayItem
-                                                            (StructTypeInstanceMember
+                                                            (StructInstanceMember
                                                                 (Var 13 self)
                                                                 13 1_toml_vector_lst
                                                                 (Allocatable
@@ -251,9 +251,9 @@
                                                 )
                                                 [(Associate
                                                     (Var 13 ptr)
-                                                    (StructTypeInstanceMember
+                                                    (StructInstanceMember
                                                         (ArrayItem
-                                                            (StructTypeInstanceMember
+                                                            (StructInstanceMember
                                                                 (Var 13 self)
                                                                 13 1_toml_vector_lst
                                                                 (Allocatable
@@ -393,7 +393,7 @@
                                     [(Var 12 self)
                                     (Var 12 n)]
                                     [(Assignment
-                                        (StructTypeInstanceMember
+                                        (StructInstanceMember
                                             (Var 12 self)
                                             12 1_toml_vector_n
                                             (Integer 4)
@@ -412,7 +412,7 @@
                                             ()
                                         )
                                         [(Allocate
-                                            [((StructTypeInstanceMember
+                                            [((StructInstanceMember
                                                 (Var 12 self)
                                                 12 1_toml_vector_lst
                                                 (Allocatable
@@ -634,7 +634,7 @@
                                     [(If
                                         (IntrinsicImpureFunction
                                             Allocated
-                                            [(StructTypeInstanceMember
+                                            [(StructInstanceMember
                                                 (Var 8 self)
                                                 8 1_toml_value_key
                                                 (Allocatable
@@ -647,7 +647,7 @@
                                             ()
                                         )
                                         [(ExplicitDeallocate
-                                            [(StructTypeInstanceMember
+                                            [(StructInstanceMember
                                                 (Var 8 self)
                                                 8 1_toml_value_key
                                                 (Allocatable
@@ -661,7 +661,7 @@
                                     (If
                                         (IntrinsicImpureFunction
                                             Allocated
-                                            [(StructTypeInstanceMember
+                                            [(StructInstanceMember
                                                 (Var 8 self)
                                                 8 1_toml_keyval_raw
                                                 (Allocatable
@@ -674,7 +674,7 @@
                                             ()
                                         )
                                         [(ExplicitDeallocate
-                                            [(StructTypeInstanceMember
+                                            [(StructInstanceMember
                                                 (Var 8 self)
                                                 8 1_toml_keyval_raw
                                                 (Allocatable
@@ -898,7 +898,7 @@
                                     [(If
                                         (IntrinsicImpureFunction
                                             Allocated
-                                            [(StructTypeInstanceMember
+                                            [(StructInstanceMember
                                                 (Var 5 self)
                                                 5 1_toml_value_key
                                                 (Allocatable
@@ -915,7 +915,7 @@
                                             (StringCompare
                                                 (Var 5 key)
                                                 Eq
-                                                (StructTypeInstanceMember
+                                                (StructInstanceMember
                                                     (Var 5 self)
                                                     5 1_toml_value_key
                                                     (Allocatable

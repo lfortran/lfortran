@@ -86,7 +86,7 @@
                                     [(If
                                         (IntrinsicImpureFunction
                                             Allocated
-                                            [(StructTypeInstanceMember
+                                            [(StructInstanceMember
                                                 (Var 4 string)
                                                 4 1_string_type_raw
                                                 (Allocatable
@@ -101,7 +101,7 @@
                                         [(Assignment
                                             (Var 4 length)
                                             (StringLen
-                                                (StructTypeInstanceMember
+                                                (StructInstanceMember
                                                     (Var 4 string)
                                                     4 1_string_type_raw
                                                     (Allocatable
@@ -218,7 +218,7 @@
                                     [(If
                                         (IntrinsicImpureFunction
                                             Allocated
-                                            [(StructTypeInstanceMember
+                                            [(StructInstanceMember
                                                 (Var 5 string)
                                                 5 1_string_type_raw
                                                 (Allocatable
@@ -232,7 +232,7 @@
                                         )
                                         [(Assignment
                                             (Var 5 maybe_string)
-                                            (StructTypeInstanceMember
+                                            (StructInstanceMember
                                                 (Var 5 string)
                                                 5 1_string_type_raw
                                                 (Allocatable

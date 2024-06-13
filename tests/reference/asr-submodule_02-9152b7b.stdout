@@ -376,14 +376,14 @@
                                             [(RealBinOp
                                                 (RealBinOp
                                                     (RealBinOp
-                                                        (StructTypeInstanceMember
+                                                        (StructInstanceMember
                                                             (Var 10 a)
                                                             10 1_point_x
                                                             (Real 4)
                                                             ()
                                                         )
                                                         Sub
-                                                        (StructTypeInstanceMember
+                                                        (StructInstanceMember
                                                             (Var 10 b)
                                                             10 1_point_x
                                                             (Real 4)
@@ -408,14 +408,14 @@
                                                 Add
                                                 (RealBinOp
                                                     (RealBinOp
-                                                        (StructTypeInstanceMember
+                                                        (StructInstanceMember
                                                             (Var 10 a)
                                                             10 1_point_y
                                                             (Real 4)
                                                             ()
                                                         )
                                                         Sub
-                                                        (StructTypeInstanceMember
+                                                        (StructInstanceMember
                                                             (Var 10 b)
                                                             10 1_point_y
                                                             (Real 4)
@@ -562,14 +562,14 @@
                                             [(RealBinOp
                                                 (RealBinOp
                                                     (RealBinOp
-                                                        (StructTypeInstanceMember
+                                                        (StructInstanceMember
                                                             (Var 11 a)
                                                             11 1_point_x
                                                             (Real 4)
                                                             ()
                                                         )
                                                         Sub
-                                                        (StructTypeInstanceMember
+                                                        (StructInstanceMember
                                                             (Var 11 b)
                                                             11 1_point_x
                                                             (Real 4)
@@ -594,14 +594,14 @@
                                                 Add
                                                 (RealBinOp
                                                     (RealBinOp
-                                                        (StructTypeInstanceMember
+                                                        (StructInstanceMember
                                                             (Var 11 a)
                                                             11 1_point_y
                                                             (Real 4)
                                                             ()
                                                         )
                                                         Sub
-                                                        (StructTypeInstanceMember
+                                                        (StructInstanceMember
                                                             (Var 11 b)
                                                             11 1_point_y
                                                             (Real 4)

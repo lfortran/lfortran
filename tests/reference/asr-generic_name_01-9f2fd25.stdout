@@ -217,14 +217,14 @@
                                         ()
                                     )
                                     (Assignment
-                                        (StructTypeInstanceMember
+                                        (StructInstanceMember
                                             (Var 4 sum)
                                             4 1_complextype_r
                                             (Real 4)
                                             ()
                                         )
                                         (RealBinOp
-                                            (StructTypeInstanceMember
+                                            (StructInstanceMember
                                                 (Var 4 this)
                                                 4 1_complextype_r
                                                 (Real 4)
@@ -243,14 +243,14 @@
                                         ()
                                     )
                                     (Assignment
-                                        (StructTypeInstanceMember
+                                        (StructInstanceMember
                                             (Var 4 sum)
                                             4 1_complextype_i
                                             (Real 4)
                                             ()
                                         )
                                         (RealBinOp
-                                            (StructTypeInstanceMember
+                                            (StructInstanceMember
                                                 (Var 4 this)
                                                 4 1_complextype_i
                                                 (Real 4)
@@ -404,14 +404,14 @@
                                         ()
                                     )
                                     (Assignment
-                                        (StructTypeInstanceMember
+                                        (StructInstanceMember
                                             (Var 5 sum)
                                             5 1_complextype_r
                                             (Real 4)
                                             ()
                                         )
                                         (RealBinOp
-                                            (StructTypeInstanceMember
+                                            (StructInstanceMember
                                                 (Var 5 this)
                                                 5 1_complextype_r
                                                 (Real 4)
@@ -425,14 +425,14 @@
                                         ()
                                     )
                                     (Assignment
-                                        (StructTypeInstanceMember
+                                        (StructInstanceMember
                                             (Var 5 sum)
                                             5 1_complextype_i
                                             (Real 4)
                                             ()
                                         )
                                         (RealBinOp
-                                            (StructTypeInstanceMember
+                                            (StructInstanceMember
                                                 (Var 5 this)
                                                 5 1_complextype_i
                                                 (Real 4)
@@ -728,13 +728,13 @@
                         (Var 6 c)
                     )
                     (Print
-                        [(StructTypeInstanceMember
+                        [(StructInstanceMember
                             (Var 6 a)
                             6 1_complextype_r
                             (Real 4)
                             ()
                         )
-                        (StructTypeInstanceMember
+                        (StructInstanceMember
                             (Var 6 a)
                             6 1_complextype_i
                             (Real 4)
@@ -745,7 +745,7 @@
                     )
                     (If
                         (RealCompare
-                            (StructTypeInstanceMember
+                            (StructInstanceMember
                                 (Var 6 a)
                                 6 1_complextype_r
                                 (Real 4)
@@ -766,7 +766,7 @@
                     )
                     (If
                         (RealCompare
-                            (StructTypeInstanceMember
+                            (StructInstanceMember
                                 (Var 6 a)
                                 6 1_complextype_i
                                 (Real 4)
@@ -794,13 +794,13 @@
                         (Var 6 c)
                     )
                     (Print
-                        [(StructTypeInstanceMember
+                        [(StructInstanceMember
                             (Var 6 a)
                             6 1_complextype_r
                             (Real 4)
                             ()
                         )
-                        (StructTypeInstanceMember
+                        (StructInstanceMember
                             (Var 6 a)
                             6 1_complextype_i
                             (Real 4)
@@ -811,7 +811,7 @@
                     )
                     (If
                         (RealCompare
-                            (StructTypeInstanceMember
+                            (StructInstanceMember
                                 (Var 6 a)
                                 6 1_complextype_r
                                 (Real 4)
@@ -832,7 +832,7 @@
                     )
                     (If
                         (RealCompare
-                            (StructTypeInstanceMember
+                            (StructInstanceMember
                                 (Var 6 a)
                                 6 1_complextype_i
                                 (Real 4)

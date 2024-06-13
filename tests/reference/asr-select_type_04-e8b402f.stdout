@@ -306,7 +306,7 @@
                                                         )
                                                         [(Assignment
                                                             (Var 8 stat)
-                                                            (StructTypeInstanceMember
+                                                            (StructInstanceMember
                                                                 (Var 4 toml_stat)
                                                                 9 1_enum_stat_success
                                                                 (Integer 4)
@@ -375,7 +375,7 @@
                                                 )
                                                 [(Assignment
                                                     (Var 8 stat)
-                                                    (StructTypeInstanceMember
+                                                    (StructInstanceMember
                                                         (Var 4 toml_stat)
                                                         8 1_enum_stat_fatal
                                                         (Integer 4)

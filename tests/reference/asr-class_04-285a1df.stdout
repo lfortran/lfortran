@@ -293,8 +293,8 @@
                     main
                     []
                     [(Assignment
-                        (StructTypeInstanceMember
-                            (StructTypeInstanceMember
+                        (StructInstanceMember
+                            (StructInstanceMember
                                 (Var 2 foo)
                                 2 1_foo_a_m_bar_a
                                 (StructType
@@ -314,8 +314,8 @@
                         ()
                     )
                     (Assignment
-                        (StructTypeInstanceMember
-                            (StructTypeInstanceMember
+                        (StructInstanceMember
+                            (StructInstanceMember
                                 (Var 2 foo)
                                 2 1_foo_b_m_bar_b
                                 (StructType
@@ -331,8 +331,8 @@
                         ()
                     )
                     (Assignment
-                        (StructTypeInstanceMember
-                            (StructTypeInstanceMember
+                        (StructInstanceMember
+                            (StructInstanceMember
                                 (Var 2 foo)
                                 2 1_foo_c_m_bar_c
                                 (StructType
@@ -348,8 +348,8 @@
                         ()
                     )
                     (Print
-                        [(StructTypeInstanceMember
-                            (StructTypeInstanceMember
+                        [(StructInstanceMember
+                            (StructInstanceMember
                                 (Var 2 foo)
                                 2 1_foo_a_m_bar_a
                                 (StructType
@@ -365,8 +365,8 @@
                         ()
                     )
                     (Print
-                        [(StructTypeInstanceMember
-                            (StructTypeInstanceMember
+                        [(StructInstanceMember
+                            (StructInstanceMember
                                 (Var 2 foo)
                                 2 1_foo_b_m_bar_b
                                 (StructType
@@ -382,8 +382,8 @@
                         ()
                     )
                     (Print
-                        [(StructTypeInstanceMember
-                            (StructTypeInstanceMember
+                        [(StructInstanceMember
+                            (StructInstanceMember
                                 (Var 2 foo)
                                 2 1_foo_c_m_bar_c
                                 (StructType
@@ -402,8 +402,8 @@
                         (IntegerCompare
                             (IntegerBinOp
                                 (IntegerBinOp
-                                    (StructTypeInstanceMember
-                                        (StructTypeInstanceMember
+                                    (StructInstanceMember
+                                        (StructInstanceMember
                                             (Var 2 foo)
                                             2 1_foo_a_m_bar_a
                                             (StructType
@@ -416,8 +416,8 @@
                                         ()
                                     )
                                     Add
-                                    (StructTypeInstanceMember
-                                        (StructTypeInstanceMember
+                                    (StructInstanceMember
+                                        (StructInstanceMember
                                             (Var 2 foo)
                                             2 1_foo_b_m_bar_b
                                             (StructType
@@ -433,8 +433,8 @@
                                     ()
                                 )
                                 Add
-                                (StructTypeInstanceMember
-                                    (StructTypeInstanceMember
+                                (StructInstanceMember
+                                    (StructInstanceMember
                                         (Var 2 foo)
                                         2 1_foo_c_m_bar_c
                                         (StructType

@@ -105,7 +105,7 @@
                                     [(Var 17 url)
                                     (Var 17 branch)]
                                     [(Assignment
-                                        (StructTypeInstanceMember
+                                        (StructInstanceMember
                                             (Var 17 self)
                                             17 1_git_target_t_url
                                             (Allocatable
@@ -117,7 +117,7 @@
                                         ()
                                     )
                                     (Assignment
-                                        (StructTypeInstanceMember
+                                        (StructInstanceMember
                                             (Var 17 self)
                                             17 1_git_target_t_object
                                             (Allocatable
@@ -549,7 +549,7 @@
                                     []
                                     [(Var 13 self)]
                                     [(Assignment
-                                        (StructTypeInstanceMember
+                                        (StructInstanceMember
                                             (Var 13 self)
                                             13 1_dependency_config_t_git
                                             (Allocatable
@@ -888,7 +888,7 @@
                                     (SubroutineCall
                                         4 new_dependencies
                                         ()
-                                        [((StructTypeInstanceMember
+                                        [((StructInstanceMember
                                             (Var 6 self)
                                             6 1_executable_config_t_dependency
                                             (Allocatable

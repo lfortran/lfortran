@@ -268,7 +268,7 @@
                                                     []
                                                     []
                                                     [(Assignment
-                                                        (StructTypeInstanceMember
+                                                        (StructInstanceMember
                                                             (ArrayItem
                                                                 (Var 6 __lcompilers_created__nested_context__prune_build_targets_modules_used)
                                                                 [(()
@@ -437,7 +437,7 @@
                                         ()
                                     )
                                     (Assignment
-                                        (StructTypeInstanceMember
+                                        (StructInstanceMember
                                             (ArrayItem
                                                 (Var 5 modules_used)
                                                 [(()
@@ -476,7 +476,7 @@
                                         ()
                                     )
                                     (Print
-                                        [(StructTypeInstanceMember
+                                        [(StructInstanceMember
                                             (ArrayItem
                                                 (Var 5 modules_used)
                                                 [(()
@@ -497,7 +497,7 @@
                                     )
                                     (If
                                         (IntegerCompare
-                                            (StructTypeInstanceMember
+                                            (StructInstanceMember
                                                 (ArrayItem
                                                     (Var 5 modules_used)
                                                     [(()

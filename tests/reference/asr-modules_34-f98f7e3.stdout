@@ -207,7 +207,7 @@
                                                         6 1_to_string
                                                         ()
                                                         [((Var 5 version))]
-                                                        (StructTypeInstanceMember
+                                                        (StructInstanceMember
                                                             (Var 5 package)
                                                             6 1_package_config_t_version
                                                             (StructType

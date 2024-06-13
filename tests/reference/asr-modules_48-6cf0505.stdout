@@ -253,7 +253,7 @@
                         ()
                     )
                     (Assignment
-                        (StructTypeInstanceMember
+                        (StructInstanceMember
                             (ArrayItem
                                 (Var 8 string_var)
                                 [(()
@@ -283,7 +283,7 @@
                         ()
                     )
                     (Assignment
-                        (StructTypeInstanceMember
+                        (StructInstanceMember
                             (ArrayItem
                                 (Var 8 string_var)
                                 [(()
@@ -901,7 +901,7 @@
                                         (FunctionCall
                                             2 fnv_1a_char
                                             2 fnv_1a
-                                            [((StructTypeInstanceMember
+                                            [((StructInstanceMember
                                                 (ArrayItem
                                                     (Var 5 input)
                                                     [(()
@@ -942,7 +942,7 @@
                                             (FunctionCall
                                                 2 fnv_1a_char
                                                 2 fnv_1a
-                                                [((StructTypeInstanceMember
+                                                [((StructInstanceMember
                                                     (ArrayItem
                                                         (Var 5 input)
                                                         [(()
@@ -1530,7 +1530,7 @@
                                     )
                                     (Assignment
                                         (Var 7 cat)
-                                        (StructTypeInstanceMember
+                                        (StructInstanceMember
                                             (ArrayItem
                                                 (Var 7 strings)
                                                 [(()
@@ -1570,7 +1570,7 @@
                                                     (Character 1 -1 ())
                                                     ()
                                                 )
-                                                (StructTypeInstanceMember
+                                                (StructInstanceMember
                                                     (ArrayItem
                                                         (Var 7 strings)
                                                         [(()

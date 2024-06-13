@@ -164,7 +164,7 @@
                                     (SubroutineCall
                                         2 warnwrite_character____1
                                         2 warnwrite_character____1
-                                        [((StructTypeInstanceMember
+                                        [((StructInstanceMember
                                             (Var 8 settings)
                                             8 1_fpm_new_settings_name
                                             (Allocatable

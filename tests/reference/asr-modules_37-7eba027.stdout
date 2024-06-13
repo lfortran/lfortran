@@ -89,7 +89,7 @@
                                                     associate_block
                                                     [(Assignment
                                                         (Var 12 target)
-                                                        (StructTypeInstanceMember
+                                                        (StructInstanceMember
                                                             (ArrayItem
                                                                 (Var 9 targets)
                                                                 [(()
@@ -112,7 +112,7 @@
                                                         ()
                                                     )
                                                     (Assignment
-                                                        (StructTypeInstanceMember
+                                                        (StructInstanceMember
                                                             (Var 9 temp)
                                                             12 1_string_t_s
                                                             (Allocatable
@@ -120,7 +120,7 @@
                                                             )
                                                             ()
                                                         )
-                                                        (StructTypeInstanceMember
+                                                        (StructInstanceMember
                                                             (Var 12 target)
                                                             12 1_build_target_t_output_dir
                                                             (Allocatable
@@ -534,7 +534,7 @@
                                         ()
                                         [((Var 10 targets))
                                         ((Var 10 model))
-                                        ((StructTypeInstanceMember
+                                        ((StructInstanceMember
                                             (Var 10 settings)
                                             10 1_fpm_cmd_settings_verbose
                                             (Logical 4)

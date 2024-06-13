@@ -3346,14 +3346,14 @@
                                     [(Assignment
                                         (Var 4 res)
                                         (RealCompare
-                                            (StructTypeInstanceMember
+                                            (StructInstanceMember
                                                 (Var 4 lhs)
                                                 4 1_my_type_d
                                                 (Real 4)
                                                 ()
                                             )
                                             LtE
-                                            (StructTypeInstanceMember
+                                            (StructInstanceMember
                                                 (Var 4 rhs)
                                                 4 1_my_type_d
                                                 (Real 4)

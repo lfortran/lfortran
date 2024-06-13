@@ -97,7 +97,7 @@
                     derived_types_10
                     [derived_types_18_module_1]
                     [(Assignment
-                        (StructTypeInstanceMember
+                        (StructInstanceMember
                             (Var 5 type_1)
                             5 1_t_1_i
                             (Integer 4)
@@ -107,7 +107,7 @@
                         ()
                     )
                     (Assignment
-                        (StructTypeInstanceMember
+                        (StructInstanceMember
                             (Var 5 type_2)
                             5 1_t_1
                             (StructType
@@ -119,7 +119,7 @@
                         ()
                     )
                     (Assignment
-                        (StructTypeInstanceMember
+                        (StructInstanceMember
                             (Var 5 type_2)
                             5 1_t_2_r
                             (Real 4)
@@ -133,7 +133,7 @@
                     )
                     (If
                         (IntegerCompare
-                            (StructTypeInstanceMember
+                            (StructInstanceMember
                                 (Var 5 type_2)
                                 5 1_t_1_i
                                 (Integer 4)
@@ -151,7 +151,7 @@
                     )
                     (If
                         (RealCompare
-                            (StructTypeInstanceMember
+                            (StructInstanceMember
                                 (Var 5 type_2)
                                 5 1_t_2_r
                                 (Real 4)

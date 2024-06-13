@@ -121,7 +121,7 @@
                                     [(Assignment
                                         (Var 8 less)
                                         (StringCompare
-                                            (StructTypeInstanceMember
+                                            (StructInstanceMember
                                                 (Var 8 lhs)
                                                 8 1_toml_key_key
                                                 (Allocatable
@@ -130,7 +130,7 @@
                                                 ()
                                             )
                                             Lt
-                                            (StructTypeInstanceMember
+                                            (StructInstanceMember
                                                 (Var 8 rhs)
                                                 8 1_toml_key_key
                                                 (Allocatable

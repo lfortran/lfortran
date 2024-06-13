@@ -136,7 +136,7 @@
                                     (Var 4 context)]
                                     [(If
                                         (IntegerCompare
-                                            (StructTypeInstanceMember
+                                            (StructInstanceMember
                                                 (Var 4 context)
                                                 4 1_toml_context_num
                                                 (Integer 4)
@@ -159,7 +159,7 @@
                                                     (Character 1 18 ())
                                                 )
                                                 [(Cast
-                                                    (StructTypeInstanceMember
+                                                    (StructInstanceMember
                                                         (Var 4 context)
                                                         4 1_toml_context_num
                                                         (Integer 4)
@@ -254,7 +254,7 @@
                                                     ()
                                                 )
                                                 (StringSection
-                                                    (StructTypeInstanceMember
+                                                    (StructInstanceMember
                                                         (Var 4 context)
                                                         4 1_toml_context_ptr
                                                         (Pointer

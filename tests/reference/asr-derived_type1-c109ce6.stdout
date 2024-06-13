@@ -73,7 +73,7 @@
                                             " "
                                             (Character 1 1 ())
                                         )
-                                        (StructTypeInstanceMember
+                                        (StructInstanceMember
                                             (Var 2 toml_escape)
                                             2 1_enum_escape_newline
                                             (Character 1 1 ())

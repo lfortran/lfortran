@@ -70,7 +70,7 @@
                                                         })
                                                     ~select_type_block_
                                                     [(If
-                                                        (StructTypeInstanceMember
+                                                        (StructInstanceMember
                                                             (Var 7 ptr)
                                                             8 1_child_value_ok
                                                             (Logical 4)

@@ -361,25 +361,25 @@
                         ()
                     )
                     (Print
-                        [(StructTypeInstanceMember
+                        [(StructInstanceMember
                             (Var 5 jack)
                             5 1_person_first
                             (Character 1 20 ())
                             ()
                         )
-                        (StructTypeInstanceMember
+                        (StructInstanceMember
                             (Var 5 jack)
                             5 1_person_last
                             (Character 1 20 ())
                             ()
                         )
-                        (StructTypeInstanceMember
+                        (StructInstanceMember
                             (Var 5 jack)
                             5 1_person_birthyear
                             (Integer 4)
                             ()
                         )
-                        (StructTypeInstanceMember
+                        (StructInstanceMember
                             (Var 5 jack)
                             5 1_person_sgender
                             (Character 1 1 ())
@@ -389,8 +389,8 @@
                         ()
                     )
                     (Print
-                        [(StructTypeInstanceMember
-                            (StructTypeInstanceMember
+                        [(StructInstanceMember
+                            (StructInstanceMember
                                 (Var 5 jill)
                                 5 1_employee_person
                                 (StructType
@@ -402,8 +402,8 @@
                             (Character 1 20 ())
                             ()
                         )
-                        (StructTypeInstanceMember
-                            (StructTypeInstanceMember
+                        (StructInstanceMember
+                            (StructInstanceMember
                                 (Var 5 jill)
                                 5 1_employee_person
                                 (StructType
@@ -415,8 +415,8 @@
                             (Character 1 20 ())
                             ()
                         )
-                        (StructTypeInstanceMember
-                            (StructTypeInstanceMember
+                        (StructInstanceMember
+                            (StructInstanceMember
                                 (Var 5 jill)
                                 5 1_employee_person
                                 (StructType
@@ -428,8 +428,8 @@
                             (Integer 4)
                             ()
                         )
-                        (StructTypeInstanceMember
-                            (StructTypeInstanceMember
+                        (StructInstanceMember
+                            (StructInstanceMember
                                 (Var 5 jill)
                                 5 1_employee_person
                                 (StructType
@@ -441,13 +441,13 @@
                             (Character 1 1 ())
                             ()
                         )
-                        (StructTypeInstanceMember
+                        (StructInstanceMember
                             (Var 5 jill)
                             5 1_employee_department
                             (Character 1 20 ())
                             ()
                         )
-                        (StructTypeInstanceMember
+                        (StructInstanceMember
                             (Var 5 jill)
                             5 1_employee_hire_date
                             (Integer 4)

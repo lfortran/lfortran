@@ -160,7 +160,7 @@
                                                     [(Var 6 p)]
                                                     [(Assignment
                                                         (Var 6 r)
-                                                        (StructTypeInstanceMember
+                                                        (StructInstanceMember
                                                             (Var 6 p)
                                                             6 1_tuple_fst
                                                             (TypeParameter
@@ -251,7 +251,7 @@
                                                     [(Var 7 p)]
                                                     [(Assignment
                                                         (Var 7 r)
-                                                        (StructTypeInstanceMember
+                                                        (StructInstanceMember
                                                             (Var 7 p)
                                                             7 1_tuple_snd
                                                             (TypeParameter
@@ -463,7 +463,7 @@
                                                     [(Var 10 p)]
                                                     [(Assignment
                                                         (Var 10 r)
-                                                        (StructTypeInstanceMember
+                                                        (StructInstanceMember
                                                             (Var 10 p)
                                                             10 1_int_tuple_fst
                                                             (Integer 4)
@@ -548,7 +548,7 @@
                                                     [(Var 11 p)]
                                                     [(Assignment
                                                         (Var 11 r)
-                                                        (StructTypeInstanceMember
+                                                        (StructInstanceMember
                                                             (Var 11 p)
                                                             11 1_int_tuple_snd
                                                             (Integer 4)
@@ -633,7 +633,7 @@
                                                     [(Var 13 p)]
                                                     [(Assignment
                                                         (Var 13 r)
-                                                        (StructTypeInstanceMember
+                                                        (StructInstanceMember
                                                             (Var 13 p)
                                                             13 1_real_tuple_fst
                                                             (Real 4)
@@ -718,7 +718,7 @@
                                                     [(Var 14 p)]
                                                     [(Assignment
                                                         (Var 14 r)
-                                                        (StructTypeInstanceMember
+                                                        (StructInstanceMember
                                                             (Var 14 p)
                                                             14 1_real_tuple_snd
                                                             (Real 4)
@@ -887,7 +887,7 @@
                                     []
                                     []
                                     [(Assignment
-                                        (StructTypeInstanceMember
+                                        (StructInstanceMember
                                             (Var 8 ti)
                                             8 1_int_tuple_fst
                                             (Integer 4)
@@ -913,7 +913,7 @@
                                         ()
                                     )
                                     (Assignment
-                                        (StructTypeInstanceMember
+                                        (StructInstanceMember
                                             (Var 8 ti)
                                             8 1_int_tuple_snd
                                             (Integer 4)
@@ -939,7 +939,7 @@
                                         ()
                                     )
                                     (Assignment
-                                        (StructTypeInstanceMember
+                                        (StructInstanceMember
                                             (Var 8 tr)
                                             8 1_real_tuple_fst
                                             (Real 4)
@@ -968,7 +968,7 @@
                                         ()
                                     )
                                     (Assignment
-                                        (StructTypeInstanceMember
+                                        (StructInstanceMember
                                             (Var 8 tr)
                                             8 1_real_tuple_snd
                                             (Real 4)

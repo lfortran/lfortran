@@ -129,7 +129,7 @@
                                                 (Character 1 24 ())
                                             )
                                             [(Cast
-                                                (StructTypeInstanceMember
+                                                (StructInstanceMember
                                                     (Var 6 rhs)
                                                     6 1_toml_date_year
                                                     (Integer 4)
@@ -140,7 +140,7 @@
                                                 ()
                                             )
                                             (Cast
-                                                (StructTypeInstanceMember
+                                                (StructInstanceMember
                                                     (Var 6 rhs)
                                                     6 1_toml_date_month
                                                     (Integer 4)
@@ -151,7 +151,7 @@
                                                 ()
                                             )
                                             (Cast
-                                                (StructTypeInstanceMember
+                                                (StructInstanceMember
                                                     (Var 6 rhs)
                                                     6 1_toml_date_day
                                                     (Integer 4)
@@ -291,7 +291,7 @@
                                     [(If
                                         (IntrinsicImpureFunction
                                             Allocated
-                                            [(StructTypeInstanceMember
+                                            [(StructInstanceMember
                                                 (Var 8 rhs)
                                                 8 1_toml_datetime_date
                                                 (Allocatable
@@ -309,7 +309,7 @@
                                             8 1_to_string
                                             ()
                                             [((Var 8 lhs))]
-                                            (StructTypeInstanceMember
+                                            (StructInstanceMember
                                                 (Var 8 rhs)
                                                 8 1_toml_datetime_date
                                                 (Allocatable
@@ -323,7 +323,7 @@
                                         (If
                                             (IntrinsicImpureFunction
                                                 Allocated
-                                                [(StructTypeInstanceMember
+                                                [(StructInstanceMember
                                                     (Var 8 rhs)
                                                     8 1_toml_datetime_time
                                                     (Allocatable
@@ -341,7 +341,7 @@
                                                 8 1_to_string
                                                 ()
                                                 [((Var 8 temporary))]
-                                                (StructTypeInstanceMember
+                                                (StructInstanceMember
                                                     (Var 8 rhs)
                                                     8 1_toml_datetime_time
                                                     (Allocatable
@@ -367,7 +367,7 @@
                                         [(If
                                             (IntrinsicImpureFunction
                                                 Allocated
-                                                [(StructTypeInstanceMember
+                                                [(StructInstanceMember
                                                     (Var 8 rhs)
                                                     8 1_toml_datetime_time
                                                     (Allocatable
@@ -383,7 +383,7 @@
                                             )
                                             [(Assignment
                                                 (Var 8 lhs)
-                                                (StructTypeInstanceMember
+                                                (StructInstanceMember
                                                     (Var 8 rhs)
                                                     8 1_toml_datetime_time
                                                     (Allocatable
@@ -397,7 +397,7 @@
                                                     2 time_to_string
                                                     2 time_to_string
                                                     [((Var 8 lhs))
-                                                    ((StructTypeInstanceMember
+                                                    ((StructInstanceMember
                                                         (Var 8 rhs)
                                                         8 1_toml_datetime_time
                                                         (Allocatable
@@ -623,7 +623,7 @@
                                             ()
                                         )
                                         [(Assignment
-                                            (StructTypeInstanceMember
+                                            (StructInstanceMember
                                                 (Var 9 self)
                                                 9 1_toml_time_hour
                                                 (Integer 4)
@@ -644,7 +644,7 @@
                                             ()
                                         )
                                         [(Assignment
-                                            (StructTypeInstanceMember
+                                            (StructInstanceMember
                                                 (Var 9 self)
                                                 9 1_toml_time_minute
                                                 (Integer 4)
@@ -665,7 +665,7 @@
                                             ()
                                         )
                                         [(Assignment
-                                            (StructTypeInstanceMember
+                                            (StructInstanceMember
                                                 (Var 9 self)
                                                 9 1_toml_time_second
                                                 (Integer 4)
@@ -686,7 +686,7 @@
                                             ()
                                         )
                                         [(Assignment
-                                            (StructTypeInstanceMember
+                                            (StructInstanceMember
                                                 (Var 9 self)
                                                 9 1_toml_time_millisec
                                                 (Allocatable
@@ -709,7 +709,7 @@
                                             ()
                                         )
                                         [(Assignment
-                                            (StructTypeInstanceMember
+                                            (StructInstanceMember
                                                 (Var 9 self)
                                                 9 1_toml_time_zone
                                                 (Allocatable
@@ -866,7 +866,7 @@
                                     [(If
                                         (IntrinsicImpureFunction
                                             Allocated
-                                            [(StructTypeInstanceMember
+                                            [(StructInstanceMember
                                                 (Var 7 rhs)
                                                 7 1_toml_time_millisec
                                                 (Allocatable
@@ -899,7 +899,7 @@
                                                     (Character 1 33 ())
                                                 )
                                                 [(Cast
-                                                    (StructTypeInstanceMember
+                                                    (StructInstanceMember
                                                         (Var 7 rhs)
                                                         7 1_toml_time_hour
                                                         (Integer 4)
@@ -910,7 +910,7 @@
                                                     ()
                                                 )
                                                 (Cast
-                                                    (StructTypeInstanceMember
+                                                    (StructInstanceMember
                                                         (Var 7 rhs)
                                                         7 1_toml_time_minute
                                                         (Integer 4)
@@ -921,7 +921,7 @@
                                                     ()
                                                 )
                                                 (Cast
-                                                    (StructTypeInstanceMember
+                                                    (StructInstanceMember
                                                         (Var 7 rhs)
                                                         7 1_toml_time_second
                                                         (Integer 4)
@@ -931,7 +931,7 @@
                                                     (Integer 8)
                                                     ()
                                                 )
-                                                (StructTypeInstanceMember
+                                                (StructInstanceMember
                                                     (Var 7 rhs)
                                                     7 1_toml_time_millisec
                                                     (Allocatable
@@ -968,7 +968,7 @@
                                                     (Character 1 24 ())
                                                 )
                                                 [(Cast
-                                                    (StructTypeInstanceMember
+                                                    (StructInstanceMember
                                                         (Var 7 rhs)
                                                         7 1_toml_time_hour
                                                         (Integer 4)
@@ -979,7 +979,7 @@
                                                     ()
                                                 )
                                                 (Cast
-                                                    (StructTypeInstanceMember
+                                                    (StructInstanceMember
                                                         (Var 7 rhs)
                                                         7 1_toml_time_minute
                                                         (Integer 4)
@@ -990,7 +990,7 @@
                                                     ()
                                                 )
                                                 (Cast
-                                                    (StructTypeInstanceMember
+                                                    (StructInstanceMember
                                                         (Var 7 rhs)
                                                         7 1_toml_time_second
                                                         (Integer 4)
@@ -1012,7 +1012,7 @@
                                     (If
                                         (IntrinsicImpureFunction
                                             Allocated
-                                            [(StructTypeInstanceMember
+                                            [(StructInstanceMember
                                                 (Var 7 rhs)
                                                 7 1_toml_time_zone
                                                 (Allocatable
@@ -1031,7 +1031,7 @@
                                                 (FunctionCall
                                                     7 trim
                                                     ()
-                                                    [((StructTypeInstanceMember
+                                                    [((StructInstanceMember
                                                         (Var 7 rhs)
                                                         7 1_toml_time_zone
                                                         (Allocatable
@@ -1042,7 +1042,7 @@
                                                     (Character 1 -3 (FunctionCall
                                                         7 len_trim
                                                         ()
-                                                        [((StructTypeInstanceMember
+                                                        [((StructInstanceMember
                                                             (Var 7 rhs)
                                                             7 1_toml_time_zone
                                                             (Allocatable

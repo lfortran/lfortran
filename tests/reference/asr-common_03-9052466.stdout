@@ -51,7 +51,7 @@
                     common1
                     []
                     [(Assignment
-                        (StructTypeInstanceMember
+                        (StructInstanceMember
                             (Var 5 struct_instance_sample)
                             5 1_sample_a
                             (Real 4)
@@ -64,7 +64,7 @@
                         ()
                     )
                     (Assignment
-                        (StructTypeInstanceMember
+                        (StructInstanceMember
                             (Var 5 struct_instance_sample)
                             5 1_sample_b
                             (Real 4)
@@ -477,7 +477,7 @@
                             (IntrinsicElementalFunction
                                 Abs
                                 [(RealBinOp
-                                    (StructTypeInstanceMember
+                                    (StructInstanceMember
                                         (Var 2 struct_instance_sample)
                                         2 1_sample_a
                                         (Real 4)
@@ -513,7 +513,7 @@
                             (IntrinsicElementalFunction
                                 Abs
                                 [(RealBinOp
-                                    (StructTypeInstanceMember
+                                    (StructInstanceMember
                                         (Var 2 struct_instance_sample)
                                         2 1_sample_b
                                         (Real 4)
@@ -545,13 +545,13 @@
                         []
                     )
                     (Print
-                        [(StructTypeInstanceMember
+                        [(StructInstanceMember
                             (Var 2 struct_instance_sample)
                             2 1_sample_a
                             (Real 4)
                             ()
                         )
-                        (StructTypeInstanceMember
+                        (StructInstanceMember
                             (Var 2 struct_instance_sample)
                             2 1_sample_b
                             (Real 4)

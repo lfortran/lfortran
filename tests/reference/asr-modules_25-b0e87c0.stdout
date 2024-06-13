@@ -394,7 +394,7 @@
                                         [13 table]
                                     )
                                     (Associate
-                                        (StructTypeInstanceMember
+                                        (StructInstanceMember
                                             (Var 13 de)
                                             13 1_toml_tokenizer_current
                                             (Pointer

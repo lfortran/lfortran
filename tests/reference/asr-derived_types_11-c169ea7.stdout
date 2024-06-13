@@ -53,7 +53,7 @@
                                             "lf"
                                             (Character 1 2 ())
                                         )
-                                        (StructTypeInstanceMember
+                                        (StructInstanceMember
                                             (Var 2 type_y)
                                             2 1_y_backslash
                                             (Character 1 1 ())
@@ -185,7 +185,7 @@
                     [derived_types_11]
                     [(If
                         (StringCompare
-                            (StructTypeInstanceMember
+                            (StructInstanceMember
                                 (Var 4 type_y)
                                 4 1_y_backslash
                                 (Character 1 1 ())
