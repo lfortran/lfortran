@@ -46,6 +46,17 @@ class ASRBuilder {
         return ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym));
     }
 
+    ASR::expr_t *VariableOverwrite(SymbolTable *symtab, std::string var_name,
+            ASR::ttype_t *type, ASR::intentType intent,
+            ASR::abiType abi=ASR::abiType::Source, bool a_value_attr=false) {
+        ASR::symbol_t* sym = ASR::down_cast<ASR::symbol_t>(
+            ASR::make_Variable_t(al, loc, symtab, s2c(al, var_name), nullptr, 0,
+            intent, nullptr, nullptr, ASR::storage_typeType::Default, type, nullptr, abi,
+            ASR::Public, ASR::presenceType::Required, a_value_attr));
+        symtab->add_or_overwrite_symbol(s2c(al, var_name), sym);
+        return ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym));
+    }
+
     #define declare(var_name, type, intent)                                     \
         b.Variable(fn_symtab, var_name, type, ASR::intentType::intent)
 
@@ -109,6 +120,10 @@ class ASRBuilder {
             m_dims.push_back(al, dim);
         }
         return make_Array_t_util(al, loc, type, m_dims.p, m_dims.n);
+    }
+
+    ASR::ttype_t* CPtr() {
+        return TYPE(ASR::make_CPtr_t(al, loc));
     }
 
     // Expressions -------------------------------------------------------------
@@ -217,6 +232,10 @@ class ASRBuilder {
     inline ASR::expr_t* Ichar(std::string s, ASR::ttype_t* type, ASR::ttype_t* t) {
         return EXPR(ASR::make_Ichar_t(al, loc,
             EXPR(ASR::make_StringConstant_t(al, loc, s2c(al, s), type)), t, nullptr));
+    }
+
+    inline ASR::expr_t* PointerToCPtr(ASR::expr_t* x, ASR::ttype_t* t) {
+        return EXPR(ASR::make_PointerToCPtr_t(al, loc, x, t, nullptr));
     }
 
     // Cast --------------------------------------------------------------------
@@ -779,6 +798,21 @@ class ASRBuilder {
         return STMT(ASR::make_Allocate_t(al, loc, alloc_args.p, 1,
             nullptr, nullptr, nullptr));
     }
+
+    ASR::stmt_t *Allocate(ASR::expr_t *m_a, ASR::dimension_t* m_dims, size_t n_dims) {
+        Vec<ASR::alloc_arg_t> alloc_args; alloc_args.reserve(al, 1);
+        ASR::alloc_arg_t alloc_arg;
+        alloc_arg.loc = loc;
+        alloc_arg.m_a = m_a;
+        alloc_arg.m_dims = m_dims;
+        alloc_arg.n_dims = n_dims;
+        alloc_arg.m_type = nullptr;
+        alloc_arg.m_len_expr = nullptr;
+        alloc_args.push_back(al, alloc_arg);
+        return STMT(ASR::make_Allocate_t(al, loc, alloc_args.p, 1,
+            nullptr, nullptr, nullptr));
+    }
+
 
     #define UBound(arr, dim) PassUtils::get_bound(arr, dim, "ubound", al)
     #define LBound(arr, dim) PassUtils::get_bound(arr, dim, "lbound", al)
