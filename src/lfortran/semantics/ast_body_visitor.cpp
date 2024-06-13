@@ -990,7 +990,7 @@ public:
                     AST::Name_t* name_t = AST::down_cast<AST::Name_t>(x.m_args[i].m_start);
                     ASR::symbol_t *v = current_scope->resolve_symbol(name_t->m_id);
                     if (v) {
-                        ASR::ttype_t* struct_t = ASRUtils::TYPE(ASR::make_Struct_t(al, x.base.base.loc, v));
+                        ASR::ttype_t* struct_t = ASRUtils::TYPE(ASR::make_StructType_t(al, x.base.base.loc, v));
                         new_arg.m_type = struct_t;
                     } else {
                         throw SemanticError("`The type-spec: " + std::string(name_t->m_id)
@@ -1041,7 +1041,7 @@ public:
                 new_arg.n_dims = dims_vec.size();
                 alloc_args_vec.push_back(al, new_arg);
             } else if( ASR::is_a<ASR::Var_t>(*tmp_stmt) ||
-                       ASR::is_a<ASR::StructInstanceMember_t>(*tmp_stmt) ) {
+                       ASR::is_a<ASR::StructTypeInstanceMember_t>(*tmp_stmt) ) {
                 new_arg.m_a = tmp_stmt;
                 new_arg.m_dims = nullptr;
                 new_arg.n_dims = 0;
@@ -1171,8 +1171,8 @@ public:
                 const ASR::Var_t* tmp_var = ASR::down_cast<ASR::Var_t>(tmp_expr);
                 ASR::symbol_t* tmp_sym = tmp_var->m_v;
                 check_for_deallocation(tmp_sym, tmp_expr->base.loc);
-            } else if( ASR::is_a<ASR::StructInstanceMember_t>(*tmp_expr) ) {
-                const ASR::StructInstanceMember_t* tmp_struct_ref = ASR::down_cast<ASR::StructInstanceMember_t>(tmp_expr);
+            } else if( ASR::is_a<ASR::StructTypeInstanceMember_t>(*tmp_expr) ) {
+                const ASR::StructTypeInstanceMember_t* tmp_struct_ref = ASR::down_cast<ASR::StructTypeInstanceMember_t>(tmp_expr);
                 ASR::symbol_t* tmp_member = tmp_struct_ref->m_m;
                 check_for_deallocation(tmp_member, tmp_expr->base.loc);
             } else {
@@ -1326,8 +1326,8 @@ public:
                     if( assoc_variable ) {
                         ASR::ttype_t* selector_type = nullptr;
                         ASR::symbol_t* sym_underlying = ASRUtils::symbol_get_past_external(sym);
-                        if( ASR::is_a<ASR::StructType_t>(*sym_underlying) ) {
-                            selector_type = ASRUtils::TYPE(ASR::make_Struct_t(al, sym->base.loc, sym));
+                        if( ASR::is_a<ASR::Struct_t>(*sym_underlying) ) {
+                            selector_type = ASRUtils::TYPE(ASR::make_StructType_t(al, sym->base.loc, sym));
                         } else if( ASR::is_a<ASR::ClassType_t>(*sym_underlying) ) {
                             selector_type = ASRUtils::TYPE(ASR::make_Class_t(al, sym->base.loc, sym));
                         } else {
@@ -1372,8 +1372,8 @@ public:
                     if( assoc_variable ) {
                         ASR::ttype_t* selector_type = nullptr;
                         ASR::symbol_t* sym_underlying = ASRUtils::symbol_get_past_external(sym);
-                        if( ASR::is_a<ASR::StructType_t>(*sym_underlying) ) {
-                            selector_type = ASRUtils::TYPE(ASR::make_Struct_t(al, sym->base.loc, sym));
+                        if( ASR::is_a<ASR::Struct_t>(*sym_underlying) ) {
+                            selector_type = ASRUtils::TYPE(ASR::make_StructType_t(al, sym->base.loc, sym));
                         } else if( ASR::is_a<ASR::ClassType_t>(*sym_underlying) ) {
                             selector_type = ASRUtils::TYPE(ASR::make_Class_t(al, sym->base.loc, sym));
                         } else {
@@ -2428,7 +2428,7 @@ public:
             target->type != ASR::exprType::ArraySection &&
             target->type != ASR::exprType::StringSection &&
             target->type != ASR::exprType::StringItem &&
-            target->type != ASR::exprType::StructInstanceMember )
+            target->type != ASR::exprType::StructTypeInstanceMember )
         {
             throw SemanticError(
                 "The LHS of assignment can only be a variable or an array reference",
@@ -2449,7 +2449,7 @@ public:
             if ((target->type == ASR::exprType::Var ||
                 target->type == ASR::exprType::ArrayItem ||
                 target->type == ASR::exprType::ArraySection ||
-                target->type == ASR::exprType::StructInstanceMember) &&
+                target->type == ASR::exprType::StructTypeInstanceMember) &&
                 !ASRUtils::check_equal_type(target_type, value_type)) {
                 if (value->type == ASR::exprType::ArrayConstant) {
                     ASR::ArrayConstant_t *ac = ASR::down_cast<ASR::ArrayConstant_t>(value);

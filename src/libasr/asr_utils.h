@@ -412,8 +412,8 @@ static inline ASR::abiType expr_abi(ASR::expr_t* e) {
         case ASR::exprType::Var: {
             return ASRUtils::symbol_abi(ASR::down_cast<ASR::Var_t>(e)->m_v);
         }
-        case ASR::exprType::StructInstanceMember: {
-            return ASRUtils::symbol_abi(ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_m);
+        case ASR::exprType::StructTypeInstanceMember: {
+            return ASRUtils::symbol_abi(ASR::down_cast<ASR::StructTypeInstanceMember_t>(e)->m_m);
         }
         case ASR::exprType::ArrayReshape: {
             return ASRUtils::expr_abi(ASR::down_cast<ASR::ArrayReshape_t>(e)->m_array);
@@ -451,8 +451,8 @@ static inline char *symbol_name(const ASR::symbol_t *f)
         case ASR::symbolType::GenericProcedure: {
             return ASR::down_cast<ASR::GenericProcedure_t>(f)->m_name;
         }
-        case ASR::symbolType::StructType: {
-            return ASR::down_cast<ASR::StructType_t>(f)->m_name;
+        case ASR::symbolType::Struct: {
+            return ASR::down_cast<ASR::Struct_t>(f)->m_name;
         }
         case ASR::symbolType::EnumType: {
             return ASR::down_cast<ASR::EnumType_t>(f)->m_name;
@@ -564,8 +564,8 @@ static inline std::string type_to_str(const ASR::ttype_t *t)
         case ASR::ttypeType::List: {
             return "list";
         }
-        case ASR::ttypeType::Struct: {
-            return ASRUtils::symbol_name(ASR::down_cast<ASR::Struct_t>(t)->m_derived_type);
+        case ASR::ttypeType::StructType: {
+            return ASRUtils::symbol_name(ASR::down_cast<ASR::StructType_t>(t)->m_derived_type);
         }
         case ASR::ttypeType::Class: {
             return ASRUtils::symbol_name(ASR::down_cast<ASR::Class_t>(t)->m_class_type);
@@ -715,8 +715,8 @@ static inline std::pair<char**, size_t> symbol_dependencies(const ASR::symbol_t 
             ASR::Function_t* sym = ASR::down_cast<ASR::Function_t>(f);
             return std::make_pair(sym->m_dependencies, sym->n_dependencies);
         }
-        case ASR::symbolType::StructType: {
-            ASR::StructType_t* sym = ASR::down_cast<ASR::StructType_t>(f);
+        case ASR::symbolType::Struct: {
+            ASR::Struct_t* sym = ASR::down_cast<ASR::Struct_t>(f);
             return std::make_pair(sym->m_dependencies, sym->n_dependencies);
         }
         case ASR::symbolType::EnumType: {
@@ -757,8 +757,8 @@ static inline SymbolTable *symbol_parent_symtab(const ASR::symbol_t *f)
         case ASR::symbolType::GenericProcedure: {
             return ASR::down_cast<ASR::GenericProcedure_t>(f)->m_parent_symtab;
         }
-        case ASR::symbolType::StructType: {
-            return ASR::down_cast<ASR::StructType_t>(f)->m_symtab->parent;
+        case ASR::symbolType::Struct: {
+            return ASR::down_cast<ASR::Struct_t>(f)->m_symtab->parent;
         }
         case ASR::symbolType::EnumType: {
             return ASR::down_cast<ASR::EnumType_t>(f)->m_symtab->parent;
@@ -811,8 +811,8 @@ static inline SymbolTable *symbol_symtab(const ASR::symbol_t *f)
             return nullptr;
             //throw LCompilersException("GenericProcedure does not have a symtab");
         }
-        case ASR::symbolType::StructType: {
-            return ASR::down_cast<ASR::StructType_t>(f)->m_symtab;
+        case ASR::symbolType::Struct: {
+            return ASR::down_cast<ASR::Struct_t>(f)->m_symtab;
         }
         case ASR::symbolType::EnumType: {
             return ASR::down_cast<ASR::EnumType_t>(f)->m_symtab;
@@ -875,9 +875,9 @@ static inline ASR::symbol_t *get_asr_owner(const ASR::expr_t *expr) {
         case ASR::exprType::Var: {
             return ASRUtils::get_asr_owner(ASR::down_cast<ASR::Var_t>(expr)->m_v);
         }
-        case ASR::exprType::StructInstanceMember: {
+        case ASR::exprType::StructTypeInstanceMember: {
             return ASRUtils::get_asr_owner(ASRUtils::symbol_get_past_external(
-                    ASR::down_cast<ASR::StructInstanceMember_t>(expr)->m_m));
+                    ASR::down_cast<ASR::StructTypeInstanceMember_t>(expr)->m_m));
         }
         case ASR::exprType::GetPointer: {
             return ASRUtils::get_asr_owner(ASR::down_cast<ASR::GetPointer_t>(expr)->m_arg);
@@ -913,7 +913,7 @@ static inline bool is_c_ptr(ASR::symbol_t* v, std::string v_name="") {
         v_name = ASRUtils::symbol_name(v);
     }
     ASR::symbol_t* v_orig = ASRUtils::symbol_get_past_external(v);
-    if( ASR::is_a<ASR::StructType_t>(*v_orig) ) {
+    if( ASR::is_a<ASR::Struct_t>(*v_orig) ) {
         ASR::Module_t* der_type_module = ASRUtils::get_sym_module0(v_orig);
         return (der_type_module && std::string(der_type_module->m_name) ==
                 "lfortran_intrinsic_iso_c_binding" &&
@@ -928,7 +928,7 @@ static inline bool is_c_funptr(ASR::symbol_t* v, std::string v_name="") {
         v_name = ASRUtils::symbol_name(v);
     }
     ASR::symbol_t* v_orig = ASRUtils::symbol_get_past_external(v);
-    if( ASR::is_a<ASR::StructType_t>(*v_orig) ) {
+    if( ASR::is_a<ASR::Struct_t>(*v_orig) ) {
         ASR::Module_t* der_type_module = ASRUtils::get_sym_module0(v_orig);
         return (der_type_module && std::string(der_type_module->m_name) ==
                 "lfortran_intrinsic_iso_c_binding" &&
@@ -1037,7 +1037,7 @@ static inline bool is_variable(ASR::expr_t* a_value) {
         case ASR::exprType::StringItem:
         case ASR::exprType::StringSection:
         case ASR::exprType::ArraySection:
-        case ASR::exprType::StructInstanceMember: {
+        case ASR::exprType::StructTypeInstanceMember: {
             return true;
         }
         default: {
@@ -1114,9 +1114,9 @@ static inline bool is_value_constant(ASR::expr_t *a_value) {
         } case ASR::exprType::ArrayBroadcast: {
             ASR::ArrayBroadcast_t* array_broadcast = ASR::down_cast<ASR::ArrayBroadcast_t>(a_value);
             return is_value_constant(array_broadcast->m_value);
-        } case ASR::exprType::StructInstanceMember: {
-            ASR::StructInstanceMember_t*
-                struct_member_t = ASR::down_cast<ASR::StructInstanceMember_t>(a_value);
+        } case ASR::exprType::StructTypeInstanceMember: {
+            ASR::StructTypeInstanceMember_t*
+                struct_member_t = ASR::down_cast<ASR::StructTypeInstanceMember_t>(a_value);
             return is_value_constant(struct_member_t->m_v);
         } case ASR::exprType::Var: {
             ASR::Var_t* var_t = ASR::down_cast<ASR::Var_t>(a_value);
@@ -1138,9 +1138,9 @@ static inline bool is_value_constant(ASR::expr_t *a_value) {
             ASR::ArrayPhysicalCast_t*
                 array_physical_t = ASR::down_cast<ASR::ArrayPhysicalCast_t>(a_value);
             return is_value_constant(array_physical_t->m_arg);
-        } case ASR::exprType::StructTypeConstructor: {
-            ASR::StructTypeConstructor_t* struct_type_constructor =
-                ASR::down_cast<ASR::StructTypeConstructor_t>(a_value);
+        } case ASR::exprType::StructConstructor: {
+            ASR::StructConstructor_t* struct_type_constructor =
+                ASR::down_cast<ASR::StructConstructor_t>(a_value);
             bool is_constant = true;
             for( size_t i = 0; i < struct_type_constructor->n_args; i++ ) {
                 if( struct_type_constructor->m_args[i].m_value ) {
@@ -1551,8 +1551,8 @@ static inline std::string get_type_code(const ASR::ttype_t *t, bool use_undersco
         case ASR::ttypeType::CPtr: {
             return "CPtr";
         }
-        case ASR::ttypeType::Struct: {
-            ASR::Struct_t* d = ASR::down_cast<ASR::Struct_t>(t);
+        case ASR::ttypeType::StructType: {
+            ASR::StructType_t* d = ASR::down_cast<ASR::StructType_t>(t);
             if( ASRUtils::symbol_get_past_external(d->m_derived_type) ) {
                 res = symbol_name(ASRUtils::symbol_get_past_external(d->m_derived_type));
             } else {
@@ -1705,8 +1705,8 @@ static inline std::string type_to_str_python(const ASR::ttype_t *t,
         case ASR::ttypeType::CPtr: {
             return "CPtr";
         }
-        case ASR::ttypeType::Struct: {
-            ASR::Struct_t* d = ASR::down_cast<ASR::Struct_t>(t);
+        case ASR::ttypeType::StructType: {
+            ASR::StructType_t* d = ASR::down_cast<ASR::StructType_t>(t);
             return "struct " + std::string(symbol_name(d->m_derived_type));
         }
         case ASR::ttypeType::Enum: {
@@ -1987,7 +1987,7 @@ ASR::TranslationUnit_t* find_and_load_module(Allocator &al, const std::string &m
 
 void set_intrinsic(ASR::TranslationUnit_t* trans_unit);
 
-ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
+ASR::asr_t* getStructTypeInstanceMember_t(Allocator& al, const Location& loc,
                             ASR::asr_t* v_var, ASR::symbol_t *v,
                             ASR::symbol_t* member, SymbolTable* current_scope);
 
@@ -2006,7 +2006,7 @@ bool use_overloaded_unary_minus(ASR::expr_t* operand,
     const std::function<void (const std::string &, const Location &)> err);
 
 bool is_op_overloaded(ASR::binopType op, std::string& intrinsic_op_name,
-                      SymbolTable* curr_scope, ASR::StructType_t* left_struct=nullptr);
+                      SymbolTable* curr_scope, ASR::Struct_t* left_struct=nullptr);
 
 bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                     ASR::cmpopType op, std::string& intrinsic_op_name,
@@ -2017,7 +2017,7 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                     const std::function<void (const std::string &, const Location &)> err);
 
 bool is_op_overloaded(ASR::cmpopType op, std::string& intrinsic_op_name,
-                      SymbolTable* curr_scope, ASR::StructType_t *left_struct);
+                      SymbolTable* curr_scope, ASR::Struct_t *left_struct);
 
 bool use_overloaded_assignment(ASR::expr_t* target, ASR::expr_t* value,
                                SymbolTable* curr_scope, ASR::asr_t*& asr,
@@ -2213,7 +2213,7 @@ inline size_t extract_dimensions_from_ttype(ASR::ttype_t *x,
         case ASR::ttypeType::Complex:
         case ASR::ttypeType::Character:
         case ASR::ttypeType::Logical:
-        case ASR::ttypeType::Struct:
+        case ASR::ttypeType::StructType:
         case ASR::ttypeType::Enum:
         case ASR::ttypeType::Union:
         case ASR::ttypeType::Class:
@@ -2484,7 +2484,7 @@ inline bool ttype_set_dimensions(ASR::ttype_t** x,
         case ASR::ttypeType::Complex:
         case ASR::ttypeType::Character:
         case ASR::ttypeType::Logical:
-        case ASR::ttypeType::Struct:
+        case ASR::ttypeType::StructType:
         case ASR::ttypeType::Enum:
         case ASR::ttypeType::Union:
         case ASR::ttypeType::TypeParameter: {
@@ -2568,9 +2568,9 @@ static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
                     tnew->m_kind, tnew->m_len, tnew->m_len_expr));
             break;
         }
-        case ASR::ttypeType::Struct: {
-            ASR::Struct_t* tnew = ASR::down_cast<ASR::Struct_t>(t);
-            t_ = ASRUtils::TYPE(ASR::make_Struct_t(al, t->base.loc, tnew->m_derived_type));
+        case ASR::ttypeType::StructType: {
+            ASR::StructType_t* tnew = ASR::down_cast<ASR::StructType_t>(t);
+            t_ = ASRUtils::TYPE(ASR::make_StructType_t(al, t->base.loc, tnew->m_derived_type));
             break;
         }
         case ASR::ttypeType::Class: {
@@ -2718,9 +2718,9 @@ static inline ASR::ttype_t* duplicate_type_without_dims(Allocator& al, const ASR
             return ASRUtils::TYPE(ASR::make_Character_t(al, loc,
                         tnew->m_kind, tnew->m_len, tnew->m_len_expr));
         }
-        case ASR::ttypeType::Struct: {
-            ASR::Struct_t* tstruct = ASR::down_cast<ASR::Struct_t>(t);
-            return ASRUtils::TYPE(ASR::make_Struct_t(al, loc, tstruct->m_derived_type));
+        case ASR::ttypeType::StructType: {
+            ASR::StructType_t* tstruct = ASR::down_cast<ASR::StructType_t>(t);
+            return ASRUtils::TYPE(ASR::make_StructType_t(al, loc, tstruct->m_derived_type));
         }
         case ASR::ttypeType::Pointer: {
             ASR::Pointer_t* ptr = ASR::down_cast<ASR::Pointer_t>(t);
@@ -2762,8 +2762,8 @@ inline bool is_same_type_pointer(ASR::ttype_t* source, ASR::ttype_t* dest) {
         dest = temp;
     }
     dest = ASRUtils::type_get_past_array(ASR::down_cast<ASR::Pointer_t>(dest)->m_type);
-    if( (ASR::is_a<ASR::Class_t>(*source) || ASR::is_a<ASR::Struct_t>(*source)) &&
-        (ASR::is_a<ASR::Class_t>(*dest) || ASR::is_a<ASR::Struct_t>(*dest)) ) {
+    if( (ASR::is_a<ASR::Class_t>(*source) || ASR::is_a<ASR::StructType_t>(*source)) &&
+        (ASR::is_a<ASR::Class_t>(*dest) || ASR::is_a<ASR::StructType_t>(*dest)) ) {
         return true;
     }
     bool res = source->type == dest->type;
@@ -2942,20 +2942,20 @@ inline bool is_parent(SymbolTable* a, SymbolTable* b) {
     return false;
 }
 
-inline bool is_parent(ASR::StructType_t* a, ASR::StructType_t* b) {
+inline bool is_parent(ASR::Struct_t* a, ASR::Struct_t* b) {
     ASR::symbol_t* current_parent = b->m_parent;
     while( current_parent ) {
         current_parent = ASRUtils::symbol_get_past_external(current_parent);
         if( current_parent == (ASR::symbol_t*) a ) {
             return true;
         }
-        LCOMPILERS_ASSERT(ASR::is_a<ASR::StructType_t>(*current_parent));
-        current_parent = ASR::down_cast<ASR::StructType_t>(current_parent)->m_parent;
+        LCOMPILERS_ASSERT(ASR::is_a<ASR::Struct_t>(*current_parent));
+        current_parent = ASR::down_cast<ASR::Struct_t>(current_parent)->m_parent;
     }
     return false;
 }
 
-inline bool is_derived_type_similar(ASR::StructType_t* a, ASR::StructType_t* b) {
+inline bool is_derived_type_similar(ASR::Struct_t* a, ASR::Struct_t* b) {
     return a == b || is_parent(a, b) || is_parent(b, a) ||
         (std::string(a->m_name) == "~abstract_type" &&
         std::string(b->m_name) == "~abstract_type");
@@ -3150,13 +3150,13 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b,
                 ASR::List_t *b2 = ASR::down_cast<ASR::List_t>(b);
                 return types_equal(a2->m_type, b2->m_type);
             }
-            case (ASR::ttypeType::Struct) : {
-                ASR::Struct_t *a2 = ASR::down_cast<ASR::Struct_t>(a);
-                ASR::Struct_t *b2 = ASR::down_cast<ASR::Struct_t>(b);
-                ASR::StructType_t *a2_type = ASR::down_cast<ASR::StructType_t>(
+            case (ASR::ttypeType::StructType) : {
+                ASR::StructType_t *a2 = ASR::down_cast<ASR::StructType_t>(a);
+                ASR::StructType_t *b2 = ASR::down_cast<ASR::StructType_t>(b);
+                ASR::Struct_t *a2_type = ASR::down_cast<ASR::Struct_t>(
                                                 ASRUtils::symbol_get_past_external(
                                                     a2->m_derived_type));
-                ASR::StructType_t *b2_type = ASR::down_cast<ASR::StructType_t>(
+                ASR::Struct_t *b2_type = ASR::down_cast<ASR::Struct_t>(
                                                 ASRUtils::symbol_get_past_external(
                                                     b2->m_derived_type));
                 return a2_type == b2_type;
@@ -3173,9 +3173,9 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b,
                     ASR::ClassType_t *a2_type = ASR::down_cast<ASR::ClassType_t>(a2_typesym);
                     ASR::ClassType_t *b2_type = ASR::down_cast<ASR::ClassType_t>(b2_typesym);
                     return a2_type == b2_type;
-                } else if( a2_typesym->type == ASR::symbolType::StructType ) {
-                    ASR::StructType_t *a2_type = ASR::down_cast<ASR::StructType_t>(a2_typesym);
-                    ASR::StructType_t *b2_type = ASR::down_cast<ASR::StructType_t>(b2_typesym);
+                } else if( a2_typesym->type == ASR::symbolType::Struct ) {
+                    ASR::Struct_t *a2_type = ASR::down_cast<ASR::Struct_t>(a2_typesym);
+                    ASR::Struct_t *b2_type = ASR::down_cast<ASR::Struct_t>(b2_typesym);
                     return is_derived_type_similar(a2_type, b2_type);
                 }
                 return false;
@@ -3211,9 +3211,9 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b,
             }
             default : return false;
         }
-    } else if( a->type == ASR::ttypeType::Struct &&
+    } else if( a->type == ASR::ttypeType::StructType &&
                b->type == ASR::ttypeType::Class ) {
-        ASR::Struct_t *a2 = ASR::down_cast<ASR::Struct_t>(a);
+        ASR::StructType_t *a2 = ASR::down_cast<ASR::StructType_t>(a);
         ASR::Class_t *b2 = ASR::down_cast<ASR::Class_t>(b);
         ASR::symbol_t* a2_typesym = ASRUtils::symbol_get_past_external(a2->m_derived_type);
         ASR::symbol_t* b2_typesym = ASRUtils::symbol_get_past_external(b2->m_class_type);
@@ -3224,15 +3224,15 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b,
             ASR::ClassType_t *a2_type = ASR::down_cast<ASR::ClassType_t>(a2_typesym);
             ASR::ClassType_t *b2_type = ASR::down_cast<ASR::ClassType_t>(b2_typesym);
             return a2_type == b2_type;
-        } else if( a2_typesym->type == ASR::symbolType::StructType ) {
-            ASR::StructType_t *a2_type = ASR::down_cast<ASR::StructType_t>(a2_typesym);
-            ASR::StructType_t *b2_type = ASR::down_cast<ASR::StructType_t>(b2_typesym);
+        } else if( a2_typesym->type == ASR::symbolType::Struct ) {
+            ASR::Struct_t *a2_type = ASR::down_cast<ASR::Struct_t>(a2_typesym);
+            ASR::Struct_t *b2_type = ASR::down_cast<ASR::Struct_t>(b2_typesym);
             return is_derived_type_similar(a2_type, b2_type);
         }
     } else if( a->type == ASR::ttypeType::Class &&
-               b->type == ASR::ttypeType::Struct ) {
+               b->type == ASR::ttypeType::StructType ) {
         ASR::Class_t *a2 = ASR::down_cast<ASR::Class_t>(a);
-        ASR::Struct_t *b2 = ASR::down_cast<ASR::Struct_t>(b);
+        ASR::StructType_t *b2 = ASR::down_cast<ASR::StructType_t>(b);
         ASR::symbol_t* a2_typesym = ASRUtils::symbol_get_past_external(a2->m_class_type);
         ASR::symbol_t* b2_typesym = ASRUtils::symbol_get_past_external(b2->m_derived_type);
         if( a2_typesym->type != b2_typesym->type ) {
@@ -3242,9 +3242,9 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b,
             ASR::ClassType_t *a2_type = ASR::down_cast<ASR::ClassType_t>(a2_typesym);
             ASR::ClassType_t *b2_type = ASR::down_cast<ASR::ClassType_t>(b2_typesym);
             return a2_type == b2_type;
-        } else if( a2_typesym->type == ASR::symbolType::StructType ) {
-            ASR::StructType_t *a2_type = ASR::down_cast<ASR::StructType_t>(a2_typesym);
-            ASR::StructType_t *b2_type = ASR::down_cast<ASR::StructType_t>(b2_typesym);
+        } else if( a2_typesym->type == ASR::symbolType::Struct ) {
+            ASR::Struct_t *a2_type = ASR::down_cast<ASR::Struct_t>(a2_typesym);
+            ASR::Struct_t *b2_type = ASR::down_cast<ASR::Struct_t>(b2_typesym);
             return is_derived_type_similar(a2_type, b2_type);
         }
     }
@@ -3333,13 +3333,13 @@ inline bool types_equal_with_substitution(ASR::ttype_t *a, ASR::ttype_t *b,
                 ASR::List_t *b2 = ASR::down_cast<ASR::List_t>(b);
                 return types_equal_with_substitution(a2->m_type, b2->m_type, subs);
             }
-            case (ASR::ttypeType::Struct) : {
-                ASR::Struct_t *a2 = ASR::down_cast<ASR::Struct_t>(a);
-                ASR::Struct_t *b2 = ASR::down_cast<ASR::Struct_t>(b);
-                ASR::StructType_t *a2_type = ASR::down_cast<ASR::StructType_t>(
+            case (ASR::ttypeType::StructType) : {
+                ASR::StructType_t *a2 = ASR::down_cast<ASR::StructType_t>(a);
+                ASR::StructType_t *b2 = ASR::down_cast<ASR::StructType_t>(b);
+                ASR::Struct_t *a2_type = ASR::down_cast<ASR::Struct_t>(
                                                 ASRUtils::symbol_get_past_external(
                                                     a2->m_derived_type));
-                ASR::StructType_t *b2_type = ASR::down_cast<ASR::StructType_t>(
+                ASR::Struct_t *b2_type = ASR::down_cast<ASR::Struct_t>(
                                                 ASRUtils::symbol_get_past_external(
                                                     b2->m_derived_type));
                 return a2_type == b2_type;
@@ -3356,9 +3356,9 @@ inline bool types_equal_with_substitution(ASR::ttype_t *a, ASR::ttype_t *b,
                     ASR::ClassType_t *a2_type = ASR::down_cast<ASR::ClassType_t>(a2_typesym);
                     ASR::ClassType_t *b2_type = ASR::down_cast<ASR::ClassType_t>(b2_typesym);
                     return a2_type == b2_type;
-                } else if( a2_typesym->type == ASR::symbolType::StructType ) {
-                    ASR::StructType_t *a2_type = ASR::down_cast<ASR::StructType_t>(a2_typesym);
-                    ASR::StructType_t *b2_type = ASR::down_cast<ASR::StructType_t>(b2_typesym);
+                } else if( a2_typesym->type == ASR::symbolType::Struct ) {
+                    ASR::Struct_t *a2_type = ASR::down_cast<ASR::Struct_t>(a2_typesym);
+                    ASR::Struct_t *b2_type = ASR::down_cast<ASR::Struct_t>(b2_typesym);
                     return is_derived_type_similar(a2_type, b2_type);
                 }
                 return false;
@@ -3394,9 +3394,9 @@ inline bool types_equal_with_substitution(ASR::ttype_t *a, ASR::ttype_t *b,
             }
             default : return false;
         }
-    } else if( a->type == ASR::ttypeType::Struct &&
+    } else if( a->type == ASR::ttypeType::StructType &&
                b->type == ASR::ttypeType::Class ) {
-        ASR::Struct_t *a2 = ASR::down_cast<ASR::Struct_t>(a);
+        ASR::StructType_t *a2 = ASR::down_cast<ASR::StructType_t>(a);
         ASR::Class_t *b2 = ASR::down_cast<ASR::Class_t>(b);
         ASR::symbol_t* a2_typesym = ASRUtils::symbol_get_past_external(a2->m_derived_type);
         ASR::symbol_t* b2_typesym = ASRUtils::symbol_get_past_external(b2->m_class_type);
@@ -3407,15 +3407,15 @@ inline bool types_equal_with_substitution(ASR::ttype_t *a, ASR::ttype_t *b,
             ASR::ClassType_t *a2_type = ASR::down_cast<ASR::ClassType_t>(a2_typesym);
             ASR::ClassType_t *b2_type = ASR::down_cast<ASR::ClassType_t>(b2_typesym);
             return a2_type == b2_type;
-        } else if( a2_typesym->type == ASR::symbolType::StructType ) {
-            ASR::StructType_t *a2_type = ASR::down_cast<ASR::StructType_t>(a2_typesym);
-            ASR::StructType_t *b2_type = ASR::down_cast<ASR::StructType_t>(b2_typesym);
+        } else if( a2_typesym->type == ASR::symbolType::Struct ) {
+            ASR::Struct_t *a2_type = ASR::down_cast<ASR::Struct_t>(a2_typesym);
+            ASR::Struct_t *b2_type = ASR::down_cast<ASR::Struct_t>(b2_typesym);
             return is_derived_type_similar(a2_type, b2_type);
         }
     } else if( a->type == ASR::ttypeType::Class &&
-               b->type == ASR::ttypeType::Struct ) {
+               b->type == ASR::ttypeType::StructType ) {
         ASR::Class_t *a2 = ASR::down_cast<ASR::Class_t>(a);
-        ASR::Struct_t *b2 = ASR::down_cast<ASR::Struct_t>(b);
+        ASR::StructType_t *b2 = ASR::down_cast<ASR::StructType_t>(b);
         ASR::symbol_t* a2_typesym = ASRUtils::symbol_get_past_external(a2->m_class_type);
         ASR::symbol_t* b2_typesym = ASRUtils::symbol_get_past_external(b2->m_derived_type);
         if( a2_typesym->type != b2_typesym->type ) {
@@ -3425,9 +3425,9 @@ inline bool types_equal_with_substitution(ASR::ttype_t *a, ASR::ttype_t *b,
             ASR::ClassType_t *a2_type = ASR::down_cast<ASR::ClassType_t>(a2_typesym);
             ASR::ClassType_t *b2_type = ASR::down_cast<ASR::ClassType_t>(b2_typesym);
             return a2_type == b2_type;
-        } else if( a2_typesym->type == ASR::symbolType::StructType ) {
-            ASR::StructType_t *a2_type = ASR::down_cast<ASR::StructType_t>(a2_typesym);
-            ASR::StructType_t *b2_type = ASR::down_cast<ASR::StructType_t>(b2_typesym);
+        } else if( a2_typesym->type == ASR::symbolType::Struct ) {
+            ASR::Struct_t *a2_type = ASR::down_cast<ASR::Struct_t>(a2_typesym);
+            ASR::Struct_t *b2_type = ASR::down_cast<ASR::Struct_t>(b2_typesym);
             return is_derived_type_similar(a2_type, b2_type);
         }
     }
@@ -3677,8 +3677,8 @@ static inline ASR::symbol_t* import_struct_instance_member(Allocator& al, ASR::s
     mem_type = ASRUtils::type_get_past_array(
         ASRUtils::type_get_past_pointer(
             ASRUtils::type_get_past_allocatable(mem_type)));
-    if( mem_type && ASR::is_a<ASR::Struct_t>(*mem_type) ) {
-        ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(mem_type);
+    if( mem_type && ASR::is_a<ASR::StructType_t>(*mem_type) ) {
+        ASR::StructType_t* struct_t = ASR::down_cast<ASR::StructType_t>(mem_type);
         std::string struct_type_name = ASRUtils::symbol_name(struct_t->m_derived_type);
         ASR::symbol_t* struct_t_m_derived_type = ASRUtils::symbol_get_past_external(struct_t->m_derived_type);
         if( scope->resolve_symbol(struct_type_name) == nullptr ) {
@@ -3691,9 +3691,9 @@ static inline ASR::symbol_t* import_struct_instance_member(Allocator& al, ASR::s
                     nullptr, 0, s2c(al, struct_type_name), ASR::accessType::Public));
                 scope->add_symbol(struct_type_name_, imported_struct_type);
             }
-            mem_type = ASRUtils::TYPE(ASR::make_Struct_t(al, mem_type->base.loc, scope->get_symbol(struct_type_name_)));
+            mem_type = ASRUtils::TYPE(ASR::make_StructType_t(al, mem_type->base.loc, scope->get_symbol(struct_type_name_)));
         } else {
-            mem_type = ASRUtils::TYPE(ASR::make_Struct_t(al, mem_type->base.loc,
+            mem_type = ASRUtils::TYPE(ASR::make_StructType_t(al, mem_type->base.loc,
                 scope->resolve_symbol(struct_type_name)));
         }
     }
@@ -3923,7 +3923,7 @@ class FixScopedTypeVisitor: public ASR::BaseExprReplacer<FixScopedTypeVisitor> {
     FixScopedTypeVisitor(Allocator& al_, SymbolTable* current_scope_) :
         al(al_), current_scope(current_scope_) {}
 
-    void replace_Struct(ASR::Struct_t* x) {
+    void replace_StructType(ASR::StructType_t* x) {
         ASR::symbol_t* m_derived_type = current_scope->resolve_symbol(
             ASRUtils::symbol_name(x->m_derived_type));
         if (m_derived_type == nullptr) {
@@ -3994,7 +3994,7 @@ class ReplaceWithFunctionParamVisitor: public ASR::BaseExprReplacer<ReplaceWithF
         }
     }
 
-    void replace_Struct(ASR::Struct_t *x) {
+    void replace_StructType(ASR::StructType_t *x) {
         std::string derived_type_name = ASRUtils::symbol_name(x->m_derived_type);
         ASR::symbol_t* derived_type_sym = current_scope->resolve_symbol(derived_type_name);
         LCOMPILERS_ASSERT_MSG( derived_type_sym != nullptr,
@@ -4150,9 +4150,9 @@ class SymbolDuplicator {
                 new_symbol_name = block->m_name;
                 break;
             }
-            case ASR::symbolType::StructType: {
-                ASR::StructType_t* struct_type = ASR::down_cast<ASR::StructType_t>(symbol);
-                new_symbol = duplicate_StructType(struct_type, destination_symtab);
+            case ASR::symbolType::Struct: {
+                ASR::Struct_t* struct_type = ASR::down_cast<ASR::Struct_t>(symbol);
+                new_symbol = duplicate_Struct(struct_type, destination_symtab);
                 new_symbol_name = struct_type->m_name;
                 break;
             }
@@ -4184,8 +4184,8 @@ class SymbolDuplicator {
         if( !node_duplicator.success ) {
             return nullptr;
         }
-        if (ASR::is_a<ASR::Struct_t>(*m_type)) {
-            ASR::Struct_t* st = ASR::down_cast<ASR::Struct_t>(m_type);
+        if (ASR::is_a<ASR::StructType_t>(*m_type)) {
+            ASR::StructType_t* st = ASR::down_cast<ASR::StructType_t>(m_type);
             std::string derived_type_name = ASRUtils::symbol_name(st->m_derived_type);
             ASR::symbol_t* derived_type_sym = destination_symtab->resolve_symbol(derived_type_name);
             LCOMPILERS_ASSERT_MSG( derived_type_sym != nullptr, "derived_type_sym cannot be nullptr");
@@ -4325,11 +4325,11 @@ class SymbolDuplicator {
                 new_body.p, new_body.size()));
     }
 
-    ASR::symbol_t* duplicate_StructType(ASR::StructType_t* struct_type_t,
+    ASR::symbol_t* duplicate_Struct(ASR::Struct_t* struct_type_t,
         SymbolTable* destination_symtab) {
         SymbolTable* struct_type_symtab = al.make_new<SymbolTable>(destination_symtab);
         duplicate_SymbolTable(struct_type_t->m_symtab, struct_type_symtab);
-        return ASR::down_cast<ASR::symbol_t>(ASR::make_StructType_t(
+        return ASR::down_cast<ASR::symbol_t>(ASR::make_Struct_t(
             al, struct_type_t->base.base.loc, struct_type_symtab,
             struct_type_t->m_name, struct_type_t->m_dependencies, struct_type_t->n_dependencies,
             struct_type_t->m_members, struct_type_t->n_members, struct_type_t->m_abi,
@@ -4591,7 +4591,7 @@ static inline bool is_pass_array_by_data_possible(ASR::Function_t* x, std::vecto
              argi->m_intent == ASRUtils::intent_out ||
              argi->m_intent == ASRUtils::intent_inout) &&
             !ASR::is_a<ASR::Allocatable_t>(*argi->m_type) &&
-            !ASR::is_a<ASR::Struct_t>(*argi->m_type) &&
+            !ASR::is_a<ASR::StructType_t>(*argi->m_type) &&
             !ASR::is_a<ASR::Character_t>(*argi->m_type) &&
             argi->m_presence != ASR::presenceType::Optional) {
             v.push_back(i);
@@ -4628,8 +4628,8 @@ static inline ASR::expr_t* get_bound(ASR::expr_t* arr_expr, int dim,
                             " does not have enough dimensions.";
             }
             throw SemanticError(msg, arr_expr->base.loc);
-        } else if ( ASR::is_a<ASR::StructInstanceMember_t>(*arr_expr )) {
-            ASR::StructInstanceMember_t* non_array_struct_inst_mem = ASR::down_cast<ASR::StructInstanceMember_t>(arr_expr);
+        } else if ( ASR::is_a<ASR::StructTypeInstanceMember_t>(*arr_expr )) {
+            ASR::StructTypeInstanceMember_t* non_array_struct_inst_mem = ASR::down_cast<ASR::StructTypeInstanceMember_t>(arr_expr);
             ASR::Variable_t* non_array_variable = ASR::down_cast<ASR::Variable_t>(
                 symbol_get_past_external(non_array_struct_inst_mem->m_m));
             std::string msg;
@@ -4944,8 +4944,8 @@ static inline void import_struct_t(Allocator& al,
     }
     ASR::ttype_t* var_type_unwrapped = ASRUtils::type_get_past_allocatable(
         ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_array(var_type)));
-    if( ASR::is_a<ASR::Struct_t>(*var_type_unwrapped) ) {
-        ASR::symbol_t* der_sym = ASR::down_cast<ASR::Struct_t>(var_type_unwrapped)->m_derived_type;
+    if( ASR::is_a<ASR::StructType_t>(*var_type_unwrapped) ) {
+        ASR::symbol_t* der_sym = ASR::down_cast<ASR::StructType_t>(var_type_unwrapped)->m_derived_type;
         if( (ASR::asr_t*) ASRUtils::get_asr_owner(der_sym) != current_scope->asr_owner ) {
             std::string sym_name = ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(der_sym));
             if( current_scope->resolve_symbol(sym_name) == nullptr ) {
@@ -4958,7 +4958,7 @@ static inline void import_struct_t(Allocator& al,
             } else {
                 der_sym = current_scope->resolve_symbol(sym_name);
             }
-            var_type = ASRUtils::TYPE(ASR::make_Struct_t(al, loc, der_sym));
+            var_type = ASRUtils::TYPE(ASR::make_StructType_t(al, loc, der_sym));
             if( is_array ) {
                 var_type = ASRUtils::make_Array_t_util(al, loc, var_type, m_dims, n_dims,
                     ASR::abiType::Source, false, ptype, true);
@@ -5642,7 +5642,7 @@ static inline ASR::asr_t* make_SubroutineCall_t_util(
     if( a_dt && ASR::is_a<ASR::Variable_t>(
         *ASRUtils::symbol_get_past_external(a_name)) &&
         ASR::is_a<ASR::FunctionType_t>(*ASRUtils::symbol_type(a_name)) ) {
-        a_dt = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, a_loc,
+        a_dt = ASRUtils::EXPR(ASR::make_StructTypeInstanceMember_t(al, a_loc,
             a_dt, a_name, ASRUtils::symbol_type(a_name), nullptr));
     }
 

@@ -26,7 +26,7 @@ class ReplaceReductionVariable: public ASR::BaseExprReplacer<ReplaceReductionVar
             if (std::find(reduction_variables.begin(), reduction_variables.end(), ASRUtils::symbol_name(x->m_v)) != reduction_variables.end()) {
                 ASR::symbol_t* sym = current_scope->get_symbol("thread_data_" + std::string(ASRUtils::symbol_name(x->m_v)));
                 LCOMPILERS_ASSERT(sym != nullptr);
-                *current_expr = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, x->base.base.loc, data_expr, sym, ASRUtils::symbol_type(sym), nullptr));
+                *current_expr = ASRUtils::EXPR(ASR::make_StructTypeInstanceMember_t(al, x->base.base.loc, data_expr, sym, ASRUtils::symbol_type(sym), nullptr));
             }
         }
 };
@@ -253,8 +253,8 @@ class DoConcurrentVisitor :
                         ASR::accessType::Public
                         );
                     current_scope->add_or_overwrite_symbol(sym, ASR::down_cast<ASR::symbol_t>(es));
-                } else if( ASR::is_a<ASR::StructType_t>(*item.second) ) {
-                    ASR::StructType_t *mv = ASR::down_cast<ASR::StructType_t>(item.second);
+                } else if( ASR::is_a<ASR::Struct_t>(*item.second) ) {
+                    ASR::Struct_t *mv = ASR::down_cast<ASR::Struct_t>(item.second);
                     // `mv` is the Variable in a module. Now we construct
                     // an ExternalSymbol that points to it.
                     Str name;
@@ -336,7 +336,7 @@ class DoConcurrentVisitor :
             std::string unsupported_sym_name = import_all(ASR::down_cast<ASR::Module_t>(iso_c_binding));
             LCOMPILERS_ASSERT(unsupported_sym_name == "");
 
-            // create StructType
+            // create Struct
             ASRUtils::ASRBuilder b(al, loc);
             SymbolTable* parent_scope = current_scope;
             current_scope = al.make_new<SymbolTable>(parent_scope);
@@ -346,7 +346,7 @@ class DoConcurrentVisitor :
                 LCOMPILERS_ASSERT(b.Variable(current_scope, it.first, it.second, ASR::intentType::Local) != nullptr);
                 involved_symbols_set.push_back(al, s2c(al, it.first));
             }
-            ASR::symbol_t* thread_data_struct = ASR::down_cast<ASR::symbol_t>(ASR::make_StructType_t(al, loc,
+            ASR::symbol_t* thread_data_struct = ASR::down_cast<ASR::symbol_t>(ASR::make_Struct_t(al, loc,
                 current_scope, s2c(al, "thread_data"), nullptr, 0, involved_symbols_set.p, involved_symbols_set.n, ASR::abiType::Source,
                 ASR::accessType::Public, false, false, nullptr, 0, nullptr, nullptr));
             current_scope->parent->add_symbol("thread_data", thread_data_struct);
@@ -391,7 +391,7 @@ class DoConcurrentVisitor :
             LCOMPILERS_ASSERT(data_expr != nullptr);
 
             // create tdata variable: `type(thread_data), pointer :: tdata`
-            ASR::expr_t* tdata_expr = b.Variable(current_scope, "tdata", ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, ASRUtils::TYPE(ASR::make_Struct_t(al, loc, thread_data_sym)))),
+            ASR::expr_t* tdata_expr = b.Variable(current_scope, "tdata", ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, ASRUtils::TYPE(ASR::make_StructType_t(al, loc, thread_data_sym)))),
                     ASR::intentType::Local, ASR::abiType::BindC);
             LCOMPILERS_ASSERT(tdata_expr != nullptr);
 
@@ -419,7 +419,7 @@ class DoConcurrentVisitor :
                 // handle arrays
                 body.push_back(al, b.Assignment(
                     b.Var(current_scope->get_symbol(it.first)),
-                    ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc, tdata_expr,
+                    ASRUtils::EXPR(ASR::make_StructTypeInstanceMember_t(al, loc, tdata_expr,
                     sym, ASRUtils::symbol_type(sym), nullptr))
                 ));
             }
@@ -540,7 +540,7 @@ class DoConcurrentVisitor :
             for ( size_t i = 0; i < do_loop.n_reduction; i++ ) {
                 ASR::reduction_expr_t red = do_loop.m_reduction[i];
                 ASR::symbol_t* red_sym = current_scope->get_symbol("thread_data_" + std::string(ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(red.m_arg)->m_v)));
-                ASR::expr_t* lhs = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc, tdata_expr, red_sym, ASRUtils::symbol_type(red_sym), nullptr));
+                ASR::expr_t* lhs = ASRUtils::EXPR(ASR::make_StructTypeInstanceMember_t(al, loc, tdata_expr, red_sym, ASRUtils::symbol_type(red_sym), nullptr));
 
                 switch (red.m_op) {
                     case ASR::reduction_opType::ReduceAdd : {
@@ -620,7 +620,7 @@ class DoConcurrentVisitor :
 
             // create data variable for the thread data module
             ASRUtils::ASRBuilder b(al, x.base.base.loc);
-            ASR::expr_t* data_expr = b.Variable(current_scope, "data", ASRUtils::TYPE(ASR::make_Struct_t(al, x.base.base.loc, thread_data_ext_sym)), ASR::intentType::Local);
+            ASR::expr_t* data_expr = b.Variable(current_scope, "data", ASRUtils::TYPE(ASR::make_StructType_t(al, x.base.base.loc, thread_data_ext_sym)), ASR::intentType::Local);
             LCOMPILERS_ASSERT(data_expr != nullptr);
 
             // now create a tdata (cptr)
@@ -641,7 +641,7 @@ class DoConcurrentVisitor :
 
                 // handle arrays
                 pass_result.push_back(al, b.Assignment(
-                    ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, x.base.base.loc, data_expr,
+                    ASRUtils::EXPR(ASR::make_StructTypeInstanceMember_t(al, x.base.base.loc, data_expr,
                     sym, ASRUtils::symbol_type(sym), nullptr)),
                     b.Var(current_scope->get_symbol(it.first))
                 ));

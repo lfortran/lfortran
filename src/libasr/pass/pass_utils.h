@@ -150,11 +150,11 @@ namespace LCompilers {
             ASR::ttype_t* return_type, ASR::expr_t* arr_item, ASR::stmt_t* stmt, int curr_idx);
 
         static inline bool is_aggregate_type(ASR::expr_t* var) {
-            return ASR::is_a<ASR::Struct_t>(*ASRUtils::expr_type(var));
+            return ASR::is_a<ASR::StructType_t>(*ASRUtils::expr_type(var));
         }
 
         static inline bool is_aggregate_or_array_type(ASR::expr_t* var) {
-            return (ASR::is_a<ASR::Struct_t>(*ASRUtils::expr_type(var)) ||
+            return (ASR::is_a<ASR::StructType_t>(*ASRUtils::expr_type(var)) ||
                     ASRUtils::is_array(ASRUtils::expr_type(var)) ||
                     ASR::is_a<ASR::SymbolicExpression_t>(*ASRUtils::expr_type(var)));
         }
@@ -236,12 +236,12 @@ namespace LCompilers {
             return arg;
         }
 
-        template <class Struct>
-        class PassVisitor: public ASR::ASRPassBaseWalkVisitor<Struct> {
+        template <class StructType>
+        class PassVisitor: public ASR::ASRPassBaseWalkVisitor<StructType> {
 
             private:
 
-                Struct& self() { return static_cast<Struct&>(*this); }
+                StructType& self() { return static_cast<StructType&>(*this); }
 
             public:
 
@@ -351,19 +351,19 @@ namespace LCompilers {
 
         };
 
-        template <class Struct>
-        class SkipOptimizationFunctionVisitor: public PassVisitor<Struct> {
+        template <class StructType>
+        class SkipOptimizationFunctionVisitor: public PassVisitor<StructType> {
 
             public:
 
-                SkipOptimizationFunctionVisitor(Allocator& al_): PassVisitor<Struct>(al_, nullptr) {
+                SkipOptimizationFunctionVisitor(Allocator& al_): PassVisitor<StructType>(al_, nullptr) {
                 }
 
                 void visit_Function(const ASR::Function_t &x) {
                     if( ASRUtils::is_intrinsic_optimization<ASR::Function_t>(&x) ) {
                         return ;
                     }
-                    PassUtils::PassVisitor<Struct>::visit_Function(x);
+                    PassUtils::PassVisitor<StructType>::visit_Function(x);
                 }
 
         };
@@ -566,8 +566,8 @@ namespace LCompilers {
                     for( auto itr: x.m_symtab->get_scope() ) {
                         ASR::ttype_t* type = ASRUtils::extract_type(
                             ASRUtils::symbol_type(itr.second));
-                        if( ASR::is_a<ASR::Struct_t>(*type) ) {
-                            ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(type);
+                        if( ASR::is_a<ASR::StructType_t>(*type) ) {
+                            ASR::StructType_t* struct_t = ASR::down_cast<ASR::StructType_t>(type);
                             vec.push_back(al, ASRUtils::symbol_name(struct_t->m_derived_type));
                         } else if( ASR::is_a<ASR::Enum_t>(*type) ) {
                             ASR::Enum_t* enum_t = ASR::down_cast<ASR::Enum_t>(type);
@@ -578,7 +578,7 @@ namespace LCompilers {
                     xx.n_dependencies = vec.size();
                 }
 
-                void visit_StructType(const ASR::StructType_t& x) {
+                void visit_Struct(const ASR::Struct_t& x) {
                     visit_UserDefinedType(x);
                 }
 
@@ -590,7 +590,7 @@ namespace LCompilers {
 
     namespace ReplacerUtils {
         template <typename T>
-        void replace_StructTypeConstructor(ASR::StructTypeConstructor_t* x,
+        void replace_StructConstructor(ASR::StructConstructor_t* x,
             T* replacer, bool inside_symtab, bool& remove_original_statement,
             Vec<ASR::stmt_t*>* result_vec,
             bool perform_cast=false,
@@ -616,8 +616,8 @@ namespace LCompilers {
             }
 
             std::deque<ASR::symbol_t*> constructor_arg_syms;
-            ASR::Struct_t* dt_der = ASR::down_cast<ASR::Struct_t>(x->m_type);
-            ASR::StructType_t* dt_dertype = ASR::down_cast<ASR::StructType_t>(
+            ASR::StructType_t* dt_der = ASR::down_cast<ASR::StructType_t>(x->m_type);
+            ASR::Struct_t* dt_dertype = ASR::down_cast<ASR::Struct_t>(
                                             ASRUtils::symbol_get_past_external(dt_der->m_derived_type));
             while( dt_dertype ) {
                 for( int i = (int) dt_dertype->n_members - 1; i >= 0; i-- ) {
@@ -628,8 +628,8 @@ namespace LCompilers {
                 if( dt_dertype->m_parent != nullptr ) {
                     ASR::symbol_t* dt_der_sym = ASRUtils::symbol_get_past_external(
                                             dt_dertype->m_parent);
-                    LCOMPILERS_ASSERT(ASR::is_a<ASR::StructType_t>(*dt_der_sym));
-                    dt_dertype = ASR::down_cast<ASR::StructType_t>(dt_der_sym);
+                    LCOMPILERS_ASSERT(ASR::is_a<ASR::Struct_t>(*dt_der_sym));
+                    dt_dertype = ASR::down_cast<ASR::Struct_t>(dt_der_sym);
                 } else {
                     dt_dertype = nullptr;
                 }
@@ -641,13 +641,13 @@ namespace LCompilers {
                     continue ;
                 }
                 ASR::symbol_t* member = constructor_arg_syms[i];
-                if( ASR::is_a<ASR::StructTypeConstructor_t>(*x->m_args[i].m_value) ) {
+                if( ASR::is_a<ASR::StructConstructor_t>(*x->m_args[i].m_value) ) {
                     ASR::expr_t* result_var_copy = replacer->result_var;
                     ASR::symbol_t *v = nullptr;
                     if (ASR::is_a<ASR::Var_t>(*result_var_copy)) {
                         v = ASR::down_cast<ASR::Var_t>(result_var_copy)->m_v;
                     }
-                    replacer->result_var = ASRUtils::EXPR(ASRUtils::getStructInstanceMember_t(replacer->al,
+                    replacer->result_var = ASRUtils::EXPR(ASRUtils::getStructTypeInstanceMember_t(replacer->al,
                                                 x->base.base.loc, (ASR::asr_t*) result_var_copy, v,
                                                 member, replacer->current_scope));
                     ASR::expr_t** current_expr_copy = replacer->current_expr;
@@ -660,7 +660,7 @@ namespace LCompilers {
                     if (ASR::is_a<ASR::Var_t>(*replacer->result_var)) {
                         v = ASR::down_cast<ASR::Var_t>(replacer->result_var)->m_v;
                     }
-                    ASR::expr_t* derived_ref = ASRUtils::EXPR(ASRUtils::getStructInstanceMember_t(replacer->al,
+                    ASR::expr_t* derived_ref = ASRUtils::EXPR(ASRUtils::getStructTypeInstanceMember_t(replacer->al,
                                                     x->base.base.loc, (ASR::asr_t*) replacer->result_var, v,
                                                     member, replacer->current_scope));
                     ASR::expr_t* x_m_args_i = x->m_args[i].m_value;
