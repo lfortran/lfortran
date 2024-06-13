@@ -57,7 +57,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Struct
+                                                    (StructType
                                                         15 git_target_t
                                                     )
                                                     ()
@@ -87,7 +87,7 @@
                                     (FunctionType
                                         [(Character 1 -1 ())
                                         (Character 1 -1 ())]
-                                        (Struct
+                                        (StructType
                                             15 git_target_t
                                         )
                                         Source
@@ -105,7 +105,7 @@
                                     [(Var 17 url)
                                     (Var 17 branch)]
                                     [(Assignment
-                                        (StructInstanceMember
+                                        (StructTypeInstanceMember
                                             (Var 17 self)
                                             17 1_git_target_t_url
                                             (Allocatable
@@ -117,7 +117,7 @@
                                         ()
                                     )
                                     (Assignment
-                                        (StructInstanceMember
+                                        (StructTypeInstanceMember
                                             (Var 17 self)
                                             17 1_git_target_t_object
                                             (Allocatable
@@ -135,7 +135,7 @@
                                     ()
                                 ),
                             git_target_t:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         16
                                         {
@@ -200,7 +200,7 @@
                         8
                         {
                             dependency_config_t:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         9
                                         {
@@ -214,7 +214,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Struct
+                                                        (StructType
                                                             8 git_target_t
                                                         )
                                                     )
@@ -275,7 +275,7 @@
                                     ()
                                 ),
                             error_t:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         10
                                         {
@@ -345,7 +345,7 @@
                                                     Default
                                                     (Allocatable
                                                         (Array
-                                                            (Struct
+                                                            (StructType
                                                                 8 dependency_config_t
                                                             )
                                                             [(()
@@ -369,7 +369,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Struct
+                                                        (StructType
                                                             8 error_t
                                                         )
                                                     )
@@ -404,7 +404,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Struct
+                                                    (StructType
                                                         8 toml_table
                                                     )
                                                     ()
@@ -418,7 +418,7 @@
                                     (FunctionType
                                         [(Allocatable
                                             (Array
-                                                (Struct
+                                                (StructType
                                                     8 dependency_config_t
                                                 )
                                                 [(()
@@ -426,12 +426,12 @@
                                                 DescriptorArray
                                             )
                                         )
-                                        (Struct
+                                        (StructType
                                             8 toml_table
                                         )
                                         (Character 1 -1 ())
                                         (Allocatable
-                                            (Struct
+                                            (StructType
                                                 8 error_t
                                             )
                                         )]
@@ -501,7 +501,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Struct
+                                                    (StructType
                                                         8 dependency_config_t
                                                     )
                                                     ()
@@ -531,7 +531,7 @@
                                         })
                                     new_dependency
                                     (FunctionType
-                                        [(Struct
+                                        [(StructType
                                             8 dependency_config_t
                                         )]
                                         ()
@@ -549,11 +549,11 @@
                                     []
                                     [(Var 13 self)]
                                     [(Assignment
-                                        (StructInstanceMember
+                                        (StructTypeInstanceMember
                                             (Var 13 self)
                                             13 1_dependency_config_t_git
                                             (Allocatable
-                                                (Struct
+                                                (StructType
                                                     8 git_target_t
                                                 )
                                             )
@@ -564,7 +564,7 @@
                                             ()
                                             [((Var 13 url))
                                             ((Var 13 obj))]
-                                            (Struct
+                                            (StructType
                                                 8 git_target_t
                                             )
                                             ()
@@ -583,7 +583,7 @@
                                     ()
                                 ),
                             toml_table:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         11
                                         {
@@ -653,7 +653,7 @@
                                     Public
                                 ),
                             executable_config_t:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         5
                                         {
@@ -668,7 +668,7 @@
                                                     Default
                                                     (Allocatable
                                                         (Array
-                                                            (Struct
+                                                            (StructType
                                                                 4 dependency_config_t
                                                             )
                                                             [(()
@@ -786,7 +786,7 @@
                                                     ()
                                                     Default
                                                     (Pointer
-                                                        (Struct
+                                                        (StructType
                                                             4 toml_table
                                                         )
                                                     )
@@ -806,7 +806,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Struct
+                                                        (StructType
                                                             4 error_t
                                                         )
                                                     )
@@ -825,7 +825,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Struct
+                                                    (StructType
                                                         4 executable_config_t
                                                     )
                                                     ()
@@ -843,7 +843,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Struct
+                                                    (StructType
                                                         4 toml_table
                                                     )
                                                     ()
@@ -855,14 +855,14 @@
                                         })
                                     new_executable
                                     (FunctionType
-                                        [(Struct
+                                        [(StructType
                                             4 executable_config_t
                                         )
-                                        (Struct
+                                        (StructType
                                             4 toml_table
                                         )
                                         (Allocatable
-                                            (Struct
+                                            (StructType
                                                 4 error_t
                                             )
                                         )]
@@ -888,12 +888,12 @@
                                     (SubroutineCall
                                         4 new_dependencies
                                         ()
-                                        [((StructInstanceMember
+                                        [((StructTypeInstanceMember
                                             (Var 6 self)
                                             6 1_executable_config_t_dependency
                                             (Allocatable
                                                 (Array
-                                                    (Struct
+                                                    (StructType
                                                         4 dependency_config_t
                                                     )
                                                     [(()

@@ -56,7 +56,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Struct
+                                                    (StructType
                                                         2 t_1
                                                     )
                                                     ()
@@ -69,7 +69,7 @@
                                     add
                                     (FunctionType
                                         []
-                                        (Struct
+                                        (StructType
                                             2 t_1
                                         )
                                         Source
@@ -86,21 +86,21 @@
                                     []
                                     []
                                     [(Assignment
-                                        (StructInstanceMember
+                                        (StructTypeInstanceMember
                                             (Var 4 self)
                                             4 1_t_1_num
                                             (Integer 4)
                                             ()
                                         )
                                         (IntegerBinOp
-                                            (StructInstanceMember
+                                            (StructTypeInstanceMember
                                                 (Var 4 self)
                                                 4 1_t_1_num
                                                 (Integer 4)
                                                 ()
                                             )
                                             Add
-                                            (StructInstanceMember
+                                            (StructTypeInstanceMember
                                                 (Var 4 self)
                                                 4 1_t_1_num
                                                 (Integer 4)
@@ -141,7 +141,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Struct
+                                                    (StructType
                                                         2 t_1
                                                     )
                                                     ()
@@ -154,7 +154,7 @@
                                     subtract
                                     (FunctionType
                                         []
-                                        (Struct
+                                        (StructType
                                             2 t_1
                                         )
                                         Source
@@ -171,21 +171,21 @@
                                     []
                                     []
                                     [(Assignment
-                                        (StructInstanceMember
+                                        (StructTypeInstanceMember
                                             (Var 5 self)
                                             5 1_t_1_num
                                             (Integer 4)
                                             ()
                                         )
                                         (IntegerBinOp
-                                            (StructInstanceMember
+                                            (StructTypeInstanceMember
                                                 (Var 5 self)
                                                 5 1_t_1_num
                                                 (Integer 4)
                                                 ()
                                             )
                                             Mul
-                                            (StructInstanceMember
+                                            (StructTypeInstanceMember
                                                 (Var 5 self)
                                                 5 1_t_1_num
                                                 (Integer 4)
@@ -203,7 +203,7 @@
                                     ()
                                 ),
                             t_1:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         3
                                         {
@@ -294,7 +294,7 @@
                                             6 subtract
                                             ()
                                             []
-                                            (Struct
+                                            (StructType
                                                 7 1_t_1
                                             )
                                             ()
@@ -308,7 +308,7 @@
                                             6 add
                                             ()
                                             []
-                                            (Struct
+                                            (StructType
                                                 7 1_t_1
                                             )
                                             ()

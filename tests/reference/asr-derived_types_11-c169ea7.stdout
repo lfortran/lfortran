@@ -23,17 +23,17 @@
                                     type_y
                                     []
                                     Local
-                                    (StructTypeConstructor
+                                    (StructConstructor
                                         2 y
                                         [(())]
-                                        (Struct
+                                        (StructType
                                             2 y
                                         )
                                         ()
                                     )
                                     ()
                                     Parameter
-                                    (Struct
+                                    (StructType
                                         2 y
                                     )
                                     ()
@@ -53,7 +53,7 @@
                                             "lf"
                                             (Character 1 2 ())
                                         )
-                                        (StructInstanceMember
+                                        (StructTypeInstanceMember
                                             (Var 2 type_y)
                                             2 1_y_backslash
                                             (Character 1 1 ())
@@ -81,7 +81,7 @@
                                     .false.
                                 ),
                             y:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         3
                                         {
@@ -185,7 +185,7 @@
                     [derived_types_11]
                     [(If
                         (StringCompare
-                            (StructInstanceMember
+                            (StructTypeInstanceMember
                                 (Var 4 type_y)
                                 4 1_y_backslash
                                 (Character 1 1 ())

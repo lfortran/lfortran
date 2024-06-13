@@ -41,7 +41,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Struct
+                                                    (StructType
                                                         2 toml_context
                                                     )
                                                     ()
@@ -116,7 +116,7 @@
                                         [(Allocatable
                                             (Character 1 -2 ())
                                         )
-                                        (Struct
+                                        (StructType
                                             2 toml_context
                                         )]
                                         ()
@@ -136,7 +136,7 @@
                                     (Var 4 context)]
                                     [(If
                                         (IntegerCompare
-                                            (StructInstanceMember
+                                            (StructTypeInstanceMember
                                                 (Var 4 context)
                                                 4 1_toml_context_num
                                                 (Integer 4)
@@ -159,7 +159,7 @@
                                                     (Character 1 18 ())
                                                 )
                                                 [(Cast
-                                                    (StructInstanceMember
+                                                    (StructTypeInstanceMember
                                                         (Var 4 context)
                                                         4 1_toml_context_num
                                                         (Integer 4)
@@ -254,7 +254,7 @@
                                                     ()
                                                 )
                                                 (StringSection
-                                                    (StructInstanceMember
+                                                    (StructTypeInstanceMember
                                                         (Var 4 context)
                                                         4 1_toml_context_ptr
                                                         (Pointer
@@ -305,7 +305,7 @@
                                     ()
                                 ),
                             toml_context:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         3
                                         {

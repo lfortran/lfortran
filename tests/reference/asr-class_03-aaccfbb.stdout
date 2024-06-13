@@ -8,7 +8,7 @@
                         2
                         {
                             employee:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         4
                                         {
@@ -53,7 +53,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Struct
+                                                    (StructType
                                                         2 person
                                                     )
                                                     ()
@@ -77,7 +77,7 @@
                                     ()
                                 ),
                             person:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         3
                                         {
@@ -260,7 +260,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Struct
+                                    (StructType
                                         5 person
                                     )
                                     ()
@@ -278,7 +278,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Struct
+                                    (StructType
                                         5 employee
                                     )
                                     ()
@@ -302,7 +302,7 @@
                     [hr]
                     [(Assignment
                         (Var 5 jack)
-                        (StructTypeConstructor
+                        (StructConstructor
                             5 person
                             [((StringConstant
                                 "Jack"
@@ -317,7 +317,7 @@
                                 "M"
                                 (Character 1 1 ())
                             ))]
-                            (Struct
+                            (StructType
                                 5 person
                             )
                             ()
@@ -326,9 +326,9 @@
                     )
                     (Assignment
                         (Var 5 jill)
-                        (StructTypeConstructor
+                        (StructConstructor
                             5 employee
-                            [((StructTypeConstructor
+                            [((StructConstructor
                                 5 person
                                 [((StringConstant
                                     "Jill"
@@ -343,7 +343,7 @@
                                     "F"
                                     (Character 1 1 ())
                                 ))]
-                                (Struct
+                                (StructType
                                     5 person
                                 )
                                 ()
@@ -353,7 +353,7 @@
                                 "sales"
                                 (Character 1 5 ())
                             ))]
-                            (Struct
+                            (StructType
                                 5 employee
                             )
                             ()
@@ -361,25 +361,25 @@
                         ()
                     )
                     (Print
-                        [(StructInstanceMember
+                        [(StructTypeInstanceMember
                             (Var 5 jack)
                             5 1_person_first
                             (Character 1 20 ())
                             ()
                         )
-                        (StructInstanceMember
+                        (StructTypeInstanceMember
                             (Var 5 jack)
                             5 1_person_last
                             (Character 1 20 ())
                             ()
                         )
-                        (StructInstanceMember
+                        (StructTypeInstanceMember
                             (Var 5 jack)
                             5 1_person_birthyear
                             (Integer 4)
                             ()
                         )
-                        (StructInstanceMember
+                        (StructTypeInstanceMember
                             (Var 5 jack)
                             5 1_person_sgender
                             (Character 1 1 ())
@@ -389,11 +389,11 @@
                         ()
                     )
                     (Print
-                        [(StructInstanceMember
-                            (StructInstanceMember
+                        [(StructTypeInstanceMember
+                            (StructTypeInstanceMember
                                 (Var 5 jill)
                                 5 1_employee_person
-                                (Struct
+                                (StructType
                                     5 person
                                 )
                                 ()
@@ -402,11 +402,11 @@
                             (Character 1 20 ())
                             ()
                         )
-                        (StructInstanceMember
-                            (StructInstanceMember
+                        (StructTypeInstanceMember
+                            (StructTypeInstanceMember
                                 (Var 5 jill)
                                 5 1_employee_person
-                                (Struct
+                                (StructType
                                     5 person
                                 )
                                 ()
@@ -415,11 +415,11 @@
                             (Character 1 20 ())
                             ()
                         )
-                        (StructInstanceMember
-                            (StructInstanceMember
+                        (StructTypeInstanceMember
+                            (StructTypeInstanceMember
                                 (Var 5 jill)
                                 5 1_employee_person
-                                (Struct
+                                (StructType
                                     5 person
                                 )
                                 ()
@@ -428,11 +428,11 @@
                             (Integer 4)
                             ()
                         )
-                        (StructInstanceMember
-                            (StructInstanceMember
+                        (StructTypeInstanceMember
+                            (StructTypeInstanceMember
                                 (Var 5 jill)
                                 5 1_employee_person
-                                (Struct
+                                (StructType
                                     5 person
                                 )
                                 ()
@@ -441,13 +441,13 @@
                             (Character 1 1 ())
                             ()
                         )
-                        (StructInstanceMember
+                        (StructTypeInstanceMember
                             (Var 5 jill)
                             5 1_employee_department
                             (Character 1 20 ())
                             ()
                         )
-                        (StructInstanceMember
+                        (StructTypeInstanceMember
                             (Var 5 jill)
                             5 1_employee_hire_date
                             (Integer 4)

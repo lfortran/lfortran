@@ -85,7 +85,7 @@
                                     ()
                                 ),
                             bitset_type:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         3
                                         {

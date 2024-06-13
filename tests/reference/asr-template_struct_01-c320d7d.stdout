@@ -109,7 +109,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (Struct
+                                                                    (StructType
                                                                         4 tuple
                                                                     )
                                                                     ()
@@ -139,7 +139,7 @@
                                                         })
                                                     get_fst
                                                     (FunctionType
-                                                        [(Struct
+                                                        [(StructType
                                                             4 tuple
                                                         )]
                                                         (TypeParameter
@@ -160,7 +160,7 @@
                                                     [(Var 6 p)]
                                                     [(Assignment
                                                         (Var 6 r)
-                                                        (StructInstanceMember
+                                                        (StructTypeInstanceMember
                                                             (Var 6 p)
                                                             6 1_tuple_fst
                                                             (TypeParameter
@@ -200,7 +200,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (Struct
+                                                                    (StructType
                                                                         4 tuple
                                                                     )
                                                                     ()
@@ -230,7 +230,7 @@
                                                         })
                                                     get_snd
                                                     (FunctionType
-                                                        [(Struct
+                                                        [(StructType
                                                             4 tuple
                                                         )]
                                                         (TypeParameter
@@ -251,7 +251,7 @@
                                                     [(Var 7 p)]
                                                     [(Assignment
                                                         (Var 7 r)
-                                                        (StructInstanceMember
+                                                        (StructTypeInstanceMember
                                                             (Var 7 p)
                                                             7 1_tuple_snd
                                                             (TypeParameter
@@ -286,7 +286,7 @@
                                                     .false.
                                                 ),
                                             tuple:
-                                                (StructType
+                                                (Struct
                                                     (SymbolTable
                                                         5
                                                         {
@@ -416,7 +416,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (Struct
+                                                                    (StructType
                                                                         8 int_tuple
                                                                     )
                                                                     ()
@@ -444,7 +444,7 @@
                                                         })
                                                     get_int_fst
                                                     (FunctionType
-                                                        [(Struct
+                                                        [(StructType
                                                             8 int_tuple
                                                         )]
                                                         (Integer 4)
@@ -463,7 +463,7 @@
                                                     [(Var 10 p)]
                                                     [(Assignment
                                                         (Var 10 r)
-                                                        (StructInstanceMember
+                                                        (StructTypeInstanceMember
                                                             (Var 10 p)
                                                             10 1_int_tuple_fst
                                                             (Integer 4)
@@ -501,7 +501,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (Struct
+                                                                    (StructType
                                                                         8 int_tuple
                                                                     )
                                                                     ()
@@ -529,7 +529,7 @@
                                                         })
                                                     get_int_snd
                                                     (FunctionType
-                                                        [(Struct
+                                                        [(StructType
                                                             8 int_tuple
                                                         )]
                                                         (Integer 4)
@@ -548,7 +548,7 @@
                                                     [(Var 11 p)]
                                                     [(Assignment
                                                         (Var 11 r)
-                                                        (StructInstanceMember
+                                                        (StructTypeInstanceMember
                                                             (Var 11 p)
                                                             11 1_int_tuple_snd
                                                             (Integer 4)
@@ -586,7 +586,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (Struct
+                                                                    (StructType
                                                                         8 real_tuple
                                                                     )
                                                                     ()
@@ -614,7 +614,7 @@
                                                         })
                                                     get_real_fst
                                                     (FunctionType
-                                                        [(Struct
+                                                        [(StructType
                                                             8 real_tuple
                                                         )]
                                                         (Real 4)
@@ -633,7 +633,7 @@
                                                     [(Var 13 p)]
                                                     [(Assignment
                                                         (Var 13 r)
-                                                        (StructInstanceMember
+                                                        (StructTypeInstanceMember
                                                             (Var 13 p)
                                                             13 1_real_tuple_fst
                                                             (Real 4)
@@ -671,7 +671,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (Struct
+                                                                    (StructType
                                                                         8 real_tuple
                                                                     )
                                                                     ()
@@ -699,7 +699,7 @@
                                                         })
                                                     get_real_snd
                                                     (FunctionType
-                                                        [(Struct
+                                                        [(StructType
                                                             8 real_tuple
                                                         )]
                                                         (Real 4)
@@ -718,7 +718,7 @@
                                                     [(Var 14 p)]
                                                     [(Assignment
                                                         (Var 14 r)
-                                                        (StructInstanceMember
+                                                        (StructTypeInstanceMember
                                                             (Var 14 p)
                                                             14 1_real_tuple_snd
                                                             (Real 4)
@@ -733,7 +733,7 @@
                                                     ()
                                                 ),
                                             int_tuple:
-                                                (StructType
+                                                (Struct
                                                     (SymbolTable
                                                         9
                                                         {
@@ -783,7 +783,7 @@
                                                     ()
                                                 ),
                                             real_tuple:
-                                                (StructType
+                                                (Struct
                                                     (SymbolTable
                                                         12
                                                         {
@@ -841,7 +841,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Struct
+                                                    (StructType
                                                         8 int_tuple
                                                     )
                                                     ()
@@ -859,7 +859,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Struct
+                                                    (StructType
                                                         8 real_tuple
                                                     )
                                                     ()
@@ -887,7 +887,7 @@
                                     []
                                     []
                                     [(Assignment
-                                        (StructInstanceMember
+                                        (StructTypeInstanceMember
                                             (Var 8 ti)
                                             8 1_int_tuple_fst
                                             (Integer 4)
@@ -913,7 +913,7 @@
                                         ()
                                     )
                                     (Assignment
-                                        (StructInstanceMember
+                                        (StructTypeInstanceMember
                                             (Var 8 ti)
                                             8 1_int_tuple_snd
                                             (Integer 4)
@@ -939,7 +939,7 @@
                                         ()
                                     )
                                     (Assignment
-                                        (StructInstanceMember
+                                        (StructTypeInstanceMember
                                             (Var 8 tr)
                                             8 1_real_tuple_fst
                                             (Real 4)
@@ -968,7 +968,7 @@
                                         ()
                                     )
                                     (Assignment
-                                        (StructInstanceMember
+                                        (StructTypeInstanceMember
                                             (Var 8 tr)
                                             8 1_real_tuple_snd
                                             (Real 4)

@@ -159,7 +159,7 @@
                                         ()
                                         ((Var 13 i)
                                         (IntegerConstant 1 (Integer 4))
-                                        (StructInstanceMember
+                                        (StructTypeInstanceMember
                                             (Var 13 self)
                                             13 1_toml_vector_n
                                             (Integer 4)
@@ -169,14 +169,14 @@
                                         [(If
                                             (IntrinsicImpureFunction
                                                 Allocated
-                                                [(StructInstanceMember
+                                                [(StructTypeInstanceMember
                                                     (ArrayItem
-                                                        (StructInstanceMember
+                                                        (StructTypeInstanceMember
                                                             (Var 13 self)
                                                             13 1_toml_vector_lst
                                                             (Allocatable
                                                                 (Array
-                                                                    (Struct
+                                                                    (StructType
                                                                         9 toml_node
                                                                     )
                                                                     [(()
@@ -189,7 +189,7 @@
                                                         [(()
                                                         (Var 13 i)
                                                         ())]
-                                                        (Struct
+                                                        (StructType
                                                             9 toml_node
                                                         )
                                                         ColMajor
@@ -214,14 +214,14 @@
                                                     [((Var 13 key))]
                                                     (Logical 4)
                                                     ()
-                                                    (StructInstanceMember
+                                                    (StructTypeInstanceMember
                                                         (ArrayItem
-                                                            (StructInstanceMember
+                                                            (StructTypeInstanceMember
                                                                 (Var 13 self)
                                                                 13 1_toml_vector_lst
                                                                 (Allocatable
                                                                     (Array
-                                                                        (Struct
+                                                                        (StructType
                                                                             9 toml_node
                                                                         )
                                                                         [(()
@@ -234,7 +234,7 @@
                                                             [(()
                                                             (Var 13 i)
                                                             ())]
-                                                            (Struct
+                                                            (StructType
                                                                 9 toml_node
                                                             )
                                                             ColMajor
@@ -251,14 +251,14 @@
                                                 )
                                                 [(Associate
                                                     (Var 13 ptr)
-                                                    (StructInstanceMember
+                                                    (StructTypeInstanceMember
                                                         (ArrayItem
-                                                            (StructInstanceMember
+                                                            (StructTypeInstanceMember
                                                                 (Var 13 self)
                                                                 13 1_toml_vector_lst
                                                                 (Allocatable
                                                                     (Array
-                                                                        (Struct
+                                                                        (StructType
                                                                             9 toml_node
                                                                         )
                                                                         [(()
@@ -271,7 +271,7 @@
                                                             [(()
                                                             (Var 13 i)
                                                             ())]
-                                                            (Struct
+                                                            (StructType
                                                                 9 toml_node
                                                             )
                                                             ColMajor
@@ -361,7 +361,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Struct
+                                                    (StructType
                                                         9 toml_vector
                                                     )
                                                     ()
@@ -373,7 +373,7 @@
                                         })
                                     new_vector
                                     (FunctionType
-                                        [(Struct
+                                        [(StructType
                                             9 toml_vector
                                         )
                                         (Integer 4)]
@@ -393,7 +393,7 @@
                                     [(Var 12 self)
                                     (Var 12 n)]
                                     [(Assignment
-                                        (StructInstanceMember
+                                        (StructTypeInstanceMember
                                             (Var 12 self)
                                             12 1_toml_vector_n
                                             (Integer 4)
@@ -412,12 +412,12 @@
                                             ()
                                         )
                                         [(Allocate
-                                            [((StructInstanceMember
+                                            [((StructTypeInstanceMember
                                                 (Var 12 self)
                                                 12 1_toml_vector_lst
                                                 (Allocatable
                                                     (Array
-                                                        (Struct
+                                                        (StructType
                                                             9 toml_node
                                                         )
                                                         [(()
@@ -451,7 +451,7 @@
                                     ()
                                 ),
                             toml_node:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         10
                                         {
@@ -498,7 +498,7 @@
                                     Public
                                 ),
                             toml_vector:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         11
                                         {
@@ -513,7 +513,7 @@
                                                     Default
                                                     (Allocatable
                                                         (Array
-                                                            (Struct
+                                                            (StructType
                                                                 9 toml_node
                                                             )
                                                             [(()
@@ -634,7 +634,7 @@
                                     [(If
                                         (IntrinsicImpureFunction
                                             Allocated
-                                            [(StructInstanceMember
+                                            [(StructTypeInstanceMember
                                                 (Var 8 self)
                                                 8 1_toml_value_key
                                                 (Allocatable
@@ -647,7 +647,7 @@
                                             ()
                                         )
                                         [(ExplicitDeallocate
-                                            [(StructInstanceMember
+                                            [(StructTypeInstanceMember
                                                 (Var 8 self)
                                                 8 1_toml_value_key
                                                 (Allocatable
@@ -661,7 +661,7 @@
                                     (If
                                         (IntrinsicImpureFunction
                                             Allocated
-                                            [(StructInstanceMember
+                                            [(StructTypeInstanceMember
                                                 (Var 8 self)
                                                 8 1_toml_keyval_raw
                                                 (Allocatable
@@ -674,7 +674,7 @@
                                             ()
                                         )
                                         [(ExplicitDeallocate
-                                            [(StructInstanceMember
+                                            [(StructTypeInstanceMember
                                                 (Var 8 self)
                                                 8 1_toml_keyval_raw
                                                 (Allocatable
@@ -692,7 +692,7 @@
                                     ()
                                 ),
                             toml_keyval:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         7
                                         {
@@ -898,7 +898,7 @@
                                     [(If
                                         (IntrinsicImpureFunction
                                             Allocated
-                                            [(StructInstanceMember
+                                            [(StructTypeInstanceMember
                                                 (Var 5 self)
                                                 5 1_toml_value_key
                                                 (Allocatable
@@ -915,7 +915,7 @@
                                             (StringCompare
                                                 (Var 5 key)
                                                 Eq
-                                                (StructInstanceMember
+                                                (StructTypeInstanceMember
                                                     (Var 5 self)
                                                     5 1_toml_value_key
                                                     (Allocatable
@@ -944,7 +944,7 @@
                                     ()
                                 ),
                             toml_value:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         3
                                         {

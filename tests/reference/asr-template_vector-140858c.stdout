@@ -157,7 +157,7 @@
                                                     [(Assignment
                                                         (Var 9 new_size)
                                                         (IntegerBinOp
-                                                            (StructInstanceMember
+                                                            (StructTypeInstanceMember
                                                                 (Var 9 this)
                                                                 9 1_intvector_sz
                                                                 (Integer 4)
@@ -178,7 +178,7 @@
                                                     )
                                                     (Assignment
                                                         (ArrayItem
-                                                            (StructInstanceMember
+                                                            (StructTypeInstanceMember
                                                                 (Var 9 this)
                                                                 9 1_intvector_elements
                                                                 (Allocatable
@@ -202,7 +202,7 @@
                                                         ()
                                                     )
                                                     (Assignment
-                                                        (StructInstanceMember
+                                                        (StructTypeInstanceMember
                                                             (Var 9 this)
                                                             9 1_intvector_sz
                                                             (Integer 4)
@@ -341,7 +341,7 @@
                                                         (LogicalNot
                                                             (IntrinsicImpureFunction
                                                                 Allocated
-                                                                [(StructInstanceMember
+                                                                [(StructTypeInstanceMember
                                                                     (Var 10 this)
                                                                     10 1_intvector_elements
                                                                     (Allocatable
@@ -362,7 +362,7 @@
                                                             ()
                                                         )
                                                         [(Allocate
-                                                            [((StructInstanceMember
+                                                            [((StructTypeInstanceMember
                                                                 (Var 10 this)
                                                                 10 1_intvector_elements
                                                                 (Allocatable
@@ -388,7 +388,7 @@
                                                     )
                                                     (If
                                                         (IntegerCompare
-                                                            (StructInstanceMember
+                                                            (StructTypeInstanceMember
                                                                 (Var 10 this)
                                                                 10 1_intvector_sz
                                                                 (Integer 4)
@@ -405,7 +405,7 @@
                                                     (Allocate
                                                         [((Var 10 tmp)
                                                         [((IntegerConstant 1 (Integer 4))
-                                                        (StructInstanceMember
+                                                        (StructTypeInstanceMember
                                                             (Var 10 this)
                                                             10 1_intvector_sz
                                                             (Integer 4)
@@ -421,7 +421,7 @@
                                                         ()
                                                         ((Var 10 i)
                                                         (IntegerConstant 1 (Integer 4))
-                                                        (StructInstanceMember
+                                                        (StructTypeInstanceMember
                                                             (Var 10 this)
                                                             10 1_intvector_sz
                                                             (Integer 4)
@@ -439,7 +439,7 @@
                                                                 ()
                                                             )
                                                             (ArrayItem
-                                                                (StructInstanceMember
+                                                                (StructTypeInstanceMember
                                                                     (Var 10 this)
                                                                     10 1_intvector_elements
                                                                     (Allocatable
@@ -464,7 +464,7 @@
                                                         []
                                                     )
                                                     (Allocate
-                                                        [((StructInstanceMember
+                                                        [((StructTypeInstanceMember
                                                             (Var 10 this)
                                                             10 1_intvector_elements
                                                             (Allocatable
@@ -487,7 +487,7 @@
                                                     )
                                                     (Assignment
                                                         (ArraySection
-                                                            (StructInstanceMember
+                                                            (StructTypeInstanceMember
                                                                 (Var 10 this)
                                                                 10 1_intvector_elements
                                                                 (Allocatable
@@ -501,7 +501,7 @@
                                                                 ()
                                                             )
                                                             [((IntegerConstant 1 (Integer 4))
-                                                            (StructInstanceMember
+                                                            (StructTypeInstanceMember
                                                                 (Var 10 this)
                                                                 10 1_intvector_sz
                                                                 (Integer 4)
@@ -547,7 +547,7 @@
                                                     .false.
                                                 ),
                                             intvector:
-                                                (StructType
+                                                (Struct
                                                     (SymbolTable
                                                         8
                                                         {
@@ -663,11 +663,11 @@
                                     []
                                     [(Assignment
                                         (Var 7 v)
-                                        (StructTypeConstructor
+                                        (StructConstructor
                                             7 intvector
                                             [(())
                                             (())]
-                                            (Struct
+                                            (StructType
                                                 7 intvector
                                             )
                                             ()
@@ -799,7 +799,7 @@
                                                     [(Assignment
                                                         (Var 5 new_size)
                                                         (IntegerBinOp
-                                                            (StructInstanceMember
+                                                            (StructTypeInstanceMember
                                                                 (Var 5 this)
                                                                 5 1_vector_sz
                                                                 (Integer 4)
@@ -820,7 +820,7 @@
                                                     )
                                                     (Assignment
                                                         (ArrayItem
-                                                            (StructInstanceMember
+                                                            (StructTypeInstanceMember
                                                                 (Var 5 this)
                                                                 5 1_vector_elements
                                                                 (Allocatable
@@ -848,7 +848,7 @@
                                                         ()
                                                     )
                                                     (Assignment
-                                                        (StructInstanceMember
+                                                        (StructTypeInstanceMember
                                                             (Var 5 this)
                                                             5 1_vector_sz
                                                             (Integer 4)
@@ -989,7 +989,7 @@
                                                         (LogicalNot
                                                             (IntrinsicImpureFunction
                                                                 Allocated
-                                                                [(StructInstanceMember
+                                                                [(StructTypeInstanceMember
                                                                     (Var 6 this)
                                                                     6 1_vector_elements
                                                                     (Allocatable
@@ -1012,7 +1012,7 @@
                                                             ()
                                                         )
                                                         [(Allocate
-                                                            [((StructInstanceMember
+                                                            [((StructTypeInstanceMember
                                                                 (Var 6 this)
                                                                 6 1_vector_elements
                                                                 (Allocatable
@@ -1040,7 +1040,7 @@
                                                     )
                                                     (If
                                                         (IntegerCompare
-                                                            (StructInstanceMember
+                                                            (StructTypeInstanceMember
                                                                 (Var 6 this)
                                                                 6 1_vector_sz
                                                                 (Integer 4)
@@ -1057,7 +1057,7 @@
                                                     (Allocate
                                                         [((Var 6 tmp)
                                                         [((IntegerConstant 1 (Integer 4))
-                                                        (StructInstanceMember
+                                                        (StructTypeInstanceMember
                                                             (Var 6 this)
                                                             6 1_vector_sz
                                                             (Integer 4)
@@ -1073,7 +1073,7 @@
                                                         ()
                                                         ((Var 6 i)
                                                         (IntegerConstant 1 (Integer 4))
-                                                        (StructInstanceMember
+                                                        (StructTypeInstanceMember
                                                             (Var 6 this)
                                                             6 1_vector_sz
                                                             (Integer 4)
@@ -1093,7 +1093,7 @@
                                                                 ()
                                                             )
                                                             (ArrayItem
-                                                                (StructInstanceMember
+                                                                (StructTypeInstanceMember
                                                                     (Var 6 this)
                                                                     6 1_vector_elements
                                                                     (Allocatable
@@ -1122,7 +1122,7 @@
                                                         []
                                                     )
                                                     (Allocate
-                                                        [((StructInstanceMember
+                                                        [((StructTypeInstanceMember
                                                             (Var 6 this)
                                                             6 1_vector_elements
                                                             (Allocatable
@@ -1147,7 +1147,7 @@
                                                     )
                                                     (Assignment
                                                         (ArraySection
-                                                            (StructInstanceMember
+                                                            (StructTypeInstanceMember
                                                                 (Var 6 this)
                                                                 6 1_vector_elements
                                                                 (Allocatable
@@ -1163,7 +1163,7 @@
                                                                 ()
                                                             )
                                                             [((IntegerConstant 1 (Integer 4))
-                                                            (StructInstanceMember
+                                                            (StructTypeInstanceMember
                                                                 (Var 6 this)
                                                                 6 1_vector_sz
                                                                 (Integer 4)
@@ -1213,7 +1213,7 @@
                                                     .false.
                                                 ),
                                             vector:
-                                                (StructType
+                                                (Struct
                                                     (SymbolTable
                                                         4
                                                         {

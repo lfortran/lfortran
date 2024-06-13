@@ -74,7 +74,7 @@
                                     ()
                                 ),
                             t1:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         9
                                         {
@@ -202,7 +202,7 @@
                                             []
                                             (Logical 4)
                                             ()
-                                            (StructInstanceMember
+                                            (StructTypeInstanceMember
                                                 (Var 6 self)
                                                 6 1_t2_val
                                                 (Allocatable
@@ -237,7 +237,7 @@
                                     Public
                                 ),
                             t2:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         5
                                         {

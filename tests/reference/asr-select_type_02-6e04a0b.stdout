@@ -8,7 +8,7 @@
                         2
                         {
                             point:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         3
                                         {
@@ -109,7 +109,7 @@
                                     Public
                                 ),
                             color_point:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         6
                                         {
@@ -150,7 +150,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Struct
+                                    (StructType
                                         4 color_point
                                     )
                                     ()
@@ -168,7 +168,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Struct
+                                    (StructType
                                         4 point
                                     )
                                     ()
@@ -186,7 +186,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Struct
+                                    (StructType
                                         4 point_3d
                                     )
                                     ()
@@ -226,7 +226,7 @@
                                     Public
                                 ),
                             point_3d:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         5
                                         {
@@ -314,13 +314,13 @@
                                             "point: "
                                             (Character 1 7 ())
                                         )
-                                        (StructInstanceMember
+                                        (StructTypeInstanceMember
                                             (Var 7 an)
                                             7 1_point_x
                                             (Real 4)
                                             ()
                                         )
-                                        (StructInstanceMember
+                                        (StructTypeInstanceMember
                                             (Var 7 an)
                                             7 1_point_y
                                             (Real 4)
@@ -396,19 +396,19 @@
                                             "color_point: "
                                             (Character 1 13 ())
                                         )
-                                        (StructInstanceMember
+                                        (StructTypeInstanceMember
                                             (Var 8 an)
                                             8 1_point_x
                                             (Real 4)
                                             ()
                                         )
-                                        (StructInstanceMember
+                                        (StructTypeInstanceMember
                                             (Var 8 an)
                                             8 1_point_y
                                             (Real 4)
                                             ()
                                         )
-                                        (StructInstanceMember
+                                        (StructTypeInstanceMember
                                             (Var 8 an)
                                             8 1_color_point_color
                                             (Integer 4)
@@ -422,7 +422,7 @@
                     select_type_02
                     [derived_type_collection]
                     [(Assignment
-                        (StructInstanceMember
+                        (StructTypeInstanceMember
                             (Var 4 p)
                             4 1_point_x
                             (Real 4)
@@ -435,7 +435,7 @@
                         ()
                     )
                     (Assignment
-                        (StructInstanceMember
+                        (StructTypeInstanceMember
                             (Var 4 p)
                             4 1_point_y
                             (Real 4)
@@ -448,7 +448,7 @@
                         ()
                     )
                     (Assignment
-                        (StructInstanceMember
+                        (StructTypeInstanceMember
                             (Var 4 p3d)
                             4 1_point_x
                             (Real 4)
@@ -461,7 +461,7 @@
                         ()
                     )
                     (Assignment
-                        (StructInstanceMember
+                        (StructTypeInstanceMember
                             (Var 4 p3d)
                             4 1_point_y
                             (Real 4)
@@ -474,7 +474,7 @@
                         ()
                     )
                     (Assignment
-                        (StructInstanceMember
+                        (StructTypeInstanceMember
                             (Var 4 p3d)
                             4 1_point_3d_z
                             (Real 4)
@@ -487,7 +487,7 @@
                         ()
                     )
                     (Assignment
-                        (StructInstanceMember
+                        (StructTypeInstanceMember
                             (Var 4 cp)
                             4 1_point_x
                             (Real 4)
@@ -500,7 +500,7 @@
                         ()
                     )
                     (Assignment
-                        (StructInstanceMember
+                        (StructTypeInstanceMember
                             (Var 4 cp)
                             4 1_point_y
                             (Real 4)
@@ -513,7 +513,7 @@
                         ()
                     )
                     (Assignment
-                        (StructInstanceMember
+                        (StructTypeInstanceMember
                             (Var 4 cp)
                             4 1_color_point_color
                             (Integer 4)

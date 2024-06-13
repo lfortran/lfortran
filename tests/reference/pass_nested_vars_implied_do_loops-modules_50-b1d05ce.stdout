@@ -18,7 +18,7 @@
                                     Default
                                     (Pointer
                                         (Array
-                                            (Struct
+                                            (StructType
                                                 8 int_t
                                             )
                                             [(()
@@ -89,7 +89,7 @@
                         2
                         {
                             int_t:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         3
                                         {
@@ -235,7 +235,7 @@
                                                                     Default
                                                                     (Allocatable
                                                                         (Array
-                                                                            (Struct
+                                                                            (StructType
                                                                                 4 int_t
                                                                             )
                                                                             [(()
@@ -268,13 +268,13 @@
                                                     []
                                                     []
                                                     [(Assignment
-                                                        (StructInstanceMember
+                                                        (StructTypeInstanceMember
                                                             (ArrayItem
                                                                 (Var 6 __lcompilers_created__nested_context__prune_build_targets_modules_used)
                                                                 [(()
                                                                 (IntegerConstant 1 (Integer 4))
                                                                 ())]
-                                                                (Struct
+                                                                (StructType
                                                                     4 int_t
                                                                 )
                                                                 ColMajor
@@ -340,7 +340,7 @@
                                                                 [(()
                                                                 (Var 6 __1_k)
                                                                 ())]
-                                                                (Struct
+                                                                (StructType
                                                                     4 int_t
                                                                 )
                                                                 RowMajor
@@ -351,7 +351,7 @@
                                                                 [(()
                                                                 (Var 6 __1_t)
                                                                 ())]
-                                                                (Struct
+                                                                (StructType
                                                                     4 int_t
                                                                 )
                                                                 RowMajor
@@ -394,7 +394,7 @@
                                                     Default
                                                     (Allocatable
                                                         (Array
-                                                            (Struct
+                                                            (StructType
                                                                 4 int_t
                                                             )
                                                             [(()
@@ -437,13 +437,13 @@
                                         ()
                                     )
                                     (Assignment
-                                        (StructInstanceMember
+                                        (StructTypeInstanceMember
                                             (ArrayItem
                                                 (Var 5 modules_used)
                                                 [(()
                                                 (IntegerConstant 1 (Integer 4))
                                                 ())]
-                                                (Struct
+                                                (StructType
                                                     4 int_t
                                                 )
                                                 ColMajor
@@ -476,13 +476,13 @@
                                         ()
                                     )
                                     (Print
-                                        [(StructInstanceMember
+                                        [(StructTypeInstanceMember
                                             (ArrayItem
                                                 (Var 5 modules_used)
                                                 [(()
                                                 (IntegerConstant 1 (Integer 4))
                                                 ())]
-                                                (Struct
+                                                (StructType
                                                     4 int_t
                                                 )
                                                 ColMajor
@@ -497,13 +497,13 @@
                                     )
                                     (If
                                         (IntegerCompare
-                                            (StructInstanceMember
+                                            (StructTypeInstanceMember
                                                 (ArrayItem
                                                     (Var 5 modules_used)
                                                     [(()
                                                     (IntegerConstant 1 (Integer 4))
                                                     ())]
-                                                    (Struct
+                                                    (StructType
                                                         4 int_t
                                                     )
                                                     ColMajor

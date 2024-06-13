@@ -98,7 +98,7 @@
                                                                     Default
                                                                     (Allocatable
                                                                         (Array
-                                                                            (Struct
+                                                                            (StructType
                                                                                 2 toml_key
                                                                             )
                                                                             [(()
@@ -137,7 +137,7 @@
                                                         (Integer 4)
                                                         (Allocatable
                                                             (Array
-                                                                (Struct
+                                                                (StructType
                                                                     2 toml_key
                                                                 )
                                                                 [(()
@@ -249,7 +249,7 @@
                                                                     Default
                                                                     (Allocatable
                                                                         (Array
-                                                                            (Struct
+                                                                            (StructType
                                                                                 2 toml_key
                                                                             )
                                                                             [(()
@@ -268,7 +268,7 @@
                                                     (FunctionType
                                                         [(Allocatable
                                                             (Array
-                                                                (Struct
+                                                                (StructType
                                                                     2 toml_key
                                                                 )
                                                                 [(()
@@ -345,7 +345,7 @@
                                     .false.
                                 ),
                             toml_key:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         3
                                         {
@@ -380,7 +380,7 @@
                                     ()
                                 ),
                             toml_tokenizer:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         4
                                         {

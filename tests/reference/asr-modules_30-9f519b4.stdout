@@ -67,7 +67,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Struct
+                                                    (StructType
                                                         7 executable_config
                                                     )
                                                     ()
@@ -79,7 +79,7 @@
                                         })
                                     default_executable
                                     (FunctionType
-                                        [(Struct
+                                        [(StructType
                                             7 executable_config
                                         )
                                         (Character 1 -1 ())]
@@ -99,7 +99,7 @@
                                     [(Var 9 self)
                                     (Var 9 name)]
                                     [(Assignment
-                                        (StructInstanceMember
+                                        (StructTypeInstanceMember
                                             (Var 9 self)
                                             9 1_executable_config_name
                                             (Allocatable
@@ -111,7 +111,7 @@
                                         ()
                                     )
                                     (Assignment
-                                        (StructInstanceMember
+                                        (StructTypeInstanceMember
                                             (Var 9 self)
                                             9 1_executable_config_source_dir
                                             (Allocatable
@@ -126,7 +126,7 @@
                                         ()
                                     )
                                     (Assignment
-                                        (StructInstanceMember
+                                        (StructTypeInstanceMember
                                             (Var 9 self)
                                             9 1_executable_config_main
                                             (Allocatable
@@ -147,7 +147,7 @@
                                     ()
                                 ),
                             executable_config:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         8
                                         {
@@ -294,7 +294,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Struct
+                                                    (StructType
                                                         2 package_config_t
                                                     )
                                                     ()
@@ -322,7 +322,7 @@
                                         })
                                     package_defaults
                                     (FunctionType
-                                        [(Struct
+                                        [(StructType
                                             2 package_config_t
                                         )
                                         (Character 1 -1 ())]
@@ -342,12 +342,12 @@
                                     [(Var 10 package)
                                     (Var 10 root)]
                                     [(Allocate
-                                        [((StructInstanceMember
+                                        [((StructTypeInstanceMember
                                             (Var 10 package)
                                             10 1_package_config_t_executable
                                             (Allocatable
                                                 (Array
-                                                    (Struct
+                                                    (StructType
                                                         10 1_executable_config
                                                     )
                                                     [(()
@@ -369,12 +369,12 @@
                                         2 default_executable
                                         ()
                                         [((ArrayItem
-                                            (StructInstanceMember
+                                            (StructTypeInstanceMember
                                                 (Var 10 package)
                                                 10 1_package_config_t_executable
                                                 (Allocatable
                                                     (Array
-                                                        (Struct
+                                                        (StructType
                                                             10 1_executable_config
                                                         )
                                                         [(()
@@ -387,13 +387,13 @@
                                             [(()
                                             (IntegerConstant 1 (Integer 4))
                                             ())]
-                                            (Struct
+                                            (StructType
                                                 10 1_executable_config
                                             )
                                             ColMajor
                                             ()
                                         ))
-                                        ((StructInstanceMember
+                                        ((StructTypeInstanceMember
                                             (Var 10 package)
                                             10 1_package_config_t_name
                                             (Allocatable
@@ -432,7 +432,7 @@
                                     Public
                                 ),
                             package_config_t:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         5
                                         {
@@ -447,7 +447,7 @@
                                                     Default
                                                     (Allocatable
                                                         (Array
-                                                            (Struct
+                                                            (StructType
                                                                 4 executable_config
                                                             )
                                                             [(()

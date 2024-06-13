@@ -24,7 +24,7 @@
                         3
                         {
                             ls0001:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         4
                                         {
@@ -70,7 +70,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Struct
+                                    (StructType
                                         3 ls0001
                                     )
                                     ()

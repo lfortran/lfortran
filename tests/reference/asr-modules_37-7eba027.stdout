@@ -75,7 +75,7 @@
                                                                     ()
                                                                     Default
                                                                     (Pointer
-                                                                        (Struct
+                                                                        (StructType
                                                                             2 build_target_t
                                                                         )
                                                                     )
@@ -89,13 +89,13 @@
                                                     associate_block
                                                     [(Assignment
                                                         (Var 12 target)
-                                                        (StructInstanceMember
+                                                        (StructTypeInstanceMember
                                                             (ArrayItem
                                                                 (Var 9 targets)
                                                                 [(()
                                                                 (Var 9 i)
                                                                 ())]
-                                                                (Struct
+                                                                (StructType
                                                                     2 build_target_ptr
                                                                 )
                                                                 ColMajor
@@ -103,7 +103,7 @@
                                                             )
                                                             9 1_build_target_ptr_ptr
                                                             (Pointer
-                                                                (Struct
+                                                                (StructType
                                                                     2 build_target_t
                                                                 )
                                                             )
@@ -112,7 +112,7 @@
                                                         ()
                                                     )
                                                     (Assignment
-                                                        (StructInstanceMember
+                                                        (StructTypeInstanceMember
                                                             (Var 9 temp)
                                                             12 1_string_t_s
                                                             (Allocatable
@@ -120,7 +120,7 @@
                                                             )
                                                             ()
                                                         )
-                                                        (StructInstanceMember
+                                                        (StructTypeInstanceMember
                                                             (Var 12 target)
                                                             12 1_build_target_t_output_dir
                                                             (Allocatable
@@ -137,7 +137,7 @@
                                                             (Var 9 temp)]
                                                             (Allocatable
                                                                 (Array
-                                                                    (Struct
+                                                                    (StructType
                                                                         2 string_t
                                                                     )
                                                                     [(()
@@ -162,7 +162,7 @@
                                                     Default
                                                     (Allocatable
                                                         (Array
-                                                            (Struct
+                                                            (StructType
                                                                 2 string_t
                                                             )
                                                             [(()
@@ -217,7 +217,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Struct
+                                                    (StructType
                                                         2 fpm_model_t
                                                     )
                                                     ()
@@ -236,7 +236,7 @@
                                                     ()
                                                     Default
                                                     (Array
-                                                        (Struct
+                                                        (StructType
                                                             2 build_target_ptr
                                                         )
                                                         [(()
@@ -258,7 +258,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Struct
+                                                    (StructType
                                                         2 string_t
                                                     )
                                                     ()
@@ -287,14 +287,14 @@
                                     build_package
                                     (FunctionType
                                         [(Array
-                                            (Struct
+                                            (StructType
                                                 2 build_target_ptr
                                             )
                                             [(()
                                             ())]
                                             DescriptorArray
                                         )
-                                        (Struct
+                                        (StructType
                                             2 fpm_model_t
                                         )
                                         (Logical 4)]
@@ -350,7 +350,7 @@
                                     ()
                                 ),
                             build_target_ptr:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         6
                                         {
@@ -362,21 +362,21 @@
                                                     Local
                                                     (PointerNullConstant
                                                         (Pointer
-                                                            (Struct
+                                                            (StructType
                                                                 2 build_target_t
                                                             )
                                                         )
                                                     )
                                                     (PointerNullConstant
                                                         (Pointer
-                                                            (Struct
+                                                            (StructType
                                                                 2 build_target_t
                                                             )
                                                         )
                                                     )
                                                     Default
                                                     (Pointer
-                                                        (Struct
+                                                        (StructType
                                                             2 build_target_t
                                                         )
                                                     )
@@ -399,7 +399,7 @@
                                     ()
                                 ),
                             build_target_t:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         7
                                         {
@@ -457,7 +457,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Struct
+                                                    (StructType
                                                         2 fpm_model_t
                                                     )
                                                     ()
@@ -475,7 +475,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Struct
+                                                    (StructType
                                                         2 fpm_build_settings
                                                     )
                                                     ()
@@ -495,7 +495,7 @@
                                                     Default
                                                     (Allocatable
                                                         (Array
-                                                            (Struct
+                                                            (StructType
                                                                 2 build_target_ptr
                                                             )
                                                             [(()
@@ -512,7 +512,7 @@
                                         })
                                     cmd_build
                                     (FunctionType
-                                        [(Struct
+                                        [(StructType
                                             2 fpm_build_settings
                                         )]
                                         ()
@@ -534,7 +534,7 @@
                                         ()
                                         [((Var 10 targets))
                                         ((Var 10 model))
-                                        ((StructInstanceMember
+                                        ((StructTypeInstanceMember
                                             (Var 10 settings)
                                             10 1_fpm_cmd_settings_verbose
                                             (Logical 4)
@@ -552,7 +552,7 @@
                                     ()
                                 ),
                             fpm_build_settings:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         4
                                         {
@@ -570,7 +570,7 @@
                                     2 fpm_cmd_settings
                                 ),
                             fpm_cmd_settings:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         3
                                         {
@@ -609,7 +609,7 @@
                                     ()
                                 ),
                             fpm_model_t:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         8
                                         {
@@ -627,7 +627,7 @@
                                     ()
                                 ),
                             string_t:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         5
                                         {

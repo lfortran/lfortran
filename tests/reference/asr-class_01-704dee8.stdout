@@ -36,7 +36,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Struct
+                                    (StructType
                                         6 circle
                                     )
                                     ()
@@ -60,13 +60,13 @@
                     [class_circle1]
                     [(Assignment
                         (Var 6 c)
-                        (StructTypeConstructor
+                        (StructConstructor
                             6 circle
                             [((RealConstant
                                 1.500000
                                 (Real 4)
                             ))]
-                            (Struct
+                            (StructType
                                 6 circle
                             )
                             ()
@@ -80,7 +80,7 @@
                         (Var 6 c)
                     )
                     (Assignment
-                        (StructInstanceMember
+                        (StructTypeInstanceMember
                             (Var 6 c)
                             6 1_circle_radius
                             (Real 4)
@@ -105,7 +105,7 @@
                         2
                         {
                             circle:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         3
                                         {
@@ -234,7 +234,7 @@
                                             (Var 2 pi)
                                             Mul
                                             (RealBinOp
-                                                (StructInstanceMember
+                                                (StructTypeInstanceMember
                                                     (Var 4 this)
                                                     4 1_circle_radius
                                                     (Real 4)
@@ -360,7 +360,7 @@
                                             "Circle: r = "
                                             (Character 1 12 ())
                                         )
-                                        (StructInstanceMember
+                                        (StructTypeInstanceMember
                                             (Var 5 this)
                                             5 1_circle_radius
                                             (Real 4)

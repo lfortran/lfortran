@@ -97,7 +97,7 @@
                                     [(Assignment
                                         (Var 4 res)
                                         (RealBinOp
-                                            (StructInstanceMember
+                                            (StructTypeInstanceMember
                                                 (Var 4 self)
                                                 4 1_t_1_i
                                                 (Real 4)
@@ -206,7 +206,7 @@
                                     [(Assignment
                                         (Var 5 res)
                                         (RealBinOp
-                                            (StructInstanceMember
+                                            (StructTypeInstanceMember
                                                 (Var 5 self)
                                                 5 1_t_1_i
                                                 (Real 4)
@@ -240,7 +240,7 @@
                                     ()
                                 ),
                             t_1:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         3
                                         {
@@ -382,7 +382,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Struct
+                                    (StructType
                                         6 t_1
                                     )
                                     ()
@@ -395,7 +395,7 @@
                     name
                     [derived_types_15_module_1]
                     [(Assignment
-                        (StructInstanceMember
+                        (StructTypeInstanceMember
                             (Var 6 type_1)
                             6 1_t_1_i
                             (Real 4)

@@ -76,7 +76,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Struct
+                                    (StructType
                                         7 t_2
                                     )
                                     ()
@@ -96,14 +96,14 @@
                         ()
                     )
                     (Print
-                        [(StructInstanceMember
+                        [(StructTypeInstanceMember
                             (ArrayItem
-                                (StructInstanceMember
+                                (StructTypeInstanceMember
                                     (Var 7 type_1)
                                     7 1_t_2_type_2
                                     (Pointer
                                         (Array
-                                            (Struct
+                                            (StructType
                                                 7 t_1
                                             )
                                             [(()
@@ -116,7 +116,7 @@
                                 [(()
                                 (IntegerConstant 0 (Integer 4))
                                 ())]
-                                (Struct
+                                (StructType
                                     7 t_1
                                 )
                                 ColMajor
@@ -185,14 +185,14 @@
                                                     associate_block
                                                     [(Assignment
                                                         (Var 8 target)
-                                                        (StructInstanceMember
+                                                        (StructTypeInstanceMember
                                                             (ArrayItem
-                                                                (StructInstanceMember
+                                                                (StructTypeInstanceMember
                                                                     (Var 5 type_1)
                                                                     5 1_t_2_type_2
                                                                     (Pointer
                                                                         (Array
-                                                                            (Struct
+                                                                            (StructType
                                                                                 2 t_1
                                                                             )
                                                                             [(()
@@ -205,7 +205,7 @@
                                                                 [(()
                                                                 (IntegerConstant 0 (Integer 4))
                                                                 ())]
-                                                                (Struct
+                                                                (StructType
                                                                     2 t_1
                                                                 )
                                                                 ColMajor
@@ -280,12 +280,12 @@
                                     [(Var 5 type_1)
                                     (Var 5 i)]
                                     [(Allocate
-                                        [((StructInstanceMember
+                                        [((StructTypeInstanceMember
                                             (Var 5 type_1)
                                             5 1_t_2_type_2
                                             (Pointer
                                                 (Array
-                                                    (Struct
+                                                    (StructType
                                                         2 t_1
                                                     )
                                                     [(()
@@ -388,14 +388,14 @@
                                                         ()
                                                     )
                                                     (Assignment
-                                                        (StructInstanceMember
+                                                        (StructTypeInstanceMember
                                                             (ArrayItem
-                                                                (StructInstanceMember
+                                                                (StructTypeInstanceMember
                                                                     (Var 9 target)
                                                                     9 1_t_2_type_2
                                                                     (Pointer
                                                                         (Array
-                                                                            (Struct
+                                                                            (StructType
                                                                                 2 t_1
                                                                             )
                                                                             [(()
@@ -408,7 +408,7 @@
                                                                 [(()
                                                                 (IntegerConstant 0 (Integer 4))
                                                                 ())]
-                                                                (Struct
+                                                                (StructType
                                                                     2 t_1
                                                                 )
                                                                 ColMajor
@@ -475,7 +475,7 @@
                                     []
                                     [(Var 6 progress)]
                                     [(Allocate
-                                        [((StructInstanceMember
+                                        [((StructTypeInstanceMember
                                             (ArrayItem
                                                 (Var 6 progress)
                                                 [(()
@@ -490,7 +490,7 @@
                                             6 1_t_2_type_2
                                             (Pointer
                                                 (Array
-                                                    (Struct
+                                                    (StructType
                                                         2 t_1
                                                     )
                                                     [(()
@@ -518,7 +518,7 @@
                                     ()
                                 ),
                             t_1:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         3
                                         {
@@ -551,7 +551,7 @@
                                     ()
                                 ),
                             t_2:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         4
                                         {
@@ -566,7 +566,7 @@
                                                     Default
                                                     (Pointer
                                                         (Array
-                                                            (Struct
+                                                            (StructType
                                                                 2 t_1
                                                             )
                                                             [(()

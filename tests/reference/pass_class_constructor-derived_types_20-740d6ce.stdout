@@ -8,7 +8,7 @@
                         4
                         {
                             fpm_cmd_settings:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         5
                                         {
@@ -66,7 +66,7 @@
                                     ()
                                 ),
                             fpm_new_settings:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         6
                                         {
@@ -382,7 +382,7 @@
                                         [((Var 7 cmd_settings)
                                         []
                                         ()
-                                        (Struct
+                                        (StructType
                                             4 fpm_new_settings
                                         ))]
                                         ()
@@ -431,7 +431,7 @@
                                             ()
                                         )
                                         [(Assignment
-                                            (StructInstanceMember
+                                            (StructTypeInstanceMember
                                                 (Var 7 cmd_settings)
                                                 7 1_fpm_cmd_settings_verbose
                                                 (Logical 4)
@@ -444,7 +444,7 @@
                                             ()
                                         )
                                         (Assignment
-                                            (StructInstanceMember
+                                            (StructTypeInstanceMember
                                                 (Var 7 cmd_settings)
                                                 7 1_fpm_new_settings_name
                                                 (Allocatable
@@ -459,7 +459,7 @@
                                             ()
                                         )
                                         (Assignment
-                                            (StructInstanceMember
+                                            (StructTypeInstanceMember
                                                 (Var 7 cmd_settings)
                                                 7 1_fpm_new_settings_with_executable
                                                 (Logical 4)
@@ -472,7 +472,7 @@
                                             ()
                                         )
                                         (Assignment
-                                            (StructInstanceMember
+                                            (StructTypeInstanceMember
                                                 (Var 7 cmd_settings)
                                                 7 1_fpm_new_settings_with_test
                                                 (Logical 4)
@@ -485,7 +485,7 @@
                                             ()
                                         )
                                         (Assignment
-                                            (StructInstanceMember
+                                            (StructTypeInstanceMember
                                                 (Var 7 cmd_settings)
                                                 7 1_fpm_new_settings_with_lib
                                                 (Logical 4)
@@ -498,7 +498,7 @@
                                             ()
                                         )
                                         (Assignment
-                                            (StructInstanceMember
+                                            (StructTypeInstanceMember
                                                 (Var 7 cmd_settings)
                                                 7 1_fpm_new_settings_with_example
                                                 (Logical 4)
@@ -511,7 +511,7 @@
                                             ()
                                         )
                                         (Assignment
-                                            (StructInstanceMember
+                                            (StructTypeInstanceMember
                                                 (Var 7 cmd_settings)
                                                 7 1_fpm_new_settings_backfill
                                                 (Logical 4)

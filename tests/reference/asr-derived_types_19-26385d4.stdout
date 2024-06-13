@@ -22,7 +22,7 @@
                                                     ()
                                                     Default
                                                     (Pointer
-                                                        (Struct
+                                                        (StructType
                                                             4 child_value
                                                         )
                                                     )
@@ -70,7 +70,7 @@
                                                         })
                                                     ~select_type_block_
                                                     [(If
-                                                        (StructInstanceMember
+                                                        (StructTypeInstanceMember
                                                             (Var 7 ptr)
                                                             8 1_child_value_ok
                                                             (Logical 4)
@@ -141,7 +141,7 @@
                                     ()
                                 ),
                             child_value:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         5
                                         {
@@ -257,7 +257,7 @@
                                     ()
                                 ),
                             toml_value:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         6
                                         {

@@ -8,7 +8,7 @@
                         4
                         {
                             enum_type:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         5
                                         {
@@ -131,7 +131,7 @@
                                     toml_type
                                     []
                                     Local
-                                    (StructTypeConstructor
+                                    (StructConstructor
                                         4 enum_type
                                         [(())
                                         (())
@@ -139,14 +139,14 @@
                                         (())
                                         (())
                                         (())]
-                                        (Struct
+                                        (StructType
                                             4 enum_type
                                         )
                                         ()
                                     )
                                     ()
                                     Parameter
-                                    (Struct
+                                    (StructType
                                         4 enum_type
                                     )
                                     ()
@@ -371,7 +371,7 @@
                                         )
                                         [(Assignment
                                             (Var 6 vtype)
-                                            (StructInstanceMember
+                                            (StructTypeInstanceMember
                                                 (Var 2 toml_type)
                                                 6 1_enum_type_string
                                                 (Integer 4)
@@ -393,7 +393,7 @@
                                         )
                                         [(Assignment
                                             (Var 6 vtype)
-                                            (StructInstanceMember
+                                            (StructTypeInstanceMember
                                                 (Var 2 toml_type)
                                                 6 1_enum_type_boolean
                                                 (Integer 4)
@@ -415,7 +415,7 @@
                                         )
                                         [(Assignment
                                             (Var 6 vtype)
-                                            (StructInstanceMember
+                                            (StructTypeInstanceMember
                                                 (Var 2 toml_type)
                                                 6 1_enum_type_int
                                                 (Integer 4)
@@ -437,7 +437,7 @@
                                         )
                                         [(Assignment
                                             (Var 6 vtype)
-                                            (StructInstanceMember
+                                            (StructTypeInstanceMember
                                                 (Var 2 toml_type)
                                                 6 1_enum_type_float
                                                 (Integer 4)
@@ -459,7 +459,7 @@
                                         )
                                         [(Assignment
                                             (Var 6 vtype)
-                                            (StructInstanceMember
+                                            (StructTypeInstanceMember
                                                 (Var 2 toml_type)
                                                 6 1_enum_type_datetime
                                                 (Integer 4)
@@ -472,7 +472,7 @@
                                     )
                                     (Assignment
                                         (Var 6 vtype)
-                                        (StructInstanceMember
+                                        (StructTypeInstanceMember
                                             (Var 2 toml_type)
                                             6 1_enum_type_invalid
                                             (Integer 4)

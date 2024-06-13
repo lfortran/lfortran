@@ -219,7 +219,7 @@
                                     ()
                                     Default
                                     (Array
-                                        (Struct
+                                        (StructType
                                             8 string_t
                                         )
                                         [((IntegerConstant 1 (Integer 4))
@@ -253,13 +253,13 @@
                         ()
                     )
                     (Assignment
-                        (StructInstanceMember
+                        (StructTypeInstanceMember
                             (ArrayItem
                                 (Var 8 string_var)
                                 [(()
                                 (IntegerConstant 1 (Integer 4))
                                 ())]
-                                (Struct
+                                (StructType
                                     8 string_t
                                 )
                                 ColMajor
@@ -283,13 +283,13 @@
                         ()
                     )
                     (Assignment
-                        (StructInstanceMember
+                        (StructTypeInstanceMember
                             (ArrayItem
                                 (Var 8 string_var)
                                 [(()
                                 (IntegerConstant 2 (Integer 4))
                                 ())]
-                                (Struct
+                                (StructType
                                     8 string_t
                                 )
                                 ColMajor
@@ -359,7 +359,7 @@
                                 FixedSizeArray
                                 DescriptorArray
                                 (Array
-                                    (Struct
+                                    (StructType
                                         8 string_t
                                     )
                                     [((IntegerConstant 1 (Integer 4))
@@ -385,7 +385,7 @@
                                 FixedSizeArray
                                 DescriptorArray
                                 (Array
-                                    (Struct
+                                    (StructType
                                         8 string_t
                                     )
                                     [((IntegerConstant 1 (Integer 4))
@@ -430,7 +430,7 @@
                                 FixedSizeArray
                                 DescriptorArray
                                 (Array
-                                    (Struct
+                                    (StructType
                                         8 string_t
                                     )
                                     [((IntegerConstant 1 (Integer 4))
@@ -504,7 +504,7 @@
                                 FixedSizeArray
                                 DescriptorArray
                                 (Array
-                                    (Struct
+                                    (StructType
                                         8 string_t
                                     )
                                     [((IntegerConstant 1 (Integer 4))
@@ -840,7 +840,7 @@
                                                     ()
                                                     Default
                                                     (Array
-                                                        (Struct
+                                                        (StructType
                                                             2 string_t
                                                         )
                                                         [(()
@@ -873,7 +873,7 @@
                                     fnv_1a_string_t
                                     (FunctionType
                                         [(Array
-                                            (Struct
+                                            (StructType
                                                 2 string_t
                                             )
                                             [(()
@@ -901,13 +901,13 @@
                                         (FunctionCall
                                             2 fnv_1a_char
                                             2 fnv_1a
-                                            [((StructInstanceMember
+                                            [((StructTypeInstanceMember
                                                 (ArrayItem
                                                     (Var 5 input)
                                                     [(()
                                                     (IntegerConstant 1 (Integer 4))
                                                     ())]
-                                                    (Struct
+                                                    (StructType
                                                         2 string_t
                                                     )
                                                     ColMajor
@@ -942,13 +942,13 @@
                                             (FunctionCall
                                                 2 fnv_1a_char
                                                 2 fnv_1a
-                                                [((StructInstanceMember
+                                                [((StructTypeInstanceMember
                                                     (ArrayItem
                                                         (Var 5 input)
                                                         [(()
                                                         (Var 5 i)
                                                         ())]
-                                                        (Struct
+                                                        (StructType
                                                             2 string_t
                                                         )
                                                         ColMajor
@@ -1439,7 +1439,7 @@
                                                     ()
                                                     Default
                                                     (Array
-                                                        (Struct
+                                                        (StructType
                                                             2 string_t
                                                         )
                                                         [(()
@@ -1456,7 +1456,7 @@
                                     string_cat
                                     (FunctionType
                                         [(Array
-                                            (Struct
+                                            (StructType
                                                 2 string_t
                                             )
                                             [(()
@@ -1530,13 +1530,13 @@
                                     )
                                     (Assignment
                                         (Var 7 cat)
-                                        (StructInstanceMember
+                                        (StructTypeInstanceMember
                                             (ArrayItem
                                                 (Var 7 strings)
                                                 [(()
                                                 (IntegerConstant 1 (Integer 4))
                                                 ())]
-                                                (Struct
+                                                (StructType
                                                     2 string_t
                                                 )
                                                 ColMajor
@@ -1570,13 +1570,13 @@
                                                     (Character 1 -1 ())
                                                     ()
                                                 )
-                                                (StructInstanceMember
+                                                (StructTypeInstanceMember
                                                     (ArrayItem
                                                         (Var 7 strings)
                                                         [(()
                                                         (Var 7 i)
                                                         ())]
-                                                        (Struct
+                                                        (StructType
                                                             2 string_t
                                                         )
                                                         ColMajor
@@ -1605,7 +1605,7 @@
                                     ()
                                 ),
                             string_t:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         3
                                         {

@@ -89,7 +89,7 @@
                                     ()
                                 ),
                             toml_ordered:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         11
                                         {
@@ -107,7 +107,7 @@
                                     10 toml_structure
                                 ),
                             toml_structure:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         12
                                         {
@@ -231,7 +231,7 @@
                                     [(If
                                         (IntrinsicImpureFunction
                                             Allocated
-                                            [(StructInstanceMember
+                                            [(StructTypeInstanceMember
                                                 (Var 15 self)
                                                 15 1_toml_value_key
                                                 (Allocatable
@@ -244,7 +244,7 @@
                                             ()
                                         )
                                         [(ExplicitDeallocate
-                                            [(StructInstanceMember
+                                            [(StructTypeInstanceMember
                                                 (Var 15 self)
                                                 15 1_toml_value_key
                                                 (Allocatable
@@ -258,7 +258,7 @@
                                     (If
                                         (IntrinsicImpureFunction
                                             Allocated
-                                            [(StructInstanceMember
+                                            [(StructTypeInstanceMember
                                                 (Var 15 self)
                                                 15 1_toml_array_list
                                                 (Allocatable
@@ -276,7 +276,7 @@
                                             15 1_destroy
                                             ()
                                             []
-                                            (StructInstanceMember
+                                            (StructTypeInstanceMember
                                                 (Var 15 self)
                                                 15 1_toml_array_list
                                                 (Allocatable
@@ -288,7 +288,7 @@
                                             )
                                         )
                                         (ExplicitDeallocate
-                                            [(StructInstanceMember
+                                            [(StructTypeInstanceMember
                                                 (Var 15 self)
                                                 15 1_toml_array_list
                                                 (Allocatable
@@ -328,7 +328,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Struct
+                                                    (StructType
                                                         2 toml_array
                                                     )
                                                     ()
@@ -340,7 +340,7 @@
                                         })
                                     new_array
                                     (FunctionType
-                                        [(Struct
+                                        [(StructType
                                             2 toml_array
                                         )]
                                         ()
@@ -365,7 +365,7 @@
                                     ()
                                 ),
                             toml_array:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         14
                                         {
@@ -496,7 +496,7 @@
                                     ()
                                 ),
                             toml_value:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         5
                                         {

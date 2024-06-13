@@ -46,7 +46,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Struct
+                                    (StructType
                                         5 test_type
                                     )
                                     ()
@@ -124,7 +124,7 @@
                                     ()
                                 ),
                             test_type:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         3
                                         {

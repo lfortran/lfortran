@@ -76,7 +76,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Struct
+                                    (StructType
                                         8 x
                                     )
                                     ()
@@ -94,7 +94,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Struct
+                                    (StructType
                                         8 z
                                     )
                                     ()
@@ -208,7 +208,7 @@
                     [derived_types_01_m_02
                     derived_types_01_m_01]
                     [(Assignment
-                        (StructInstanceMember
+                        (StructTypeInstanceMember
                             (Var 8 b)
                             8 1_x_i
                             (Integer 4)
@@ -218,7 +218,7 @@
                         ()
                     )
                     (Assignment
-                        (StructInstanceMember
+                        (StructTypeInstanceMember
                             (Var 8 b)
                             8 1_x_r
                             (Real 4)
@@ -231,13 +231,13 @@
                         ()
                     )
                     (Print
-                        [(StructInstanceMember
+                        [(StructTypeInstanceMember
                             (Var 8 b)
                             8 1_x_i
                             (Integer 4)
                             ()
                         )
-                        (StructInstanceMember
+                        (StructTypeInstanceMember
                             (Var 8 b)
                             8 1_x_r
                             (Real 4)
@@ -253,13 +253,13 @@
                         ()
                     )
                     (Print
-                        [(StructInstanceMember
+                        [(StructTypeInstanceMember
                             (Var 8 b)
                             8 1_x_i
                             (Integer 4)
                             ()
                         )
-                        (StructInstanceMember
+                        (StructTypeInstanceMember
                             (Var 8 b)
                             8 1_x_r
                             (Real 4)
@@ -269,18 +269,18 @@
                         ()
                     )
                     (Assignment
-                        (StructInstanceMember
-                            (StructInstanceMember
-                                (StructInstanceMember
+                        (StructTypeInstanceMember
+                            (StructTypeInstanceMember
+                                (StructTypeInstanceMember
                                     (Var 8 c)
                                     8 1_z_l
-                                    (Struct
+                                    (StructType
                                         8 derived_types_01_m_01_y
                                     )
                                     ()
                                 )
                                 8 1_y_d
-                                (Struct
+                                (StructType
                                     8 x
                                 )
                                 ()
@@ -296,18 +296,18 @@
                         ()
                     )
                     (Assignment
-                        (StructInstanceMember
-                            (StructInstanceMember
-                                (StructInstanceMember
+                        (StructTypeInstanceMember
+                            (StructTypeInstanceMember
+                                (StructTypeInstanceMember
                                     (Var 8 c)
                                     8 1_z_l
-                                    (Struct
+                                    (StructType
                                         8 derived_types_01_m_01_y1
                                     )
                                     ()
                                 )
                                 8 1_y_d
-                                (Struct
+                                (StructType
                                     8 x
                                 )
                                 ()
@@ -320,7 +320,7 @@
                         ()
                     )
                     (Assignment
-                        (StructInstanceMember
+                        (StructTypeInstanceMember
                             (Var 8 c)
                             8 1_z_k
                             (Complex 4)
@@ -345,18 +345,18 @@
                         ()
                     )
                     (Print
-                        [(StructInstanceMember
-                            (StructInstanceMember
-                                (StructInstanceMember
+                        [(StructTypeInstanceMember
+                            (StructTypeInstanceMember
+                                (StructTypeInstanceMember
                                     (Var 8 c)
                                     8 1_z_l
-                                    (Struct
+                                    (StructType
                                         8 derived_types_01_m_01_y2
                                     )
                                     ()
                                 )
                                 8 1_y_d
-                                (Struct
+                                (StructType
                                     8 x
                                 )
                                 ()
@@ -365,18 +365,18 @@
                             (Real 4)
                             ()
                         )
-                        (StructInstanceMember
-                            (StructInstanceMember
-                                (StructInstanceMember
+                        (StructTypeInstanceMember
+                            (StructTypeInstanceMember
+                                (StructTypeInstanceMember
                                     (Var 8 c)
                                     8 1_z_l
-                                    (Struct
+                                    (StructType
                                         8 derived_types_01_m_01_y3
                                     )
                                     ()
                                 )
                                 8 1_y_d
-                                (Struct
+                                (StructType
                                     8 x
                                 )
                                 ()
@@ -385,7 +385,7 @@
                             (Integer 4)
                             ()
                         )
-                        (StructInstanceMember
+                        (StructTypeInstanceMember
                             (Var 8 c)
                             8 1_z_k
                             (Complex 4)
@@ -397,17 +397,17 @@
                     (SubroutineCall
                         8 set
                         ()
-                        [((StructInstanceMember
-                            (StructInstanceMember
+                        [((StructTypeInstanceMember
+                            (StructTypeInstanceMember
                                 (Var 8 c)
                                 8 1_z_l
-                                (Struct
+                                (StructType
                                     8 derived_types_01_m_01_y4
                                 )
                                 ()
                             )
                             8 1_y_d
-                            (Struct
+                            (StructType
                                 8 x
                             )
                             ()
@@ -415,18 +415,18 @@
                         ()
                     )
                     (Print
-                        [(StructInstanceMember
-                            (StructInstanceMember
-                                (StructInstanceMember
+                        [(StructTypeInstanceMember
+                            (StructTypeInstanceMember
+                                (StructTypeInstanceMember
                                     (Var 8 c)
                                     8 1_z_l
-                                    (Struct
+                                    (StructType
                                         8 derived_types_01_m_01_y5
                                     )
                                     ()
                                 )
                                 8 1_y_d
-                                (Struct
+                                (StructType
                                     8 x
                                 )
                                 ()
@@ -435,18 +435,18 @@
                             (Real 4)
                             ()
                         )
-                        (StructInstanceMember
-                            (StructInstanceMember
-                                (StructInstanceMember
+                        (StructTypeInstanceMember
+                            (StructTypeInstanceMember
+                                (StructTypeInstanceMember
                                     (Var 8 c)
                                     8 1_z_l
-                                    (Struct
+                                    (StructType
                                         8 derived_types_01_m_01_y6
                                     )
                                     ()
                                 )
                                 8 1_y_d
-                                (Struct
+                                (StructType
                                     8 x
                                 )
                                 ()
@@ -455,7 +455,7 @@
                             (Integer 4)
                             ()
                         )
-                        (StructInstanceMember
+                        (StructTypeInstanceMember
                             (Var 8 c)
                             8 1_z_k
                             (Complex 4)
@@ -504,7 +504,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Struct
+                                                    (StructType
                                                         2 x
                                                     )
                                                     ()
@@ -516,7 +516,7 @@
                                         })
                                     set
                                     (FunctionType
-                                        [(Struct
+                                        [(StructType
                                             2 x
                                         )]
                                         ()
@@ -534,7 +534,7 @@
                                     []
                                     [(Var 5 a)]
                                     [(Assignment
-                                        (StructInstanceMember
+                                        (StructTypeInstanceMember
                                             (Var 5 a)
                                             5 1_x_i
                                             (Integer 4)
@@ -544,7 +544,7 @@
                                         ()
                                     )
                                     (Assignment
-                                        (StructInstanceMember
+                                        (StructTypeInstanceMember
                                             (Var 5 a)
                                             5 1_x_r
                                             (Real 4)
@@ -563,7 +563,7 @@
                                     ()
                                 ),
                             x:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         3
                                         {
@@ -613,7 +613,7 @@
                                     ()
                                 ),
                             y:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         4
                                         {
@@ -642,7 +642,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Struct
+                                                    (StructType
                                                         2 x
                                                     )
                                                     ()
@@ -686,7 +686,7 @@
                                     Public
                                 ),
                             z:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         7
                                         {
@@ -715,7 +715,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Struct
+                                                    (StructType
                                                         6 y
                                                     )
                                                     ()
