@@ -716,6 +716,7 @@ jobs:
             src/bin/lfortran --show-llvm integration_tests/print_03.f90
             src/bin/lfortran integration_tests/print_03.f90
             ./print_03.out
+            src/bin/lfortran --show-llvm tests/subroutine3.f90
 
   test_llvm_wasm:
     name: Test LLVM->WASM ${{ matrix.llvm-version }}

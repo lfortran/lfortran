@@ -3956,7 +3956,7 @@ public:
             ASR::Variable_t *asr_retval = EXPR2VAR(x.m_return_var);
             uint32_t h = get_hash((ASR::asr_t*)asr_retval);
             llvm::Value *ret_val = llvm_symtab[h];
-            llvm::Value *ret_val2 = CreateLoad(ret_val);
+            llvm::Value *ret_val2 = CreateLoad2(asr_retval->m_type, ret_val);
             // Handle Complex type return value for BindC:
             if (ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::BindC) {
                 ASR::ttype_t* arg_type = asr_retval->m_type;
@@ -9849,7 +9849,7 @@ public:
                         start_new_block(elseBB);
                     }
                     start_new_block(mergeBB);
-                    tmp = LLVM::CreateLoad(*builder, target);
+                    tmp = LLVM::CreateLoad2(*builder, target_type, target);
                     break;
                 } else {
                     LCOMPILERS_ASSERT(false);
