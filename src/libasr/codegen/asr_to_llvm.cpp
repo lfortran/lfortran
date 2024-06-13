@@ -2327,13 +2327,17 @@ public:
             LCOMPILERS_ASSERT(ASRUtils::extract_n_dims_from_ttype(x_mv_type) > 0);
             bool is_polymorphic = current_select_type_block_type != nullptr;
             if (array_t->m_physical_type == ASR::array_physical_typeType::UnboundedPointerToDataArray) {
-                tmp = arr_descr->get_single_element(array, indices, x.n_args,
+                llvm::Type* el_type = llvm_utils->get_type_from_ttype_t_util(
+                    x_mv_type, module.get());
+                tmp = arr_descr->get_single_element(el_type, array, indices, x.n_args,
                                                     true,
                                                     false,
                                                     llvm_diminfo.p, is_polymorphic, current_select_type_block_type,
                                                     true);
             } else {
-                tmp = arr_descr->get_single_element(array, indices, x.n_args,
+                llvm::Type* el_type = llvm_utils->get_type_from_ttype_t_util(
+                    x_mv_type, module.get());
+                tmp = arr_descr->get_single_element(el_type, array, indices, x.n_args,
                                                     array_t->m_physical_type == ASR::array_physical_typeType::PointerToDataArray,
                                                     array_t->m_physical_type == ASR::array_physical_typeType::FixedSizeArray || array_t->m_physical_type == ASR::array_physical_typeType::SIMDArray
                                                     || (array_t->m_physical_type == ASR::array_physical_typeType::CharacterArraySinglePointer && ASRUtils::is_fixed_size_array(x_mv_type)),
@@ -5332,7 +5336,7 @@ public:
             x->type == ASR::exprType::StructInstanceMember ) {
             if( load_ref &&
                 !ASRUtils::is_value_constant(ASRUtils::expr_value(x)) ) {
-                tmp = CreateLoad(tmp);
+                tmp = CreateLoad2(ASRUtils::expr_type(x), tmp);
             }
         }
     }
@@ -9703,9 +9707,9 @@ public:
                     (LLVM::is_llvm_pointer(*ASRUtils::expr_type(x.m_v)));
         visit_expr_wrapper(x.m_v);
         ptr_loads = ptr_loads_copy;
-        bool is_pointer_array = tmp->getType()->getContainedType(0)->isPointerTy();
+        bool is_pointer_array = tmp->getType()->isPointerTy();
         if (is_pointer_array) {
-            tmp = CreateLoad(tmp);
+            tmp = CreateLoad2(x.m_type, tmp);
         }
         llvm::Value* llvm_arg1 = tmp;
         visit_expr_wrapper(x.m_dim, true);
@@ -9773,7 +9777,7 @@ public:
                     start_new_block(elseBB);
                 }
                 start_new_block(mergeBB);
-                tmp = LLVM::CreateLoad(*builder, target);
+                tmp = LLVM::CreateLoad2(*builder, target_type, target);
                 break;
             }
             case ASR::array_physical_typeType::SIMDArray: {
