@@ -6,7 +6,7 @@ end type
 
 type, extends(fpm_build_settings) :: fpm_run_settings
     ! TODO: Set allocatable attribute after supporting
-    ! allocation of StructTypeInstanceMember
+    ! allocation of StructInstanceMember
     character(len=5) :: name(2)
     character(len=4) :: args
     character(len=6) :: runner
@@ -37,7 +37,7 @@ use modules_36_fpm_main_01
 implicit none
 
 type(fpm_run_settings) :: settings
-! TODO: Re-enable after supporting allocation of StructTypeInstanceMember
+! TODO: Re-enable after supporting allocation of StructInstanceMember
 ! allocate(settings%name(2))
 ! allocate(character(len=4)::settings%args)
 ! allocate(character(len=6)::settings%runner)

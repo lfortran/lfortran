@@ -627,12 +627,12 @@ public:
             x->m_original_name, args.p, args.size(), dt, nullptr, false, false);
     }
 
-    ASR::asr_t* duplicate_StructTypeInstanceMember(ASR::StructTypeInstanceMember_t *x) {
+    ASR::asr_t* duplicate_StructInstanceMember(ASR::StructInstanceMember_t *x) {
         ASR::expr_t *v = duplicate_expr(x->m_v);
         ASR::ttype_t *t = substitute_type(x->m_type);
         ASR::expr_t *value = duplicate_expr(x->m_value);
         ASR::symbol_t *s = duplicate_symbol(x->m_m);
-        return ASR::make_StructTypeInstanceMember_t(al, x->base.base.loc,
+        return ASR::make_StructInstanceMember_t(al, x->base.base.loc,
             v, s, t, value);
     }
 
@@ -1713,7 +1713,7 @@ public:
             v, args.p, args.size(), ttype, value);
     }
 
-    ASR::asr_t* duplicate_StructTypeInstanceMember(ASR::StructTypeInstanceMember_t *x) {
+    ASR::asr_t* duplicate_StructInstanceMember(ASR::StructInstanceMember_t *x) {
         ASR::expr_t *v = duplicate_expr(x->m_v);
         ASR::ttype_t *t = substitute_type(x->m_type);
         ASR::expr_t *value = duplicate_expr(x->m_value);
@@ -1722,7 +1722,7 @@ public:
         SymbolInstantiator t_i(al, new_scope, type_subs, symbol_subs, s_name, x->m_m);
         ASR::symbol_t *s = t_i.instantiate();
 
-        return ASR::make_StructTypeInstanceMember_t(al, x->base.base.loc, v, s, t, value);
+        return ASR::make_StructInstanceMember_t(al, x->base.base.loc, v, s, t, value);
     }
 
     ASR::asr_t* duplicate_ListItem(ASR::ListItem_t *x) {

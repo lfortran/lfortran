@@ -365,10 +365,10 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
             loc, alloc_args.p, alloc_args.size(), nullptr, nullptr, nullptr))); \
     }
 
-    void replace_StructTypeInstanceMember(ASR::StructTypeInstanceMember_t* x) {
+    void replace_StructInstanceMember(ASR::StructInstanceMember_t* x) {
         if( ASRUtils::is_array(ASRUtils::expr_type(x->m_v)) &&
             !ASRUtils::is_array(ASRUtils::symbol_type(x->m_m)) ) {
-            ASR::BaseExprReplacer<ReplaceArrayOp>::replace_StructTypeInstanceMember(x);
+            ASR::BaseExprReplacer<ReplaceArrayOp>::replace_StructInstanceMember(x);
             const Location& loc = x->base.base.loc;
             ASR::expr_t* arr_expr = x->m_v;
             ASR::dimension_t* arr_expr_dims = nullptr; int arr_expr_n_dims; int n_dims;
@@ -403,7 +403,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                 ASR::expr_t* ref = PassUtils::create_array_ref(arr_expr, idx_vars_value, al);
                 LCOMPILERS_ASSERT(result_var != nullptr);
                 ASR::expr_t* res = PassUtils::create_array_ref(result_var, idx_vars, al);
-                ASR::expr_t* op_el_wise = ASRUtils::EXPR(ASR::make_StructTypeInstanceMember_t(
+                ASR::expr_t* op_el_wise = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(
                     al, loc, ref, x->m_m, ASRUtils::extract_type(x->m_type), nullptr));
                 ASR::stmt_t* assign = ASRUtils::STMT(ASR::make_Assignment_t(al, loc, res, op_el_wise, nullptr));
                 doloop_body.push_back(al, assign);

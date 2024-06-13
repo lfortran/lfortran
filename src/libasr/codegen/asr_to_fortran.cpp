@@ -1660,7 +1660,7 @@ public:
 
     // void visit_BitCast(const ASR::BitCast_t &x) {}
 
-    void visit_StructTypeInstanceMember(const ASR::StructTypeInstanceMember_t &x) {
+    void visit_StructInstanceMember(const ASR::StructInstanceMember_t &x) {
         std::string r;
         visit_expr(*x.m_v);
         r += src;

@@ -653,7 +653,7 @@ namespace LCompilers {
                     if (ASR::is_a<ASR::Var_t>(*result_var_copy)) {
                         v = ASR::down_cast<ASR::Var_t>(result_var_copy)->m_v;
                     }
-                    replacer->result_var = ASRUtils::EXPR(ASRUtils::getStructTypeInstanceMember_t(replacer->al,
+                    replacer->result_var = ASRUtils::EXPR(ASRUtils::getStructInstanceMember_t(replacer->al,
                                                 x->base.base.loc, (ASR::asr_t*) result_var_copy, v,
                                                 member, replacer->current_scope));
                     ASR::expr_t** current_expr_copy = replacer->current_expr;
@@ -666,7 +666,7 @@ namespace LCompilers {
                     if (ASR::is_a<ASR::Var_t>(*replacer->result_var)) {
                         v = ASR::down_cast<ASR::Var_t>(replacer->result_var)->m_v;
                     }
-                    ASR::expr_t* derived_ref = ASRUtils::EXPR(ASRUtils::getStructTypeInstanceMember_t(replacer->al,
+                    ASR::expr_t* derived_ref = ASRUtils::EXPR(ASRUtils::getStructInstanceMember_t(replacer->al,
                                                     x->base.base.loc, (ASR::asr_t*) replacer->result_var, v,
                                                     member, replacer->current_scope));
                     ASR::expr_t* x_m_args_i = x->m_args[i].m_value;

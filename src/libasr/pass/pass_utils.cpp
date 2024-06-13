@@ -64,8 +64,8 @@ namespace LCompilers {
                     ASR::dimension_t* m_dims;
                     get_dim_rank(x_type, m_dims, n_dims);
                 }
-            } else if (ASR::is_a<ASR::StructTypeInstanceMember_t>(*x)) {
-                ASR::ttype_t *x_type = ASR::down_cast<ASR::StructTypeInstanceMember_t>(x)->m_type;
+            } else if (ASR::is_a<ASR::StructInstanceMember_t>(*x)) {
+                ASR::ttype_t *x_type = ASR::down_cast<ASR::StructInstanceMember_t>(x)->m_type;
                 ASR::dimension_t* m_dims;
                 get_dim_rank(x_type, m_dims, n_dims);
             } else if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*x)) {

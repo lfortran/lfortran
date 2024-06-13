@@ -1301,8 +1301,8 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         } else if (ASR::is_a<ASR::ArrayItem_t>(*x.m_target)) {
             self().visit_ArrayItem(*ASR::down_cast<ASR::ArrayItem_t>(x.m_target));
             target = src;
-        } else if (ASR::is_a<ASR::StructTypeInstanceMember_t>(*x.m_target)) {
-            visit_StructTypeInstanceMember(*ASR::down_cast<ASR::StructTypeInstanceMember_t>(x.m_target));
+        } else if (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_target)) {
+            visit_StructInstanceMember(*ASR::down_cast<ASR::StructInstanceMember_t>(x.m_target));
             target = src;
         } else if (ASR::is_a<ASR::UnionInstanceMember_t>(*x.m_target)) {
             visit_UnionInstanceMember(*ASR::down_cast<ASR::UnionInstanceMember_t>(x.m_target));
@@ -1357,14 +1357,14 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         ASR::ttype_t* value_type = ASRUtils::expr_type(x.m_value);
         if( ASR::is_a<ASR::StructType_t>(*value_type) ) {
              if (ASR::is_a<ASR::ArrayItem_t>(*x.m_value) ||
-                 ASR::is_a<ASR::StructTypeInstanceMember_t>(*x.m_value) ||
+                 ASR::is_a<ASR::StructInstanceMember_t>(*x.m_value) ||
                  ASR::is_a<ASR::UnionInstanceMember_t>(*x.m_value)) {
                  value = "&" + value;
              }
         }
         if( ASR::is_a<ASR::StructType_t>(*m_target_type) ) {
              if (ASR::is_a<ASR::ArrayItem_t>(*x.m_target) ||
-                 ASR::is_a<ASR::StructTypeInstanceMember_t>(*x.m_target) ||
+                 ASR::is_a<ASR::StructInstanceMember_t>(*x.m_target) ||
                  ASR::is_a<ASR::UnionInstanceMember_t>(*x.m_target)) {
                  target = "&" + target;
              }
@@ -2050,7 +2050,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         last_expr_precedence = 2;
     }
 
-    void visit_StructTypeInstanceMember(const ASR::StructTypeInstanceMember_t& x) {
+    void visit_StructInstanceMember(const ASR::StructInstanceMember_t& x) {
         CHECK_FAST_C_CPP(compiler_options, x)
         std::string der_expr, member;
         this->visit_expr(*x.m_v);
@@ -2058,7 +2058,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         member = ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(x.m_m));
         if( ASR::is_a<ASR::ArrayItem_t>(*x.m_v) ||
             ASR::is_a<ASR::UnionInstanceMember_t>(*x.m_v) ||
-            ASR::is_a<ASR::StructTypeInstanceMember_t>(*x.m_v) ) {
+            ASR::is_a<ASR::StructInstanceMember_t>(*x.m_v) ) {
             src = der_expr + "." + member;
         } else {
             src = der_expr + "->" + member;

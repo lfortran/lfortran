@@ -44,7 +44,7 @@ public:
         }
         for( size_t i = 0; i < struct_type_t->n_members; i++ ) {
             ASR::symbol_t* member = struct_type_t->m_symtab->resolve_symbol(struct_type_t->m_members[i]);
-            new_values.push_back(al, ASRUtils::EXPR(ASRUtils::getStructTypeInstanceMember_t(
+            new_values.push_back(al, ASRUtils::EXPR(ASRUtils::getStructInstanceMember_t(
                     al, struct_type_t->base.base.loc,
                 (ASR::asr_t*) obj, obj_v, member, current_scope)));
         }

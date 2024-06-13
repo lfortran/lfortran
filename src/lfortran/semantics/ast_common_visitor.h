@@ -1400,7 +1400,7 @@ public:
         tmp = nullptr;
     }
 
-    ASR::asr_t* create_StructTypeInstanceMember(ASR::expr_t* target, ASR::Variable_t* target_var) {
+    ASR::asr_t* create_StructInstanceMember(ASR::expr_t* target, ASR::Variable_t* target_var) {
         uint64_t hash = get_hash((ASR::asr_t*) target_var);
         std::string target_var_name = target_var->m_name;
         SymbolTable* scope = target_var->m_parent_symtab;
@@ -1437,7 +1437,7 @@ public:
                 scope->add_symbol(member_name, member_sym);
             }
 
-            ASR::asr_t* new_target = ASR::make_StructTypeInstanceMember_t(al, target->base.loc, ASRUtils::EXPR(struct_var_),
+            ASR::asr_t* new_target = ASR::make_StructInstanceMember_t(al, target->base.loc, ASRUtils::EXPR(struct_var_),
                 member_sym, ASRUtils::fix_scoped_type(al, ASRUtils::symbol_type(struct_type->m_symtab->resolve_symbol(target_var_name)),
                     current_scope), nullptr);
 
@@ -1455,7 +1455,7 @@ public:
             ASR::symbol_t* target_var_sym = ASR::down_cast<ASR::Var_t>(target)->m_v;
             if (ASR::is_a<ASR::Variable_t>(*(target_var_sym))) {
                 ASR::Variable_t* target_var = ASR::down_cast<ASR::Variable_t>(target_var_sym);
-                ASR::asr_t* new_target = create_StructTypeInstanceMember(target, target_var);
+                ASR::asr_t* new_target = create_StructInstanceMember(target, target_var);
                 if (new_target) {
                     return ASRUtils::EXPR(new_target);
                 }
@@ -1467,7 +1467,7 @@ public:
                 ASR::symbol_t* target_array_var_sym = ASR::down_cast<ASR::Var_t>(target_array)->m_v;
                 if (ASR::is_a<ASR::Variable_t>(*(target_array_var_sym))) {
                     ASR::Variable_t* target_array_var = ASR::down_cast<ASR::Variable_t>(target_array_var_sym);
-                    ASR::asr_t* new_target_array = create_StructTypeInstanceMember(target_array, target_array_var);
+                    ASR::asr_t* new_target_array = create_StructInstanceMember(target_array, target_array_var);
                     if (new_target_array) {
                         ASR::down_cast<ASR::ArrayItem_t>(target)->m_v = ASRUtils::EXPR(new_target_array);
                         return target;
@@ -1564,8 +1564,8 @@ public:
             tmp = ASRUtils::make_ArrayConstructor_t_util(al, x.base.base.loc, body.p,
                 body.size(), obj_type, ASR::arraystorageType::ColMajor);
             ASR::Variable_t* v2 = nullptr;
-            if (ASR::is_a<ASR::StructTypeInstanceMember_t>(*object)) {
-                ASR::StructTypeInstanceMember_t *mem = ASR::down_cast<ASR::StructTypeInstanceMember_t>(object);
+            if (ASR::is_a<ASR::StructInstanceMember_t>(*object)) {
+                ASR::StructInstanceMember_t *mem = ASR::down_cast<ASR::StructInstanceMember_t>(object);
                 v2 = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(mem->m_m));
             } else {
                 ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(object);
@@ -1643,8 +1643,8 @@ public:
             throw SemanticError("The value in data must be a constant",
                 x.base.base.loc);
         }
-        if (ASR::is_a<ASR::StructTypeInstanceMember_t>(*object)) {
-            ASR::StructTypeInstanceMember_t *mem = ASR::down_cast<ASR::StructTypeInstanceMember_t>(object);
+        if (ASR::is_a<ASR::StructInstanceMember_t>(*object)) {
+            ASR::StructInstanceMember_t *mem = ASR::down_cast<ASR::StructInstanceMember_t>(object);
             ASR::Variable_t* v2 = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(mem->m_m));
             v2->m_value = expression_value;
             v2->m_symbolic_value = expression_value;
@@ -3560,7 +3560,7 @@ public:
         if( v_expr ) {
             ASR::ttype_t* struct_t_mem_type = ASRUtils::symbol_type(v);
             ASR::symbol_t* v_ext = ASRUtils::import_struct_instance_member(al, v, current_scope, struct_t_mem_type);
-            v_Var = ASRUtils::EXPR(ASR::make_StructTypeInstanceMember_t(
+            v_Var = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(
                         al, v_expr->base.loc, v_expr, v_ext,
                         ASRUtils::fix_scoped_type(al, struct_t_mem_type, current_scope), nullptr));
         } else {
@@ -3720,8 +3720,8 @@ public:
         if( is_item ) {
             Vec<ASR::dimension_t> empty_dims;
             empty_dims.reserve(al, 1);
-            if (ASR::is_a<ASR::StructTypeInstanceMember_t>(*v_Var)) {
-                type = ASR::down_cast<ASR::StructTypeInstanceMember_t>(v_Var)->m_type;
+            if (ASR::is_a<ASR::StructInstanceMember_t>(*v_Var)) {
+                type = ASR::down_cast<ASR::StructInstanceMember_t>(v_Var)->m_type;
             }
             type = ASRUtils::duplicate_type(al, type, &empty_dims);
             if (arr_ref_val == nullptr) {
@@ -4517,7 +4517,7 @@ public:
         // TODO: Uncomment later
         // ASRUtils::set_absent_optional_arguments_to_null(args, ASR::down_cast<ASR::Function_t>(v), al);
         if( is_dt_present ) {
-            ASR::expr_t* dt = ASRUtils::EXPR(ASR::make_StructTypeInstanceMember_t(
+            ASR::expr_t* dt = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(
                 al, loc, args.p[0].m_value, v, ASRUtils::symbol_type(v), nullptr));
             return ASRUtils::make_FunctionCall_t_util(al, loc, v, nullptr,
                 args.p + 1, args.size() - 1, return_type, nullptr, dt, false);
@@ -4672,7 +4672,7 @@ public:
                 ASR::asr_t* v_var = ASR::make_Var_t(al, loc, v);
                 make_ArrayItem_from_struct_m_args(
                     dt_struct_m_args, dt_struct_n_args, ASRUtils::EXPR(v_var), v_var, loc);
-                ASR::asr_t* expr_ = (ASR::asr_t*) ASRUtils::getStructTypeInstanceMember_t(
+                ASR::asr_t* expr_ = (ASR::asr_t*) ASRUtils::getStructInstanceMember_t(
                     al, loc, v_var, v, member, current_scope);
                 make_ArrayItem_from_struct_m_args(
                     member_struct_m_args, member_struct_n_args, ASRUtils::EXPR(expr_), expr_, loc);
@@ -7999,10 +7999,10 @@ public:
                     x_m_member[1].m_args, x_m_member[1].n_args)));
             bool is_tmp_array = ASRUtils::is_array(
                 ASRUtils::expr_type(ASRUtils::EXPR(tmp)));
-            ASR::StructTypeInstanceMember_t* tmp2;
+            ASR::StructInstanceMember_t* tmp2;
             std::uint32_t i;
             for( i = 2; i < x_n_member; i++ ) {
-                tmp2 = (ASR::StructTypeInstanceMember_t*) this->resolve_variable2(loc,
+                tmp2 = (ASR::StructInstanceMember_t*) this->resolve_variable2(loc,
                         to_lower(x_m_member[i].m_name), to_lower(x_m_member[i - 1].m_name),
                         scope);
                 ASR::ttype_t* tmp2_mem_type = tmp2->m_type;
@@ -8016,7 +8016,7 @@ public:
                     m_dims_vec.from_pointer_n(m_dims, n_dims);
                     tmp2_mem_type = ASRUtils::duplicate_type(al, tmp2_mem_type, &m_dims_vec);
                 }
-                tmp = ASR::make_StructTypeInstanceMember_t(al, loc, ASRUtils::EXPR(tmp),
+                tmp = ASR::make_StructInstanceMember_t(al, loc, ASRUtils::EXPR(tmp),
                     tmp2_m_m_ext, ASRUtils::fix_scoped_type(al, tmp2_mem_type, current_scope), nullptr);
                 make_ArrayItem_from_struct_m_args(x_m_member[i].m_args, x_m_member[i].n_args,
                     ASRUtils::EXPR(tmp), tmp, loc);
@@ -8029,7 +8029,7 @@ public:
                 }
             }
             i = x_n_member - 1;
-            tmp2 = (ASR::StructTypeInstanceMember_t*) this->resolve_variable2(loc, to_lower(x_m_id),
+            tmp2 = (ASR::StructInstanceMember_t*) this->resolve_variable2(loc, to_lower(x_m_id),
                         to_lower(x_m_member[i].m_name), scope);
             ASR::ttype_t* tmp2_mem_type = tmp2->m_type;
             ASR::symbol_t* tmp2_m_m_ext = ASRUtils::import_struct_instance_member(al, tmp2->m_m,
@@ -8046,7 +8046,7 @@ public:
                 m_dims_vec.from_pointer_n(m_dims, n_dims);
                 tmp2_mem_type = ASRUtils::duplicate_type(al, tmp2_mem_type, &m_dims_vec);
             }
-            tmp = ASR::make_StructTypeInstanceMember_t(al, loc, ASRUtils::EXPR(tmp), tmp2_m_m_ext,
+            tmp = ASR::make_StructInstanceMember_t(al, loc, ASRUtils::EXPR(tmp), tmp2_m_m_ext,
                 ASRUtils::fix_scoped_type(al, tmp2_mem_type, current_scope), nullptr);
         }
     }

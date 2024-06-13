@@ -412,8 +412,8 @@ static inline ASR::abiType expr_abi(ASR::expr_t* e) {
         case ASR::exprType::Var: {
             return ASRUtils::symbol_abi(ASR::down_cast<ASR::Var_t>(e)->m_v);
         }
-        case ASR::exprType::StructTypeInstanceMember: {
-            return ASRUtils::symbol_abi(ASR::down_cast<ASR::StructTypeInstanceMember_t>(e)->m_m);
+        case ASR::exprType::StructInstanceMember: {
+            return ASRUtils::symbol_abi(ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_m);
         }
         case ASR::exprType::ArrayReshape: {
             return ASRUtils::expr_abi(ASR::down_cast<ASR::ArrayReshape_t>(e)->m_array);
@@ -875,9 +875,9 @@ static inline ASR::symbol_t *get_asr_owner(const ASR::expr_t *expr) {
         case ASR::exprType::Var: {
             return ASRUtils::get_asr_owner(ASR::down_cast<ASR::Var_t>(expr)->m_v);
         }
-        case ASR::exprType::StructTypeInstanceMember: {
+        case ASR::exprType::StructInstanceMember: {
             return ASRUtils::get_asr_owner(ASRUtils::symbol_get_past_external(
-                    ASR::down_cast<ASR::StructTypeInstanceMember_t>(expr)->m_m));
+                    ASR::down_cast<ASR::StructInstanceMember_t>(expr)->m_m));
         }
         case ASR::exprType::GetPointer: {
             return ASRUtils::get_asr_owner(ASR::down_cast<ASR::GetPointer_t>(expr)->m_arg);
@@ -1037,7 +1037,7 @@ static inline bool is_variable(ASR::expr_t* a_value) {
         case ASR::exprType::StringItem:
         case ASR::exprType::StringSection:
         case ASR::exprType::ArraySection:
-        case ASR::exprType::StructTypeInstanceMember: {
+        case ASR::exprType::StructInstanceMember: {
             return true;
         }
         default: {
@@ -1114,9 +1114,9 @@ static inline bool is_value_constant(ASR::expr_t *a_value) {
         } case ASR::exprType::ArrayBroadcast: {
             ASR::ArrayBroadcast_t* array_broadcast = ASR::down_cast<ASR::ArrayBroadcast_t>(a_value);
             return is_value_constant(array_broadcast->m_value);
-        } case ASR::exprType::StructTypeInstanceMember: {
-            ASR::StructTypeInstanceMember_t*
-                struct_member_t = ASR::down_cast<ASR::StructTypeInstanceMember_t>(a_value);
+        } case ASR::exprType::StructInstanceMember: {
+            ASR::StructInstanceMember_t*
+                struct_member_t = ASR::down_cast<ASR::StructInstanceMember_t>(a_value);
             return is_value_constant(struct_member_t->m_v);
         } case ASR::exprType::Var: {
             ASR::Var_t* var_t = ASR::down_cast<ASR::Var_t>(a_value);
@@ -1987,7 +1987,7 @@ ASR::TranslationUnit_t* find_and_load_module(Allocator &al, const std::string &m
 
 void set_intrinsic(ASR::TranslationUnit_t* trans_unit);
 
-ASR::asr_t* getStructTypeInstanceMember_t(Allocator& al, const Location& loc,
+ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
                             ASR::asr_t* v_var, ASR::symbol_t *v,
                             ASR::symbol_t* member, SymbolTable* current_scope);
 
@@ -4628,8 +4628,8 @@ static inline ASR::expr_t* get_bound(ASR::expr_t* arr_expr, int dim,
                             " does not have enough dimensions.";
             }
             throw SemanticError(msg, arr_expr->base.loc);
-        } else if ( ASR::is_a<ASR::StructTypeInstanceMember_t>(*arr_expr )) {
-            ASR::StructTypeInstanceMember_t* non_array_struct_inst_mem = ASR::down_cast<ASR::StructTypeInstanceMember_t>(arr_expr);
+        } else if ( ASR::is_a<ASR::StructInstanceMember_t>(*arr_expr )) {
+            ASR::StructInstanceMember_t* non_array_struct_inst_mem = ASR::down_cast<ASR::StructInstanceMember_t>(arr_expr);
             ASR::Variable_t* non_array_variable = ASR::down_cast<ASR::Variable_t>(
                 symbol_get_past_external(non_array_struct_inst_mem->m_m));
             std::string msg;
@@ -5642,7 +5642,7 @@ static inline ASR::asr_t* make_SubroutineCall_t_util(
     if( a_dt && ASR::is_a<ASR::Variable_t>(
         *ASRUtils::symbol_get_past_external(a_name)) &&
         ASR::is_a<ASR::FunctionType_t>(*ASRUtils::symbol_type(a_name)) ) {
-        a_dt = ASRUtils::EXPR(ASR::make_StructTypeInstanceMember_t(al, a_loc,
+        a_dt = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, a_loc,
             a_dt, a_name, ASRUtils::symbol_type(a_name), nullptr));
     }
 

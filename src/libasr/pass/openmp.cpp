@@ -26,7 +26,7 @@ class ReplaceReductionVariable: public ASR::BaseExprReplacer<ReplaceReductionVar
             if (std::find(reduction_variables.begin(), reduction_variables.end(), ASRUtils::symbol_name(x->m_v)) != reduction_variables.end()) {
                 ASR::symbol_t* sym = current_scope->get_symbol("thread_data_" + std::string(ASRUtils::symbol_name(x->m_v)));
                 LCOMPILERS_ASSERT(sym != nullptr);
-                *current_expr = ASRUtils::EXPR(ASR::make_StructTypeInstanceMember_t(al, x->base.base.loc, data_expr, sym, ASRUtils::symbol_type(sym), nullptr));
+                *current_expr = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, x->base.base.loc, data_expr, sym, ASRUtils::symbol_type(sym), nullptr));
             }
         }
 };
@@ -419,7 +419,7 @@ class DoConcurrentVisitor :
                 // handle arrays
                 body.push_back(al, b.Assignment(
                     b.Var(current_scope->get_symbol(it.first)),
-                    ASRUtils::EXPR(ASR::make_StructTypeInstanceMember_t(al, loc, tdata_expr,
+                    ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc, tdata_expr,
                     sym, ASRUtils::symbol_type(sym), nullptr))
                 ));
             }
@@ -540,7 +540,7 @@ class DoConcurrentVisitor :
             for ( size_t i = 0; i < do_loop.n_reduction; i++ ) {
                 ASR::reduction_expr_t red = do_loop.m_reduction[i];
                 ASR::symbol_t* red_sym = current_scope->get_symbol("thread_data_" + std::string(ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(red.m_arg)->m_v)));
-                ASR::expr_t* lhs = ASRUtils::EXPR(ASR::make_StructTypeInstanceMember_t(al, loc, tdata_expr, red_sym, ASRUtils::symbol_type(red_sym), nullptr));
+                ASR::expr_t* lhs = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc, tdata_expr, red_sym, ASRUtils::symbol_type(red_sym), nullptr));
 
                 switch (red.m_op) {
                     case ASR::reduction_opType::ReduceAdd : {
@@ -641,7 +641,7 @@ class DoConcurrentVisitor :
 
                 // handle arrays
                 pass_result.push_back(al, b.Assignment(
-                    ASRUtils::EXPR(ASR::make_StructTypeInstanceMember_t(al, x.base.base.loc, data_expr,
+                    ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, x.base.base.loc, data_expr,
                     sym, ASRUtils::symbol_type(sym), nullptr)),
                     b.Var(current_scope->get_symbol(it.first))
                 ));

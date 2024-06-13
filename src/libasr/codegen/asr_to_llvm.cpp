@@ -85,7 +85,7 @@ void string_init(llvm::LLVMContext &context, llvm::Module &module,
 class ASRToLLVMVisitor : public ASR::BaseVisitor<ASRToLLVMVisitor>
 {
 private:
-  //! To be used by visit_StructTypeInstanceMember.
+  //! To be used by visit_StructInstanceMember.
   std::string current_der_type_name;
 
     //! Helpful for debugging while testing LLVM code
@@ -274,7 +274,7 @@ public:
         return LLVM::CreateGEP(*builder, x, idx);
     }
 
-    #define load_non_array_non_character_pointers(expr, type, llvm_value) if( ASR::is_a<ASR::StructTypeInstanceMember_t>(*expr) && \
+    #define load_non_array_non_character_pointers(expr, type, llvm_value) if( ASR::is_a<ASR::StructInstanceMember_t>(*expr) && \
         !ASRUtils::is_array(type) && \
         LLVM::is_llvm_pointer(*type) && \
         !ASRUtils::is_character(*type) ) { \
@@ -1140,8 +1140,8 @@ public:
                 fetch_var(v);
                 ptr_loads = ptr_loads_copy;
                 abt = v->m_abi;
-            } else if (ASR::is_a<ASR::StructTypeInstanceMember_t>(*tmp_expr)) {
-                ASR::StructTypeInstanceMember_t* sm = ASR::down_cast<ASR::StructTypeInstanceMember_t>(tmp_expr);
+            } else if (ASR::is_a<ASR::StructInstanceMember_t>(*tmp_expr)) {
+                ASR::StructInstanceMember_t* sm = ASR::down_cast<ASR::StructInstanceMember_t>(tmp_expr);
                 this->visit_expr_wrapper(sm->m_v);
                 ASR::ttype_t* caller_type = ASRUtils::type_get_past_allocatable(
                         ASRUtils::expr_type(sm->m_v));
@@ -2292,7 +2292,7 @@ public:
             bool is_bindc_array = ASRUtils::expr_abi(x.m_v) == ASR::abiType::BindC;
             if ( LLVM::is_llvm_pointer(*x_mv_type) ||
                ((is_bindc_array && !ASRUtils::is_fixed_size_array(m_dims, n_dims)) &&
-                ASR::is_a<ASR::StructTypeInstanceMember_t>(*x.m_v)) ) {
+                ASR::is_a<ASR::StructInstanceMember_t>(*x.m_v)) ) {
                 array = CreateLoad(array);
             }
 
@@ -2461,7 +2461,7 @@ public:
         }
 
         visit_expr(*x.m_v);
-        if( ASR::is_a<ASR::StructTypeInstanceMember_t>(*x.m_v) ) {
+        if( ASR::is_a<ASR::StructInstanceMember_t>(*x.m_v) ) {
             tmp = LLVM::CreateLoad(*builder, tmp);
         }
         if( !ASR::is_a<ASR::Integer_t>(*x.m_type) && lookup_enum_value_for_nonints ) {
@@ -2476,7 +2476,7 @@ public:
         }
 
         visit_expr(*x.m_v);
-        if( ASR::is_a<ASR::StructTypeInstanceMember_t>(*x.m_v) ) {
+        if( ASR::is_a<ASR::StructInstanceMember_t>(*x.m_v) ) {
             tmp = LLVM::CreateLoad(*builder, tmp);
         }
         ASR::Enum_t* enum_t = ASR::down_cast<ASR::Enum_t>(x.m_enum_type);
@@ -2524,7 +2524,7 @@ public:
         tmp = SizeOfTypeUtil(x.m_arg, llvm_type_size, x.m_type);
     }
 
-    void visit_StructTypeInstanceMember(const ASR::StructTypeInstanceMember_t& x) {
+    void visit_StructInstanceMember(const ASR::StructInstanceMember_t& x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
             return;
@@ -4356,7 +4356,7 @@ public:
         ptr_loads = 1 - !LLVM::is_llvm_pointer(*value_array_type);
         visit_expr_wrapper(array_section->m_v);
         llvm::Value* value_desc = tmp;
-        if( ASR::is_a<ASR::StructTypeInstanceMember_t>(*array_section->m_v) &&
+        if( ASR::is_a<ASR::StructInstanceMember_t>(*array_section->m_v) &&
             ASRUtils::extract_physical_type(value_array_type) !=
                 ASR::array_physical_typeType::FixedSizeArray ) {
             value_desc = LLVM::CreateLoad(*builder, value_desc);
@@ -4792,7 +4792,7 @@ public:
         if( x.m_target->type == ASR::exprType::ArrayItem ||
             x.m_target->type == ASR::exprType::StringItem ||
             x.m_target->type == ASR::exprType::ArraySection ||
-            x.m_target->type == ASR::exprType::StructTypeInstanceMember ||
+            x.m_target->type == ASR::exprType::StructInstanceMember ||
             x.m_target->type == ASR::exprType::ListItem ||
             x.m_target->type == ASR::exprType::DictItem ||
             x.m_target->type == ASR::exprType::UnionInstanceMember ) {
@@ -4812,7 +4812,7 @@ public:
                         }
                     }
                 }
-            } else if (is_a<ASR::StructTypeInstanceMember_t>(*x.m_target)) {
+            } else if (is_a<ASR::StructInstanceMember_t>(*x.m_target)) {
                 if( ASRUtils::is_allocatable(x.m_target) &&
                     !ASRUtils::is_character(*ASRUtils::expr_type(x.m_target)) ) {
                     target = CreateLoad(target);
@@ -4931,7 +4931,7 @@ public:
                 }
                 if ( (ASR::is_a<ASR::FunctionCall_t>(*x.m_value) ||
                      ASR::is_a<ASR::StringConcat_t>(*x.m_value) ||
-                     (ASR::is_a<ASR::StructTypeInstanceMember_t>(*x.m_target)
+                     (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_target)
                          && ASRUtils::is_character(*target_type))) &&
                     !ASR::is_a<ASR::DictItem_t>(*x.m_target) ) {
                     if( ASRUtils::is_allocatable(x.m_target) ) {
@@ -5148,7 +5148,7 @@ public:
 
         if( m_new == ASR::array_physical_typeType::PointerToDataArray &&
             m_old == ASR::array_physical_typeType::DescriptorArray ) {
-            if( ASR::is_a<ASR::StructTypeInstanceMember_t>(*m_arg) ) {
+            if( ASR::is_a<ASR::StructInstanceMember_t>(*m_arg) ) {
                 arg = LLVM::CreateLoad(*builder, arg);
             }
             tmp = LLVM::CreateLoad(*builder, arr_descr->get_pointer_to_data(arg));
@@ -5329,7 +5329,7 @@ public:
         this->visit_expr(*x);
         if( x->type == ASR::exprType::ArrayItem ||
             x->type == ASR::exprType::ArraySection ||
-            x->type == ASR::exprType::StructTypeInstanceMember ) {
+            x->type == ASR::exprType::StructInstanceMember ) {
             if( load_ref &&
                 !ASRUtils::is_value_constant(ASRUtils::expr_value(x)) ) {
                 tmp = CreateLoad(tmp);
@@ -8452,10 +8452,10 @@ public:
                 if( x_abi == ASR::abiType::BindC ) {
                     if( (ASR::is_a<ASR::ArrayItem_t>(*x.m_args[i].m_value) &&
                          orig_arg_intent ==  ASR::intentType::In) ||
-                        ASR::is_a<ASR::StructTypeInstanceMember_t>(*x.m_args[i].m_value) ||
+                        ASR::is_a<ASR::StructInstanceMember_t>(*x.m_args[i].m_value) ||
                         (ASR::is_a<ASR::CPtr_t>(*arg_type) &&
-                         ASR::is_a<ASR::StructTypeInstanceMember_t>(*x.m_args[i].m_value)) ) {
-                        if( ASR::is_a<ASR::StructTypeInstanceMember_t>(*x.m_args[i].m_value) &&
+                         ASR::is_a<ASR::StructInstanceMember_t>(*x.m_args[i].m_value)) ) {
+                        if( ASR::is_a<ASR::StructInstanceMember_t>(*x.m_args[i].m_value) &&
                             ASRUtils::is_array(arg_type) ) {
                             ASR::dimension_t* arg_m_dims = nullptr;
                             size_t n_dims = ASRUtils::extract_dimensions_from_ttype(arg_type, arg_m_dims);
@@ -8593,7 +8593,7 @@ public:
                                 // using alloca inside a loop, which would
                                 // run out of stack
                                 if( (ASR::is_a<ASR::ArrayItem_t>(*x.m_args[i].m_value) ||
-                                    (ASR::is_a<ASR::StructTypeInstanceMember_t>(*x.m_args[i].m_value) &&
+                                    (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_args[i].m_value) &&
                                     (ASRUtils::is_array(arg_type) ||
                                         ASR::is_a<ASR::CPtr_t>(*ASRUtils::expr_type(x.m_args[i].m_value)))))
                                         && value->getType()->isPointerTy()) {
@@ -8602,7 +8602,7 @@ public:
                                 if( !ASR::is_a<ASR::CPtr_t>(*arg_type) &&
                                     !(orig_arg && !LLVM::is_llvm_pointer(*orig_arg->m_type) &&
                                       LLVM::is_llvm_pointer(*arg_type) &&
-                                      !ASRUtils::is_character(*orig_arg->m_type)) && !ASR::is_a<ASR::StructTypeInstanceMember_t>(*x.m_args[i].m_value) ) {
+                                      !ASRUtils::is_character(*orig_arg->m_type)) && !ASR::is_a<ASR::StructInstanceMember_t>(*x.m_args[i].m_value) ) {
                                     llvm::BasicBlock &entry_block = builder->GetInsertBlock()->getParent()->getEntryBlock();
                                     llvm::IRBuilder<> builder0(context);
                                     builder0.SetInsertPoint(&entry_block, entry_block.getFirstInsertionPt());
@@ -8790,7 +8790,7 @@ public:
         }
 
         std::vector<llvm::Value*> args;
-        if( x.m_dt && ASR::is_a<ASR::StructTypeInstanceMember_t>(*x.m_dt) &&
+        if( x.m_dt && ASR::is_a<ASR::StructInstanceMember_t>(*x.m_dt) &&
             ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(x.m_name)) &&
             ASR::is_a<ASR::FunctionType_t>(*ASRUtils::symbol_type(x.m_name)) ) {
             uint64_t ptr_loads_copy = ptr_loads;
@@ -8858,9 +8858,9 @@ public:
                 ASR::ttype_t* dt_type = ASRUtils::type_get_past_pointer(caller->m_type);
                 dt = convert_to_polymorphic_arg(dt, s_m_args0_type, dt_type);
                 args.push_back(dt);
-            } else if (ASR::is_a<ASR::StructTypeInstanceMember_t>(*x.m_dt)) {
-                ASR::StructTypeInstanceMember_t *struct_mem
-                    = ASR::down_cast<ASR::StructTypeInstanceMember_t>(x.m_dt);
+            } else if (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_dt)) {
+                ASR::StructInstanceMember_t *struct_mem
+                    = ASR::down_cast<ASR::StructInstanceMember_t>(x.m_dt);
 
                 // Declared struct variable
                 ASR::Variable_t *caller = EXPR2VAR(struct_mem->m_v);
@@ -9286,7 +9286,7 @@ public:
         }
 
         std::vector<llvm::Value*> args;
-        if( x.m_dt && ASR::is_a<ASR::StructTypeInstanceMember_t>(*x.m_dt) &&
+        if( x.m_dt && ASR::is_a<ASR::StructInstanceMember_t>(*x.m_dt) &&
             ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(x.m_name)) &&
             ASR::is_a<ASR::FunctionType_t>(*ASRUtils::symbol_type(x.m_name)) ) {
             uint64_t ptr_loads_copy = ptr_loads;
@@ -9356,9 +9356,9 @@ public:
                 ASR::ttype_t* dt_type = ASRUtils::type_get_past_pointer(caller->m_type);
                 dt = convert_to_polymorphic_arg(dt, s_m_args0_type, dt_type);
                 args.push_back(dt);
-            } else if (ASR::is_a<ASR::StructTypeInstanceMember_t>(*x.m_dt)) {
-                ASR::StructTypeInstanceMember_t *struct_mem
-                    = ASR::down_cast<ASR::StructTypeInstanceMember_t>(x.m_dt);
+            } else if (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_dt)) {
+                ASR::StructInstanceMember_t *struct_mem
+                    = ASR::down_cast<ASR::StructInstanceMember_t>(x.m_dt);
 
                 // Declared struct variable
                 this->visit_expr_wrapper(struct_mem->m_v);

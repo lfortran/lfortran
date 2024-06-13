@@ -1484,7 +1484,7 @@ public:
         last_expr_precedence = julia_prec::Base;
     }
 
-    void visit_StructTypeInstanceMember(const ASR::StructTypeInstanceMember_t& x)
+    void visit_StructInstanceMember(const ASR::StructInstanceMember_t& x)
     {
         std::string der_expr, member;
         this->visit_expr(*x.m_v);
