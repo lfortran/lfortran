@@ -723,7 +723,7 @@ class DoConcurrentVisitor :
                                             ASRUtils::TYPE(ASR::make_Pointer_t(al, array_type->base.base.loc,
                                                     ASRUtils::TYPE(ASR::make_Array_t(al, array_type->base.base.loc,
                                                     array_type->m_type, dims.p, dims.n, ASR::array_physical_typeType::DescriptorArray)))),
-                                                ASR::intentType::Local);
+                                                ASR::intentType::InOut);
                                     LCOMPILERS_ASSERT(array_expr != nullptr);
                                     new_body.push_back(al, b.Allocate(b.Var(sym), array_type->m_dims, array_type->n_dims));
                                 } else {
