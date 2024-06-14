@@ -51,6 +51,68 @@ class ArrayVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayVisitor> {
         }
 };
 
+class CheckIfAlreadyAllocatedVisitor: public ASR::BaseWalkVisitor<CheckIfAlreadyAllocatedVisitor> {
+    private:
+        bool &already_allocated;
+        int array_variable_index;
+        std::string function_name;
+        SymbolTable* current_scope;
+        std::string array_variable_name;
+
+    public:
+        CheckIfAlreadyAllocatedVisitor(int array_variable_index_, std::string function_name_, std::string array_variable_name_, bool &already_allocated_) :
+            already_allocated(already_allocated_), array_variable_index(array_variable_index_),
+            function_name(function_name_), array_variable_name(array_variable_name_) {}
+
+        void visit_Program(const ASR::Program_t &x) {
+            ASR::Program_t& xx = const_cast<ASR::Program_t&>(x);
+            SymbolTable* current_scope_copy = current_scope;
+            current_scope = xx.m_symtab;
+
+            BaseWalkVisitor::visit_Program(x);
+
+            current_scope = current_scope_copy;
+        }
+
+        void visit_Function(const ASR::Function_t &x) {
+            ASR::Function_t& xx = const_cast<ASR::Function_t&>(x);
+            SymbolTable* current_scope_copy = current_scope;
+            current_scope = xx.m_symtab;
+
+            BaseWalkVisitor::visit_Function(x);
+
+            current_scope = current_scope_copy;
+        }
+
+        void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+            if (ASRUtils::symbol_name(x.m_name) == function_name) {
+                ASR::expr_t* arg = x.m_args[array_variable_index].m_value;
+                if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*arg)) {
+                    arg = ASR::down_cast<ASR::ArrayPhysicalCast_t>(arg)->m_arg;
+                }
+                if (ASR::is_a<ASR::Var_t>(*arg)) {
+                    ASR::ttype_t* sym_type = ASRUtils::symbol_type(current_scope->get_symbol(ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(arg)->m_v)));
+                    already_allocated &= (ASRUtils::is_pointer(sym_type) || ASRUtils::is_allocatable(sym_type));
+                }
+            }
+            BaseWalkVisitor::visit_FunctionCall(x);
+        }
+
+        void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+            if (ASRUtils::symbol_name(x.m_name) == function_name) {
+                ASR::expr_t* arg = x.m_args[array_variable_index].m_value;
+                if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*arg)) {
+                    arg = ASR::down_cast<ASR::ArrayPhysicalCast_t>(arg)->m_arg;
+                }
+                if (ASR::is_a<ASR::Var_t>(*arg)) {
+                    ASR::ttype_t* sym_type = ASRUtils::symbol_type(current_scope->get_symbol(ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(arg)->m_v)));
+                    already_allocated &= (ASRUtils::is_pointer(sym_type) || ASRUtils::is_allocatable(sym_type));
+                }
+            }
+            BaseWalkVisitor::visit_SubroutineCall(x);
+        }
+};
+
 class FunctionSubroutineCallVisitor: public ASR::BaseWalkVisitor<FunctionSubroutineCallVisitor> {
     private:
         std::string function_name;
@@ -102,6 +164,7 @@ class ReplaceReductionVariable: public ASR::BaseExprReplacer<ReplaceReductionVar
     public:
         ASR::expr_t* data_expr;
         SymbolTable* current_scope;
+        std::string thread_data_name;
         std::vector<std::string> reduction_variables;
 
         ReplaceReductionVariable(Allocator& al_) :
@@ -109,7 +172,7 @@ class ReplaceReductionVariable: public ASR::BaseExprReplacer<ReplaceReductionVar
 
         void replace_Var(ASR::Var_t* x) {
             if (std::find(reduction_variables.begin(), reduction_variables.end(), ASRUtils::symbol_name(x->m_v)) != reduction_variables.end()) {
-                ASR::symbol_t* sym = current_scope->get_symbol("thread_data_" + std::string(ASRUtils::symbol_name(x->m_v)));
+                ASR::symbol_t* sym = current_scope->get_symbol(thread_data_name + "_" + std::string(ASRUtils::symbol_name(x->m_v)));
                 LCOMPILERS_ASSERT(sym != nullptr);
                 *current_expr = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, x->base.base.loc, data_expr, sym, ASRUtils::symbol_type(sym), nullptr));
             }
@@ -120,13 +183,14 @@ class ReductionVariableVisitor: public ASR::CallReplacerOnExpressionsVisitor<Red
     private:
         ASR::expr_t* data_expr;
         SymbolTable* current_scope;
+        std::string thread_data_name;
         ReplaceReductionVariable replacer;
         std::vector<std::string> reduction_variables;
 
     public:
-        ReductionVariableVisitor(Allocator &al_, SymbolTable* current_scope_, ASR::expr_t* data_expr_,
+        ReductionVariableVisitor(Allocator &al_, SymbolTable* current_scope_, std::string thread_data_name_, ASR::expr_t* data_expr_,
             std::vector<std::string> reduction_variables_) :
-            data_expr(data_expr_), current_scope(current_scope_), replacer(al_) {
+            data_expr(data_expr_), current_scope(current_scope_), thread_data_name(thread_data_name_), replacer(al_) {
                 reduction_variables = reduction_variables_;
             }
 
@@ -134,6 +198,7 @@ class ReductionVariableVisitor: public ASR::CallReplacerOnExpressionsVisitor<Red
             replacer.data_expr = data_expr;
             replacer.current_expr = current_expr;
             replacer.current_scope = current_scope;
+            replacer.thread_data_name = thread_data_name;
             replacer.reduction_variables = reduction_variables;
             replacer.replace_expr(*current_expr);
         }
@@ -412,17 +477,20 @@ class DoConcurrentVisitor :
                 b.VariableDeclaration(current_scope, it.first, sym_type, ASR::intentType::Local);
                 involved_symbols_set.push_back(al, s2c(al, it.first));
             }
+            std::string thread_data_module_name = parent_scope->parent->get_unique_name("thread_data_module");
+            std::string suffix = thread_data_module_name.substr(18);
+            std::string thread_data_name = "thread_data" + suffix;
             ASR::symbol_t* thread_data_struct = ASR::down_cast<ASR::symbol_t>(ASR::make_StructType_t(al, loc,
-                current_scope, s2c(al, "thread_data"), nullptr, 0, involved_symbols_set.p, involved_symbols_set.n, ASR::abiType::Source,
+                current_scope, s2c(al, thread_data_name), nullptr, 0, involved_symbols_set.p, involved_symbols_set.n, ASR::abiType::Source,
                 ASR::accessType::Public, false, false, nullptr, 0, nullptr, nullptr));
-            current_scope->parent->add_symbol("thread_data", thread_data_struct);
+            current_scope->parent->add_symbol(thread_data_name, thread_data_struct);
             current_scope = parent_scope;
             ASR::symbol_t* thread_data_module = ASR::down_cast<ASR::symbol_t>(ASR::make_Module_t(al, loc,
-                                                current_scope, s2c(al, current_scope->get_unique_name("thread_data_module")),
+                                                current_scope, s2c(al, thread_data_module_name),
                                                 module_dependencies.p, module_dependencies.n, false, false));
-            current_scope->parent->add_symbol("thread_data_module", thread_data_module);
+            current_scope->parent->add_symbol(thread_data_module_name, thread_data_module);
             current_scope = current_scope_copy;
-            return {ASRUtils::symbol_name(thread_data_module), thread_data_struct};
+            return {thread_data_module_name, thread_data_struct};
         }
 
         ASR::symbol_t* create_lcompilers_function(const Location &loc, const ASR::DoConcurrentLoop_t &do_loop,
@@ -449,7 +517,7 @@ class DoConcurrentVisitor :
 
 
             ASRUtils::ASRBuilder b(al, loc);
-            ASR::symbol_t* thread_data_sym = current_scope->get_symbol("thread_data");
+            ASR::symbol_t* thread_data_sym = current_scope->get_symbol("thread_data" + thread_data_module_name.substr(18));
             ASR::symbol_t* thread_data_ext_sym = ASRUtils::symbol_get_past_external(thread_data_sym);
 
             // create data variable: `type(c_ptr), value :: data`
@@ -618,7 +686,7 @@ class DoConcurrentVisitor :
             }
             for ( size_t i = 0; i < do_loop.n_reduction; i++ ) {
                 ASR::reduction_expr_t red = do_loop.m_reduction[i];
-                ASR::symbol_t* red_sym = current_scope->get_symbol("thread_data_" + std::string(ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(red.m_arg)->m_v)));
+                ASR::symbol_t* red_sym = current_scope->get_symbol(std::string(ASRUtils::symbol_name(thread_data_sym)) + "_" + std::string(ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(red.m_arg)->m_v)));
                 ASR::expr_t* lhs = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc, tdata_expr, red_sym, ASRUtils::symbol_type(red_sym), nullptr));
 
                 switch (red.m_op) {
@@ -899,7 +967,26 @@ class DoConcurrentVisitor :
                                         array_type->m_type, dims.p, dims.n, ASR::array_physical_typeType::DescriptorArray)))),
                                     ASR::intentType::InOut);
                         LCOMPILERS_ASSERT(array_expr != nullptr);
-                        pass_result.push_back(al, b.Allocate(array_expr, array_type->m_dims, array_type->n_dims));
+                        bool already_allocated = true;
+                        if (ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner) && ASR::is_a<ASR::Function_t>(*ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner))) {
+                            ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner));
+                            int arg_index = -1;
+                            for (size_t i = 0; i < func->n_args; i++) {
+                                if (ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(func->m_args[i])->m_v) == it.first) {
+                                    arg_index = i;
+                                    break;
+                                }
+                            }
+                            if (arg_index != -1) {
+                                CheckIfAlreadyAllocatedVisitor v(arg_index, func->m_name, it.first, already_allocated);
+                                SymbolTable* global_scope = current_scope;
+                                while (global_scope->parent != nullptr) {
+                                    global_scope = global_scope->parent;
+                                }
+                                v.visit_TranslationUnit(*ASR::down_cast2<ASR::TranslationUnit_t>(global_scope->asr_owner));
+                            }
+                        }
+                        if (!already_allocated) pass_result.push_back(al, b.Allocate(array_expr, array_type->m_dims, array_type->n_dims));
                         involved_symbols[it.first] = ASRUtils::expr_type(array_expr);
 
                         /*
@@ -987,7 +1074,7 @@ class DoConcurrentVisitor :
                                 call_args.p, call_args.n, nullptr)));
 
             // update all reduction variables in statements after this.
-            ReductionVariableVisitor rvv(al, current_scope, data_expr, reduction_variables);
+            ReductionVariableVisitor rvv(al, current_scope, ASRUtils::symbol_name(thread_data_sym), data_expr, reduction_variables);
             for (size_t i = current_stmt_index + 1; i < current_n_body; i++) {
                 rvv.visit_stmt(*current_m_body[i]);
             }
