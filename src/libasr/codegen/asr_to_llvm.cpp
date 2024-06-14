@@ -3396,7 +3396,7 @@ public:
         }
         llvm::Type* vtab_type = type2vtabtype[struct_type_sym];
         llvm::Value* vtab_obj = builder->CreateAlloca(vtab_type);
-        llvm::Value* struct_type_hash_ptr = llvm_utils->create_gep(vtab_obj, 0);
+        llvm::Value* struct_type_hash_ptr = llvm_utils->create_gep2(vtab_type, vtab_obj, 0);
         llvm::Value* struct_type_hash = llvm::ConstantInt::get(llvm_utils->getIntType(8),
             llvm::APInt(64, get_class_hash(struct_type_sym)));
         builder->CreateStore(struct_type_hash, struct_type_hash_ptr);
@@ -8773,10 +8773,11 @@ public:
             }
             llvm::Value* dt_polymorphic = builder->CreateAlloca(
                 llvm_utils->getClassType(s_m_args0_type, true));
-            llvm::Value* hash_ptr = llvm_utils->create_gep(dt_polymorphic, 0);
+            llvm::Type* _type = llvm_utils->get_type_from_ttype_t_util(s_m_args0_type, module.get());
+            llvm::Value* hash_ptr = llvm_utils->create_gep2(_type, dt_polymorphic, 0);
             llvm::Value* hash = llvm::ConstantInt::get(llvm_utils->getIntType(8), llvm::APInt(64, get_class_hash(struct_sym)));
             builder->CreateStore(hash, hash_ptr);
-            llvm::Value* class_ptr = llvm_utils->create_gep(dt_polymorphic, 1);
+            llvm::Value* class_ptr = llvm_utils->create_gep2(_type, dt_polymorphic, 1);
             builder->CreateStore(builder->CreateBitCast(dt, llvm_utils->getStructType(s_m_args0_type, module.get(), true)), class_ptr);
             return dt_polymorphic;
         }
