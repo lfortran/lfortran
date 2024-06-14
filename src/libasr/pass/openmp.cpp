@@ -407,8 +407,9 @@ class DoConcurrentVisitor :
             current_scope = al.make_new<SymbolTable>(parent_scope);
             SetChar involved_symbols_set; involved_symbols_set.reserve(al, involved_symbols.size());
             for (auto it: involved_symbols) {
-                ASR::ttype_t* sym_type = ASRUtils::is_array(it.second) ? b.CPtr() : it.second;
-                LCOMPILERS_ASSERT(b.Variable(current_scope, it.first, sym_type, ASR::intentType::Local) != nullptr);
+                ASR::ttype_t* sym_type = nullptr;
+                sym_type = ASRUtils::is_array(it.second) ? b.CPtr() : it.second;
+                b.VariableDeclaration(current_scope, it.first, sym_type, ASR::intentType::Local);
                 involved_symbols_set.push_back(al, s2c(al, it.first));
             }
             ASR::symbol_t* thread_data_struct = ASR::down_cast<ASR::symbol_t>(ASR::make_StructType_t(al, loc,
@@ -725,7 +726,7 @@ class DoConcurrentVisitor :
                                                     array_type->m_type, dims.p, dims.n, ASR::array_physical_typeType::DescriptorArray)))),
                                                 ASR::intentType::InOut);
                                     LCOMPILERS_ASSERT(array_expr != nullptr);
-                                    new_body.push_back(al, b.Allocate(b.Var(sym), array_type->m_dims, array_type->n_dims));
+                                    new_body.push_back(al, b.Allocate(array_expr, array_type->m_dims, array_type->n_dims));
                                 } else {
                                     // we have no information about what size to allocate
                                 }
@@ -811,7 +812,7 @@ class DoConcurrentVisitor :
                                                     array_type->m_type, dims.p, dims.n, ASR::array_physical_typeType::DescriptorArray)))),
                                                 ASR::intentType::Local);
                                     LCOMPILERS_ASSERT(array_expr != nullptr);
-                                    new_body.push_back(al, b.Allocate(b.Var(sym), array_type->m_dims, array_type->n_dims));
+                                    new_body.push_back(al, b.Allocate(array_expr, array_type->m_dims, array_type->n_dims));
                                 } else {
                                     // we have no information about what size to allocate
                                 }
