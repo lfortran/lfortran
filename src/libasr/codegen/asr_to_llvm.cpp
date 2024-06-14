@@ -840,8 +840,12 @@ public:
         std::vector<llvm::Value *> idx = {
             llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
             llvm::ConstantInt::get(context, llvm::APInt(32, 1))};
-        llvm::Value *pim = CreateGEP(pc, idx);
-        return CreateLoad(pim);
+        llvm::Value *pim = LLVM::CreateGEP2(*builder, complex_type, pc, idx);
+        if (complex_type == complex_type_4) {
+            return LLVM::CreateLoad2(*builder, llvm::Type::getFloatTy(context), pim);
+        } else {
+            return LLVM::CreateLoad2(*builder, llvm::Type::getDoubleTy(context), pim);
+        }
     }
 
     llvm::Value *complex_from_floats(llvm::Value *re, llvm::Value *im,
@@ -3701,7 +3705,7 @@ public:
                             builder->CreateStore(s_malloc, target_var);
                             tmp = lfortran_str_copy(target_var, init_value);
                             if (v->m_intent == intent_local) {
-                                strings_to_be_deallocated.push_back(al, CreateLoad(target_var));
+                                strings_to_be_deallocated.push_back(al, CreateLoad2(v->m_type, target_var));
                             }
                         } else {
                             builder->CreateStore(init_value, target_var);
@@ -3728,7 +3732,7 @@ public:
                                 string_init(context, *module, *builder, arg_size, init_value);
                                 builder->CreateStore(init_value, target_var);
                                 if (v->m_intent == intent_local) {
-                                    strings_to_be_deallocated.push_back(al, CreateLoad(target_var));
+                                    strings_to_be_deallocated.push_back(al, CreateLoad2(v->m_type, target_var));
                                 }
                             } else if (strlen == -2) {
                                 // Allocatable string. Initialize to `nullptr` (unallocated)
