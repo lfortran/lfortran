@@ -269,7 +269,6 @@ public:
         return LLVM::CreateLoad2(*builder, el_type, x);
     }
 
-
     llvm::Value* CreateGEP(llvm::Value *x, std::vector<llvm::Value *> &idx) {
         return LLVM::CreateGEP(*builder, x, idx);
     }
@@ -808,8 +807,12 @@ public:
         std::vector<llvm::Value *> idx = {
             llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
             llvm::ConstantInt::get(context, llvm::APInt(32, 0))};
-        llvm::Value *pim = CreateGEP(pc, idx);
-        return CreateLoad(pim);
+        llvm::Value *pim = LLVM::CreateGEP2(*builder, complex_type, pc, idx);
+        if (complex_type == complex_type_4) {
+            return LLVM::CreateLoad2(*builder, llvm::Type::getFloatTy(context), pim);
+        } else {
+            return LLVM::CreateLoad2(*builder, llvm::Type::getDoubleTy(context), pim);
+        }
     }
 
     llvm::Value *complex_im(llvm::Value *c, llvm::Type* complex_type=nullptr) {
@@ -837,11 +840,11 @@ public:
         std::vector<llvm::Value *> idx2 = {
             llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
             llvm::ConstantInt::get(context, llvm::APInt(32, 1))};
-        llvm::Value *pre = CreateGEP(pres, idx1);
-        llvm::Value *pim = CreateGEP(pres, idx2);
+        llvm::Value *pre = LLVM::CreateGEP2(*builder, complex_type, pres, idx1);
+        llvm::Value *pim = LLVM::CreateGEP2(*builder, complex_type, pres, idx2);
         builder->CreateStore(re, pre);
         builder->CreateStore(im, pim);
-        return CreateLoad(pres);
+        return LLVM::CreateLoad2(*builder, complex_type, pres);
     }
 
     llvm::Value *nested_struct_rd(std::vector<llvm::Value*> vals,
@@ -5377,8 +5380,13 @@ public:
             size_t n_type_block = 0;
             switch( select_type_stmts[i]->type ) {
                 case ASR::type_stmtType::TypeStmtName: {
-                    llvm::Value* vptr_int_hash = CreateLoad(llvm_utils->create_gep(llvm_selector, 0));
                     ASR::ttype_t* selector_var_type = ASRUtils::expr_type(x.m_selector);
+                    llvm::Type* llvm_type_selector = llvm_utils->get_type_from_ttype_t_util(
+                        selector_var_type, module.get()
+                    );
+                    llvm::Value* vptr_int_hash = CreateLoad2(
+                        selector_var_type, llvm_utils->create_gep2(llvm_type_selector, llvm_selector, 0)
+                    );
                     if( ASRUtils::is_array(selector_var_type) ) {
                         vptr_int_hash = CreateLoad(llvm_utils->create_gep(vptr_int_hash, 0));
                     }
@@ -7025,7 +7033,7 @@ public:
         llvm::AllocaInst *result = builder->CreateAlloca(ret_type, nullptr);
         std::vector<llvm::Value*> args = {arg, result};
         builder->CreateCall(fn, args);
-        tmp = CreateLoad(result);
+        tmp = LLVM::CreateLoad2(*builder, ret_type, result);
     }
 
     void visit_BitCast(const ASR::BitCast_t& x) {
@@ -8347,7 +8355,7 @@ public:
                                             // E.g.:
                                             // i32* -> i32
                                             // {double,double}* -> {double,double}
-                                            tmp = CreateLoad(tmp);
+                                            tmp = CreateLoad2(arg_type, tmp);
                                         }
                                     }
                                 }
