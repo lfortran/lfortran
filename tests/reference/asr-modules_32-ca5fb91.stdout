@@ -8,7 +8,7 @@
                         2
                         {
                             build_target_ptr:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         3
                                         {
@@ -20,21 +20,21 @@
                                                     Local
                                                     (PointerNullConstant
                                                         (Pointer
-                                                            (Struct
+                                                            (StructType
                                                                 2 build_target_t
                                                             )
                                                         )
                                                     )
                                                     (PointerNullConstant
                                                         (Pointer
-                                                            (Struct
+                                                            (StructType
                                                                 2 build_target_t
                                                             )
                                                         )
                                                     )
                                                     Default
                                                     (Pointer
-                                                        (Struct
+                                                        (StructType
                                                             2 build_target_t
                                                         )
                                                     )
@@ -57,7 +57,7 @@
                                     ()
                                 ),
                             build_target_t:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         4
                                         {
@@ -125,7 +125,7 @@
                                                     ()
                                                     Default
                                                     (Pointer
-                                                        (Struct
+                                                        (StructType
                                                             2 build_target_t
                                                         )
                                                     )
@@ -140,7 +140,7 @@
                                     (FunctionType
                                         []
                                         (Pointer
-                                            (Struct
+                                            (StructType
                                                 2 build_target_t
                                             )
                                         )
@@ -161,7 +161,7 @@
                                         (Var 5 target_ptr)
                                         (PointerNullConstant
                                             (Pointer
-                                                (Struct
+                                                (StructType
                                                     2 build_target_t
                                                 )
                                             )

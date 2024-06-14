@@ -28,7 +28,7 @@
                                     Default
                                     (Allocatable
                                         (Array
-                                            (Struct
+                                            (StructType
                                                 5 srcfile_t
                                             )
                                             [(()
@@ -96,7 +96,7 @@
                                                     Default
                                                     (Allocatable
                                                         (Array
-                                                            (Struct
+                                                            (StructType
                                                                 2 srcfile_t
                                                             )
                                                             [(()
@@ -142,7 +142,7 @@
                                                     Default
                                                     (Allocatable
                                                         (Array
-                                                            (Struct
+                                                            (StructType
                                                                 2 srcfile_t
                                                             )
                                                             [(()
@@ -161,7 +161,7 @@
                                     (FunctionType
                                         [(Allocatable
                                             (Array
-                                                (Struct
+                                                (StructType
                                                     2 srcfile_t
                                                 )
                                                 [(()
@@ -235,7 +235,7 @@
                                                 (Allocatable
                                                     (Allocatable
                                                         (Array
-                                                            (Struct
+                                                            (StructType
                                                                 2 srcfile_t
                                                             )
                                                             [(()
@@ -306,7 +306,7 @@
                                                     (Allocatable
                                                         (Allocatable
                                                             (Array
-                                                                (Struct
+                                                                (StructType
                                                                     2 srcfile_t
                                                                 )
                                                                 [(()
@@ -345,7 +345,7 @@
                                                 )]
                                                 (Allocatable
                                                     (Array
-                                                        (Struct
+                                                        (StructType
                                                             2 srcfile_t
                                                         )
                                                         [(()
@@ -369,7 +369,7 @@
                                     ()
                                 ),
                             srcfile_t:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         3
                                         {

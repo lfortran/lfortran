@@ -46,7 +46,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Struct
+                                    (StructType
                                         9 fpm_new_settings
                                     )
                                     ()
@@ -117,7 +117,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Struct
+                                                    (StructType
                                                         2 fpm_new_settings
                                                     )
                                                     ()
@@ -129,7 +129,7 @@
                                         })
                                     cmd_new
                                     (FunctionType
-                                        [(Struct
+                                        [(StructType
                                             2 fpm_new_settings
                                         )]
                                         ()
@@ -211,7 +211,7 @@
                                     ()
                                 ),
                             fpm_cmd_settings:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         6
                                         {
@@ -246,7 +246,7 @@
                                     ()
                                 ),
                             fpm_new_settings:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         7
                                         {

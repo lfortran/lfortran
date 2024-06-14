@@ -23,17 +23,17 @@
                                     type_y
                                     []
                                     Local
-                                    (StructTypeConstructor
+                                    (StructConstructor
                                         2 y
                                         [(())]
-                                        (Struct
+                                        (StructType
                                             2 y
                                         )
                                         ()
                                     )
                                     ()
                                     Parameter
-                                    (Struct
+                                    (StructType
                                         2 y
                                     )
                                     ()
@@ -81,7 +81,7 @@
                                     .false.
                                 ),
                             y:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         3
                                         {

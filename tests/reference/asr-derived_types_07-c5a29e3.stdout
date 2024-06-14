@@ -176,7 +176,7 @@
                                                             13 1_toml_vector_lst
                                                             (Allocatable
                                                                 (Array
-                                                                    (Struct
+                                                                    (StructType
                                                                         9 toml_node
                                                                     )
                                                                     [(()
@@ -189,7 +189,7 @@
                                                         [(()
                                                         (Var 13 i)
                                                         ())]
-                                                        (Struct
+                                                        (StructType
                                                             9 toml_node
                                                         )
                                                         ColMajor
@@ -221,7 +221,7 @@
                                                                 13 1_toml_vector_lst
                                                                 (Allocatable
                                                                     (Array
-                                                                        (Struct
+                                                                        (StructType
                                                                             9 toml_node
                                                                         )
                                                                         [(()
@@ -234,7 +234,7 @@
                                                             [(()
                                                             (Var 13 i)
                                                             ())]
-                                                            (Struct
+                                                            (StructType
                                                                 9 toml_node
                                                             )
                                                             ColMajor
@@ -258,7 +258,7 @@
                                                                 13 1_toml_vector_lst
                                                                 (Allocatable
                                                                     (Array
-                                                                        (Struct
+                                                                        (StructType
                                                                             9 toml_node
                                                                         )
                                                                         [(()
@@ -271,7 +271,7 @@
                                                             [(()
                                                             (Var 13 i)
                                                             ())]
-                                                            (Struct
+                                                            (StructType
                                                                 9 toml_node
                                                             )
                                                             ColMajor
@@ -361,7 +361,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Struct
+                                                    (StructType
                                                         9 toml_vector
                                                     )
                                                     ()
@@ -373,7 +373,7 @@
                                         })
                                     new_vector
                                     (FunctionType
-                                        [(Struct
+                                        [(StructType
                                             9 toml_vector
                                         )
                                         (Integer 4)]
@@ -417,7 +417,7 @@
                                                 12 1_toml_vector_lst
                                                 (Allocatable
                                                     (Array
-                                                        (Struct
+                                                        (StructType
                                                             9 toml_node
                                                         )
                                                         [(()
@@ -451,7 +451,7 @@
                                     ()
                                 ),
                             toml_node:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         10
                                         {
@@ -498,7 +498,7 @@
                                     Public
                                 ),
                             toml_vector:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         11
                                         {
@@ -513,7 +513,7 @@
                                                     Default
                                                     (Allocatable
                                                         (Array
-                                                            (Struct
+                                                            (StructType
                                                                 9 toml_node
                                                             )
                                                             [(()
@@ -692,7 +692,7 @@
                                     ()
                                 ),
                             toml_keyval:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         7
                                         {
@@ -944,7 +944,7 @@
                                     ()
                                 ),
                             toml_value:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         3
                                         {

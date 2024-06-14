@@ -39,7 +39,7 @@
                         3
                         {
                             block_1:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         4
                                         {
@@ -114,7 +114,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Struct
+                                    (StructType
                                         3 block_1
                                     )
                                     ()
@@ -135,7 +135,7 @@
                         5
                         {
                             block_2:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         6
                                         {
@@ -193,7 +193,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Struct
+                                    (StructType
                                         5 block_2
                                     )
                                     ()
@@ -214,7 +214,7 @@
                         7
                         {
                             block_3:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         8
                                         {
@@ -272,7 +272,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Struct
+                                    (StructType
                                         7 block_3
                                     )
                                     ()
@@ -293,7 +293,7 @@
                         9
                         {
                             block_4:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         10
                                         {
@@ -334,7 +334,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Struct
+                                    (StructType
                                         9 block_4
                                     )
                                     ()
@@ -355,7 +355,7 @@
                         11
                         {
                             block_5:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         12
                                         {
@@ -413,7 +413,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Struct
+                                    (StructType
                                         11 block_5
                                     )
                                     ()

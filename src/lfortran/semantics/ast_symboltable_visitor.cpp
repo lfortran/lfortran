@@ -246,19 +246,19 @@ public:
         for( auto& itr: symtab->get_scope() ) {
             ASR::symbol_t* sym = itr.second;
             if( !ASR::is_a<ASR::Variable_t>(*sym) &&
-                !ASR::is_a<ASR::StructType_t>(*sym) ) {
+                !ASR::is_a<ASR::Struct_t>(*sym) ) {
                 continue ;
             }
 
-            if( ASR::is_a<ASR::StructType_t>(*sym) ) {
-                fix_struct_type(ASR::down_cast<ASR::StructType_t>(sym)->m_symtab);
+            if( ASR::is_a<ASR::Struct_t>(*sym) ) {
+                fix_struct_type(ASR::down_cast<ASR::Struct_t>(sym)->m_symtab);
                 continue ;
             }
 
             ASR::ttype_t* sym_type = ASRUtils::type_get_past_pointer(
                                         ASRUtils::symbol_type(sym));
-            if( ASR::is_a<ASR::Struct_t>(*sym_type) ) {
-                ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(sym_type);
+            if( ASR::is_a<ASR::StructType_t>(*sym_type) ) {
+                ASR::StructType_t* struct_t = ASR::down_cast<ASR::StructType_t>(sym_type);
                 ASR::symbol_t* der_sym = struct_t->m_derived_type;
                 if( ASR::is_a<ASR::ExternalSymbol_t>(*der_sym) &&
                     ASR::down_cast<ASR::ExternalSymbol_t>(der_sym)->m_external == nullptr &&
@@ -1390,7 +1390,7 @@ public:
                             + derived_type_name + "' not declared", x.base.base.loc);
 
                     }
-                    type = ASRUtils::TYPE(ASR::make_Struct_t(al, x.base.base.loc, v));
+                    type = ASRUtils::TYPE(ASR::make_StructType_t(al, x.base.base.loc, v));
                     break;
                 }
                 default :
@@ -1669,7 +1669,7 @@ public:
         for( auto& item: current_scope->get_scope() ) {
             // ExternalSymbol means that current module/program
             // already depends on the module of ExternalSymbol
-            // present inside StructType's scope. So the order
+            // present inside Struct's scope. So the order
             // is already established and hence no need to store
             // this ExternalSymbol as a dependency.
             if( ASR::is_a<ASR::ExternalSymbol_t>(*item.second) ) {
@@ -1677,8 +1677,8 @@ public:
             }
             ASR::ttype_t* var_type = ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(item.second));
             char* aggregate_type_name = nullptr;
-            if( ASR::is_a<ASR::Struct_t>(*var_type) ) {
-                ASR::symbol_t* sym = ASR::down_cast<ASR::Struct_t>(var_type)->m_derived_type;
+            if( ASR::is_a<ASR::StructType_t>(*var_type) ) {
+                ASR::symbol_t* sym = ASR::down_cast<ASR::StructType_t>(var_type)->m_derived_type;
                 aggregate_type_name = ASRUtils::symbol_name(sym);
             } else if( ASR::is_a<ASR::Class_t>(*var_type) ) {
                 ASR::symbol_t* sym = ASR::down_cast<ASR::Class_t>(var_type)->m_class_type;
@@ -1688,7 +1688,7 @@ public:
                 struct_dependencies.push_back(al, aggregate_type_name);
             }
         }
-        tmp = ASR::make_StructType_t(al, x.base.base.loc, current_scope,
+        tmp = ASR::make_Struct_t(al, x.base.base.loc, current_scope,
             s2c(al, to_lower(x.m_name)), struct_dependencies.p, struct_dependencies.size(),
             data_member_names.p, data_member_names.size(),
             ASR::abiType::Source, dflt_access, false, is_abstract, nullptr, 0, nullptr, parent_sym);
@@ -1924,7 +1924,7 @@ public:
             std::string sym_name_str = proc.first;
             if( current_scope->get_symbol(proc.first) != nullptr ) {
                 ASR::symbol_t* der_type_name = current_scope->get_symbol(proc.first);
-                if( der_type_name->type == ASR::symbolType::StructType ||
+                if( der_type_name->type == ASR::symbolType::Struct ||
                     der_type_name->type == ASR::symbolType::Function ) {
                     sym_name_str = "~" + proc.first;
                 }
@@ -1978,7 +1978,7 @@ public:
             Location loc;
             loc.first = 1;
             loc.last = 1;
-            ASR::StructType_t *clss = ASR::down_cast<ASR::StructType_t>(
+            ASR::Struct_t *clss = ASR::down_cast<ASR::Struct_t>(
                                             current_scope->get_symbol(proc.first));
             for (auto &pname : proc.second) {
                 Vec<ASR::symbol_t*> cand_procs;
@@ -2033,7 +2033,7 @@ public:
                 if (var_type_clss_sym == clss_sym) {
                     return true;
                 }
-                var_type_clss_sym = ASR::down_cast<ASR::StructType_t>(var_type_clss_sym)->m_parent;
+                var_type_clss_sym = ASR::down_cast<ASR::Struct_t>(var_type_clss_sym)->m_parent;
             }
         }
         return false;
@@ -2065,7 +2065,7 @@ public:
         }
     }
 
-    bool check_is_deferred(const std::string& pname, ASR::StructType_t* clss) {
+    bool check_is_deferred(const std::string& pname, ASR::Struct_t* clss) {
         auto& cdf = class_deferred_procedures;
         while( true ) {
             std::string proc = clss->m_name;
@@ -2076,8 +2076,8 @@ public:
             if( !clss_sym ) {
                 break;
             }
-            LCOMPILERS_ASSERT(ASR::is_a<ASR::StructType_t>(*clss_sym));
-            clss = ASR::down_cast<ASR::StructType_t>(clss_sym);
+            LCOMPILERS_ASSERT(ASR::is_a<ASR::Struct_t>(*clss_sym));
+            clss = ASR::down_cast<ASR::Struct_t>(clss_sym);
         }
         return false;
     }
@@ -2086,7 +2086,7 @@ public:
         for (auto &proc : class_procedures) {
             ASR::symbol_t* clss_sym = ASRUtils::symbol_get_past_external(
                 current_scope->resolve_symbol(proc.first));
-            ASR::StructType_t *clss = ASR::down_cast<ASR::StructType_t>(clss_sym);
+            ASR::Struct_t *clss = ASR::down_cast<ASR::Struct_t>(clss_sym);
             SymbolTable* proc_scope = ASRUtils::symbol_parent_symtab(clss_sym);
             for (auto &pname : proc.second) {
                 auto &loc = pname.second["procedure"].loc;
@@ -2220,8 +2220,8 @@ public:
                     dflt_access
                     );
                 current_scope->add_or_overwrite_symbol(sym, ASR::down_cast<ASR::symbol_t>(es));
-            } else if( ASR::is_a<ASR::StructType_t>(*item.second) ) {
-                ASR::StructType_t *mv = ASR::down_cast<ASR::StructType_t>(item.second);
+            } else if( ASR::is_a<ASR::Struct_t>(*item.second) ) {
+                ASR::Struct_t *mv = ASR::down_cast<ASR::Struct_t>(item.second);
                 // `mv` is the Variable in a module. Now we construct
                 // an ExternalSymbol that points to it.
                 Str name;
@@ -2500,9 +2500,9 @@ public:
                 dflt_access
                 );
             current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(v));
-        } else if( ASR::is_a<ASR::StructType_t>(*t) ) {
+        } else if( ASR::is_a<ASR::Struct_t>(*t) ) {
             ASR::symbol_t* imported_struct_type = current_scope->get_symbol(local_sym);
-            ASR::StructType_t *mv = ASR::down_cast<ASR::StructType_t>(t);
+            ASR::Struct_t *mv = ASR::down_cast<ASR::Struct_t>(t);
             if (imported_struct_type != nullptr) {
                 imported_struct_type = ASRUtils::symbol_get_past_external(imported_struct_type);
                 if( imported_struct_type == t ) {
@@ -3027,8 +3027,8 @@ public:
                         ASR::symbol_t *arg_sym0 = current_scope->resolve_symbol(arg);
                         ASR::symbol_t *arg_sym = ASRUtils::symbol_get_past_external(arg_sym0);
                         ASR::ttype_t *arg_type = nullptr;
-                        if (ASR::is_a<ASR::StructType_t>(*arg_sym)) {
-                            arg_type = ASRUtils::TYPE(ASR::make_Struct_t(al, x.m_args[i]->base.loc, arg_sym0));
+                        if (ASR::is_a<ASR::Struct_t>(*arg_sym)) {
+                            arg_type = ASRUtils::TYPE(ASR::make_StructType_t(al, x.m_args[i]->base.loc, arg_sym0));
                         } else {
                             arg_type = ASRUtils::symbol_type(arg_sym);
                         }

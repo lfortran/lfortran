@@ -96,7 +96,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Struct
+                                    (StructType
                                         6 rectangle
                                     )
                                     ()
@@ -134,7 +134,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Struct
+                                    (StructType
                                         6 shape
                                     )
                                     ()
@@ -470,7 +470,7 @@
                                     ()
                                 ),
                             rectangle:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         4
                                         {
@@ -520,7 +520,7 @@
                                     2 shape
                                 ),
                             shape:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         3
                                         {

@@ -76,7 +76,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Struct
+                                    (StructType
                                         8 x
                                     )
                                     ()
@@ -94,7 +94,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Struct
+                                    (StructType
                                         8 z
                                     )
                                     ()
@@ -274,13 +274,13 @@
                                 (StructInstanceMember
                                     (Var 8 c)
                                     8 1_z_l
-                                    (Struct
+                                    (StructType
                                         8 derived_types_01_m_01_y
                                     )
                                     ()
                                 )
                                 8 1_y_d
-                                (Struct
+                                (StructType
                                     8 x
                                 )
                                 ()
@@ -301,13 +301,13 @@
                                 (StructInstanceMember
                                     (Var 8 c)
                                     8 1_z_l
-                                    (Struct
+                                    (StructType
                                         8 derived_types_01_m_01_y1
                                     )
                                     ()
                                 )
                                 8 1_y_d
-                                (Struct
+                                (StructType
                                     8 x
                                 )
                                 ()
@@ -350,13 +350,13 @@
                                 (StructInstanceMember
                                     (Var 8 c)
                                     8 1_z_l
-                                    (Struct
+                                    (StructType
                                         8 derived_types_01_m_01_y2
                                     )
                                     ()
                                 )
                                 8 1_y_d
-                                (Struct
+                                (StructType
                                     8 x
                                 )
                                 ()
@@ -370,13 +370,13 @@
                                 (StructInstanceMember
                                     (Var 8 c)
                                     8 1_z_l
-                                    (Struct
+                                    (StructType
                                         8 derived_types_01_m_01_y3
                                     )
                                     ()
                                 )
                                 8 1_y_d
-                                (Struct
+                                (StructType
                                     8 x
                                 )
                                 ()
@@ -401,13 +401,13 @@
                             (StructInstanceMember
                                 (Var 8 c)
                                 8 1_z_l
-                                (Struct
+                                (StructType
                                     8 derived_types_01_m_01_y4
                                 )
                                 ()
                             )
                             8 1_y_d
-                            (Struct
+                            (StructType
                                 8 x
                             )
                             ()
@@ -420,13 +420,13 @@
                                 (StructInstanceMember
                                     (Var 8 c)
                                     8 1_z_l
-                                    (Struct
+                                    (StructType
                                         8 derived_types_01_m_01_y5
                                     )
                                     ()
                                 )
                                 8 1_y_d
-                                (Struct
+                                (StructType
                                     8 x
                                 )
                                 ()
@@ -440,13 +440,13 @@
                                 (StructInstanceMember
                                     (Var 8 c)
                                     8 1_z_l
-                                    (Struct
+                                    (StructType
                                         8 derived_types_01_m_01_y6
                                     )
                                     ()
                                 )
                                 8 1_y_d
-                                (Struct
+                                (StructType
                                     8 x
                                 )
                                 ()
@@ -504,7 +504,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Struct
+                                                    (StructType
                                                         2 x
                                                     )
                                                     ()
@@ -516,7 +516,7 @@
                                         })
                                     set
                                     (FunctionType
-                                        [(Struct
+                                        [(StructType
                                             2 x
                                         )]
                                         ()
@@ -563,7 +563,7 @@
                                     ()
                                 ),
                             x:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         3
                                         {
@@ -613,7 +613,7 @@
                                     ()
                                 ),
                             y:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         4
                                         {
@@ -642,7 +642,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Struct
+                                                    (StructType
                                                         2 x
                                                     )
                                                     ()
@@ -686,7 +686,7 @@
                                     Public
                                 ),
                             z:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         7
                                         {
@@ -715,7 +715,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Struct
+                                                    (StructType
                                                         6 y
                                                     )
                                                     ()

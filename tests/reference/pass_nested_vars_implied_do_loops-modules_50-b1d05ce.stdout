@@ -18,7 +18,7 @@
                                     Default
                                     (Pointer
                                         (Array
-                                            (Struct
+                                            (StructType
                                                 8 int_t
                                             )
                                             [(()
@@ -89,7 +89,7 @@
                         2
                         {
                             int_t:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         3
                                         {
@@ -235,7 +235,7 @@
                                                                     Default
                                                                     (Allocatable
                                                                         (Array
-                                                                            (Struct
+                                                                            (StructType
                                                                                 4 int_t
                                                                             )
                                                                             [(()
@@ -274,7 +274,7 @@
                                                                 [(()
                                                                 (IntegerConstant 1 (Integer 4))
                                                                 ())]
-                                                                (Struct
+                                                                (StructType
                                                                     4 int_t
                                                                 )
                                                                 ColMajor
@@ -340,7 +340,7 @@
                                                                 [(()
                                                                 (Var 6 __1_k)
                                                                 ())]
-                                                                (Struct
+                                                                (StructType
                                                                     4 int_t
                                                                 )
                                                                 RowMajor
@@ -351,7 +351,7 @@
                                                                 [(()
                                                                 (Var 6 __1_t)
                                                                 ())]
-                                                                (Struct
+                                                                (StructType
                                                                     4 int_t
                                                                 )
                                                                 RowMajor
@@ -394,7 +394,7 @@
                                                     Default
                                                     (Allocatable
                                                         (Array
-                                                            (Struct
+                                                            (StructType
                                                                 4 int_t
                                                             )
                                                             [(()
@@ -443,7 +443,7 @@
                                                 [(()
                                                 (IntegerConstant 1 (Integer 4))
                                                 ())]
-                                                (Struct
+                                                (StructType
                                                     4 int_t
                                                 )
                                                 ColMajor
@@ -482,7 +482,7 @@
                                                 [(()
                                                 (IntegerConstant 1 (Integer 4))
                                                 ())]
-                                                (Struct
+                                                (StructType
                                                     4 int_t
                                                 )
                                                 ColMajor
@@ -503,7 +503,7 @@
                                                     [(()
                                                     (IntegerConstant 1 (Integer 4))
                                                     ())]
-                                                    (Struct
+                                                    (StructType
                                                         4 int_t
                                                     )
                                                     ColMajor

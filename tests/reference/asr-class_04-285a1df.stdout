@@ -68,7 +68,7 @@
                                     Public
                                 ),
                             bar_a:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         3
                                         {
@@ -101,7 +101,7 @@
                                     ()
                                 ),
                             bar_b:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         5
                                         {
@@ -134,7 +134,7 @@
                                     2 bar_a
                                 ),
                             bar_c:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         6
                                         {
@@ -175,7 +175,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Struct
+                                    (StructType
                                         2 foo_c
                                     )
                                     ()
@@ -185,7 +185,7 @@
                                     .false.
                                 ),
                             foo_a:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         4
                                         {
@@ -198,7 +198,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Struct
+                                                    (StructType
                                                         2 bar_a
                                                     )
                                                     ()
@@ -220,7 +220,7 @@
                                     ()
                                 ),
                             foo_b:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         7
                                         {
@@ -233,7 +233,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Struct
+                                                    (StructType
                                                         2 bar_b
                                                     )
                                                     ()
@@ -255,7 +255,7 @@
                                     2 foo_a
                                 ),
                             foo_c:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         8
                                         {
@@ -268,7 +268,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Struct
+                                                    (StructType
                                                         2 bar_c
                                                     )
                                                     ()
@@ -297,7 +297,7 @@
                             (StructInstanceMember
                                 (Var 2 foo)
                                 2 1_foo_a_m_bar_a
-                                (Struct
+                                (StructType
                                     2 bar_a
                                 )
                                 ()
@@ -318,7 +318,7 @@
                             (StructInstanceMember
                                 (Var 2 foo)
                                 2 1_foo_b_m_bar_b
-                                (Struct
+                                (StructType
                                     2 bar_b
                                 )
                                 ()
@@ -335,7 +335,7 @@
                             (StructInstanceMember
                                 (Var 2 foo)
                                 2 1_foo_c_m_bar_c
-                                (Struct
+                                (StructType
                                     2 bar_c
                                 )
                                 ()
@@ -352,7 +352,7 @@
                             (StructInstanceMember
                                 (Var 2 foo)
                                 2 1_foo_a_m_bar_a
-                                (Struct
+                                (StructType
                                     2 bar_a
                                 )
                                 ()
@@ -369,7 +369,7 @@
                             (StructInstanceMember
                                 (Var 2 foo)
                                 2 1_foo_b_m_bar_b
-                                (Struct
+                                (StructType
                                     2 bar_b
                                 )
                                 ()
@@ -386,7 +386,7 @@
                             (StructInstanceMember
                                 (Var 2 foo)
                                 2 1_foo_c_m_bar_c
-                                (Struct
+                                (StructType
                                     2 bar_c
                                 )
                                 ()
@@ -406,7 +406,7 @@
                                         (StructInstanceMember
                                             (Var 2 foo)
                                             2 1_foo_a_m_bar_a
-                                            (Struct
+                                            (StructType
                                                 2 bar_a
                                             )
                                             ()
@@ -420,7 +420,7 @@
                                         (StructInstanceMember
                                             (Var 2 foo)
                                             2 1_foo_b_m_bar_b
-                                            (Struct
+                                            (StructType
                                                 2 bar_b
                                             )
                                             ()
@@ -437,7 +437,7 @@
                                     (StructInstanceMember
                                         (Var 2 foo)
                                         2 1_foo_c_m_bar_c
-                                        (Struct
+                                        (StructType
                                             2 bar_c
                                         )
                                         ()

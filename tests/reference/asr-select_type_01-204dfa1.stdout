@@ -28,7 +28,7 @@
                                     Public
                                 ),
                             base:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         3
                                         {
@@ -66,17 +66,17 @@
                                     base_target
                                     []
                                     Local
-                                    (StructTypeConstructor
+                                    (StructConstructor
                                         2 base
                                         [((IntegerConstant 10 (Integer 4)))]
-                                        (Struct
+                                        (StructType
                                             2 base
                                         )
                                         ()
                                     )
                                     ()
                                     Default
-                                    (Struct
+                                    (StructType
                                         2 base
                                     )
                                     ()
@@ -106,7 +106,7 @@
                                     .false.
                                 ),
                             child:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         4
                                         {
@@ -147,7 +147,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Struct
+                                    (StructType
                                         2 child
                                     )
                                     ()
@@ -366,11 +366,11 @@
                     []
                     [(Assignment
                         (Var 2 child_target)
-                        (StructTypeConstructor
+                        (StructConstructor
                             2 child
                             [((IntegerConstant 20 (Integer 4)))
                             ((IntegerConstant 30 (Integer 4)))]
-                            (Struct
+                            (StructType
                                 2 child
                             )
                             ()

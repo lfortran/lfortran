@@ -32,7 +32,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Struct
+                                                    (StructType
                                                         2 string_type
                                                     )
                                                     ()
@@ -61,7 +61,7 @@
                                     new_string
                                     (FunctionType
                                         [(Character 1 -1 ())]
-                                        (Struct
+                                        (StructType
                                             2 string_type
                                         )
                                         Source
@@ -98,7 +98,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Struct
+                                                    (StructType
                                                         2 string_type
                                                     )
                                                     ()
@@ -127,7 +127,7 @@
                                     new_string_from_integer_int32
                                     (FunctionType
                                         [(Integer 4)]
-                                        (Struct
+                                        (StructType
                                             2 string_type
                                         )
                                         Source
@@ -164,7 +164,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Struct
+                                                    (StructType
                                                         2 string_type
                                                     )
                                                     ()
@@ -193,7 +193,7 @@
                                     new_string_from_integer_int64
                                     (FunctionType
                                         [(Integer 8)]
-                                        (Struct
+                                        (StructType
                                             2 string_type
                                         )
                                         Source
@@ -230,7 +230,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Struct
+                                                    (StructType
                                                         2 string_type
                                                     )
                                                     ()
@@ -259,7 +259,7 @@
                                     new_string_from_logical_lk
                                     (FunctionType
                                         [(Logical 4)]
-                                        (Struct
+                                        (StructType
                                             2 string_type
                                         )
                                         Source
@@ -283,7 +283,7 @@
                                     ()
                                 ),
                             string_type:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         3
                                         {
@@ -352,7 +352,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Struct
+                                                    (StructType
                                                         8 string_type
                                                     )
                                                     ()
@@ -381,7 +381,7 @@
                                     new_string
                                     (FunctionType
                                         [(Character 1 -1 ())]
-                                        (Struct
+                                        (StructType
                                             8 string_type
                                         )
                                         Source
@@ -418,7 +418,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Struct
+                                                    (StructType
                                                         8 string_type
                                                     )
                                                     ()
@@ -447,7 +447,7 @@
                                     new_string_from_integer_int32
                                     (FunctionType
                                         [(Integer 4)]
-                                        (Struct
+                                        (StructType
                                             8 string_type
                                         )
                                         Source
@@ -484,7 +484,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Struct
+                                                    (StructType
                                                         8 string_type
                                                     )
                                                     ()
@@ -513,7 +513,7 @@
                                     new_string_from_integer_int64
                                     (FunctionType
                                         [(Integer 8)]
-                                        (Struct
+                                        (StructType
                                             8 string_type
                                         )
                                         Source
@@ -550,7 +550,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Struct
+                                                    (StructType
                                                         8 string_type
                                                     )
                                                     ()
@@ -579,7 +579,7 @@
                                     new_string_from_logical_lk
                                     (FunctionType
                                         [(Logical 4)]
-                                        (Struct
+                                        (StructType
                                             8 string_type
                                         )
                                         Source

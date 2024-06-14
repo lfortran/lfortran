@@ -8,7 +8,7 @@
                         4
                         {
                             enum_type:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         5
                                         {
@@ -131,7 +131,7 @@
                                     toml_type
                                     []
                                     Local
-                                    (StructTypeConstructor
+                                    (StructConstructor
                                         4 enum_type
                                         [(())
                                         (())
@@ -139,14 +139,14 @@
                                         (())
                                         (())
                                         (())]
-                                        (Struct
+                                        (StructType
                                             4 enum_type
                                         )
                                         ()
                                     )
                                     ()
                                     Parameter
-                                    (Struct
+                                    (StructType
                                         4 enum_type
                                     )
                                     ()

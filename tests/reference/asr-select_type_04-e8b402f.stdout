@@ -8,7 +8,7 @@
                         11
                         {
                             enum_stat:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         12
                                         {
@@ -67,18 +67,18 @@
                                     toml_stat
                                     []
                                     Local
-                                    (StructTypeConstructor
+                                    (StructConstructor
                                         11 enum_stat
                                         [(())
                                         (())]
-                                        (Struct
+                                        (StructType
                                             11 enum_stat
                                         )
                                         ()
                                     )
                                     ()
                                     Parameter
-                                    (Struct
+                                    (StructType
                                         11 enum_stat
                                     )
                                     ()
@@ -200,7 +200,7 @@
                                                     ()
                                                     Default
                                                     (Pointer
-                                                        (Struct
+                                                        (StructType
                                                             4 toml_table
                                                         )
                                                     )
@@ -324,7 +324,7 @@
                                             4 toml_table
                                         )
                                         (Pointer
-                                            (Struct
+                                            (StructType
                                                 4 toml_table
                                             )
                                         )
@@ -410,7 +410,7 @@
                                     Public
                                 ),
                             toml_table:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         5
                                         {
@@ -472,7 +472,7 @@
                                     4 toml_value
                                 ),
                             toml_value:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         6
                                         {

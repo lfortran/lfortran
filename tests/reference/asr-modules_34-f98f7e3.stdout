@@ -50,7 +50,7 @@
                         15
                         {
                             package_config_t:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         16
                                         {
@@ -81,7 +81,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Struct
+                                                    (StructType
                                                         15 version_t
                                                     )
                                                     ()
@@ -210,7 +210,7 @@
                                                         (StructInstanceMember
                                                             (Var 5 package)
                                                             6 1_package_config_t_version
-                                                            (Struct
+                                                            (StructType
                                                                 6 fpm_versioning_modules_34_version_t
                                                             )
                                                             ()
@@ -242,7 +242,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Struct
+                                                    (StructType
                                                         4 package_config_t
                                                     )
                                                     ()
@@ -272,7 +272,7 @@
                                         })
                                     build_model
                                     (FunctionType
-                                        [(Struct
+                                        [(StructType
                                             4 package_config_t
                                         )]
                                         ()
@@ -488,7 +488,7 @@
                                     ()
                                 ),
                             version_t:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         11
                                         {

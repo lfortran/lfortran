@@ -36,7 +36,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Struct
+                                    (StructType
                                         6 circle
                                     )
                                     ()
@@ -60,13 +60,13 @@
                     [class_circle1]
                     [(Assignment
                         (Var 6 c)
-                        (StructTypeConstructor
+                        (StructConstructor
                             6 circle
                             [((RealConstant
                                 1.500000
                                 (Real 4)
                             ))]
-                            (Struct
+                            (StructType
                                 6 circle
                             )
                             ()
@@ -105,7 +105,7 @@
                         2
                         {
                             circle:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         3
                                         {

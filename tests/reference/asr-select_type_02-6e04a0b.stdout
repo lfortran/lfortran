@@ -8,7 +8,7 @@
                         2
                         {
                             point:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         3
                                         {
@@ -109,7 +109,7 @@
                                     Public
                                 ),
                             color_point:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         6
                                         {
@@ -150,7 +150,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Struct
+                                    (StructType
                                         4 color_point
                                     )
                                     ()
@@ -168,7 +168,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Struct
+                                    (StructType
                                         4 point
                                     )
                                     ()
@@ -186,7 +186,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Struct
+                                    (StructType
                                         4 point_3d
                                     )
                                     ()
@@ -226,7 +226,7 @@
                                     Public
                                 ),
                             point_3d:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         5
                                         {

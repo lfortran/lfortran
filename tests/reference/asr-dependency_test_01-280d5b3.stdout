@@ -31,7 +31,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Struct
+                                                    (StructType
                                                         2 dependency_config_t
                                                     )
                                                     ()
@@ -80,7 +80,7 @@
                                         [(Class
                                             2 dependency_tree_t
                                         )
-                                        (Struct
+                                        (StructType
                                             2 dependency_config_t
                                         )]
                                         ()
@@ -118,7 +118,7 @@
                                     ()
                                 ),
                             dependency_config_t:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         3
                                         {
@@ -172,7 +172,7 @@
                                     ()
                                 ),
                             dependency_node_t:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         4
                                         {
@@ -272,7 +272,7 @@
                                     ()
                                 ),
                             dependency_tree_t:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         5
                                         {
@@ -323,7 +323,7 @@
                                                     Default
                                                     (Allocatable
                                                         (Array
-                                                            (Struct
+                                                            (StructType
                                                                 2 dependency_node_t
                                                             )
                                                             [(()

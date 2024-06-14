@@ -547,7 +547,7 @@
                                                     .false.
                                                 ),
                                             intvector:
-                                                (StructType
+                                                (Struct
                                                     (SymbolTable
                                                         8
                                                         {
@@ -663,11 +663,11 @@
                                     []
                                     [(Assignment
                                         (Var 7 v)
-                                        (StructTypeConstructor
+                                        (StructConstructor
                                             7 intvector
                                             [(())
                                             (())]
-                                            (Struct
+                                            (StructType
                                                 7 intvector
                                             )
                                             ()
@@ -1213,7 +1213,7 @@
                                                     .false.
                                                 ),
                                             vector:
-                                                (StructType
+                                                (Struct
                                                     (SymbolTable
                                                         4
                                                         {

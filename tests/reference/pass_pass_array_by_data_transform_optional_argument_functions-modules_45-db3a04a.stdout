@@ -126,7 +126,7 @@
                                     Default
                                     (Allocatable
                                         (Array
-                                            (Struct
+                                            (StructType
                                                 7 profile_config_t
                                             )
                                             [(()
@@ -210,7 +210,7 @@
                         2
                         {
                             file_scope_flag:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         3
                                         {
@@ -367,7 +367,7 @@
                                                     Default
                                                     (Allocatable
                                                         (Array
-                                                            (Struct
+                                                            (StructType
                                                                 2 file_scope_flag
                                                             )
                                                             [(()
@@ -544,7 +544,7 @@
                                                     Default
                                                     (Allocatable
                                                         (Array
-                                                            (Struct
+                                                            (StructType
                                                                 2 profile_config_t
                                                             )
                                                             [(()
@@ -602,7 +602,7 @@
                                         (Integer 4)
                                         (Allocatable
                                             (Array
-                                                (Struct
+                                                (StructType
                                                     2 profile_config_t
                                                 )
                                                 [(()
@@ -637,7 +637,7 @@
                                             [(()
                                             (Var 6 profindex)
                                             ())]
-                                            (Struct
+                                            (StructType
                                                 2 profile_config_t
                                             )
                                             ColMajor
@@ -739,7 +739,7 @@
                                                 .false.
                                                 (Logical 4)
                                             ))]
-                                            (Struct
+                                            (StructType
                                                 2 profile_config_t
                                             )
                                             ()
@@ -838,7 +838,7 @@
                                                     ()
                                                     Default
                                                     (Array
-                                                        (Struct
+                                                        (StructType
                                                             2 file_scope_flag
                                                         )
                                                         [(()
@@ -1020,7 +1020,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Struct
+                                                    (StructType
                                                         2 profile_config_t
                                                     )
                                                     ()
@@ -1060,7 +1060,7 @@
                                         (Character 1 -1 ())
                                         (Logical 4)
                                         (Array
-                                            (Struct
+                                            (StructType
                                                 2 file_scope_flag
                                             )
                                             [(()
@@ -1070,7 +1070,7 @@
                                         (Logical 4)
                                         (Logical 4)
                                         (Logical 4)]
-                                        (Struct
+                                        (StructType
                                             2 profile_config_t
                                         )
                                         Source
@@ -1108,7 +1108,7 @@
                                     ()
                                 ),
                             profile_config_t:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         4
                                         {
@@ -1177,7 +1177,7 @@
                                                     Default
                                                     (Allocatable
                                                         (Array
-                                                            (Struct
+                                                            (StructType
                                                                 2 file_scope_flag
                                                             )
                                                             [(()

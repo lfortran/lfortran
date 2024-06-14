@@ -189,7 +189,7 @@
                                                     .false.
                                                 ),
                                             ~abstract_type:
-                                                (StructType
+                                                (Struct
                                                     (SymbolTable
                                                         7
                                                         {
@@ -1165,7 +1165,7 @@
                                                     Private
                                                 ),
                                             ~abstract_type:
-                                                (StructType
+                                                (Struct
                                                     (SymbolTable
                                                         4
                                                         {

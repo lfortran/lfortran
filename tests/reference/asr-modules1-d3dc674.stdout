@@ -74,7 +74,7 @@
                                     ()
                                 ),
                             t1:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         9
                                         {
@@ -237,7 +237,7 @@
                                     Public
                                 ),
                             t2:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         5
                                         {

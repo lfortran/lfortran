@@ -666,7 +666,7 @@ class RemoveArrayByDescriptorProceduresVisitor : public PassUtils::PassVisitor<R
                 if ( ASR::is_a<ASR::Module_t>(*item.second) ||
                     ASR::is_a<ASR::Program_t>(*item.second) ||
                     ASR::is_a<ASR::Function_t>(*item.second) ||
-                    ASR::is_a<ASR::StructType_t>(*item.second) ||
+                    ASR::is_a<ASR::Struct_t>(*item.second) ||
                     ASR::is_a<ASR::Block_t>(*item.second)) {
                     SymbolTable* current_scope_copy = current_scope;
                     visit_symbol(*item.second);
@@ -699,7 +699,7 @@ class RemoveArrayByDescriptorProceduresVisitor : public PassUtils::PassVisitor<R
             visit_Unit(x);
         }
 
-        void visit_StructType(const ASR::StructType_t& x) {
+        void visit_Struct(const ASR::Struct_t& x) {
             visit_Unit(x);
         }
 

@@ -33,7 +33,7 @@
                         2
                         {
                             circle:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         3
                                         {
@@ -342,7 +342,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Struct
+                                                    (StructType
                                                         2 circle
                                                     )
                                                     ()
@@ -371,13 +371,13 @@
                                     []
                                     [(Assignment
                                         (Var 6 c)
-                                        (StructTypeConstructor
+                                        (StructConstructor
                                             2 circle
                                             [((RealConstant
                                                 1.000000
                                                 (Real 4)
                                             ))]
-                                            (Struct
+                                            (StructType
                                                 2 circle
                                             )
                                             ()

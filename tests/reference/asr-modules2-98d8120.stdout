@@ -89,7 +89,7 @@
                                     ()
                                 ),
                             toml_ordered:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         11
                                         {
@@ -107,7 +107,7 @@
                                     10 toml_structure
                                 ),
                             toml_structure:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         12
                                         {
@@ -328,7 +328,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Struct
+                                                    (StructType
                                                         2 toml_array
                                                     )
                                                     ()
@@ -340,7 +340,7 @@
                                         })
                                     new_array
                                     (FunctionType
-                                        [(Struct
+                                        [(StructType
                                             2 toml_array
                                         )]
                                         ()
@@ -365,7 +365,7 @@
                                     ()
                                 ),
                             toml_array:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         14
                                         {
@@ -496,7 +496,7 @@
                                     ()
                                 ),
                             toml_value:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         5
                                         {

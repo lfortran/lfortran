@@ -22,7 +22,7 @@
                                                     ()
                                                     Default
                                                     (Pointer
-                                                        (Struct
+                                                        (StructType
                                                             4 child_value
                                                         )
                                                     )
@@ -141,7 +141,7 @@
                                     ()
                                 ),
                             child_value:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         5
                                         {
@@ -257,7 +257,7 @@
                                     ()
                                 ),
                             toml_value:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         6
                                         {

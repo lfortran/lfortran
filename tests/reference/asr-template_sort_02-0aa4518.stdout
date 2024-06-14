@@ -1681,7 +1681,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (Struct
+                                                                    (StructType
                                                                         5 my_type
                                                                     )
                                                                     ()
@@ -1699,7 +1699,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (Struct
+                                                                    (StructType
                                                                         5 my_type
                                                                     )
                                                                     ()
@@ -1717,7 +1717,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (Struct
+                                                                    (StructType
                                                                         5 my_type
                                                                     )
                                                                     ()
@@ -1735,7 +1735,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (Struct
+                                                                    (StructType
                                                                         5 my_type
                                                                     )
                                                                     ()
@@ -1747,10 +1747,10 @@
                                                         })
                                                     __asr___instantiated_swap12
                                                     (FunctionType
-                                                        [(Struct
+                                                        [(StructType
                                                             5 my_type
                                                         )
-                                                        (Struct
+                                                        (StructType
                                                             5 my_type
                                                         )]
                                                         ()
@@ -1913,7 +1913,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (Struct
+                                                                    (StructType
                                                                         5 my_type
                                                                     )
                                                                     ()
@@ -1931,7 +1931,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (Struct
+                                                                    (StructType
                                                                         5 my_type
                                                                     )
                                                                     ()
@@ -1949,7 +1949,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (Struct
+                                                                    (StructType
                                                                         5 my_type
                                                                     )
                                                                     ()
@@ -1967,7 +1967,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (Struct
+                                                                    (StructType
                                                                         5 my_type
                                                                     )
                                                                     ()
@@ -1979,10 +1979,10 @@
                                                         })
                                                     __asr___instantiated_swap3
                                                     (FunctionType
-                                                        [(Struct
+                                                        [(StructType
                                                             5 my_type
                                                         )
-                                                        (Struct
+                                                        (StructType
                                                             5 my_type
                                                         )]
                                                         ()
@@ -2670,7 +2670,7 @@
                                                                     ()
                                                                     Default
                                                                     (Array
-                                                                        (Struct
+                                                                        (StructType
                                                                             5 my_type
                                                                         )
                                                                         [(()
@@ -2756,7 +2756,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (Struct
+                                                                    (StructType
                                                                         5 my_type
                                                                     )
                                                                     ()
@@ -2769,7 +2769,7 @@
                                                     __instantiated_quicksort2
                                                     (FunctionType
                                                         [(Array
-                                                            (Struct
+                                                            (StructType
                                                                 5 my_type
                                                             )
                                                             [(()
@@ -2811,7 +2811,7 @@
                                                                 [(()
                                                                 (Var 25 high)
                                                                 ())]
-                                                                (Struct
+                                                                (StructType
                                                                     5 my_type
                                                                 )
                                                                 ColMajor
@@ -2851,7 +2851,7 @@
                                                                         [(()
                                                                         (Var 25 i)
                                                                         ())]
-                                                                        (Struct
+                                                                        (StructType
                                                                             5 my_type
                                                                         )
                                                                         ColMajor
@@ -2881,7 +2881,7 @@
                                                                         [(()
                                                                         (Var 25 last)
                                                                         ())]
-                                                                        (Struct
+                                                                        (StructType
                                                                             5 my_type
                                                                         )
                                                                         ColMajor
@@ -2892,7 +2892,7 @@
                                                                         [(()
                                                                         (Var 25 i)
                                                                         ())]
-                                                                        (Struct
+                                                                        (StructType
                                                                             5 my_type
                                                                         )
                                                                         ColMajor
@@ -2918,7 +2918,7 @@
                                                                     ()
                                                                 )
                                                                 ())]
-                                                                (Struct
+                                                                (StructType
                                                                     5 my_type
                                                                 )
                                                                 ColMajor
@@ -2929,7 +2929,7 @@
                                                                 [(()
                                                                 (Var 25 high)
                                                                 ())]
-                                                                (Struct
+                                                                (StructType
                                                                     5 my_type
                                                                 )
                                                                 ColMajor
@@ -2945,7 +2945,7 @@
                                                                 DescriptorArray
                                                                 DescriptorArray
                                                                 (Array
-                                                                    (Struct
+                                                                    (StructType
                                                                         5 my_type
                                                                     )
                                                                     [(()
@@ -2966,7 +2966,7 @@
                                                                 DescriptorArray
                                                                 DescriptorArray
                                                                 (Array
-                                                                    (Struct
+                                                                    (StructType
                                                                         5 my_type
                                                                     )
                                                                     [(()
@@ -3040,7 +3040,7 @@
                                                     ()
                                                     Default
                                                     (Array
-                                                        (Struct
+                                                        (StructType
                                                             5 my_type
                                                         )
                                                         [((IntegerConstant 1 (Integer 4))
@@ -3134,13 +3134,13 @@
                                                 [(()
                                                 (Var 15 i)
                                                 ())]
-                                                (Struct
+                                                (StructType
                                                     5 my_type
                                                 )
                                                 ColMajor
                                                 ()
                                             )
-                                            (StructTypeConstructor
+                                            (StructConstructor
                                                 5 my_type
                                                 [((ArrayItem
                                                     (Var 15 xr)
@@ -3151,7 +3151,7 @@
                                                     ColMajor
                                                     ()
                                                 ))]
-                                                (Struct
+                                                (StructType
                                                     5 my_type
                                                 )
                                                 ()
@@ -3206,7 +3206,7 @@
                                             FixedSizeArray
                                             DescriptorArray
                                             (Array
-                                                (Struct
+                                                (StructType
                                                     5 my_type
                                                 )
                                                 [((IntegerConstant 1 (Integer 4))
@@ -3276,7 +3276,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Struct
+                                                    (StructType
                                                         2 my_type
                                                     )
                                                     ()
@@ -3310,7 +3310,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Struct
+                                                    (StructType
                                                         2 my_type
                                                     )
                                                     ()
@@ -3322,10 +3322,10 @@
                                         })
                                     lt_my_type
                                     (FunctionType
-                                        [(Struct
+                                        [(StructType
                                             2 my_type
                                         )
-                                        (Struct
+                                        (StructType
                                             2 my_type
                                         )]
                                         (Logical 4)
@@ -3371,7 +3371,7 @@
                                     ()
                                 ),
                             my_type:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         3
                                         {

@@ -10,7 +10,7 @@
                         5
                         {
                             point:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         6
                                         {
@@ -73,7 +73,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Struct
+                                                    (StructType
                                                         5 point
                                                     )
                                                     ()
@@ -91,7 +91,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Struct
+                                                    (StructType
                                                         5 point
                                                     )
                                                     ()
@@ -119,10 +119,10 @@
                                         })
                                     point_dist_func
                                     (FunctionType
-                                        [(Struct
+                                        [(StructType
                                             5 point
                                         )
-                                        (Struct
+                                        (StructType
                                             5 point
                                         )]
                                         (Real 4)
@@ -161,7 +161,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Struct
+                                                    (StructType
                                                         5 point
                                                     )
                                                     ()
@@ -179,7 +179,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Struct
+                                                    (StructType
                                                         5 point
                                                     )
                                                     ()
@@ -207,10 +207,10 @@
                                         })
                                     point_dist_subrout
                                     (FunctionType
-                                        [(Struct
+                                        [(StructType
                                             5 point
                                         )
-                                        (Struct
+                                        (StructType
                                             5 point
                                         )
                                         (Real 4)]
@@ -302,7 +302,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Struct
+                                                    (StructType
                                                         9 point
                                                     )
                                                     ()
@@ -320,7 +320,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Struct
+                                                    (StructType
                                                         9 point
                                                     )
                                                     ()
@@ -348,10 +348,10 @@
                                         })
                                     point_dist_func
                                     (FunctionType
-                                        [(Struct
+                                        [(StructType
                                             9 point
                                         )
-                                        (Struct
+                                        (StructType
                                             9 point
                                         )]
                                         (Real 4)
@@ -486,7 +486,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Struct
+                                                    (StructType
                                                         9 point
                                                     )
                                                     ()
@@ -504,7 +504,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Struct
+                                                    (StructType
                                                         9 point
                                                     )
                                                     ()
@@ -532,10 +532,10 @@
                                         })
                                     point_dist_subrout
                                     (FunctionType
-                                        [(Struct
+                                        [(StructType
                                             9 point
                                         )
-                                        (Struct
+                                        (StructType
                                             9 point
                                         )
                                         (Real 4)]

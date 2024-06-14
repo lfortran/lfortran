@@ -990,7 +990,7 @@ public:
                     AST::Name_t* name_t = AST::down_cast<AST::Name_t>(x.m_args[i].m_start);
                     ASR::symbol_t *v = current_scope->resolve_symbol(name_t->m_id);
                     if (v) {
-                        ASR::ttype_t* struct_t = ASRUtils::TYPE(ASR::make_Struct_t(al, x.base.base.loc, v));
+                        ASR::ttype_t* struct_t = ASRUtils::TYPE(ASR::make_StructType_t(al, x.base.base.loc, v));
                         new_arg.m_type = struct_t;
                     } else {
                         throw SemanticError("`The type-spec: " + std::string(name_t->m_id)
@@ -1326,8 +1326,8 @@ public:
                     if( assoc_variable ) {
                         ASR::ttype_t* selector_type = nullptr;
                         ASR::symbol_t* sym_underlying = ASRUtils::symbol_get_past_external(sym);
-                        if( ASR::is_a<ASR::StructType_t>(*sym_underlying) ) {
-                            selector_type = ASRUtils::TYPE(ASR::make_Struct_t(al, sym->base.loc, sym));
+                        if( ASR::is_a<ASR::Struct_t>(*sym_underlying) ) {
+                            selector_type = ASRUtils::TYPE(ASR::make_StructType_t(al, sym->base.loc, sym));
                         } else if( ASR::is_a<ASR::ClassType_t>(*sym_underlying) ) {
                             selector_type = ASRUtils::TYPE(ASR::make_Class_t(al, sym->base.loc, sym));
                         } else {
@@ -1372,8 +1372,8 @@ public:
                     if( assoc_variable ) {
                         ASR::ttype_t* selector_type = nullptr;
                         ASR::symbol_t* sym_underlying = ASRUtils::symbol_get_past_external(sym);
-                        if( ASR::is_a<ASR::StructType_t>(*sym_underlying) ) {
-                            selector_type = ASRUtils::TYPE(ASR::make_Struct_t(al, sym->base.loc, sym));
+                        if( ASR::is_a<ASR::Struct_t>(*sym_underlying) ) {
+                            selector_type = ASRUtils::TYPE(ASR::make_StructType_t(al, sym->base.loc, sym));
                         } else if( ASR::is_a<ASR::ClassType_t>(*sym_underlying) ) {
                             selector_type = ASRUtils::TYPE(ASR::make_Class_t(al, sym->base.loc, sym));
                         } else {

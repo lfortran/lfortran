@@ -191,7 +191,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Struct
+                                                    (StructType
                                                         2 string_type
                                                     )
                                                     ()
@@ -203,7 +203,7 @@
                                         })
                                     char_string
                                     (FunctionType
-                                        [(Struct
+                                        [(StructType
                                             2 string_type
                                         )]
                                         (Character 1 -3 (FunctionCall
@@ -211,7 +211,7 @@
                                             2 len
                                             [((FunctionParam
                                                 0
-                                                (Struct
+                                                (StructType
                                                     2 string_type
                                                 )
                                                 ()
@@ -277,7 +277,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Struct
+                                                    (StructType
                                                         2 string_type
                                                     )
                                                     ()
@@ -289,7 +289,7 @@
                                         })
                                     len_string
                                     (FunctionType
-                                        [(Struct
+                                        [(StructType
                                             2 string_type
                                         )]
                                         (Integer 4)
@@ -314,7 +314,7 @@
                                     ()
                                 ),
                             string_type:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         3
                                         {
@@ -595,7 +595,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Struct
+                                                    (StructType
                                                         6 string_type
                                                     )
                                                     ()
@@ -607,7 +607,7 @@
                                         })
                                     compute_lps_use1
                                     (FunctionType
-                                        [(Struct
+                                        [(StructType
                                             6 string_type
                                         )]
                                         (Integer 4)
@@ -964,7 +964,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Struct
+                                                    (StructType
                                                         6 string_type
                                                     )
                                                     ()
@@ -982,7 +982,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Struct
+                                                    (StructType
                                                         6 string_type
                                                     )
                                                     ()
@@ -994,11 +994,11 @@
                                         })
                                     padl_string_default
                                     (FunctionType
-                                        [(Struct
+                                        [(StructType
                                             6 string_type
                                         )
                                         (Integer 4)]
-                                        (Struct
+                                        (StructType
                                             6 string_type
                                         )
                                         Source
@@ -1017,7 +1017,7 @@
                                     (Var 10 output_length)]
                                     [(Assignment
                                         (Var 10 res)
-                                        (StructTypeConstructor
+                                        (StructConstructor
                                             6 string_type
                                             [((FunctionCall
                                                 6 padl_char_pad_with
@@ -1071,7 +1071,7 @@
                                                 ()
                                                 ()
                                             ))]
-                                            (Struct
+                                            (StructType
                                                 6 string_type
                                             )
                                             ()
@@ -1150,7 +1150,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Struct
+                                                    (StructType
                                                         6 string_type
                                                     )
                                                     ()
@@ -1168,7 +1168,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Struct
+                                                    (StructType
                                                         6 string_type
                                                     )
                                                     ()
@@ -1180,12 +1180,12 @@
                                         })
                                     padl_string_pad_with
                                     (FunctionType
-                                        [(Struct
+                                        [(StructType
                                             6 string_type
                                         )
                                         (Integer 4)
                                         (Character 1 1 ())]
-                                        (Struct
+                                        (StructType
                                             6 string_type
                                         )
                                         Source
@@ -1205,7 +1205,7 @@
                                     (Var 11 pad_with)]
                                     [(Assignment
                                         (Var 11 res)
-                                        (StructTypeConstructor
+                                        (StructConstructor
                                             6 string_type
                                             [((FunctionCall
                                                 6 padl_char_pad_with
@@ -1256,7 +1256,7 @@
                                                 ()
                                                 ()
                                             ))]
-                                            (Struct
+                                            (StructType
                                                 6 string_type
                                             )
                                             ()

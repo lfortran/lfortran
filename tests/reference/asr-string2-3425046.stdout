@@ -668,7 +668,7 @@
                                     ()
                                 ),
                             string_t:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         5
                                         {

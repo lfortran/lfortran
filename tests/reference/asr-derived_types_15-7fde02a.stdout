@@ -240,7 +240,7 @@
                                     ()
                                 ),
                             t_1:
-                                (StructType
+                                (Struct
                                     (SymbolTable
                                         3
                                         {
@@ -382,7 +382,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Struct
+                                    (StructType
                                         6 t_1
                                     )
                                     ()
