@@ -10,6 +10,91 @@
 
 namespace LCompilers {
 
+class ReplaceArrayVariable: public ASR::BaseExprReplacer<ReplaceArrayVariable> {
+    private:
+        Allocator& al;
+    public:
+        SymbolTable* current_scope;
+        std::vector<std::string> array_variables;
+
+        ReplaceArrayVariable(Allocator& al_) :
+            al(al_) {}
+
+        void replace_Var(ASR::Var_t* x) {
+            ASRUtils::ASRBuilder b(al, x->base.base.loc);
+            if (std::find(array_variables.begin(), array_variables.end(), ASRUtils::symbol_name(x->m_v)) != array_variables.end() &&
+                ASRUtils::symbol_parent_symtab(x->m_v)->counter == current_scope->counter) {
+                // TODO: Ideally we shall not need any check for the symbol parent symtab
+                // This is a bug where somehow it changes symbol present in lcompilers_function or say not of the current_scope
+                ASR::symbol_t* sym = current_scope->get_symbol(std::string(ASRUtils::symbol_name(x->m_v)));
+                LCOMPILERS_ASSERT(sym != nullptr);
+                *current_expr = b.Var(sym);
+            }
+        }
+};
+
+class ArrayVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayVisitor> {
+    private:
+        SymbolTable* current_scope;
+        ReplaceArrayVariable replacer;
+        std::vector<std::string> array_variables;
+
+    public:
+        ArrayVisitor(Allocator &al_, SymbolTable* current_scope_, std::vector<std::string> array_variables_) :
+            current_scope(current_scope_), replacer(al_) , array_variables(array_variables_) {}
+
+        void call_replacer() {
+            replacer.current_expr = current_expr;
+            replacer.current_scope = current_scope;
+            replacer.array_variables = array_variables;
+            replacer.replace_expr(*current_expr);
+        }
+};
+
+class FunctionSubroutineCallVisitor: public ASR::BaseWalkVisitor<FunctionSubroutineCallVisitor> {
+    private:
+        std::string function_name;
+        SymbolTable* current_scope;
+        std::vector<SymbolTable*> &scopes;
+    
+    public:
+        FunctionSubroutineCallVisitor(std::string function_name_, std::vector<SymbolTable*> &scopes_) :
+            function_name(function_name_), scopes(scopes_) {}
+        
+        void visit_Program(const ASR::Program_t &x) {
+            ASR::Program_t& xx = const_cast<ASR::Program_t&>(x);
+            SymbolTable* current_scope_copy = current_scope;
+            current_scope = xx.m_symtab;
+
+            BaseWalkVisitor::visit_Program(x);
+
+            current_scope = current_scope_copy;
+        }
+
+        void visit_Function(const ASR::Function_t &x) {
+            ASR::Function_t& xx = const_cast<ASR::Function_t&>(x);
+            SymbolTable* current_scope_copy = current_scope;
+            current_scope = xx.m_symtab;
+
+            BaseWalkVisitor::visit_Function(x);
+
+            current_scope = current_scope_copy;
+        }
+
+        void visit_FunctionCall(const ASR::FunctionCall_t& x) {
+            if (ASRUtils::symbol_name(x.m_name) == function_name)
+                scopes.push_back(current_scope);
+
+            BaseWalkVisitor::visit_FunctionCall(x);
+        }
+
+        void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
+            if (ASRUtils::symbol_name(x.m_name) == function_name)
+                scopes.push_back(current_scope);
+
+            BaseWalkVisitor::visit_SubroutineCall(x);
+        }
+};
 
 class ReplaceReductionVariable: public ASR::BaseExprReplacer<ReplaceReductionVariable> {
     private:
@@ -92,27 +177,7 @@ class DoConcurrentStatementVisitor : public ASR::CallReplacerOnExpressionsVisito
         LCOMPILERS_ASSERT(func_sym != nullptr);
         x_copy->m_name = func_sym;
         x_copy->m_original_name = func_sym;
-
-        for (size_t i=0; i<x.n_args; i++) {
-            visit_call_arg(x.m_args[i]);
-        }
-        visit_ttype(*x.m_type);
-        if (x.m_value) {
-            ASR::expr_t** current_expr_copy_123 = current_expr;
-            current_expr = const_cast<ASR::expr_t**>(&(x.m_value));
-            call_replacer();
-            current_expr = current_expr_copy_123;
-            if( x.m_value )
-            visit_expr(*x.m_value);
-        }
-        if (x.m_dt) {
-            ASR::expr_t** current_expr_copy_124 = current_expr;
-            current_expr = const_cast<ASR::expr_t**>(&(x.m_dt));
-            call_replacer();
-            current_expr = current_expr_copy_124;
-            if( x.m_dt )
-            visit_expr(*x.m_dt);
-        }
+        CallReplacerOnExpressionsVisitor::visit_FunctionCall(x);
     }
 };
 
@@ -342,8 +407,9 @@ class DoConcurrentVisitor :
             current_scope = al.make_new<SymbolTable>(parent_scope);
             SetChar involved_symbols_set; involved_symbols_set.reserve(al, involved_symbols.size());
             for (auto it: involved_symbols) {
-                // TODO: handle array dimension correctly
-                LCOMPILERS_ASSERT(b.Variable(current_scope, it.first, it.second, ASR::intentType::Local) != nullptr);
+                ASR::ttype_t* sym_type = nullptr;
+                sym_type = ASRUtils::is_array(it.second) ? b.CPtr() : it.second;
+                b.VariableDeclaration(current_scope, it.first, sym_type, ASR::intentType::Local);
                 involved_symbols_set.push_back(al, s2c(al, it.first));
             }
             ASR::symbol_t* thread_data_struct = ASR::down_cast<ASR::symbol_t>(ASR::make_StructType_t(al, loc,
@@ -360,7 +426,8 @@ class DoConcurrentVisitor :
         }
 
         ASR::symbol_t* create_lcompilers_function(const Location &loc, const ASR::DoConcurrentLoop_t &do_loop,
-                    std::map<std::string, ASR::ttype_t*> &involved_symbols, std::string thread_data_module_name) {
+                    std::map<std::string, ASR::ttype_t*> &involved_symbols,
+                    std::map<std::string, ASR::expr_t*> &array_variables_to_allocate, std::string thread_data_module_name) {
             SymbolTable* current_scope_copy = current_scope;
             while (current_scope->parent != nullptr) {
                 current_scope = current_scope->parent;
@@ -403,7 +470,6 @@ class DoConcurrentVisitor :
 
             // declare involved variables
             for (auto it: involved_symbols) {
-                // handle arrays
                 LCOMPILERS_ASSERT(b.Variable(current_scope, it.first, it.second, ASR::intentType::Local, ASR::abiType::BindC));
             }
 
@@ -417,11 +483,24 @@ class DoConcurrentVisitor :
                 current_scope->add_symbol(sym_name, sym);
 
                 // handle arrays
-                body.push_back(al, b.Assignment(
-                    b.Var(current_scope->get_symbol(it.first)),
-                    ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc, tdata_expr,
-                    sym, ASRUtils::symbol_type(sym), nullptr))
-                ));
+                ASR::ttype_t* sym_type = it.second;
+                if (ASRUtils::is_array(sym_type)) {
+                    DoConcurrentStatementVisitor v(al, current_scope);
+                    v.current_expr = nullptr;
+                    v.visit_expr(*array_variables_to_allocate[it.first]);
+                    body.push_back(al, b.CPtrToPointer(
+                        ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc, tdata_expr,
+                        sym, ASRUtils::symbol_type(sym), nullptr)),
+                        b.Var(current_scope->get_symbol(it.first)),
+                        array_variables_to_allocate[it.first]
+                    ));
+                } else {
+                    body.push_back(al, b.Assignment(
+                        b.Var(current_scope->get_symbol(it.first)),
+                        ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc, tdata_expr,
+                        sym, ASRUtils::symbol_type(sym), nullptr))
+                    ));
+                }
             }
 
             // Partitioning logic
@@ -603,6 +682,177 @@ class DoConcurrentVisitor :
             return interface_function;
         }
 
+        /*
+            This function is invoked only if array variables are used in OMP DoConcurrent
+            It does the following:
+            1. As we changed declaration of array variables to pointers, we need to allocate memory for them
+               and update the function body accordingly
+            2. Update the function signature for array variables
+            3. Search for function / subroutine calls to existing function in entire ASR
+            4. Recursively call this function for all the function calls found in step 3
+
+            TODO: right now we assume array variables will have same name in different scopes
+            this won't work, need to find a way to handle this
+        */
+        void recursive_function_call_resolver(SymbolTable* current_scope, std::vector<std::string> &array_variables, bool first_call=false) {
+            ASR::asr_t* asr_owner = current_scope->asr_owner;
+            if (ASR::is_a<ASR::symbol_t>(*asr_owner)) {
+                ASR::symbol_t* sym = ASR::down_cast<ASR::symbol_t>(asr_owner);
+                if (ASR::is_a<ASR::Function_t>(*sym)) {
+                    ASRUtils::ASRBuilder b(al, sym->base.loc);
+                    ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(sym);
+                    if (!first_call) {
+                        Vec<ASR::stmt_t*> new_body; new_body.reserve(al, func->n_body);
+                        // update declaration of array variables
+                        // TODO: array_variables will not have same name in different scopes
+                        // this won't work, need to find a way to handle this
+                        for (size_t i = 0; i < array_variables.size(); i++) {
+                            ASR::symbol_t* sym = current_scope->resolve_symbol(array_variables[i]);
+                            ASR::ttype_t* sym_type = ASRUtils::symbol_type(sym);
+                            if (ASR::is_a<ASR::Pointer_t>(*sym_type)) {
+                                continue;
+                            } else if (ASR::is_a<ASR::Array_t>(*sym_type)) {
+                                ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(sym_type);
+                                if (!ASRUtils::is_dimension_empty(*array_type->m_dims)) {
+                                    Vec<ASR::dimension_t> dims; dims.reserve(al, array_type->n_dims);
+                                    ASR::dimension_t empty_dim; empty_dim.loc = array_type->base.base.loc;
+                                    empty_dim.m_start = nullptr; empty_dim.m_length = nullptr;
+                                    for (size_t i = 0; i < array_type->n_dims; i++) {
+                                        dims.push_back(al, empty_dim);
+                                    }
+                                    ASR::expr_t* array_expr = b.VariableOverwrite(current_scope, array_variables[i],
+                                            ASRUtils::TYPE(ASR::make_Pointer_t(al, array_type->base.base.loc,
+                                                    ASRUtils::TYPE(ASR::make_Array_t(al, array_type->base.base.loc,
+                                                    array_type->m_type, dims.p, dims.n, ASR::array_physical_typeType::DescriptorArray)))),
+                                                ASR::intentType::InOut);
+                                    LCOMPILERS_ASSERT(array_expr != nullptr);
+                                    new_body.push_back(al, b.Allocate(array_expr, array_type->m_dims, array_type->n_dims));
+                                } else {
+                                    // we have no information about what size to allocate
+                                }
+                            } else if (ASR::is_a<ASR::Allocatable_t>(*sym_type)) {
+                                // TODO: handle allocatable
+                                continue;
+                            }
+                        }
+                        for (size_t i = 0; i < func->n_body; i++) {
+                            new_body.push_back(al, func->m_body[i]);
+                        }
+                        func->m_body = new_body.p;
+                        func->n_body = new_body.n;
+                    }
+                    // update function body
+                    ArrayVisitor v(al, func->m_symtab, array_variables);
+                    for (size_t i=0; i<func->n_body; i++) {
+                        v.visit_stmt(*func->m_body[i]);
+                    }
+
+                    // update function signature for arrays
+                    std::map<std::string, int> array_arg_mapping;
+                    for (size_t i = 0; i < func->n_args; i++) {
+                        std::string arg_name = ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(func->m_args[i])->m_v);
+                        if (std::find(array_variables.begin(), array_variables.end(), arg_name) != array_variables.end()) {
+                            array_arg_mapping[arg_name] = i;
+                            func->m_args[i] = b.Var(func->m_symtab->resolve_symbol(arg_name));
+                        }
+                    }
+                    ASR::FunctionType_t* func_type = ASR::down_cast<ASR::FunctionType_t>(func->m_function_signature);
+                    for (auto it: array_arg_mapping) {
+                        func_type->m_arg_types[it.second] = ASRUtils::symbol_type(func->m_symtab->resolve_symbol(it.first));
+                    }
+
+                    // search for function / subroutine calls to existing function
+                    std::vector<SymbolTable*> scopes;
+                    FunctionSubroutineCallVisitor fsv(func->m_name, scopes);
+
+                    // get global scope
+                    SymbolTable* global_scope = current_scope;
+                    while (global_scope->parent != nullptr) {
+                        global_scope = global_scope->parent;
+                    }
+                    fsv.visit_TranslationUnit(*ASR::down_cast2<ASR::TranslationUnit_t>(global_scope->asr_owner));
+
+                    std::vector<SymbolTable*> unique_scopes;
+                    for(auto it: scopes) {
+                        if (std::find(unique_scopes.begin(), unique_scopes.end(), it) == unique_scopes.end()) {
+                            unique_scopes.push_back(it);
+                        }
+                    }
+                    for (auto it: unique_scopes ) {
+                        if (it->counter != current_scope->counter) {
+                            recursive_function_call_resolver(it, array_variables);
+                        }
+                    }
+                    scopes.clear();
+                } else if (ASR::is_a<ASR::Program_t>(*sym)) {
+                    ASRUtils::ASRBuilder b(al, sym->base.loc);
+                    ASR::Program_t* prog = ASR::down_cast<ASR::Program_t>(sym);
+                    if (!first_call) {
+                        Vec<ASR::stmt_t*> new_body; new_body.reserve(al, prog->n_body);
+                        // update declaration of array variables
+                        // TODO: array_variables will not have same name in different scopes
+                        // this won't work, need to find a way to handle this
+                        for (size_t i = 0; i < array_variables.size(); i++) {
+                            ASR::symbol_t* sym = current_scope->resolve_symbol(array_variables[i]);
+                            ASR::ttype_t* sym_type = ASRUtils::symbol_type(sym);
+                            if (ASR::is_a<ASR::Pointer_t>(*sym_type)) {
+                                continue;
+                            } else if (ASR::is_a<ASR::Array_t>(*sym_type)) {
+                                ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(sym_type);
+                                if (!ASRUtils::is_dimension_empty(*array_type->m_dims)) {
+                                    Vec<ASR::dimension_t> dims; dims.reserve(al, array_type->n_dims);
+                                    ASR::dimension_t empty_dim; empty_dim.loc = array_type->base.base.loc;
+                                    empty_dim.m_start = nullptr; empty_dim.m_length = nullptr;
+                                    for (size_t i = 0; i < array_type->n_dims; i++) {
+                                        dims.push_back(al, empty_dim);
+                                    }
+                                    ASR::expr_t* array_expr = b.VariableOverwrite(prog->m_symtab, array_variables[i],
+                                            ASRUtils::TYPE(ASR::make_Pointer_t(al, array_type->base.base.loc,
+                                                    ASRUtils::TYPE(ASR::make_Array_t(al, array_type->base.base.loc,
+                                                    array_type->m_type, dims.p, dims.n, ASR::array_physical_typeType::DescriptorArray)))),
+                                                ASR::intentType::Local);
+                                    LCOMPILERS_ASSERT(array_expr != nullptr);
+                                    new_body.push_back(al, b.Allocate(array_expr, array_type->m_dims, array_type->n_dims));
+                                } else {
+                                    // we have no information about what size to allocate
+                                }
+                            } else if (ASR::is_a<ASR::Allocatable_t>(*sym_type)) {
+                                // TODO: handle allocatable
+                                continue;
+                            }
+                        }
+                        for (size_t i = 0; i < prog->n_body; i++) {
+                            new_body.push_back(al, prog->m_body[i]);
+                        }
+                        prog->m_body = new_body.p;
+                        prog->n_body = new_body.n;
+                    }
+                    // update function body
+                    ArrayVisitor v(al, prog->m_symtab, array_variables);
+                    for (size_t i=0; i<prog->n_body; i++) {
+                        // we can create a replacer but then there will be too many replacers to handle.
+                        if (ASR::is_a<ASR::SubroutineCall_t>(*prog->m_body[i])) {
+                            ASR::SubroutineCall_t* sub_call = ASR::down_cast<ASR::SubroutineCall_t>(prog->m_body[i]);
+                            for (size_t j = 0; j < sub_call->n_args; j++) {
+                                ASR::expr_t* arg = sub_call->m_args[j].m_value;
+                                if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*arg)) {
+                                    ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(ASR::down_cast<ASR::ArrayPhysicalCast_t>(arg)->m_arg)->m_v;
+                                    std::string sym_name = ASRUtils::symbol_name(sym);
+                                    if (std::find(array_variables.begin(), array_variables.end(), sym_name) != array_variables.end()) {
+                                        sub_call->m_args[j].m_value = b.Var(sym);
+                                    }
+                                }
+                            }
+                        }
+                        // TODO: handle function calls
+                        v.visit_stmt(*prog->m_body[i]);
+                    }
+                }
+            } else {
+                LCOMPILERS_ASSERT(false);
+            }
+        }
+
         void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
             std::map<std::string, ASR::ttype_t*> involved_symbols;
 
@@ -618,6 +868,8 @@ class DoConcurrentVisitor :
                 nullptr, 0, ASRUtils::symbol_name(thread_data_module.second), ASR::accessType::Public));
             current_scope->add_symbol(ASRUtils::symbol_name(thread_data_module.second), thread_data_ext_sym);
 
+            std::map<std::string, ASR::expr_t*> array_variables_to_allocate;
+            std::vector<std::string> array_variables;
             // create data variable for the thread data module
             ASRUtils::ASRBuilder b(al, x.base.base.loc);
             ASR::expr_t* data_expr = b.Variable(current_scope, "data", ASRUtils::TYPE(ASR::make_Struct_t(al, x.base.base.loc, thread_data_ext_sym)), ASR::intentType::Local);
@@ -628,6 +880,45 @@ class DoConcurrentVisitor :
             LCOMPILERS_ASSERT(tdata_expr != nullptr);
 
             // TODO: update symbols with correct type
+            for (auto it: involved_symbols) {
+                ASR::ttype_t* sym_type = it.second;
+                if (ASR::is_a<ASR::Pointer_t>(*sym_type)) {
+                    continue;
+                } else if (ASR::is_a<ASR::Array_t>(*sym_type)) {
+                    ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(sym_type);
+                    if (!ASRUtils::is_dimension_empty(*array_type->m_dims)) {
+                        Vec<ASR::dimension_t> dims; dims.reserve(al, array_type->n_dims);
+                        ASR::dimension_t empty_dim; empty_dim.loc = array_type->base.base.loc;
+                        empty_dim.m_start = nullptr; empty_dim.m_length = nullptr;
+                        for (size_t i = 0; i < array_type->n_dims; i++) {
+                            dims.push_back(al, empty_dim);
+                        }
+                        ASR::expr_t* array_expr = b.VariableOverwrite(current_scope, it.first,
+                                ASRUtils::TYPE(ASR::make_Pointer_t(al, array_type->base.base.loc,
+                                        ASRUtils::TYPE(ASR::make_Array_t(al, array_type->base.base.loc,
+                                        array_type->m_type, dims.p, dims.n, ASR::array_physical_typeType::DescriptorArray)))),
+                                    ASR::intentType::InOut);
+                        LCOMPILERS_ASSERT(array_expr != nullptr);
+                        pass_result.push_back(al, b.Allocate(array_expr, array_type->m_dims, array_type->n_dims));
+                        involved_symbols[it.first] = ASRUtils::expr_type(array_expr);
+
+                        /*
+                            In lcompilers_function we need to do: call c_f_pointer(tdata%a, a, [size])
+                            So we'll populate array_variables_to_allocate with the size of the array
+                        */
+                        // TODO: handle multi-dimensional arrays
+                        Vec<ASR::expr_t*> size_args; size_args.reserve(al, 1); size_args.push_back(al, array_type->m_dims[0].m_length);
+                        array_variables_to_allocate[it.first] = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, array_expr->base.loc,
+                            size_args.p, size_args.n, ASRUtils::TYPE(ASR::make_Integer_t(al, array_expr->base.loc, 4)), ASR::arraystorageType::ColMajor));
+                        array_variables.push_back(it.first);
+                    } else {
+                        // we have no information about what size to allocate
+                    }
+                } else if (ASR::is_a<ASR::Allocatable_t>(*sym_type)) {
+                    // TODO: handle allocatable
+                    continue;
+                }
+            }
             
             // add external symbols to struct members, we need those for `data%n = n`
             ASR::symbol_t* thread_data_sym = thread_data_module.second;
@@ -640,11 +931,20 @@ class DoConcurrentVisitor :
                 current_scope->add_symbol(sym_name, sym);
 
                 // handle arrays
-                pass_result.push_back(al, b.Assignment(
-                    ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, x.base.base.loc, data_expr,
-                    sym, ASRUtils::symbol_type(sym), nullptr)),
-                    b.Var(current_scope->get_symbol(it.first))
-                ));
+                ASR::ttype_t* sym_type = it.second;
+                if (ASRUtils::is_array(sym_type)) {
+                    pass_result.push_back(al, b.Assignment(
+                        ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, x.base.base.loc, data_expr,
+                        sym, ASRUtils::symbol_type(sym), nullptr)),
+                        b.PointerToCPtr(b.Var(current_scope->get_symbol(it.first)), ASRUtils::symbol_type(sym))
+                    ));
+                } else {
+                    pass_result.push_back(al, b.Assignment(
+                        ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, x.base.base.loc, data_expr,
+                        sym, ASRUtils::symbol_type(sym), nullptr)),
+                        b.Var(current_scope->get_symbol(it.first))
+                    ));
+                }
             }
 
             // tdata = c_loc(data)
@@ -655,7 +955,7 @@ class DoConcurrentVisitor :
                     ASRUtils::expr_type(tdata_expr), nullptr))
             ));
 
-            ASR::symbol_t* lcompilers_function = create_lcompilers_function(x.base.base.loc, x, involved_symbols, thread_data_module.first);
+            ASR::symbol_t* lcompilers_function = create_lcompilers_function(x.base.base.loc, x, involved_symbols, array_variables_to_allocate, thread_data_module.first);
             LCOMPILERS_ASSERT(lcompilers_function != nullptr);
             ASR::Function_t* lcompilers_func = ASR::down_cast<ASR::Function_t>(lcompilers_function);
             ASR::symbol_t* lcompilers_interface_function = create_interface_lcompilers_function(lcompilers_func);
@@ -692,6 +992,11 @@ class DoConcurrentVisitor :
                 rvv.visit_stmt(*current_m_body[i]);
             }
             reduction_variables.clear();
+
+            if (array_variables.size() > 0) {
+                // std::vector<std::string> function_names; function_names.push_back(ASRUtils::symbol_name(ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner)));
+                recursive_function_call_resolver(current_scope, array_variables, true);
+            }
 
             remove_original_statement = true;
             return;
