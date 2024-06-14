@@ -635,7 +635,7 @@ namespace LCompilers {
                 if( is_fixed_size ) {
                     tmp = llvm_utils->create_gep2(el_type, array, idx);
                 } else {
-                    tmp = llvm_utils->create_ptr_gep(array, idx);
+                    tmp = llvm_utils->create_ptr_gep2(el_type, array, idx);
                 }
             } else {
                 idx = cmo_convertor_single_element(array, m_args, n_args, check_for_bounds);

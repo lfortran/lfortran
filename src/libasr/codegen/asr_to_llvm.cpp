@@ -273,6 +273,22 @@ public:
         return LLVM::CreateGEP(*builder, x, idx);
     }
 
+    llvm::Value* CreateGEP2(ASR::ttype_t *type, llvm::Value *x, std::vector<llvm::Value *> &idx) {
+        llvm::Type* llvm_type = llvm_utils->get_type_from_ttype_t_util(
+            ASRUtils::extract_type(type), module.get()
+        );
+        return LLVM::CreateGEP2(*builder, llvm_type, x, idx);
+    }
+
+
+    llvm::Value* CreateGEP2(ASR::ttype_t *type, llvm::Value *x, int idx) {
+        std::vector<llvm::Value*> idx_vec = {
+        llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
+        llvm::ConstantInt::get(context, llvm::APInt(32, idx))};
+        llvm::Type* llvm_type = llvm_utils->get_type_from_ttype_t_util(type, module.get());
+        return LLVM::CreateGEP2(*builder, llvm_type, x, idx_vec);
+    }
+
     #define load_non_array_non_character_pointers(expr, type, llvm_value) if( ASR::is_a<ASR::StructInstanceMember_t>(*expr) && \
         !ASRUtils::is_array(type) && \
         LLVM::is_llvm_pointer(*type) && \
@@ -5167,7 +5183,7 @@ public:
                 !ASR::is_a<ASR::ArrayConstant_t>(*ASRUtils::expr_value(m_arg))) ||
                 ASRUtils::expr_value(m_arg) == nullptr ) &&
                 !ASR::is_a<ASR::ArrayConstructor_t>(*m_arg) ) {
-                tmp = llvm_utils->create_gep(tmp, 0);
+                tmp = CreateGEP2(ASRUtils::expr_type(m_arg), tmp, 0);
             }
         } else if(
             m_new == ASR::array_physical_typeType::UnboundedPointerToDataArray &&
