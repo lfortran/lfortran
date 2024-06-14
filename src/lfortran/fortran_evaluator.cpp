@@ -125,37 +125,37 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
     // LLVM -> Machine code -> Execution
     e->add_module(std::move(m));
     if (return_type == "integer4") {
-        int32_t r = e->int32fn(run_fn);
+        int32_t r = e->execfn<int32_t>(run_fn);
         result.type = EvalResult::integer4;
         result.i32 = r;
     } else if (return_type == "integer8") {
-        int64_t r = e->int64fn(run_fn);
+        int64_t r = e->execfn<int64_t>(run_fn);
         result.type = EvalResult::integer8;
         result.i64 = r;
     } else if (return_type == "real4") {
-        float r = e->floatfn(run_fn);
+        float r = e->execfn<float>(run_fn);
         result.type = EvalResult::real4;
         result.f32 = r;
     } else if (return_type == "real8") {
-        double r = e->doublefn(run_fn);
+        double r = e->execfn<double>(run_fn);
         result.type = EvalResult::real8;
         result.f64 = r;
     } else if (return_type == "complex4") {
-        std::complex<float> r = e->complex4fn(run_fn);
+        std::complex<float> r = e->execfn<std::complex<float>>(run_fn);
         result.type = EvalResult::complex4;
         result.c32.re = r.real();
         result.c32.im = r.imag();
     } else if (return_type == "complex8") {
-        std::complex<double> r = e->complex8fn(run_fn);
+        std::complex<double> r = e->execfn<std::complex<double>>(run_fn);
         result.type = EvalResult::complex8;
         result.c64.re = r.real();
         result.c64.im = r.imag();
     } else if (return_type == "logical") {
-        bool r = e->boolfn(run_fn);
+        bool r = e->execfn<bool>(run_fn);
         result.type = EvalResult::boolean;
         result.b = r;
     } else if (return_type == "void") {
-        e->voidfn(run_fn);
+        e->execfn<void>(run_fn);
         result.type = EvalResult::statement;
     } else if (return_type == "none") {
         result.type = EvalResult::none;
