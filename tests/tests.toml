@@ -425,6 +425,14 @@ filename = "errors/nint_overflow.f90"
 asr = true
 
 [[test]]
+filename = "errors/dint_args.f90"
+asr = true
+
+[[test]]
+filename = "errors/dnint_args.f90"
+asr = true
+
+[[test]]
 filename = "warnings/dim_assgn_test.f90"
 asr = true
 

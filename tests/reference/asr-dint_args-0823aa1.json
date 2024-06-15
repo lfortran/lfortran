@@ -1,0 +1,13 @@
+{
+    "basename": "asr-dint_args-0823aa1",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/dint_args.f90",
+    "infile_hash": "2070168962f7bf0a98cb987d443506650737beb6909ff2319b0ab779",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-dint_args-0823aa1.stderr",
+    "stderr_hash": "2ef1e87d1dd172a51e033ddada381c518c2e6f939ed7e3222a24225b",
+    "returncode": 2
+}

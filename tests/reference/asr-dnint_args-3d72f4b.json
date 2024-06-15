@@ -1,0 +1,13 @@
+{
+    "basename": "asr-dnint_args-3d72f4b",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/dnint_args.f90",
+    "infile_hash": "42430aca5c0789f759c918d3059f349331b047bc5ec628b428866496",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-dnint_args-3d72f4b.stderr",
+    "stderr_hash": "c95bfb2fbc2094b2f71e308f5166e79619d2d3d0284f62b5425679ee",
+    "returncode": 2
+}
