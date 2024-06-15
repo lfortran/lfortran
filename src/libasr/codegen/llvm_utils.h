@@ -182,7 +182,7 @@ namespace LCompilers {
             return ASR::is_a<ASR::Tuple_t>(*asr_type) ||
                    ASR::is_a<ASR::List_t>(*asr_type) ||
                    ASR::is_a<ASR::StructType_t>(*asr_type) ||
-                   ASR::is_a<ASR::Class_t>(*asr_type)||
+                   ASR::is_a<ASR::ClassType_t>(*asr_type)||
                    ASR::is_a<ASR::Dict_t>(*asr_type);
         }
         static inline bool is_llvm_pointer(const ASR::ttype_t& asr_type) {
@@ -282,7 +282,7 @@ namespace LCompilers {
             llvm::Type* getUnionType(ASR::ttype_t* _type,
                 llvm::Module* module, bool is_pointer=false);
 
-            llvm::Type* getClassType(ASR::ClassType_t* der_type, bool is_pointer=false);
+            llvm::Type* getClassType(ASR::Class_t* der_type, bool is_pointer=false);
 
             llvm::Type* getClassType(ASR::Struct_t* der_type, bool is_pointer=false);
 

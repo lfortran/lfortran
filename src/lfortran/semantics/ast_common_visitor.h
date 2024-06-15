@@ -3476,7 +3476,7 @@ public:
                 parent_scope->add_symbol(derived_type_name, v);
                 current_scope = parent_scope;
             }
-            type = ASRUtils::TYPE(ASR::make_Class_t(al, loc, v));
+            type = ASRUtils::TYPE(ASR::make_ClassType_t(al, loc, v));
             type = ASRUtils::make_Array_t_util(
                 al, loc, type, dims.p, dims.size(), abi, is_argument);
             if (is_pointer) {
@@ -4635,13 +4635,13 @@ public:
         ASR::Variable_t* v_variable = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(v));
         ASR::ttype_t* v_variable_m_type = ASRUtils::extract_type(v_variable->m_type);
         if (ASR::is_a<ASR::StructType_t>(*v_variable_m_type) ||
-                ASR::is_a<ASR::Class_t>(*v_variable_m_type)) {
+                ASR::is_a<ASR::ClassType_t>(*v_variable_m_type)) {
             ASR::ttype_t* v_type = v_variable_m_type;
             ASR::symbol_t *derived_type = nullptr;
             if (ASR::is_a<ASR::StructType_t>(*v_type)) {
                 derived_type = ASR::down_cast<ASR::StructType_t>(v_type)->m_derived_type;
-            } else if (ASR::is_a<ASR::Class_t>(*v_type)) {
-                derived_type = ASR::down_cast<ASR::Class_t>(v_type)->m_class_type;
+            } else if (ASR::is_a<ASR::ClassType_t>(*v_type)) {
+                derived_type = ASR::down_cast<ASR::ClassType_t>(v_type)->m_class_type;
             }
             ASR::Struct_t *der_type;
             if (ASR::is_a<ASR::ExternalSymbol_t>(*derived_type)) {
@@ -4737,8 +4737,8 @@ public:
             if ( ASR::is_a<ASR::StructType_t>(*dt_type) ) {
                 ASR::StructType_t* der = ASR::down_cast<ASR::StructType_t>(dt_type);
                 der_type = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(der->m_derived_type));
-            } else if( ASR::is_a<ASR::Class_t>(*dt_type) ) {
-                ASR::Class_t* der = ASR::down_cast<ASR::Class_t>(dt_type);
+            } else if( ASR::is_a<ASR::ClassType_t>(*dt_type) ) {
+                ASR::ClassType_t* der = ASR::down_cast<ASR::ClassType_t>(dt_type);
                 der_type = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(der->m_class_type));
             } else {
                 throw SemanticError("Variable '" + dt_name + "' is not a derived type", loc);
@@ -7340,9 +7340,9 @@ public:
             left_struct = ASR::down_cast<ASR::Struct_t>(
                 ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::StructType_t>(
                 left_type)->m_derived_type));
-        } else if ( ASR::is_a<ASR::Class_t>(*left_type) ) {
+        } else if ( ASR::is_a<ASR::ClassType_t>(*left_type) ) {
             left_struct = ASR::down_cast<ASR::Struct_t>(
-                ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Class_t>(
+                ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::ClassType_t>(
                 left_type)->m_class_type));
         }
 
