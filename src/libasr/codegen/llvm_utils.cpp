@@ -166,7 +166,7 @@ namespace LCompilers {
                 break;
             }
             case ASR::ttypeType::StructType: {
-                llvm_mem_type = getStruct(mem_type, module);
+                llvm_mem_type = getStructType(mem_type, module);
                 break;
             }
             case ASR::ttypeType::EnumType: {
@@ -233,7 +233,7 @@ namespace LCompilers {
         }
     }
 
-    llvm::Type* LLVMUtils::getStruct(ASR::Struct_t* der_type, llvm::Module* module, bool is_pointer) {
+    llvm::Type* LLVMUtils::getStructType(ASR::Struct_t* der_type, llvm::Module* module, bool is_pointer) {
         std::string der_type_name = std::string(der_type->m_name);
         createStructTypeContext(der_type);
         if (std::find(struct_type_stack.begin(), struct_type_stack.end(),
@@ -252,7 +252,7 @@ namespace LCompilers {
             if( der_type->m_parent != nullptr ) {
                 ASR::Struct_t *par_der_type = ASR::down_cast<ASR::Struct_t>(
                                                         ASRUtils::symbol_get_past_external(der_type->m_parent));
-                llvm::Type* par_llvm = getStruct(par_der_type, module);
+                llvm::Type* par_llvm = getStructType(par_der_type, module);
                 member_types.push_back(par_llvm);
                 dertype2parent[der_type_name] = std::string(par_der_type->m_name);
                 member_idx += 1;
@@ -275,7 +275,7 @@ namespace LCompilers {
         return (llvm::Type*) *der_type_llvm;
     }
 
-    llvm::Type* LLVMUtils::getStruct(ASR::ttype_t* _type, llvm::Module* module, bool is_pointer) {
+    llvm::Type* LLVMUtils::getStructType(ASR::ttype_t* _type, llvm::Module* module, bool is_pointer) {
         ASR::Struct_t* der_type;
         if( ASR::is_a<ASR::StructType_t>(*_type) ) {
             ASR::StructType_t* der = ASR::down_cast<ASR::StructType_t>(_type);
@@ -289,7 +289,7 @@ namespace LCompilers {
             LCOMPILERS_ASSERT(false);
             return nullptr; // silence a warning
         }
-        llvm::Type* type = getStruct(der_type, module, is_pointer);
+        llvm::Type* type = getStructType(der_type, module, is_pointer);
         LCOMPILERS_ASSERT(type != nullptr);
         return type;
     }
@@ -410,7 +410,7 @@ namespace LCompilers {
                 member_types.push_back(getClassType(class_type_t, is_pointer));
             } else if( ASR::is_a<ASR::Struct_t>(*der_sym) ) {
                 ASR::Struct_t* struct_type_t = ASR::down_cast<ASR::Struct_t>(der_sym);
-                member_types.push_back(getStruct(struct_type_t, module, is_pointer));
+                member_types.push_back(getStructType(struct_type_t, module, is_pointer));
             }
             der_type_llvm = llvm::StructType::create(context, member_types, der_type_name);
             name2dertype[der_type_name] = der_type_llvm;
@@ -498,7 +498,7 @@ namespace LCompilers {
                 break;
             }
             case ASR::ttypeType::StructType: {
-                el_type = getStruct(m_type_, module);
+                el_type = getStructType(m_type_, module);
                 break;
             }
             case ASR::ttypeType::Union: {
@@ -770,7 +770,7 @@ namespace LCompilers {
                 break;
             }
             case (ASR::ttypeType::StructType) : {
-                type = getStruct(asr_type, module, true);
+                type = getStructType(asr_type, module, true);
                 break;
             }
             case (ASR::ttypeType::Class) : {
@@ -1434,7 +1434,7 @@ namespace LCompilers {
                 break;
             }
             case (ASR::ttypeType::StructType) : {
-                llvm_type = getStruct(asr_type, module, false);
+                llvm_type = getStructType(asr_type, module, false);
                 break;
             }
             case (ASR::ttypeType::Class) : {

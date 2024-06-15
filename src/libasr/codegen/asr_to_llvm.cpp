@@ -4482,7 +4482,7 @@ public:
                     ASRUtils::type_get_past_pointer(target_type));
                 ASR::Struct_t* struct_type_t = ASR::down_cast<ASR::Struct_t>(
                     ASRUtils::symbol_get_past_external(class_t->m_class_type));
-                llvm_value = builder->CreateBitCast(llvm_value, llvm_utils->getStruct(struct_type_t, module.get(), true));
+                llvm_value = builder->CreateBitCast(llvm_value, llvm_utils->getStructType(struct_type_t, module.get(), true));
                 builder->CreateStore(llvm_value, llvm_target);
             } else if( is_target_class && is_value_class ) {
                 [[maybe_unused]] ASR::Class_t* target_class_t = ASR::down_cast<ASR::Class_t>(
@@ -5381,7 +5381,7 @@ public:
                     ASR::TypeStmtName_t* type_stmt_name = ASR::down_cast<ASR::TypeStmtName_t>(select_type_stmts[i]);
                     ASR::symbol_t* type_sym = ASRUtils::symbol_get_past_external(type_stmt_name->m_sym);
                     if( ASR::is_a<ASR::Struct_t>(*type_sym) ) {
-                        current_select_type_block_type = llvm_utils->getStruct(
+                        current_select_type_block_type = llvm_utils->getStructType(
                             ASR::down_cast<ASR::Struct_t>(type_sym), module.get(), true);
                         current_select_type_block_der_type = ASR::down_cast<ASR::Struct_t>(type_sym)->m_name;
                     } else {
@@ -5404,7 +5404,7 @@ public:
                     ASR::ClassStmt_t* class_stmt = ASR::down_cast<ASR::ClassStmt_t>(select_type_stmts[i]);
                     ASR::symbol_t* class_sym = ASRUtils::symbol_get_past_external(class_stmt->m_sym);
                     if( ASR::is_a<ASR::Struct_t>(*class_sym) ) {
-                        current_select_type_block_type = llvm_utils->getStruct(
+                        current_select_type_block_type = llvm_utils->getStructType(
                             ASR::down_cast<ASR::Struct_t>(class_sym), module.get(), true);
                         current_select_type_block_der_type = ASR::down_cast<ASR::Struct_t>(class_sym)->m_name;
                     } else {
@@ -8773,7 +8773,7 @@ public:
             llvm::Value* hash = llvm::ConstantInt::get(llvm_utils->getIntType(8), llvm::APInt(64, get_class_hash(struct_sym)));
             builder->CreateStore(hash, hash_ptr);
             llvm::Value* class_ptr = llvm_utils->create_gep(dt_polymorphic, 1);
-            builder->CreateStore(builder->CreateBitCast(dt, llvm_utils->getStruct(s_m_args0_type, module.get(), true)), class_ptr);
+            builder->CreateStore(builder->CreateBitCast(dt, llvm_utils->getStructType(s_m_args0_type, module.get(), true)), class_ptr);
             return dt_polymorphic;
         }
         return dt;
@@ -9153,7 +9153,7 @@ public:
             {
                 std::vector<llvm::Value*> args;
                 ASR::Struct_t* struct_type_t = ASR::down_cast<ASR::Struct_t>(type_sym);
-                llvm::Type* target_dt_type = llvm_utils->getStruct(struct_type_t, module.get(), true);
+                llvm::Type* target_dt_type = llvm_utils->getStructType(struct_type_t, module.get(), true);
                 llvm::Type* target_class_dt_type = llvm_utils->getClassType(struct_type_t);
                 llvm::Value* target_dt = builder->CreateAlloca(target_class_dt_type);
                 llvm::Value* target_dt_hash_ptr = llvm_utils->create_gep(target_dt, 0);
@@ -9240,7 +9240,7 @@ public:
             {
                 std::vector<llvm::Value*> args;
                 ASR::Struct_t* struct_type_t = ASR::down_cast<ASR::Struct_t>(type_sym);
-                llvm::Type* target_dt_type = llvm_utils->getStruct(struct_type_t, module.get(), true);
+                llvm::Type* target_dt_type = llvm_utils->getStructType(struct_type_t, module.get(), true);
                 llvm::Type* target_class_dt_type = llvm_utils->getClassType(struct_type_t);
                 llvm::Value* target_dt = builder->CreateAlloca(target_class_dt_type);
                 llvm::Value* target_dt_hash_ptr = llvm_utils->create_gep(target_dt, 0);
