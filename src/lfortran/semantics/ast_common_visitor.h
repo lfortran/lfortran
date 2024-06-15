@@ -5394,7 +5394,7 @@ public:
             return;
         }
 
-        int arg_size = args.size();
+        size_t arg_size = args.size();
         if(intrinsic_name == "dint" || intrinsic_name == "dnint") { 
             arg_size = 1;
             if (args[1]) {
