@@ -272,9 +272,9 @@ namespace LCompilers {
 
             void createStructTypeContext(ASR::Struct_t* der_type);
 
-            llvm::Type* getStruct(ASR::Struct_t* der_type, llvm::Module* module, bool is_pointer=false);
+            llvm::Type* getStructType(ASR::Struct_t* der_type, llvm::Module* module, bool is_pointer=false);
 
-            llvm::Type* getStruct(ASR::ttype_t* _type, llvm::Module* module, bool is_pointer=false);
+            llvm::Type* getStructType(ASR::ttype_t* _type, llvm::Module* module, bool is_pointer=false);
 
             llvm::Type* getUnionType(ASR::UnionType_t* union_type,
                 llvm::Module* module, bool is_pointer=false);
