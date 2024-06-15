@@ -5393,7 +5393,7 @@ public:
         if (intrinsic_mapping[intrinsic_name].second == "int4") {
             for (size_t i = 0; i < args.size(); i++) {
                 if (args[i] != nullptr) {
-                    ASR::ttype_t *arg_type = ASRUtils::expr_type(args[i]);
+                    ASR::ttype_t *arg_type = ASRUtils::type_get_past_array(ASRUtils::expr_type(args[i]));
                     if (!is_integer(*arg_type)) {
                         throw SemanticError("Argument " + std::to_string(i + 1) + " of " + intrinsic_name +
                                             " must be of integer type", loc);
@@ -5403,7 +5403,7 @@ public:
         } else if (intrinsic_mapping[intrinsic_name].second == "real") {
             for (size_t i = 0; i < args.size(); i++) {
                 if (args[i] != nullptr) {
-                    ASR::ttype_t *arg_type = ASRUtils::expr_type(args[i]);
+                    ASR::ttype_t *arg_type = ASRUtils::type_get_past_array(ASRUtils::expr_type(args[i]));
                     if (!is_real(*arg_type)) {
                         throw SemanticError("Argument " + std::to_string(i + 1) + " of " + intrinsic_name +
                                             " must be of real type", loc);
@@ -5413,7 +5413,7 @@ public:
         } else if (intrinsic_mapping[intrinsic_name].second == "real4") {
             for (size_t i = 0; i < args.size(); i++) {
                 if (args[i] != nullptr) {
-                    ASR::ttype_t *arg_type = ASRUtils::expr_type(args[i]);
+                    ASR::ttype_t *arg_type = ASRUtils::type_get_past_array(ASRUtils::expr_type(args[i]));
                     int kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
                     if (!is_real(*arg_type) || kind != 4) {
                         throw SemanticError("Argument " + std::to_string(i + 1) + " of " + intrinsic_name +
@@ -5424,7 +5424,7 @@ public:
         } else if (intrinsic_mapping[intrinsic_name].second == "real8") {
             for (size_t i = 0; i < args.size(); i++) {
                 if (args[i] != nullptr) {
-                    ASR::ttype_t *arg_type = ASRUtils::expr_type(args[i]);
+                    ASR::ttype_t *arg_type = ASRUtils::type_get_past_array(ASRUtils::expr_type(args[i]));
                     int kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
                     if (!is_real(*arg_type) || kind != 8) {
                         throw SemanticError("Argument " + std::to_string(i + 1) + " of " + intrinsic_name +
@@ -5435,7 +5435,7 @@ public:
         } else if (intrinsic_mapping[intrinsic_name].second == "complex") {
             for (size_t i = 0; i < args.size(); i++) {
                 if (args[i] != nullptr) {
-                    ASR::ttype_t *arg_type = ASRUtils::expr_type(args[i]);
+                    ASR::ttype_t *arg_type = ASRUtils::type_get_past_array(ASRUtils::expr_type(args[i]));
                     if (!is_complex(*arg_type)) {
                         throw SemanticError("Argument " + std::to_string(i + 1) + " of " + intrinsic_name +
                                             " must be of complex type", loc);
@@ -5445,7 +5445,7 @@ public:
         } else if (intrinsic_mapping[intrinsic_name].second == "complex4") {
             for (size_t i = 0; i < args.size(); i++) {
                 if (args[i] != nullptr) {
-                    ASR::ttype_t *arg_type = ASRUtils::expr_type(args[i]);
+                    ASR::ttype_t *arg_type = ASRUtils::type_get_past_array(ASRUtils::expr_type(args[i]));
                     int kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
                     if (!is_complex(*arg_type) || kind != 4) {
                         throw SemanticError("Argument " + std::to_string(i + 1) + " of " + intrinsic_name +
@@ -5456,7 +5456,7 @@ public:
         } else if (intrinsic_mapping[intrinsic_name].second == "complex8") {
             for (size_t i = 0; i < args.size(); i++) {
                 if (args[i] != nullptr) {
-                    ASR::ttype_t *arg_type = ASRUtils::expr_type(args[i]);
+                    ASR::ttype_t *arg_type = ASRUtils::type_get_past_array(ASRUtils::expr_type(args[i]));
                     int kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
                     if (!is_complex(*arg_type) || kind != 8) {
                         throw SemanticError("Argument " + std::to_string(i + 1) + " of " + intrinsic_name +
