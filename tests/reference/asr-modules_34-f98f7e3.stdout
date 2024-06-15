@@ -347,7 +347,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Class
+                                                    (ClassType
                                                         10 version_t
                                                     )
                                                     ()
@@ -377,7 +377,7 @@
                                         })
                                     as_string
                                     (FunctionType
-                                        [(Class
+                                        [(ClassType
                                             10 version_t
                                         )]
                                         (Allocatable
@@ -429,7 +429,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Class
+                                                    (ClassType
                                                         10 version_t
                                                     )
                                                     ()
@@ -459,7 +459,7 @@
                                         })
                                     to_string
                                     (FunctionType
-                                        [(Class
+                                        [(ClassType
                                             10 version_t
                                         )
                                         (Allocatable

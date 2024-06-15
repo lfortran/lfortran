@@ -21,7 +21,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Class
+                                                    (ClassType
                                                         3 ~abstract_type
                                                     )
                                                     ()
@@ -51,7 +51,7 @@
                                         })
                                     subrout
                                     (FunctionType
-                                        [(Class
+                                        [(ClassType
                                             3 ~abstract_type
                                         )]
                                         ()

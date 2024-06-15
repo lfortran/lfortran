@@ -762,7 +762,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Class
+                                                    (ClassType
                                                         9 dependency_tree_t
                                                     )
                                                     ()
@@ -774,7 +774,7 @@
                                         })
                                     update_dependency
                                     (FunctionType
-                                        [(Class
+                                        [(ClassType
                                             9 dependency_tree_t
                                         )
                                         (Character 1 -1 ())

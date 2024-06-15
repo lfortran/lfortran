@@ -63,7 +63,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Class
+                                                    (ClassType
                                                         2 t_1
                                                     )
                                                     ()
@@ -75,7 +75,7 @@
                                         })
                                     multiply
                                     (FunctionType
-                                        [(Class
+                                        [(ClassType
                                             2 t_1
                                         )
                                         (Real 4)]
@@ -172,7 +172,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Class
+                                                    (ClassType
                                                         2 t_1
                                                     )
                                                     ()
@@ -184,7 +184,7 @@
                                         })
                                     sqrt_subtract
                                     (FunctionType
-                                        [(Class
+                                        [(ClassType
                                             2 t_1
                                         )
                                         (Integer 4)]

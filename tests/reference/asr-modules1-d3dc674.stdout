@@ -37,7 +37,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Class
+                                                    (ClassType
                                                         8 t1
                                                     )
                                                     ()
@@ -49,7 +49,7 @@
                                         })
                                     f
                                     (FunctionType
-                                        [(Class
+                                        [(ClassType
                                             8 t1
                                         )]
                                         (Logical 4)
@@ -166,7 +166,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Class
+                                                    (ClassType
                                                         4 t2
                                                     )
                                                     ()
@@ -178,7 +178,7 @@
                                         })
                                     sub
                                     (FunctionType
-                                        [(Class
+                                        [(ClassType
                                             4 t2
                                         )]
                                         ()
@@ -206,7 +206,7 @@
                                                 (Var 6 self)
                                                 6 1_t2_val
                                                 (Allocatable
-                                                    (Class
+                                                    (ClassType
                                                         4 t1
                                                     )
                                                 )
@@ -251,7 +251,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Class
+                                                        (ClassType
                                                             4 t1
                                                         )
                                                     )

@@ -122,7 +122,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Class
+                                                    (ClassType
                                                         2 toml_table
                                                     )
                                                     ()
@@ -134,7 +134,7 @@
                                         })
                                     check_table
                                     (FunctionType
-                                        [(Class
+                                        [(ClassType
                                             2 toml_table
                                         )]
                                         ()
@@ -235,7 +235,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Class
+                                                    (ClassType
                                                         2 toml_table
                                                     )
                                                     ()
@@ -254,7 +254,7 @@
                                                     ()
                                                     Default
                                                     (Pointer
-                                                        (Class
+                                                        (ClassType
                                                             2 toml_value
                                                         )
                                                     )
@@ -320,7 +320,7 @@
                                         })
                                     get_table
                                     (FunctionType
-                                        [(Class
+                                        [(ClassType
                                             2 toml_table
                                         )
                                         (Pointer

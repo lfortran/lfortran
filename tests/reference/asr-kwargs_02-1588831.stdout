@@ -58,7 +58,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Class
+                                                    (ClassType
                                                         2 logger_type
                                                     )
                                                     ()
@@ -86,7 +86,7 @@
                                         })
                                     add_log_file
                                     (FunctionType
-                                        [(Class
+                                        [(ClassType
                                             2 logger_type
                                         )
                                         (Character 1 -1 ())
@@ -167,7 +167,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Class
+                                                    (ClassType
                                                         2 logger_type
                                                     )
                                                     ()
@@ -195,7 +195,7 @@
                                         })
                                     log_io_error
                                     (FunctionType
-                                        [(Class
+                                        [(ClassType
                                             2 logger_type
                                         )
                                         (Integer 4)

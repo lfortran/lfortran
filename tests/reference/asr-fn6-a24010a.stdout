@@ -21,7 +21,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Class
+                                                    (ClassType
                                                         6 ~abstract_type
                                                     )
                                                     ()
@@ -39,7 +39,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Class
+                                                    (ClassType
                                                         6 ~abstract_type
                                                     )
                                                     ()
@@ -57,7 +57,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Class
+                                                    (ClassType
                                                         6 ~abstract_type
                                                     )
                                                     ()
@@ -75,7 +75,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Class
+                                                    (ClassType
                                                         6 ~abstract_type
                                                     )
                                                     ()
@@ -93,7 +93,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Class
+                                                    (ClassType
                                                         6 ~abstract_type
                                                     )
                                                     ()
@@ -111,7 +111,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Class
+                                                    (ClassType
                                                         6 ~abstract_type
                                                     )
                                                     ()
@@ -129,7 +129,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Class
+                                                    (ClassType
                                                         6 ~abstract_type
                                                     )
                                                     ()
@@ -147,7 +147,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Class
+                                                    (ClassType
                                                         6 ~abstract_type
                                                     )
                                                     ()
@@ -210,28 +210,28 @@
                                     journal
                                     (FunctionType
                                         [(Character 1 -1 ())
-                                        (Class
+                                        (ClassType
                                             6 ~abstract_type
                                         )
-                                        (Class
+                                        (ClassType
                                             6 ~abstract_type
                                         )
-                                        (Class
+                                        (ClassType
                                             6 ~abstract_type
                                         )
-                                        (Class
+                                        (ClassType
                                             6 ~abstract_type
                                         )
-                                        (Class
+                                        (ClassType
                                             6 ~abstract_type
                                         )
-                                        (Class
+                                        (ClassType
                                             6 ~abstract_type
                                         )
-                                        (Class
+                                        (ClassType
                                             6 ~abstract_type
                                         )
-                                        (Class
+                                        (ClassType
                                             6 ~abstract_type
                                         )
                                         (Character 1 -1 ())]
@@ -315,7 +315,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Class
+                                                    (ClassType
                                                         3 ~abstract_type
                                                     )
                                                     ()
@@ -333,7 +333,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Class
+                                                    (ClassType
                                                         3 ~abstract_type
                                                     )
                                                     ()
@@ -351,7 +351,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Class
+                                                    (ClassType
                                                         3 ~abstract_type
                                                     )
                                                     ()
@@ -369,7 +369,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Class
+                                                    (ClassType
                                                         3 ~abstract_type
                                                     )
                                                     ()
@@ -387,7 +387,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Class
+                                                    (ClassType
                                                         3 ~abstract_type
                                                     )
                                                     ()
@@ -405,7 +405,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Class
+                                                    (ClassType
                                                         3 ~abstract_type
                                                     )
                                                     ()
@@ -423,7 +423,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Class
+                                                    (ClassType
                                                         3 ~abstract_type
                                                     )
                                                     ()
@@ -441,7 +441,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Class
+                                                    (ClassType
                                                         3 ~abstract_type
                                                     )
                                                     ()
@@ -550,7 +550,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (Class
+                                                                    (ClassType
                                                                         3 ~abstract_type
                                                                     )
                                                                     ()
@@ -988,7 +988,7 @@
                                                         })
                                                     print_generic
                                                     (FunctionType
-                                                        [(Class
+                                                        [(ClassType
                                                             3 ~abstract_type
                                                         )]
                                                         ()
@@ -1185,28 +1185,28 @@
                                         })
                                     msg_scalar
                                     (FunctionType
-                                        [(Class
+                                        [(ClassType
                                             3 ~abstract_type
                                         )
-                                        (Class
+                                        (ClassType
                                             3 ~abstract_type
                                         )
-                                        (Class
+                                        (ClassType
                                             3 ~abstract_type
                                         )
-                                        (Class
+                                        (ClassType
                                             3 ~abstract_type
                                         )
-                                        (Class
+                                        (ClassType
                                             3 ~abstract_type
                                         )
-                                        (Class
+                                        (ClassType
                                             3 ~abstract_type
                                         )
-                                        (Class
+                                        (ClassType
                                             3 ~abstract_type
                                         )
-                                        (Class
+                                        (ClassType
                                             3 ~abstract_type
                                         )
                                         (Character 1 -1 ())]

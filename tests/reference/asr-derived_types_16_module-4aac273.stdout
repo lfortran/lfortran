@@ -67,7 +67,7 @@
                                     ()
                                     Default
                                     (Allocatable
-                                        (Class
+                                        (ClassType
                                             5 fpm_run_settings
                                         )
                                     )
@@ -264,7 +264,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Class
+                                                        (ClassType
                                                             2 fpm_run_settings
                                                         )
                                                     )
@@ -278,7 +278,7 @@
                                     get_command_line_settings
                                     (FunctionType
                                         [(Allocatable
-                                            (Class
+                                            (ClassType
                                                 2 fpm_run_settings
                                             )
                                         )]

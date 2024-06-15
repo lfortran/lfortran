@@ -248,7 +248,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Class
+                                                    (ClassType
                                                         2 t_2
                                                     )
                                                     ()
@@ -260,7 +260,7 @@
                                         })
                                     sub_1
                                     (FunctionType
-                                        [(Class
+                                        [(ClassType
                                             2 t_2
                                         )
                                         (Integer 4)]
@@ -361,7 +361,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (Class
+                                                                    (ClassType
                                                                         2 t_2
                                                                     )
                                                                     ()
@@ -379,7 +379,7 @@
                                                             [(()
                                                             (IntegerConstant 0 (Integer 4))
                                                             ())]
-                                                            (Class
+                                                            (ClassType
                                                                 2 t_2
                                                             )
                                                             ColMajor
@@ -433,7 +433,7 @@
                                                     Default
                                                     (Allocatable
                                                         (Array
-                                                            (Class
+                                                            (ClassType
                                                                 2 t_2
                                                             )
                                                             [(()
@@ -452,7 +452,7 @@
                                     (FunctionType
                                         [(Allocatable
                                             (Array
-                                                (Class
+                                                (ClassType
                                                     2 t_2
                                                 )
                                                 [(()
@@ -481,7 +481,7 @@
                                                 [(()
                                                 (IntegerConstant 0 (Integer 4))
                                                 ())]
-                                                (Class
+                                                (ClassType
                                                     2 t_2
                                                 )
                                                 ColMajor

@@ -48,7 +48,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Class
+                                                    (ClassType
                                                         2 bitset_type
                                                     )
                                                     ()
@@ -60,7 +60,7 @@
                                         })
                                     all_abstract
                                     (FunctionType
-                                        [(Class
+                                        [(ClassType
                                             2 bitset_type
                                         )]
                                         (Logical 4)

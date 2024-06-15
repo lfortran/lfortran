@@ -75,7 +75,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Class
+                                                    (ClassType
                                                         7 toml_date
                                                     )
                                                     ()
@@ -90,7 +90,7 @@
                                         [(Allocatable
                                             (Character 1 -2 ())
                                         )
-                                        (Class
+                                        (ClassType
                                             7 toml_date
                                         )]
                                         ()
@@ -237,7 +237,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Class
+                                                    (ClassType
                                                         7 toml_datetime
                                                     )
                                                     ()
@@ -270,7 +270,7 @@
                                         [(Allocatable
                                             (Character 1 -2 ())
                                         )
-                                        (Class
+                                        (ClassType
                                             7 toml_datetime
                                         )]
                                         ()
@@ -820,7 +820,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Class
+                                                    (ClassType
                                                         7 toml_time
                                                     )
                                                     ()
@@ -845,7 +845,7 @@
                                         [(Allocatable
                                             (Character 1 -2 ())
                                         )
-                                        (Class
+                                        (ClassType
                                             7 toml_time
                                         )]
                                         ()

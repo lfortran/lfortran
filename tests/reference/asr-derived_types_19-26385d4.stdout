@@ -42,7 +42,7 @@
                                                     ()
                                                     Default
                                                     (Pointer
-                                                        (Class
+                                                        (ClassType
                                                             4 toml_value
                                                         )
                                                     )

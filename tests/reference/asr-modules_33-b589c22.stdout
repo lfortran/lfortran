@@ -80,7 +80,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Class
+                                                    (ClassType
                                                         7 dependency_tree_t
                                                     )
                                                     ()
@@ -92,7 +92,7 @@
                                         })
                                     add_project
                                     (FunctionType
-                                        [(Class
+                                        [(ClassType
                                             7 dependency_tree_t
                                         )
                                         (StructType
@@ -192,7 +192,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Class
+                                                    (ClassType
                                                         7 dependency_tree_t
                                                     )
                                                     ()
@@ -204,7 +204,7 @@
                                         })
                                     add_project_dependencies
                                     (FunctionType
-                                        [(Class
+                                        [(ClassType
                                             7 dependency_tree_t
                                         )
                                         (Character 1 -1 ())
@@ -691,7 +691,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Class
+                                                    (ClassType
                                                         7 dependency_tree_t
                                                     )
                                                     ()
@@ -703,7 +703,7 @@
                                         })
                                     update_dependency
                                     (FunctionType
-                                        [(Class
+                                        [(ClassType
                                             7 dependency_tree_t
                                         )
                                         (Character 1 -1 ())
