@@ -98,7 +98,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Class
+                                                    (ClassType
                                                         4 toml_character_tokenizer
                                                     )
                                                     ()
@@ -126,7 +126,7 @@
                                         })
                                     next_token
                                     (FunctionType
-                                        [(Class
+                                        [(ClassType
                                             4 toml_character_tokenizer
                                         )
                                         (Logical 4)]
@@ -263,7 +263,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Class
+                                                    (ClassType
                                                         8 toml_tokenizer
                                                     )
                                                     ()
@@ -291,7 +291,7 @@
                                         })
                                     next_token
                                     (FunctionType
-                                        [(Class
+                                        [(ClassType
                                             8 toml_tokenizer
                                         )
                                         (Logical 4)]
@@ -341,7 +341,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Class
+                                                    (ClassType
                                                         8 toml_tokenizer
                                                     )
                                                     ()
@@ -373,7 +373,7 @@
                                         })
                                     parse_select
                                     (FunctionType
-                                        [(Class
+                                        [(ClassType
                                             8 toml_tokenizer
                                         )]
                                         ()

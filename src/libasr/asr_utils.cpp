@@ -591,9 +591,9 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
         left_struct = ASR::down_cast<ASR::Struct_t>(
             ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::StructType_t>(
             left_type)->m_derived_type));
-    } else if ( ASR::is_a<ASR::Class_t>(*left_type) ) {
+    } else if ( ASR::is_a<ASR::ClassType_t>(*left_type) ) {
         left_struct = ASR::down_cast<ASR::Struct_t>(
-            ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Class_t>(
+            ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::ClassType_t>(
             left_type)->m_class_type));
     }
     bool found = false;
@@ -1127,9 +1127,9 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
         left_struct = ASR::down_cast<ASR::Struct_t>(
             ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::StructType_t>(
             left_type)->m_derived_type));
-    } else if ( ASR::is_a<ASR::Class_t>(*left_type) ) {
+    } else if ( ASR::is_a<ASR::ClassType_t>(*left_type) ) {
         left_struct = ASR::down_cast<ASR::Struct_t>(
-            ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Class_t>(
+            ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::ClassType_t>(
             left_type)->m_class_type));
     }
     bool found = false;
@@ -1158,9 +1158,9 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                         ASR::ttype_t* right_arg_type = ASRUtils::expr_type(func->m_args[1]);
                         if( (left_arg_type->type == left_type->type &&
                             right_arg_type->type == right_type->type)
-                        || (ASR::is_a<ASR::Class_t>(*left_arg_type) &&
+                        || (ASR::is_a<ASR::ClassType_t>(*left_arg_type) &&
                             ASR::is_a<ASR::StructType_t>(*left_type))
-                        || (ASR::is_a<ASR::Class_t>(*right_arg_type) &&
+                        || (ASR::is_a<ASR::ClassType_t>(*right_arg_type) &&
                             ASR::is_a<ASR::StructType_t>(*right_type))) {
                             found = true;
                             Vec<ASR::call_arg_t> a_args;

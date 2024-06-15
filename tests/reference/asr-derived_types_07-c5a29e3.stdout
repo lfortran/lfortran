@@ -96,7 +96,7 @@
                                                     ()
                                                     Default
                                                     (Pointer
-                                                        (Class
+                                                        (ClassType
                                                             9 toml_value
                                                         )
                                                     )
@@ -115,7 +115,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Class
+                                                    (ClassType
                                                         9 toml_vector
                                                     )
                                                     ()
@@ -127,12 +127,12 @@
                                         })
                                     find
                                     (FunctionType
-                                        [(Class
+                                        [(ClassType
                                             9 toml_vector
                                         )
                                         (Character 1 -1 ())
                                         (Pointer
-                                            (Class
+                                            (ClassType
                                                 9 toml_value
                                             )
                                         )]
@@ -197,7 +197,7 @@
                                                     )
                                                     13 1_toml_node_val
                                                     (Allocatable
-                                                        (Class
+                                                        (ClassType
                                                             9 toml_value
                                                         )
                                                     )
@@ -242,7 +242,7 @@
                                                         )
                                                         13 1_toml_node_val
                                                         (Allocatable
-                                                            (Class
+                                                            (ClassType
                                                                 9 toml_value
                                                             )
                                                         )
@@ -279,7 +279,7 @@
                                                         )
                                                         13 1_toml_node_val
                                                         (Allocatable
-                                                            (Class
+                                                            (ClassType
                                                                 9 toml_value
                                                             )
                                                         )
@@ -465,7 +465,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Class
+                                                        (ClassType
                                                             9 toml_value
                                                         )
                                                     )
@@ -602,7 +602,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Class
+                                                    (ClassType
                                                         6 toml_keyval
                                                     )
                                                     ()
@@ -614,7 +614,7 @@
                                         })
                                     destroy
                                     (FunctionType
-                                        [(Class
+                                        [(ClassType
                                             6 toml_keyval
                                         )]
                                         ()
@@ -772,7 +772,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Class
+                                                    (ClassType
                                                         2 toml_value
                                                     )
                                                     ()
@@ -784,7 +784,7 @@
                                         })
                                     destroy
                                     (FunctionType
-                                        [(Class
+                                        [(ClassType
                                             2 toml_value
                                         )]
                                         ()
@@ -864,7 +864,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Class
+                                                    (ClassType
                                                         2 toml_value
                                                     )
                                                     ()
@@ -876,7 +876,7 @@
                                         })
                                     match_key
                                     (FunctionType
-                                        [(Class
+                                        [(ClassType
                                             2 toml_value
                                         )
                                         (Character 1 -1 ())]

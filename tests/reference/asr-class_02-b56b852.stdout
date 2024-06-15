@@ -127,7 +127,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Class
+                                                    (ClassType
                                                         2 circle
                                                     )
                                                     ()
@@ -139,7 +139,7 @@
                                         })
                                     circle_area
                                     (FunctionType
-                                        [(Class
+                                        [(ClassType
                                             2 circle
                                         )]
                                         (Real 4)
@@ -242,7 +242,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Class
+                                                    (ClassType
                                                         2 circle
                                                     )
                                                     ()
@@ -254,7 +254,7 @@
                                         })
                                     circle_print
                                     (FunctionType
-                                        [(Class
+                                        [(ClassType
                                             2 circle
                                         )]
                                         ()

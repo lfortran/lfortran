@@ -39,7 +39,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Class
+                                                    (ClassType
                                                         2 toml_tokenizer
                                                     )
                                                     ()
@@ -62,7 +62,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (Class
+                                                                    (ClassType
                                                                         2 toml_tokenizer
                                                                     )
                                                                     ()
@@ -115,7 +115,7 @@
                                                         })
                                                     fill_stack
                                                     (FunctionType
-                                                        [(Class
+                                                        [(ClassType
                                                             2 toml_tokenizer
                                                         )
                                                         (Integer 4)
@@ -266,7 +266,7 @@
                                         })
                                     parse_select
                                     (FunctionType
-                                        [(Class
+                                        [(ClassType
                                             2 toml_tokenizer
                                         )]
                                         ()

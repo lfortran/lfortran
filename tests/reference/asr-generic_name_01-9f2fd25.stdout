@@ -171,7 +171,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Class
+                                                    (ClassType
                                                         2 complextype
                                                     )
                                                     ()
@@ -183,7 +183,7 @@
                                         })
                                     integer_add_subrout
                                     (FunctionType
-                                        [(Class
+                                        [(ClassType
                                             2 complextype
                                         )
                                         (Integer 4)
@@ -358,7 +358,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Class
+                                                    (ClassType
                                                         2 complextype
                                                     )
                                                     ()
@@ -370,7 +370,7 @@
                                         })
                                     real_add_subrout
                                     (FunctionType
-                                        [(Class
+                                        [(ClassType
                                             2 complextype
                                         )
                                         (Real 4)

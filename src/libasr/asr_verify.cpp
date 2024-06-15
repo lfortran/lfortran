@@ -545,8 +545,8 @@ public:
             } else if( ASR::is_a<ASR::Union_t>(*var_type) ) {
                 sym = ASR::down_cast<ASR::Union_t>(var_type)->m_union_type;
                 aggregate_type_name = ASRUtils::symbol_name(sym);
-            } else if( ASR::is_a<ASR::Class_t>(*var_type) ) {
-                sym = ASR::down_cast<ASR::Class_t>(var_type)->m_class_type;
+            } else if( ASR::is_a<ASR::ClassType_t>(*var_type) ) {
+                sym = ASR::down_cast<ASR::ClassType_t>(var_type)->m_class_type;
                 aggregate_type_name = ASRUtils::symbol_name(sym);
             }
             if( aggregate_type_name && ASRUtils::symbol_parent_symtab(sym) != current_symtab ) {
@@ -973,13 +973,13 @@ public:
                 type_sym = ASR::down_cast<ASR::StructType_t>(t2)->m_derived_type;
                 break;
             }
-            case (ASR::ttypeType::Class): {
-                type_sym = ASR::down_cast<ASR::Class_t>(t2)->m_class_type;
+            case (ASR::ttypeType::ClassType): {
+                type_sym = ASR::down_cast<ASR::ClassType_t>(t2)->m_class_type;
                 break;
             }
             default :
                 require_with_loc(false,
-                    "m_dt::m_v::m_type must point to a type with a symbol table (StructType or Class)",
+                    "m_dt::m_v::m_type must point to a type with a symbol table (StructType or ClassType)",
                     dt->base.loc);
         }
         return get_dt_symtab(type_sym);
@@ -1014,8 +1014,8 @@ public:
                 parent = der_type->m_parent;
                 break;
             }
-            case (ASR::ttypeType::Class): {
-                type_sym = ASR::down_cast<ASR::Class_t>(t2)->m_class_type;
+            case (ASR::ttypeType::ClassType): {
+                type_sym = ASR::down_cast<ASR::ClassType_t>(t2)->m_class_type;
                 type_sym = ASRUtils::symbol_get_past_external(type_sym);
                 if( type_sym->type == ASR::symbolType::Struct ) {
                     ASR::Struct_t* der_type = ASR::down_cast<ASR::Struct_t>(type_sym);

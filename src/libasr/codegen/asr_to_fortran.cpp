@@ -691,7 +691,7 @@ public:
         src = r;
     }
 
-    // void visit_ClassType(const ASR::ClassType_t &x) {}
+    // void visit_Class(const ASR::Class_t &x) {}
 
     // void visit_ClassProcedure(const ASR::ClassProcedure_t &x) {}
 

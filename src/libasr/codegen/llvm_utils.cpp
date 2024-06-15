@@ -281,8 +281,8 @@ namespace LCompilers {
             ASR::StructType_t* der = ASR::down_cast<ASR::StructType_t>(_type);
             ASR::symbol_t* der_sym = ASRUtils::symbol_get_past_external(der->m_derived_type);
             der_type = ASR::down_cast<ASR::Struct_t>(der_sym);
-        } else if( ASR::is_a<ASR::Class_t>(*_type) ) {
-            ASR::Class_t* der = ASR::down_cast<ASR::Class_t>(_type);
+        } else if( ASR::is_a<ASR::ClassType_t>(*_type) ) {
+            ASR::ClassType_t* der = ASR::down_cast<ASR::ClassType_t>(_type);
             ASR::symbol_t* der_sym = ASRUtils::symbol_get_past_external(der->m_class_type);
             der_type = ASR::down_cast<ASR::Struct_t>(der_sym);
         } else {
@@ -330,7 +330,7 @@ namespace LCompilers {
         return getUnionType(union_type, module, is_pointer);
     }
 
-    llvm::Type* LLVMUtils::getClassType(ASR::ClassType_t* der_type, bool is_pointer) {
+    llvm::Type* LLVMUtils::getClassType(ASR::Class_t* der_type, bool is_pointer) {
         const std::map<std::string, ASR::symbol_t*>& scope = der_type->m_symtab->get_scope();
         std::vector<llvm::Type*> member_types;
         int member_idx = 0;
@@ -351,7 +351,7 @@ namespace LCompilers {
                         mem_type = getFPType(a_kind);
                         break;
                     }
-                    case ASR::ttypeType::Class: {
+                    case ASR::ttypeType::ClassType: {
                         mem_type = getClassType(member->m_type);
                         break;
                     }
@@ -393,7 +393,7 @@ namespace LCompilers {
     }
 
     llvm::Type* LLVMUtils::getClassType(ASR::ttype_t* _type, bool is_pointer) {
-        ASR::Class_t* der = ASR::down_cast<ASR::Class_t>(_type);
+        ASR::ClassType_t* der = ASR::down_cast<ASR::ClassType_t>(_type);
         ASR::symbol_t* der_sym = ASRUtils::symbol_get_past_external(der->m_class_type);
         std::string der_sym_name = ASRUtils::symbol_name(der_sym);
         std::string der_type_name = der_sym_name + std::string("_polymorphic");
@@ -405,8 +405,8 @@ namespace LCompilers {
             member_types.push_back(getIntType(8));
             if( der_sym_name == "~abstract_type" ) {
                 member_types.push_back(llvm::Type::getVoidTy(context)->getPointerTo());
-            } else if( ASR::is_a<ASR::ClassType_t>(*der_sym) ) {
-                ASR::ClassType_t* class_type_t = ASR::down_cast<ASR::ClassType_t>(der_sym);
+            } else if( ASR::is_a<ASR::Class_t>(*der_sym) ) {
+                ASR::Class_t* class_type_t = ASR::down_cast<ASR::Class_t>(der_sym);
                 member_types.push_back(getClassType(class_type_t, is_pointer));
             } else if( ASR::is_a<ASR::Struct_t>(*der_sym) ) {
                 ASR::Struct_t* struct_type_t = ASR::down_cast<ASR::Struct_t>(der_sym);
@@ -505,7 +505,7 @@ namespace LCompilers {
                 el_type = getUnionType(m_type_, module);
                 break;
             }
-            case ASR::ttypeType::Class: {
+            case ASR::ttypeType::ClassType: {
                 el_type = getClassType(m_type_);
                 break;
             }
@@ -582,7 +582,7 @@ namespace LCompilers {
         bool get_pointer) {
         llvm::Type* type = nullptr;
 
-        #define handle_llvm_pointers2() bool is_pointer_ = ASR::is_a<ASR::Class_t>(*t2) || \
+        #define handle_llvm_pointers2() bool is_pointer_ = ASR::is_a<ASR::ClassType_t>(*t2) || \
             (ASR::is_a<ASR::Character_t>(*t2) && arg_m_abi != ASR::abiType::BindC); \
             type = get_arg_type_from_ttype_t(t2, nullptr, m_abi, arg_m_abi, \
                         m_storage, arg_m_value_attr, n_dims, a_kind, \
@@ -773,7 +773,7 @@ namespace LCompilers {
                 type = getStructType(asr_type, module, true);
                 break;
             }
-            case (ASR::ttypeType::Class) : {
+            case (ASR::ttypeType::ClassType) : {
                 type = getClassType(asr_type, true)->getPointerTo();
                 break;
             }
@@ -1437,7 +1437,7 @@ namespace LCompilers {
                 llvm_type = getStructType(asr_type, module, false);
                 break;
             }
-            case (ASR::ttypeType::Class) : {
+            case (ASR::ttypeType::ClassType) : {
                 llvm_type = getClassType(asr_type, is_pointer);
                 break;
             }
@@ -1447,7 +1447,7 @@ namespace LCompilers {
             }
             case (ASR::ttypeType::Pointer) : {
                 ASR::ttype_t *t2 = ASR::down_cast<ASR::Pointer_t>(asr_type)->m_type;
-                bool is_pointer_ = ( ASR::is_a<ASR::Class_t>(*t2) ||
+                bool is_pointer_ = ( ASR::is_a<ASR::ClassType_t>(*t2) ||
                     (ASR::is_a<ASR::Character_t>(*t2) && m_abi != ASR::abiType::BindC) );
                 is_malloc_array_type = ASRUtils::is_array(t2);
                 handle_llvm_pointers1()

@@ -123,7 +123,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (Class
+                                                                    (ClassType
                                                                         7 intvector
                                                                     )
                                                                     ()
@@ -135,7 +135,7 @@
                                                         })
                                                     __asr_push_back
                                                     (FunctionType
-                                                        [(Class
+                                                        [(ClassType
                                                             7 intvector
                                                         )
                                                         (Integer 4)]
@@ -283,7 +283,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (Class
+                                                                    (ClassType
                                                                         7 intvector
                                                                     )
                                                                     ()
@@ -318,7 +318,7 @@
                                                         })
                                                     __asr_resize
                                                     (FunctionType
-                                                        [(Class
+                                                        [(ClassType
                                                             7 intvector
                                                         )
                                                         (Integer 4)]
@@ -634,7 +634,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Class
+                                                    (ClassType
                                                         7 intvector
                                                     )
                                                     ()
@@ -763,7 +763,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (Class
+                                                                    (ClassType
                                                                         3 vector
                                                                     )
                                                                     ()
@@ -775,7 +775,7 @@
                                                         })
                                                     push_back
                                                     (FunctionType
-                                                        [(Class
+                                                        [(ClassType
                                                             3 vector
                                                         )
                                                         (TypeParameter
@@ -929,7 +929,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (Class
+                                                                    (ClassType
                                                                         3 vector
                                                                     )
                                                                     ()
@@ -966,7 +966,7 @@
                                                         })
                                                     resize
                                                     (FunctionType
-                                                        [(Class
+                                                        [(ClassType
                                                             3 vector
                                                         )
                                                         (Integer 4)]

@@ -1328,8 +1328,8 @@ public:
                         ASR::symbol_t* sym_underlying = ASRUtils::symbol_get_past_external(sym);
                         if( ASR::is_a<ASR::Struct_t>(*sym_underlying) ) {
                             selector_type = ASRUtils::TYPE(ASR::make_StructType_t(al, sym->base.loc, sym));
-                        } else if( ASR::is_a<ASR::ClassType_t>(*sym_underlying) ) {
-                            selector_type = ASRUtils::TYPE(ASR::make_Class_t(al, sym->base.loc, sym));
+                        } else if( ASR::is_a<ASR::Class_t>(*sym_underlying) ) {
+                            selector_type = ASRUtils::TYPE(ASR::make_ClassType_t(al, sym->base.loc, sym));
                         } else {
                             throw SemanticError("Only class and derived type in select type test expressions.",
                                                 class_stmt->base.base.loc);
@@ -1374,8 +1374,8 @@ public:
                         ASR::symbol_t* sym_underlying = ASRUtils::symbol_get_past_external(sym);
                         if( ASR::is_a<ASR::Struct_t>(*sym_underlying) ) {
                             selector_type = ASRUtils::TYPE(ASR::make_StructType_t(al, sym->base.loc, sym));
-                        } else if( ASR::is_a<ASR::ClassType_t>(*sym_underlying) ) {
-                            selector_type = ASRUtils::TYPE(ASR::make_Class_t(al, sym->base.loc, sym));
+                        } else if( ASR::is_a<ASR::Class_t>(*sym_underlying) ) {
+                            selector_type = ASRUtils::TYPE(ASR::make_ClassType_t(al, sym->base.loc, sym));
                         } else {
                             throw SemanticError("Only class and derived type in select type test expressions.",
                                                 type_stmt_name->base.base.loc);

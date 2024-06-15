@@ -722,12 +722,12 @@ public:
                 return ASRUtils::TYPE(ASR::make_Allocatable_t(al, ttype->base.loc,
                     substitute_type(a->m_type)));
             }
-            case (ASR::ttypeType::Class): {
-                ASR::Class_t *c = ASR::down_cast<ASR::Class_t>(ttype);
+            case (ASR::ttypeType::ClassType): {
+                ASR::ClassType_t *c = ASR::down_cast<ASR::ClassType_t>(ttype);
                 std::string c_name = ASRUtils::symbol_name(c->m_class_type);
                 if (context_map.find(c_name) != context_map.end()) {
                     std::string new_c_name = context_map[c_name];
-                    return ASRUtils::TYPE(ASR::make_Class_t(al,
+                    return ASRUtils::TYPE(ASR::make_ClassType_t(al,
                         ttype->base.loc, func_scope->get_symbol(new_c_name)));
                 }
                 return ttype;
@@ -1392,12 +1392,12 @@ public:
                 return ASRUtils::TYPE(ASR::make_Allocatable_t(al, ttype->base.loc,
                     substitute_type(a->m_type)));
             }
-            case (ASR::ttypeType::Class) : {
-                ASR::Class_t *c = ASR::down_cast<ASR::Class_t>(ttype);
+            case (ASR::ttypeType::ClassType) : {
+                ASR::ClassType_t *c = ASR::down_cast<ASR::ClassType_t>(ttype);
                 std::string class_name = ASRUtils::symbol_name(c->m_class_type);
                 if (symbol_subs.find(class_name) != symbol_subs.end()) {
                     ASR::symbol_t *new_c = symbol_subs[class_name];
-                    return ASRUtils::TYPE(ASR::make_Class_t(al, ttype->base.loc, new_c));
+                    return ASRUtils::TYPE(ASR::make_ClassType_t(al, ttype->base.loc, new_c));
                 }
                 return ttype;
             }
@@ -1812,12 +1812,12 @@ public:
                 return ASRUtils::TYPE(ASR::make_Allocatable_t(al, ttype->base.loc,
                     substitute_type(a->m_type)));
             }
-            case (ASR::ttypeType::Class) : {
-                ASR::Class_t *c = ASR::down_cast<ASR::Class_t>(ttype);
+            case (ASR::ttypeType::ClassType) : {
+                ASR::ClassType_t *c = ASR::down_cast<ASR::ClassType_t>(ttype);
                 std::string class_name = ASRUtils::symbol_name(c->m_class_type);
                 if (symbol_subs.find(class_name) != symbol_subs.end()) {
                     ASR::symbol_t *new_c = symbol_subs[class_name];
-                    return ASRUtils::TYPE(ASR::make_Class_t(al, ttype->base.loc, new_c));
+                    return ASRUtils::TYPE(ASR::make_ClassType_t(al, ttype->base.loc, new_c));
                 }
                 return ttype;
             }

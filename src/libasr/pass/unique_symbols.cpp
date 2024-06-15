@@ -254,7 +254,7 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
         visit_symbols_2(x);
     }
 
-    void visit_ClassType(const ASR::ClassType_t &x) {
+    void visit_Class(const ASR::Class_t &x) {
         visit_symbols_2(x);
     }
 
@@ -472,8 +472,8 @@ class UniqueSymbolVisitor: public ASR::BaseWalkVisitor<UniqueSymbolVisitor> {
         }
     }
 
-    void visit_ClassType(const ASR::ClassType_t &x) {
-        ASR::ClassType_t& xx = const_cast<ASR::ClassType_t&>(x);
+    void visit_Class(const ASR::Class_t &x) {
+        ASR::Class_t& xx = const_cast<ASR::Class_t&>(x);
         ASR::symbol_t *sym = ASR::down_cast<ASR::symbol_t>((ASR::asr_t*)&x);
         if (sym_to_new_name.find(sym) != sym_to_new_name.end()) {
             xx.m_name = s2c(al, sym_to_new_name[sym]);

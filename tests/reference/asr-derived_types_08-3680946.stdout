@@ -354,7 +354,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Class
+                                                    (ClassType
                                                         2 shape
                                                     )
                                                     ()
@@ -398,7 +398,7 @@
                                         })
                                     initialize_subrout
                                     (FunctionType
-                                        [(Class
+                                        [(ClassType
                                             2 shape
                                         )
                                         (Integer 4)

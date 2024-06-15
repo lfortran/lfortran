@@ -42,7 +42,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Class
+                                                    (ClassType
                                                         15 toml_structure
                                                     )
                                                     ()
@@ -64,7 +64,7 @@
                                         })
                                     destroy
                                     (FunctionType
-                                        [(Class
+                                        [(ClassType
                                             15 toml_structure
                                         )]
                                         ()
@@ -260,7 +260,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Class
+                                                    (ClassType
                                                         4 toml_array
                                                     )
                                                     ()
@@ -272,7 +272,7 @@
                                         })
                                     destroy
                                     (FunctionType
-                                        [(Class
+                                        [(ClassType
                                             4 toml_array
                                         )]
                                         ()
@@ -323,7 +323,7 @@
                                                 (Var 6 self)
                                                 6 1_toml_array_list
                                                 (Allocatable
-                                                    (Class
+                                                    (ClassType
                                                         4 toml_ordered
                                                     )
                                                 )
@@ -341,7 +341,7 @@
                                                 (Var 6 self)
                                                 6 1_toml_array_list
                                                 (Allocatable
-                                                    (Class
+                                                    (ClassType
                                                         4 toml_ordered
                                                     )
                                                 )
@@ -353,7 +353,7 @@
                                                 (Var 6 self)
                                                 6 1_toml_array_list
                                                 (Allocatable
-                                                    (Class
+                                                    (ClassType
                                                         4 toml_ordered
                                                     )
                                                 )
@@ -451,7 +451,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Class
+                                                        (ClassType
                                                             4 toml_ordered
                                                         )
                                                     )
@@ -540,7 +540,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Class
+                                                    (ClassType
                                                         20 toml_keyval
                                                     )
                                                     ()
@@ -552,7 +552,7 @@
                                         })
                                     destroy
                                     (FunctionType
-                                        [(Class
+                                        [(ClassType
                                             20 toml_keyval
                                         )]
                                         ()
@@ -803,7 +803,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Class
+                                                    (ClassType
                                                         9 toml_value
                                                     )
                                                     ()
@@ -815,7 +815,7 @@
                                         })
                                     destroy
                                     (FunctionType
-                                        [(Class
+                                        [(ClassType
                                             9 toml_value
                                         )]
                                         ()
