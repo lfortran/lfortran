@@ -36,18 +36,21 @@ program intrinsics_252
     if (abs(r2 - 1.00000000000000000e+00_dp) > 1e-12_dp) error stop
 
     print *, ar1
-    if (any(abs(ar1 - [5.20499877813046519e-01_dp, -9.66105146475310761e-01_dp, 9.98137153702018165e-01_dp]) > 1e-12_dp)) error stop
+    if (any(abs(ar1 - [5.20499877813046519e-01_dp, -9.66105146475310761e-01_dp, &
+    9.98137153702018165e-01_dp]) > 1e-12_dp)) error stop
 
     print *, ar2
     if (any(abs(ar2 - [-2.22702589210478474e-01_dp, 0.00000000000000000e+00_dp]) > 1e-12_dp)) error stop
 
     arr1 = [-6.738377383_dp, -3.1473863781_dp, -7389.83936383_dp]
     print *, derf(arr1)
-    if (any(abs(derf(arr1) - [-1.00000000000000000e+00_dp, -9.99991455910536065e-01_dp, -1.00000000000000000e+00_dp]) > 1e-12_dp)) error stop
+    if (any(abs(derf(arr1) - [-1.00000000000000000e+00_dp, -9.99991455910536065e-01_dp, &
+    -1.00000000000000000e+00_dp]) > 1e-12_dp)) error stop
 
     arr2 = [6.738377383_dp, 3.1473863781_dp, 7389.83936383_dp]
     res = derf(arr2)
     print *, res
-    if (any(abs(res - [1.00000000000000000e+00_dp, 9.99991455910536065e-01_dp, 1.00000000000000000e+00_dp]) > 1e-12_dp)) error stop
+    if (any(abs(res - [1.00000000000000000e+00_dp, 9.99991455910536065e-01_dp, & 
+    1.00000000000000000e+00_dp]) > 1e-12_dp)) error stop
 
 end program
