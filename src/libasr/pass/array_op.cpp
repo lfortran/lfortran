@@ -13,6 +13,38 @@
 
 namespace LCompilers {
 
+class ArrayBroadcastReplacer: public ASR::BaseExprReplacer<ArrayBroadcastReplacer> {
+
+    public:
+
+    Allocator& al;
+
+    ArrayBroadcastReplacer(Allocator& al_): al(al_) {
+    }
+
+    void replace_ArrayBroadcast(ASR::ArrayBroadcast_t* x) {
+        *current_expr = x->m_array;
+    }
+
+};
+
+class ArrayBroadcastVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayBroadcastVisitor> {
+
+    private:
+
+    ArrayBroadcastReplacer replacer;
+
+    public:
+
+    void call_replacer() {
+        replacer.current_expr = current_expr;
+        replacer.replace_expr(*current_expr);
+    }
+
+    ArrayBroadcastVisitor(Allocator& al_): replacer(al_) {}
+
+};
+
 class ArrayVarAddressReplacer: public ASR::BaseExprReplacer<ArrayVarAddressReplacer> {
 
     public:
@@ -381,6 +413,10 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         fix_type_args.push_back(al, x.m_value);
 
         generate_loop(x, vars, fix_type_args, loc);
+
+        ArrayBroadcastVisitor array_broadcast_visitor(al);
+        array_broadcast_visitor.current_expr = const_cast<ASR::expr_t**>(&(x.m_value));
+        array_broadcast_visitor.call_replacer();
     }
 
     void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {

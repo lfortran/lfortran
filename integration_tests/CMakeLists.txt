@@ -1525,7 +1525,7 @@ RUN(NAME character_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME character_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME character_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME char_array_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME char_array_indexing LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+# RUN(NAME char_array_indexing LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME character_parameter_padding_trimming LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME c_ptr_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)

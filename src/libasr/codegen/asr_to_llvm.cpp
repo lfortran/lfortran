@@ -6906,6 +6906,7 @@ public:
         switch( x_m_v->type ) {
             case ASR::symbolType::Variable: {
                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(x_m_v);
+                std::cout<<"v: "<<v->m_name<<std::endl;
                 fetch_var(v);
                 return ;
             }
