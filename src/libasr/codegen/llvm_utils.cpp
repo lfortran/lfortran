@@ -169,7 +169,7 @@ namespace LCompilers {
                 llvm_mem_type = getStruct(mem_type, module);
                 break;
             }
-            case ASR::ttypeType::Enum: {
+            case ASR::ttypeType::EnumType: {
                 llvm_mem_type = llvm::Type::getInt32Ty(context);
                 break ;
             }
@@ -808,7 +808,7 @@ namespace LCompilers {
                 type = list_api->get_list_type(el_llvm_type, el_type_code, type_size)->getPointerTo();
                 break;
             }
-            case ASR::ttypeType::Enum: {
+            case ASR::ttypeType::EnumType: {
                 if (arg_m_abi == ASR::abiType::BindC
                     && arg_m_value_attr) {
                     type = llvm::Type::getInt32Ty(context);
@@ -1513,7 +1513,7 @@ namespace LCompilers {
                 llvm_type = llvm::Type::getVoidTy(context)->getPointerTo();
                 break;
             }
-            case (ASR::ttypeType::Enum) : {
+            case (ASR::ttypeType::EnumType) : {
                 llvm_type = llvm::Type::getInt32Ty(context);
                 break ;
             }

@@ -232,7 +232,7 @@ public:
         current_symtab = parent_symtab;
     }
 
-    void visit_EnumType(const EnumType_t &x) {
+    void visit_Enum(const Enum_t &x) {
         SymbolTable *parent_symtab = current_symtab;
         current_symtab = x.m_symtab;
         x.m_symtab->parent = parent_symtab;
@@ -361,8 +361,8 @@ public:
                 Struct_t *m = down_cast<Struct_t>(m_sym);
                 sym = m->m_symtab->find_scoped_symbol(original_name,
                         x.n_scope_names, x.m_scope_names);
-            } else if( ASR::is_a<ASR::EnumType_t>(*m_sym) ) {
-                EnumType_t *m = down_cast<EnumType_t>(m_sym);
+            } else if( ASR::is_a<ASR::Enum_t>(*m_sym) ) {
+                Enum_t *m = down_cast<Enum_t>(m_sym);
                 sym = m->m_symtab->find_scoped_symbol(original_name,
                         x.n_scope_names, x.m_scope_names);
             } else if( ASR::is_a<ASR::Function_t>(*m_sym) ) {

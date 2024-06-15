@@ -539,8 +539,8 @@ public:
             if( ASR::is_a<ASR::StructType_t>(*var_type) ) {
                 sym = ASR::down_cast<ASR::StructType_t>(var_type)->m_derived_type;
                 aggregate_type_name = ASRUtils::symbol_name(sym);
-            } else if( ASR::is_a<ASR::Enum_t>(*var_type) ) {
-                sym = ASR::down_cast<ASR::Enum_t>(var_type)->m_enum_type;
+            } else if( ASR::is_a<ASR::EnumType_t>(*var_type) ) {
+                sym = ASR::down_cast<ASR::EnumType_t>(var_type)->m_enum_type;
                 aggregate_type_name = ASRUtils::symbol_name(sym);
             } else if( ASR::is_a<ASR::Union_t>(*var_type) ) {
                 sym = ASR::down_cast<ASR::Union_t>(var_type)->m_union_type;
@@ -583,23 +583,23 @@ public:
                 " is not a positive power of 2.");
     }
 
-    void visit_EnumType(const EnumType_t& x) {
+    void visit_Enum(const Enum_t& x) {
         visit_UserDefinedType(x);
         require(x.m_type != nullptr,
-            "The common type of Enum cannot be nullptr. " +
+            "The common type of EnumType cannot be nullptr. " +
             std::string(x.m_name) + " doesn't seem to follow this rule.");
         ASR::ttype_t* common_type = x.m_type;
         std::map<int64_t, int64_t> value2count;
         for( auto itr: x.m_symtab->get_scope() ) {
             ASR::Variable_t* itr_var = ASR::down_cast<ASR::Variable_t>(itr.second);
             require(itr_var->m_symbolic_value != nullptr,
-                "All members of Enum must have their values to be set. " +
+                "All members of EnumType must have their values to be set. " +
                 std::string(itr_var->m_name) + " doesn't seem to follow this rule in "
-                + std::string(x.m_name) + " Enum.");
+                + std::string(x.m_name) + " EnumType.");
             require(ASRUtils::check_equal_type(itr_var->m_type, common_type),
-                "All members of Enum must the same type. " +
+                "All members of EnumType must the same type. " +
                 std::string(itr_var->m_name) + " doesn't seem to follow this rule in " +
-                std::string(x.m_name) + " Enum.");
+                std::string(x.m_name) + " EnumType.");
             ASR::expr_t* value = ASRUtils::expr_value(itr_var->m_symbolic_value);
             int64_t value_int64 = -1;
             ASRUtils::extract_value(value, value_int64);
@@ -633,7 +633,7 @@ public:
             is_enumtype_correct = !is_enum_integer;
         }
         require(is_enumtype_correct, "Properties of enum value members don't match correspond "
-                                     "to EnumType::m_enum_value_type");
+                                     "to Enum::m_enum_value_type");
     }
 
     void visit_UnionType(const UnionType_t& x) {
@@ -719,7 +719,7 @@ public:
                 "ExternalSymbol::m_original_name must match external->m_name");
             ASR::Module_t *m = ASRUtils::get_sym_module(x.m_external);
             ASR::Struct_t* sm = nullptr;
-            ASR::EnumType_t* em = nullptr;
+            ASR::Enum_t* em = nullptr;
             ASR::UnionType_t* um = nullptr;
             ASR::Function_t* fm = nullptr;
             bool is_valid_owner = false;
@@ -728,14 +728,14 @@ public:
             if( !is_valid_owner ) {
                 ASR::symbol_t* asr_owner_sym = ASRUtils::get_asr_owner(x.m_external);
                 is_valid_owner = (ASR::is_a<ASR::Struct_t>(*asr_owner_sym) ||
-                                  ASR::is_a<ASR::EnumType_t>(*asr_owner_sym) ||
+                                  ASR::is_a<ASR::Enum_t>(*asr_owner_sym) ||
                                   ASR::is_a<ASR::Function_t>(*asr_owner_sym) ||
                                   ASR::is_a<ASR::UnionType_t>(*asr_owner_sym));
                 if( ASR::is_a<ASR::Struct_t>(*asr_owner_sym) ) {
                     sm = ASR::down_cast<ASR::Struct_t>(asr_owner_sym);
                     asr_owner_name = sm->m_name;
-                } else if( ASR::is_a<ASR::EnumType_t>(*asr_owner_sym) ) {
-                    em = ASR::down_cast<ASR::EnumType_t>(asr_owner_sym);
+                } else if( ASR::is_a<ASR::Enum_t>(*asr_owner_sym) ) {
+                    em = ASR::down_cast<ASR::Enum_t>(asr_owner_sym);
                     asr_owner_name = em->m_name;
                 } else if( ASR::is_a<ASR::UnionType_t>(*asr_owner_sym) ) {
                     um = ASR::down_cast<ASR::UnionType_t>(asr_owner_sym);
@@ -795,9 +795,9 @@ public:
             s = ASRUtils::symbol_get_past_external(x.m_v);
         }
         require(is_a<Variable_t>(*s) || is_a<Function_t>(*s)
-                || is_a<ASR::EnumType_t>(*s) || is_a<ASR::ExternalSymbol_t>(*s),
+                || is_a<ASR::Enum_t>(*s) || is_a<ASR::ExternalSymbol_t>(*s),
             "Var_t::m_v " + x_mv_name + " does not point to a Variable_t, " \
-            "Function_t, or EnumType_t (possibly behind ExternalSymbol_t)");
+            "Function_t, or Enum_t (possibly behind ExternalSymbol_t)");
         require(symtab_in_scope(current_symtab, x.m_v),
             "Var::m_v `" + x_mv_name + "` cannot point outside of its symbol table");
         variable_dependencies.push_back(x_mv_name);

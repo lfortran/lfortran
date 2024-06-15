@@ -3461,7 +3461,7 @@ public:
         ASR::enumtypeType enum_value_type = ASR::enumtypeType::IntegerConsecutiveFromZero;
         ASRUtils::set_enum_value_type(enum_value_type, current_scope);
 
-        tmp = ASR::make_EnumType_t(al, x.base.base.loc, current_scope,
+        tmp = ASR::make_Enum_t(al, x.base.base.loc, current_scope,
             s2c(al, sym_name), nullptr, 0, m_members.p, m_members.n, abi_type,
             dflt_access, enum_value_type, type, nullptr);
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
