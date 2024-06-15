@@ -889,8 +889,8 @@ public:
         {"dcmplx", {"cmplx", {"any"}}},
         {"dacos", {"acos", {"real8"}}},
         {"dacosh", {"acosh", {"real8"}}},
-        {"dint", {"aint", {"real8", "real8"}}},
-        {"dnint", {"anint", {"real8", "real8"}}},
+        {"dint", {"aint", {"real8"}}},
+        {"dnint", {"anint", {"real8"}}},
         {"dasin", {"asin", {"real8"}}},
         {"dasinh", {"asinh", {"real8"}}},
         {"datanh", {"atanh", {"real8"}}},
@@ -898,6 +898,8 @@ public:
         {"dbesj1", {"bessel_j1", {"real8"}}},
         {"dbesy0", {"bessel_y0", {"real8"}}},
         {"dbesy1", {"bessel_y1", {"real8"}}},
+        {"dbesjn", {"bessel_jn", {"int4", "real8"}}},
+        {"dbesyn", {"bessel_yn", {"int4", "real8"}}},
         {"dconjg", {"conjg", {"complex"}}},
         {"idim", {"dim", {"int4", "int4"}}},
         {"ddim", {"dim", {"real8", "real8"}}},
@@ -5391,12 +5393,25 @@ public:
         if (intrinsic_mapping.find(intrinsic_name) == intrinsic_mapping.end()) {
             return;
         }
-        for (size_t i = 0; i < args.size(); i++) {
+
+        int arg_size = args.size();
+        if(intrinsic_name == "dint" || intrinsic_name == "dnint") { 
+            arg_size = 1;
+            if (args[1]) {
+                throw SemanticError("Too many arguments to call `" + intrinsic_name + "`", loc);
+            }
+        }
+
+        for (size_t i = 0; i < arg_size; i++) {
             std::string argument_type = "";
             if (array_intrinsic_mapping_names.find(intrinsic_name) != array_intrinsic_mapping_names.end()) {
                 argument_type = intrinsic_mapping[intrinsic_name].second[0];
             } else {
-                argument_type = intrinsic_mapping[intrinsic_name].second[i];
+                if(i < intrinsic_mapping[intrinsic_name].second.size()){
+                    argument_type = intrinsic_mapping[intrinsic_name].second[i];
+                } else {
+                    throw SemanticError("Too many arguments to call `" + intrinsic_name + "`", loc);
+                }        
             }
             if (argument_type == "int4") {
                 if (args[i] != nullptr) {
