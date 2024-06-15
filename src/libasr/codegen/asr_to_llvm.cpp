@@ -905,7 +905,7 @@ public:
         // Process Variables first:
         for (auto &item : x.m_symtab->get_scope()) {
             if (is_a<ASR::Variable_t>(*item.second) ||
-                is_a<ASR::EnumType_t>(*item.second)) {
+                is_a<ASR::Enum_t>(*item.second)) {
                 visit_symbol(*item.second);
             }
         }
@@ -2430,8 +2430,8 @@ public:
     }
 
     void lookup_EnumValue(const ASR::EnumValue_t& x) {
-        ASR::Enum_t* enum_t = ASR::down_cast<ASR::Enum_t>(x.m_enum_type);
-        ASR::EnumType_t* enum_type = ASR::down_cast<ASR::EnumType_t>(enum_t->m_enum_type);
+        ASR::EnumType_t* enum_t = ASR::down_cast<ASR::EnumType_t>(x.m_enum_type);
+        ASR::Enum_t* enum_type = ASR::down_cast<ASR::Enum_t>(enum_t->m_enum_type);
         uint32_t h = get_hash((ASR::asr_t*) enum_type);
         llvm::Value* array = llvm_symtab[h];
         tmp = llvm_utils->create_gep(array, tmp);
@@ -2445,8 +2445,8 @@ public:
             } else if( ASR::is_a<ASR::EnumStaticMember_t>(*x.m_v) ) {
                 ASR::EnumStaticMember_t* x_enum_member = ASR::down_cast<ASR::EnumStaticMember_t>(x.m_v);
                 ASR::Variable_t* x_mv = ASR::down_cast<ASR::Variable_t>(x_enum_member->m_m);
-                ASR::Enum_t* enum_t = ASR::down_cast<ASR::Enum_t>(x.m_enum_type);
-                ASR::EnumType_t* enum_type = ASR::down_cast<ASR::EnumType_t>(enum_t->m_enum_type);
+                ASR::EnumType_t* enum_t = ASR::down_cast<ASR::EnumType_t>(x.m_enum_type);
+                ASR::Enum_t* enum_type = ASR::down_cast<ASR::Enum_t>(enum_t->m_enum_type);
                 for( size_t i = 0; i < enum_type->n_members; i++ ) {
                     if( std::string(enum_type->m_members[i]) == std::string(x_mv->m_name) ) {
                         tmp = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, i));
@@ -2479,8 +2479,8 @@ public:
         if( ASR::is_a<ASR::StructInstanceMember_t>(*x.m_v) ) {
             tmp = LLVM::CreateLoad(*builder, tmp);
         }
-        ASR::Enum_t* enum_t = ASR::down_cast<ASR::Enum_t>(x.m_enum_type);
-        ASR::EnumType_t* enum_type = ASR::down_cast<ASR::EnumType_t>(enum_t->m_enum_type);
+        ASR::EnumType_t* enum_t = ASR::down_cast<ASR::EnumType_t>(x.m_enum_type);
+        ASR::Enum_t* enum_type = ASR::down_cast<ASR::Enum_t>(enum_t->m_enum_type);
         uint32_t h = get_hash((ASR::asr_t*) enum_type);
         llvm::Value* array = llvm_symtab[h];
         if( ASR::is_a<ASR::Integer_t>(*enum_type->m_type) ) {
@@ -2500,7 +2500,7 @@ public:
         }
     }
 
-    void visit_EnumTypeConstructor(const ASR::EnumTypeConstructor_t& x) {
+    void visit_EnumConstructor(const ASR::EnumConstructor_t& x) {
         LCOMPILERS_ASSERT(x.n_args == 1);
         ASR::expr_t* m_arg = x.m_args[0];
         this->visit_expr(*m_arg);
@@ -2890,7 +2890,7 @@ public:
         tmp = llvm::ConstantPointerNull::get(static_cast<llvm::PointerType*>(value_type));
     }
 
-    void visit_EnumType(const ASR::EnumType_t& x) {
+    void visit_Enum(const ASR::Enum_t& x) {
         if( x.m_enum_value_type == ASR::enumtypeType::IntegerUnique &&
             x.m_abi == ASR::abiType::BindC ) {
             throw CodeGenError("C-interoperation support for non-consecutive but uniquely "
@@ -3043,9 +3043,9 @@ public:
                 ASR::Function_t *v = down_cast<ASR::Function_t>(
                         item.second);
                 instantiate_function(*v);
-            } else if (is_a<ASR::EnumType_t>(*item.second)) {
-                ASR::EnumType_t *et = down_cast<ASR::EnumType_t>(item.second);
-                visit_EnumType(*et);
+            } else if (is_a<ASR::Enum_t>(*item.second)) {
+                ASR::Enum_t *et = down_cast<ASR::Enum_t>(item.second);
+                visit_Enum(*et);
             }
         }
         finish_module_init_function_prototype(x);
@@ -8083,7 +8083,7 @@ public:
             fmt.push_back("%lld");
             llvm::Value* d = builder->CreatePtrToInt(tmp, llvm_utils->getIntType(8, false));
             args.push_back(d);
-        } else if (t->type == ASR::ttypeType::Enum) {
+        } else if (t->type == ASR::ttypeType::EnumType) {
             // TODO: Use recursion to generalise for any underlying type in enum
             fmt.push_back("%d");
             args.push_back(tmp);
@@ -8517,7 +8517,7 @@ public:
                     case (ASR::ttypeType::Logical) :
                         target_type = llvm::Type::getInt1Ty(context);
                         break;
-                    case (ASR::ttypeType::Enum) :
+                    case (ASR::ttypeType::EnumType) :
                         target_type = llvm::Type::getInt32Ty(context);
                         break;
                     case (ASR::ttypeType::StructType) :

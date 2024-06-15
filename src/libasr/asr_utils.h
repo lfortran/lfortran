@@ -312,8 +312,8 @@ static inline ASR::ttype_t* symbol_type(const ASR::symbol_t *f)
         case ASR::symbolType::Variable: {
             return ASR::down_cast<ASR::Variable_t>(f)->m_type;
         }
-        case ASR::symbolType::EnumType: {
-            return ASR::down_cast<ASR::EnumType_t>(f)->m_type;
+        case ASR::symbolType::Enum: {
+            return ASR::down_cast<ASR::Enum_t>(f)->m_type;
         }
         case ASR::symbolType::ExternalSymbol: {
             return symbol_type(ASRUtils::symbol_get_past_external(f));
@@ -336,8 +336,8 @@ static inline ASR::abiType symbol_abi(const ASR::symbol_t *f)
         case ASR::symbolType::Variable: {
             return ASR::down_cast<ASR::Variable_t>(f)->m_abi;
         }
-        case ASR::symbolType::EnumType: {
-            return ASR::down_cast<ASR::EnumType_t>(f)->m_abi;
+        case ASR::symbolType::Enum: {
+            return ASR::down_cast<ASR::Enum_t>(f)->m_abi;
         }
         case ASR::symbolType::ExternalSymbol: {
             return symbol_abi(ASR::down_cast<ASR::ExternalSymbol_t>(f)->m_external);
@@ -371,9 +371,9 @@ static inline ASR::ttype_t* get_contained_type(ASR::ttype_t* asr_type, int overl
                     return asr_type;
             }
         }
-        case ASR::ttypeType::Enum: {
-            ASR::Enum_t* enum_asr = ASR::down_cast<ASR::Enum_t>(asr_type);
-            ASR::EnumType_t* enum_type = ASR::down_cast<ASR::EnumType_t>(enum_asr->m_enum_type);
+        case ASR::ttypeType::EnumType: {
+            ASR::EnumType_t* enum_asr = ASR::down_cast<ASR::EnumType_t>(asr_type);
+            ASR::Enum_t* enum_type = ASR::down_cast<ASR::Enum_t>(enum_asr->m_enum_type);
             return enum_type->m_type;
         }
         case ASR::ttypeType::Pointer: {
@@ -454,8 +454,8 @@ static inline char *symbol_name(const ASR::symbol_t *f)
         case ASR::symbolType::Struct: {
             return ASR::down_cast<ASR::Struct_t>(f)->m_name;
         }
-        case ASR::symbolType::EnumType: {
-            return ASR::down_cast<ASR::EnumType_t>(f)->m_name;
+        case ASR::symbolType::Enum: {
+            return ASR::down_cast<ASR::Enum_t>(f)->m_name;
         }
         case ASR::symbolType::UnionType: {
             return ASR::down_cast<ASR::UnionType_t>(f)->m_name;
@@ -719,8 +719,8 @@ static inline std::pair<char**, size_t> symbol_dependencies(const ASR::symbol_t 
             ASR::Struct_t* sym = ASR::down_cast<ASR::Struct_t>(f);
             return std::make_pair(sym->m_dependencies, sym->n_dependencies);
         }
-        case ASR::symbolType::EnumType: {
-            ASR::EnumType_t* sym = ASR::down_cast<ASR::EnumType_t>(f);
+        case ASR::symbolType::Enum: {
+            ASR::Enum_t* sym = ASR::down_cast<ASR::Enum_t>(f);
             return std::make_pair(sym->m_dependencies, sym->n_dependencies);
         }
         case ASR::symbolType::UnionType: {
@@ -760,8 +760,8 @@ static inline SymbolTable *symbol_parent_symtab(const ASR::symbol_t *f)
         case ASR::symbolType::Struct: {
             return ASR::down_cast<ASR::Struct_t>(f)->m_symtab->parent;
         }
-        case ASR::symbolType::EnumType: {
-            return ASR::down_cast<ASR::EnumType_t>(f)->m_symtab->parent;
+        case ASR::symbolType::Enum: {
+            return ASR::down_cast<ASR::Enum_t>(f)->m_symtab->parent;
         }
         case ASR::symbolType::UnionType: {
             return ASR::down_cast<ASR::UnionType_t>(f)->m_symtab->parent;
@@ -814,8 +814,8 @@ static inline SymbolTable *symbol_symtab(const ASR::symbol_t *f)
         case ASR::symbolType::Struct: {
             return ASR::down_cast<ASR::Struct_t>(f)->m_symtab;
         }
-        case ASR::symbolType::EnumType: {
-            return ASR::down_cast<ASR::EnumType_t>(f)->m_symtab;
+        case ASR::symbolType::Enum: {
+            return ASR::down_cast<ASR::Enum_t>(f)->m_symtab;
         }
         case ASR::symbolType::UnionType: {
             return ASR::down_cast<ASR::UnionType_t>(f)->m_symtab;
@@ -1709,8 +1709,8 @@ static inline std::string type_to_str_python(const ASR::ttype_t *t,
             ASR::StructType_t* d = ASR::down_cast<ASR::StructType_t>(t);
             return "struct " + std::string(symbol_name(d->m_derived_type));
         }
-        case ASR::ttypeType::Enum: {
-            ASR::Enum_t* d = ASR::down_cast<ASR::Enum_t>(t);
+        case ASR::ttypeType::EnumType: {
+            ASR::EnumType_t* d = ASR::down_cast<ASR::EnumType_t>(t);
             return "enum " + std::string(symbol_name(d->m_enum_type));
         }
         case ASR::ttypeType::Union: {
@@ -2214,7 +2214,7 @@ inline size_t extract_dimensions_from_ttype(ASR::ttype_t *x,
         case ASR::ttypeType::Character:
         case ASR::ttypeType::Logical:
         case ASR::ttypeType::StructType:
-        case ASR::ttypeType::Enum:
+        case ASR::ttypeType::EnumType:
         case ASR::ttypeType::Union:
         case ASR::ttypeType::Class:
         case ASR::ttypeType::List:
@@ -2485,7 +2485,7 @@ inline bool ttype_set_dimensions(ASR::ttype_t** x,
         case ASR::ttypeType::Character:
         case ASR::ttypeType::Logical:
         case ASR::ttypeType::StructType:
-        case ASR::ttypeType::Enum:
+        case ASR::ttypeType::EnumType:
         case ASR::ttypeType::Union:
         case ASR::ttypeType::TypeParameter: {
             *x = ASRUtils::make_Array_t_util(al,
@@ -2807,7 +2807,7 @@ inline int extract_kind(ASR::expr_t* kind_expr, const Location& loc) {
             if (kind_variable->m_parent_symtab->asr_owner != nullptr) {
                 ASR::symbol_t *s = ASR::down_cast<ASR::symbol_t>(
                     kind_variable->m_parent_symtab->asr_owner);
-                is_parent_enum = ASR::is_a<ASR::EnumType_t>(*s);
+                is_parent_enum = ASR::is_a<ASR::Enum_t>(*s);
             }
             if( is_parent_enum ) {
                 return ASRUtils::extract_kind_from_ttype_t(kind_variable->m_type);
@@ -3438,14 +3438,14 @@ inline bool check_equal_type(ASR::ttype_t* x, ASR::ttype_t* y, bool check_for_di
     ASR::ttype_t *x_underlying, *y_underlying;
     x_underlying = nullptr;
     y_underlying = nullptr;
-    if( ASR::is_a<ASR::Enum_t>(*x) ) {
-        ASR::Enum_t *x_enum = ASR::down_cast<ASR::Enum_t>(x);
-        ASR::EnumType_t *x_enum_type = ASR::down_cast<ASR::EnumType_t>(x_enum->m_enum_type);
+    if( ASR::is_a<ASR::EnumType_t>(*x) ) {
+        ASR::EnumType_t *x_enum = ASR::down_cast<ASR::EnumType_t>(x);
+        ASR::Enum_t *x_enum_type = ASR::down_cast<ASR::Enum_t>(x_enum->m_enum_type);
         x_underlying = x_enum_type->m_type;
     }
-    if( ASR::is_a<ASR::Enum_t>(*y) ) {
-        ASR::Enum_t *y_enum = ASR::down_cast<ASR::Enum_t>(y);
-        ASR::EnumType_t *y_enum_type = ASR::down_cast<ASR::EnumType_t>(y_enum->m_enum_type);
+    if( ASR::is_a<ASR::EnumType_t>(*y) ) {
+        ASR::EnumType_t *y_enum = ASR::down_cast<ASR::EnumType_t>(y);
+        ASR::Enum_t *y_enum_type = ASR::down_cast<ASR::Enum_t>(y_enum->m_enum_type);
         y_underlying = y_enum_type->m_type;
     }
     if( x_underlying || y_underlying ) {
@@ -4690,15 +4690,15 @@ static inline ASR::expr_t* get_size(ASR::expr_t* arr_expr, Allocator& al) {
     return ASRUtils::EXPR(ASRUtils::make_ArraySize_t_util(al, arr_expr->base.loc, arr_expr, nullptr, int32_type, nullptr));
 }
 
-static inline ASR::EnumType_t* get_EnumType_from_symbol(ASR::symbol_t* s) {
+static inline ASR::Enum_t* get_Enum_from_symbol(ASR::symbol_t* s) {
     ASR::Variable_t* s_var = ASR::down_cast<ASR::Variable_t>(s);
-    if( ASR::is_a<ASR::Enum_t>(*s_var->m_type) ) {
-        ASR::Enum_t* enum_ = ASR::down_cast<ASR::Enum_t>(s_var->m_type);
-        return ASR::down_cast<ASR::EnumType_t>(enum_->m_enum_type);
+    if( ASR::is_a<ASR::EnumType_t>(*s_var->m_type) ) {
+        ASR::EnumType_t* enum_ = ASR::down_cast<ASR::EnumType_t>(s_var->m_type);
+        return ASR::down_cast<ASR::Enum_t>(enum_->m_enum_type);
     }
     ASR::symbol_t* enum_type_cand = ASR::down_cast<ASR::symbol_t>(s_var->m_parent_symtab->asr_owner);
-    LCOMPILERS_ASSERT(ASR::is_a<ASR::EnumType_t>(*enum_type_cand));
-    return ASR::down_cast<ASR::EnumType_t>(enum_type_cand);
+    LCOMPILERS_ASSERT(ASR::is_a<ASR::Enum_t>(*enum_type_cand));
+    return ASR::down_cast<ASR::Enum_t>(enum_type_cand);
 }
 
 static inline bool is_abstract_class_type(ASR::ttype_t* type) {

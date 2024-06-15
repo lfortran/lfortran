@@ -308,7 +308,7 @@ public:
         std::map<std::string, std::vector<std::string>> struct_dep_graph;
         for (auto &item : x.m_symtab->get_scope()) {
             if (ASR::is_a<ASR::Struct_t>(*item.second) ||
-                    ASR::is_a<ASR::EnumType_t>(*item.second) ||
+                    ASR::is_a<ASR::Enum_t>(*item.second) ||
                     ASR::is_a<ASR::UnionType_t>(*item.second)) {
                 std::vector<std::string> struct_deps_vec;
                 std::pair<char**, size_t> struct_deps_ptr = ASRUtils::symbol_dependencies(item.second);
@@ -389,7 +389,7 @@ public:
         std::map<std::string, std::vector<std::string>> struct_dep_graph;
         for (auto &item : x.m_symtab->get_scope()) {
             if (ASR::is_a<ASR::Struct_t>(*item.second) ||
-                    ASR::is_a<ASR::EnumType_t>(*item.second) ||
+                    ASR::is_a<ASR::Enum_t>(*item.second) ||
                     ASR::is_a<ASR::UnionType_t>(*item.second)) {
                 std::vector<std::string> struct_deps_vec;
                 std::pair<char**, size_t> struct_deps_ptr = ASRUtils::symbol_dependencies(item.second);
@@ -630,7 +630,7 @@ public:
         src = r;
     }
 
-    // void visit_EnumType(const ASR::EnumType_t &x) {}
+    // void visit_Enum(const ASR::Enum_t &x) {}
 
     // void visit_UnionType(const ASR::UnionType_t &x) {}
 
@@ -1304,7 +1304,7 @@ public:
         src = r;
     }
 
-    // void visit_EnumTypeConstructor(const ASR::EnumTypeConstructor_t &x) {}
+    // void visit_EnumConstructor(const ASR::EnumConstructor_t &x) {}
 
     // void visit_UnionTypeConstructor(const ASR::UnionTypeConstructor_t &x) {}
 

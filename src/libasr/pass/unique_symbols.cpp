@@ -246,7 +246,7 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
         visit_symbols_2(x);
     }
 
-    void visit_EnumType(const ASR::EnumType_t &x) {
+    void visit_Enum(const ASR::Enum_t &x) {
         visit_symbols_2(x);
     }
 
@@ -448,7 +448,7 @@ class UniqueSymbolVisitor: public ASR::BaseWalkVisitor<UniqueSymbolVisitor> {
         update_symbols_2(x);
     }
 
-    void visit_EnumType(const ASR::EnumType_t &x) {
+    void visit_Enum(const ASR::Enum_t &x) {
         update_symbols_2(x);
     }
 

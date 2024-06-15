@@ -543,9 +543,9 @@ public:
                                     false, false);
             } else if (ASR::is_a<ASR::CPtr_t>(*v_m_type)) {
                 sub = format_type_c("", "void*", v.m_name, false, false);
-            } else if (ASR::is_a<ASR::Enum_t>(*v_m_type)) {
-                ASR::Enum_t* enum_ = ASR::down_cast<ASR::Enum_t>(v_m_type);
-                ASR::EnumType_t* enum_type = ASR::down_cast<ASR::EnumType_t>(enum_->m_enum_type);
+            } else if (ASR::is_a<ASR::EnumType_t>(*v_m_type)) {
+                ASR::EnumType_t* enum_ = ASR::down_cast<ASR::EnumType_t>(v_m_type);
+                ASR::Enum_t* enum_type = ASR::down_cast<ASR::Enum_t>(enum_->m_enum_type);
                 sub = format_type_c("", "enum " + std::string(enum_type->m_name), v.m_name, false, false);
             } else if (ASR::is_a<ASR::TypeParameter_t>(*v_m_type)) {
                 // Ignore type variables
@@ -632,7 +632,7 @@ R"(
         std::map<std::string, std::vector<std::string>> struct_dep_graph;
         for (auto &item : x.m_symtab->get_scope()) {
             if (ASR::is_a<ASR::Struct_t>(*item.second) ||
-                ASR::is_a<ASR::EnumType_t>(*item.second) ||
+                ASR::is_a<ASR::Enum_t>(*item.second) ||
                 ASR::is_a<ASR::UnionType_t>(*item.second)) {
                 std::vector<std::string> struct_deps_vec;
                 std::pair<char**, size_t> struct_deps_ptr = ASRUtils::symbol_dependencies(item.second);
@@ -754,7 +754,7 @@ R"(
         std::map<std::string, std::vector<std::string>> struct_dep_graph;
         for (auto &item : x.m_symtab->get_scope()) {
             if (ASR::is_a<ASR::Struct_t>(*item.second) ||
-                    ASR::is_a<ASR::EnumType_t>(*item.second) ||
+                    ASR::is_a<ASR::Enum_t>(*item.second) ||
                     ASR::is_a<ASR::UnionType_t>(*item.second)) {
                 std::vector<std::string> struct_deps_vec;
                 std::pair<char**, size_t> struct_deps_ptr = ASRUtils::symbol_dependencies(item.second);
@@ -937,14 +937,14 @@ R"(    // Initialise Numpy
         visit_AggregateTypeUtil(x, "union", array_types_decls);
     }
 
-    void visit_EnumType(const ASR::EnumType_t& x) {
+    void visit_Enum(const ASR::Enum_t& x) {
         if( x.m_enum_value_type == ASR::enumtypeType::NonInteger ) {
-            throw CodeGenError("C backend only supports integer valued Enum. " +
+            throw CodeGenError("C backend only supports integer valued EnumType. " +
                 std::string(x.m_name) + " is not integer valued.");
         }
         if( x.m_enum_value_type == ASR::enumtypeType::IntegerNotUnique ) {
-            throw CodeGenError("C backend only supports uniquely valued integer Enum. " +
-                std::string(x.m_name) + " Enum is having duplicate values for its members.");
+            throw CodeGenError("C backend only supports uniquely valued integer EnumType. " +
+                std::string(x.m_name) + " EnumType is having duplicate values for its members.");
         }
         if( x.m_enum_value_type == ASR::enumtypeType::IntegerUnique &&
             x.m_abi == ASR::abiType::BindC ) {
@@ -997,11 +997,11 @@ R"(    // Initialise Numpy
         src = "";
     }
 
-    void visit_EnumTypeConstructor(const ASR::EnumTypeConstructor_t& x) {
+    void visit_EnumConstructor(const ASR::EnumConstructor_t& x) {
         LCOMPILERS_ASSERT(x.n_args == 1);
         ASR::expr_t* m_arg = x.m_args[0];
         this->visit_expr(*m_arg);
-        ASR::EnumType_t* enum_type = ASR::down_cast<ASR::EnumType_t>(x.m_dt_sym);
+        ASR::Enum_t* enum_type = ASR::down_cast<ASR::Enum_t>(x.m_dt_sym);
         src = "(enum " + std::string(enum_type->m_name) + ") (" + src + ")";
     }
 
@@ -1023,8 +1023,8 @@ R"(    // Initialise Numpy
     void visit_EnumName(const ASR::EnumName_t& x) {
         CHECK_FAST_C(compiler_options, x)
         int64_t min_value = INT64_MAX;
-        ASR::Enum_t* enum_t = ASR::down_cast<ASR::Enum_t>(x.m_enum_type);
-        ASR::EnumType_t* enum_type = ASR::down_cast<ASR::EnumType_t>(enum_t->m_enum_type);
+        ASR::EnumType_t* enum_t = ASR::down_cast<ASR::EnumType_t>(x.m_enum_type);
+        ASR::Enum_t* enum_type = ASR::down_cast<ASR::Enum_t>(enum_t->m_enum_type);
         for( auto itr: enum_type->m_symtab->get_scope() ) {
             ASR::Variable_t* itr_var = ASR::down_cast<ASR::Variable_t>(itr.second);
             ASR::expr_t* value = ASRUtils::expr_value(itr_var->m_symbolic_value);

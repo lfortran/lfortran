@@ -523,7 +523,7 @@ class CCPPDSUtils {
                         return get_print_type(type_ptr->m_type, false);
                     }
                 }
-                case ASR::ttypeType::Enum: {
+                case ASR::ttypeType::EnumType: {
                     ASR::ttype_t* enum_underlying_type = ASRUtils::get_contained_type(t);
                     return get_print_type(enum_underlying_type, deref_ptr);
                 }
