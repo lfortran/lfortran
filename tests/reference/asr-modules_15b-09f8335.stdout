@@ -1445,7 +1445,7 @@
                                                         (Real 8)
                                                         [(()
                                                         ())]
-                                                        PointerToDataArray
+                                                        UnboundedPointerToDataArray
                                                     )
                                                     ()
                                                     BindC
@@ -1493,7 +1493,7 @@
                                             (Real 8)
                                             [(()
                                             ())]
-                                            PointerToDataArray
+                                            UnboundedPointerToDataArray
                                         )]
                                         (Real 8)
                                         BindC
@@ -2029,7 +2029,7 @@
                                                         (Real 4)
                                                         [(()
                                                         ())]
-                                                        PointerToDataArray
+                                                        UnboundedPointerToDataArray
                                                     )
                                                     ()
                                                     BindC
@@ -2077,7 +2077,7 @@
                                             (Real 4)
                                             [(()
                                             ())]
-                                            PointerToDataArray
+                                            UnboundedPointerToDataArray
                                         )]
                                         (Real 4)
                                         BindC
@@ -2213,7 +2213,7 @@
                                                         (Integer 4)
                                                         [(()
                                                         ())]
-                                                        PointerToDataArray
+                                                        UnboundedPointerToDataArray
                                                     )
                                                     ()
                                                     BindC
@@ -2261,7 +2261,7 @@
                                             (Integer 4)
                                             [(()
                                             ())]
-                                            PointerToDataArray
+                                            UnboundedPointerToDataArray
                                         )]
                                         (Integer 4)
                                         BindC
