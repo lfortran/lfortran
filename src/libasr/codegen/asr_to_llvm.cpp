@@ -8419,7 +8419,12 @@ public:
                                 }
                             }
                         } else {
-                            if( orig_arg &&
+                            if ( x_abi == ASR::abiType::BindC ) {
+                              llvm::Type* array_data_type = llvm_utils->get_el_type(
+                                  ASRUtils::type_get_past_array(arg->m_type), module.get());
+                              tmp = builder->CreateBitCast(tmp, array_data_type->getPointerTo());
+                            }
+                            else if( orig_arg &&
                                 !LLVM::is_llvm_pointer(*orig_arg->m_type) &&
                                 LLVM::is_llvm_pointer(*arg->m_type) ) {
                                 tmp = LLVM::CreateLoad(*builder, tmp);
