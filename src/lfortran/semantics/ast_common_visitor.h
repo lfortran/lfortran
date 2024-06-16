@@ -829,85 +829,87 @@ public:
         {"eoshift", {IntrinsicSignature({"array", "shift", "boundary", "dim"}, 2, 4)}},
     };
 
-    std::map<std::string, std::pair<std::string, std::string>> intrinsic_mapping = {
-        {"iabs", {"abs", "int4"}},
-        {"dabs", {"abs", "real8"}},
-        {"cabs", {"abs", "complex4"}},
-        {"zabs", {"abs", "complex8"}},
-        {"cdabs", {"abs", "complex8"}},
-        {"dsinh", {"sinh", "real8"}},
-        {"dcosh", {"cosh", "real8"}},
-        {"dtanh", {"tanh", "real8"}},
-        {"dsin", {"sin", "real8"}},
-        {"derf", {"erf", "real8"}},
-        {"derfc", {"erfc", "real8"}},
-        {"lgamma", {"log_gamma", "real"}},
-        {"algama", {"log_gamma", "real"}},
-        {"dlgama", {"log_gamma", "real8"}},
-        {"csin", {"sin", "complex4"}},
-        {"zsin", {"sin", "complex8"}},
-        {"cdsin", {"sin", "complex8"}},
-        {"dcos", {"cos", "real8"}},
-        {"ccos", {"cos", "complex4"}},
-        {"zcos", {"cos", "complex8"}},
-        {"cdcos", {"cos", "complex8"}},
-        {"dtan", {"tan", "real8"}},
-        {"datan", {"atan", "real8"}},
-        {"datan2", {"atan2", "real8"}},
-        {"dimag", {"aimag", "complex8"}},
-        {"imag", {"aimag", "complex"}},
-        {"imagpart", {"aimag", "complex"}},
-        {"realpart", {"real", "complex"}},
-        {"isign", {"sign", "int4"}},
-        {"dsign", {"sign", "real8"}},
-        {"dgamma", {"gamma", "real8"}},
-        {"dsqrt", {"sqrt", "real8"}},
-        {"csqrt", {"sqrt", "complex4"}},
-        {"zsqrt", {"sqrt", "complex8"}},
-        {"cdsqrt", {"sqrt", "complex8"}},
-        {"alog", {"log", "real4"}},
-        {"dlog", {"log", "real8"}},
-        {"clog", {"log", "complex4"}},
-        {"zlog", {"log", "complex8"}},
-        {"cdlog", {"log", "complex8"}},
-        {"alog10", {"log10", "real4"}},
-        {"dlog10", {"log10", "real8"}},
-        {"dexp", {"exp", "real8"}},
-        {"cexp", {"exp", "complex4"}},
-        {"zexp", {"exp", "complex8"}},
-        {"cdexp", {"exp", "complex8"}},
-        {"min0", {"min", "int4"}},
-        {"amin0", {"min", "int4"}},
-        {"min1", {"min", "real"}},
-        {"amin1", {"min", "real4"}},
-        {"dmin1", {"min", "real"}},
-        {"max0", {"max", "int4"}},
-        {"amax0", {"max", "int4"}},
-        {"max1", {"max", "real"}},
-        {"amax1", {"max", "real4"}},
-        {"dmax1", {"max", "real"}},
-        {"dcmplx", {"cmplx", "any"}},
-        {"dacos", {"acos", "real8"}},
-        {"dacosh", {"acosh", "real8"}},
-        {"dint", {"aint", "real8"}},
-        {"dnint", {"anint", "real8"}},
-        {"dasin", {"asin", "real8"}},
-        {"dasinh", {"asinh", "real8"}},
-        {"datanh", {"atanh", "real8"}},
-        {"dbesj0", {"bessel_j0", "real8"}},
-        {"dbesj1", {"bessel_j1", "real8"}},
-        {"dbesy0", {"bessel_y0", "real8"}},
-        {"dbesy1", {"bessel_y1", "real8"}},
-        {"dconjg", {"conjg", "complex"}},
-        {"idim", {"dim", "int4"}},
-        {"ddim", {"dim", "real8"}},
-        {"amod", {"mod", "real4"}},
-        {"dmod", {"mod", "real8"}},
-        {"and", {"iand", "any"}},
-        {"or", {"ior", "any"}},
-        {"xor", {"ieor", "any"}},
+    std::map<std::string, std::pair<std::string, std::vector<std::string>>> intrinsic_mapping = {
+        {"iabs", {"abs", {"int4"}}},
+        {"dabs", {"abs", {"real8"}}},
+        {"cabs", {"abs", {"complex4"}}},
+        {"zabs", {"abs", {"complex8"}}},
+        {"cdabs", {"abs", {"complex8"}}},
+        {"dsinh", {"sinh", {"real8"}}},
+        {"dcosh", {"cosh", {"real8"}}},
+        {"dtanh", {"tanh", {"real8"}}},
+        {"dsin", {"sin", {"real8"}}},
+        {"derf", {"erf", {"real8"}}},
+        {"derfc", {"erfc", {"real8"}}},
+        {"lgamma", {"log_gamma", {"real"}}},
+        {"algama", {"log_gamma", {"real"}}},
+        {"dlgama", {"log_gamma", {"real8"}}},
+        {"csin", {"sin", {"complex4"}}},
+        {"zsin", {"sin", {"complex8"}}},
+        {"cdsin", {"sin", {"complex8"}}},
+        {"dcos", {"cos", {"real8"}}},
+        {"ccos", {"cos", {"complex4"}}},
+        {"zcos", {"cos", {"complex8"}}},
+        {"cdcos", {"cos", {"complex8"}}},
+        {"dtan", {"tan", {"real8"}}},
+        {"datan", {"atan", {"real8"}}},
+        {"datan2", {"atan2", {"real8", "real8"}}},
+        {"dimag", {"aimag", {"complex8"}}},
+        {"imag", {"aimag", {"complex"}}},
+        {"imagpart", {"aimag", {"complex"}}},
+        {"realpart", {"real", {"complex"}}},
+        {"isign", {"sign", {"int4", "int4"}}},
+        {"dsign", {"sign", {"real8", "real8"}}},
+        {"dgamma", {"gamma", {"real8"}}},
+        {"dsqrt", {"sqrt", {"real8"}}},
+        {"csqrt", {"sqrt", {"complex4"}}},
+        {"zsqrt", {"sqrt", {"complex8"}}},
+        {"cdsqrt", {"sqrt", {"complex8"}}},
+        {"alog", {"log", {"real4"}}},
+        {"dlog", {"log", {"real8"}}},
+        {"clog", {"log", {"complex4"}}},
+        {"zlog", {"log", {"complex8"}}},
+        {"cdlog", {"log", {"complex8"}}},
+        {"alog10", {"log10", {"real4"}}},
+        {"dlog10", {"log10", {"real8"}}},
+        {"dexp", {"exp", {"real8"}}},
+        {"cexp", {"exp", {"complex4"}}},
+        {"zexp", {"exp", {"complex8"}}},
+        {"cdexp", {"exp", {"complex8"}}},
+        {"min0", {"min", {"int4"}}},
+        {"amin0", {"min", {"int4"}}},
+        {"min1", {"min", {"real"}}},
+        {"amin1", {"min", {"real4"}}},
+        {"dmin1", {"min", {"real"}}},
+        {"max0", {"max", {"int4"}}},
+        {"amax0", {"max", {"int4"}}},
+        {"max1", {"max", {"real"}}},
+        {"amax1", {"max", {"real4"}}},
+        {"dmax1", {"max", {"real"}}},
+        {"dcmplx", {"cmplx", {"any"}}},
+        {"dacos", {"acos", {"real8"}}},
+        {"dacosh", {"acosh", {"real8"}}},
+        {"dint", {"aint", {"real8"}}},
+        {"dnint", {"anint", {"real8"}}},
+        {"dasin", {"asin", {"real8"}}},
+        {"dasinh", {"asinh", {"real8"}}},
+        {"datanh", {"atanh", {"real8"}}},
+        {"dbesj0", {"bessel_j0", {"real8"}}},
+        {"dbesj1", {"bessel_j1", {"real8"}}},
+        {"dbesy0", {"bessel_y0", {"real8"}}},
+        {"dbesy1", {"bessel_y1", {"real8"}}},
+        {"dbesjn", {"bessel_jn", {"int4", "real8"}}},
+        {"dbesyn", {"bessel_yn", {"int4", "real8"}}},
+        {"dconjg", {"conjg", {"complex"}}},
+        {"idim", {"dim", {"int4", "int4"}}},
+        {"ddim", {"dim", {"real8", "real8"}}},
+        {"amod", {"mod", {"real4", "real4"}}},
+        {"dmod", {"mod", {"real8", "real8"}}},
+        {"and", {"iand", {"any", "any"}}},
+        {"or", {"ior", {"any", "any"}}},
+        {"xor", {"ieor", {"any", "any"}}},
     };
-
+    
     ASR::asr_t *tmp;
     std::vector<ASR::asr_t *> tmp_vec;
     Allocator &al;
@@ -5387,11 +5389,31 @@ public:
     }
 
     void check_specific_type_intrinsics(std::string intrinsic_name, Vec<ASR::expr_t*> &args, const Location &loc) {
+        std::set<std::string>array_intrinsic_mapping_names = {"min0", "amin0", "min1", "amin1", "dmin1", "max0", "amax", "min1", "amax1", "dmax1"};
         if (intrinsic_mapping.find(intrinsic_name) == intrinsic_mapping.end()) {
             return;
         }
-        if (intrinsic_mapping[intrinsic_name].second == "int4") {
-            for (size_t i = 0; i < args.size(); i++) {
+
+        size_t arg_size = args.size();
+        if(intrinsic_name == "dint" || intrinsic_name == "dnint") { 
+            arg_size = 1;
+            if (args[1]) {
+                throw SemanticError("Too many arguments to call `" + intrinsic_name + "`", loc);
+            }
+        }
+
+        for (size_t i = 0; i < arg_size; i++) {
+            std::string argument_type = "";
+            if (array_intrinsic_mapping_names.find(intrinsic_name) != array_intrinsic_mapping_names.end()) {
+                argument_type = intrinsic_mapping[intrinsic_name].second[0];
+            } else {
+                if(i < intrinsic_mapping[intrinsic_name].second.size()){
+                    argument_type = intrinsic_mapping[intrinsic_name].second[i];
+                } else {
+                    throw SemanticError("Too many arguments to call `" + intrinsic_name + "`", loc);
+                }        
+            }
+            if (argument_type == "int4") {
                 if (args[i] != nullptr) {
                     ASR::ttype_t *arg_type = ASRUtils::type_get_past_array(ASRUtils::expr_type(args[i]));
                     if (!is_integer(*arg_type)) {
@@ -5399,9 +5421,7 @@ public:
                                             " must be of integer type", loc);
                     }
                 }
-            }
-        } else if (intrinsic_mapping[intrinsic_name].second == "real") {
-            for (size_t i = 0; i < args.size(); i++) {
+            } else if (argument_type == "real") {
                 if (args[i] != nullptr) {
                     ASR::ttype_t *arg_type = ASRUtils::type_get_past_array(ASRUtils::expr_type(args[i]));
                     if (!is_real(*arg_type)) {
@@ -5409,9 +5429,7 @@ public:
                                             " must be of real type", loc);
                     }
                 }
-            }
-        } else if (intrinsic_mapping[intrinsic_name].second == "real4") {
-            for (size_t i = 0; i < args.size(); i++) {
+            } else if (argument_type == "real4") {
                 if (args[i] != nullptr) {
                     ASR::ttype_t *arg_type = ASRUtils::type_get_past_array(ASRUtils::expr_type(args[i]));
                     int kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
@@ -5420,9 +5438,7 @@ public:
                                             " must be of single precision real type", loc);
                     }
                 }
-            }
-        } else if (intrinsic_mapping[intrinsic_name].second == "real8") {
-            for (size_t i = 0; i < args.size(); i++) {
+            } else if (argument_type == "real8") {
                 if (args[i] != nullptr) {
                     ASR::ttype_t *arg_type = ASRUtils::type_get_past_array(ASRUtils::expr_type(args[i]));
                     int kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
@@ -5431,9 +5447,7 @@ public:
                                             " must be of double precision real type", loc);
                     }
                 }
-            }
-        } else if (intrinsic_mapping[intrinsic_name].second == "complex") {
-            for (size_t i = 0; i < args.size(); i++) {
+            } else if (argument_type == "complex") {
                 if (args[i] != nullptr) {
                     ASR::ttype_t *arg_type = ASRUtils::type_get_past_array(ASRUtils::expr_type(args[i]));
                     if (!is_complex(*arg_type)) {
@@ -5441,9 +5455,7 @@ public:
                                             " must be of complex type", loc);
                     }
                 }
-            }
-        } else if (intrinsic_mapping[intrinsic_name].second == "complex4") {
-            for (size_t i = 0; i < args.size(); i++) {
+            } else if (argument_type == "complex4") {
                 if (args[i] != nullptr) {
                     ASR::ttype_t *arg_type = ASRUtils::type_get_past_array(ASRUtils::expr_type(args[i]));
                     int kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
@@ -5452,9 +5464,7 @@ public:
                                             " must be of single precision complex type", loc);
                     }
                 }
-            }
-        } else if (intrinsic_mapping[intrinsic_name].second == "complex8") {
-            for (size_t i = 0; i < args.size(); i++) {
+            } else if (argument_type == "complex8") {
                 if (args[i] != nullptr) {
                     ASR::ttype_t *arg_type = ASRUtils::type_get_past_array(ASRUtils::expr_type(args[i]));
                     int kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
