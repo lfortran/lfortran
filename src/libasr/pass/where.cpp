@@ -199,9 +199,14 @@ public:
     ASR::stmt_t* handle_If(ASR::Where_t& x, ASR::expr_t* test, ASR::expr_t* var, Location& loc, Vec<ASR::expr_t*> idx_vars) {
         ASR::IntegerCompare_t* int_cmp = nullptr;
         ASR::RealCompare_t* real_cmp = nullptr;
+        ASR::LogicalBinOp_t* log_bin_op = nullptr;
         ASR::expr_t* left, *right;
+        bool is_left_array = false;
         bool is_right_array = false;
         ASR::ttype_t* logical_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4));
+        ASR::expr_t* test_new = nullptr;
+        ASR::expr_t* left_array = nullptr;
+        ASR::expr_t* right_array = nullptr;
 
         if (ASR::is_a<ASR::IntegerCompare_t>(*test)) {
             int_cmp = ASR::down_cast<ASR::IntegerCompare_t>(test);
@@ -211,23 +216,49 @@ public:
             real_cmp = ASR::down_cast<ASR::RealCompare_t>(test);
             left = real_cmp->m_left;
             right = real_cmp->m_right;
+        } else if (ASR::is_a<ASR::LogicalBinOp_t>(*test)) {
+            log_bin_op = ASR::down_cast<ASR::LogicalBinOp_t>(test);
+            left = log_bin_op->m_left;
+            right = log_bin_op->m_right;
         } else {
             throw LCompilersException("Unsupported type");
         }
 
-        if (ASRUtils::is_array(ASRUtils::expr_type(right))) {
-            is_right_array = true;
+        if (ASRUtils::is_array(ASRUtils::expr_type(left))) {
+            if (ASR::is_a<ASR::ArrayBroadcast_t>(*left)) {
+                ASR::ArrayBroadcast_t* arr_broadcast = ASR::down_cast<ASR::ArrayBroadcast_t>(left);
+                if (ASR::is_a<ASR::Logical_t>(*ASRUtils::expr_type(arr_broadcast->m_array))) {
+                    is_left_array = false;
+                }
+            } else {
+                is_left_array = true;
+                left_array = PassUtils::create_array_ref(left, idx_vars, al, current_scope);
+            }
         }
 
-        ASR::expr_t* left_array = PassUtils::create_array_ref(left, idx_vars, al, current_scope);
-        ASR::expr_t* right_array = PassUtils::create_array_ref(right, idx_vars, al, current_scope);
+        if (ASRUtils::is_array(ASRUtils::expr_type(right))) {
+            if (ASR::is_a<ASR::ArrayBroadcast_t>(*right)) {
+                ASR::ArrayBroadcast_t* arr_broadcast = ASR::down_cast<ASR::ArrayBroadcast_t>(right);
+                if (ASR::is_a<ASR::Logical_t>(*ASRUtils::expr_type(arr_broadcast->m_array))) {
+                    is_right_array = false;
+                }
+            } else {
+                is_right_array = true;
+                right_array = PassUtils::create_array_ref(right, idx_vars, al, current_scope);
+            }
+        }
 
-        ASR::expr_t* test_new = ASRUtils::EXPR(
-                    real_cmp?ASR::make_RealCompare_t(al, loc, left_array, real_cmp->m_op, is_right_array?right_array:right,
-                                            logical_type, nullptr):
-                             ASR::make_IntegerCompare_t(al, loc, left_array, int_cmp->m_op, is_right_array?right_array:right,
-                                            logical_type, nullptr));
 
+        if (int_cmp) {
+            test_new = ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loc, is_left_array ? left_array : left, int_cmp->m_op,
+                        is_right_array?right_array:right, logical_type, nullptr));
+        } else if (real_cmp) {
+            test_new = ASRUtils::EXPR(ASR::make_RealCompare_t(al, loc, is_left_array ? left_array : left, real_cmp->m_op,
+                        is_right_array?right_array:right, logical_type, nullptr));
+        } else if (log_bin_op) {
+            test_new = ASRUtils::EXPR(ASR::make_LogicalBinOp_t(al, loc, is_left_array ? left_array : left, log_bin_op->m_op,
+                        is_right_array?right_array:right, logical_type, nullptr));
+        }
 
         Vec<ASR::stmt_t*> if_body;
         if_body.reserve(al, x.n_body);
@@ -268,9 +299,11 @@ public:
         ASR::expr_t* test = x.m_test;
         ASR::IntegerCompare_t* int_cmp = nullptr;
         ASR::RealCompare_t* real_cmp = nullptr;
+        ASR::LogicalBinOp_t* log_bin_op = nullptr;
         ASR::expr_t* left;
         ASR::expr_t* opt_left = nullptr;
         ASR::stmt_t* assign_stmt = nullptr;
+        ASR::stmt_t* if_stmt = nullptr;
 
         if (ASR::is_a<ASR::IntegerCompare_t>(*test)) {
             int_cmp = ASR::down_cast<ASR::IntegerCompare_t>(test);
@@ -278,6 +311,9 @@ public:
         } else if (ASR::is_a<ASR::RealCompare_t>(*test)) {
             real_cmp = ASR::down_cast<ASR::RealCompare_t>(test);
             left = real_cmp->m_left;
+        } else if (ASR::is_a<ASR::LogicalBinOp_t>(*test)) {
+            log_bin_op = ASR::down_cast<ASR::LogicalBinOp_t>(test);
+            left = log_bin_op->m_left;
         } else {
             throw LCompilersException("Unsupported type, " + std::to_string(test->type));
         }
@@ -315,6 +351,10 @@ public:
             real_cmp = ASR::down_cast<ASR::RealCompare_t>(test);
             real_cmp->m_left = opt_left;
         }
+        if (opt_left && ASR::is_a<ASR::LogicalBinOp_t>(*test)) {
+            log_bin_op = ASR::down_cast<ASR::LogicalBinOp_t>(test);
+            log_bin_op->m_left = opt_left;
+        }
 
         // create do loop head
         ASR::do_loop_head_t head;
@@ -329,7 +369,13 @@ public:
         do_loop_body.reserve(al, 1);
 
         // create an if statement
-        ASR::stmt_t* if_stmt = handle_If(xx, int_cmp?ASRUtils::EXPR((ASR::asr_t*)int_cmp):ASRUtils::EXPR((ASR::asr_t*)real_cmp), var, loc, idx_vars);
+        if (int_cmp) {
+            if_stmt = handle_If(xx, ASRUtils::EXPR((ASR::asr_t*)int_cmp), var, loc, idx_vars);
+        } else if (real_cmp) {
+            if_stmt = handle_If(xx, ASRUtils::EXPR((ASR::asr_t*)real_cmp), var, loc, idx_vars);
+        } else if (log_bin_op) {
+            if_stmt = handle_If(xx, ASRUtils::EXPR((ASR::asr_t*)log_bin_op), var, loc, idx_vars);
+        }
         if (assign_stmt) {
             pass_result.push_back(al, assign_stmt);
         }
