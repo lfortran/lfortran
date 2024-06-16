@@ -2435,10 +2435,12 @@ inline ASR::ttype_t* make_Array_t_util(Allocator& al, const Location& loc,
                 al, as->base.base.loc, as->m_v, as->m_dim, as->m_type, nullptr));
         }
     }
-
     if( !override_physical_type ) {
         if( abi == ASR::abiType::BindC ) {
-            physical_type = ASR::array_physical_typeType::PointerToDataArray;
+            if(is_dimension_star)
+              physical_type = ASR::array_physical_typeType::UnboundedPointerToDataArray;
+            else
+              physical_type = ASR::array_physical_typeType::PointerToDataArray;
         } else {
             if( ASRUtils::is_fixed_size_array(m_dims, n_dims) ) {
                 if( is_argument ) {
