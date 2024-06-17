@@ -823,6 +823,9 @@ class DoConcurrentVisitor :
                                                     array_type->m_type, dims.p, dims.n, ASR::array_physical_typeType::DescriptorArray)))),
                                                 ASR::intentType::InOut);
                                     LCOMPILERS_ASSERT(array_expr != nullptr);
+                                    /*
+                                        We allocate memory for array variables only if we have information about their sizes.
+                                    */
                                     new_body.push_back(al, b.Allocate(array_expr, array_type->m_dims, array_type->n_dims));
                                 } else {
                                     // we have no information about what size to allocate
@@ -1014,6 +1017,9 @@ class DoConcurrentVisitor :
                                 }
                             }
                             if (arg_index != -1) {
+                                /*
+                                    Same reasoning as in the comment below, I'll keep this line as well
+                                */
                                 CheckIfAlreadyAllocatedVisitor v(arg_index, func->m_name, it.first, already_allocated);
                                 SymbolTable* global_scope = current_scope;
                                 while (global_scope->parent != nullptr) {
@@ -1022,7 +1028,18 @@ class DoConcurrentVisitor :
                                 v.visit_TranslationUnit(*ASR::down_cast2<ASR::TranslationUnit_t>(global_scope->asr_owner));
                             }
                         }
-                        if (!already_allocated) pass_result.push_back(al, b.Allocate(array_expr, array_type->m_dims, array_type->n_dims));
+                        /*
+                            I will not remove the line below, it is used to allocate memory for arrays present in thread_data module
+                            but we are not sure if that is correct way to do it.
+
+                            Based on example ./integration_tests/openmp_15.f90, we will assume that passed on variable is already
+                            allocated and we will not allocate memory for it again.
+
+                            This way we can handle arrays with dimension not known at compile time.
+
+                            Reason to comment this line can be found in function `recursive_function_call_resolver`
+                        */
+                        // if (!already_allocated) pass_result.push_back(al, b.Allocate(array_expr, array_type->m_dims, array_type->n_dims));
                         involved_symbols[it.first] = ASRUtils::expr_type(array_expr);
 
                         /*
