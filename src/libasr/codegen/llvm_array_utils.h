@@ -267,7 +267,7 @@ namespace LCompilers {
                 * to the rules implemented by current class.
                 */
                 virtual
-                llvm::Value* get_single_element(llvm::Type *type, llvm::Type *el_type, llvm::Value* array,
+                llvm::Value* get_single_element(llvm::Type *type, llvm::Value* array,
                     std::vector<llvm::Value*>& m_args, int n_args,
                     bool data_only=false, bool is_fixed_size=false,
                     llvm::Value** llvm_diminfo=nullptr,
@@ -438,7 +438,7 @@ namespace LCompilers {
                 llvm::Value* get_stride(llvm::Value* dim_des, bool load=true);
 
                 virtual
-                llvm::Value* get_single_element(llvm::Type *type, llvm::Type *el_type, llvm::Value* array,
+                llvm::Value* get_single_element(llvm::Type *type, llvm::Value* array,
                     std::vector<llvm::Value*>& m_args, int n_args,
                     bool data_only=false, bool is_fixed_size=false,
                     llvm::Value** llvm_diminfo=nullptr,

@@ -2347,21 +2347,31 @@ public:
                 ptr_loads = ptr_loads_copy;
             }
             LCOMPILERS_ASSERT(ASRUtils::extract_n_dims_from_ttype(x_mv_type) > 0);
-            llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(x_mv_type, module.get());
-            llvm::Type* el_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::extract_type(x_mv_type), module.get());
             bool is_polymorphic = current_select_type_block_type != nullptr;
             if (array_t->m_physical_type == ASR::array_physical_typeType::UnboundedPointerToDataArray) {
-                tmp = arr_descr->get_single_element(type, el_type, array, indices, x.n_args,
+                llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::extract_type(x_mv_type), module.get());
+                tmp = arr_descr->get_single_element(type, array, indices, x.n_args,
                                                     true,
                                                     false,
                                                     llvm_diminfo.p, is_polymorphic, current_select_type_block_type,
                                                     true);
             } else {
-                tmp = arr_descr->get_single_element(type, el_type, array, indices, x.n_args,
+                llvm::Type* type;
+                bool is_fixed_size = (array_t->m_physical_type == ASR::array_physical_typeType::FixedSizeArray ||
+                    array_t->m_physical_type == ASR::array_physical_typeType::SIMDArray ||
+                    (
+                        array_t->m_physical_type == ASR::array_physical_typeType::CharacterArraySinglePointer &&
+                        ASRUtils::is_fixed_size_array(x_mv_type)
+                    )
+                );
+                if (is_fixed_size) {
+                    type = llvm_utils->get_type_from_ttype_t_util(x_mv_type, module.get());
+                } else {
+                    type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::extract_type(x_mv_type), module.get());
+                }
+                tmp = arr_descr->get_single_element(type, array, indices, x.n_args,
                                                     array_t->m_physical_type == ASR::array_physical_typeType::PointerToDataArray,
-                                                    array_t->m_physical_type == ASR::array_physical_typeType::FixedSizeArray || array_t->m_physical_type == ASR::array_physical_typeType::SIMDArray
-                                                    || (array_t->m_physical_type == ASR::array_physical_typeType::CharacterArraySinglePointer && ASRUtils::is_fixed_size_array(x_mv_type)),
-                                                    llvm_diminfo.p, is_polymorphic, current_select_type_block_type);
+                                                    is_fixed_size, llvm_diminfo.p, is_polymorphic, current_select_type_block_type);
             }
         }
     }
