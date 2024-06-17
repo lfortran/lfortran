@@ -222,6 +222,15 @@ namespace LCompilers {
         }
 
         llvm::Value* SimpleCMODescriptor::
+        get_pointer_to_dimension_descriptor_array(llvm::Type* type, llvm::Value* arr, bool load) {
+            llvm::Value* dim_des_arr_ptr = llvm_utils->create_gep2(type, arr, 2);
+            if( !load ) {
+                return dim_des_arr_ptr;
+            }
+            return LLVM::CreateLoad(*builder, dim_des_arr_ptr);
+        }
+
+        llvm::Value* SimpleCMODescriptor::
         get_rank(llvm::Value* arr, bool get_pointer) {
             llvm::Value* rank_ptr = llvm_utils->create_gep(arr, 4);
             if( get_pointer ) {
@@ -620,7 +629,7 @@ namespace LCompilers {
             return idx;
         }
 
-        llvm::Value* SimpleCMODescriptor::get_single_element(llvm::Type *el_type, llvm::Value* array,
+        llvm::Value* SimpleCMODescriptor::get_single_element(llvm::Type *type, llvm::Type *el_type, llvm::Value* array,
             std::vector<llvm::Value*>& m_args, int n_args, bool data_only,
             bool is_fixed_size, llvm::Value** llvm_diminfo, bool polymorphic,
             llvm::Type* polymorphic_type, bool is_unbounded_pointer_to_data) {
@@ -633,7 +642,7 @@ namespace LCompilers {
                 LCOMPILERS_ASSERT(llvm_diminfo);
                 idx = cmo_convertor_single_element_data_only(llvm_diminfo, m_args, n_args, check_for_bounds, is_unbounded_pointer_to_data);
                 if( is_fixed_size ) {
-                    tmp = llvm_utils->create_gep2(el_type, array, idx);
+                    tmp = llvm_utils->create_gep2(type, array, idx);
                 } else {
                     tmp = llvm_utils->create_ptr_gep2(el_type, array, idx);
                 }

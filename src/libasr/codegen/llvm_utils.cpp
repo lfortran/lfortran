@@ -45,9 +45,7 @@ namespace LCompilers {
             return builder.CreateInBoundsGEP(t2, x, idx);
         }
 
-        llvm::Value* CreateInBoundsGEP2(
-            llvm::IRBuilder<> &builder, llvm::Type *t, llvm::Value *x, std::vector<llvm::Value *> &idx
-        ) {
+        llvm::Value* CreateInBoundsGEP2(llvm::IRBuilder<> &builder, llvm::Type *t, llvm::Value *x, std::vector<llvm::Value *> &idx) {
             return builder.CreateInBoundsGEP(t, x, idx);
         }
 

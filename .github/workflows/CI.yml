@@ -729,7 +729,7 @@ jobs:
             src/bin/lfortran --show-llvm integration_tests/elemental_04.f90
             src/bin/lfortran integration_tests/elemental_04.f90
             ./elemental_04.out
-            src/bin/lfortran --show-llvm integration_tests/integration_tests/types_23.f90
+            src/bin/lfortran --show-llvm integration_tests/types_23.f90
             src/bin/lfortran integration_tests/types_23.f90
             ./types_23.out
             src/bin/lfortran --show-llvm integration_tests/character_01.f90

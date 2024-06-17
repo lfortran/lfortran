@@ -264,8 +264,7 @@ public:
     }
 
     llvm::Value* CreateLoad2(ASR::ttype_t *type, llvm::Value *x) {
-        llvm::Type* el_type = llvm_utils->get_type_from_ttype_t_util(
-            ASRUtils::extract_type(type), module.get());
+        llvm::Type* el_type = llvm_utils->get_type_from_ttype_t_util(type, module.get());
         return LLVM::CreateLoad2(*builder, el_type, x);
     }
 
@@ -2348,19 +2347,17 @@ public:
                 ptr_loads = ptr_loads_copy;
             }
             LCOMPILERS_ASSERT(ASRUtils::extract_n_dims_from_ttype(x_mv_type) > 0);
+            llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(x_mv_type, module.get());
+            llvm::Type* el_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::extract_type(x_mv_type), module.get());
             bool is_polymorphic = current_select_type_block_type != nullptr;
             if (array_t->m_physical_type == ASR::array_physical_typeType::UnboundedPointerToDataArray) {
-                llvm::Type* el_type = llvm_utils->get_type_from_ttype_t_util(
-                    x_mv_type, module.get());
-                tmp = arr_descr->get_single_element(el_type, array, indices, x.n_args,
+                tmp = arr_descr->get_single_element(type, el_type, array, indices, x.n_args,
                                                     true,
                                                     false,
                                                     llvm_diminfo.p, is_polymorphic, current_select_type_block_type,
                                                     true);
             } else {
-                llvm::Type* el_type = llvm_utils->get_type_from_ttype_t_util(
-                    x_mv_type, module.get());
-                tmp = arr_descr->get_single_element(el_type, array, indices, x.n_args,
+                tmp = arr_descr->get_single_element(type, el_type, array, indices, x.n_args,
                                                     array_t->m_physical_type == ASR::array_physical_typeType::PointerToDataArray,
                                                     array_t->m_physical_type == ASR::array_physical_typeType::FixedSizeArray || array_t->m_physical_type == ASR::array_physical_typeType::SIMDArray
                                                     || (array_t->m_physical_type == ASR::array_physical_typeType::CharacterArraySinglePointer && ASRUtils::is_fixed_size_array(x_mv_type)),
@@ -9736,19 +9733,26 @@ public:
                     (LLVM::is_llvm_pointer(*ASRUtils::expr_type(x.m_v)));
         visit_expr_wrapper(x.m_v);
         ptr_loads = ptr_loads_copy;
-        bool is_pointer_array = tmp->getType()->isPointerTy();
+        bool is_pointer_array = (tmp->getType()->getNumContainedTypes() > 0) && (tmp->getType()->getContainedType(0)->isPointerTy());
         if (is_pointer_array) {
-            tmp = CreateLoad2(x.m_type, tmp);
+            tmp = CreateLoad2(ASRUtils::expr_type(x.m_v), tmp);
         }
         llvm::Value* llvm_arg1 = tmp;
         visit_expr_wrapper(x.m_dim, true);
         llvm::Value* dim_val = tmp;
 
         ASR::ttype_t* x_mv_type = ASRUtils::expr_type(x.m_v);
+        llvm::Type *llvm_x_mv_type = llvm_utils->get_type_from_ttype_t_util(x_mv_type, module.get());
         ASR::array_physical_typeType physical_type = ASRUtils::extract_physical_type(x_mv_type);
         switch( physical_type ) {
             case ASR::array_physical_typeType::DescriptorArray: {
-                llvm::Value* dim_des_val = arr_descr->get_pointer_to_dimension_descriptor_array(llvm_arg1);
+                llvm::Type* el_type_llvm_arg1;
+                if (llvm_arg1->getType()->getNumContainedTypes() > 0) {
+                    el_type_llvm_arg1 = llvm_arg1->getType()->getContainedType(0);
+                } else {
+                    el_type_llvm_arg1 = llvm_arg1->getType();
+                }
+                llvm::Value* dim_des_val = arr_descr->get_pointer_to_dimension_descriptor_array(el_type_llvm_arg1, llvm_arg1);
                 llvm::Value* const_1 = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
                 dim_val = builder->CreateSub(dim_val, const_1);
                 llvm::Value* dim_struct = arr_descr->get_pointer_to_dimension_descriptor(dim_des_val, dim_val);
