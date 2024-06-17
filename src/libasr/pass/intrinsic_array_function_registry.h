@@ -208,7 +208,7 @@ static inline void verify_args(const ASR::IntrinsicArrayFunction_t& x, diag::Dia
         size_t array_n_dims = ASRUtils::extract_dimensions_from_ttype(array_type, array_dims);
         size_t mask_n_dims = ASRUtils::extract_dimensions_from_ttype(mask_type, mask_dims);
         if (mask_n_dims != 0) {
-            ASRUtils::require_impl(ASRUtils::dimensions_equal(array_dims, array_n_dims, mask_dims, mask_n_dims),
+            ASRUtils::require_impl(ASRUtils::dimensions_compatible(array_dims, array_n_dims, mask_dims, mask_n_dims),
                 "The dimensions of `array` and `mask` arguments of `" + intrinsic_func_name + "` intrinsic must be same",
                 x.base.base.loc, diagnostics);
         }
