@@ -9742,7 +9742,6 @@ public:
         llvm::Value* dim_val = tmp;
 
         ASR::ttype_t* x_mv_type = ASRUtils::expr_type(x.m_v);
-        llvm::Type *llvm_x_mv_type = llvm_utils->get_type_from_ttype_t_util(x_mv_type, module.get());
         ASR::array_physical_typeType physical_type = ASRUtils::extract_physical_type(x_mv_type);
         switch( physical_type ) {
             case ASR::array_physical_typeType::DescriptorArray: {
