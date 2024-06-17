@@ -16,9 +16,8 @@
 
 #include <xeus/xinterpreter.hpp>
 #include <xeus/xkernel.hpp>
-#include <xeus/xkernel_configuration.hpp>
-#include <xeus-zmq/xserver_zmq.hpp>
-#include "xeus-zmq/xserver_shell_main.hpp"
+#include "xeus/xkernel_configuration.hpp"
+#include "xeus-zmq/xserver_zmq.hpp"
 
 #include <nlohmann/json.hpp>
 
@@ -85,12 +84,13 @@ namespace LCompilers::LFortran {
 
         void configure_impl() override;
 
-        nl::json execute_request_impl(int execution_counter,
-                                      const std::string& code,
-                                      bool silent,
-                                      bool store_history,
-                                      nl::json user_expressions,
-                                      bool allow_stdin) override;
+        void execute_request_impl(send_reply_callback cb,
+                                  int execution_counter,
+                                  const std::string& code,
+                                  //bool silent,
+                                  //bool store_history,
+                                  execute_request_config config,
+                                  nl::json user_expressions) override;
 
         nl::json complete_request_impl(const std::string& code,
                                        int cursor_pos) override;
@@ -106,13 +106,12 @@ namespace LCompilers::LFortran {
         void shutdown_request_impl() override;
     };
 
-
-    nl::json custom_interpreter::execute_request_impl(int execution_counter, // Typically the cell number
+    
+    void custom_interpreter::execute_request_impl(send_reply_callback cb,
+                                                      int execution_counter, // Typically the cell number
                                                       const std::string& code, // Code to execute
-                                                      bool /*silent*/,
-                                                      bool /*store_history*/,
-                                                      nl::json /*user_expressions*/,
-                                                      bool /*allow_stdin*/)
+                                                      execute_request_config,
+                                                      nl::json /*user_expressions*/)
     {
         FortranEvaluator::EvalResult r;
         std::string std_out;
@@ -391,7 +390,7 @@ namespace LCompilers::LFortran {
         result["user_expressions"] = nl::json::object();
         return result;
     }
-
+    
     void custom_interpreter::configure_impl()
     {
         // Perform some operations
