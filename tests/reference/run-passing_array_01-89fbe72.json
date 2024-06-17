@@ -1,0 +1,13 @@
+{
+    "basename": "run-passing_array_01-89fbe72",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/passing_array_01.f90",
+    "infile_hash": "c4f23f8af4c7add1c1eeab42b957fd5885da76f668ca6b1b86660896",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "run-passing_array_01-89fbe72.stderr",
+    "stderr_hash": "d5fd781a0c253c70c5ff9ed4c113d607c13db45bde638f72dbb1c414",
+    "returncode": 1
+}
