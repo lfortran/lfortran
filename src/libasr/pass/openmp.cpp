@@ -118,10 +118,18 @@ class FunctionSubroutineCallVisitor: public ASR::BaseWalkVisitor<FunctionSubrout
         std::string function_name;
         SymbolTable* current_scope;
         std::vector<SymbolTable*> &scopes;
+        std::vector<int> &array_variable_indices;
+        std::vector<std::string> &array_variables;
+        std::map<int, std::map<std::string, ASR::symbol_t*>> &scoped_array_variable_map;
     
     public:
-        FunctionSubroutineCallVisitor(std::string function_name_, std::vector<SymbolTable*> &scopes_) :
-            function_name(function_name_), scopes(scopes_) {}
+        FunctionSubroutineCallVisitor(std::string function_name_, std::vector<SymbolTable*> &scopes_,
+            std::vector<int> &array_variable_indices_,
+            std::vector<std::string> &array_variables_,
+            std::map<int, std::map<std::string, ASR::symbol_t*>> &scoped_array_variable_map_) :
+            function_name(function_name_), scopes(scopes_), array_variable_indices(array_variable_indices_),
+            array_variables(array_variables_),
+            scoped_array_variable_map(scoped_array_variable_map_) {}
         
         void visit_Program(const ASR::Program_t &x) {
             ASR::Program_t& xx = const_cast<ASR::Program_t&>(x);
@@ -144,15 +152,41 @@ class FunctionSubroutineCallVisitor: public ASR::BaseWalkVisitor<FunctionSubrout
         }
 
         void visit_FunctionCall(const ASR::FunctionCall_t& x) {
-            if (ASRUtils::symbol_name(x.m_name) == function_name)
+            if (ASRUtils::symbol_name(x.m_name) == function_name) {
                 scopes.push_back(current_scope);
+                for (size_t i = 0; i < array_variable_indices.size(); i++) {
+                    ASR::expr_t* arg = x.m_args[array_variable_indices[i]].m_value;
+                    if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*arg)) {
+                        arg = ASR::down_cast<ASR::ArrayPhysicalCast_t>(arg)->m_arg;
+                    }
+                    if (ASR::is_a<ASR::Var_t>(*arg)) {
+                        ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(arg);
+                        ASR::symbol_t* sym = current_scope->get_symbol(ASRUtils::symbol_name(var->m_v));
+                        LCOMPILERS_ASSERT(sym != nullptr);
+                        scoped_array_variable_map[current_scope->counter][array_variables[i]] = sym;
+                    }
+                }
+            }
 
             BaseWalkVisitor::visit_FunctionCall(x);
         }
 
         void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
-            if (ASRUtils::symbol_name(x.m_name) == function_name)
+            if (ASRUtils::symbol_name(x.m_name) == function_name) {
                 scopes.push_back(current_scope);
+                for (size_t i = 0; i < array_variable_indices.size(); i++) {
+                    ASR::expr_t* arg = x.m_args[array_variable_indices[i]].m_value;
+                    if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*arg)) {
+                        arg = ASR::down_cast<ASR::ArrayPhysicalCast_t>(arg)->m_arg;
+                    }
+                    if (ASR::is_a<ASR::Var_t>(*arg)) {
+                        ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(arg);
+                        ASR::symbol_t* sym = current_scope->get_symbol(ASRUtils::symbol_name(var->m_v));
+                        LCOMPILERS_ASSERT(sym != nullptr);
+                        scoped_array_variable_map[current_scope->counter][array_variables[i]] = sym;
+                    }
+                }
+            }
 
             BaseWalkVisitor::visit_SubroutineCall(x);
         }
@@ -758,11 +792,9 @@ class DoConcurrentVisitor :
             2. Update the function signature for array variables
             3. Search for function / subroutine calls to existing function in entire ASR
             4. Recursively call this function for all the function calls found in step 3
-
-            TODO: right now we assume array variables will have same name in different scopes
-            this won't work, need to find a way to handle this
         */
-        void recursive_function_call_resolver(SymbolTable* current_scope, std::vector<std::string> &array_variables, bool first_call=false) {
+        void recursive_function_call_resolver(SymbolTable* current_scope, std::vector<std::string> array_variables,
+                std::map<int, std::map<std::string, ASR::symbol_t*>> scoped_array_variable_map, bool first_call=false) {
             ASR::asr_t* asr_owner = current_scope->asr_owner;
             if (ASR::is_a<ASR::symbol_t>(*asr_owner)) {
                 ASR::symbol_t* sym = ASR::down_cast<ASR::symbol_t>(asr_owner);
@@ -771,9 +803,6 @@ class DoConcurrentVisitor :
                     ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(sym);
                     if (!first_call) {
                         Vec<ASR::stmt_t*> new_body; new_body.reserve(al, func->n_body);
-                        // update declaration of array variables
-                        // TODO: array_variables will not have same name in different scopes
-                        // this won't work, need to find a way to handle this
                         for (size_t i = 0; i < array_variables.size(); i++) {
                             ASR::symbol_t* sym = current_scope->resolve_symbol(array_variables[i]);
                             ASR::ttype_t* sym_type = ASRUtils::symbol_type(sym);
@@ -788,7 +817,7 @@ class DoConcurrentVisitor :
                                     for (size_t i = 0; i < array_type->n_dims; i++) {
                                         dims.push_back(al, empty_dim);
                                     }
-                                    ASR::expr_t* array_expr = b.VariableOverwrite(current_scope, array_variables[i],
+                                    ASR::expr_t* array_expr = b.VariableOverwrite(current_scope, ASRUtils::symbol_name(sym),
                                             ASRUtils::TYPE(ASR::make_Pointer_t(al, array_type->base.base.loc,
                                                     ASRUtils::TYPE(ASR::make_Array_t(al, array_type->base.base.loc,
                                                     array_type->m_type, dims.p, dims.n, ASR::array_physical_typeType::DescriptorArray)))),
@@ -829,9 +858,15 @@ class DoConcurrentVisitor :
                         func_type->m_arg_types[it.second] = ASRUtils::symbol_type(func->m_symtab->resolve_symbol(it.first));
                     }
 
+                    std::vector<int> array_variables_indices;
+                    for (auto it: array_variables) {
+                        array_variables_indices.push_back(array_arg_mapping[it]);
+                    }
+
                     // search for function / subroutine calls to existing function
                     std::vector<SymbolTable*> scopes;
-                    FunctionSubroutineCallVisitor fsv(func->m_name, scopes);
+                    scoped_array_variable_map.clear();
+                    FunctionSubroutineCallVisitor fsv(func->m_name, scopes, array_variables_indices, array_variables, scoped_array_variable_map);
 
                     // get global scope
                     SymbolTable* global_scope = current_scope;
@@ -848,7 +883,11 @@ class DoConcurrentVisitor :
                     }
                     for (auto it: unique_scopes ) {
                         if (it->counter != current_scope->counter) {
-                            recursive_function_call_resolver(it, array_variables);
+                            std::vector<std::string> new_array_variables;
+                            for (auto it2: scoped_array_variable_map[it->counter]) {
+                                new_array_variables.push_back(ASRUtils::symbol_name(it2.second));
+                            }
+                            recursive_function_call_resolver(it, new_array_variables, scoped_array_variable_map);
                         }
                     }
                     scopes.clear();
@@ -857,11 +896,8 @@ class DoConcurrentVisitor :
                     ASR::Program_t* prog = ASR::down_cast<ASR::Program_t>(sym);
                     if (!first_call) {
                         Vec<ASR::stmt_t*> new_body; new_body.reserve(al, prog->n_body);
-                        // update declaration of array variables
-                        // TODO: array_variables will not have same name in different scopes
-                        // this won't work, need to find a way to handle this
                         for (size_t i = 0; i < array_variables.size(); i++) {
-                            ASR::symbol_t* sym = current_scope->resolve_symbol(array_variables[i]);
+                            ASR::symbol_t* sym = current_scope->get_symbol(array_variables[i]);
                             ASR::ttype_t* sym_type = ASRUtils::symbol_type(sym);
                             if (ASR::is_a<ASR::Pointer_t>(*sym_type)) {
                                 continue;
@@ -874,7 +910,7 @@ class DoConcurrentVisitor :
                                     for (size_t i = 0; i < array_type->n_dims; i++) {
                                         dims.push_back(al, empty_dim);
                                     }
-                                    ASR::expr_t* array_expr = b.VariableOverwrite(prog->m_symtab, array_variables[i],
+                                    ASR::expr_t* array_expr = b.VariableOverwrite(prog->m_symtab, ASRUtils::symbol_name(sym),
                                             ASRUtils::TYPE(ASR::make_Pointer_t(al, array_type->base.base.loc,
                                                     ASRUtils::TYPE(ASR::make_Array_t(al, array_type->base.base.loc,
                                                     array_type->m_type, dims.p, dims.n, ASR::array_physical_typeType::DescriptorArray)))),
@@ -1082,7 +1118,8 @@ class DoConcurrentVisitor :
 
             if (array_variables.size() > 0) {
                 // std::vector<std::string> function_names; function_names.push_back(ASRUtils::symbol_name(ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner)));
-                recursive_function_call_resolver(current_scope, array_variables, true);
+                std::map<int, std::map<std::string, ASR::symbol_t*>> scoped_array_variable_map;
+                recursive_function_call_resolver(current_scope, array_variables, scoped_array_variable_map, true);
             }
 
             remove_original_statement = true;

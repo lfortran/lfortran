@@ -1,24 +1,24 @@
-subroutine initialize_array(n, a)
+subroutine initialize_array(n, b)
 use omp_lib
 implicit none
 integer, intent(in) :: n
-real, dimension(n), intent(out) :: a
+real, dimension(n), intent(out) :: b
 
 integer :: i
 
-!$omp parallel shared(a) private(i)
+!$omp parallel shared(b) private(i)
 !$omp do
 do i = 1, n
-  a(i) = 12.91
+  b(i) = 12.91
 end do
 !$omp end do
 !$omp end parallel
 
-print *, a(1), a(n)
-if (abs(a(1) - 12.91) > 1e-8) error stop
-if (abs(a(n) - 12.91) > 1e-8) error stop
-if (abs(a(12) - 12.91) > 1e-8) error stop
-if (abs(a(12841) - 12.91) > 1e-8) error stop
+print *, b(1), b(n)
+if (abs(b(1) - 12.91) > 1e-8) error stop
+if (abs(b(n) - 12.91) > 1e-8) error stop
+if (abs(b(12) - 12.91) > 1e-8) error stop
+if (abs(b(12841) - 12.91) > 1e-8) error stop
 end subroutine
 
 program openmp_12
