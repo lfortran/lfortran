@@ -5398,12 +5398,7 @@ public:
             switch( select_type_stmts[i]->type ) {
                 case ASR::type_stmtType::TypeStmtName: {
                     ASR::ttype_t* selector_var_type = ASRUtils::expr_type(x.m_selector);
-                    llvm::Type* llvm_type_selector = llvm_utils->get_type_from_ttype_t_util(
-                        selector_var_type, module.get()
-                    );
-                    llvm::Value* vptr_int_hash = CreateLoad2(
-                        selector_var_type, llvm_utils->create_gep2(llvm_type_selector, llvm_selector, 0)
-                    );
+                    llvm::Value* vptr_int_hash = CreateLoad(llvm_utils->create_gep(llvm_selector, 0));
                     if( ASRUtils::is_array(selector_var_type) ) {
                         vptr_int_hash = CreateLoad(llvm_utils->create_gep(vptr_int_hash, 0));
                     }
