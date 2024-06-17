@@ -1391,7 +1391,7 @@ filename = "interface4.f90"
 ast = true
 
 [[test]]
-filename = "passing_array_01.f90"
+filename = "errors/passing_array_01.f90"
 run = true
 
 [[test]]
