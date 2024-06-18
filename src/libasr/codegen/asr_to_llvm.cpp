@@ -5182,8 +5182,11 @@ public:
 
         if( m_new == ASR::array_physical_typeType::PointerToDataArray &&
             m_old == ASR::array_physical_typeType::DescriptorArray ) {
-            if( ASR::is_a<ASR::StructInstanceMember_t>(*m_arg) ) {
-                arg = LLVM::CreateLoad(*builder, arg);
+            llvm::Type* type_m_arg = llvm_utils->get_type_from_ttype_t_util(
+                ASRUtils::expr_type(m_arg), module.get()
+            );
+            if (ASR::is_a<ASR::StructInstanceMember_t>(*m_arg)) {
+                arg = LLVM::CreateLoad2(*builder, type_m_arg, arg);
             }
             tmp = LLVM::CreateLoad(*builder, arr_descr->get_pointer_to_data(arg));
             tmp = llvm_utils->create_ptr_gep(tmp, arr_descr->get_offset(arg));
