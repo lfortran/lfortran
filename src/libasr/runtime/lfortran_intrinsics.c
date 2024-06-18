@@ -2914,7 +2914,7 @@ LFORTRAN_API void _lpython_set_argv(int32_t argc_1, char *argv_1[]) {
     for (size_t i = 0; i < argc_1; i++) {
         _argv[i] = strdup(argv_1[i]);
     }
-    _argc = argc_1;
+    _argc = argc_1 - 1;
 }
 
 LFORTRAN_API int32_t _lpython_get_argc() {
