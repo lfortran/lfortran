@@ -216,10 +216,12 @@ static inline void verify_args(const ASR::IntrinsicArrayFunction_t& x, diag::Dia
 }
 
 template<typename T>
-T find_sum(size_t size, T* data) {
+T find_sum(size_t size, T* data, bool* mask) {
     T result = 0;
     for (size_t i = 0; i < size; i++) {
-        result += data[i];
+        if (mask[i]) {
+            result += data[i];
+        }
     }
     return result;
 }
@@ -267,6 +269,7 @@ T find_maxval(size_t size, T* data) {
 static inline ASR::expr_t *eval_ArrIntrinsic(Allocator & al,
     const Location & loc, ASR::ttype_t *t, Vec<ASR::expr_t*>& args,
     diag::Diagnostics& /*diag*/, ASRUtils::IntrinsicArrayFunctions intrinsic_func_id) {
+    ASRBuilder b(al, loc);
     ASR::expr_t* array = args[0];
     if (!array) return nullptr;
     ASR::expr_t* value = nullptr, *args_value0 = nullptr;
@@ -281,16 +284,49 @@ static inline ASR::expr_t *eval_ArrIntrinsic(Allocator & al,
     } else {
         return nullptr;
     }
+    ASR::ArrayConstant_t *mask = nullptr;
+    ASR::expr_t* dim = b.i32(1);
+    if (args[1]) {
+        if (is_integer(*ASRUtils::expr_type(args[1]))){
+            dim = args[1];
+            if (args[2]) {
+                if (ASR::is_a<ASR::ArrayConstant_t>(*args[2])) {
+                    mask = ASR::down_cast<ASR::ArrayConstant_t>(args[2]);
+                } else if (ASR::is_a<ASR::LogicalConstant_t>(*args[2])) {
+                    std::vector<ASR::expr_t*> mask_values(size, args[2]);
+                    ASR::expr_t *arr = b.ArrayConstant(mask_values, logical, false);
+                    mask = ASR::down_cast<ASR::ArrayConstant_t>(arr);
+                } else {
+                    return nullptr;
+                }
+            }
+        } else {
+            if (ASR::is_a<ASR::ArrayConstant_t>(*args[1])) {
+                mask = ASR::down_cast<ASR::ArrayConstant_t>(args[1]);
+            } else if (ASR::is_a<ASR::LogicalConstant_t>(*args[1])) {
+                std::vector<ASR::expr_t*> mask_values(size, args[1]);
+                ASR::expr_t *arr = b.ArrayConstant(mask_values, logical, false);
+                mask = ASR::down_cast<ASR::ArrayConstant_t>(arr);
+            } else {
+                return nullptr;
+            }
+        }
+    } else {
+        std::vector<ASR::expr_t*> mask_values(size, b.bool_t(true, logical));
+        ASR::expr_t *arr = b.ArrayConstant(mask_values, logical, false);
+        mask = ASR::down_cast<ASR::ArrayConstant_t>(arr);
+    }
+    bool *mask_data = (bool*)(mask->m_data);
     switch( intrinsic_func_id ) {
         case ASRUtils::IntrinsicArrayFunctions::Sum: {
-            if (ASR::is_a<ASR::ArrayConstant_t>(*array)) {
+            if (ASR::is_a<ASR::ArrayConstant_t>(*array) && ASR::is_a<ASR::IntegerConstant_t>(*dim)) {
                 if (ASR::is_a<ASR::IntegerConstant_t>(*args_value0)) {
                     int64_t result = 0;
                     switch (kind) {
-                        case 1: result = find_sum(size, (int8_t*)(a->m_data)); break;
-                        case 2: result = find_sum(size, (int16_t*)(a->m_data)); break;
-                        case 4: result = find_sum(size, (int32_t*)(a->m_data)); break;
-                        case 8: result = find_sum(size, (int64_t*)(a->m_data)); break;
+                        case 1: result = find_sum(size, (int8_t*)(a->m_data), mask_data); break;
+                        case 2: result = find_sum(size, (int16_t*)(a->m_data), mask_data); break;
+                        case 4: result = find_sum(size, (int32_t*)(a->m_data), mask_data); break;
+                        case 8: result = find_sum(size, (int64_t*)(a->m_data), mask_data); break;
                         default: break;
                     }
                     value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al,
@@ -298,29 +334,34 @@ static inline ASR::expr_t *eval_ArrIntrinsic(Allocator & al,
                 } else if (ASR::is_a<ASR::RealConstant_t>(*args_value0)) {
                     if (kind == 4) {
                         float result = 0.0;
-                        result += find_sum(size, (float*)(a->m_data));
+                        result += find_sum(size, (float*)(a->m_data), mask_data);
                         value = ASRUtils::EXPR(ASR::make_RealConstant_t(al,
                         loc, result, t));
                     } else {
                         double result = 0.0;
-                        result += find_sum(size, (double*)(a->m_data));
+                        result += find_sum(size, (double*)(a->m_data), mask_data);
                         value = ASRUtils::EXPR(ASR::make_RealConstant_t(al,
                         loc, result, t));
                     }
                 } else if (ASR::is_a<ASR::ComplexConstant_t>(*args_value0)) {
+                    
                     if (ASRUtils::extract_kind_from_ttype_t(t) == 4) {
                         std::complex<float> result = {0.0, 0.0};
                         for (size_t i = 0; i < size; i++) {
-                            result.real(result.real() + *(((float*)(a->m_data)) + 2*i));
-                            result.imag(result.imag() + *(((float*)(a->m_data)) + 2*i + 1));
+                            if (mask_data[i]) {
+                                result.real(result.real() + *(((float*)(a->m_data)) + 2*i));
+                                result.imag(result.imag() + *(((float*)(a->m_data)) + 2*i + 1));
+                            }
                         }
                         value = ASRUtils::EXPR(ASR::make_ComplexConstant_t(al,
                         loc, result.real(), result.imag(), t));
                     } else {
                         std::complex<double> result = {0.0, 0.0};
                         for (size_t i = 0; i < size; i++) {
-                            result.real(result.real() + *(((double*)(a->m_data)) + 2*i));
-                            result.imag(result.imag() + *(((double*)(a->m_data)) + 2*i + 1));
+                            if (mask_data[i]) {
+                                result.real(result.real() + *(((double*)(a->m_data)) + 2*i));
+                                result.imag(result.imag() + *(((double*)(a->m_data)) + 2*i + 1));
+                            }
                         }
                         value = ASRUtils::EXPR(ASR::make_ComplexConstant_t(al,
                         loc, result.real(), result.imag(), t));
@@ -458,8 +499,7 @@ static inline ASR::expr_t *eval_ArrIntrinsic(Allocator & al,
 
 static inline ASR::asr_t* create_ArrIntrinsic(
     Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args,
-    diag::Diagnostics& diag,
-    ASRUtils::IntrinsicArrayFunctions intrinsic_func_id) {
+    diag::Diagnostics& diag, ASRUtils::IntrinsicArrayFunctions intrinsic_func_id) {
     std::string intrinsic_func_name = ASRUtils::get_array_intrinsic_name(static_cast<int64_t>(intrinsic_func_id));
     int64_t id_array = 0, id_array_dim = 1, id_array_mask = 2;
     int64_t id_array_dim_mask = 3;
