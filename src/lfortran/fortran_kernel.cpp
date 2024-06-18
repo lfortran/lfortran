@@ -18,7 +18,6 @@
 #include <xeus/xkernel.hpp>
 #include <xeus/xkernel_configuration.hpp>
 #include "xeus-zmq/xzmq_context.hpp"
-//#include <xeus-zmq/xserver_zmq.hpp>
 #include <xeus-zmq/xserver_zmq_split.hpp>
 
 #include <nlohmann/json.hpp>
@@ -492,9 +491,6 @@ namespace LCompilers::LFortran {
 
     int run_kernel(const std::string &connection_filename)
     {
-        //using context_type = xeus::xcontext_impl<zmq::context_t>;
-        //using context_ptr = std::unique_ptr<context_type>;
-        //context_ptr context = context_ptr(new context_type());
         std::unique_ptr<xeus::xcontext> context = xeus::make_zmq_context();
 
         // Create interpreter instance
