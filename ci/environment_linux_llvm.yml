@@ -8,7 +8,7 @@ dependencies:
   - xeus=5.1.0
   - xeus-zmq=3.0.0
   - xtl
-  - nlohmann_json=3.11.2
+  - nlohmann_json>=3.11.2
   - cppzmq
   - jupyter_kernel_test
   - xonsh
