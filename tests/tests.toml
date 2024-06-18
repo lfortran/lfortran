@@ -3899,10 +3899,6 @@ filename = "errors/incompatible_dimension_logical_arrays_logical_binop_02.f90"
 asr = true
 
 [[test]]
-filename = "errors/incompatible_dimension_logical_arrays_logical_binop_03.f90"
-asr = true
-
-[[test]]
 filename = "errors/end_function_name_not_match.f90"
 ast = true
 

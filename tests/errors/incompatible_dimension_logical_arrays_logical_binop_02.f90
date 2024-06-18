@@ -1,8 +1,6 @@
 program main
-    logical :: x1(2, 2)
-    x1(1, 1) = .true.
-    x1(1, 2) = .false.
-    x1(2, 1) = .false.
-    x1(2, 2) = .true.
-    print *, x1 .neqv. [.true., .true.]
+    logical, parameter :: x1(3) = [.true., .false., .false.]
+    logical, parameter :: x2(2) = [.true., .true.]
+    print *, x1 .neqv. x2
  end program
+ 

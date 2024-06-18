@@ -1,21 +1,51 @@
 program main
+   implicit none
    logical, parameter :: x1(2) = [.true., .false.]
-   logical :: x2(2, 2)
-   logical :: x3(2, 2)
 
+   ! parameter variable != logical constant
    print *, x1 .neqv. .true.
    if (all((x1 .neqv. .true.) .neqv. [.false., .true.])) error stop
 
-   x2(1, 1) = .true.
-   x2(1, 2) = .false.
-   x2(2, 1) = .false.
-   x2(2, 2) = .true.
-
-   print *, x2 .neqv. .true.
-   x3 = reshape([.false., .true., .true., .false.], [2, 2])
-   if (all((x2 .neqv. .true.) .neqv. x3)) error stop
-
+   ! logical array constant == logical array constant
    print *, [.false., .true.] .eqv. [.false., .true.]
    if (all(([.false., .true.] .eqv. [.false., .true.]) .neqv. [.true., .true.])) error stop
+
+   ! parameter variable != function returning logical constant
+   print *, x1 .neqv. get_true()
+   if (all((x1 .neqv. get_true()) .neqv. [.false., .true.])) error stop
+
+   ! logical constant == parameter variable
+   print *, .true. .eqv. x1 
+   if (all((.true. .eqv. x1) .neqv. [.true., .false.])) error stop
+
+   ! parameter variable and logical constant
+   print *, x1 .and. .false.
+   if (all((x1 .and. .false.) .neqv. [.false., .false.])) error stop
+
+   ! parameter variable or logical constant
+   print *, .false. .or. x1
+   if (all((.false. .or. x1) .neqv. [.true., .false.])) error stop
+
+   ! logical expression or logical constant
+   print *, 1 > 2 .or. x1
+   if (all((1 > 2 .or. x1) .neqv. [.true., .false.])) error stop
+
+   ! logical expression or logical constant
+   print *, ((1 + 2) > 2) .or. x1
+   if (all((((1 + 2) > 2) .or. x1) .neqv. [.true., .true.])) error stop
+
+   ! logical expression or logical constant
+   print *, ((1 + 2) == 3) .or. x1
+   if (all((((1 + 2) == 3) .or. x1) .neqv. [.true., .true.])) error stop
+
+   ! logical expression or logical constant
+   print *, ((1 + 2) == 3) .or. x1
+   if (all((((1 + 2) == 3) .or. x1) .neqv. [.true., .true.])) error stop
+
+contains
+
+   logical function get_true() result(value)
+      value = .true.
+   end function get_true
 
 end program main
