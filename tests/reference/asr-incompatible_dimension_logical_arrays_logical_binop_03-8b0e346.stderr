@@ -1,0 +1,5 @@
+semantic error: Shapes for operands are not conformable
+ --> tests/errors/incompatible_dimension_logical_arrays_logical_binop_03.f90:4:14
+  |
+4 |     print *, x1 .neqv. x2
+  |              ^^        ^^ 
