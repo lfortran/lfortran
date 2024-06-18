@@ -2449,7 +2449,7 @@ LFORTRAN_API void _lfortran_read_int64(int64_t *p, int32_t unit_num)
 {
     if (unit_num == -1) {
         // Read from stdin
-        (void)!scanf(INT64, p);
+        (void)!scanf("%" PRId64, p);
         return;
     }
 
@@ -2463,7 +2463,7 @@ LFORTRAN_API void _lfortran_read_int64(int64_t *p, int32_t unit_num)
     if (unit_file_bin) {
         (void)!fread(p, sizeof(*p), 1, filep);
     } else {
-        (void)!fscanf(filep, INT64, p);
+        (void)!fscanf(filep, "%" PRId64, p);
     }
 }
 

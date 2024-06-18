@@ -169,7 +169,9 @@ namespace LCompilers {
         llvm::Value* CreateLoad2(llvm::IRBuilder<> &builder, llvm::Type *t, llvm::Value *x);
         llvm::Value* CreateStore(llvm::IRBuilder<> &builder, llvm::Value *x, llvm::Value *y);
         llvm::Value* CreateGEP(llvm::IRBuilder<> &builder, llvm::Value *x, std::vector<llvm::Value *> &idx);
+        llvm::Value* CreateGEP2(llvm::IRBuilder<> &builder, llvm::Type *t, llvm::Value *x, std::vector<llvm::Value *> &idx);
         llvm::Value* CreateInBoundsGEP(llvm::IRBuilder<> &builder, llvm::Value *x, std::vector<llvm::Value *> &idx);
+        llvm::Value* CreateInBoundsGEP2(llvm::IRBuilder<> &builder, llvm::Type *t, llvm::Value *x, std::vector<llvm::Value *> &idx);
         llvm::Value* lfortran_malloc(llvm::LLVMContext &context, llvm::Module &module,
                 llvm::IRBuilder<> &builder, llvm::Value* arg_size);
         llvm::Value* lfortran_realloc(llvm::LLVMContext &context, llvm::Module &module,
@@ -245,11 +247,19 @@ namespace LCompilers {
 
             llvm::Value* create_gep(llvm::Value* ds, int idx);
 
+            llvm::Value* create_gep2(llvm::Type *t, llvm::Value* ds, int idx);
+
             llvm::Value* create_gep(llvm::Value* ds, llvm::Value* idx);
+
+            llvm::Value* create_gep2(llvm::Type *t, llvm::Value* ds, llvm::Value* idx);
 
             llvm::Value* create_ptr_gep(llvm::Value* ptr, int idx);
 
+            llvm::Value* create_ptr_gep2(llvm::Type* type, llvm::Value* ptr, int idx);
+
             llvm::Value* create_ptr_gep(llvm::Value* ptr, llvm::Value* idx);
+
+            llvm::Value* create_ptr_gep2(llvm::Type* type, llvm::Value* ptr, llvm::Value* idx);
 
             llvm::Type* getIntType(int a_kind, bool get_pointer=false);
 
