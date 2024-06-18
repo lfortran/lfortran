@@ -520,6 +520,17 @@ inline static void visit_BoolOp(Allocator &al, const AST::BoolOp_t &x,
             *ASRUtils::type_get_past_array_pointer_allocatable(dest_type)));
 
         if (ASRUtils::is_array(source_type) || ASRUtils::is_array(dest_type)) {
+            ASR::dimension_t* m_dims = nullptr;
+            size_t n_dims;
+            if (ASRUtils::is_array(source_type) && !ASRUtils::is_array(dest_type)) {
+                n_dims = ASRUtils::extract_dimensions_from_ttype(source_type, m_dims);
+                dest_type = ASRUtils::make_Array_t_util(
+                    al, source_type->base.loc, dest_type, m_dims, n_dims);
+            } else if (!ASRUtils::is_array(source_type) && ASRUtils::is_array(dest_type)) {
+                n_dims = ASRUtils::extract_dimensions_from_ttype(dest_type, m_dims);
+                source_type = ASRUtils::make_Array_t_util(
+                    al, dest_type->base.loc, source_type, m_dims, n_dims);
+            }
             // If we reach this block, it means either of `left` or `right` is an ArrayConstant_t and
             // the other one has to be casted. Based on this fact we get the array storage type below.
             ASR::arraystorageType arr_storage_type = ASR::down_cast<ASR::ArrayConstant_t>(
@@ -550,7 +561,7 @@ inline static void visit_BoolOp(Allocator &al, const AST::BoolOp_t &x,
                     al, x.base.base.loc, dest_type, right_value, arr_storage_type);
             }
 
-            if (left_arr_const->m_n_data != right_arr_const->m_n_data) {
+            if (ASRUtils::get_fixed_size_of_array(source_type) != ASRUtils::get_fixed_size_of_array(dest_type)) {
                 diag.semantic_error_label(
                     "Shapes for operands are not conformable",
                     { x.m_left->base.loc, x.m_right->base.loc },
