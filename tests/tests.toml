@@ -3973,3 +3973,7 @@ asr = true
 [[test]]
 filename = "openmp1.f90"
 asr_openmp = true
+
+[[test]]
+filename = "errors/intrinsics_03.f90"
+asr = true

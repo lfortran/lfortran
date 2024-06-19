@@ -1,0 +1,5 @@
+semantic error: `pos` argument of `ibclr` intrinsic must be non-negative
+ --> tests/errors/intrinsics_03.f90:2:14
+  |
+2 |     print *, ibclr(1, -2)
+  |              ^^^^^^^^^^^^ 
