@@ -3243,7 +3243,7 @@ public:
         llvm::Value* ptr_ = nullptr;
         if( is_malloc_array_type && !is_list && !is_data_only ) {
             ptr_ = builder->CreateAlloca(type_, nullptr, "arr_desc");
-            arr_descr->fill_dimension_descriptor(ptr_, n_dims);
+            arr_descr->fill_dimension_descriptor2(type_, ptr_, n_dims);
         }
         if( is_array_type && !is_malloc_array_type &&
             !is_list ) {
@@ -4408,6 +4408,7 @@ public:
                 ASRUtils::type_get_past_pointer(value_array_type)),
              ASR::array_physical_typeType::DescriptorArray, true);
         llvm::Type* target_type = llvm_utils->get_type_from_ttype_t_util(target_desc_type, module.get());
+        llvm::Type* llvm_value_array_type = llvm_utils->get_type_from_ttype_t_util(value_array_type, module.get());
         llvm::AllocaInst *target = builder0.CreateAlloca(
             target_type, nullptr, "array_section_descriptor");
         int value_rank = array_section->n_args, target_rank = 0;
@@ -4432,7 +4433,7 @@ public:
             }
         }
         LCOMPILERS_ASSERT(target_rank > 0);
-        llvm::Value* target_dim_des_ptr = arr_descr->get_pointer_to_dimension_descriptor_array(target, false);
+        llvm::Value* target_dim_des_ptr = arr_descr->get_pointer_to_dimension_descriptor_array2(target_type, target, false);
         llvm::Value* target_dim_des_val = builder0.CreateAlloca(arr_descr->get_dimension_descriptor_type(false),
             llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, target_rank)));
         builder->CreateStore(target_dim_des_val, target_dim_des_ptr);
@@ -4443,7 +4444,7 @@ public:
             arr_physical_type == ASR::array_physical_typeType::CharacterArraySinglePointer) {
             if( arr_physical_type == ASR::array_physical_typeType::FixedSizeArray ||
                 arr_physical_type == ASR::array_physical_typeType::CharacterArraySinglePointer) {
-                value_desc = llvm_utils->create_gep(value_desc, 0);
+                value_desc = llvm_utils->create_gep2(llvm_value_array_type, value_desc, 0);
             }
             ASR::dimension_t* m_dims = nullptr;
             // Fill in m_dims:
@@ -4457,7 +4458,7 @@ public:
                 visit_expr_wrapper(m_dims[i].m_length, true);
                 llvm_diminfo.push_back(al, tmp);
             }
-            arr_descr->fill_descriptor_for_array_section_data_only(value_desc, target,
+            arr_descr->fill_descriptor_for_array_section_data_only2(value_desc, target, target_type,
                 lbs.p, ubs.p, ds.p, non_sliced_indices.p,
                 llvm_diminfo.p, value_rank, target_rank);
         } else {
@@ -6799,7 +6800,7 @@ public:
         int64_t ptr_loads_copy = ptr_loads;
         tmp = x_v;
         while( ptr_loads_copy-- ) {
-            tmp = CreateLoad(tmp);
+            tmp = CreateLoad2(x->m_type, tmp);
         }
     }
 
@@ -9759,7 +9760,7 @@ public:
                 } else {
                     el_type_llvm_arg1 = llvm_arg1->getType();
                 }
-                llvm::Value* dim_des_val = arr_descr->get_pointer_to_dimension_descriptor_array(el_type_llvm_arg1, llvm_arg1);
+                llvm::Value* dim_des_val = arr_descr->get_pointer_to_dimension_descriptor_array2(el_type_llvm_arg1, llvm_arg1);
                 llvm::Value* const_1 = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
                 dim_val = builder->CreateSub(dim_val, const_1);
                 llvm::Value* dim_struct = arr_descr->get_pointer_to_dimension_descriptor(dim_des_val, dim_val);

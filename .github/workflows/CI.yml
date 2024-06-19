@@ -738,6 +738,12 @@ jobs:
             src/bin/lfortran --show-llvm integration_tests/pass_array_by_data_01.f90
             src/bin/lfortran integration_tests/pass_array_by_data_01.f90
             ./pass_array_by_data_01.out
+            src/bin/lfortran --show-llvm integration_tests/kwargs_01.f90
+            src/bin/lfortran integration_tests/kwargs_01.f90
+            ./kwargs_01.out
+            src/bin/lfortran --show-llvm integration_tests/abs_01.f90
+            src/bin/lfortran integration_tests/abs_01.f90
+            ./abs_01.out
 
   test_llvm_wasm:
     name: Test LLVM->WASM ${{ matrix.llvm-version }}
