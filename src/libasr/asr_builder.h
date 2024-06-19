@@ -142,6 +142,14 @@ class ASRBuilder {
         return ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym));
     }
 
+    ASR::expr_t* ArrayUBound(ASR::expr_t* x, int64_t dim) {
+        return ASRUtils::EXPR(ASR::make_ArrayBound_t(al, loc, x, i32(dim), int32, ASR::arrayboundType::UBound, nullptr));
+    }
+
+    ASR::expr_t* ArrayLBound(ASR::expr_t* x, int64_t dim) {
+        return ASRUtils::EXPR(ASR::make_ArrayBound_t(al, loc, x, i32(dim), int32, ASR::arrayboundType::LBound, nullptr));
+    }
+
     inline ASR::expr_t* i_t(int64_t x, ASR::ttype_t* t) {
         return EXPR(ASR::make_IntegerConstant_t(al, loc, x, t));
     }
