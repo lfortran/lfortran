@@ -693,7 +693,7 @@ RUN(NAME intrinsics_129 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) #
 RUN(NAME intrinsics_130 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # ishft
 RUN(NAME intrinsics_131 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # max for strings
 RUN(NAME intrinsics_132 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # Floor
-RUN(NAME intrinsics_133 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran NOFAST) # Ceiling
+RUN(NAME intrinsics_133 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # Ceiling
 RUN(NAME intrinsics_134 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # Adjustl
 RUN(NAME intrinsics_135 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # nint
 RUN(NAME intrinsics_136 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # rshift
@@ -818,6 +818,8 @@ RUN(NAME intrinsics_254 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # derfc
 RUN(NAME intrinsics_255 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # dbesjn, dbesyn
 RUN(NAME intrinsics_259 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # lgt, llt, lge, lle
 RUN(NAME intrinsics_260 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # sum
+RUN(NAME intrinsics_261 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # ceiling
+RUN(NAME intrinsics_262 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # floor
 
 RUN(NAME passing_array_01 LABELS gfortran fortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME passing_array_02 LABELS gfortran fortran llvm llvm_wasm llvm_wasm_emcc)
