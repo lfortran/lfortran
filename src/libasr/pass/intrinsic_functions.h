@@ -1792,10 +1792,13 @@ namespace Ieor {
 namespace Ibclr {
 
     static ASR::expr_t *eval_Ibclr(Allocator &al, const Location &loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
         int64_t result;
+        if ( val2 < 0 ) {
+            diag.semantic_error_label("`pos` argument of `ibclr` intrinsic must be non-negative", {loc}, "");
+        } 
         result = val1 & ~(1 << val2);
         return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);
     }
@@ -1824,10 +1827,13 @@ namespace Ibclr {
 namespace Ibset {
 
     static ASR::expr_t *eval_Ibset(Allocator &al, const Location &loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
         int64_t result;
+        if ( val2 < 0 ) {
+            diag.semantic_error_label("`pos` argument of `ibset` intrinsic must be non-negative", {loc}, "");
+        }
         result = val1 | (1 << val2);
         return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);
     }
@@ -1856,10 +1862,13 @@ namespace Ibset {
 namespace Btest {
 
     static ASR::expr_t *eval_Btest(Allocator &al, const Location &loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
         bool result;
+        if ( val2 < 0 ) {
+            diag.semantic_error_label("`pos` argument of `btest` intrinsic must be non-negative", {loc}, "");
+        }
         if ((val1 & (1 << val2)) == 0) result = false;
         else result = true;
         return make_ConstantWithType(make_LogicalConstant_t, result, t1, loc);
@@ -1893,10 +1902,16 @@ namespace Btest {
 namespace Ibits {
 
     static ASR::expr_t *eval_Ibits(Allocator &al, const Location &loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
         int64_t val3 = ASR::down_cast<ASR::IntegerConstant_t>(args[2])->m_n;
+        if ( val2 < 0 ) {
+            diag.semantic_error_label("`pos` argument of `ibits` intrinsic must be non-negative", {loc}, "");
+        }
+        if ( val3 < 0 ) {
+            diag.semantic_error_label("`len` argument of `ibits` intrinsic must be non-negative", {loc}, "");
+        }
         int64_t result;
         result = (val1 >> val2) & ((1 << val3) - 1);
         return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);

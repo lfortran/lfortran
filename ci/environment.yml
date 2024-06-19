@@ -7,13 +7,13 @@ dependencies:
   - pytest
   - jupyter
   - nbconvert=7.4.0
-  - xeus=3.0.5
-  - xeus-zmq=1.0.2
+  - xeus=5.1.0
+  - xeus-zmq=3.0.0
   - xtl
-  - nlohmann_json=3.11.2
+  - nlohmann_json=3.11.3
   - cppzmq
   - jupyter_kernel_test
-  - xonsh
+  - xonsh=0.16.0
   - re2c
   - numpy
   - ninja
