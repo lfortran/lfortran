@@ -384,95 +384,6 @@ static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x,
 
 } // namespace UnaryIntrinsicFunction
 
-namespace BinaryIntrinsicFunction {
-
-static inline ASR::expr_t* instantiate_functions(Allocator &al,
-        const Location &loc, SymbolTable *scope, std::string new_name,
-        ASR::ttype_t *arg_type, ASR::ttype_t *return_type,
-        Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-    std::string c_func_name;
-    switch (arg_type->type) {
-        case ASR::ttypeType::Complex : {
-            if (ASRUtils::extract_kind_from_ttype_t(arg_type) == 4) {
-                c_func_name = "_lfortran_c" + new_name;
-            } else {
-                c_func_name = "_lfortran_z" + new_name;
-            }
-            break;
-        }
-        default : {
-            if (ASRUtils::extract_kind_from_ttype_t(arg_type) == 4) {
-                c_func_name = "_lfortran_s" + new_name;
-            } else {
-                c_func_name = "_lfortran_d" + new_name;
-            }
-        }
-    }
-    new_name = "_lcompilers_" + new_name + "_" + type_to_str_python(arg_type);
-
-    declare_basic_variables(new_name);
-    if (scope->get_symbol(new_name)) {
-        ASR::symbol_t *s = scope->get_symbol(new_name);
-        ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(s);
-        return b.Call(s, new_args, expr_type(f->m_return_var));
-    }
-    fill_func_arg("x", arg_type);
-    fill_func_arg("y", arg_type)
-    auto result = declare(new_name, return_type, ReturnVar);
-
-    {
-        SymbolTable *fn_symtab_1 = al.make_new<SymbolTable>(fn_symtab);
-        Vec<ASR::expr_t*> args_1;
-        {
-            args_1.reserve(al, 2);
-            ASR::expr_t *arg_1 = b.Variable(fn_symtab_1, "x", arg_type,
-                ASR::intentType::In, ASR::abiType::BindC, true);
-            ASR::expr_t *arg_2 = b.Variable(fn_symtab_1, "y", arg_type,
-                ASR::intentType::In, ASR::abiType::BindC, true);
-            args_1.push_back(al, arg_1);
-            args_1.push_back(al, arg_2);
-        }
-
-        ASR::expr_t *return_var_1 = b.Variable(fn_symtab_1, c_func_name,
-            arg_type, ASRUtils::intent_return_var, ASR::abiType::BindC, false);
-
-        SetChar dep_1; dep_1.reserve(al, 1);
-        Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 1);
-        ASR::symbol_t *s = make_ASR_Function_t(c_func_name, fn_symtab_1, dep_1, args_1,
-            body_1, return_var_1, ASR::abiType::BindC, ASR::deftypeType::Interface, s2c(al, c_func_name));
-        fn_symtab->add_symbol(c_func_name, s);
-        dep.push_back(al, s2c(al, c_func_name));
-        body.push_back(al, b.Assignment(result, b.Call(s, args, arg_type)));
-    }
-
-    ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
-        body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
-    scope->add_symbol(fn_name, new_symbol);
-    return b.Call(new_symbol, new_args, return_type);
-}
-
-static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x,
-        diag::Diagnostics& diagnostics) {
-    const Location& loc = x.base.base.loc;
-    ASRUtils::require_impl(x.n_args == 2,
-        "Binary intrinsics must have only 2 input arguments",
-        loc, diagnostics);
-
-    ASR::ttype_t* input_type = ASRUtils::expr_type(x.m_args[0]);
-    ASR::ttype_t* input_type_2 = ASRUtils::expr_type(x.m_args[1]);
-    ASR::ttype_t* output_type = x.m_type;
-    ASRUtils::require_impl(ASRUtils::check_equal_type(input_type, input_type_2, true),
-        "The types of both the arguments of binary intrinsics must exactly match, argument 1 type: " +
-        ASRUtils::get_type_code(input_type) + " argument 2 type: " + ASRUtils::get_type_code(input_type_2),
-        loc, diagnostics);
-    ASRUtils::require_impl(ASRUtils::check_equal_type(input_type, output_type, true),
-        "The input and output type of elemental intrinsics must exactly match, input type: " +
-        ASRUtils::get_type_code(input_type) + " output type: " + ASRUtils::get_type_code(output_type),
-        loc, diagnostics);
-}
-
-} // namespace BinaryIntrinsicFunction
-
 // `X` is the name of the function in the IntrinsicElementalFunctions enum and
 // we use the same name for `create_X` and other places
 // `eval_X` is the name of the function in the `std` namespace for compile
@@ -744,10 +655,70 @@ namespace Atan2 {
     static inline ASR::expr_t* instantiate_Atan2 (Allocator &al,
             const Location &loc, SymbolTable *scope,
             Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
-            Vec<ASR::call_arg_t>& new_args,int64_t overload_id) {
+            Vec<ASR::call_arg_t>& new_args,int64_t /*overload_id*/) {
         ASR::ttype_t* arg_type = arg_types[0];
-        return BinaryIntrinsicFunction::instantiate_functions(al, loc, scope,
-            "atan2", arg_type, return_type, new_args, overload_id);
+
+
+        std::string c_func_name;
+        std::string new_name = "atan2";
+    switch (arg_type->type) {
+        case ASR::ttypeType::Complex : {
+            if (ASRUtils::extract_kind_from_ttype_t(arg_type) == 4) {
+                c_func_name = "_lfortran_c" + new_name;
+            } else {
+                c_func_name = "_lfortran_z" + new_name;
+            }
+            break;
+        }
+        default : {
+            if (ASRUtils::extract_kind_from_ttype_t(arg_type) == 4) {
+                c_func_name = "_lfortran_s" + new_name;
+            } else {
+                c_func_name = "_lfortran_d" + new_name;
+            }
+        }
+    }
+    new_name = "_lcompilers_" + new_name + "_" + type_to_str_python(arg_type);
+
+    declare_basic_variables(new_name);
+    if (scope->get_symbol(new_name)) {
+        ASR::symbol_t *s = scope->get_symbol(new_name);
+        ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(s);
+        return b.Call(s, new_args, expr_type(f->m_return_var));
+    }
+    fill_func_arg("x", arg_type);
+    fill_func_arg("y", arg_type)
+    auto result = declare(new_name, return_type, ReturnVar);
+
+    {
+        SymbolTable *fn_symtab_1 = al.make_new<SymbolTable>(fn_symtab);
+        Vec<ASR::expr_t*> args_1;
+        {
+            args_1.reserve(al, 2);
+            ASR::expr_t *arg_1 = b.Variable(fn_symtab_1, "x", arg_type,
+                ASR::intentType::In, ASR::abiType::BindC, true);
+            ASR::expr_t *arg_2 = b.Variable(fn_symtab_1, "y", arg_type,
+                ASR::intentType::In, ASR::abiType::BindC, true);
+            args_1.push_back(al, arg_1);
+            args_1.push_back(al, arg_2);
+        }
+
+        ASR::expr_t *return_var_1 = b.Variable(fn_symtab_1, c_func_name,
+            arg_type, ASRUtils::intent_return_var, ASR::abiType::BindC, false);
+
+        SetChar dep_1; dep_1.reserve(al, 1);
+        Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 1);
+        ASR::symbol_t *s = make_ASR_Function_t(c_func_name, fn_symtab_1, dep_1, args_1,
+            body_1, return_var_1, ASR::abiType::BindC, ASR::deftypeType::Interface, s2c(al, c_func_name));
+        fn_symtab->add_symbol(c_func_name, s);
+        dep.push_back(al, s2c(al, c_func_name));
+        body.push_back(al, b.Assignment(result, b.Call(s, args, arg_type)));
+    }
+
+    ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+        body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+    scope->add_symbol(fn_name, new_symbol);
+    return b.Call(new_symbol, new_args, return_type);
     }
 }
 
