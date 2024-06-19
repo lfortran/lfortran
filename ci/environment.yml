@@ -13,7 +13,7 @@ dependencies:
   - nlohmann_json=3.11.2
   - cppzmq
   - jupyter_kernel_test
-  - xonsh
+  - xonsh=0.16.0
   - re2c
   - numpy
   - ninja
