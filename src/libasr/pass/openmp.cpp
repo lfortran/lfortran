@@ -146,6 +146,20 @@ class FunctionSubroutineCallVisitor: public ASR::BaseWalkVisitor<FunctionSubrout
             SymbolTable* current_scope_copy = current_scope;
             current_scope = xx.m_symtab;
 
+            // handle interface
+            if (x.m_name == function_name) {
+                ASR::FunctionType_t* func_type = ASR::down_cast<ASR::FunctionType_t>(x.m_function_signature);
+                if (func_type->m_deftype == ASR::deftypeType::Interface) {
+                    scopes.push_back(current_scope);
+
+                    for (size_t i = 0; i < array_variable_indices.size(); i++) {
+                        ASR::symbol_t* sym = current_scope->get_symbol(array_variables[i]);
+                        LCOMPILERS_ASSERT(sym != nullptr);
+                        scoped_array_variable_map[current_scope->counter][array_variables[i]] = sym;
+                    }
+                }
+            }
+
             BaseWalkVisitor::visit_Function(x);
 
             current_scope = current_scope_copy;
@@ -507,8 +521,21 @@ class DoConcurrentVisitor :
             SetChar involved_symbols_set; involved_symbols_set.reserve(al, involved_symbols.size());
             for (auto it: involved_symbols) {
                 ASR::ttype_t* sym_type = nullptr;
-                sym_type = ASRUtils::is_array(it.second) ? b.CPtr() : it.second;
+                bool is_array = ASRUtils::is_array(it.second);
+                sym_type = is_array ? b.CPtr() : it.second;
                 b.VariableDeclaration(current_scope, it.first, sym_type, ASR::intentType::Local);
+                if (is_array) {
+                    // add lbound and ubound variables for array
+                    ASR::Array_t* arr_type = ASR::down_cast<ASR::Array_t>(it.second);
+                    for (size_t i = 0; i < arr_type->n_dims; i++) {
+                        std::string lbound_name = "lbound_" + it.first + "_" + std::to_string(i);
+                        std::string ubound_name = "ubound_" + it.first + "_" + std::to_string(i);
+                        b.VariableDeclaration(current_scope, lbound_name, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), ASR::intentType::Local);
+                        b.VariableDeclaration(current_scope, ubound_name, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), ASR::intentType::Local);
+                        involved_symbols_set.push_back(al, s2c(al, lbound_name));
+                        involved_symbols_set.push_back(al, s2c(al, ubound_name));
+                    }
+                }
                 involved_symbols_set.push_back(al, s2c(al, it.first));
             }
             std::string thread_data_module_name = parent_scope->parent->get_unique_name("thread_data_module");
@@ -528,8 +555,7 @@ class DoConcurrentVisitor :
         }
 
         ASR::symbol_t* create_lcompilers_function(const Location &loc, const ASR::DoConcurrentLoop_t &do_loop,
-                    std::map<std::string, ASR::ttype_t*> &involved_symbols,
-                    std::map<std::string, ASR::expr_t*> &array_variables_to_allocate, std::string thread_data_module_name) {
+                    std::map<std::string, ASR::ttype_t*> &involved_symbols, std::string thread_data_module_name) {
             SymbolTable* current_scope_copy = current_scope;
             while (current_scope->parent != nullptr) {
                 current_scope = current_scope->parent;
@@ -576,6 +602,7 @@ class DoConcurrentVisitor :
             }
 
             // add external symbols to struct members, we need those for `data%n = n`
+            // first process all non-arrays
             SymbolTable* thread_data_symtab = ASRUtils::symbol_symtab(thread_data_ext_sym);
             for (auto it: involved_symbols) {
                 std::string sym_name = std::string(ASRUtils::symbol_name(thread_data_sym)) + "_" + it.first;
@@ -584,23 +611,51 @@ class DoConcurrentVisitor :
                     s2c(al, it.first), ASR::accessType::Public));
                 current_scope->add_symbol(sym_name, sym);
 
-                // handle arrays
                 ASR::ttype_t* sym_type = it.second;
-                if (ASRUtils::is_array(sym_type)) {
-                    DoConcurrentStatementVisitor v(al, current_scope);
-                    v.current_expr = nullptr;
-                    v.visit_expr(*array_variables_to_allocate[it.first]);
-                    body.push_back(al, b.CPtrToPointer(
-                        ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc, tdata_expr,
-                        sym, ASRUtils::symbol_type(sym), nullptr)),
-                        b.Var(current_scope->get_symbol(it.first)),
-                        array_variables_to_allocate[it.first]
-                    ));
-                } else {
+                if (!ASRUtils::is_array(sym_type)) {
                     body.push_back(al, b.Assignment(
                         b.Var(current_scope->get_symbol(it.first)),
                         ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc, tdata_expr,
                         sym, ASRUtils::symbol_type(sym), nullptr))
+                    ));
+                }
+            }
+
+            // then process arrays
+            for (auto it: involved_symbols) {
+                std::string sym_name = std::string(ASRUtils::symbol_name(thread_data_sym)) + "_" + it.first;
+                ASR::symbol_t* sym = current_scope->get_symbol(sym_name);
+
+                // handle arrays
+                ASR::ttype_t* sym_type = it.second;
+                if (ASRUtils::is_array(sym_type)) {
+                    ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_pointer(sym_type));
+                    Vec<ASR::expr_t*> size_args; size_args.reserve(al, array_type->n_dims);
+                    for (size_t i = 0; i < array_type->n_dims; i++) {
+                        std::string ubound_name = std::string(ASRUtils::symbol_name(thread_data_sym)) + "_ubound_" + it.first + "_" + std::to_string(i);
+                        ASR::symbol_t* ubound_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al, loc,
+                            current_scope, s2c(al, ubound_name), thread_data_symtab->resolve_symbol("ubound_" + it.first + "_" + std::to_string(i)), ASRUtils::symbol_name(thread_data_sym), nullptr, 0,
+                            s2c(al, "ubound_" + it.first + "_" + std::to_string(i)), ASR::accessType::Public));
+                        current_scope->add_symbol(ubound_name, ubound_sym);
+                        ASR::expr_t* ubound = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc, tdata_expr,
+                            ubound_sym, ASRUtils::symbol_type(ubound_sym), nullptr));
+                        std::string lbound_name = std::string(ASRUtils::symbol_name(thread_data_sym)) + "_lbound_" + it.first + "_" + std::to_string(i);
+                        ASR::symbol_t* lbound_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al, loc,
+                            current_scope, s2c(al, lbound_name), thread_data_symtab->resolve_symbol("lbound_" + it.first + "_" + std::to_string(i)), ASRUtils::symbol_name(thread_data_sym), nullptr, 0,
+                            s2c(al, "lbound_" + it.first + "_" + std::to_string(i)), ASR::accessType::Public));
+                        current_scope->add_symbol(lbound_name, lbound_sym);
+                        ASR::expr_t* lbound = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc, tdata_expr,
+                            lbound_sym, ASRUtils::symbol_type(lbound_sym), nullptr));
+                        size_args.push_back(al, b.Add(b.Sub(ubound, lbound), b.i32(1)));
+                    }
+                    ASR::expr_t* shape = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, loc,
+                        size_args.p, size_args.n, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), ASR::arraystorageType::ColMajor));
+                    // call c_f_pointer(tdata%<sym>, <sym>, [ubound-lbound+1])
+                    body.push_back(al, b.CPtrToPointer(
+                        ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc, tdata_expr,
+                        sym, ASRUtils::symbol_type(sym), nullptr)),
+                        b.Var(current_scope->get_symbol(it.first)),
+                        shape
                     ));
                 }
             }
@@ -801,6 +856,7 @@ class DoConcurrentVisitor :
                 if (ASR::is_a<ASR::Function_t>(*sym)) {
                     ASRUtils::ASRBuilder b(al, sym->base.loc);
                     ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(sym);
+                    bool is_interface = ASR::down_cast<ASR::FunctionType_t>(func->m_function_signature)->m_deftype == ASR::deftypeType::Interface;
                     if (!first_call) {
                         Vec<ASR::stmt_t*> new_body; new_body.reserve(al, func->n_body);
                         for (size_t i = 0; i < array_variables.size(); i++) {
@@ -810,7 +866,7 @@ class DoConcurrentVisitor :
                                 continue;
                             } else if (ASR::is_a<ASR::Array_t>(*sym_type)) {
                                 ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(sym_type);
-                                if (!ASRUtils::is_dimension_empty(*array_type->m_dims)) {
+                                if (!ASRUtils::is_dimension_empty(*array_type->m_dims) || is_interface) {
                                     Vec<ASR::dimension_t> dims; dims.reserve(al, array_type->n_dims);
                                     ASR::dimension_t empty_dim; empty_dim.loc = array_type->base.base.loc;
                                     empty_dim.m_start = nullptr; empty_dim.m_length = nullptr;
@@ -826,7 +882,7 @@ class DoConcurrentVisitor :
                                     /*
                                         We allocate memory for array variables only if we have information about their sizes.
                                     */
-                                    new_body.push_back(al, b.Allocate(array_expr, array_type->m_dims, array_type->n_dims));
+                                    if (!is_interface) new_body.push_back(al, b.Allocate(array_expr, array_type->m_dims, array_type->n_dims));
                                 } else {
                                     // we have no information about what size to allocate
                                 }
@@ -876,7 +932,7 @@ class DoConcurrentVisitor :
                     while (global_scope->parent != nullptr) {
                         global_scope = global_scope->parent;
                     }
-                    fsv.visit_TranslationUnit(*ASR::down_cast2<ASR::TranslationUnit_t>(global_scope->asr_owner));
+                    if (!is_interface) fsv.visit_TranslationUnit(*ASR::down_cast2<ASR::TranslationUnit_t>(global_scope->asr_owner));
 
                     std::vector<SymbolTable*> unique_scopes;
                     for(auto it: scopes) {
@@ -975,7 +1031,6 @@ class DoConcurrentVisitor :
                 nullptr, 0, ASRUtils::symbol_name(thread_data_module.second), ASR::accessType::Public));
             current_scope->add_symbol(ASRUtils::symbol_name(thread_data_module.second), thread_data_ext_sym);
 
-            std::map<std::string, ASR::expr_t*> array_variables_to_allocate;
             std::vector<std::string> array_variables;
             // create data variable for the thread data module
             ASRUtils::ASRBuilder b(al, x.base.base.loc);
@@ -993,67 +1048,54 @@ class DoConcurrentVisitor :
                     continue;
                 } else if (ASR::is_a<ASR::Array_t>(*sym_type)) {
                     ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(sym_type);
-                    if (!ASRUtils::is_dimension_empty(*array_type->m_dims)) {
-                        Vec<ASR::dimension_t> dims; dims.reserve(al, array_type->n_dims);
-                        ASR::dimension_t empty_dim; empty_dim.loc = array_type->base.base.loc;
-                        empty_dim.m_start = nullptr; empty_dim.m_length = nullptr;
-                        for (size_t i = 0; i < array_type->n_dims; i++) {
-                            dims.push_back(al, empty_dim);
-                        }
-                        ASR::expr_t* array_expr = b.VariableOverwrite(current_scope, it.first,
-                                ASRUtils::TYPE(ASR::make_Pointer_t(al, array_type->base.base.loc,
-                                        ASRUtils::TYPE(ASR::make_Array_t(al, array_type->base.base.loc,
-                                        array_type->m_type, dims.p, dims.n, ASR::array_physical_typeType::DescriptorArray)))),
-                                    ASR::intentType::InOut);
-                        LCOMPILERS_ASSERT(array_expr != nullptr);
-                        bool already_allocated = true;
-                        if (ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner) && ASR::is_a<ASR::Function_t>(*ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner))) {
-                            ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner));
-                            int arg_index = -1;
-                            for (size_t i = 0; i < func->n_args; i++) {
-                                if (ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(func->m_args[i])->m_v) == it.first) {
-                                    arg_index = i;
-                                    break;
-                                }
-                            }
-                            if (arg_index != -1) {
-                                /*
-                                    Same reasoning as in the comment below, I'll keep this line as well
-                                */
-                                CheckIfAlreadyAllocatedVisitor v(arg_index, func->m_name, it.first, already_allocated);
-                                SymbolTable* global_scope = current_scope;
-                                while (global_scope->parent != nullptr) {
-                                    global_scope = global_scope->parent;
-                                }
-                                v.visit_TranslationUnit(*ASR::down_cast2<ASR::TranslationUnit_t>(global_scope->asr_owner));
-                            }
-                        }
-                        /*
-                            I will not remove the line below, it is used to allocate memory for arrays present in thread_data module
-                            but we are not sure if that is correct way to do it.
-
-                            Based on example ./integration_tests/openmp_15.f90, we will assume that passed on variable is already
-                            allocated and we will not allocate memory for it again.
-
-                            This way we can handle arrays with dimension not known at compile time.
-
-                            Reason to comment this line can be found in function `recursive_function_call_resolver`
-                        */
-                        // if (!already_allocated) pass_result.push_back(al, b.Allocate(array_expr, array_type->m_dims, array_type->n_dims));
-                        involved_symbols[it.first] = ASRUtils::expr_type(array_expr);
-
-                        /*
-                            In lcompilers_function we need to do: call c_f_pointer(tdata%a, a, [size])
-                            So we'll populate array_variables_to_allocate with the size of the array
-                        */
-                        // TODO: handle multi-dimensional arrays
-                        Vec<ASR::expr_t*> size_args; size_args.reserve(al, 1); size_args.push_back(al, array_type->m_dims[0].m_length);
-                        array_variables_to_allocate[it.first] = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, array_expr->base.loc,
-                            size_args.p, size_args.n, ASRUtils::TYPE(ASR::make_Integer_t(al, array_expr->base.loc, 4)), ASR::arraystorageType::ColMajor));
-                        array_variables.push_back(it.first);
-                    } else {
-                        // we have no information about what size to allocate
+                    Vec<ASR::dimension_t> dims; dims.reserve(al, array_type->n_dims);
+                    ASR::dimension_t empty_dim; empty_dim.loc = array_type->base.base.loc;
+                    empty_dim.m_start = nullptr; empty_dim.m_length = nullptr;
+                    for (size_t i = 0; i < array_type->n_dims; i++) {
+                        dims.push_back(al, empty_dim);
                     }
+                    ASR::expr_t* array_expr = b.VariableOverwrite(current_scope, it.first,
+                            ASRUtils::TYPE(ASR::make_Pointer_t(al, array_type->base.base.loc,
+                                    ASRUtils::TYPE(ASR::make_Array_t(al, array_type->base.base.loc,
+                                    array_type->m_type, dims.p, dims.n, ASR::array_physical_typeType::DescriptorArray)))),
+                                ASR::intentType::InOut);
+                    LCOMPILERS_ASSERT(array_expr != nullptr);
+                    bool already_allocated = true;
+                    if (ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner) && ASR::is_a<ASR::Function_t>(*ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner))) {
+                        ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner));
+                        int arg_index = -1;
+                        for (size_t i = 0; i < func->n_args; i++) {
+                            if (ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(func->m_args[i])->m_v) == it.first) {
+                                arg_index = i;
+                                break;
+                            }
+                        }
+                        if (arg_index != -1) {
+                            /*
+                                Same reasoning as in the comment below, I'll keep this line as well
+                            */
+                            CheckIfAlreadyAllocatedVisitor v(arg_index, func->m_name, it.first, already_allocated);
+                            SymbolTable* global_scope = current_scope;
+                            while (global_scope->parent != nullptr) {
+                                global_scope = global_scope->parent;
+                            }
+                            v.visit_TranslationUnit(*ASR::down_cast2<ASR::TranslationUnit_t>(global_scope->asr_owner));
+                        }
+                    }
+                    /*
+                        I will not remove the line below, it is used to allocate memory for arrays present in thread_data module
+                        but we are not sure if that is correct way to do it.
+
+                        Based on example ./integration_tests/openmp_15.f90, we will assume that passed on variable is already
+                        allocated and we will not allocate memory for it again.
+
+                        This way we can handle arrays with dimension not known at compile time.
+
+                        Reason to comment this line can be found in function `recursive_function_call_resolver`
+                    */
+                    // if (!already_allocated) pass_result.push_back(al, b.Allocate(array_expr, array_type->m_dims, array_type->n_dims));
+                    involved_symbols[it.first] = ASRUtils::expr_type(array_expr);
+                    array_variables.push_back(it.first);
                 } else if (ASR::is_a<ASR::Allocatable_t>(*sym_type)) {
                     // TODO: handle allocatable
                     continue;
@@ -1078,6 +1120,30 @@ class DoConcurrentVisitor :
                         sym, ASRUtils::symbol_type(sym), nullptr)),
                         b.PointerToCPtr(b.Var(current_scope->get_symbol(it.first)), ASRUtils::symbol_type(sym))
                     ));
+                    // add sym, assignment for Ubound and Lbound
+                    ASR::Array_t *array_type = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_pointer(sym_type));
+                    for (size_t i = 0; i < array_type->n_dims; i++) {
+                        std::string lbound_name = std::string(ASRUtils::symbol_name(thread_data_sym)) + "_" + "lbound_" + it.first + "_" + std::to_string(i);
+                        ASR::symbol_t* lbound_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al, x.base.base.loc,
+                            current_scope, s2c(al, lbound_name), thread_data_symtab->resolve_symbol("lbound_" + it.first + "_" + std::to_string(i)), ASRUtils::symbol_name(thread_data_sym), nullptr, 0,
+                            s2c(al, "lbound_" + it.first + "_" + std::to_string(i)), ASR::accessType::Public));
+                        current_scope->add_symbol(lbound_name, lbound_sym);
+                        pass_result.push_back(al, b.Assignment(
+                            ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, x.base.base.loc, data_expr,
+                            lbound_sym, ASRUtils::symbol_type(lbound_sym), nullptr)),
+                            b.ArrayLBound(b.Var(current_scope->get_symbol(it.first)), i+1)
+                        ));
+                        std::string ubound_name = std::string(ASRUtils::symbol_name(thread_data_sym)) + "_" + "ubound_" + it.first + "_" + std::to_string(i);
+                        ASR::symbol_t* ubound_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al, x.base.base.loc,
+                            current_scope, s2c(al, ubound_name), thread_data_symtab->resolve_symbol("ubound_" + it.first + "_" + std::to_string(i)), ASRUtils::symbol_name(thread_data_sym), nullptr, 0,
+                            s2c(al, "ubound_" + it.first + "_" + std::to_string(i)), ASR::accessType::Public));
+                        current_scope->add_symbol(ubound_name, ubound_sym);
+                        pass_result.push_back(al, b.Assignment(
+                            ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, x.base.base.loc, data_expr,
+                            ubound_sym, ASRUtils::symbol_type(ubound_sym), nullptr)),
+                            b.ArrayUBound(b.Var(current_scope->get_symbol(it.first)), i+1)
+                        ));
+                    }
                 } else {
                     pass_result.push_back(al, b.Assignment(
                         ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, x.base.base.loc, data_expr,
@@ -1095,7 +1161,7 @@ class DoConcurrentVisitor :
                     ASRUtils::expr_type(tdata_expr), nullptr))
             ));
 
-            ASR::symbol_t* lcompilers_function = create_lcompilers_function(x.base.base.loc, x, involved_symbols, array_variables_to_allocate, thread_data_module.first);
+            ASR::symbol_t* lcompilers_function = create_lcompilers_function(x.base.base.loc, x, involved_symbols, thread_data_module.first);
             LCOMPILERS_ASSERT(lcompilers_function != nullptr);
             ASR::Function_t* lcompilers_func = ASR::down_cast<ASR::Function_t>(lcompilers_function);
             ASR::symbol_t* lcompilers_interface_function = create_interface_lcompilers_function(lcompilers_func);
