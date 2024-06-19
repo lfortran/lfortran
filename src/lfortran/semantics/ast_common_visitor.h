@@ -547,6 +547,14 @@ inline static void visit_BoolOp(Allocator &al, const AST::BoolOp_t &x,
             ASR::ArrayConstant_t* right_arr_const = ASR::down_cast<ASR::ArrayConstant_t>(
                                                         right_expr_value);
 
+            if (ASRUtils::get_fixed_size_of_array(left_type) != ASRUtils::get_fixed_size_of_array(right_type)) {
+                diag.semantic_error_label(
+                    "Shapes for operands are not conformable",
+                    { x.m_left->base.loc, x.m_right->base.loc },
+                    "");
+                throw SemanticAbort();
+            }
+
             size_t arr_size = ASRUtils::get_fixed_size_of_array(left_type);
             value = create_boolean_result_array(al, x.base.base.loc, op, arr_size, left_arr_const, right_arr_const, false);
 
