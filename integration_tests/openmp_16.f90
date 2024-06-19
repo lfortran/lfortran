@@ -5,7 +5,7 @@ double precision, intent(out) :: b(n, m)
 
 integer :: i
 
-!$omp parallel shared(b, n, m) private(i)
+!$omp parallel shared(b, n) private(i)
 !$omp do
 do i = 1, n
   b(i, :) = 12.9d0
@@ -25,7 +25,7 @@ integer :: i
 
 res = 0.0d0 
 
-!$omp parallel shared(b, n, m) private(i) reduction(+:res)
+!$omp parallel shared(b, n) private(i) reduction(+:res)
 !$omp do
 do i = 1, n
 res = res + sum(b(i, :))
@@ -34,7 +34,7 @@ end do
 !$omp end parallel
 
 print *, 'Sum = ', res
-! if (abs(res - 7455168.0000000438d0) > 1e-12) error stop ! TODO: fix it, sometimes value diverges in LFortran
+if (abs(res - 7455168.0000000438d0) > 1e-12) error stop
 end subroutine
 
 
