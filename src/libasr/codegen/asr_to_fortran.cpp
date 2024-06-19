@@ -769,27 +769,34 @@ public:
 
     void visit_ExplicitDeallocate(const ASR::ExplicitDeallocate_t &x) {
         std::string r = indent;
-        r += "deallocate(";
         for (size_t i = 0; i < x.n_vars; i ++) {
+            r += "if (allocated(";
             visit_expr(*x.m_vars[i]);
-            r += src;
-            if (i < x.n_vars-1) r += ", ";
+            r += src + ")) then\n";
+            inc_indent();
+            r += indent;
+            r += "deallocate(" + src + ")\n";
+            dec_indent();
+            r += indent;
+            r += "end if\n";
         }
-        r += ")";
-        r += "\n";
         src = r;
     }
 
     void visit_ImplicitDeallocate(const ASR::ImplicitDeallocate_t &x) {
         std::string r = indent;
-        r += "deallocate(";
         for (size_t i = 0; i < x.n_vars; i ++) {
+            r += "if (allocated(";
             visit_expr(*x.m_vars[i]);
-            r += src;
-            if (i < x.n_vars-1) r += ", ";
+            r += src + ")) then\n";
+            inc_indent();
+            r += indent;
+            r += "deallocate(" + src + ")";
+            r += "    ! Implicit deallocate\n";
+            dec_indent();
+            r += indent;
+            r += "end if\n";
         }
-        r += ") ";
-        r += "! Implicit deallocate\n";
         src = r;
     }
 
