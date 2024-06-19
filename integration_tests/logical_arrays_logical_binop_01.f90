@@ -15,14 +15,14 @@ program main
    if (all((x1 .neqv. get_true()) .neqv. [.false., .true.])) error stop
 
    ! logical constant == parameter variable
-   print *, .true. .eqv. x1 
+   print *, .true. .eqv. x1
    if (all((.true. .eqv. x1) .neqv. [.true., .false.])) error stop
 
    ! parameter variable and logical constant
    print *, x1 .and. .false.
    if (all((x1 .and. .false.) .neqv. [.false., .false.])) error stop
 
-   ! parameter variable or logical constant
+   ! logical constant or parameter variable
    print *, .false. .or. x1
    if (all((.false. .or. x1) .neqv. [.true., .false.])) error stop
 
