@@ -17,7 +17,7 @@
 #include <xeus/xinterpreter.hpp>
 #include <xeus/xkernel.hpp>
 #include <xeus/xkernel_configuration.hpp>
-#include "xeus-zmq/xzmq_context.hpp"
+#include <xeus-zmq/xzmq_context.hpp>
 #include <xeus-zmq/xserver_zmq_split.hpp>
 
 #include <nlohmann/json.hpp>
