@@ -447,25 +447,28 @@ inline static bool get_boolean_comparison_value(Location loc, ASR::logicalbinopT
     return result;
 }
 
-static inline ASR::ArrayConstant_t* create_array_constant_from_value(Allocator &al, Location loc,
-                            ASR::ttype_t* arr_type, bool value, ASR::arraystorageType storage_type) {
-    size_t arr_size = ASRUtils::get_fixed_size_of_array(arr_type);
+template <typename T>
+static inline ASR::expr_t* create_boolean_result_array(Allocator &al, Location loc, ASR::logicalbinopType op,
+                                                        size_t arr_size,
+                                                        ASR::ArrayConstant_t* left,
+                                                        T right,
+                                                        bool is_right_logical_constant) {
     void* arr_data = nullptr;
     bool* array = al.allocate<bool>(arr_size);
 
     for (size_t i = 0; i < arr_size; i++) {
-        array[i] = value;
+        bool right_value = is_right_logical_constant ? (bool) right : (bool) (((bool*) ((ASR::ArrayConstant_t*)right)->m_data)[i]);
+        array[i] = get_boolean_comparison_value(loc, op, ((bool*) left->m_data)[i], right_value);
     }
+
     arr_data = array;
-    ASR::ttype_t *internal_type = ASRUtils::type_get_past_array(
-                        ASRUtils::type_get_past_pointer(arr_type));
-    int kind = ASRUtils::extract_kind_from_ttype_t(internal_type);
-    ASR::ArrayConstant_t* arr_const = ASR::down_cast<ASR::ArrayConstant_t>(
-        ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, loc,
-                                                arr_size * kind,
-                                                arr_data, arr_type,
-                                                storage_type)));
-    return arr_const;
+    ASR::expr_t* result_arr_const = ASRUtils::EXPR(
+                                        ASR::make_ArrayConstant_t( 
+                                                al, loc,
+                                                left->m_n_data,arr_data,
+                                                left->m_type,
+                                                left->m_storage_format));
+    return result_arr_const;
 }
 
 inline static void visit_BoolOp(Allocator &al, const AST::BoolOp_t &x,
@@ -496,117 +499,70 @@ inline static void visit_BoolOp(Allocator &al, const AST::BoolOp_t &x,
                                 x.base.base.loc);
     }
 
-    // Cast LHS or RHS if necessary
     ASR::ttype_t *left_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(left));
     ASR::ttype_t *right_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(right));
-    ASR::expr_t **conversion_cand = &left;
-    ASR::ttype_t *source_type = left_type;
-    ASR::ttype_t *dest_type = right_type;
-
-    ImplicitCastRules::find_conversion_candidate(&left, &right, left_type,
-                                                 right_type, conversion_cand,
-                                                 &source_type, &dest_type);
-    ImplicitCastRules::set_converted_value(al, x.base.base.loc, conversion_cand,
-                                           source_type, dest_type);
 
     LCOMPILERS_ASSERT(
-        ASRUtils::check_equal_type(ASRUtils::expr_type(left),
-                                   ASRUtils::expr_type(right)));
+        ASRUtils::check_equal_type(ASRUtils::expr_type(left), ASRUtils::expr_type(right)));
 
     ASR::expr_t *value = nullptr;
+    ASR::expr_t* left_expr_value = ASRUtils::expr_value(left);
+    ASR::expr_t* right_expr_value = ASRUtils::expr_value(right);
+
     // Assign evaluation to `value` if possible, otherwise leave nullptr
-    if (ASRUtils::expr_value(left) != nullptr && ASRUtils::expr_value(right) != nullptr) {
+    if (left_expr_value != nullptr && right_expr_value != nullptr) {
         LCOMPILERS_ASSERT(ASR::is_a<ASR::Logical_t>(
-            *ASRUtils::type_get_past_array_pointer_allocatable(dest_type)));
+            *ASRUtils::type_get_past_array_pointer_allocatable(left_type)));
 
-        if (ASRUtils::is_array(source_type) || ASRUtils::is_array(dest_type)) {
-            ASR::dimension_t* m_dims = nullptr;
-            size_t n_dims;
-            if (ASRUtils::is_array(source_type) && !ASRUtils::is_array(dest_type)) {
-                n_dims = ASRUtils::extract_dimensions_from_ttype(source_type, m_dims);
-                dest_type = ASRUtils::make_Array_t_util(
-                    al, source_type->base.loc, dest_type, m_dims, n_dims);
-            } else if (!ASRUtils::is_array(source_type) && ASRUtils::is_array(dest_type)) {
-                n_dims = ASRUtils::extract_dimensions_from_ttype(dest_type, m_dims);
-                source_type = ASRUtils::make_Array_t_util(
-                    al, dest_type->base.loc, source_type, m_dims, n_dims);
-            }
-            // If we reach this block, it means either of `left` or `right` is an ArrayConstant_t and
-            // the other one has to be casted. Based on this fact we get the array storage type below.
-            ASR::arraystorageType arr_storage_type = ASR::down_cast<ASR::ArrayConstant_t>(
-                                                            ASRUtils::is_array(left_type)
-                                                            ? ASRUtils::expr_value(left)
-                                                            : ASRUtils::expr_value(right)
-                                                            )->m_storage_format;
-            ASR::ArrayConstant_t* left_arr_const;
-            ASR::ArrayConstant_t* right_arr_const;
+        if (ASR::is_a<ASR::LogicalBinOp_t>(*left)) {
+            left_expr_value = ASR::down_cast<ASR::LogicalBinOp_t>(left)->m_value;
+            left_type = ASRUtils::expr_type(left_expr_value);
+        }
+        if (ASR::is_a<ASR::LogicalBinOp_t>(*right)) {
+            right_expr_value = ASR::down_cast<ASR::LogicalBinOp_t>(right)->m_value;
+            right_type = ASRUtils::expr_type(right_expr_value);
+        }
 
-            // create a logical array from `left`
-            if (ASR::is_a<ASR::ArrayConstant_t>(*ASRUtils::expr_value(left))) {
-                left_arr_const = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(left));
-            } else {
-                bool left_value = ASR::down_cast<ASR::LogicalConstant_t>(
-                                                ASRUtils::expr_value(left))->m_value;
-                left_arr_const = create_array_constant_from_value(
-                    al, x.base.base.loc, source_type, left_value, arr_storage_type);
-            }
+        if (ASRUtils::is_array(left_type) && !ASRUtils::is_array(right_type)) {
+            ASR::ArrayConstant_t* arr_const;
+            bool logical_const;
+            arr_const = ASR::down_cast<ASR::ArrayConstant_t>(left_expr_value);
+            logical_const = ASR::down_cast<ASR::LogicalConstant_t>(right_expr_value)->m_value;
 
-            // create a logical array from `right`
-            if (ASR::is_a<ASR::ArrayConstant_t>(*ASRUtils::expr_value(right))) {
-                right_arr_const = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(right));
-            } else {
-                bool right_value = ASR::down_cast<ASR::LogicalConstant_t>(
-                                                    ASRUtils::expr_value(right))->m_value;
-                right_arr_const = create_array_constant_from_value(
-                    al, x.base.base.loc, dest_type, right_value, arr_storage_type);
-            }
+            size_t arr_size = ASRUtils::get_fixed_size_of_array(left_type);
+            value = create_boolean_result_array(al, x.base.base.loc, op, arr_size, arr_const, logical_const, true);
 
-            if (ASRUtils::get_fixed_size_of_array(source_type) != ASRUtils::get_fixed_size_of_array(dest_type)) {
-                diag.semantic_error_label(
-                    "Shapes for operands are not conformable",
-                    { x.m_left->base.loc, x.m_right->base.loc },
-                    "");
-                throw SemanticAbort();
-            }
+        } else if (!ASRUtils::is_array(left_type) && ASRUtils::is_array(right_type)) {
+            ASR::ArrayConstant_t* arr_const;
+            bool logical_const;
+            arr_const = ASR::down_cast<ASR::ArrayConstant_t>(right_expr_value);
+            logical_const = ASR::down_cast<ASR::LogicalConstant_t>(left_expr_value)->m_value;
 
-            // create an array for the resultant value
-            ASR::ttype_t *result_type = ASRUtils::type_get_past_array(
-                                ASRUtils::type_get_past_pointer(source_type));
-            int kind = ASRUtils::extract_kind_from_ttype_t(result_type);
-            size_t arr_size = ASRUtils::get_fixed_size_of_array(dest_type);
-            void* arr_data = nullptr;
-            bool* array = al.allocate<bool>(arr_size);
+            size_t arr_size = ASRUtils::get_fixed_size_of_array(right_type);
+            value = create_boolean_result_array(al, x.base.base.loc, op, arr_size, arr_const, logical_const, true);
 
-            for (size_t i = 0; i < arr_size; i++) {
-                array[i] = get_boolean_comparison_value(x.base.base.loc, op,
-                                                        ((bool*) left_arr_const->m_data)[i],
-                                                        ((bool*) right_arr_const->m_data)[i]);
-            }
+        } else if (ASRUtils::is_array(left_type) && ASRUtils::is_array(right_type)) {
+            ASR::ArrayConstant_t* left_arr_const = ASR::down_cast<ASR::ArrayConstant_t>(
+                                                        left_expr_value);
+            ASR::ArrayConstant_t* right_arr_const = ASR::down_cast<ASR::ArrayConstant_t>(
+                                                        right_expr_value);
 
-            arr_data = array;
-            ASR::expr_t* result_arr_const = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al,
-                                                         x.base.base.loc,
-                                                         arr_size * kind,
-                                                         arr_data,
-                                                         dest_type,
-                                                         arr_storage_type));
+            size_t arr_size = ASRUtils::get_fixed_size_of_array(left_type);
+            value = create_boolean_result_array(al, x.base.base.loc, op, arr_size, left_arr_const, right_arr_const, false);
 
-            value = result_arr_const;
         } else {
-            bool left_value = ASR::down_cast<ASR::LogicalConstant_t>(
-                                                ASRUtils::expr_value(left))->m_value;
-            bool right_value = ASR::down_cast<ASR::LogicalConstant_t>(
-                                                ASRUtils::expr_value(right))->m_value;
+            bool left_value = ASR::down_cast<ASR::LogicalConstant_t>(left_expr_value)->m_value;
+            bool right_value = ASR::down_cast<ASR::LogicalConstant_t>(right_expr_value)->m_value;
 
             bool result = get_boolean_comparison_value(x.base.base.loc, op, left_value, right_value);
 
             value = ASR::down_cast<ASR::expr_t>(ASR::make_LogicalConstant_t(
-                al, x.base.base.loc, result, dest_type));
+                al, x.base.base.loc, result, left_type));
         }
     }
 
     ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, left, right);
-    asr = ASR::make_LogicalBinOp_t(al, x.base.base.loc, left, op, right, dest_type, value);
+    asr = ASR::make_LogicalBinOp_t(al, x.base.base.loc, left, op, right, left_type, value);
 
   }
 
