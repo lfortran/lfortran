@@ -168,13 +168,13 @@ class FunctionSubroutineCallVisitor: public ASR::BaseWalkVisitor<FunctionSubrout
         std::vector<SymbolTable*> &scopes;
         std::vector<int> &array_variable_indices;
         std::vector<std::string> &array_variables;
-        std::map<int, std::map<std::string, ASR::symbol_t*>> &scoped_array_variable_map;
+        std::map<int, std::map<std::string, std::vector<ASR::symbol_t*>>> &scoped_array_variable_map;
     
     public:
         FunctionSubroutineCallVisitor(std::string function_name_, std::vector<SymbolTable*> &scopes_,
             std::vector<int> &array_variable_indices_,
             std::vector<std::string> &array_variables_,
-            std::map<int, std::map<std::string, ASR::symbol_t*>> &scoped_array_variable_map_) :
+            std::map<int, std::map<std::string, std::vector<ASR::symbol_t*>>> &scoped_array_variable_map_) :
             function_name(function_name_), scopes(scopes_), array_variable_indices(array_variable_indices_),
             array_variables(array_variables_),
             scoped_array_variable_map(scoped_array_variable_map_) {}
@@ -203,7 +203,7 @@ class FunctionSubroutineCallVisitor: public ASR::BaseWalkVisitor<FunctionSubrout
                     for (size_t i = 0; i < array_variable_indices.size(); i++) {
                         ASR::symbol_t* sym = current_scope->get_symbol(array_variables[i]);
                         LCOMPILERS_ASSERT(sym != nullptr);
-                        scoped_array_variable_map[current_scope->counter][array_variables[i]] = sym;
+                        scoped_array_variable_map[current_scope->counter][array_variables[i]].push_back(sym);
                     }
                 }
             }
@@ -225,7 +225,7 @@ class FunctionSubroutineCallVisitor: public ASR::BaseWalkVisitor<FunctionSubrout
                         ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(arg);
                         ASR::symbol_t* sym = current_scope->get_symbol(ASRUtils::symbol_name(var->m_v));
                         LCOMPILERS_ASSERT(sym != nullptr);
-                        scoped_array_variable_map[current_scope->counter][array_variables[i]] = sym;
+                        scoped_array_variable_map[current_scope->counter][array_variables[i]].push_back(sym);
                     }
                 }
             }
@@ -245,7 +245,7 @@ class FunctionSubroutineCallVisitor: public ASR::BaseWalkVisitor<FunctionSubrout
                         ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(arg);
                         ASR::symbol_t* sym = current_scope->get_symbol(ASRUtils::symbol_name(var->m_v));
                         LCOMPILERS_ASSERT(sym != nullptr);
-                        scoped_array_variable_map[current_scope->counter][array_variables[i]] = sym;
+                        scoped_array_variable_map[current_scope->counter][array_variables[i]].push_back(sym);
                     }
                 }
             }
@@ -897,7 +897,7 @@ class DoConcurrentVisitor :
             4. Recursively call this function for all the function calls found in step 3
         */
         void recursive_function_call_resolver(SymbolTable* current_scope, std::vector<std::string> array_variables,
-                std::map<int, std::map<std::string, ASR::symbol_t*>> scoped_array_variable_map, bool first_call=false, std::string func_name = "") {
+                std::map<int, std::map<std::string, std::vector<ASR::symbol_t*>>> scoped_array_variable_map, bool first_call=false, std::string func_name = "") {
             ASR::asr_t* asr_owner = current_scope->asr_owner;
             if (ASR::is_a<ASR::symbol_t>(*asr_owner)) {
                 ASR::symbol_t* sym = ASR::down_cast<ASR::symbol_t>(asr_owner);
@@ -985,7 +985,9 @@ class DoConcurrentVisitor :
                         if (it->counter != current_scope->counter) {
                             std::vector<std::string> new_array_variables;
                             for (auto it2: scoped_array_variable_map[it->counter]) {
-                                new_array_variables.push_back(ASRUtils::symbol_name(it2.second));
+                                for (auto it3: it2.second) {
+                                    new_array_variables.push_back(ASRUtils::symbol_name(it3));
+                                }
                             }
                             recursive_function_call_resolver(it, new_array_variables, scoped_array_variable_map, false, func->m_name);
                         }
@@ -1255,8 +1257,12 @@ class DoConcurrentVisitor :
 
             if (array_variables.size() > 0) {
                 // std::vector<std::string> function_names; function_names.push_back(ASRUtils::symbol_name(ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner)));
-                std::map<int, std::map<std::string, ASR::symbol_t*>> scoped_array_variable_map;
-                recursive_function_call_resolver(current_scope, array_variables, scoped_array_variable_map, true);
+                std::map<int, std::map<std::string, std::vector<ASR::symbol_t*>>> scoped_array_variable_map;
+                std::string func_name = "";
+                if (ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner)) {
+                    func_name = ASRUtils::symbol_name(ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner));
+                }
+                recursive_function_call_resolver(current_scope, array_variables, scoped_array_variable_map, true, func_name);
             }
 
             remove_original_statement = true;
