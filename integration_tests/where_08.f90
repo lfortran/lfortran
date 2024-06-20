@@ -31,4 +31,4 @@ contains
       value = [.true., .false., .true., .false., .true.]
    end function
 
-end program main
+end program where_08
