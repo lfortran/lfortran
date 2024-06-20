@@ -46,7 +46,8 @@ int yylex(LCompilers::LFortran::YYSTYPE *yylval, YYLTYPE *yyloc,
 void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
     const std::string &msg)
 {
-    p.handle_yyerror(*yyloc, msg);
+    std::cout << "ERROR 3" << std::endl;
+//    p.handle_yyerror(*yyloc, msg);
 }
 
 #define YYLLOC_DEFAULT(Current, Rhs, N)                                 \
@@ -1683,6 +1684,13 @@ assign_statement
 
 assignment_statement
     : expr "=" expr { $$ = ASSIGNMENT($1, $3, @$); }
+//    | expr "=" error { $$ = ASSIGNMENT($1, $1, @$); }
+    | expr "=" error {
+        //yyerrok;
+        std::cout << "ERROR 2" << std::endl;
+        $$ = ASSIGNMENT($1, $1, @$);
+        //yyclearin;
+        }
     ;
 
 goto_statement
