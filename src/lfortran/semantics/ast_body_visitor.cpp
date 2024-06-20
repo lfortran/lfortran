@@ -3218,6 +3218,17 @@ public:
         Vec<ASR::stmt_t*> orelse;
         orelse.reserve(al, x.n_orelse);
         transform_stmts(orelse, x.n_orelse, x.m_orelse);
+        if (ASRUtils::is_array(ASRUtils::expr_type(test))) {
+            if (!ASR::is_a<ASR::Logical_t>(*ASRUtils::type_get_past_array(ASRUtils::expr_type((test))))) {
+                throw SemanticError("'where' clause requires a logical array", test->base.loc);
+            } else {
+                ASR::expr_t* logical_true = ASRUtils::EXPR(
+                                                ASR::make_LogicalConstant_t(al, x.base.base.loc, true,
+                                                ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, 4))));
+                test = ASRUtils::EXPR(ASR::make_LogicalBinOp_t(al, x.base.base.loc, test,
+                            ASR::logicalbinopType::Eqv, logical_true, ASRUtils::expr_type(test), nullptr));
+            }
+        }
         tmp = ASR::make_Where_t(al, x.base.base.loc, test, body.p, body.size(), orelse.p, orelse.size());
     }
 
