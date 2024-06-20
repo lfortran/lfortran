@@ -526,7 +526,7 @@ class DoConcurrentVisitor :
                 b.VariableDeclaration(current_scope, it.first, sym_type, ASR::intentType::Local);
                 if (is_array) {
                     // add lbound and ubound variables for array
-                    ASR::Array_t* arr_type = ASR::down_cast<ASR::Array_t>(it.second);
+                    ASR::Array_t* arr_type = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(it.second)));
                     for (size_t i = 0; i < arr_type->n_dims; i++) {
                         std::string lbound_name = "lbound_" + it.first + "_" + std::to_string(i);
                         std::string ubound_name = "ubound_" + it.first + "_" + std::to_string(i);
@@ -862,33 +862,26 @@ class DoConcurrentVisitor :
                         for (size_t i = 0; i < array_variables.size(); i++) {
                             ASR::symbol_t* sym = current_scope->resolve_symbol(array_variables[i]);
                             ASR::ttype_t* sym_type = ASRUtils::symbol_type(sym);
-                            if (ASR::is_a<ASR::Pointer_t>(*sym_type)) {
-                                continue;
-                            } else if (ASR::is_a<ASR::Array_t>(*sym_type)) {
+                            // look at comment in Program_t case
+                            if (ASR::is_a<ASR::Array_t>(*sym_type)) {
                                 ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(sym_type);
-                                if (!ASRUtils::is_dimension_empty(*array_type->m_dims) || is_interface) {
-                                    Vec<ASR::dimension_t> dims; dims.reserve(al, array_type->n_dims);
-                                    ASR::dimension_t empty_dim; empty_dim.loc = array_type->base.base.loc;
-                                    empty_dim.m_start = nullptr; empty_dim.m_length = nullptr;
-                                    for (size_t i = 0; i < array_type->n_dims; i++) {
-                                        dims.push_back(al, empty_dim);
-                                    }
-                                    ASR::expr_t* array_expr = b.VariableOverwrite(current_scope, ASRUtils::symbol_name(sym),
-                                            ASRUtils::TYPE(ASR::make_Pointer_t(al, array_type->base.base.loc,
-                                                    ASRUtils::TYPE(ASR::make_Array_t(al, array_type->base.base.loc,
-                                                    array_type->m_type, dims.p, dims.n, ASR::array_physical_typeType::DescriptorArray)))),
-                                                ASR::intentType::InOut);
-                                    LCOMPILERS_ASSERT(array_expr != nullptr);
-                                    /*
-                                        We allocate memory for array variables only if we have information about their sizes.
-                                    */
-                                    if (!is_interface) new_body.push_back(al, b.Allocate(array_expr, array_type->m_dims, array_type->n_dims));
-                                } else {
-                                    // we have no information about what size to allocate
+                                bool dimension_empty = ASRUtils::is_dimension_empty(*array_type->m_dims);
+                                Vec<ASR::dimension_t> dims; dims.reserve(al, array_type->n_dims);
+                                ASR::dimension_t empty_dim; empty_dim.loc = array_type->base.base.loc;
+                                empty_dim.m_start = nullptr; empty_dim.m_length = nullptr;
+                                for (size_t i = 0; i < array_type->n_dims; i++) {
+                                    dims.push_back(al, empty_dim);
                                 }
-                            } else if (ASR::is_a<ASR::Allocatable_t>(*sym_type)) {
-                                // TODO: handle allocatable
-                                continue;
+                                ASR::expr_t* array_expr = b.VariableOverwrite(current_scope, ASRUtils::symbol_name(sym),
+                                        ASRUtils::TYPE(ASR::make_Pointer_t(al, array_type->base.base.loc,
+                                                ASRUtils::TYPE(ASR::make_Array_t(al, array_type->base.base.loc,
+                                                array_type->m_type, dims.p, dims.n, ASR::array_physical_typeType::DescriptorArray)))),
+                                            check_is_argument(current_scope, ASRUtils::symbol_name(sym)) ? ASR::intentType::InOut : ASR::intentType::Local);
+                                LCOMPILERS_ASSERT(array_expr != nullptr);
+                                /*
+                                    We allocate memory for array variables only if we have information about their sizes.
+                                */
+                                if (!is_interface && !dimension_empty) new_body.push_back(al, b.Allocate(array_expr, array_type->m_dims, array_type->n_dims));
                             }
                         }
                         for (size_t i = 0; i < func->n_body; i++) {
@@ -958,10 +951,18 @@ class DoConcurrentVisitor :
                         for (size_t i = 0; i < array_variables.size(); i++) {
                             ASR::symbol_t* sym = current_scope->get_symbol(array_variables[i]);
                             ASR::ttype_t* sym_type = ASRUtils::symbol_type(sym);
-                            if (ASR::is_a<ASR::Pointer_t>(*sym_type)) {
-                                continue;
-                            } else if (ASR::is_a<ASR::Array_t>(*sym_type)) {
+                            /*
+                                For pointer and allocatable arrays, we already have the symbol with the correct type
+                                and we don't need to allocate memory for them as they are already allocated.
+
+                                So special handling is required only for non-pointer and non-allocatable arrays.
+                            */
+                            if (ASR::is_a<ASR::Array_t>(*sym_type)) {
                                 ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(sym_type);
+                                /*
+                                    More precisely dimension cannot be empty for arrays in program, so
+                                    it is just a check to see if we have information about the size of the array.
+                                */
                                 if (!ASRUtils::is_dimension_empty(*array_type->m_dims)) {
                                     Vec<ASR::dimension_t> dims; dims.reserve(al, array_type->n_dims);
                                     ASR::dimension_t empty_dim; empty_dim.loc = array_type->base.base.loc;
@@ -979,9 +980,6 @@ class DoConcurrentVisitor :
                                 } else {
                                     // we have no information about what size to allocate
                                 }
-                            } else if (ASR::is_a<ASR::Allocatable_t>(*sym_type)) {
-                                // TODO: handle allocatable
-                                continue;
                             }
                         }
                         for (size_t i = 0; i < prog->n_body; i++) {
@@ -1016,6 +1014,19 @@ class DoConcurrentVisitor :
             }
         }
 
+        bool check_is_argument(SymbolTable *current_scope, std::string arg_name) {
+            if (ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner) &&
+                ASR::is_a<ASR::Function_t>(*ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner)) ) {
+                ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner));
+                for (size_t i = 0; i < func->n_args; i++) {
+                    if (ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(func->m_args[i])->m_v) == arg_name) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
         void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
             std::map<std::string, ASR::ttype_t*> involved_symbols;
 
@@ -1045,9 +1056,12 @@ class DoConcurrentVisitor :
             for (auto it: involved_symbols) {
                 ASR::ttype_t* sym_type = it.second;
                 if (ASR::is_a<ASR::Pointer_t>(*sym_type)) {
+                    // everything is already handled
                     continue;
-                } else if (ASR::is_a<ASR::Array_t>(*sym_type)) {
-                    ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(sym_type);
+                } else if (ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable(sym_type))) {
+                    bool is_argument = check_is_argument(current_scope, it.first);
+                    bool is_allocatable = ASR::is_a<ASR::Allocatable_t>(*sym_type);
+                    ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_allocatable(sym_type));
                     Vec<ASR::dimension_t> dims; dims.reserve(al, array_type->n_dims);
                     ASR::dimension_t empty_dim; empty_dim.loc = array_type->base.base.loc;
                     empty_dim.m_start = nullptr; empty_dim.m_length = nullptr;
@@ -1058,7 +1072,7 @@ class DoConcurrentVisitor :
                             ASRUtils::TYPE(ASR::make_Pointer_t(al, array_type->base.base.loc,
                                     ASRUtils::TYPE(ASR::make_Array_t(al, array_type->base.base.loc,
                                     array_type->m_type, dims.p, dims.n, ASR::array_physical_typeType::DescriptorArray)))),
-                                ASR::intentType::InOut);
+                                is_argument ? ASR::intentType::InOut : ASR::intentType::Local);
                     LCOMPILERS_ASSERT(array_expr != nullptr);
                     bool already_allocated = true;
                     if (ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner) && ASR::is_a<ASR::Function_t>(*ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner))) {
@@ -1094,14 +1108,16 @@ class DoConcurrentVisitor :
                         Reason to comment this line can be found in function `recursive_function_call_resolver`
                     */
                     // if (!already_allocated) pass_result.push_back(al, b.Allocate(array_expr, array_type->m_dims, array_type->n_dims));
+                    /*
+                        If it is not an argument, we need to allocate memory for it.
+                        But if it is also an allocatable, we assume that user will allocate memory for it or code is incorrect.
+                    */
+                    if (!is_argument && !is_allocatable) pass_result.push_back(al, b.Allocate(array_expr, array_type->m_dims, array_type->n_dims));
                     involved_symbols[it.first] = ASRUtils::expr_type(array_expr);
                     array_variables.push_back(it.first);
-                } else if (ASR::is_a<ASR::Allocatable_t>(*sym_type)) {
-                    // TODO: handle allocatable
-                    continue;
                 }
             }
-            
+
             // add external symbols to struct members, we need those for `data%n = n`
             ASR::symbol_t* thread_data_sym = thread_data_module.second;
             SymbolTable* thread_data_symtab = ASRUtils::symbol_symtab(thread_data_sym);
