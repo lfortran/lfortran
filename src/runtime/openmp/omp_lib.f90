@@ -44,7 +44,7 @@ end subroutine
 double precision function omp_get_wtime() bind(c, name="omp_get_wtime")
 end function omp_get_wtime
 
-integer function omp_get_num_procs() bind(c, name="omp_in_parallel")
+integer function omp_get_num_procs() bind(c, name="omp_get_num_procs")
 end function omp_get_num_procs
 
 end interface
