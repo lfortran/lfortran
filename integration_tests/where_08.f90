@@ -1,4 +1,4 @@
-program main
+program where_08
    implicit none
    logical :: l1(5)
    logical :: l2(5)
