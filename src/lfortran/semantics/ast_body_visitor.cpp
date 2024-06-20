@@ -3218,6 +3218,10 @@ public:
         Vec<ASR::stmt_t*> orelse;
         orelse.reserve(al, x.n_orelse);
         transform_stmts(orelse, x.n_orelse, x.m_orelse);
+        // check if ttype of `test` is an array
+        if (!ASRUtils::is_array(ASRUtils::expr_type(test))) {
+            throw SemanticError("'where' clause requires a logical array", test->base.loc);
+        }
         // check if `test` is stricly an array and not the ttype of an accepted expression
         if (ASRUtils::is_array(ASRUtils::expr_type(test))
             && !ASR::is_a<ASR::IntegerCompare_t>(*test) 
