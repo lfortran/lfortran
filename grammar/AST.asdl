@@ -293,6 +293,7 @@ simple_attribute
     | AttrAllocatable
     | AttrAsynchronous
     | AttrCommon
+    | AttrConstant
     | AttrContiguous
     | AttrDeferred
     | AttrElemental
