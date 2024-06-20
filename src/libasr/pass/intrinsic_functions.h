@@ -1814,7 +1814,7 @@ namespace Ibclr {
         * r = ibclr(x, y)
         * r = x & ~( 1 << y )
         */
-        body.push_back(al, b.Assignment(result, b.And(args[0], b.Not(b.BitLshift(b.i_t(1, arg_types[0]), args[1], return_type)))));
+        body.push_back(al, b.Assignment(result, b.And(args[0], b.Not(b.BitLshift(b.i_t(1, arg_types[0]), b.i2i_t(args[1], arg_types[0]), return_type)))));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -1849,7 +1849,7 @@ namespace Ibset {
         * r = ibset(x, y)
         * r = x | ( 1 << y )
         */
-        body.push_back(al, b.Assignment(result, b.Or(args[0], b.BitLshift(b.i_t(1, arg_types[0]), args[1], return_type))));
+        body.push_back(al, b.Assignment(result, b.Or(args[0], b.BitLshift(b.i_t(1, arg_types[0]), b.i2i_t(args[1], arg_types[0]), return_type))));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -1885,7 +1885,7 @@ namespace Btest {
         * r = btest(x, y)
         * r = (( x  & ( 1 << y )) == 0) ? .false. : .true.
         */
-        body.push_back(al, b.If(b.Eq(b.And(args[0], b.BitLshift(b.i_t(1, arg_types[0]), args[1], arg_types[0])), b.i_t(0, arg_types[0])), {
+        body.push_back(al, b.If(b.Eq(b.And(args[0], b.BitLshift(b.i_t(1, arg_types[0]), b.i2i_t(args[1], arg_types[0]), arg_types[0])), b.i_t(0, arg_types[0])), {
             b.Assignment(result, b.bool_t(0, return_type))
         }, {
             b.Assignment(result, b.bool_t(1, return_type))

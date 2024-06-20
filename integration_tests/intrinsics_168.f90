@@ -35,12 +35,10 @@ program intrinsics_168
     print*, ibclr(a1, a2)
     if (ibclr(a1, a2) /= 5) error stop
 
-    ! Does not work yet - #4308
-
-    ! print*, ibclr(a3, a1)
-    ! if (ibclr(a3, a1) /= -33) error stop
-    ! print*, ibclr(a2, a4)
-    ! if (ibclr(a2, a4) /= 8) error stop
+    print*, ibclr(a3, a1)
+    if (ibclr(a3, a1) /= -33) error stop
+    print*, ibclr(a2, a4)
+    if (ibclr(a2, a4) /= 8) error stop
     print*, ibclr(a5, a6)
     if (ibclr(a5, a6) /= -134217730) error stop
 
@@ -51,8 +49,8 @@ program intrinsics_168
 
     print *, ibclr(arr1, arr1)
     if (any(ibclr(arr1, arr1) /= [5, 8, 9])) error stop
-    ! print *, ibclr(arr2, arr1
-    ! if (any(ibclr(arr2, arr1) /= [-33, -134217730, -134217731])) error stop
+    print *, ibclr(arr2, arr1)
+    if (any(ibclr(arr2, arr1) /= [-33, -261, -522])) error stop
 
     res = ibclr(arr1, arr3)
     print *, res
