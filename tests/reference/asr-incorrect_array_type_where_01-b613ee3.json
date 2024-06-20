@@ -1,0 +1,13 @@
+{
+    "basename": "asr-incorrect_array_type_where_01-b613ee3",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/incorrect_array_type_where_01.f90",
+    "infile_hash": "7405582b48138f3053960b0c529eb8efd66eb1f0ba5b64831491897a",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-incorrect_array_type_where_01-b613ee3.stderr",
+    "stderr_hash": "ecbfd62065f48f80ad37e203d15df32b1931d67c4796b6f667d12f0a",
+    "returncode": 2
+}

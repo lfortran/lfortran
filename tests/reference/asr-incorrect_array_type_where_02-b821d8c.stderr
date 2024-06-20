@@ -1,0 +1,5 @@
+semantic error: 'where' clause requires a logical array
+ --> tests/errors/incorrect_array_type_where_02.f90:8:10
+  |
+8 |    where(i1) b = 1
+  |          ^^ 
