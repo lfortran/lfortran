@@ -319,12 +319,13 @@ class ReplaceExpression: public ASR::BaseExprReplacer<ReplaceExpression> {
 
 class DoConcurrentStatementVisitor : public ASR::CallReplacerOnExpressionsVisitor<DoConcurrentStatementVisitor> {
     private:
+        Allocator& al;
         SymbolTable* current_scope;
         ReplaceExpression replacer;
 
     public:
         DoConcurrentStatementVisitor(Allocator &al_, SymbolTable* current_scope_) :
-            current_scope(current_scope_), replacer(al_) {}
+            al(al_), current_scope(current_scope_), replacer(al_) {}
 
     void call_replacer() {
         replacer.current_expr = current_expr;
@@ -335,6 +336,18 @@ class DoConcurrentStatementVisitor : public ASR::CallReplacerOnExpressionsVisito
     void visit_FunctionCall(const ASR::FunctionCall_t &x) {
         ASR::FunctionCall_t* x_copy = const_cast<ASR::FunctionCall_t*>(&x);
         ASR::symbol_t* func_sym = current_scope->get_symbol(ASRUtils::symbol_name(x.m_name));
+        if (func_sym == nullptr) {
+            // this means we have a user defined function and need to create an interface for it
+            ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(x.m_name);
+            ASRUtils::SymbolDuplicator duplicator(al);
+            // This will create trouble when we have something like x(n) inside function
+            // duplicator does not duplicate type of variables inside function
+            func_sym = duplicator.duplicate_Function(func, current_scope);
+            current_scope->add_symbol(ASRUtils::symbol_name(func_sym), func_sym);
+            ASR::Function_t* new_func = ASR::down_cast<ASR::Function_t>(func_sym);
+            new_func->m_body = nullptr; new_func->n_body = 0;
+            ASR::down_cast<ASR::FunctionType_t>(new_func->m_function_signature)->m_deftype = ASR::deftypeType::Interface;
+        }
         LCOMPILERS_ASSERT(func_sym != nullptr);
         x_copy->m_name = func_sym;
         x_copy->m_original_name = func_sym;
