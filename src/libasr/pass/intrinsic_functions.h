@@ -384,95 +384,6 @@ static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x,
 
 } // namespace UnaryIntrinsicFunction
 
-namespace BinaryIntrinsicFunction {
-
-static inline ASR::expr_t* instantiate_functions(Allocator &al,
-        const Location &loc, SymbolTable *scope, std::string new_name,
-        ASR::ttype_t *arg_type, ASR::ttype_t *return_type,
-        Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-    std::string c_func_name;
-    switch (arg_type->type) {
-        case ASR::ttypeType::Complex : {
-            if (ASRUtils::extract_kind_from_ttype_t(arg_type) == 4) {
-                c_func_name = "_lfortran_c" + new_name;
-            } else {
-                c_func_name = "_lfortran_z" + new_name;
-            }
-            break;
-        }
-        default : {
-            if (ASRUtils::extract_kind_from_ttype_t(arg_type) == 4) {
-                c_func_name = "_lfortran_s" + new_name;
-            } else {
-                c_func_name = "_lfortran_d" + new_name;
-            }
-        }
-    }
-    new_name = "_lcompilers_" + new_name + "_" + type_to_str_python(arg_type);
-
-    declare_basic_variables(new_name);
-    if (scope->get_symbol(new_name)) {
-        ASR::symbol_t *s = scope->get_symbol(new_name);
-        ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(s);
-        return b.Call(s, new_args, expr_type(f->m_return_var));
-    }
-    fill_func_arg("x", arg_type);
-    fill_func_arg("y", arg_type)
-    auto result = declare(new_name, return_type, ReturnVar);
-
-    {
-        SymbolTable *fn_symtab_1 = al.make_new<SymbolTable>(fn_symtab);
-        Vec<ASR::expr_t*> args_1;
-        {
-            args_1.reserve(al, 2);
-            ASR::expr_t *arg_1 = b.Variable(fn_symtab_1, "x", arg_type,
-                ASR::intentType::In, ASR::abiType::BindC, true);
-            ASR::expr_t *arg_2 = b.Variable(fn_symtab_1, "y", arg_type,
-                ASR::intentType::In, ASR::abiType::BindC, true);
-            args_1.push_back(al, arg_1);
-            args_1.push_back(al, arg_2);
-        }
-
-        ASR::expr_t *return_var_1 = b.Variable(fn_symtab_1, c_func_name,
-            arg_type, ASRUtils::intent_return_var, ASR::abiType::BindC, false);
-
-        SetChar dep_1; dep_1.reserve(al, 1);
-        Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 1);
-        ASR::symbol_t *s = make_ASR_Function_t(c_func_name, fn_symtab_1, dep_1, args_1,
-            body_1, return_var_1, ASR::abiType::BindC, ASR::deftypeType::Interface, s2c(al, c_func_name));
-        fn_symtab->add_symbol(c_func_name, s);
-        dep.push_back(al, s2c(al, c_func_name));
-        body.push_back(al, b.Assignment(result, b.Call(s, args, arg_type)));
-    }
-
-    ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
-        body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
-    scope->add_symbol(fn_name, new_symbol);
-    return b.Call(new_symbol, new_args, return_type);
-}
-
-static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x,
-        diag::Diagnostics& diagnostics) {
-    const Location& loc = x.base.base.loc;
-    ASRUtils::require_impl(x.n_args == 2,
-        "Binary intrinsics must have only 2 input arguments",
-        loc, diagnostics);
-
-    ASR::ttype_t* input_type = ASRUtils::expr_type(x.m_args[0]);
-    ASR::ttype_t* input_type_2 = ASRUtils::expr_type(x.m_args[1]);
-    ASR::ttype_t* output_type = x.m_type;
-    ASRUtils::require_impl(ASRUtils::check_equal_type(input_type, input_type_2, true),
-        "The types of both the arguments of binary intrinsics must exactly match, argument 1 type: " +
-        ASRUtils::get_type_code(input_type) + " argument 2 type: " + ASRUtils::get_type_code(input_type_2),
-        loc, diagnostics);
-    ASRUtils::require_impl(ASRUtils::check_equal_type(input_type, output_type, true),
-        "The input and output type of elemental intrinsics must exactly match, input type: " +
-        ASRUtils::get_type_code(input_type) + " output type: " + ASRUtils::get_type_code(output_type),
-        loc, diagnostics);
-}
-
-} // namespace BinaryIntrinsicFunction
-
 // `X` is the name of the function in the IntrinsicElementalFunctions enum and
 // we use the same name for `create_X` and other places
 // `eval_X` is the name of the function in the `std` namespace for compile
@@ -744,10 +655,49 @@ namespace Atan2 {
     static inline ASR::expr_t* instantiate_Atan2 (Allocator &al,
             const Location &loc, SymbolTable *scope,
             Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
-            Vec<ASR::call_arg_t>& new_args,int64_t overload_id) {
+            Vec<ASR::call_arg_t>& new_args,int64_t /*overload_id*/) {
         ASR::ttype_t* arg_type = arg_types[0];
-        return BinaryIntrinsicFunction::instantiate_functions(al, loc, scope,
-            "atan2", arg_type, return_type, new_args, overload_id);
+        std::string c_func_name;
+        std::string new_name = "atan2";
+        switch (arg_type->type) {
+            case ASR::ttypeType::Complex : {
+                if (ASRUtils::extract_kind_from_ttype_t(arg_type) == 4) {
+                    c_func_name = "_lfortran_c" + new_name;
+                } else {
+                    c_func_name = "_lfortran_z" + new_name;
+                }
+                break;
+            }
+            default : {
+                if (ASRUtils::extract_kind_from_ttype_t(arg_type) == 4) {
+                    c_func_name = "_lfortran_s" + new_name;
+                } else {
+                    c_func_name = "_lfortran_d" + new_name;
+                }
+            }
+        }
+        new_name = "_lcompilers_" + new_name + "_" + type_to_str_python(arg_type);
+
+        declare_basic_variables(new_name);
+        if (scope->get_symbol(new_name)) {
+            ASR::symbol_t *s = scope->get_symbol(new_name);
+            ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(s);
+            return b.Call(s, new_args, expr_type(f->m_return_var));
+        }
+        fill_func_arg("x", arg_type);
+        fill_func_arg("y", arg_type);
+        auto result = declare(new_name, return_type, ReturnVar);
+        {
+            ASR::symbol_t *s = b.create_c_func(c_func_name, fn_symtab, return_type, arg_types.size(), arg_types);
+            fn_symtab->add_symbol(c_func_name, s);
+            dep.push_back(al, s2c(al, c_func_name));
+            body.push_back(al, b.Assignment(result, b.Call(s, args, return_type)));
+        }
+
+        ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+        body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, new_symbol);
+        return b.Call(new_symbol, new_args, return_type);
     }
 }
 
@@ -1792,10 +1742,13 @@ namespace Ieor {
 namespace Ibclr {
 
     static ASR::expr_t *eval_Ibclr(Allocator &al, const Location &loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
         int64_t result;
+        if ( val2 < 0 ) {
+            diag.semantic_error_label("`pos` argument of `ibclr` intrinsic must be non-negative", {loc}, "");
+        } 
         result = val1 & ~(1 << val2);
         return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);
     }
@@ -1811,7 +1764,7 @@ namespace Ibclr {
         * r = ibclr(x, y)
         * r = x & ~( 1 << y )
         */
-        body.push_back(al, b.Assignment(result, b.And(args[0], b.Not(b.BitLshift(b.i_t(1, arg_types[0]), args[1], return_type)))));
+        body.push_back(al, b.Assignment(result, b.And(args[0], b.Not(b.BitLshift(b.i_t(1, arg_types[0]), b.i2i_t(args[1], arg_types[0]), return_type)))));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -1824,10 +1777,13 @@ namespace Ibclr {
 namespace Ibset {
 
     static ASR::expr_t *eval_Ibset(Allocator &al, const Location &loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
         int64_t result;
+        if ( val2 < 0 ) {
+            diag.semantic_error_label("`pos` argument of `ibset` intrinsic must be non-negative", {loc}, "");
+        }
         result = val1 | (1 << val2);
         return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);
     }
@@ -1843,7 +1799,7 @@ namespace Ibset {
         * r = ibset(x, y)
         * r = x | ( 1 << y )
         */
-        body.push_back(al, b.Assignment(result, b.Or(args[0], b.BitLshift(b.i_t(1, arg_types[0]), args[1], return_type))));
+        body.push_back(al, b.Assignment(result, b.Or(args[0], b.BitLshift(b.i_t(1, arg_types[0]), b.i2i_t(args[1], arg_types[0]), return_type))));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -1856,10 +1812,13 @@ namespace Ibset {
 namespace Btest {
 
     static ASR::expr_t *eval_Btest(Allocator &al, const Location &loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
         bool result;
+        if ( val2 < 0 ) {
+            diag.semantic_error_label("`pos` argument of `btest` intrinsic must be non-negative", {loc}, "");
+        }
         if ((val1 & (1 << val2)) == 0) result = false;
         else result = true;
         return make_ConstantWithType(make_LogicalConstant_t, result, t1, loc);
@@ -1876,7 +1835,7 @@ namespace Btest {
         * r = btest(x, y)
         * r = (( x  & ( 1 << y )) == 0) ? .false. : .true.
         */
-        body.push_back(al, b.If(b.Eq(b.And(args[0], b.BitLshift(b.i_t(1, arg_types[0]), args[1], arg_types[0])), b.i_t(0, arg_types[0])), {
+        body.push_back(al, b.If(b.Eq(b.And(args[0], b.BitLshift(b.i_t(1, arg_types[0]), b.i2i_t(args[1], arg_types[0]), arg_types[0])), b.i_t(0, arg_types[0])), {
             b.Assignment(result, b.bool_t(0, return_type))
         }, {
             b.Assignment(result, b.bool_t(1, return_type))
@@ -1893,10 +1852,16 @@ namespace Btest {
 namespace Ibits {
 
     static ASR::expr_t *eval_Ibits(Allocator &al, const Location &loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
         int64_t val3 = ASR::down_cast<ASR::IntegerConstant_t>(args[2])->m_n;
+        if ( val2 < 0 ) {
+            diag.semantic_error_label("`pos` argument of `ibits` intrinsic must be non-negative", {loc}, "");
+        }
+        if ( val3 < 0 ) {
+            diag.semantic_error_label("`len` argument of `ibits` intrinsic must be non-negative", {loc}, "");
+        }
         int64_t result;
         result = (val1 >> val2) & ((1 << val3) - 1);
         return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);

@@ -1,0 +1,13 @@
+{
+    "basename": "asr-incorrect_type_where_03-a95b1f2",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/incorrect_type_where_03.f90",
+    "infile_hash": "a68b2276cc817ca2db41c25621904b778868e085b956002ce3efba83",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-incorrect_type_where_03-a95b1f2.stderr",
+    "stderr_hash": "e62bad036d6b387c4724af66f63526d9db27752fdabf6a16662dc60e",
+    "returncode": 2
+}

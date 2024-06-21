@@ -5,13 +5,11 @@ dependencies:
   - toml
   - pytest
   - jupyter
-  - xeus=3.0.5
-  - xeus-zmq=1.0.2
-  - xtl
-  - nlohmann_json=3.11.2
-  - cppzmq
+  - xeus=5.1.0
+  - xeus-zmq=3.0.0
+  - nlohmann_json=3.11.3
   - jupyter_kernel_test
-  - xonsh
+  - xonsh=0.16.0
   - re2c
   - numpy
   - bison=3.4

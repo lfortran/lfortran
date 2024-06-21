@@ -82,4 +82,5 @@ program intrinsics_132
     print *, res_8_arr(3)
     if (res_8_arr(3) /= 5) error stop
     if (kind(res_8_arr(3)) /= 8) error stop
+    
 end program

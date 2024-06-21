@@ -41,6 +41,12 @@ end subroutine
 subroutine GOMP_atomic_end() bind(C, name="GOMP_atomic_end")
 end subroutine
 
+double precision function omp_get_wtime() bind(c, name="omp_get_wtime")
+end function omp_get_wtime
+
+integer function omp_get_num_procs() bind(c, name="omp_get_num_procs")
+end function omp_get_num_procs
+
 end interface
 
 end module

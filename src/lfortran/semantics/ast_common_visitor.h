@@ -423,91 +423,154 @@ inline static void visit_Compare(Allocator &al, const AST::Compare_t &x,
     }
 }
 
+inline static bool get_boolean_comparison_value(Location loc, ASR::logicalbinopType op,
+                                                bool left_value, bool right_value) {
+    bool result;
+    switch (op) {
+        case (ASR::And):
+            result = left_value && right_value;
+            break;
+        case (ASR::Or):
+            result = left_value || right_value;
+            break;
+        case (ASR::NEqv):
+            result = left_value != right_value;
+            break;
+        case (ASR::Eqv):
+            result = left_value == right_value;
+            break;
+        default:
+            throw SemanticError(R"""(Only .and., .or., .neqv., .eqv.
+                                implemented for logical type operands.)""",
+                                loc);
+    }
+    return result;
+}
+
+template <typename T>
+static inline ASR::expr_t* create_boolean_result_array(Allocator &al, Location loc, ASR::logicalbinopType op,
+                                                        size_t arr_size,
+                                                        ASR::ArrayConstant_t* left,
+                                                        T right,
+                                                        bool is_right_logical_constant) {
+    void* arr_data = nullptr;
+    bool* array = al.allocate<bool>(arr_size);
+
+    for (size_t i = 0; i < arr_size; i++) {
+        bool right_value = is_right_logical_constant ? (bool) right : (bool) (((bool*) ((ASR::ArrayConstant_t*)right)->m_data)[i]);
+        array[i] = get_boolean_comparison_value(loc, op, ((bool*) left->m_data)[i], right_value);
+    }
+
+    arr_data = array;
+    ASR::expr_t* result_arr_const = ASRUtils::EXPR(
+                                        ASR::make_ArrayConstant_t( 
+                                                al, loc,
+                                                left->m_n_data,arr_data,
+                                                left->m_type,
+                                                left->m_storage_format));
+    return result_arr_const;
+}
+
 inline static void visit_BoolOp(Allocator &al, const AST::BoolOp_t &x,
                                   ASR::expr_t *&left, ASR::expr_t *&right,
                                   ASR::asr_t *&asr, diag::Diagnostics &diag) {
     ASR::logicalbinopType op;
     switch (x.m_op) {
-    case (AST::And):
-      op = ASR::And;
-      break;
-    case (AST::Or):
-      op = ASR::Or;
-      break;
-    case (AST::Xor):
-      op = ASR::Xor;
-        diag.semantic_warning_label(
-            ".xor. is an LFortran extension",
-            {x.base.base.loc},
-            "LFortran extension"
-        );
-      break;
-    case (AST::NEqv):
-      op = ASR::NEqv;
-      break;
-    case (AST::Eqv):
-      op = ASR::Eqv;
-      break;
-    default:
-      throw SemanticError(R"""(Only .and., .or., .xor., .neqv., .eqv.
+        case (AST::And):
+            op = ASR::And;
+            break;
+        case (AST::Or):
+            op = ASR::Or;
+            break;
+        case (AST::Xor):
+            op = ASR::Xor;
+            diag.semantic_warning_label(
+                ".xor. is an LFortran extension", { x.base.base.loc }, "LFortran extension");
+            break;
+        case (AST::NEqv):
+            op = ASR::NEqv;
+            break;
+        case (AST::Eqv):
+            op = ASR::Eqv;
+            break;
+        default:
+            throw SemanticError(R"""(Only .and., .or., .xor., .neqv., .eqv.
                                     implemented for logical type operands.)""",
-                          x.base.base.loc);
+                                x.base.base.loc);
     }
 
-    // Cast LHS or RHS if necessary
     ASR::ttype_t *left_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(left));
     ASR::ttype_t *right_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(right));
-    ASR::expr_t **conversion_cand = &left;
-    ASR::ttype_t *source_type = left_type;
-    ASR::ttype_t *dest_type = right_type;
-
-    ImplicitCastRules::find_conversion_candidate(&left, &right, left_type,
-                                                 right_type, conversion_cand,
-                                                 &source_type, &dest_type);
-    ImplicitCastRules::set_converted_value(al, x.base.base.loc, conversion_cand,
-                                           source_type, dest_type);
 
     LCOMPILERS_ASSERT(
-        ASRUtils::check_equal_type(ASRUtils::expr_type(left),
-                                   ASRUtils::expr_type(right)));
+        ASRUtils::check_equal_type(ASRUtils::expr_type(left), ASRUtils::expr_type(right)));
 
     ASR::expr_t *value = nullptr;
-    // Assign evaluation to `value` if possible, otherwise leave nullptr
-    if (ASRUtils::expr_value(left) != nullptr &&
-        ASRUtils::expr_value(right) != nullptr) {
-        LCOMPILERS_ASSERT(ASR::is_a<ASR::Logical_t>(*dest_type))
+    ASR::expr_t* left_expr_value = ASRUtils::expr_value(left);
+    ASR::expr_t* right_expr_value = ASRUtils::expr_value(right);
 
-        bool left_value = ASR::down_cast<ASR::LogicalConstant_t>(
-                                 ASRUtils::expr_value(left))
-                                 ->m_value;
-        bool right_value = ASR::down_cast<ASR::LogicalConstant_t>(
-                                  ASRUtils::expr_value(right))
-                                  ->m_value;
-        bool result;
-        switch (op) {
-            case (ASR::And):
-                result = left_value && right_value;
-                break;
-            case (ASR::Or):
-                result = left_value || right_value;
-                break;
-            case (ASR::NEqv):
-                result = left_value != right_value;
-                break;
-            case (ASR::Eqv):
-                result = left_value == right_value;
-                break;
-            default:
-                throw SemanticError(R"""(Only .and., .or., .neqv., .eqv.
-                                                implemented for logical type operands.)""",
-                                    x.base.base.loc);
+    // Assign evaluation to `value` if possible, otherwise leave nullptr
+    if (left_expr_value != nullptr && right_expr_value != nullptr) {
+        LCOMPILERS_ASSERT(ASR::is_a<ASR::Logical_t>(
+            *ASRUtils::type_get_past_array_pointer_allocatable(left_type)));
+
+        if (ASR::is_a<ASR::LogicalBinOp_t>(*left)) {
+            left_expr_value = ASR::down_cast<ASR::LogicalBinOp_t>(left)->m_value;
+            left_type = ASRUtils::expr_type(left_expr_value);
         }
-        value = ASR::down_cast<ASR::expr_t>(ASR::make_LogicalConstant_t(
-            al, x.base.base.loc, result, dest_type));
+        if (ASR::is_a<ASR::LogicalBinOp_t>(*right)) {
+            right_expr_value = ASR::down_cast<ASR::LogicalBinOp_t>(right)->m_value;
+            right_type = ASRUtils::expr_type(right_expr_value);
+        }
+
+        if (ASRUtils::is_array(left_type) && !ASRUtils::is_array(right_type)) {
+            ASR::ArrayConstant_t* arr_const;
+            bool logical_const;
+            arr_const = ASR::down_cast<ASR::ArrayConstant_t>(left_expr_value);
+            logical_const = ASR::down_cast<ASR::LogicalConstant_t>(right_expr_value)->m_value;
+
+            size_t arr_size = ASRUtils::get_fixed_size_of_array(left_type);
+            value = create_boolean_result_array(al, x.base.base.loc, op, arr_size, arr_const, logical_const, true);
+
+        } else if (!ASRUtils::is_array(left_type) && ASRUtils::is_array(right_type)) {
+            ASR::ArrayConstant_t* arr_const;
+            bool logical_const;
+            arr_const = ASR::down_cast<ASR::ArrayConstant_t>(right_expr_value);
+            logical_const = ASR::down_cast<ASR::LogicalConstant_t>(left_expr_value)->m_value;
+
+            size_t arr_size = ASRUtils::get_fixed_size_of_array(right_type);
+            value = create_boolean_result_array(al, x.base.base.loc, op, arr_size, arr_const, logical_const, true);
+
+        } else if (ASRUtils::is_array(left_type) && ASRUtils::is_array(right_type)) {
+            ASR::ArrayConstant_t* left_arr_const = ASR::down_cast<ASR::ArrayConstant_t>(
+                                                        left_expr_value);
+            ASR::ArrayConstant_t* right_arr_const = ASR::down_cast<ASR::ArrayConstant_t>(
+                                                        right_expr_value);
+
+            if (ASRUtils::get_fixed_size_of_array(left_type) != ASRUtils::get_fixed_size_of_array(right_type)) {
+                diag.semantic_error_label(
+                    "Shapes for operands are not conformable",
+                    { x.m_left->base.loc, x.m_right->base.loc },
+                    "");
+                throw SemanticAbort();
+            }
+
+            size_t arr_size = ASRUtils::get_fixed_size_of_array(left_type);
+            value = create_boolean_result_array(al, x.base.base.loc, op, arr_size, left_arr_const, right_arr_const, false);
+
+        } else {
+            bool left_value = ASR::down_cast<ASR::LogicalConstant_t>(left_expr_value)->m_value;
+            bool right_value = ASR::down_cast<ASR::LogicalConstant_t>(right_expr_value)->m_value;
+
+            bool result = get_boolean_comparison_value(x.base.base.loc, op, left_value, right_value);
+
+            value = ASR::down_cast<ASR::expr_t>(ASR::make_LogicalConstant_t(
+                al, x.base.base.loc, result, left_type));
+        }
     }
 
     ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, left, right);
-    asr = ASR::make_LogicalBinOp_t(al, x.base.base.loc, left, op, right, dest_type, value);
+    asr = ASR::make_LogicalBinOp_t(al, x.base.base.loc, left, op, right, left_type, value);
 
   }
 
@@ -741,24 +804,18 @@ public:
         {"iany", {IntrinsicSignature({"array", "dim", "mask"}, 1, 3)}},
         {"iall", {IntrinsicSignature({"array", "dim", "mask"}, 1, 3)}},
         {"norm2", {IntrinsicSignature({"array", "dim"}, 1, 2)}},
-        {"sum", {IntrinsicSignature({"array", "dim", "mask"}, 1, 3),
-                IntrinsicSignature({"array", "mask"}, 1, 2)}},
-        {"product", {IntrinsicSignature({"array", "dim", "mask"}, 1, 3),
-                IntrinsicSignature({"array", "mask"}, 1, 2)}},
-        {"iparity", {IntrinsicSignature({"array", "dim", "mask"}, 1, 3),
-                IntrinsicSignature({"array", "mask"}, 1, 2)}},
+        {"sum", {IntrinsicSignature({"array", "dim", "mask"}, 1, 3)}},
+        {"product", {IntrinsicSignature({"array", "dim", "mask"}, 1, 3)}},
+        {"iparity", {IntrinsicSignature({"array", "dim", "mask"}, 1, 3)}},
         {"matmul", {IntrinsicSignature({"matrix_a", "matrix_b"}, 2, 2)}},
         {"dot_product", {IntrinsicSignature({"vector_a", "vector_b"}, 2, 2)}},
         {"pack", {IntrinsicSignature({"array", "mask", "vector"}, 2, 3)}},
         {"unpack", {IntrinsicSignature({"vector", "mask", "field"}, 3, 3)}},
         {"count", {IntrinsicSignature({"mask", "dim", "kind"}, 1, 3)}},
         {"parity", {IntrinsicSignature({"mask", "dim"}, 1, 2)}},
-        {"maxval", {IntrinsicSignature({"array", "dim", "mask"}, 1, 3),
-                IntrinsicSignature({"array", "mask"}, 1, 2)}},
-        {"maxloc", {IntrinsicSignature({"array", "dim", "mask", "kind", "back"}, 1, 5),
-                    IntrinsicSignature({"array", "mask", "kind", "back"}, 1, 4)}},
-        {"minval", {IntrinsicSignature({"array", "dim", "mask"}, 1, 3),
-                IntrinsicSignature({"array", "mask"}, 1, 2)}},
+        {"maxval", {IntrinsicSignature({"array", "dim", "mask"}, 1, 3)}},
+        {"maxloc", {IntrinsicSignature({"array", "dim", "mask", "kind", "back"}, 1, 5)}},
+        {"minval", {IntrinsicSignature({"array", "dim", "mask"}, 1, 3)}},
         {"minloc", {IntrinsicSignature({"array", "dim", "mask", "kind", "back"}, 1, 5),
                     IntrinsicSignature({"array", "mask", "kind", "back"}, 1, 4)}},
         // max0 can accept any arbitrary number of arguments 2<=x<=100

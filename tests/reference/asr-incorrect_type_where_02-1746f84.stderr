@@ -1,0 +1,5 @@
+semantic error: the argument to `where` must be an array
+ --> tests/errors/incorrect_type_where_02.f90:5:10
+  |
+5 |    where(1) b = 12121
+  |          ^ 

@@ -1823,6 +1823,30 @@ filename = "errors/complex_01.f90"
 asr = true
 
 [[test]]
+filename = "errors/incorrect_array_type_where_01.f90"
+asr = true
+
+[[test]]
+filename = "errors/incorrect_array_type_where_02.f90"
+asr = true
+
+[[test]]
+filename = "errors/incorrect_type_where_01.f90"
+asr = true
+
+[[test]]
+filename = "errors/incorrect_type_where_02.f90"
+asr = true
+
+[[test]]
+filename = "errors/incorrect_type_where_03.f90"
+asr = true
+
+[[test]]
+filename = "errors/incorrect_type_where_04.f90"
+asr = true
+
+[[test]]
 filename = "../integration_tests/complex_sub_test.f90"
 asr = true
 llvm = true
@@ -3891,6 +3915,14 @@ filename = "errors/incompatible_dimension_assignment_arr2.f90"
 asr = true
 
 [[test]]
+filename = "errors/incompatible_dimension_logical_arrays_logical_binop_01.f90"
+asr = true
+
+[[test]]
+filename = "errors/incompatible_dimension_logical_arrays_logical_binop_02.f90"
+asr = true
+
+[[test]]
 filename = "errors/end_function_name_not_match.f90"
 ast = true
 
@@ -3973,3 +4005,7 @@ asr = true
 [[test]]
 filename = "openmp1.f90"
 asr_openmp = true
+
+[[test]]
+filename = "errors/intrinsics_03.f90"
+asr = true

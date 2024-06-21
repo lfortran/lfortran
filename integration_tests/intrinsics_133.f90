@@ -71,7 +71,16 @@ program intrinsics_133
     print *, res_8
     if (res_8 /= -412) error stop
 
-    ! Compile time broadcasting
+     ! Compile time broadcasting
+    res_4_arr = Ceiling([real :: 1.2, 3.3, 5])
+    print *, res_4_arr(1)
+    if (res_4_arr(1) /= 2) error stop
+    print *, res_4_arr(2)
+    if (res_4_arr(2) /= 4) error stop
+    print *, res_4_arr(3)
+    if (res_4_arr(3) /= 5) error stop
+
+     ! Compile time broadcasting
     res_4_arr = Ceiling([real :: 1.2, 3.3, 5])
     print *, res_4_arr(1)
     if (res_4_arr(1) /= 2) error stop
@@ -90,4 +99,5 @@ program intrinsics_133
     print *, res_8_arr(3)
     if (res_8_arr(3) /= 5) error stop
     if (kind(res_8_arr(3)) /= 8) error stop
+
 end program

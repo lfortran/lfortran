@@ -3218,6 +3218,27 @@ public:
         Vec<ASR::stmt_t*> orelse;
         orelse.reserve(al, x.n_orelse);
         transform_stmts(orelse, x.n_orelse, x.m_orelse);
+        if (ASRUtils::is_array(ASRUtils::expr_type(test))) {
+            if (ASR::is_a<ASR::Logical_t>(*ASRUtils::type_get_past_array(ASRUtils::expr_type(test)))) {
+                // verify that `test` is *not* the ttype of an expression as we then 
+                // are sure that it is a single standalone logical array
+                if  (!ASR::is_a<ASR::IntegerCompare_t>(*test) 
+                    && !ASR::is_a<ASR::RealCompare_t>(*test)
+                    && !ASR::is_a<ASR::LogicalBinOp_t>(*test)) {
+                        // Rewrite into a form "X == true" as a workaround
+                        // until https://github.com/lfortran/lfortran/issues/4330 is fixed
+                        ASR::expr_t* logical_true = ASRUtils::EXPR(
+                                                        ASR::make_LogicalConstant_t(al, x.base.base.loc, true,
+                                                        ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, 4))));
+                        test = ASRUtils::EXPR(ASR::make_LogicalBinOp_t(al, x.base.base.loc, test,
+                                    ASR::logicalbinopType::Eqv, logical_true, ASRUtils::expr_type(test), nullptr));
+                }
+            } else {
+                throw SemanticError("the first array argument to `where` must be of type logical", test->base.loc);
+            }
+        } else {
+            throw SemanticError("the argument to `where` must be an array", test->base.loc);
+        }
         tmp = ASR::make_Where_t(al, x.base.base.loc, test, body.p, body.size(), orelse.p, orelse.size());
     }
 

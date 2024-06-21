@@ -143,14 +143,19 @@ public:
         }
     }
 
-    void handle_line_truncation(std::string &r, int i_level, int line_length=80) {
-        int line_segments_count = r.size()/line_length;
-        for (int i = 1; i <= line_segments_count; i ++) {
-            int index = r.find_last_of(',', line_length*i);
-            r.insert(index + 2, "&\n" + indent +
-                std::string(i_level*indent_spaces, ' '));
+    void handle_line_truncation(std::string &r, int i_level, int line_length=120) {
+        size_t current_pos = 0;
+        std::string indent = std::string(i_level * indent_spaces, ' ');
+        while (current_pos + line_length < r.length()) {
+            size_t break_pos = r.find_last_of(',', current_pos + line_length);
+            if (break_pos == std::string::npos || break_pos <= current_pos) {
+                break_pos = current_pos + line_length - 1;
+            }
+            r.insert(break_pos + 1, "&\n" + indent);
+            current_pos = break_pos + 2 + i_level * indent_spaces;
         }
     }
+
 
     std::string get_type(const ASR::ttype_t *t) {
         std::string r = "";
@@ -296,6 +301,7 @@ public:
         r = "program";
         r += " ";
         r.append(x.m_name);
+        handle_line_truncation(r, 2);
         r += "\n";
         for (auto &item : x.m_symtab->get_scope()) {
             if (is_a<ASR::ExternalSymbol_t>(*item.second)) {
@@ -370,6 +376,7 @@ public:
         r = "module";
         r += " ";
         r.append(x.m_name);
+        handle_line_truncation(r, 2);
         r += "\n";
         for (auto &item : x.m_symtab->get_scope()) {
             if (is_a<ASR::ExternalSymbol_t>(*item.second)) {
@@ -507,6 +514,7 @@ public:
                 r += " result(" + return_var + ")";
             }
         }
+        handle_line_truncation(r, 2);
         r += "\n";
 
         inc_indent();
@@ -530,6 +538,7 @@ public:
                 if (i < import_struct_type.size() - 1) {
                     r += ", ";
                 } else {
+                    handle_line_truncation(r, 2);
                     r += "\n";
                 }
             }
@@ -548,6 +557,7 @@ public:
                     inc_indent();
                     visit_symbol(*item.second);
                     r += src;
+                    handle_line_truncation(r, 2);
                     r += "\n";
                     dec_indent();
                     r += indent;
@@ -578,6 +588,7 @@ public:
         std::string r = indent;
         r += "interface ";
         r.append(x.m_name);
+        handle_line_truncation(r, 2);
         r += "\n";
         inc_indent();
         r += indent;
@@ -587,6 +598,7 @@ public:
             if (i < x.n_procs-1) r += ", ";
         }
         dec_indent();
+        handle_line_truncation(r, 2);
         r += "\n";
         r += "end interface ";
         r.append(x.m_name);
@@ -613,6 +625,7 @@ public:
         std::string r = indent;
         r += "type :: ";
         r.append(x.m_name);
+        handle_line_truncation(r, 2);
         r += "\n";
         inc_indent();
         std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab);
@@ -687,6 +700,7 @@ public:
             visit_expr(*x.m_symbolic_value);
             r += src;
         }
+        handle_line_truncation(r, 2);
         r += "\n";
         src = r;
     }
@@ -721,7 +735,9 @@ public:
             }
             if (i < x.n_args-1) r += ", ";
         }
-        r += ")\n";
+        r += ")";
+        handle_line_truncation(r, 2);
+        r += "\n";
         src = r;
     }
 
@@ -736,6 +752,7 @@ public:
         r += "to";
         r += " ";
         r += x.m_variable;
+        handle_line_truncation(r, 2);
         r += "\n";
         src = r;
     }
@@ -747,6 +764,7 @@ public:
         r += " = ";
         visit_expr(*x.m_value);
         r += src;
+        handle_line_truncation(r, 2);
         r += "\n";
         src = r;
     }
@@ -776,6 +794,7 @@ public:
             if (i < x.n_vars-1) r += ", ";
         }
         r += ")";
+        handle_line_truncation(r, 2);
         r += "\n";
         src = r;
     }
@@ -816,6 +835,7 @@ public:
             visit_expr(*x.m_head.m_increment);
             r += src;
         }
+        handle_line_truncation(r, 2);
         r += "\n";
         visit_body(x, r);
         r += indent;
@@ -848,6 +868,7 @@ public:
         r += "go to";
         r += " ";
         r += std::to_string(x.m_target_id);
+        handle_line_truncation(r, 2);
         r += "\n";
         src = r;
     }
@@ -857,6 +878,7 @@ public:
         r += std::to_string(x.m_id);
         r += " ";
         r += "continue";
+        handle_line_truncation(r, 2);
         r += "\n";
         src = r;
     }
@@ -869,6 +891,7 @@ public:
         r += src;
         r += ") ";
         r += "then";
+        handle_line_truncation(r, 2);
         r += "\n";
         visit_body(x, r);
         for (size_t i = 0; i < x.n_orelse; i++) {
@@ -908,6 +931,7 @@ public:
             visit_expr(*x.m_values[i]);
             r += src;
         }
+        handle_line_truncation(r, 2);
         r += "\n";
         src = r;
     }
@@ -942,6 +966,7 @@ public:
             r += src;
         }
         r += ")";
+        handle_line_truncation(r, 2);
         r += "\n";
         src = r;
     }
@@ -958,6 +983,7 @@ public:
             throw CodeGenError("close() function must be called with a file unit number");
         }
         r += ")";
+        handle_line_truncation(r, 2);
         r += "\n";
         src = r;
     }
@@ -1005,6 +1031,7 @@ public:
             r += src;
             if (i < x.n_values - 1) r += ", ";
         }
+        handle_line_truncation(r, 2);
         r += "\n";
         src = r;
     }
@@ -1039,6 +1066,7 @@ public:
             r += src;
             if (i < x.n_values-1) r += ", ";
         }
+        handle_line_truncation(r, 2);
         r += "\n";
         src = r;
     }
@@ -1046,6 +1074,7 @@ public:
     void visit_Return(const ASR::Return_t &/*x*/) {
         std::string r = indent;
         r += "return";
+        handle_line_truncation(r, 2);
         r += "\n";
         src = r;
     }
@@ -1056,7 +1085,9 @@ public:
         r += " (";
         visit_expr(*x.m_test);
         r += src;
-        r += ")\n";
+        r += ")";
+        handle_line_truncation(r, 2);
+        r += "\n";
         inc_indent();
         if (x.n_body > 0) {
             for(size_t i = 0; i < x.n_body; i ++) {
@@ -1099,8 +1130,10 @@ public:
             r += src;
             if (i < x.n_args-1) r += ", ";
         }
-        r += ")\n";
-        handle_line_truncation(r, 1);
+        
+        r += ")";
+        handle_line_truncation(r, 2);
+        r += "\n";
         src = r;
     }
 
@@ -1112,11 +1145,14 @@ public:
         r += "(";
         visit_expr(*x.m_test);
         r += src;
-        r += ")\n";
+        r += ")";
+        handle_line_truncation(r, 2);
+        r += "\n";
         visit_body(x, r);
         for (size_t i = 0; i < x.n_orelse; i++) {
             r += indent;
             r += "else where";
+            handle_line_truncation(r, 2);
             r += "\n";
             inc_indent();
             visit_stmt(*x.m_orelse[i]);
@@ -1139,7 +1175,9 @@ public:
         r += " (";
         visit_expr(*x.m_test);
         r += src;
-        r += ")\n";
+        r += ")";
+        handle_line_truncation(r, 2);
+        r += "\n";
         visit_body(x, r);
         r += indent;
         r += "end do";
@@ -1788,7 +1826,9 @@ public:
             r += src;
             if (i < x.n_test-1) r += ", ";
         }
-        r += ")\n";
+        r += ")";
+        handle_line_truncation(r, 2);
+        r += "\n";
         inc_indent();
         for(size_t i = 0; i < x.n_body; i ++) {
             visit_stmt(*x.m_body[i]);
@@ -1810,7 +1850,9 @@ public:
             visit_expr(*x.m_end);
             r += src;
         }
-        r += ")\n";
+        r += ")";
+        handle_line_truncation(r, 2);
+        r += "\n";
         inc_indent();
         for(size_t i = 0; i < x.n_body; i ++) {
             visit_stmt(*x.m_body[i]);

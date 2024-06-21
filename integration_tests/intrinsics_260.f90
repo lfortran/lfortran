@@ -1,14 +1,14 @@
 program intrinsics_260
-implicit none
+    implicit none
     integer(4), parameter :: i1 = sum([1, 2, 3])
 	real(4), parameter :: i2 = sum([1.0, 2.0, 3.0])
 	complex(4), parameter :: i3 = sum([(1.0, 2.0), (3.0, 4.0), (5.0, 6.0)])
 	integer(8), parameter :: i4 = sum([1, 2, 3], [.true., .true., .true.])
-	real(8), parameter :: i5 = sum([1.5_8, 22.9_8, 3.0_8], mask=[.true., .false., .true.])
-	complex(8), parameter :: i6 = sum([(1.5_8, 2.2_8), (22.9_8, 1.4_8), (3.0_8, 1.1_8)], mask=[.true., .false., .true.])
-	integer(4), parameter :: i7 = sum([11, 2, 5], 1, mask=[.true., .false., .true.])
-	real(4), parameter :: i8 = sum([1.0, 3.0, 55.9], mask=[.true., .false., .true.], dim = 1)
-    complex(4), parameter :: i9 = sum([(1.0, 2.0), (3.0, 4.0), (5.0, 6.0)], dim = 1, mask=[.true., .false., .true.])
+	real(8), parameter :: i5 = sum([1.5_8, 22.9_8, 3.0_8], mask = [.true., .false., .true.])
+	complex(8), parameter :: i6 = sum([(1.5_8, 2.2_8), (22.9_8, 1.4_8), (3.0_8, 1.1_8)], mask = [.true., .false., .true.])
+	integer(4), parameter :: i7 = sum([11, 2, 5], 1, [.true., .false., .true.])
+	real(4), parameter :: i8 = sum([1.0, 3.0, 55.9], mask = [.true., .false., .true.], dim = 1)
+    complex(4), parameter :: i9 = sum([(1.0, 2.0), (3.0, 4.0), (5.0, 6.0)], dim = 1, mask = [.true., .false., .true.])
 
     integer(4) :: ar1(4) = [1, 2, 7, 9]
     real(4) :: ar2(4) = [1.0, 3.1, 7.2, 9.0]
@@ -41,23 +41,23 @@ implicit none
     if (abs(sum(ar2) - 20.3) >1e-6 ) error stop
     print *, sum(ar3)
     if (abs(sum(ar3) - (16.0, 20.0)) > 1e-6) error stop
-    print *, sum(ar1, mask=mask)
-    if (sum(ar1, mask=mask) /= 17) error stop
-    print *, sum(ar2, mask=mask)
-    if (abs(sum(ar2, mask=mask) - 17.2) > 1e-6) error stop
-    print *, sum(ar3, mask=mask)
-    if (abs(sum(ar3, mask=mask) - (13.0, 16.0)) > 1e-6) error stop
-    print *, sum(ar1, dim=dim)
-    if (sum(ar1, dim=dim) /= 19) error stop
-    print *, sum(ar2, dim=dim)
-    if (abs(sum(ar2, dim=dim) - 20.3) > 1e-6) error stop
-    print *, sum(ar3, dim=dim)
-    if (abs(sum(ar3, dim=dim) - (16.0, 20.0)) > 1e-6) error stop
-    print *, sum(ar1, mask=mask, dim=dim)
-    if (sum(ar1, mask=mask, dim=dim) /= 17) error stop
-    print *, sum(ar2, mask=mask, dim=dim)
-    if (abs(sum(ar2, mask=mask, dim=dim) - 17.2) > 1e-6) error stop
-    print *, sum(ar3, mask=mask, dim=dim)
-    if (abs(sum(ar3, mask=mask, dim=dim) - (13.0, 16.0)) > 1e-6) error stop
+    print *, sum(ar1, mask = mask)
+    if (sum(ar1, mask = mask) /= 17) error stop
+    print *, sum(ar2, mask)
+    if (abs(sum(ar2, mask) - 17.2) > 1e-6) error stop
+    print *, sum(ar3, mask = mask)
+    if (abs(sum(ar3, mask = mask) - (13.0, 16.0)) > 1e-6) error stop
+    print *, sum(ar1, dim)
+    if (sum(ar1, dim) /= 19) error stop
+    print *, sum(ar2, dim = dim)
+    if (abs(sum(ar2, dim = dim) - 20.3) > 1e-6) error stop
+    print *, sum(ar3, dim)
+    if (abs(sum(ar3, dim) - (16.0, 20.0)) > 1e-6) error stop
+    print *, sum(ar1, mask = mask, dim = dim)
+    if (sum(ar1, mask = mask, dim = dim) /= 17) error stop
+    print *, sum(ar2, dim, mask)
+    if (abs(sum(ar2, dim, mask) - 17.2) > 1e-6) error stop
+    print *, sum(ar3, mask = mask, dim = dim)
+    if (abs(sum(ar3, mask = mask, dim = dim) - (13.0, 16.0)) > 1e-6) error stop
 
 end program
