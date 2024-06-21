@@ -1,4 +1,4 @@
-semantic error: 'where' clause requires a logical array
+semantic error: the argument to `where` must be an array
   --> tests/errors/incorrect_type_where_04.f90:11:10
    |
 11 |    where(c) b = 12121

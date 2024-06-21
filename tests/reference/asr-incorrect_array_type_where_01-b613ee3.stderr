@@ -1,4 +1,4 @@
-semantic error: 'where' clause requires a logical array
+semantic error: the first array argument to `where` must be of type logical
  --> tests/errors/incorrect_array_type_where_01.f90:5:10
   |
 5 |    where([1, 2, 3, 4, 5]) b = 1
