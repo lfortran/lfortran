@@ -247,31 +247,55 @@ T find_product(size_t size, T* data, bool* mask = nullptr) {
 }
 
 template<typename T>
-T find_iparity(size_t size, T* data) {
+T find_iparity(size_t size, T* data, bool* mask = nullptr) {
     T result = 0;
-    for (size_t i = 0; i < size; i++) {
-        result ^= data[i];
-    }
-    return result;
-}
-
-template<typename T>
-T find_minval(size_t size, T* data) {
-    T result = std::numeric_limits<T>::max();
-    for (size_t i = 0; i < size; i++) {
-        if (data[i] < result) {
-            result = data[i];
+    if (mask) {
+        for (size_t i = 0; i < size; i++) {
+            if (mask[i]) {
+                result ^= data[i];
+            }
+        }
+    } else {
+        for (size_t i = 0; i < size; i++) {
+            result ^= data[i];
         }
     }
     return result;
 }
 
 template<typename T>
-T find_maxval(size_t size, T* data) {
+T find_minval(size_t size, T* data, bool* mask = nullptr) {
+    T result = std::numeric_limits<T>::max();
+    if (mask) {
+        for (size_t i = 0; i < size; i++) {
+            if (mask[i] && data[i] < result) {
+                result = data[i];
+            }
+        }
+    } else {
+        for (size_t i = 0; i < size; i++) {
+            if (data[i] < result) {
+                result = data[i];
+            }
+        }
+    }
+    return result;
+}
+
+template<typename T>
+T find_maxval(size_t size, T* data, bool* mask = nullptr) {
     T result = std::numeric_limits<T>::min();
-    for (size_t i = 0; i < size; i++) {
-        if (data[i] > result) {
-            result = data[i];
+    if (mask) {
+        for (size_t i = 0; i < size; i++) {
+            if (mask[i] && data[i] > result) {
+                result = data[i];
+            }
+        }
+    } else {
+        for (size_t i = 0; i < size; i++) {
+            if (data[i] > result) {
+                result = data[i];
+            }
         }
     }
     return result;
@@ -333,18 +357,18 @@ static inline ASR::expr_t *eval_ArrIntrinsic(Allocator & al,
                         default: break;
                     }
                     value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al,
-                    loc, result, t));
+                        loc, result, t));
                 } else if (ASR::is_a<ASR::RealConstant_t>(*args_value0)) {
                     if (kind == 4) {
                         float result = 0.0;
                         result += find_sum(size, (float*)(a->m_data), mask_data);
                         value = ASRUtils::EXPR(ASR::make_RealConstant_t(al,
-                        loc, result, t));
+                            loc, result, t));
                     } else {
                         double result = 0.0;
                         result += find_sum(size, (double*)(a->m_data), mask_data);
                         value = ASRUtils::EXPR(ASR::make_RealConstant_t(al,
-                        loc, result, t));
+                            loc, result, t));
                     }
                 } else if (ASR::is_a<ASR::ComplexConstant_t>(*args_value0)) {
                     if (kind == 4) {
@@ -363,7 +387,7 @@ static inline ASR::expr_t *eval_ArrIntrinsic(Allocator & al,
                             }
                         }
                         value = ASRUtils::EXPR(ASR::make_ComplexConstant_t(al,
-                        loc, result.real(), result.imag(), t));
+                            loc, result.real(), result.imag(), t));
                     } else {
                         std::complex<double> result = {0.0, 0.0};
                         if (mask) {
@@ -380,7 +404,7 @@ static inline ASR::expr_t *eval_ArrIntrinsic(Allocator & al,
                             }
                         }
                         value = ASRUtils::EXPR(ASR::make_ComplexConstant_t(al,
-                        loc, result.real(), result.imag(), t));
+                            loc, result.real(), result.imag(), t));
                     }
                 }
             }
@@ -399,18 +423,18 @@ static inline ASR::expr_t *eval_ArrIntrinsic(Allocator & al,
                         default: break;
                     }
                     value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al,
-                    loc, result, t));
+                        loc, result, t));
                 } else if (ASR::is_a<ASR::RealConstant_t>(*args_value0)) {
                     if (kind == 4) {
                         float result = 1.0;
                         result = find_product(size, (float*)(a->m_data), mask_data);
                         value = ASRUtils::EXPR(ASR::make_RealConstant_t(al,
-                        loc, result, t));
+                            loc, result, t));
                     } else {
                         double result = 1.0;
                         result = find_product(size, (double*)(a->m_data), mask_data);
                         value = ASRUtils::EXPR(ASR::make_RealConstant_t(al,
-                        loc, result, t));
+                            loc, result, t));
                     }
                 } else if (ASR::is_a<ASR::ComplexConstant_t>(*args_value0)) {
                     if (ASRUtils::extract_kind_from_ttype_t(t) == 4) {
@@ -435,7 +459,7 @@ static inline ASR::expr_t *eval_ArrIntrinsic(Allocator & al,
                             }
                         }
                         value = ASRUtils::EXPR(ASR::make_ComplexConstant_t(al,
-                        loc, result.real(), result.imag(), t));
+                            loc, result.real(), result.imag(), t));
                     } else {
                         std::complex<double> result = {*(double*)(a->m_data), *((double*)(a->m_data) + 1)};
                         double temp_real = result.real();
@@ -459,51 +483,53 @@ static inline ASR::expr_t *eval_ArrIntrinsic(Allocator & al,
                             }
                         }
                         value = ASRUtils::EXPR(ASR::make_ComplexConstant_t(al,
-                        loc, result.real(), result.imag(), t));
+                            loc, result.real(), result.imag(), t));
                     }
                 }
             }
             return value;
         } 
         case ASRUtils::IntrinsicArrayFunctions::Iparity: {
+            if (mask) mask_data = (bool*)(mask->m_data);
             if (ASR::is_a<ASR::ArrayConstant_t>(*array)) {
                     int64_t result = 0;
                     switch (kind) {
-                        case 1: result = find_iparity(size, (int8_t*)(a->m_data)); break;
-                        case 2: result = find_iparity(size, (int16_t*)(a->m_data)); break;
-                        case 4: result = find_iparity(size, (int32_t*)(a->m_data)); break;
-                        case 8: result = find_iparity(size, (int64_t*)(a->m_data)); break;
+                        case 1: result = find_iparity(size, (int8_t*)(a->m_data), mask_data); break;
+                        case 2: result = find_iparity(size, (int16_t*)(a->m_data), mask_data); break;
+                        case 4: result = find_iparity(size, (int32_t*)(a->m_data), mask_data); break;
+                        case 8: result = find_iparity(size, (int64_t*)(a->m_data), mask_data); break;
                         default: break;
                     }
                     value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al,
-                    loc, result, t));
+                        loc, result, t));
             }
             return value;
         }
         case ASRUtils::IntrinsicArrayFunctions::MinVal: {
             if (ASR::is_a<ASR::ArrayConstant_t>(*array)) {
+                if (mask) mask_data = (bool*)(mask->m_data);
                 if (ASR::is_a<ASR::IntegerConstant_t>(*args_value0)) {
                     int64_t result = std::numeric_limits<int64_t>::max();
                     switch (kind) {
-                        case 1: result = find_minval(size, (int8_t*)(a->m_data)); break;
-                        case 2: result = find_minval(size, (int16_t*)(a->m_data)); break;
-                        case 4: result = find_minval(size, (int32_t*)(a->m_data)); break;
-                        case 8: result = find_minval(size, (int64_t*)(a->m_data)); break;
+                        case 1: result = find_minval(size, (int8_t*)(a->m_data), mask_data); break;
+                        case 2: result = find_minval(size, (int16_t*)(a->m_data), mask_data); break;
+                        case 4: result = find_minval(size, (int32_t*)(a->m_data), mask_data); break;
+                        case 8: result = find_minval(size, (int64_t*)(a->m_data), mask_data); break;
                         default: break;
                     } 
                     value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al,
-                    loc, result, t));
+                        loc, result, t));
                 } else if (ASR::is_a<ASR::RealConstant_t>(*args_value0)) {
                     if (kind == 4) {
                         float result = std::numeric_limits<float>::max();
-                        result = find_minval(size, (float*)(a->m_data));
+                        result = find_minval(size, (float*)(a->m_data), mask_data);
                         value = ASRUtils::EXPR(ASR::make_RealConstant_t(al,
-                        loc, result, t));
+                            loc, result, t));
                     } else {
                         double result = std::numeric_limits<double>::max();
-                        result = find_minval(size, (double*)(a->m_data));                       
+                        result = find_minval(size, (double*)(a->m_data), mask_data);                       
                         value = ASRUtils::EXPR(ASR::make_RealConstant_t(al,
-                        loc, result, t));
+                            loc, result, t));
                     }
                 }
             }
@@ -511,28 +537,29 @@ static inline ASR::expr_t *eval_ArrIntrinsic(Allocator & al,
         } 
         case ASRUtils::IntrinsicArrayFunctions::MaxVal: {
             if (ASR::is_a<ASR::ArrayConstant_t>(*array)) {
+                if (mask) mask_data = (bool*)(mask->m_data);
                 if (ASR::is_a<ASR::IntegerConstant_t>(*args_value0)) {
                     int64_t result = std::numeric_limits<int64_t>::min();
                     switch (kind) {
-                        case 1: result = find_maxval(size, (int8_t*)(a->m_data)); break;
-                        case 2: result = find_maxval(size, (int16_t*)(a->m_data)); break;
-                        case 4: result = find_maxval(size, (int32_t*)(a->m_data)); break;
-                        case 8: result = find_maxval(size, (int64_t*)(a->m_data)); break;
+                        case 1: result = find_maxval(size, (int8_t*)(a->m_data), mask_data); break;
+                        case 2: result = find_maxval(size, (int16_t*)(a->m_data), mask_data); break;
+                        case 4: result = find_maxval(size, (int32_t*)(a->m_data), mask_data); break;
+                        case 8: result = find_maxval(size, (int64_t*)(a->m_data), mask_data); break;
                         default: break;
                     }
                     value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al,
-                    loc, result, t));
+                        loc, result, t));
                 } else if (ASR::is_a<ASR::RealConstant_t>(*args_value0)) {
                     if (kind == 4) {
                         float result = std::numeric_limits<float>::min();
-                        result = find_maxval(size, (float*)(a->m_data));
+                        result = find_maxval(size, (float*)(a->m_data), mask_data);
                         value = ASRUtils::EXPR(ASR::make_RealConstant_t(al,
-                        loc, result, t));
+                            loc, result, t));
                     } else {
                         double result = std::numeric_limits<double>::min();
-                        result = find_maxval(size, (double*)(a->m_data));                    
+                        result = find_maxval(size, (double*)(a->m_data), mask_data);                    
                         value = ASRUtils::EXPR(ASR::make_RealConstant_t(al,
-                        loc, result, t));
+                            loc, result, t));
                     }
                 }
             }
