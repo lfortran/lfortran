@@ -75,6 +75,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
     ASR::dimension_t* op_dims; size_t op_n_dims;
     ASR::expr_t* op_expr;
     std::map<ASR::expr_t*, ASR::expr_t*>& resultvar2value;
+    std::map<void*, ASR::expr_t*> intrinsics2result_var;
     bool realloc_lhs;
 
     public:
@@ -1293,6 +1294,10 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
 
     template <typename T>
     void replace_intrinsic_function(T* x) {
+        if( intrinsics2result_var[(void*)x] ){
+            *current_expr = intrinsics2result_var[(void*)x];
+            return;
+        }
         LCOMPILERS_ASSERT(current_scope != nullptr);
         const Location& loc = x->base.base.loc;
         std::vector<bool> array_mask(x->n_args, false);
@@ -1381,6 +1386,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
             result_var_created = true;
         }
         *current_expr = result_var;
+        intrinsics2result_var[(void*)x] = result_var;
         if( op_expr == &(x->base) ) {
             op_dims = nullptr;
             op_n_dims = ASRUtils::extract_dimensions_from_ttype(
