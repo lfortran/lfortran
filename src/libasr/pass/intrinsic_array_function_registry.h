@@ -230,10 +230,18 @@ T find_sum(size_t size, T* data, bool* mask = nullptr) {
 }
 
 template<typename T>
-T find_product(size_t size, T* data) {
+T find_product(size_t size, T* data, bool* mask = nullptr) {
     T result = 1;
-    for (size_t i = 0; i < size; i++) {
-        result *= data[i];
+    if (mask) {
+        for (size_t i = 0; i < size; i++) {
+            if (mask[i]) {
+                result *= data[i];
+            }
+        }
+    } else {
+        for (size_t i = 0; i < size; i++) {
+            result *= data[i];
+        }
     }
     return result;
 }
@@ -379,44 +387,76 @@ static inline ASR::expr_t *eval_ArrIntrinsic(Allocator & al,
             return value;
         }
         case ASRUtils::IntrinsicArrayFunctions::Product: {
+            if (mask) mask_data = (bool*)(mask->m_data);
             if (ASR::is_a<ASR::ArrayConstant_t>(*array)) {
                 if (ASR::is_a<ASR::IntegerConstant_t>(*args_value0)) {
-                    int64_t result = 0;
+                    int64_t result = 1;
                     switch (kind) {
-                        case 1: result = find_product(size, (int8_t*)(a->m_data)); break;
-                        case 2: result = find_product(size, (int16_t*)(a->m_data)); break;
-                        case 4: result = find_product(size, (int32_t*)(a->m_data)); break;
-                        case 8: result = find_product(size, (int64_t*)(a->m_data)); break;
+                        case 1: result = find_product(size, (int8_t*)(a->m_data), mask_data); break;
+                        case 2: result = find_product(size, (int16_t*)(a->m_data), mask_data); break;
+                        case 4: result = find_product(size, (int32_t*)(a->m_data), mask_data); break;
+                        case 8: result = find_product(size, (int64_t*)(a->m_data), mask_data); break;
                         default: break;
                     }
                     value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al,
                     loc, result, t));
                 } else if (ASR::is_a<ASR::RealConstant_t>(*args_value0)) {
                     if (kind == 4) {
-                        float result = 0.0;
-                        result = find_product(size, (float*)(a->m_data));
+                        float result = 1.0;
+                        result = find_product(size, (float*)(a->m_data), mask_data);
                         value = ASRUtils::EXPR(ASR::make_RealConstant_t(al,
                         loc, result, t));
                     } else {
-                        double result = 0.0;
-                        result = find_product(size, (double*)(a->m_data));
+                        double result = 1.0;
+                        result = find_product(size, (double*)(a->m_data), mask_data);
                         value = ASRUtils::EXPR(ASR::make_RealConstant_t(al,
                         loc, result, t));
                     }
                 } else if (ASR::is_a<ASR::ComplexConstant_t>(*args_value0)) {
                     if (ASRUtils::extract_kind_from_ttype_t(t) == 4) {
-                        std::complex<float> result = {0.0, 0.0};
-                        for (size_t i = 0; i < size; i++) {
-                            result.real(result.real() * *(((float*)(a->m_data)) + 2*i));
-                            result.imag(result.imag() * *(((float*)(a->m_data)) + 2*i + 1));
+                        std::complex<float> result = {*(float*)(a->m_data), *((float*)(a->m_data) + 1)};
+                        float temp_real = result.real();
+                        float temp_imag = result.imag();
+                        if (mask) {
+                            for (size_t i = 1; i < size; i++) {
+                                if (mask_data[i]) {
+                                    result.real(temp_real * *(((float*)(a->m_data)) + 2*i) - temp_imag * *(((float*)(a->m_data)) + 2*i + 1));
+                                    result.imag(temp_real * *(((float*)(a->m_data)) + 2*i + 1) + temp_imag * *(((float*)(a->m_data)) + 2*i));
+                                    temp_real = result.real();
+                                    temp_imag = result.imag();
+                                }
+                            }
+                        } else {
+                            for (size_t i = 1; i < size; i++) {
+                                result.real(temp_real * *(((float*)(a->m_data)) + 2*i) - temp_imag * *(((float*)(a->m_data)) + 2*i + 1));
+                                result.imag(temp_real * *(((float*)(a->m_data)) + 2*i + 1) + temp_imag * *(((float*)(a->m_data)) + 2*i));
+                                temp_real = result.real();
+                                temp_imag = result.imag();
+                            }
                         }
                         value = ASRUtils::EXPR(ASR::make_ComplexConstant_t(al,
                         loc, result.real(), result.imag(), t));
                     } else {
-                        std::complex<double> result = {0.0, 0.0};
-                        for (size_t i = 0; i < size; i++) {
-                            result.real(result.real() * *(((double*)(a->m_data)) + 2*i));
-                            result.imag(result.imag() * *(((double*)(a->m_data)) + 2*i + 1));
+                        std::complex<double> result = {*(double*)(a->m_data), *((double*)(a->m_data) + 1)};
+                        double temp_real = result.real();
+                        double temp_imag = result.imag();
+                        if (mask) {
+                            for (size_t i =  1; i < size; i++) {
+                                if (mask_data[i]) {
+                                    // x1*x2 - y1*y2 + i(x1*y2 + x2*y1)
+                                    result.real(temp_real * *(((double*)(a->m_data)) + 2*i) - temp_imag * *(((double*)(a->m_data)) + 2*i + 1));
+                                    result.imag(temp_real * *(((double*)(a->m_data)) + 2*i + 1) + temp_imag * *(((double*)(a->m_data)) + 2*i));
+                                    temp_real = result.real();
+                                    temp_imag = result.imag();
+                                }
+                            }
+                        } else {
+                            for (size_t i = 1; i < size; i++) {
+                                result.real(temp_real * *(((double*)(a->m_data)) + 2*i) - temp_imag * *(((double*)(a->m_data)) + 2*i + 1));
+                                result.imag(temp_real * *(((double*)(a->m_data)) + 2*i + 1) + temp_imag * *(((double*)(a->m_data)) + 2*i));
+                                temp_real = result.real();
+                                temp_imag = result.imag();
+                            }
                         }
                         value = ASRUtils::EXPR(ASR::make_ComplexConstant_t(al,
                         loc, result.real(), result.imag(), t));
@@ -740,7 +780,7 @@ static inline ASR::expr_t* instantiate_ArrIntrinsic(Allocator &al,
     int64_t id_array = 0, id_array_dim = 1, id_array_mask = 2, id_array_dim_mask = 3;
 
     ASR::ttype_t* arg_type = ASRUtils::type_get_past_allocatable(
-        ASRUtils::type_get_past_pointer(arg_types[0]));
+        ASRUtils::type_get_past_pointer(arg_types[0])); 
     int kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
     int rank = ASRUtils::extract_n_dims_from_ttype(arg_type);
     std::string new_name = intrinsic_func_name + "_" + std::to_string(kind) +
