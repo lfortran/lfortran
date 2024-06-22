@@ -15,6 +15,6 @@ z = tan(z)
 print *, z
 if (abs(real(z,dp) - 2.57834890405532317E-004_dp) > 1e-10_dp) error stop
 if (abs(real(tan((1.5_sp, 3.5_sp)), sp) - 2.57834879E-004_sp) > 1e-10_dp) error stop
-!if (abs(aimag(z) - 1.0018071108086137_dp) > 1e-10_dp) error stop
+if (abs(aimag(z) - 1.0018071108086137_dp) > 1e-10_dp) error stop
 
 end program intrinsics_04
