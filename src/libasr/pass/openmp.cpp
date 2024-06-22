@@ -377,6 +377,7 @@ class DoConcurrentVisitor :
         Allocator& al;
         bool remove_original_statement;
         Vec<ASR::stmt_t*> pass_result;
+        Vec<ASR::stmt_t*> pass_result_allocatable;
         SymbolTable* current_scope;
         PassOptions pass_options;
         int current_stmt_index = -1;
@@ -386,6 +387,7 @@ class DoConcurrentVisitor :
         DoConcurrentVisitor(Allocator& al_, PassOptions pass_options_) :
         al(al_), remove_original_statement(false), pass_options(pass_options_) {
             pass_result.n = 0;
+            pass_result_allocatable.n = 0;
         }
 
         void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
@@ -396,12 +398,17 @@ class DoConcurrentVisitor :
             current_n_body = n_body;
             for (size_t i=0; i<n_body; i++) {
                 pass_result.n = 0;
+                pass_result_allocatable.n = 0;
                 current_stmt_index = i;
                 pass_result.reserve(al, 1);
+                pass_result_allocatable.reserve(al, 1);
                 remove_original_statement = false;
                 visit_stmt(*m_body[i]);
                 for (size_t j=0; j < pass_result.size(); j++) {
                     body.push_back(al, pass_result[j]);
+                }
+                for (size_t j=0; j < pass_result_allocatable.size(); j++) {
+                    body.push_front(al, pass_result_allocatable[j]);
                 }
                 if( !remove_original_statement ) {
                     body.push_back(al, m_body[i]);
@@ -412,6 +419,7 @@ class DoConcurrentVisitor :
             current_m_body = nullptr;
             current_n_body = 0;
             pass_result.n = 0;
+            pass_result_allocatable.n = 0;
             remove_original_statement = remove_original_statement_copy;
         }
 
@@ -852,8 +860,23 @@ class DoConcurrentVisitor :
                         body.push_back(al, b.Assignment(lhs, b.Mul(lhs, red.m_arg)));
                         break;
                     }
+                    case ASR::reduction_opType::ReduceMAX : {
+                        body.push_back(al, b.If(b.Lt(lhs, red.m_arg), {
+                            b.Assignment(lhs, red.m_arg)
+                        }, {
+                            // do nothing
+                        }));
+                        break;
+                    }
+                    case ASR::reduction_opType::ReduceMIN : {
+                        body.push_back(al, b.If(b.Gt(lhs, red.m_arg), {
+                            b.Assignment(lhs, red.m_arg)
+                        }, {
+                            // do nothing
+                        }));
+                        break;
+                    }
                     default : {
-                        // TODO: support ReduceMAX, ReduceMIN
                         LCOMPILERS_ASSERT(false);
                     }
                 }
@@ -1097,11 +1120,11 @@ class DoConcurrentVisitor :
             std::vector<std::string> array_variables;
             // create data variable for the thread data module
             ASRUtils::ASRBuilder b(al, x.base.base.loc);
-            ASR::expr_t* data_expr = b.Variable(current_scope, "data", ASRUtils::TYPE(ASR::make_StructType_t(al, x.base.base.loc, thread_data_ext_sym)), ASR::intentType::Local);
+            ASR::expr_t* data_expr = b.Variable(current_scope, current_scope->get_unique_name("data"), ASRUtils::TYPE(ASR::make_StructType_t(al, x.base.base.loc, thread_data_ext_sym)), ASR::intentType::Local);
             LCOMPILERS_ASSERT(data_expr != nullptr);
 
             // now create a tdata (cptr)
-            ASR::expr_t* tdata_expr = b.Variable(current_scope, "tdata", ASRUtils::TYPE(ASR::make_CPtr_t(al, x.base.base.loc)), ASR::intentType::Local);
+            ASR::expr_t* tdata_expr = b.Variable(current_scope, current_scope->get_unique_name("tdata"), ASRUtils::TYPE(ASR::make_CPtr_t(al, x.base.base.loc)), ASR::intentType::Local);
             LCOMPILERS_ASSERT(tdata_expr != nullptr);
 
             // TODO: update symbols with correct type
@@ -1165,7 +1188,7 @@ class DoConcurrentVisitor :
                         If it is not an argument, we need to allocate memory for it.
                         But if it is also an allocatable, we assume that user will allocate memory for it or code is incorrect.
                     */
-                    if (!is_argument && !is_allocatable) pass_result.push_back(al, b.Allocate(array_expr, array_type->m_dims, array_type->n_dims));
+                    if (!is_argument && !is_allocatable) pass_result_allocatable.push_back(al, b.Allocate(array_expr, array_type->m_dims, array_type->n_dims));
                     involved_symbols[it.first] = ASRUtils::expr_type(array_expr);
                     array_variables.push_back(it.first);
                 }
