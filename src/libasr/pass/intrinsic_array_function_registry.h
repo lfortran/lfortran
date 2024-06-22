@@ -1071,7 +1071,8 @@ static inline ASR::expr_t *instantiate_MaxMinLoc(Allocator &al,
      *  end ...
      * end do
      */
-    fill_func_arg("array", arg_types[0]);
+    ASR::ttype_t* array_type = ASRUtils::duplicate_type_with_empty_dims(al, arg_types[0]);
+    fill_func_arg("array", array_type);
     int n_dims = extract_n_dims_from_ttype(arg_types[0]);
     ASR::ttype_t *type = extract_type(return_type);
     if (m_args.n > 1) {
