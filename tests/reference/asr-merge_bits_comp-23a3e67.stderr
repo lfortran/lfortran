@@ -1,0 +1,5 @@
+semantic error: The second argument of 'merge_bits' intrinsic must be the same type and kind as first argument
+ --> tests/errors/merge_bits_comp.f90:2:14
+  |
+2 |     print *, merge_bits(8, 12_8, 2)
+  |              ^^^^^^^^^^^^^^^^^^^^^^ 
