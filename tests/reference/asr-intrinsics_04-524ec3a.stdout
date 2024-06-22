@@ -428,6 +428,43 @@
                             ()
                         )]
                         []
+                    )
+                    (If
+                        (RealCompare
+                            (IntrinsicElementalFunction
+                                Abs
+                                [(RealBinOp
+                                    (IntrinsicElementalFunction
+                                        Aimag
+                                        [(Var 2 z)]
+                                        0
+                                        (Real 8)
+                                        ()
+                                    )
+                                    Sub
+                                    (RealConstant
+                                        1.001807
+                                        (Real 8)
+                                    )
+                                    (Real 8)
+                                    ()
+                                )]
+                                0
+                                (Real 8)
+                                ()
+                            )
+                            Gt
+                            (RealConstant
+                                0.000000
+                                (Real 8)
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
                     )]
                 ),
             iso_fortran_env:
