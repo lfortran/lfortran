@@ -1,6 +1,8 @@
 program intrinsics_209
     use, intrinsic :: iso_fortran_env, only: dp => real64, sp => real32
     integer :: i
+    real(sp) :: q,y,z
+    real(dp) :: k,l,m
     real(dp) :: w(19)
     real(dp) :: large(38)
     real(sp) :: x(19)
@@ -104,5 +106,88 @@ program intrinsics_209
         print *, comp(i)
         if (abs(comp(i) - expected_large(i)) > 1e-5_sp) error stop
     end do
+
+    q = 0.123
+    y = 0.876
+    z = 0.542
+
+    k = 0.1237382_dp
+    l = 0.8767382_dp
+    m = 0.5427382_dp
+
+
+
+
+    print *, atand(q)
+    if (atand(q) - 7.01215982_sp > 1e-5) error stop
+
+    print *, atand(y)
+    if (atand(y) - 41.2183571_sp > 1e-5) error stop
+
+    print *, atand(z)
+    if (atand(z) - 28.4576912_sp > 1e-5) error stop
+
+    print *, atand(0.123_sp)
+    if (atand(0.123_sp) - 7.01216030_sp > 1e-5) error stop
+
+    print *, atand(0.876_sp)
+    if (atand(0.876_sp) - 41.2183571_sp > 1e-5) error stop
+
+    print *, atand(0.542_sp)
+    if (atand(0.542_sp) - 28.4576931_sp > 1e-5) error stop
+
+    print *, atand(k)
+    if (atand(k) - 7.0538217578390441_dp > 1e-12) error stop
+
+    print *, atand(l)
+    if (atand(l) - 41.242282419755384_dp > 1e-12) error stop
+
+    print *, atand(m)
+    if (atand(m) - 28.490374622093171_dp > 1e-12) error stop
+
+    print *, atand(0.1237382_dp)
+    if (atand(0.1237382_dp) - 7.0538217578390441_dp > 1e-12) error stop
+
+    print *, atand(0.8767382_dp)
+    if (atand(0.8767382_dp) - 41.242282419755391_dp > 1e-12) error stop
+
+    print *, atand(0.5427382_dp)
+    if (atand(0.5427382_dp) - 528.490374622093171_dp > 1e-12) error stop
+
+
+    q = -0.123
+    y = -0.876
+    z = -0.542
+
+    k = -0.1237382_dp
+    l = -0.8767382_dp
+    m = -0.5427382_dp
+
+    print *, atand(q)
+    if (atand(q) - (-7.01215982_sp) > 1e-5) error stop
+
+    print *, atand(y)
+    if (atand(y) - (-41.2183571_sp) > 1e-5) error stop
+
+    print *, atand(z)
+    if (atand(z) - (-28.4576912_sp) > 1e-5) error stop
+
+    print *, atand(-0.123_sp)
+    if (atand(-0.123_sp) - (-7.01216030_sp) > 1e-5) error stop
+
+    print *, atand(-0.876_sp)
+    if (atand(-0.876_sp) - (-41.2183571_sp) > 1e-5) error stop
+
+    print *, atand(-0.542_sp)
+    if (atand(-0.542_sp) - (-28.4576931_sp) > 1e-5) error stop
+
+    print *, atand(k)
+    if (atand(k) - (-7.0538217578390441_sp) > 1e-12) error stop
+
+    print *, atand(l)
+    if (atand(l) - (-41.242282419755384_dp) > 1e-12) error stop
+
+    print *, atand(m)
+    if (atand(m) - (-28.490374622093171_dp) > 1e-12) error stop
 
 end program
