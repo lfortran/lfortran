@@ -2113,7 +2113,7 @@ static inline bool is_logical(ASR::ttype_t &x) {
 }
 
 static inline bool is_struct(ASR::ttype_t& x) {
-    return ASR::is_a<ASR::Struct_t>(
+    return ASR::is_a<ASR::StructType_t>(
         *type_get_past_array_pointer_allocatable(&x));
 }
 
@@ -3068,14 +3068,14 @@ inline bool dimension_expr_equal(
 
     return true;
 }
- 
+
 inline bool dimensions_compatible(ASR::dimension_t* dims_a, size_t n_dims_a,
     ASR::dimension_t* dims_b, size_t n_dims_b,
     bool check_n_dims= true){
 
     if (check_n_dims && (n_dims_a != n_dims_b)) {
         return false;
-    } 
+    }
     int total_a = get_fixed_size_of_array(dims_a,n_dims_a);
     int total_b = get_fixed_size_of_array(dims_b,n_dims_b);
     // -1 means found dimension with no value at compile time, then return true anyway.
@@ -5625,10 +5625,10 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                     dimension_.from_pointer_n_copy(al, orig_arg_array_t->m_dims, orig_arg_array_t->n_dims);
                     dimensions = &dimension_;
                 }
-                //TO DO : Add appropriate errors in 'asr_uttils.h'. 
+                //TO DO : Add appropriate errors in 'asr_uttils.h'.
                 LCOMPILERS_ASSERT_MSG(dimensions_compatible(arg_array_t->m_dims, arg_array_t->n_dims,
                     orig_arg_array_t->m_dims, orig_arg_array_t->n_dims, false),
-                    "Incompatible dimensions passed to " + (std::string)(ASR::down_cast<ASR::Function_t>(a_name_)->m_name) 
+                    "Incompatible dimensions passed to " + (std::string)(ASR::down_cast<ASR::Function_t>(a_name_)->m_name)
                     + "(" + std::to_string(get_fixed_size_of_array(arg_array_t->m_dims,arg_array_t->n_dims)) + "/" + std::to_string(get_fixed_size_of_array(orig_arg_array_t->m_dims,orig_arg_array_t->n_dims))+")");
 
                 physical_cast_arg.m_value = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(

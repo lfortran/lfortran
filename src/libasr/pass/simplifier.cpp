@@ -457,7 +457,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         xx.n_args = x_m_args.size();
     }
 
-    void visit_EnumTypeConstructor(const ASR::EnumTypeConstructor_t& x) {
+    void visit_EnumConstructor(const ASR::EnumConstructor_t& x) {
         visit_TypeConstructor(x, std::string("_enum_type_constructor_") +
             ASRUtils::symbol_name(x.m_dt_sym));
     }
@@ -545,11 +545,11 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         xx.n_args = x_m_args.size();
     }
 
-    void visit_StructTypeConstructor(const ASR::StructTypeConstructor_t& x) {
+    void visit_StructConstructor(const ASR::StructConstructor_t& x) {
         Vec<ASR::call_arg_t> x_m_args; x_m_args.reserve(al, x.n_args);
         traverse_call_args(x_m_args, x.m_args, x.n_args,
             std::string("_struct_type_constructor_") + ASRUtils::symbol_name(x.m_dt_sym));
-        ASR::StructTypeConstructor_t& xx = const_cast<ASR::StructTypeConstructor_t&>(x);
+        ASR::StructConstructor_t& xx = const_cast<ASR::StructConstructor_t&>(x);
         xx.m_args = x_m_args.p;
         xx.n_args = x_m_args.size();
     }
@@ -670,11 +670,11 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
             ASRUtils::get_impure_intrinsic_name(x->m_impure_intrinsic_id))
     }
 
-    void replace_StructTypeConstructor(ASR::StructTypeConstructor_t* x) {
+    void replace_StructTypeConstructor(ASR::StructConstructor_t* x) {
         replace_current_expr("_struct_type_constructor_")
     }
 
-    void replace_EnumTypeConstructor(ASR::EnumTypeConstructor_t* x) {
+    void replace_EnumTypeConstructor(ASR::EnumConstructor_t* x) {
         replace_current_expr("_enum_type_constructor_")
     }
 
@@ -1196,12 +1196,12 @@ class VerifySimplifierASROutput:
         }
     }
 
-    void visit_StructTypeConstructor(const ASR::StructTypeConstructor_t& x) {
+    void visit_StructConstructor(const ASR::StructConstructor_t& x) {
         traverse_call_args(x.m_args, x.n_args);
         check_if_linked_to_target(x.base, x.m_type);
     }
 
-    void visit_EnumTypeConstructor(const ASR::EnumTypeConstructor_t& x) {
+    void visit_EnumTypeConstructor(const ASR::EnumConstructor_t& x) {
         traverse_args(x.m_args, x.n_args);
         check_if_linked_to_target(x.base, x.m_type);
     }
