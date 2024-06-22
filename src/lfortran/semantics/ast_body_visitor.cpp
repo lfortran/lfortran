@@ -33,7 +33,7 @@ public:
     AST::stmt_t **starting_m_body = nullptr;
     std::vector<ASR::symbol_t*> do_loop_variables;
     std::map<ASR::asr_t*, std::pair<const AST::stmt_t*,int64_t>> print_statements;
-    std::vector<ASR::DoConcurrentLoop_t *> omp_constructs;
+    std::vector<std::pair<ASR::DoConcurrentLoop_t *, std::vector<ASR::stmt_t*>>> omp_constructs;
 
     BodyVisitor(Allocator &al, ASR::asr_t *unit, diag::Diagnostics &diagnostics,
             CompilerOptions &compiler_options, std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping,
@@ -3257,6 +3257,47 @@ public:
         ASR::ttype_t *src_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(*conv_candidate)); \
         ImplicitCastRules::set_converted_value(al, x.base.base.loc, conv_candidate, src_type, des_type);
 
+    // This is same as `transform_stmts` with special handling for omp constructs
+    void transform_stmts_for_do_loop(Vec<ASR::stmt_t*> &body, size_t n_body, AST::stmt_t **m_body) {
+        tmp = nullptr;
+        Vec<ASR::stmt_t*>* current_body_copy = current_body;
+        current_body = &body;
+        for (size_t i=0; i<n_body; i++) {
+            // If there is a label, create a GoToTarget node first
+            int64_t label = stmt_label(m_body[i]);
+            if (label != 0) {
+                ASR::asr_t *l = ASR::make_GoToTarget_t(al, m_body[i]->base.loc, label,
+                                    s2c(al, std::to_string(label)));
+                body.push_back(al, ASR::down_cast<ASR::stmt_t>(l));
+            }
+            // Visit the statement
+            LCOMPILERS_ASSERT(current_body != nullptr)
+            tmp = nullptr;
+            this->visit_stmt(*m_body[i]);
+            if (tmp != nullptr) {
+                ASR::stmt_t* tmp_stmt = ASRUtils::STMT(tmp);
+                if (tmp_stmt->type == ASR::stmtType::SubroutineCall) {
+                    ASR::stmt_t* impl_decl = create_implicit_deallocate_subrout_call(tmp_stmt);
+                    if (impl_decl != nullptr) {
+                        body.push_back(al, impl_decl);
+                    }
+                }
+                body.push_back(al, tmp_stmt);
+            } else if (!tmp_vec.empty()) {
+                for(auto &x: tmp_vec) {
+                    body.push_back(al, ASRUtils::STMT(x));
+                }
+                tmp_vec.clear();
+            }
+            if (tmp == nullptr && !omp_constructs.empty() && !omp_constructs.back().second.empty()) {
+                body.push_back(al, omp_constructs.back().second.back());
+            }
+            // To avoid last statement to be entered twice once we exit this node
+            tmp = nullptr;
+        }
+        current_body = current_body_copy;
+    }
+
     void visit_DoLoop(const AST::DoLoop_t &x) {
         ASR::expr_t *var, *start, *end;
         ASR::ttype_t* type = nullptr;
@@ -3325,7 +3366,7 @@ public:
         }
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_body);
-        transform_stmts(body, x.n_body, x.m_body);
+        transform_stmts_for_do_loop(body, x.n_body, x.m_body);
         ASR::do_loop_head_t head;
         head.m_v = var;
         head.m_start = start;
@@ -3333,14 +3374,12 @@ public:
         head.m_increment = increment;
         if (head.m_v != nullptr) {
             head.loc = head.m_v->base.loc;
+            tmp = ASR::make_DoLoop_t(al, x.base.base.loc, x.m_stmt_name,
+                head, body.p, body.size(), nullptr, 0);
+            do_loop_variables.pop_back();
             if (!omp_constructs.empty()) {
-                omp_constructs.back()->m_head = head;
-                omp_constructs.back()->m_body = body.p;
-                omp_constructs.back()->n_body = body.size();
-            } else {
-                tmp = ASR::make_DoLoop_t(al, x.base.base.loc, x.m_stmt_name,
-                    head, body.p, body.size(), nullptr, 0);
-                do_loop_variables.pop_back();
+                omp_constructs.back().second.push_back(ASRUtils::STMT(tmp));
+                tmp = nullptr;
             }
         } else {
             ASR::ttype_t* cond_type
@@ -3637,7 +3676,17 @@ public:
         if (x.m_type == AST::OMPPragma) {
             if (x.m_end) {
                 if (LCompilers::startswith(x.m_construct_name, "parallel")) {
-                    tmp = (ASR::asr_t *) omp_constructs.back();
+                    ASR::DoConcurrentLoop_t* do_conc_loop= omp_constructs.back().first;
+                    Vec<ASR::stmt_t*> body; body.reserve(al, 1);
+                    std::vector<ASR::stmt_t*> tmp_body = omp_constructs.back().second;
+                    // as we only support `parallel do` construct
+                    // the last element will be outermost do loop as we go depth first
+                    LCOMPILERS_ASSERT(ASR::is_a<ASR::DoLoop_t>(*omp_constructs.back().second.back()));
+                    ASR::DoLoop_t* do_loop = ASR::down_cast<ASR::DoLoop_t>(omp_constructs.back().second.back());
+                    do_conc_loop->m_head = do_loop->m_head;
+                    do_conc_loop->m_body = do_loop->m_body;
+                    do_conc_loop->n_body = do_loop->n_body;
+                    tmp = (ASR::asr_t*) do_conc_loop;
                     omp_constructs.pop_back();
                     return;
                 }
@@ -3708,9 +3757,9 @@ public:
                     }
                 }
                 ASR::do_loop_head_t head{};
-                omp_constructs.push_back(ASR::down_cast2<ASR::DoConcurrentLoop_t>(
+                omp_constructs.push_back({ASR::down_cast2<ASR::DoConcurrentLoop_t>(
                     ASR::make_DoConcurrentLoop_t(al,loc, head, m_shared.p,
-                    m_shared.n, m_local.p, m_local.n, m_reduction.p, m_reduction.n, nullptr, 0)));
+                    m_shared.n, m_local.p, m_local.n, m_reduction.p, m_reduction.n, nullptr, 0)), {}});
             } else if ( strcmp(x.m_construct_name, "do") == 0 ) {
                 // pass
             } else {
