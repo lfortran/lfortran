@@ -3060,7 +3060,7 @@ namespace Trailz {
     static inline ASR::expr_t* instantiate_Trailz(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_optimization_trailz_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_trailz_" + type_to_str_python(arg_types[0]));
         fill_func_arg("n", arg_types[0]);
         auto result = declare(fn_name, arg_types[0], ReturnVar);
         // This is not the most efficient way to do this, but it works for now.
@@ -3478,7 +3478,7 @@ namespace Leadz {
     static inline ASR::expr_t* instantiate_Leadz(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_optimization_leadz_" + type_to_str_python(arg_types[0]));
+        declare_basic_variables("_lcompilers_leadz_" + type_to_str_python(arg_types[0]));
         fill_func_arg("n", arg_types[0]);
         auto result = declare(fn_name, arg_types[0], ReturnVar);
         auto total_bits = declare("r", arg_types[0], Local);
