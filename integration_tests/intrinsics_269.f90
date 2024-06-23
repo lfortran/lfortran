@@ -78,13 +78,55 @@ program intrinsics_269
     print *, acos(a)
     if (abs(acos(a)) - 1.0264977928984282_dp > 1e-12) error stop
 
+    print *, acos(0.5178181202_dp)
+    if (abs(acos(0.5178181202_dp) - 1.0264977928984282_dp) > 1e-12) error stop
+
     print *, acos(b)
     if (acos(b) - (1.64367688_sp) > 1e-5) error stop
+
+    print *, acos(-0.072816_sp)
+    if (acos(-0.072816_sp) - (1.64367688_sp) > 1e-5) error stop
 
     print *, acos(c)
     if (acos(c) - (2.1150948606913649_dp) > 1e-12) error stop
 
+    print *, acos(-0.5178181202_dp)
+    if (acos(-0.5178181202_dp) - (2.1150948606913649_dp) > 1e-12) error stop
+
     print *, acos(d)
     if (acos(d) - (1.49791586_sp) > 1e-5) error stop
+
+    print *, acos(0.072816_sp)
+    if (acos(0.072816_sp) - (1.49791586_sp) > 1e-5) error stop
+
+    a = -0.271927291_dp
+    b = -0.6382728_sp
+    c = 0.271927291_dp
+    d = 0.6382728_sp
+
+    print *, acos(a)
+    if (abs(acos(a) - (1.8461915525880368_dp)) > 1e-12) error stop
+
+    print *, acos(-0.271927291_dp)
+    if (abs(acos(-0.271927291_dp) - (1.8461915525880368_dp)) > 1e-12) error stop
+
+    print *, acos(b)
+    if (acos(b) - (2.26304889_sp) > 1e-5) error stop
+
+    print *, acos(-0.6382728_sp)
+    if (acos(-0.6382728_sp) - (2.26304889_sp) > 1e-5) error stop
+
+    print *, acos(c)
+    if (acos(c) - (1.2954011010017565_dp) > 1e-12) error stop
+
+    print *, acos(0.271927291_dp)
+    if (acos(0.271927291_dp) - (1.2954011010017565_dp) > 1e-12) error stop
+
+    print *, acos(d)
+    if (acos(d) - (0.878543794_sp) > 1e-5) error stop
+
+    print *, acos(0.6382728_sp)
+    if (acos(0.6382728_sp) - (0.878543794_sp) > 1e-5) error stop
+
 
 end program

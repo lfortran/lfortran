@@ -80,13 +80,54 @@ program intrinsics_268
     print *, asin(a)
     if (abs(asin(a)) - 0.54429853389646843_dp > 1e-12) error stop
 
+    print *, asin(0.5178181202_dp)
+    if (abs(asin(0.5178181202_dp) - 0.54429853389646843_dp) > 1e-12) error stop
+
     print *, asin(b)
     if (asin(b) - (-7.28804991E-02_sp) > 1e-5) error stop
+
+    print *, asin(-0.072816_sp)
+    if (asin(-0.072816_sp) - (-7.28804991E-02_sp) > 1e-5) error stop
 
     print *, asin(c)
     if (asin(c) - (-5.44298533896468428e-01_dp) > 1e-12) error stop
 
+    print *, asin(-0.5178181202_dp)
+    if (asin(-0.5178181202_dp) - (-5.44298533896468428e-01_dp) > 1e-12) error stop
+
     print *, asin(d)
     if (asin(d) - (7.28804991E-02_sp) > 1e-5) error stop
+
+    print *, asin(0.072816_sp)
+    if (asin(0.072816_sp) - (7.28804991E-02_sp) > 1e-5) error stop
+
+    a = -0.271927291_dp
+    b = -0.6382728_sp
+    c = 0.271927291_dp
+    d = 0.6382728_sp
+
+    print *, asin(a)
+    if (abs(asin(a) - (-0.27539522579314013_dp)) > 1e-12) error stop
+
+    print *, asin(-0.271927291_dp)
+    if (abs(asin(-0.271927291_dp) - (-0.27539522579314013_dp)) > 1e-12) error stop
+
+    print *, asin(b)
+    if (asin(b) - (-0.692252517_sp) > 1e-5) error stop
+
+    print *, asin(-0.6382728_sp)
+    if (asin(-0.6382728_sp) - (-0.692252517_sp) > 1e-5) error stop
+
+    print *, asin(c)
+    if (asin(c) - (0.27539522579314013_dp) > 1e-12) error stop
+
+    print *, asin(0.271927291_dp)
+    if (asin(0.271927291_dp) - (0.27539522579314013_dp) > 1e-12) error stop
+
+    print *, asin(d)
+    if (asin(d) - (0.692252517_sp) > 1e-5) error stop
+
+    print *, asin(0.6382728_sp)
+    if (asin(0.6382728_sp) - (0.692252517_sp) > 1e-5) error stop
 
 end program

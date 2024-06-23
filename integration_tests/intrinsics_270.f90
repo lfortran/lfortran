@@ -78,13 +78,55 @@ program intrinsics_269
     print *, atan(a)
     if (abs(atan(a)) - 0.47780028380709660_dp > 1e-12) error stop
 
+    print *, atan(0.5178181202_dp)
+    if (abs(atan(0.5178181202_dp) - 0.47780028380709660_dp) > 1e-12) error stop
+
     print *, atan(b)
     if (atan(b) - (-7.26877153E-02_sp) > 1e-5) error stop
+
+    print *, atan(-0.072816_sp)
+    if (atan(-0.072816_sp) - (-7.26877153E-02_sp) > 1e-5) error stop
 
     print *, atan(c)
     if (atan(c) - (-0.47780028380709660_dp) > 1e-12) error stop
 
+    print *, atan(-0.5178181202_dp)
+    if (atan(-0.5178181202_dp) - (-0.47780028380709660_dp) > 1e-12) error stop
+
     print *, atan(d)
     if (atan(d) - (7.26877153E-02_sp) > 1e-5) error stop
+
+    print *, atan(0.072816_sp)
+    if (atan(0.072816_sp) - (7.26877153E-02_sp) > 1e-5) error stop
+
+    a = -0.271927291_dp
+    b = -0.6382728_sp
+    c = 0.271927291_dp
+    d = 0.6382728_sp
+
+    print *, atan(a)
+    if (abs(atan(a) - (-0.26550729967368875_dp)) > 1e-12) error stop
+
+    print *, atan(-0.271927291_dp)
+    if (abs(atan(-0.271927291_dp) - (-0.26550729967368875_dp)) > 1e-12) error stop
+
+    print *, atan(b)
+    if (atan(b) - ( -0.568086922_sp) > 1e-5) error stop
+
+    print *, atan(-0.6382728_sp)
+    if (atan(-0.6382728_sp) - (-0.568086922_sp) > 1e-5) error stop
+
+    print *, atan(c)
+    if (atan(c) - (0.26550729967368875_dp) > 1e-12) error stop
+
+    print *, atan(0.271927291_dp)
+    if (atan(0.271927291_dp) - (0.26550729967368875_dp) > 1e-12) error stop
+
+    print *, atan(d)
+    if (atan(d) - (0.568086922_sp) > 1e-5) error stop
+
+    print *, atan(0.6382728_sp)
+    if (atan(0.6382728_sp) - (0.568086922_sp) > 1e-5) error stop
+
 
 end program
