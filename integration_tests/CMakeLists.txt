@@ -969,6 +969,7 @@ RUN(NAME where_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME where_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME where_07 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME where_08 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
+RUN(NAME where_09 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 
 RUN(NAME forallloop_01 LABELS gfortran)
 
