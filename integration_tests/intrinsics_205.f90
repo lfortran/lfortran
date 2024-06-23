@@ -107,7 +107,6 @@ program intrinsics_205
     print *, acosd(0.5427382_dp)
     if (acosd(0.5427382_dp) - 5.71801071e+01 > 1e-12) error stop
 
-
     x = -0.123
     y = -0.876
     z = -0.542

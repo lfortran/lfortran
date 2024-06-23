@@ -115,9 +115,6 @@ program intrinsics_209
     l = 0.8767382_dp
     m = 0.5427382_dp
 
-
-
-
     print *, atand(q)
     if (atand(q) - 7.01215982_sp > 1e-5) error stop
 
@@ -153,7 +150,6 @@ program intrinsics_209
 
     print *, atand(0.5427382_dp)
     if (atand(0.5427382_dp) - 528.490374622093171_dp > 1e-12) error stop
-
 
     q = -0.123
     y = -0.876
