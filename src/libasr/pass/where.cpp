@@ -2,6 +2,7 @@
 #include <libasr/containers.h>
 #include <libasr/exception.h>
 #include <libasr/asr_utils.h>
+#include <libasr/asr_builder.h>
 #include <libasr/asr_verify.h>
 #include <libasr/pass/pass_utils.h>
 #include <libasr/pass/replace_where.h>
@@ -343,25 +344,26 @@ public:
             return_var_hash[h] = opt_left;
         }
 
+        ASRUtils::ExprStmtDuplicator dup(al);
         if (opt_left && ASR::is_a<ASR::IntegerCompare_t>(*test)) {
-            int_cmp = ASR::down_cast<ASR::IntegerCompare_t>(test);
-            int_cmp->m_left = opt_left;
+            int_cmp = ASR::down_cast<ASR::IntegerCompare_t>(dup.duplicate_expr(test));
+            int_cmp->m_left = dup.duplicate_expr(opt_left);
         }
         if (opt_left && ASR::is_a<ASR::RealCompare_t>(*test)) {
-            real_cmp = ASR::down_cast<ASR::RealCompare_t>(test);
-            real_cmp->m_left = opt_left;
+            real_cmp = ASR::down_cast<ASR::RealCompare_t>(dup.duplicate_expr(test));
+            real_cmp->m_left = dup.duplicate_expr(opt_left);
         }
         if (opt_left && ASR::is_a<ASR::LogicalBinOp_t>(*test)) {
-            log_bin_op = ASR::down_cast<ASR::LogicalBinOp_t>(test);
-            log_bin_op->m_left = opt_left;
+            log_bin_op = ASR::down_cast<ASR::LogicalBinOp_t>(dup.duplicate_expr(test));
+            log_bin_op->m_left = dup.duplicate_expr(opt_left);
         }
 
         // create do loop head
         ASR::do_loop_head_t head;
         head.loc = loc;
         head.m_v = var;
-        head.m_start = PassUtils::get_bound(opt_left?opt_left:left, 1, "lbound", al);
-        head.m_end = PassUtils::get_bound(opt_left?opt_left:left, 1, "ubound", al);
+        head.m_start = PassUtils::get_bound(opt_left?dup.duplicate_expr(opt_left):dup.duplicate_expr(left), 1, "lbound", al);
+        head.m_end = PassUtils::get_bound(opt_left?dup.duplicate_expr(opt_left):dup.duplicate_expr(left), 1, "ubound", al);
         head.m_increment = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, int32_type));
 
         // create do loop body
