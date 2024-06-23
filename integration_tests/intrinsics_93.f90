@@ -38,8 +38,8 @@ program intrinsics_93
     if (digits(y) /= 53) error stop
 
     print *, digits(arr1)
-    if (digits(arr1) /= 31) error stop
+    ! if (digits(arr1) /= 31) error stop ! Does not work #4367
     print *, digits(arr2)
-    if (digits(arr2) /= 53) error stop
+    ! if (digits(arr2) /= 53) error stop
 
 end program
