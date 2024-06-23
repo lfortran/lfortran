@@ -3,7 +3,13 @@
 set -e
 set -x
 
-cmake \
+mkdir -p build
+cd build
+
+echo "installation path: `pwd`/inst"
+
+cmake .. \
+    -GNinja \
     -DCMAKE_BUILD_TYPE=Debug \
     -DWITH_LLVM=yes \
     -DLFORTRAN_BUILD_ALL=yes \
@@ -15,4 +21,5 @@ cmake \
     -DCMAKE_INSTALL_LIBDIR=share/lfortran/lib \
     -DCMAKE_EXPORT_COMPILE_COMMANDS=yes \
     .
+
 cmake --build . -j16 --target install
