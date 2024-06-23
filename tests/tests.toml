@@ -3967,6 +3967,14 @@ filename = "errors/sqrt_neg.f90"
 asr = true
 
 [[test]]
+filename = "errors/merge_bits_comp.f90"
+asr = true
+
+[[test]]
+filename = "errors/merge_bits_run.f90"
+asr = true
+
+[[test]]
 filename = "errors/dlgama_arg.f90"
 asr = true
 

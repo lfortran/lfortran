@@ -1,0 +1,92 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            merge_bits_comp:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            a:
+                                (Variable
+                                    2
+                                    a
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            b:
+                                (Variable
+                                    2
+                                    b
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            c:
+                                (Variable
+                                    2
+                                    c
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    merge_bits_comp
+                    []
+                    [(Assignment
+                        (Var 2 a)
+                        (IntegerConstant 8 (Integer 4))
+                        ()
+                    )
+                    (Assignment
+                        (Var 2 b)
+                        (IntegerConstant 12 (Integer 8))
+                        ()
+                    )
+                    (Assignment
+                        (Var 2 c)
+                        (IntegerConstant 2 (Integer 4))
+                        ()
+                    )
+                    (Print
+                        [(IntrinsicElementalFunction
+                            Mergebits
+                            [(Var 2 a)
+                            (Var 2 b)
+                            (Var 2 c)]
+                            0
+                            (Integer 4)
+                            ()
+                        )]
+                        ()
+                        ()
+                    )]
+                )
+        })
+    []
+)
