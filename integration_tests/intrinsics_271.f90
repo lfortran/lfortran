@@ -30,6 +30,6 @@ program intrinsics_271
     print *, kind(leadz(0_4))
     if (kind(leadz(0_4)) /= 4) error stop
     print *, kind(leadz(0_8))
-    ! if (kind(leadz(0_8)) /= 4) error stop ! Gives wrong output
+    ! if (kind(leadz(0_8)) /= 4) error stop ! Gives wrong output #4361
 
 end program
