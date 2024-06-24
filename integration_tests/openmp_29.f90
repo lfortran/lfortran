@@ -14,15 +14,15 @@ double precision :: max3
 seed = 1325
 
 do i = 1, n
-seed = mod ( ( 3125 * seed ), 65536 )
-x(i) = ( seed - 32768.0 ) / 16384.0
+    seed = mod ( ( 3125 * seed ), 65536 )
+    x(i) = ( seed - 32768.0 ) / 16384.0
 end do
 
 max1 = - huge(max1)
 do i = 1, n
-  if ( max1 < x(i) ) then
-    max1 = x(i)
-  end if
+    if ( max1 < x(i) ) then
+        max1 = x(i)
+    end if
 end do
 
 !$omp parallel shared(x) private(i) reduction(max:max2)
@@ -41,9 +41,9 @@ max3 = - huge(max3)
 !$omp parallel shared(x) private(i) reduction(max:max3)
 !$omp do
 do i = 1, n
-  if ( max3 < x(i) ) then
-    max3 = x(i)
-  end if
+    if ( max3 < x(i) ) then
+        max3 = x(i)
+    end if
 end do
 !$omp end do
 
