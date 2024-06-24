@@ -4017,3 +4017,15 @@ asr_openmp = true
 [[test]]
 filename = "errors/intrinsics_03.f90"
 asr = true
+
+[[test]]
+filename = "errors/intrinsics_04.f90"
+asr = true
+
+[[test]]
+filename = "errors/intrinsics_05.f90"
+asr = true
+
+[[test]]
+filename = "errors/intrinsics_06.f90"
+asr = true
