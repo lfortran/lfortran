@@ -79,6 +79,19 @@ class ReplaceArrayVariable: public ASR::BaseExprReplacer<ReplaceArrayVariable> {
                 *current_expr = b.Var(sym);
             }
         }
+
+        void replace_ArrayPhysicalCast(ASR::ArrayPhysicalCast_t* x) {
+            ASRUtils::ASRBuilder b(al, x->base.base.loc);
+            if (ASR::is_a<ASR::Var_t>(*x->m_arg)) {
+                ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(x->m_arg);
+                if (std::find(array_variables.begin(), array_variables.end(), ASRUtils::symbol_name(var->m_v)) != array_variables.end() &&
+                    ASRUtils::symbol_parent_symtab(var->m_v)->counter == current_scope->counter) {
+                    ASR::symbol_t* sym = current_scope->get_symbol(std::string(ASRUtils::symbol_name(var->m_v)));
+                    LCOMPILERS_ASSERT(sym != nullptr);
+                    *current_expr = b.Var(sym);
+                }
+            }
+        }
 };
 
 class ArrayVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayVisitor> {
