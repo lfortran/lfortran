@@ -67,6 +67,9 @@
 #include <libasr/asr.h>
 #include <libasr/string_utils.h>
 
+extern "C" {
+float _lfortran_stan(float x);
+}
 
 namespace LCompilers {
 
@@ -131,6 +134,8 @@ LLVMEvaluator::LLVMEvaluator(const std::string &t)
 
     // For some reason the JIT requires a different TargetMachine
     jit = cantFail(llvm::orc::KaleidoscopeJIT::Create());
+    
+    _lfortran_stan(0.5);
 }
 
 LLVMEvaluator::~LLVMEvaluator()
