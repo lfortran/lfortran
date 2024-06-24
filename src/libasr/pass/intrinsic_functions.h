@@ -1638,9 +1638,15 @@ namespace Not {
 namespace Iand {
 
     static ASR::expr_t *eval_Iand(Allocator &al, const Location &loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
+        int kind1 = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_type);
+        int kind2 = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_type);
+        if (kind1 != kind2) {
+            append_error(diag, "The kind of first argument of `iand` intrinsic must be the same as second argument", loc);
+            return nullptr;
+        }
         int64_t result;
         result = val1 & val2;
         return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);
@@ -1674,9 +1680,15 @@ namespace Iand {
 namespace Ior {
 
     static ASR::expr_t *eval_Ior(Allocator &al, const Location &loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
+        int kind1 = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_type);
+        int kind2 = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_type);
+        if (kind1 != kind2) {
+            append_error(diag, "The kind of first argument of `ior` intrinsic must be the same as second argument", loc);
+            return nullptr;
+        }
         int64_t result;
         result = val1 | val2;
         return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);
@@ -1710,9 +1722,15 @@ namespace Ior {
 namespace Ieor {
 
     static ASR::expr_t *eval_Ieor(Allocator &al, const Location &loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
+        int kind1 = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_type);
+        int kind2 = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_type);
+        if (kind1 != kind2) {
+            append_error(diag, "The kind of first argument of `ieor` intrinsic must be the same as second argument", loc);
+            return nullptr;
+        }
         int64_t result;
         result = val1 ^ val2;
         return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);
