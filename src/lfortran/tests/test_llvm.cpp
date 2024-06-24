@@ -380,23 +380,22 @@ end function)";
     CHECK(LCompilers::pickle(*asr) == "(TranslationUnit (SymbolTable 1 {f: (Function (SymbolTable 2 {f: (Variable 2 f [] ReturnVar () () Default (Integer 4) () Source Public Required .false.)}) f (FunctionType [] (Integer 4) Source Implementation () .false. .false. .false. .false. .false. [] .false.) [] [] [(Assignment (Var 2 f) (IntegerConstant 5 (Integer 4)) ())] (Var 2 f) Public .false. .false. ())}) [])");
 
     // ASR -> LLVM
-    LCompilers::LLVMEvaluator e;
+    std::unique_ptr<LCompilers::LLVMEvaluator> e = std::make_unique<LCompilers::LLVMEvaluator>();
     LCompilers::PassManager lpm;
     lpm.use_default_passes();
     CompilerOptions co;
     co.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
     co.platform = LCompilers::get_platform();
-    LCompilers::Result<std::unique_ptr<LCompilers::LLVMModule>>
-        res = LCompilers::asr_to_llvm(*asr, diagnostics, e.get_context(), al,
+    LCompilers::Result<bool>
+        res = LCompilers::asr_to_llvm(*asr, diagnostics, e, al,
             lpm, co, "f", "");
     REQUIRE(res.ok);
-    std::unique_ptr<LCompilers::LLVMModule> m = std::move(res.result);
     //std::cout << "Module:" << std::endl;
     //std::cout << m->str() << std::endl;
 
     // LLVM -> Machine code -> Execution
-    e.add_module(std::move(m));
-    CHECK(e.execfn<int32_t>("f") == 5);
+    e->add_module();
+    CHECK(e->execfn<int32_t>("f") == 5);
 }
 
 TEST_CASE("ASR -> LLVM 2") {
@@ -420,20 +419,20 @@ end function)";
         diagnostics, nullptr, false, compiler_options));
     CHECK(LCompilers::pickle(*asr) == "(TranslationUnit (SymbolTable 3 {f: (Function (SymbolTable 4 {f: (Variable 4 f [] ReturnVar () () Default (Integer 4) () Source Public Required .false.)}) f (FunctionType [] (Integer 4) Source Implementation () .false. .false. .false. .false. .false. [] .false.) [] [] [(Assignment (Var 4 f) (IntegerConstant 4 (Integer 4)) ())] (Var 4 f) Public .false. .false. ())}) [])");
     // ASR -> LLVM
-    LCompilers::LLVMEvaluator e;
+    std::unique_ptr<LCompilers::LLVMEvaluator> e = std::make_unique<LCompilers::LLVMEvaluator>();
     LCompilers::PassManager lpm;
     lpm.use_default_passes();
-    LCompilers::Result<std::unique_ptr<LCompilers::LLVMModule>>
-        res = LCompilers::asr_to_llvm(*asr, diagnostics, e.get_context(), al,
+    LCompilers::Result<bool>
+        res = LCompilers::asr_to_llvm(*asr, diagnostics, e, al,
             lpm, compiler_options, "f", "");
     REQUIRE(res.ok);
-    std::unique_ptr<LCompilers::LLVMModule> m = std::move(res.result);
+    // std::unique_ptr<LCompilers::LLVMModule> m = std::move(res.result);
     //std::cout << "Module:" << std::endl;
     //std::cout << m->str() << std::endl;
 
     // LLVM -> Machine code -> Execution
-    e.add_module(std::move(m));
-    CHECK(e.execfn<int32_t>("f") == 4);
+    e->add_module();
+    CHECK(e->execfn<int32_t>("f") == 4);
 }
 
 TEST_CASE("FortranEvaluator 1") {

@@ -37,9 +37,11 @@ namespace LCompilers {
 FortranEvaluator::FortranEvaluator(CompilerOptions compiler_options)
     :
     compiler_options{compiler_options},
-    al{1024*1024},
 #ifdef HAVE_LFORTRAN_LLVM
     e{std::make_unique<LLVMEvaluator>()},
+#endif
+    al{1024*1024},
+#ifdef HAVE_LFORTRAN_LLVM
     eval_count{0},
 #endif
     symbol_table{nullptr}
@@ -106,24 +108,21 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
     }
 
     // ASR -> LLVM
-    Result<std::unique_ptr<LLVMModule>> res3 = get_llvm3(*asr,
+    Result<bool> res3 = get_llvm3(*asr,
         pass_manager, diagnostics, lm.files.back().in_filename);
-    std::unique_ptr<LCompilers::LLVMModule> m;
-    if (res3.ok) {
-        m = std::move(res3.result);
-    } else {
+    if (!res3.ok) {
         LCOMPILERS_ASSERT(diagnostics.has_error())
         return res3.error;
     }
 
     if (verbose) {
-        result.llvm_ir = m->str();
+        result.llvm_ir = LLVMEvaluator::module_to_string(e->get_module());
     }
 
-    std::string return_type = m->get_return_type(run_fn);
+    std::string return_type = e->get_return_type(run_fn);
 
     // LLVM -> Machine code -> Execution
-    e->add_module(std::move(m));
+    e->add_module();
     if (return_type == "integer4") {
         int32_t r = e->execfn<int32_t>(run_fn);
         result.type = EvalResult::integer4;
@@ -292,10 +291,10 @@ Result<std::string> FortranEvaluator::get_llvm(
     diag::Diagnostics &diagnostics
     )
 {
-    Result<std::unique_ptr<LLVMModule>> res = get_llvm2(code, lm, pass_manager, diagnostics);
+    Result<bool> res = get_llvm2(code, lm, pass_manager, diagnostics);
     if (res.ok) {
 #ifdef HAVE_LFORTRAN_LLVM
-        return res.result->str();
+        return LLVMEvaluator::module_to_string(e->get_module());
 #else
         throw LCompilersException("LLVM is not enabled");
 #endif
@@ -305,7 +304,7 @@ Result<std::string> FortranEvaluator::get_llvm(
     }
 }
 
-Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm2(
+Result<bool> FortranEvaluator::get_llvm2(
     const std::string &code, LocationManager &lm, LCompilers::PassManager& pass_manager,
     diag::Diagnostics &diagnostics)
 {
@@ -313,22 +312,16 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm2(
     if (!asr.ok) {
         return asr.error;
     }
-    Result<std::unique_ptr<LLVMModule>> res = get_llvm3(*asr.result, pass_manager,
+    Result<bool> res = get_llvm3(*asr.result, pass_manager,
         diagnostics, lm.files.back().in_filename);
-    if (res.ok) {
-#ifdef HAVE_LFORTRAN_LLVM
-        std::unique_ptr<LLVMModule> m = std::move(res.result);
-        return m;
-#else
-        throw LCompilersException("LLVM is not enabled");
-#endif
-    } else {
+    if (!res.ok) {
         LCOMPILERS_ASSERT(diagnostics.has_error())
         return res.error;
     }
+    return true;
 }
 
-Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm3(
+Result<bool> FortranEvaluator::get_llvm3(
 #ifdef HAVE_LFORTRAN_LLVM
     ASR::TranslationUnit_t &asr, LCompilers::PassManager& pass_manager,
     diag::Diagnostics &diagnostics
@@ -356,23 +349,20 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm3(
         }
     }
     // ASR -> LLVM
-    std::unique_ptr<LCompilers::LLVMModule> m;
-    Result<std::unique_ptr<LCompilers::LLVMModule>> res
+    Result<bool> res
         = asr_to_llvm(asr, diagnostics,
-            e->get_context(), al, pass_manager,
+            e, al, pass_manager,
             compiler_options, run_fn, infile);
-    if (res.ok) {
-        m = std::move(res.result);
-    } else {
+    if (!res.ok) {
         LCOMPILERS_ASSERT(diagnostics.has_error())
         return res.error;
     }
 
     if (compiler_options.po.fast) {
-        e->opt(*m->m_m);
+        e->opt();
     }
 
-    return m;
+    return true;
 #else
     throw LCompilersException("LLVM is not enabled");
 #endif
@@ -392,9 +382,9 @@ Result<std::string> FortranEvaluator::get_asm(
     )
 {
 #ifdef HAVE_LFORTRAN_LLVM
-    Result<std::unique_ptr<LLVMModule>> res = get_llvm2(code, lm, lpm, diagnostics);
+    Result<bool> res = get_llvm2(code, lm, lpm, diagnostics);
     if (res.ok) {
-        return e->get_asm(*res.result->m_m);
+        return e->get_asm();
     } else {
         LCOMPILERS_ASSERT(diagnostics.has_error())
         return res.error;

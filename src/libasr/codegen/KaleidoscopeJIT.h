@@ -101,10 +101,9 @@ public:
 
   const DataLayout &getDataLayout() const { return DL; }
 
-  Error addModule(std::unique_ptr<Module> M, std::unique_ptr<LLVMContext> &Ctx) {
+  Error addModule(std::unique_ptr<Module> M, std::unique_ptr<LLVMContext> Ctx) {
     auto res =  CompileLayer.add(JITDL,
                             ThreadSafeModule(std::move(M), std::move(Ctx)));
-    Ctx = std::make_unique<LLVMContext>();
     return res;
   }
 

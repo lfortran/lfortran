@@ -82,22 +82,247 @@ uint64_t APInt_getint(const llvm::APInt &i) {
     }
 }
 
-LLVMModule::LLVMModule(std::unique_ptr<llvm::Module> m)
+LLVMEvaluator::LLVMEvaluator(const std::string &t)
 {
-    m_m = std::move(m);
+    llvm::InitializeNativeTarget();
+    llvm::InitializeNativeTargetAsmPrinter();
+    llvm::InitializeNativeTargetAsmParser();
+
+#ifdef HAVE_TARGET_AARCH64
+    LLVMInitializeAArch64Target();
+    LLVMInitializeAArch64TargetInfo();
+    LLVMInitializeAArch64TargetMC();
+    LLVMInitializeAArch64AsmPrinter();
+    LLVMInitializeAArch64AsmParser();
+#endif
+#ifdef HAVE_TARGET_X86
+    LLVMInitializeX86Target();
+    LLVMInitializeX86TargetInfo();
+    LLVMInitializeX86TargetMC();
+    LLVMInitializeX86AsmPrinter();
+    LLVMInitializeX86AsmParser();
+#endif
+#ifdef HAVE_TARGET_WASM
+    LLVMInitializeWebAssemblyTarget();
+    LLVMInitializeWebAssemblyTargetInfo();
+    LLVMInitializeWebAssemblyTargetMC();
+    LLVMInitializeWebAssemblyAsmPrinter();
+    LLVMInitializeWebAssemblyAsmParser();
+#endif
+
+    context = std::make_unique<llvm::LLVMContext>();
+    module = std::make_unique<llvm::Module>("LFortran", *context);
+
+    if (t != "")
+        target_triple = t;
+    else
+        target_triple = LLVMGetDefaultTargetTriple();
+
+    std::string Error;
+    const llvm::Target *target = llvm::TargetRegistry::lookupTarget(target_triple, Error);
+    if (!target) {
+        throw LCompilersException(Error);
+    }
+    std::string CPU = "generic";
+    std::string features = "";
+    llvm::TargetOptions opt;
+    RM_OPTIONAL_TYPE<llvm::Reloc::Model> RM = llvm::Reloc::Model::PIC_;
+    TM = target->createTargetMachine(target_triple, CPU, features, opt, RM);
+
+    // For some reason the JIT requires a different TargetMachine
+    jit = cantFail(llvm::orc::KaleidoscopeJIT::Create());
 }
 
-LLVMModule::~LLVMModule() = default;
-
-std::string LLVMModule::str()
+LLVMEvaluator::~LLVMEvaluator()
 {
-    return LLVMEvaluator::module_to_string(*m_m);
+    jit.reset();
 }
 
-std::string LLVMModule::get_return_type(const std::string &fn_name)
+std::unique_ptr<llvm::Module> LLVMEvaluator::parse_module(const std::string &source)
 {
-    llvm::Module *m = m_m.get();
-    llvm::Function *fn = m->getFunction(fn_name);
+    llvm::SMDiagnostic err;
+    std::unique_ptr<llvm::Module> module
+        = llvm::parseAssemblyString(source, err, *context);
+    if (!module) {
+        throw LCompilersException("parse_module(): Invalid LLVM IR");
+    }
+    bool v = llvm::verifyModule(*module);
+    if (v) {
+        throw LCompilersException("parse_module(): module failed verification.");
+    };
+    module->setTargetTriple(target_triple);
+    module->setDataLayout(jit->getDataLayout());
+    return module;
+}
+
+void LLVMEvaluator::add_module(const std::string &source) {
+    module = parse_module(source);
+    // TODO: apply LLVM optimizations here
+    // Uncomment the below code to print the module to stdout:
+    /*
+    std::cout << "---------------------------------------------" << std::endl;
+    std::cout << "LLVM Module IR:" << std::endl;
+    std::cout << module_to_string(*module);
+    std::cout << "---------------------------------------------" << std::endl;
+    */
+    add_module();
+}
+
+void LLVMEvaluator::add_module() {
+    // These are already set in parse_module(), but we set it here again for
+    // cases when the Module was constructed directly, not via parse_module().
+    module->setTargetTriple(target_triple);
+    module->setDataLayout(jit->getDataLayout());
+    llvm::Error err = jit->addModule(std::move(module), std::move(context));
+    context = std::make_unique<llvm::LLVMContext>();
+    module = std::make_unique<llvm::Module>("LFortran", *context);
+    if (err) {
+        llvm::SmallVector<char, 128> buf;
+        llvm::raw_svector_ostream dest(buf);
+        llvm::logAllUnhandledErrors(std::move(err), dest, "");
+        std::string msg = std::string(dest.str().data(), dest.str().size());
+        if (msg[msg.size()-1] == '\n') msg = msg.substr(0, msg.size()-1);
+        throw LCompilersException("addModule() returned an error: " + msg);
+    }
+}
+
+intptr_t LLVMEvaluator::get_symbol_address(const std::string &name) {
+    llvm::Expected<llvm::JITEvaluatedSymbol> s = jit->lookup(name);
+    if (!s) {
+        llvm::Error e = s.takeError();
+        llvm::SmallVector<char, 128> buf;
+        llvm::raw_svector_ostream dest(buf);
+        llvm::logAllUnhandledErrors(std::move(e), dest, "");
+        std::string msg = std::string(dest.str().data(), dest.str().size());
+        if (msg[msg.size()-1] == '\n') msg = msg.substr(0, msg.size()-1);
+        throw LCompilersException("lookup() failed to find the symbol '"
+            + name + "', error: " + msg);
+    }
+    llvm::Expected<uint64_t> addr0 = s->getAddress();
+    if (!addr0) {
+        llvm::Error e = addr0.takeError();
+        llvm::SmallVector<char, 128> buf;
+        llvm::raw_svector_ostream dest(buf);
+        llvm::logAllUnhandledErrors(std::move(e), dest, "");
+        std::string msg = std::string(dest.str().data(), dest.str().size());
+        if (msg[msg.size()-1] == '\n') msg = msg.substr(0, msg.size()-1);
+        throw LCompilersException("JITSymbol::getAddress() returned an error: " + msg);
+    }
+    return (intptr_t)cantFail(std::move(addr0));
+}
+
+void write_file(const std::string &filename, const std::string &contents)
+{
+    std::ofstream out;
+    out.open(filename);
+    out << contents << std::endl;
+}
+
+std::string LLVMEvaluator::get_asm()
+{
+    llvm::legacy::PassManager pass;
+    llvm::CodeGenFileType ft = llvm::CGFT_AssemblyFile;
+    llvm::SmallVector<char, 128> buf;
+    llvm::raw_svector_ostream dest(buf);
+    if (TM->addPassesToEmitFile(pass, dest, nullptr, ft)) {
+        throw std::runtime_error("TargetMachine can't emit a file of this type");
+    }
+    pass.run(*module);
+    return std::string(dest.str().data(), dest.str().size());
+}
+
+void LLVMEvaluator::save_asm_file(const std::string &filename)
+{
+    write_file(filename, get_asm());
+}
+
+void LLVMEvaluator::save_object_file(const std::string &filename) {
+    module->setTargetTriple(target_triple);
+    module->setDataLayout(TM->createDataLayout());
+
+    llvm::legacy::PassManager pass;
+    llvm::CodeGenFileType ft = llvm::CGFT_ObjectFile;
+    std::error_code EC;
+    llvm::raw_fd_ostream dest(filename, EC, llvm::sys::fs::OF_None);
+    if (EC) {
+        throw std::runtime_error("raw_fd_ostream failed");
+    }
+    if (TM->addPassesToEmitFile(pass, dest, nullptr, ft)) {
+        throw std::runtime_error("TargetMachine can't emit a file of this type");
+    }
+    pass.run(*module);
+    dest.flush();
+}
+
+void LLVMEvaluator::create_empty_object_file(const std::string &filename) {
+    std::string source;
+    std::unique_ptr<llvm::Module> module = parse_module(source);
+    save_object_file(filename);
+}
+
+void LLVMEvaluator::opt() {
+    module->setTargetTriple(target_triple);
+    module->setDataLayout(TM->createDataLayout());
+
+    llvm::legacy::PassManager mpm;
+    mpm.add(new llvm::TargetLibraryInfoWrapperPass(TM->getTargetTriple()));
+    mpm.add(llvm::createTargetTransformInfoWrapperPass(TM->getTargetIRAnalysis()));
+    llvm::legacy::FunctionPassManager fpm(&*module);
+    fpm.add(llvm::createTargetTransformInfoWrapperPass(TM->getTargetIRAnalysis()));
+
+    int optLevel = 3;
+    int sizeLevel = 0;
+#if LLVM_VERSION_MAJOR >= 17
+    // TODO: https://llvm.org/docs/NewPassManager.html
+#else
+    llvm::PassManagerBuilder builder;
+    builder.OptLevel = optLevel;
+    builder.SizeLevel = sizeLevel;
+    builder.Inliner = llvm::createFunctionInliningPass(optLevel, sizeLevel,
+        false);
+    builder.DisableUnrollLoops = false;
+    builder.LoopVectorize = true;
+    builder.SLPVectorize = true;
+    builder.populateFunctionPassManager(fpm);
+    builder.populateModulePassManager(mpm);
+#endif
+
+    fpm.doInitialization();
+    for (llvm::Function &func : *module) {
+        fpm.run(func);
+    }
+    fpm.doFinalization();
+
+    mpm.add(llvm::createVerifierPass());
+    mpm.run(*module);
+}
+
+std::string LLVMEvaluator::module_to_string(llvm::Module &m) {
+    std::string buf;
+    llvm::raw_string_ostream os(buf);
+    m.print(os, nullptr);
+    os.flush();
+    return buf;
+}
+
+void LLVMEvaluator::print_version_message()
+{
+    llvm::cl::PrintVersionMessage();
+}
+
+llvm::LLVMContext &LLVMEvaluator::get_context()
+{
+    return *context;
+}
+
+llvm::Module &LLVMEvaluator::get_module()
+{
+    return *module;
+}
+
+std::string LLVMEvaluator::get_return_type(const std::string &fn_name)
+{
+    llvm::Function *fn = module->getFunction(fn_name);
     if (!fn) {
         return "none";
     }
@@ -133,250 +358,6 @@ std::string LLVMModule::get_return_type(const std::string &fn_name)
     } else {
         throw LCompilersException("LLVMModule::get_return_type(): Return type not supported");
     }
-}
-
-extern "C" {
-
-float _lfortran_stan(float x);
-
-}
-
-LLVMEvaluator::LLVMEvaluator(const std::string &t)
-{
-    llvm::InitializeNativeTarget();
-    llvm::InitializeNativeTargetAsmPrinter();
-    llvm::InitializeNativeTargetAsmParser();
-
-#ifdef HAVE_TARGET_AARCH64
-    LLVMInitializeAArch64Target();
-    LLVMInitializeAArch64TargetInfo();
-    LLVMInitializeAArch64TargetMC();
-    LLVMInitializeAArch64AsmPrinter();
-    LLVMInitializeAArch64AsmParser();
-#endif
-#ifdef HAVE_TARGET_X86
-    LLVMInitializeX86Target();
-    LLVMInitializeX86TargetInfo();
-    LLVMInitializeX86TargetMC();
-    LLVMInitializeX86AsmPrinter();
-    LLVMInitializeX86AsmParser();
-#endif
-#ifdef HAVE_TARGET_WASM
-    LLVMInitializeWebAssemblyTarget();
-    LLVMInitializeWebAssemblyTargetInfo();
-    LLVMInitializeWebAssemblyTargetMC();
-    LLVMInitializeWebAssemblyAsmPrinter();
-    LLVMInitializeWebAssemblyAsmParser();
-#endif
-
-    context = std::make_unique<llvm::LLVMContext>();
-
-    if (t != "")
-        target_triple = t;
-    else
-        target_triple = LLVMGetDefaultTargetTriple();
-
-    std::string Error;
-    const llvm::Target *target = llvm::TargetRegistry::lookupTarget(target_triple, Error);
-    if (!target) {
-        throw LCompilersException(Error);
-    }
-    std::string CPU = "generic";
-    std::string features = "";
-    llvm::TargetOptions opt;
-    RM_OPTIONAL_TYPE<llvm::Reloc::Model> RM = llvm::Reloc::Model::PIC_;
-    TM = target->createTargetMachine(target_triple, CPU, features, opt, RM);
-
-    // For some reason the JIT requires a different TargetMachine
-    jit = cantFail(llvm::orc::KaleidoscopeJIT::Create());
-
-    _lfortran_stan(0.5);
-}
-
-LLVMEvaluator::~LLVMEvaluator()
-{
-    jit.reset();
-    context.reset();
-}
-
-std::unique_ptr<llvm::Module> LLVMEvaluator::parse_module(const std::string &source)
-{
-    llvm::SMDiagnostic err;
-    std::unique_ptr<llvm::Module> module
-        = llvm::parseAssemblyString(source, err, *context);
-    if (!module) {
-        throw LCompilersException("parse_module(): Invalid LLVM IR");
-    }
-    bool v = llvm::verifyModule(*module);
-    if (v) {
-        throw LCompilersException("parse_module(): module failed verification.");
-    };
-    module->setTargetTriple(target_triple);
-    module->setDataLayout(jit->getDataLayout());
-    return module;
-}
-
-void LLVMEvaluator::add_module(const std::string &source) {
-    std::unique_ptr<llvm::Module> module = parse_module(source);
-    // TODO: apply LLVM optimizations here
-    // Uncomment the below code to print the module to stdout:
-    /*
-    std::cout << "---------------------------------------------" << std::endl;
-    std::cout << "LLVM Module IR:" << std::endl;
-    std::cout << module_to_string(*module);
-    std::cout << "---------------------------------------------" << std::endl;
-    */
-    add_module(std::move(module));
-}
-
-void LLVMEvaluator::add_module(std::unique_ptr<llvm::Module> mod) {
-    // These are already set in parse_module(), but we set it here again for
-    // cases when the Module was constructed directly, not via parse_module().
-    mod->setTargetTriple(target_triple);
-    mod->setDataLayout(jit->getDataLayout());
-    llvm::Error err = jit->addModule(std::move(mod), context);
-    if (err) {
-        llvm::SmallVector<char, 128> buf;
-        llvm::raw_svector_ostream dest(buf);
-        llvm::logAllUnhandledErrors(std::move(err), dest, "");
-        std::string msg = std::string(dest.str().data(), dest.str().size());
-        if (msg[msg.size()-1] == '\n') msg = msg.substr(0, msg.size()-1);
-        throw LCompilersException("addModule() returned an error: " + msg);
-    }
-
-}
-
-void LLVMEvaluator::add_module(std::unique_ptr<LLVMModule> m) {
-    add_module(std::move(m->m_m));
-}
-
-intptr_t LLVMEvaluator::get_symbol_address(const std::string &name) {
-    llvm::Expected<llvm::JITEvaluatedSymbol> s = jit->lookup(name);
-    if (!s) {
-        llvm::Error e = s.takeError();
-        llvm::SmallVector<char, 128> buf;
-        llvm::raw_svector_ostream dest(buf);
-        llvm::logAllUnhandledErrors(std::move(e), dest, "");
-        std::string msg = std::string(dest.str().data(), dest.str().size());
-        if (msg[msg.size()-1] == '\n') msg = msg.substr(0, msg.size()-1);
-        throw LCompilersException("lookup() failed to find the symbol '"
-            + name + "', error: " + msg);
-    }
-    llvm::Expected<uint64_t> addr0 = s->getAddress();
-    if (!addr0) {
-        llvm::Error e = addr0.takeError();
-        llvm::SmallVector<char, 128> buf;
-        llvm::raw_svector_ostream dest(buf);
-        llvm::logAllUnhandledErrors(std::move(e), dest, "");
-        std::string msg = std::string(dest.str().data(), dest.str().size());
-        if (msg[msg.size()-1] == '\n') msg = msg.substr(0, msg.size()-1);
-        throw LCompilersException("JITSymbol::getAddress() returned an error: " + msg);
-    }
-    return (intptr_t)cantFail(std::move(addr0));
-}
-
-void write_file(const std::string &filename, const std::string &contents)
-{
-    std::ofstream out;
-    out.open(filename);
-    out << contents << std::endl;
-}
-
-std::string LLVMEvaluator::get_asm(llvm::Module &m)
-{
-    llvm::legacy::PassManager pass;
-    llvm::CodeGenFileType ft = llvm::CGFT_AssemblyFile;
-    llvm::SmallVector<char, 128> buf;
-    llvm::raw_svector_ostream dest(buf);
-    if (TM->addPassesToEmitFile(pass, dest, nullptr, ft)) {
-        throw std::runtime_error("TargetMachine can't emit a file of this type");
-    }
-    pass.run(m);
-    return std::string(dest.str().data(), dest.str().size());
-}
-
-void LLVMEvaluator::save_asm_file(llvm::Module &m, const std::string &filename)
-{
-    write_file(filename, get_asm(m));
-}
-
-void LLVMEvaluator::save_object_file(llvm::Module &m, const std::string &filename) {
-    m.setTargetTriple(target_triple);
-    m.setDataLayout(TM->createDataLayout());
-
-    llvm::legacy::PassManager pass;
-    llvm::CodeGenFileType ft = llvm::CGFT_ObjectFile;
-    std::error_code EC;
-    llvm::raw_fd_ostream dest(filename, EC, llvm::sys::fs::OF_None);
-    if (EC) {
-        throw std::runtime_error("raw_fd_ostream failed");
-    }
-    if (TM->addPassesToEmitFile(pass, dest, nullptr, ft)) {
-        throw std::runtime_error("TargetMachine can't emit a file of this type");
-    }
-    pass.run(m);
-    dest.flush();
-}
-
-void LLVMEvaluator::create_empty_object_file(const std::string &filename) {
-    std::string source;
-    std::unique_ptr<llvm::Module> module = parse_module(source);
-    save_object_file(*module, filename);
-}
-
-void LLVMEvaluator::opt(llvm::Module &m) {
-    m.setTargetTriple(target_triple);
-    m.setDataLayout(TM->createDataLayout());
-
-    llvm::legacy::PassManager mpm;
-    mpm.add(new llvm::TargetLibraryInfoWrapperPass(TM->getTargetTriple()));
-    mpm.add(llvm::createTargetTransformInfoWrapperPass(TM->getTargetIRAnalysis()));
-    llvm::legacy::FunctionPassManager fpm(&m);
-    fpm.add(llvm::createTargetTransformInfoWrapperPass(TM->getTargetIRAnalysis()));
-
-    int optLevel = 3;
-    int sizeLevel = 0;
-#if LLVM_VERSION_MAJOR >= 17
-    // TODO: https://llvm.org/docs/NewPassManager.html
-#else
-    llvm::PassManagerBuilder builder;
-    builder.OptLevel = optLevel;
-    builder.SizeLevel = sizeLevel;
-    builder.Inliner = llvm::createFunctionInliningPass(optLevel, sizeLevel,
-        false);
-    builder.DisableUnrollLoops = false;
-    builder.LoopVectorize = true;
-    builder.SLPVectorize = true;
-    builder.populateFunctionPassManager(fpm);
-    builder.populateModulePassManager(mpm);
-#endif
-
-    fpm.doInitialization();
-    for (llvm::Function &func : m) {
-        fpm.run(func);
-    }
-    fpm.doFinalization();
-
-    mpm.add(llvm::createVerifierPass());
-    mpm.run(m);
-}
-
-std::string LLVMEvaluator::module_to_string(llvm::Module &m) {
-    std::string buf;
-    llvm::raw_string_ostream os(buf);
-    m.print(os, nullptr);
-    os.flush();
-    return buf;
-}
-
-void LLVMEvaluator::print_version_message()
-{
-    llvm::cl::PrintVersionMessage();
-}
-
-llvm::LLVMContext &LLVMEvaluator::get_context()
-{
-    return *context;
 }
 
 void LLVMEvaluator::print_targets()
