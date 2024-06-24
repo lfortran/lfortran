@@ -1,0 +1,5 @@
+semantic error: The kind of first argument of `iand` intrinsic must be the same as second argument
+ --> tests/errors/intrinsics_04.f90:2:14
+  |
+2 |     print *, iand(1, 1_8)
+  |              ^^^^^^^^^^^^ 
