@@ -1,0 +1,5 @@
+semantic error: The kind of first argument of `ieor` intrinsic must be the same as second argument
+ --> tests/errors/intrinsics_06.f90:2:14
+  |
+2 |     print *, ieor(1, 1_8)
+  |              ^^^^^^^^^^^^ 
