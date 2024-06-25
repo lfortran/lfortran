@@ -13,7 +13,7 @@ namespace LCompilers {
         Allocator &al,
         LCompilers::PassManager& pass_manager,
         CompilerOptions &co, const std::string &run_fn,
-        const std::string &infile, bool interactive=false);
+        const std::string &infile);
 
 } // namespace LCompilers
 

@@ -140,6 +140,10 @@ LLVMEvaluator::LLVMEvaluator(const std::string &t)
 
 LLVMEvaluator::~LLVMEvaluator()
 {
+    for (auto i: RT_map) {
+        llvm::cantFail(i.second->remove());
+    }
+    RT_map.clear();
     jit.reset();
 }
 
@@ -160,7 +164,7 @@ std::unique_ptr<llvm::Module> LLVMEvaluator::parse_module(const std::string &sou
     return module;
 }
 
-void LLVMEvaluator::add_module(const std::string &source) {
+void LLVMEvaluator::add_module_with_code(const std::string &source) {
     module = parse_module(source);
     // TODO: apply LLVM optimizations here
     // Uncomment the below code to print the module to stdout:
@@ -173,14 +177,24 @@ void LLVMEvaluator::add_module(const std::string &source) {
     add_module();
 }
 
-void LLVMEvaluator::add_module() {
+void LLVMEvaluator::add_module(std::string symbol_name) {
     // These are already set in parse_module(), but we set it here again for
     // cases when the Module was constructed directly, not via parse_module().
     module->setTargetTriple(target_triple);
     module->setDataLayout(jit->getDataLayout());
-    llvm::Error err = jit->addModule(std::move(module), std::move(context));
-    context = std::make_unique<llvm::LLVMContext>();
-    module = std::make_unique<llvm::Module>("LFortran", *context);
+    llvm::orc::ResourceTrackerSP RT;
+    if (symbol_name == "") {
+        RT = jit->getMainJITDylib().getDefaultResourceTracker();
+    } else {
+        if (RT_map.find(symbol_name) != RT_map.end()) {
+            auto RT = RT_map.at(symbol_name);
+            llvm::cantFail(RT->remove());
+            RT_map.erase(symbol_name);
+        }
+        RT = jit->getMainJITDylib().createResourceTracker();
+        RT_map[symbol_name] = RT;
+    }
+    llvm::Error err = jit->addModule(std::move(module), std::move(context), RT);
     if (err) {
         llvm::SmallVector<char, 128> buf;
         llvm::raw_svector_ostream dest(buf);
@@ -189,6 +203,28 @@ void LLVMEvaluator::add_module() {
         if (msg[msg.size()-1] == '\n') msg = msg.substr(0, msg.size()-1);
         throw LCompilersException("addModule() returned an error: " + msg);
     }
+}
+
+void LLVMEvaluator::append_module_context_pair(std::string symbol_name) {
+    LCOMPILERS_ASSERT(llvm_modules.find(symbol_name) == llvm_modules.end())
+    llvm_modules[symbol_name] = std::make_pair(std::move(module), std::move(context));
+    context = std::make_unique<llvm::LLVMContext>();
+    module = std::make_unique<llvm::Module>("LFortran", *context);
+}
+
+void LLVMEvaluator::evaluate_module_context_pair() {
+    auto context_ = std::move(context);
+    auto module_ = std::move(module);
+
+    for (auto i = llvm_modules.begin(); i != llvm_modules.end(); ++i) {
+        module = std::move(i->second.first);
+        context = std::move(i->second.second);
+        add_module(i->first);
+    }
+    llvm_modules.clear();
+
+    module = std::move(module_);
+    context = std::move(context_);
 }
 
 intptr_t LLVMEvaluator::get_symbol_address(const std::string &name) {
@@ -327,10 +363,13 @@ llvm::Module &LLVMEvaluator::get_module()
 
 std::string LLVMEvaluator::get_return_type(const std::string &fn_name)
 {
-    llvm::Function *fn = module->getFunction(fn_name);
-    if (!fn) {
+    if (llvm_modules.find(fn_name) == llvm_modules.end()) {
         return "none";
     }
+
+    llvm::Function *fn = llvm_modules[fn_name].first->getFunction(fn_name);
+    LCOMPILERS_ASSERT(fn);
+
     llvm::Type *type = fn->getReturnType();
     if (type->isFloatTy()) {
         return "real4";

@@ -4,7 +4,9 @@
 #include <complex>
 #include <iostream>
 #include <memory>
+#include <unordered_map> 
 
+#include <llvm/ExecutionEngine/Orc/Core.h>
 #include <libasr/alloc.h>
 #include <libasr/asr_scopes.h>
 #include <libasr/asr.h>
@@ -30,6 +32,8 @@ class LLVMEvaluator
 {
 private:
     std::unique_ptr<llvm::orc::KaleidoscopeJIT> jit;
+    std::unordered_map<std::string, std::pair<std::unique_ptr<llvm::Module>, std::unique_ptr<llvm::LLVMContext>>> llvm_modules;
+    std::unordered_map<std::string, llvm::orc::ResourceTrackerSP> RT_map;
     std::unique_ptr<llvm::LLVMContext> context;
     std::unique_ptr<llvm::Module> module;
     std::string target_triple;
@@ -38,8 +42,10 @@ public:
     LLVMEvaluator(const std::string &t = "");
     ~LLVMEvaluator();
     std::unique_ptr<llvm::Module> parse_module(const std::string &source);
-    void add_module(const std::string &source);
-    void add_module();
+    void add_module_with_code(const std::string &source);
+    void add_module(std::string symbol_name="");
+    void append_module_context_pair(std::string symbol_name);
+    void evaluate_module_context_pair();
     intptr_t get_symbol_address(const std::string &name);
     std::string get_asm();
     void save_asm_file( const std::string &filename);

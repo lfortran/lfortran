@@ -120,9 +120,10 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
     }
 
     std::string return_type = e->get_return_type(run_fn);
+    
+    e->evaluate_module_context_pair();
 
     // LLVM -> Machine code -> Execution
-    e->add_module();
     if (return_type == "integer4") {
         int32_t r = e->execfn<int32_t>(run_fn);
         result.type = EvalResult::integer4;
