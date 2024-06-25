@@ -366,6 +366,8 @@ public:
             ASR::symbol_t* target_sym = ASRUtils::symbol_get_past_external(target_Var->m_v);
             if( target_sym && ASR::is_a<ASR::Variable_t>(*target_sym) ) {
                 ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(target_sym);
+                require(var->m_intent != ASR::intentType::In, "Assignment target `"
+                    + std::string(var->m_name) + "` with intent `IN` not allowed");
                 target_type = var->m_type;
                 is_target_const = var->m_storage == ASR::storage_typeType::Parameter;
             }
