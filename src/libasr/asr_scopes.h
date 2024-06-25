@@ -73,7 +73,7 @@ struct SymbolTable {
 
     // Add a new symbol that did not exist before
     void add_symbol(const std::string &name, ASR::symbol_t* symbol) {
-        // LCOMPILERS_ASSERT(scope.find(name) == scope.end())
+        LCOMPILERS_ASSERT(scope.find(name) == scope.end())
         scope[name] = symbol;
     }
 

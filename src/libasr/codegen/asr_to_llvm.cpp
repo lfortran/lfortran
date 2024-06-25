@@ -3977,6 +3977,12 @@ public:
                 + std::string(x.m_name) + "'");
             */
             F = llvm_symtab_fn[h];
+        } else if ((F = evaluator->get_module().getFunction(x.m_name))) {
+            // It is possible that the function prototype is present, but llvm_symtab_fn.find(h) returns end
+            // This can only happen in interactive mode
+            // This happens because the prototype was generated from previous REPL block and hash has changed
+            LCOMPILERS_ASSERT(compiler_options.interactive);
+            llvm_symtab_fn[h] = F;
         } else {
             llvm::FunctionType* function_type = llvm_utils->get_function_type(x, &evaluator->get_module());
             if( ASRUtils::get_FunctionType(x)->m_deftype == ASR::deftypeType::Interface ) {
