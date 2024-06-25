@@ -2341,7 +2341,7 @@ namespace AnyAll {
                 }
                 result_dims = dims.size();
                 if( result_dims > 0 ) {
-                    fill_func_arg("result", logical_return_type);
+                    fill_func_arg_sub("result", logical_return_type, Out);
                 }
             }
         }

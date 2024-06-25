@@ -3080,6 +3080,8 @@ namespace Trailz {
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
         declare_basic_variables("_lcompilers_trailz_" + type_to_str_python(arg_types[0]));
         fill_func_arg("n", arg_types[0]);
+        ASR::expr_t* n_val = declare("n_val", arg_types[0], Local);
+        body.push_back(al, b.Assignment(n_val, args[0]));
         auto result = declare(fn_name, arg_types[0], ReturnVar);
         // This is not the most efficient way to do this, but it works for now.
         /*
@@ -3104,14 +3106,14 @@ namespace Trailz {
         end function
         */
         body.push_back(al, b.Assignment(result, b.i_t(0, arg_types[0])));
-        body.push_back(al, b.If(b.Eq(args[0], b.i_t(0, arg_types[0])), {
+        body.push_back(al, b.If(b.Eq(n_val, b.i_t(0, arg_types[0])), {
             b.Assignment(result, b.i_t(8*ASRUtils::extract_kind_from_ttype_t(arg_types[0]), arg_types[0]))
         }, {
             b.While(b.Eq(b.CallIntrinsic(scope, {arg_types[0], arg_types[0]
             }, {
-            args[0], b.i_t(2, arg_types[0])}, return_type, 0, Mod::instantiate_Mod), b.i_t(0, arg_types[0])),
+            n_val, b.i_t(2, arg_types[0])}, return_type, 0, Mod::instantiate_Mod), b.i_t(0, arg_types[0])),
             {
-                b.Assignment(args[0], b.Div(args[0], b.i_t(2, arg_types[0]))),
+                b.Assignment(n_val, b.Div(n_val, b.i_t(2, arg_types[0]))),
                 b.Assignment(result, b.Add(result, b.i_t(1, arg_types[0])))
             })
         }));
