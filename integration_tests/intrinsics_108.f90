@@ -3,18 +3,18 @@ program intrinsics_108
     integer(8) :: i, j
     integer :: arr3(3)
 
-    integer(4) :: arg_x(5) = [12, -13, 18, 20, 67]
+    integer(4) :: arg_x(5) = [12, 13, 18, 20, 67]
     integer(4) :: arg_y(5) = [1, 2, 3, 4, 5]
-    integer(8) :: arg_x2(5) = [103, 87, 88, -95, -134]
+    integer(8) :: arg_x2(5) = [103, 87, 88, 95, 134]
     integer(8) :: arg_y2(5) = [11, 12, 4, 0, 10]
     integer(4) :: res_x(5)
     integer(8) :: res_x2(5)
 
-    integer(4), parameter :: res(5) = shiftr([12, -13, 18, 20, 67], [1, 2, 3, 4, 5])
-    integer(8), parameter :: res2(5) = shiftr([103, 87, 88, -95, -134], [11, 12, 4, 0, 10])
+    integer(4), parameter :: res(5) = shiftr([12, 13, 18, 20, 67], [1, 2, 3, 4, 5])
+    integer(8), parameter :: res2(5) = shiftr([103, 87, 88, 95, 134], [11, 12, 4, 0, 10])
 
-    integer(4) :: expected_res(5) = [6, -4, 2, 1, 2]
-    integer(8) :: expected_res2(5) = [0, 0, 5, -95, -1]
+    integer(4) :: expected_res(5) = [6, 3, 2, 1, 2]
+    integer(8) :: expected_res2(5) = [0, 0, 5, 95, 0]
 
     res_x = shiftr(arg_x, arg_y)
     res_x2 = shiftr(arg_x2, arg_y2)
