@@ -1,9 +1,26 @@
 program intrinsics_170
     use iso_fortran_env, only: sp => real32, dp => real64
+    implicit none
+    integer, parameter :: i1 = exponent(1.0_sp)
+    integer, parameter :: i2 = exponent(1.32_dp)
+    integer, parameter :: i3(3) = exponent([3.121_sp, 4.1_sp, 5.32_sp])
+    integer, parameter :: i4(3) = exponent([3.121_dp, 4.1_dp, 5.32_dp])
     real(sp) :: x
     real(dp) :: y
+    real(sp) :: arr1(3) = [3.121_sp, 4.1_sp, 5.32_sp]
+    real(dp) :: arr2(3) = [3.121_dp, 4.1_dp, 5.32_dp]
     x = 4.1
     y = 4.1_dp
+
+    print *, i1
+    if (i1 /= 1) error stop
+    print *, i2
+    if (i2 /= 1) error stop
+    print *, i3
+    if (any(i3 /= [2, 3, 3])) error stop
+    print *, i4
+    if (any(i4 /= [2, 3, 3])) error stop
+
     print *, exponent(x)
     if (exponent(x) /= 3) error stop
     print *, exponent(4.1_dp)
@@ -340,5 +357,15 @@ program intrinsics_170
 
     print *, exponent(y)    
     if (exponent(y) /= -9) error stop
+
+    print *, exponent(arr1)
+    if (any(exponent(arr1) /= [2, 3, 3])) error stop
+    print *, exponent(arr2)
+    if (any(exponent(arr2) /= [2, 3, 3])) error stop
+
+    print *, kind(exponent(1.0_sp))
+    if (kind(exponent(1.0_sp)) /= 4) error stop
+    print *, kind(exponent(1.0_dp))
+    if (kind(exponent(1.0_dp)) /= 4) error stop
 
 end program
