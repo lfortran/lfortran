@@ -6,7 +6,7 @@ program intrinsics_93
     integer(8), parameter :: i2 = digits(63)
     integer, parameter :: i3 = digits(24.5_sp)
     integer(8), parameter :: i4 = digits(53.5_dp)
-    integer, parameter :: ar1 = digits([1, 33, 56]) ! Does not work #4368
+    integer, parameter :: ar1 = digits([1, 33, 56])
     integer, parameter :: ar2 = digits([1.0_sp, 33.0_sp, 56.0_sp])
     integer :: i 
     integer(8) :: j
