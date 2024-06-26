@@ -960,6 +960,13 @@ public:
             }
         }
 
+        // Generate module prototypes
+        for (auto &item : root_translation_unit->m_symtab->get_scope()) {
+            if (is_a<ASR::Module_t>(*item.second)) {
+                visit_symbol(*item.second);
+            }
+        }
+
         // Generate function prototypes
         for (auto &item : root_translation_unit->m_symtab->get_scope()) {
             if (is_a<ASR::Function_t>(*item.second)) {
@@ -3977,21 +3984,7 @@ public:
                 + std::string(x.m_name) + "'");
             */
             F = llvm_symtab_fn[h];
-        } else if ((compiler_options.interactive) && (F = evaluator->get_module().getFunction(x.m_name))) {
-            // It is possible that the function prototype is present, but llvm_symtab_fn.find(h) returns end
-            // This can only happen in interactive mode
-            // This happens because the prototype was generated from previous REPL block and hash has changed
-            llvm_symtab_fn[h] = F;
-        } else {
-            llvm::FunctionType* function_type = llvm_utils->get_function_type(x, &evaluator->get_module());
-            if( ASRUtils::get_FunctionType(x)->m_deftype == ASR::deftypeType::Interface ) {
-                ASR::FunctionType_t* asr_function_type = ASRUtils::get_FunctionType(x);
-                for( size_t i = 0; i < asr_function_type->n_arg_types; i++ ) {
-                    if( ASR::is_a<ASR::ClassType_t>(*asr_function_type->m_arg_types[i]) ) {
-                        return ;
-                    }
-                }
-            }
+        }  else {
             std::string fn_name;
             if (ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::BindC) {
                 if (ASRUtils::get_FunctionType(x)->m_bindc_name) {
@@ -4004,6 +3997,24 @@ public:
                 fn_name = sym_name;
             } else {
                 fn_name = mangle_prefix + sym_name;
+            }
+
+            if ((compiler_options.interactive) && (F = evaluator->get_module().getFunction(fn_name))) {
+                // It is possible that the function prototype is present, but llvm_symtab_fn.find(h) returns end
+                // This can only happen in interactive mode
+                // This happens because the prototype was generated from previous REPL block and hash has changed
+                llvm_symtab_fn[h] = F;
+                return;
+            }
+
+            llvm::FunctionType* function_type = llvm_utils->get_function_type(x, &evaluator->get_module());
+            if( ASRUtils::get_FunctionType(x)->m_deftype == ASR::deftypeType::Interface ) {
+                ASR::FunctionType_t* asr_function_type = ASRUtils::get_FunctionType(x);
+                for( size_t i = 0; i < asr_function_type->n_arg_types; i++ ) {
+                    if( ASR::is_a<ASR::ClassType_t>(*asr_function_type->m_arg_types[i]) ) {
+                        return ;
+                    }
+                }
             }
             if (llvm_symtab_fn_names.find(fn_name) == llvm_symtab_fn_names.end()) {
                 llvm_symtab_fn_names[fn_name] = h;

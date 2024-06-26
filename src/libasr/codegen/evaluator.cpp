@@ -175,6 +175,8 @@ void LLVMEvaluator::add_module_with_code(const std::string &source) {
     std::cout << "---------------------------------------------" << std::endl;
     */
     add_module();
+    context = std::make_unique<llvm::LLVMContext>();
+    module = std::make_unique<llvm::Module>("LFortran", *context);
 }
 
 void LLVMEvaluator::add_module(std::string symbol_name) {

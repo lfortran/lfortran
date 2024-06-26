@@ -25,15 +25,13 @@ TEST_CASE("llvm 1") {
     //LFortran::LLVMEvaluator::print_version_message();
 
     LCompilers::LLVMEvaluator e;
-    e.add_module(R"""(
+    e.add_module_with_code(R"""(
 define i64 @f1()
 {
     ret i64 4
 }
     )""");
     CHECK(e.execfn<int64_t>("f1") == 4);
-    e.add_module("");
-//    CHECK(e.execfn<int64_t>("f1") == 4);
 
 /*
     e.add_module(R"""(
@@ -50,14 +48,14 @@ define i64 @f1()
 
 TEST_CASE("llvm 1 fail") {
     LCompilers::LLVMEvaluator e;
-    CHECK_THROWS_AS(e.add_module(R"""(
+    CHECK_THROWS_AS(e.add_module_with_code(R"""(
 define i64 @f1()
 {
     ; FAIL: "=x" is incorrect syntax
     %1 =x alloca i64
 }
         )"""), LCompilers::LCompilersException);
-    CHECK_THROWS_WITH(e.add_module(R"""(
+    CHECK_THROWS_WITH(e.add_module_with_code(R"""(
 define i64 @f1()
 {
     ; FAIL: "=x" is incorrect syntax
@@ -69,7 +67,7 @@ define i64 @f1()
 
 TEST_CASE("llvm 2") {
     LCompilers::LLVMEvaluator e;
-    e.add_module(R"""(
+    e.add_module_with_code(R"""(
 @count = global i64 0
 
 define i64 @f1()
@@ -81,7 +79,7 @@ define i64 @f1()
     )""");
     CHECK(e.execfn<int64_t>("f1") == 4);
 
-    e.add_module(R"""(
+    e.add_module_with_code(R"""(
 @count = external global i64
 
 define i64 @f2()
@@ -92,7 +90,7 @@ define i64 @f2()
     )""");
     CHECK(e.execfn<int64_t>("f2") == 4);
 
-    CHECK_THROWS_AS(e.add_module(R"""(
+    CHECK_THROWS_AS(e.add_module_with_code(R"""(
 define i64 @f3()
 {
     ; FAIL: @count is not defined
@@ -104,11 +102,11 @@ define i64 @f3()
 
 TEST_CASE("llvm 3") {
     LCompilers::LLVMEvaluator e;
-    e.add_module(R"""(
+    e.add_module_with_code(R"""(
 @count = global i64 5
     )""");
 
-    e.add_module(R"""(
+    e.add_module_with_code(R"""(
 @count = external global i64
 
 define i64 @f1()
@@ -191,7 +189,7 @@ define void @inc()
 
 TEST_CASE("llvm 4") {
     LCompilers::LLVMEvaluator e;
-    e.add_module(R"""(
+    e.add_module_with_code(R"""(
 @count = global i64 5
 
 define i64 @f1()
@@ -247,7 +245,7 @@ define void @inc2()
 
 TEST_CASE("llvm array 1") {
     LCompilers::LLVMEvaluator e;
-    e.add_module(R"""(
+    e.add_module_with_code(R"""(
 ; Sum the three elements in %a
 define i64 @sum3(i64* %a)
 {
@@ -289,7 +287,7 @@ define i64 @f()
 
 TEST_CASE("llvm array 2") {
     LCompilers::LLVMEvaluator e;
-    e.add_module(R"""(
+    e.add_module_with_code(R"""(
 %array = type {i64, [3 x i64]}
 
 ; Sum the three elements in %a
@@ -339,7 +337,7 @@ int f(int a, int b) {
 TEST_CASE("llvm callback 0") {
     LCompilers::LLVMEvaluator e;
     std::string addr = std::to_string((int64_t)f);
-    e.add_module(R"""(
+    e.add_module_with_code(R"""(
 define i64 @addrcaller(i64 %a, i64 %b)
 {
     %f = inttoptr i64 )""" + addr + R"""( to i64 (i64, i64)*
@@ -633,7 +631,7 @@ end module funcmod)");
 // Tests passing the complex struct by reference
 TEST_CASE("llvm complex type") {
     LCompilers::LLVMEvaluator e;
-    e.add_module(R"""(
+    e.add_module_with_code(R"""(
 %complex = type { float, float }
 
 define float @sum2(%complex* %a)
@@ -669,7 +667,7 @@ define float @f()
 // Tests passing the complex struct by value
 TEST_CASE("llvm complex type value") {
     LCompilers::LLVMEvaluator e;
-    e.add_module(R"""(
+    e.add_module_with_code(R"""(
 %complex = type { float, float }
 
 define float @sum2(%complex %a_value)
@@ -708,7 +706,7 @@ define float @f()
 // Tests passing boolean by reference
 TEST_CASE("llvm boolean type") {
     LCompilers::LLVMEvaluator e;
-    e.add_module(R"""(
+    e.add_module_with_code(R"""(
 
 define i1 @and_func(i1* %p, i1* %q)
 {
@@ -738,7 +736,7 @@ define i1 @b()
 // Tests passing boolean by value
 TEST_CASE("llvm boolean type") {
     LCompilers::LLVMEvaluator e;
-    e.add_module(R"""(
+    e.add_module_with_code(R"""(
 
 define i1 @and_func(i1 %p, i1 %q)
 {
@@ -768,7 +766,7 @@ define i1 @b()
 // Tests pointers
 TEST_CASE("llvm pointers 1") {
     LCompilers::LLVMEvaluator e;
-    e.add_module(R"""(
+    e.add_module_with_code(R"""(
 @r = global i64 0
 
 define i64 @f()
@@ -791,7 +789,7 @@ define i64 @f()
 
 TEST_CASE("llvm pointers 2") {
     LCompilers::LLVMEvaluator e;
-    e.add_module(R"""(
+    e.add_module_with_code(R"""(
 @r = global float 0.0
 
 define i64 @f()
@@ -810,7 +808,7 @@ define i64 @f()
 
 TEST_CASE("llvm pointers 3") {
     LCompilers::LLVMEvaluator e;
-    e.add_module(R"""(
+    e.add_module_with_code(R"""(
 ; Takes a variable and returns a pointer to it
 define i64 @pointer_reference(float* %var)
 {
@@ -850,7 +848,7 @@ define float @f()
 
 TEST_CASE("llvm pointers 4") {
     LCompilers::LLVMEvaluator e;
-    e.add_module(R"""(
+    e.add_module_with_code(R"""(
 ; Takes a variable and returns a pointer to it
 define float* @pointer_reference(float* %var)
 {
