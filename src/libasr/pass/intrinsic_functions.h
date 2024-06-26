@@ -4700,8 +4700,7 @@ namespace MinExponent {
 
     static ASR::expr_t *eval_MinExponent(Allocator &al, const Location &loc,
             ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
-        ASR::RealConstant_t* a = ASR::down_cast<ASR::RealConstant_t>(args[0]);
-        int m_kind = ASRUtils::extract_kind_from_ttype_t(a->m_type);
+        int m_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[0]));
         int result;
         if (m_kind == 4) {
             result = std::numeric_limits<float>::min_exponent;
@@ -4709,27 +4708,6 @@ namespace MinExponent {
             result = std::numeric_limits<double>::min_exponent;
         }
         return make_ConstantWithType(make_IntegerConstant_t, result, int32, loc);
-
-    }
-
-    static inline ASR::expr_t* instantiate_MinExponent(Allocator &al, const Location &loc,
-            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
-            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_optimization_minexponent_" + type_to_str_python(arg_types[0]));
-        fill_func_arg("x", arg_types[0]);
-        auto result = declare(fn_name, int32, ReturnVar);
-
-        int m_kind = ASRUtils::extract_kind_from_ttype_t(arg_types[0]);
-        if (m_kind == 4) {
-            body.push_back(al, b.Assignment(result, b.i32(-125)));
-        } else {
-            body.push_back(al, b.Assignment(result, b.i32(-1021)));
-        }
-
-        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
-            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
-        scope->add_symbol(fn_name, f_sym);
-        return b.Call(f_sym, new_args, return_type, nullptr);
     }
 
 } // namespace MinExponent
@@ -4738,8 +4716,7 @@ namespace MaxExponent {
 
     static ASR::expr_t *eval_MaxExponent(Allocator &al, const Location &loc,
             ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
-        ASR::RealConstant_t* a = ASR::down_cast<ASR::RealConstant_t>(args[0]);
-        int m_kind = ASRUtils::extract_kind_from_ttype_t(a->m_type);
+        int m_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[0]));
         int result;
         if (m_kind == 4) {
             result = std::numeric_limits<float>::max_exponent;
@@ -4747,27 +4724,6 @@ namespace MaxExponent {
             result = std::numeric_limits<double>::max_exponent;
         }
         return make_ConstantWithType(make_IntegerConstant_t, result, int32, loc);
-
-    }
-
-    static inline ASR::expr_t* instantiate_MaxExponent(Allocator &al, const Location &loc,
-            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
-            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_optimization_maxexponent_" + type_to_str_python(arg_types[0]));
-        fill_func_arg("x", arg_types[0]);
-        auto result = declare(fn_name, int32, ReturnVar);
-
-        int m_kind = ASRUtils::extract_kind_from_ttype_t(arg_types[0]);
-        if (m_kind == 4) {
-            body.push_back(al, b.Assignment(result, b.i32(128)));
-        } else {
-            body.push_back(al, b.Assignment(result, b.i32(1024)));
-        }
-
-        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
-            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
-        scope->add_symbol(fn_name, f_sym);
-        return b.Call(f_sym, new_args, return_type, nullptr);
     }
 
 } // namespace MaxExponent

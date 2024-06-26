@@ -803,6 +803,8 @@ compile_time_only_fn = [
     "BitSize",
     "NewLine",
     "Kind",
+    "MaxExponent",
+    "MinExponent",
 ]
 
 type_to_asr_type_check = {
