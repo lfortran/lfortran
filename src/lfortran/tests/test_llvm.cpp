@@ -1292,6 +1292,59 @@ end function sub
     CHECK(r.result.f32 == -1.0);
 }
 
+TEST_CASE("FortranEvaluator Function Redefinitions") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    LCompilers::Result<FortranEvaluator::EvalResult>
+    
+    r = e.evaluate2(R"(
+function f(x) result(r)
+integer :: x
+integer :: r
+r = x
+end function f
+)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::none);
+
+    r = e.evaluate2("f(1)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 1);
+    
+    r = e.evaluate2(R"(
+function f(x) result(r)
+integer :: x
+integer :: r
+r = x + 1
+end function f
+)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::none);
+    
+    r = e.evaluate2("f(1)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 2);
+    
+    r = e.evaluate2(R"(
+function f(x) result(r)
+real :: x
+real :: r
+r = x * x
+end function f
+)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::none);
+    
+    r = e.evaluate2("f(1.5)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::real4);
+    CHECK(r.result.f32 - (1.5 * 1.5) < 1e-7);
+}
+
 // This test does not work on Windows yet
 // https://github.com/lfortran/lfortran/issues/913
 #if !defined(_WIN32)
