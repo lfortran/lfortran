@@ -197,6 +197,91 @@ public:
         pass_result.reserve(al, 1);
     }
 
+    /*
+    * Converts an array section expression like `array(1, :)` to an array item
+    * expression `array(1, var)` using the current `do` loop variable `var` and
+    * returns it. 
+    * 
+    * Returns the original expression if it is not `ASR::ArraySection_t`.
+    * 
+    * We do this conversion in the `where` pass before the `array_op` pass to use the
+    * current loop variable `var` for accessing values from the array. The `array_op` pass
+    * does the above conversion using a new `do` loop which leads to an incorrect output.
+    */
+    ASR::expr_t* make_array_item_from_array_section(ASR::expr_t* expression, ASR::expr_t* var) {
+        ASR::ArraySection_t* arr_section = nullptr;
+        if (ASR::is_a<ASR::ArraySection_t>(*expression)) {
+            arr_section = ASR::down_cast<ASR::ArraySection_t>(expression);
+        } else {
+            return expression;
+        }
+
+        ASR::expr_t* arr_section_var = arr_section->m_v;
+
+        size_t sliced_dim_index = 0;
+        for (size_t i = 0; i < arr_section->n_args; i++) {
+            if (!(arr_section->m_args[i].m_left == nullptr
+                  && arr_section->m_args[i].m_right != nullptr
+                  && arr_section->m_args[i].m_step == nullptr)) {
+                sliced_dim_index = i + 1;
+            }
+        }
+
+        Vec<ASR::array_index_t> args;
+        ASR::array_index_t ai;
+        ai.loc = arr_section_var->base.loc;
+        ai.m_left = nullptr;
+        ai.m_right = nullptr;
+        ai.m_step = nullptr;
+        args.reserve(al, 1);
+
+        ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, arr_section_var->base.loc, 1,
+                                ASRUtils::TYPE(ASR::make_Integer_t(al, arr_section_var->base.loc, 8))));
+        for (size_t i = 0; i < arr_section->n_args; i++) {
+            if (i + 1 == sliced_dim_index) {
+                ai.m_left = one;
+                ai.m_right = var;
+                ai.m_step = one;
+                args.push_back(al, ai);
+            } else {
+                args.push_back(al, arr_section->m_args[i]);
+            }
+        }
+
+        ASR::expr_t* array_item = ASRUtils::EXPR(
+                                    ASRUtils::make_ArrayItem_t_util(
+                                        al,
+                                        arr_section->m_v->base.loc,
+                                        arr_section->m_v,
+                                        args.p,
+                                        args.size(),
+                                        ASRUtils::type_get_past_array_pointer_allocatable(
+                                            ASRUtils::expr_type((arr_section_var))),
+                                        ASR::arraystorageType::ColMajor,
+                                        nullptr));
+
+        return array_item;
+    }
+
+    /*
+    * Converts an array section assignment statement like `array(1, :) = 2.0` into
+    * an array item assignment statement `array(1, var) = 2.0` using the current
+    * `do` loop variable `var`.
+    */
+    ASR::stmt_t* convert_array_section_assignment_to_array_item_assignment(ASR::Assignment_t* assignment,
+                                                                   ASR::expr_t* var) {
+        ASR::expr_t* target = make_array_item_from_array_section(assignment->m_target, var);
+
+        ASR::stmt_t* arr_item_assign = ASRUtils::STMT(
+                                        ASR::make_Assignment_t(al,
+                                            assignment->base.base.loc,
+                                            target,
+                                            assignment->m_value,
+                                            assignment->m_overloaded));
+
+        return arr_item_assign;
+    }
+
     ASR::stmt_t* handle_If(ASR::Where_t& x, ASR::expr_t* test, ASR::expr_t* var, Location& loc, Vec<ASR::expr_t*> idx_vars) {
         ASR::IntegerCompare_t* int_cmp = nullptr;
         ASR::RealCompare_t* real_cmp = nullptr;
@@ -211,16 +296,19 @@ public:
 
         if (ASR::is_a<ASR::IntegerCompare_t>(*test)) {
             int_cmp = ASR::down_cast<ASR::IntegerCompare_t>(test);
-            left = int_cmp->m_left;
-            right = int_cmp->m_right;
+
+            left = make_array_item_from_array_section(int_cmp->m_left, var);
+            right = make_array_item_from_array_section(int_cmp->m_right, var);
         } else if (ASR::is_a<ASR::RealCompare_t>(*test)) {
             real_cmp = ASR::down_cast<ASR::RealCompare_t>(test);
-            left = real_cmp->m_left;
-            right = real_cmp->m_right;
+
+            left = make_array_item_from_array_section(real_cmp->m_left, var);
+            right = make_array_item_from_array_section(real_cmp->m_right, var);
         } else if (ASR::is_a<ASR::LogicalBinOp_t>(*test)) {
             log_bin_op = ASR::down_cast<ASR::LogicalBinOp_t>(test);
-            left = log_bin_op->m_left;
-            right = log_bin_op->m_right;
+
+            left = make_array_item_from_array_section(log_bin_op->m_left, var);
+            right = make_array_item_from_array_section(log_bin_op->m_right, var);
         } else {
             throw LCompilersException("Unsupported type");
         }
@@ -267,8 +355,13 @@ public:
             ASR::stmt_t* stmt = x.m_body[i];
             if (stmt->type == ASR::stmtType::Assignment) {
                 ASR::Assignment_t* assign_ = ASR::down_cast<ASR::Assignment_t>(stmt);
-                uint64_t h = get_hash((ASR::asr_t*) assign_);
-                assignment_hash[h] = idx_vars;
+                if (ASR::is_a<ASR::ArraySection_t>(*assign_->m_target)) {
+                   stmt = convert_array_section_assignment_to_array_item_assignment(assign_, var);
+                   pass_result.push_back(al, stmt);
+                } else {
+                    uint64_t h = get_hash((ASR::asr_t*) assign_);
+                    assignment_hash[h] = idx_vars;
+                }
             }
             if_body.push_back(al, stmt);
         }
@@ -284,8 +377,13 @@ public:
                 ASR::stmt_t* stmt = x.m_orelse[i];
                 if (stmt->type == ASR::stmtType::Assignment) {
                     ASR::Assignment_t* assign_ = ASR::down_cast<ASR::Assignment_t>(stmt);
-                    uint64_t h = get_hash((ASR::asr_t*) assign_);
-                    assignment_hash[h] = idx_vars;
+                    if (ASR::is_a<ASR::ArraySection_t>(*assign_->m_target)) {
+                        stmt = convert_array_section_assignment_to_array_item_assignment(assign_, var);
+                        pass_result.push_back(al, stmt);
+                    } else {
+                        uint64_t h = get_hash((ASR::asr_t*) assign_);
+                        assignment_hash[h] = idx_vars;
+                    }
                 }
                 orelse_body.push_back(al, stmt);
             }
