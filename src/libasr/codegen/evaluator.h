@@ -32,8 +32,13 @@ class LLVMEvaluator
 {
 private:
     std::unique_ptr<llvm::orc::KaleidoscopeJIT> jit;
+#if LLVM_VERSION_MAJOR >= 12
     std::unordered_map<std::string, std::pair<std::unique_ptr<llvm::Module>, std::unique_ptr<llvm::LLVMContext>>> llvm_modules;
     std::unordered_map<std::string, llvm::orc::ResourceTrackerSP> RT_map;
+#else
+    std::unordered_map<std::string, std::unique_ptr<llvm::Module>> llvm_modules;
+    std::unordered_map<std::string, llvm::orc::VModuleKey> RT_map;
+#endif
     std::unique_ptr<llvm::LLVMContext> context;
     std::unique_ptr<llvm::Module> module;
     std::string target_triple;

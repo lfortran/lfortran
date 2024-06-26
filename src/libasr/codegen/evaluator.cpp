@@ -133,17 +133,23 @@ LLVMEvaluator::LLVMEvaluator(const std::string &t)
     TM = target->createTargetMachine(target_triple, CPU, features, opt, RM);
 
     // For some reason the JIT requires a different TargetMachine
+#if LLVM_VERSION_MAJOR >=12
     jit = cantFail(llvm::orc::KaleidoscopeJIT::Create());
+#else
+    jit = std::make_unique<llvm::orc::KaleidoscopeJIT>();
+#endif
     
     _lfortran_stan(0.5);
 }
 
 LLVMEvaluator::~LLVMEvaluator()
 {
+#if LLVM_VERSION_MAJOR >= 12
     for (auto i: RT_map) {
         llvm::cantFail(i.second->remove());
     }
     RT_map.clear();
+#endif
     jit.reset();
 }
 
@@ -175,7 +181,9 @@ void LLVMEvaluator::add_module_with_code(const std::string &source) {
     std::cout << "---------------------------------------------" << std::endl;
     */
     add_module();
+#if LLVM_VERSION_MAJOR >= 12
     context = std::make_unique<llvm::LLVMContext>();
+#endif
     module = std::make_unique<llvm::Module>("LFortran", *context);
 }
 
@@ -184,6 +192,7 @@ void LLVMEvaluator::add_module(std::string symbol_name) {
     // cases when the Module was constructed directly, not via parse_module().
     module->setTargetTriple(target_triple);
     module->setDataLayout(jit->getDataLayout());
+#if LLVM_VERSION_MAJOR >= 12
     llvm::orc::ResourceTrackerSP RT;
     if (symbol_name == "") {
         RT = jit->getMainJITDylib().getDefaultResourceTracker();
@@ -194,7 +203,6 @@ void LLVMEvaluator::add_module(std::string symbol_name) {
             RT_map.erase(symbol_name);
         }
         RT = jit->getMainJITDylib().createResourceTracker();
-        RT_map[symbol_name] = RT;
     }
     llvm::Error err = jit->addModule(std::move(module), std::move(context), RT);
     if (err) {
@@ -205,31 +213,58 @@ void LLVMEvaluator::add_module(std::string symbol_name) {
         if (msg[msg.size()-1] == '\n') msg = msg.substr(0, msg.size()-1);
         throw LCompilersException("addModule() returned an error: " + msg);
     }
+    RT_map[symbol_name] = RT;
+#else
+    if (symbol_name == "") {
+        jit->addModule(std::move(module));
+        return;
+    }
+    if (RT_map.find(symbol_name) != RT_map.end()) {
+        llvm::orc::VModuleKey RT = RT_map.at(symbol_name);
+        jit->removeModule(RT);
+        RT_map.erase(symbol_name);
+    }
+    llvm::orc::VModuleKey RT = jit->addModule(std::move(module));
+    RT_map[symbol_name] = RT;
+#endif
 }
 
 void LLVMEvaluator::append_module_context_pair(std::string symbol_name) {
     LCOMPILERS_ASSERT(llvm_modules.find(symbol_name) == llvm_modules.end())
+#if LLVM_VERSION_MAJOR >= 12
     llvm_modules[symbol_name] = std::make_pair(std::move(module), std::move(context));
     context = std::make_unique<llvm::LLVMContext>();
+#else
+    llvm_modules[symbol_name] = std::move(module);
+#endif
     module = std::make_unique<llvm::Module>("LFortran", *context);
 }
 
 void LLVMEvaluator::evaluate_module_context_pair() {
+#if LLVM_VERSION_MAJOR >= 12
     auto context_ = std::move(context);
+#endif
     auto module_ = std::move(module);
 
     for (auto i = llvm_modules.begin(); i != llvm_modules.end(); ++i) {
+#if LLVM_VERSION_MAJOR >= 12
         module = std::move(i->second.first);
         context = std::move(i->second.second);
+#else
+        module = std::move(i->second);
+#endif
         add_module(i->first);
     }
     llvm_modules.clear();
 
     module = std::move(module_);
+#if LLVM_VERSION_MAJOR >= 12
     context = std::move(context_);
+#endif
 }
 
 intptr_t LLVMEvaluator::get_symbol_address(const std::string &name) {
+#if LLVM_VERSION_MAJOR >= 12
     llvm::Expected<llvm::JITEvaluatedSymbol> s = jit->lookup(name);
     if (!s) {
         llvm::Error e = s.takeError();
@@ -252,6 +287,11 @@ intptr_t LLVMEvaluator::get_symbol_address(const std::string &name) {
         throw LCompilersException("JITSymbol::getAddress() returned an error: " + msg);
     }
     return (intptr_t)cantFail(std::move(addr0));
+#else
+    auto ExprSymbol = jit->lookup(name);
+    LCOMPILERS_ASSERT(ExprSymbol)
+    return (intptr_t)cantFail(ExprSymbol.getAddress());
+#endif
 }
 
 void write_file(const std::string &filename, const std::string &contents)
@@ -368,8 +408,11 @@ std::string LLVMEvaluator::get_return_type(const std::string &fn_name)
     if (llvm_modules.find(fn_name) == llvm_modules.end()) {
         return "none";
     }
-
+#if LLVM_VERSION_MAJOR >= 12
     llvm::Function *fn = llvm_modules[fn_name].first->getFunction(fn_name);
+#else
+    llvm::Function *fn = llvm_modules[fn_name]->getFunction(fn_name);
+#endif
     LCOMPILERS_ASSERT(fn);
 
     llvm::Type *type = fn->getReturnType();
