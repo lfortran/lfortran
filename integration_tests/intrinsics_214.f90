@@ -1,5 +1,7 @@
 program intrinsics_214
     use, intrinsic :: iso_fortran_env, only: dp => real64, sp => real32
+    real(sp) :: a, b, c
+    real(dp) :: d, e, f
     integer :: i
 
     real(dp) :: w(19)
@@ -59,5 +61,49 @@ program intrinsics_214
         print *, sind(x(i))
         if (abs(sind(x(i)) - expected_x(i)) > 1e-5) error stop
     end do
+
+    a = 18.928_sp
+    b = 32.627_sp
+    c = 47.123_sp
+
+    d = 18.829262783_dp
+    e = 32.727262783_dp
+    f = 47.223262783_dp
+
+    print *, sind(a)
+    if (abs(sind(a) - 0.324379712) > 1e-3) error stop
+
+    print *, sind(b)
+    if (abs(sind(b) - 0.539167702) > 1e-3) error stop
+
+    print *, sind(c)
+    if (abs(sind(c) - 0.732816100) > 1e-3) error stop
+
+    print *, sind(18.928_sp)
+    if (abs(sind(18.928_sp) - 0.324379712) > 1e-3) error stop
+
+    print *, sind(32.627_sp)
+    if (abs(sind(32.627_sp) - 0.539167702) > 1e-3) error stop
+
+    print *, sind(47.123_sp)
+    if (abs(sind(47.123_sp) - 0.732816100) > 1e-3) error stop
+
+    print *, sind(d)
+    if (abs(sind(d) - 0.32274913716473685) > 1e-3) error stop
+
+    print *, sind(e)
+    if (abs(sind(e) - 0.54064067144737327) > 1e-3) error stop
+
+    print *, sind(f)
+    if (abs(sind(f) - 0.73400566544830548) > 1e-3) error stop
+
+    print *, sind(18.829262783_dp)
+    if (abs(sind(18.829262783_dp) - 0.32274913716473685) > 1e-3) error stop
+
+    print *, sind(32.727262783_dp)
+    if (abs(sind(32.727262783_dp) - 0.54064067144737327) > 1e-3) error stop
+
+    print *, sind(47.223262783_dp)
+    if (abs(sind(47.223262783_dp) - 0.73400566544830548) > 1e-3) error stop
 
 end program

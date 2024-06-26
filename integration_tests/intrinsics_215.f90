@@ -1,5 +1,7 @@
 program intrinsics_215
     use, intrinsic :: iso_fortran_env, only: dp => real64, sp => real32
+    real(sp) :: a, b, c
+    real(dp) :: d, e, f
     integer :: i
 
     real(dp) :: w(19)
@@ -60,5 +62,49 @@ program intrinsics_215
         print *, cosd(x(i))
         if (abs(cosd(x(i)) - expected_x(i)) > 1e-5) error stop
     end do
+
+    a = 18.928_sp
+    b = 32.627_sp
+    c = 47.123_sp
+
+    d = 18.829262783_dp
+    e = 32.727262783_dp
+    f = 47.223262783_dp
+
+    print *, cosd(a)
+    if (abs(cosd(a) - 0.945926964) > 1e-3) error stop
+
+    print *, cosd(b)
+    if (abs(cosd(b) - 0.842198431) > 1e-3) error stop
+
+    print *, cosd(c)
+    if (abs(cosd(c) - 0.680426717) > 1e-3) error stop
+
+    print *, cosd(18.928_sp)
+    if (abs(cosd(18.928_sp) - 0.945926964) > 1e-3) error stop
+
+    print *, cosd(32.627_sp)
+    if (abs(cosd(32.627_sp) - 0.842198431) > 1e-3) error stop
+
+    print *, cosd(47.123_sp)
+    if (abs(cosd(47.123_sp) - 0.680426717) > 1e-3) error stop
+
+    print *, cosd(d)
+    if (abs(cosd(d) - 0.94648454528292103) > 1e-3) error stop
+
+    print *, cosd(e)
+    if (abs(cosd(e) - 0.84125362666495140) > 1e-3) error stop
+
+    print *, cosd(f)
+    if (abs(cosd(f) - 0.67914334502356000) > 1e-3) error stop
+
+    print *, cosd(18.829262783_dp)
+    if (abs(cosd(18.829262783_dp) - 0.94648454528292103) > 1e-3) error stop
+
+    print *, cosd(32.727262783_dp)
+    if (abs(cosd(32.727262783_dp) - 0.84125362666495140) > 1e-3) error stop
+
+    print *, cosd(47.223262783_dp)
+    if (abs(cosd(47.223262783_dp) - 0.67914334502356000) > 1e-3) error stop
 
 end program
