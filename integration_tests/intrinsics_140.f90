@@ -1,17 +1,24 @@
 program intrinsics_140
-
+    implicit none
+    integer, parameter :: wp = selected_int_kind(9)
+    integer, parameter :: dp = selected_int_kind(18_8)
     integer :: k1 = 1
     integer :: k2 = 2
     integer :: k3 = 3
     integer :: k4 = 4
-    integer :: k5 = 5
-    integer :: k6 = 6
-    integer :: k7 = 7
-    integer :: k8 = 8
-    integer :: k9 = 9
-    integer :: k10 = 10
-    integer :: k11 = 11
-
+    integer(8) :: k5 = 5
+    integer(8) :: k6 = 6
+    integer(8) :: k7 = 7
+    integer(8) :: k8 = 8
+    integer(8) :: k9 = 9
+    integer(8) :: k10 = 10
+    integer(8) :: k11 = 11
+    
+    print *, wp
+    if (wp /= 4) error stop
+    print *, dp
+    if (dp /= 8) error stop
+    
     print *, selected_int_kind(1)
     if (selected_int_kind(1) /= 1) error stop
     print *, selected_int_kind(2)
@@ -58,4 +65,8 @@ program intrinsics_140
     print *, selected_int_kind(k11)
     if (selected_int_kind(k11) /= 8) error stop
 
-end
+    print *, kind(selected_int_kind(1))
+    if (kind(selected_int_kind(1)) /= 4) error stop
+    print *, kind(selected_int_kind(2_8))
+    if (kind(selected_int_kind(2_8)) /= 4) error stop
+end program

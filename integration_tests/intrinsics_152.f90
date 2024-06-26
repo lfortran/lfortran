@@ -1,4 +1,5 @@
 program intrinsics_152
+    implicit none
     integer :: k1= 5
     integer :: k2= 5_4
     integer :: k3= 58_8
@@ -67,4 +68,4 @@ program intrinsics_152
     print*, m90_quad
     if (m90_quad /= -1) error stop
 
-end
+end program
