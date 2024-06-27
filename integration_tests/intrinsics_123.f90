@@ -9,8 +9,8 @@ program intrinsics_123
     integer(4) :: res_x(5)
     integer(8) :: res_x2(5)
 
-    integer(4), parameter :: res(5) = lshift([12, -13, 18, 20, 67], [1, 2, 3, 4, 5])
-    integer(8), parameter :: res2(5) = lshift([103, 87, 88, -95, -134], [11, 12, 4, 0, 10])
+    integer(4), parameter :: res(5) = shiftl([12, -13, 18, 20, 67], [1, 2, 3, 4, 5])
+    integer(8), parameter :: res2(5) = shiftl([103, 87, 88, -95, -134], [11, 12, 4, 0, 10])
 
     integer(4) :: expected_res(5) = [24, -52, 144, 320, 2144]
     integer(8) :: expected_res2(5) = [210944, 356352, 1408, -95, -137216]
@@ -24,8 +24,8 @@ program intrinsics_123
     print *, comp2
     if (comp2 /= 210944) error stop
 
-    res_x = lshift(arg_x, arg_y)
-    res_x2 = lshift(arg_x2, arg_y2)
+    res_x = shiftl(arg_x, arg_y)
+    res_x2 = shiftl(arg_x2, arg_y2)
 
     do i = 1, size(res)
         print *, res(i)
