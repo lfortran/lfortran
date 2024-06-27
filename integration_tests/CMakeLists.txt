@@ -843,7 +843,7 @@ RUN(NAME intrinsics_278 LABELS gfortran llvm fortran) # tiny
 RUN(NAME intrinsics_279 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # sinh
 RUN(NAME intrinsics_280 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # cosh
 RUN(NAME intrinsics_281 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # tanh
-RUN(NAME intrinsics_282 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # hypot
+RUN(NAME intrinsics_282 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NOFAST) # hypot
 
 RUN(NAME passing_array_01 LABELS gfortran fortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME passing_array_02 LABELS gfortran fortran llvm llvm_wasm llvm_wasm_emcc)
