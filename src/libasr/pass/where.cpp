@@ -392,6 +392,61 @@ public:
         return if_stmt;
     }
 
+    void convert_function_call_to_return_var(ASR::expr_t* expression,
+                                             Location loc,
+                                             ASR::stmt_t*& assign_stmt,
+                                             ASR::expr_t*& opt) {
+        if (ASR::is_a<ASR::FunctionCall_t>(*expression)) {
+            // Create an assignment `return_var = expression` and replace function call with return_var
+            ASR::FunctionCall_t* fc = ASR::down_cast<ASR::FunctionCall_t>(expression);
+            uint64_t h = get_hash((ASR::asr_t*) fc->m_name);
+            ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(fc->m_name);
+            ASR::expr_t* return_var_expr = fn->m_return_var;
+            ASR::Variable_t* return_var = ASRUtils::EXPR2VAR(return_var_expr);
+            ASR::expr_t* new_return_var_expr = PassUtils::create_var(1,
+                                                                     return_var->m_name,
+                                                                     return_var->base.base.loc,
+                                                                     return_var->m_type,
+                                                                     al,
+                                                                     current_scope);
+            assign_stmt = ASRUtils::STMT(
+                            ASR::make_Assignment_t(
+                                al, loc, new_return_var_expr, expression, nullptr));
+            opt = new_return_var_expr;
+            return_var_hash[h] = opt;
+        }
+    }
+
+    ASR::expr_t* get_array_expression(ASR::expr_t* left_expression, ASR::expr_t* right_expression) {
+        ASR::ttype_t* left_type = nullptr;
+        ASR::ttype_t* right_type = nullptr;
+        if (left_expression && !right_expression) {
+            left_type = ASRUtils::expr_type(left_expression);
+            if (ASRUtils::is_array(left_type)) {
+                return right_expression;
+            }
+        } else if (!left_expression && right_expression) {
+            right_type = ASRUtils::expr_type(right_expression);
+            if (ASRUtils::is_array(right_type)) {
+                return right_expression;
+            }
+        } else if (left_expression && right_expression) {
+            left_type = ASRUtils::expr_type(left_expression);
+            right_type = ASRUtils::expr_type(right_expression);
+
+            if (ASRUtils::is_array(left_type) && !ASRUtils::is_array(right_type)) {
+                return left_expression;
+            } else if (!ASRUtils::is_array(left_type) && ASRUtils::is_array(right_type)) {
+                return right_expression;
+            } else {
+                // both sides are arrays, choose the left one
+                return left_expression;
+            }
+        }
+        // none of the side is an array
+        return nullptr;
+    }
+
     void visit_Where(const ASR::Where_t& x) {
         ASR::Where_t& xx = const_cast<ASR::Where_t&>(x);
         Location loc = x.base.base.loc;
@@ -400,19 +455,26 @@ public:
         ASR::RealCompare_t* real_cmp = nullptr;
         ASR::LogicalBinOp_t* log_bin_op = nullptr;
         ASR::expr_t* left;
+        ASR::expr_t* right;
+        ASR::expr_t* array;
         ASR::expr_t* opt_left = nullptr;
+        ASR::expr_t* opt_right = nullptr;
+        ASR::expr_t* opt = nullptr;
         ASR::stmt_t* assign_stmt = nullptr;
         ASR::stmt_t* if_stmt = nullptr;
 
         if (ASR::is_a<ASR::IntegerCompare_t>(*test)) {
             int_cmp = ASR::down_cast<ASR::IntegerCompare_t>(test);
             left = int_cmp->m_left;
+            right = int_cmp->m_right;
         } else if (ASR::is_a<ASR::RealCompare_t>(*test)) {
             real_cmp = ASR::down_cast<ASR::RealCompare_t>(test);
             left = real_cmp->m_left;
+            right = real_cmp->m_right;
         } else if (ASR::is_a<ASR::LogicalBinOp_t>(*test)) {
             log_bin_op = ASR::down_cast<ASR::LogicalBinOp_t>(test);
             left = log_bin_op->m_left;
+            right = log_bin_op->m_right;
         } else {
             throw LCompilersException("Unsupported type, " + std::to_string(test->type));
         }
@@ -427,41 +489,45 @@ public:
 
         ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
 
-        if (ASR::is_a<ASR::FunctionCall_t>(*left)) {
-            // Create an assignment `return_var = left` and replace function call with return_var
-            ASR::FunctionCall_t* fc = ASR::down_cast<ASR::FunctionCall_t>(left);
-            uint64_t h = get_hash((ASR::asr_t*) fc->m_name);
-            ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(fc->m_name);
-            ASR::expr_t* return_var_expr = fn->m_return_var;
-            ASR::Variable_t* return_var = ASRUtils::EXPR2VAR(return_var_expr);
-            ASR::expr_t* new_return_var_expr = PassUtils::create_var(1,
-                return_var->m_name, return_var->base.base.loc,
-                return_var->m_type, al, current_scope);
-            assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al, loc, new_return_var_expr, left, nullptr));
-            opt_left = new_return_var_expr;
-            return_var_hash[h] = opt_left;
-        }
+        convert_function_call_to_return_var(left, loc, assign_stmt, opt_left);
+        convert_function_call_to_return_var(right, loc, assign_stmt, opt_right);
 
         ASRUtils::ExprStmtDuplicator dup(al);
-        if (opt_left && ASR::is_a<ASR::IntegerCompare_t>(*test)) {
-            int_cmp = ASR::down_cast<ASR::IntegerCompare_t>(dup.duplicate_expr(test));
-            int_cmp->m_left = dup.duplicate_expr(opt_left);
+        if (opt_left) {
+            if (ASR::is_a<ASR::IntegerCompare_t>(*test)) {
+                int_cmp = ASR::down_cast<ASR::IntegerCompare_t>(dup.duplicate_expr(test));
+                int_cmp->m_left = dup.duplicate_expr(opt_left);
+            } else if (ASR::is_a<ASR::RealCompare_t>(*test)) {
+                real_cmp = ASR::down_cast<ASR::RealCompare_t>(dup.duplicate_expr(test));
+                real_cmp->m_left = dup.duplicate_expr(opt_left);
+            } else {
+                log_bin_op = ASR::down_cast<ASR::LogicalBinOp_t>(dup.duplicate_expr(test));
+                log_bin_op->m_left = dup.duplicate_expr(opt_left);
+            }
         }
-        if (opt_left && ASR::is_a<ASR::RealCompare_t>(*test)) {
-            real_cmp = ASR::down_cast<ASR::RealCompare_t>(dup.duplicate_expr(test));
-            real_cmp->m_left = dup.duplicate_expr(opt_left);
+
+        if (opt_right) {
+            if (ASR::is_a<ASR::IntegerCompare_t>(*test)) {
+                int_cmp = ASR::down_cast<ASR::IntegerCompare_t>(dup.duplicate_expr(test));
+                int_cmp->m_right = dup.duplicate_expr(opt_right);
+            } else if (ASR::is_a<ASR::RealCompare_t>(*test)) {
+                real_cmp = ASR::down_cast<ASR::RealCompare_t>(dup.duplicate_expr(test));
+                real_cmp->m_right = dup.duplicate_expr(opt_right);
+            } else {
+                log_bin_op = ASR::down_cast<ASR::LogicalBinOp_t>(dup.duplicate_expr(test));
+                log_bin_op->m_right = dup.duplicate_expr(opt_right);
+            }
         }
-        if (opt_left && ASR::is_a<ASR::LogicalBinOp_t>(*test)) {
-            log_bin_op = ASR::down_cast<ASR::LogicalBinOp_t>(dup.duplicate_expr(test));
-            log_bin_op->m_left = dup.duplicate_expr(opt_left);
-        }
+
+        array = get_array_expression(left, right);
+        opt = get_array_expression(opt_left, opt_right);
 
         // create do loop head
         ASR::do_loop_head_t head;
         head.loc = loc;
         head.m_v = var;
-        head.m_start = PassUtils::get_bound(opt_left?dup.duplicate_expr(opt_left):dup.duplicate_expr(left), 1, "lbound", al);
-        head.m_end = PassUtils::get_bound(opt_left?dup.duplicate_expr(opt_left):dup.duplicate_expr(left), 1, "ubound", al);
+        head.m_start = PassUtils::get_bound(opt ? dup.duplicate_expr(opt) : dup.duplicate_expr(array), 1, "lbound", al);
+        head.m_end = PassUtils::get_bound(opt ? dup.duplicate_expr(opt) : dup.duplicate_expr(array), 1, "ubound", al);
         head.m_increment = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, int32_type));
 
         // create do loop body
