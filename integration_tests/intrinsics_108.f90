@@ -2,6 +2,52 @@ program intrinsics_108
     integer(4) :: x, y
     integer(8) :: i, j
     integer :: arr3(3)
+
+    integer(4) :: arg_x(5) = [12, 13, 18, 20, 67]
+    integer(4) :: arg_y(5) = [1, 2, 3, 4, 5]
+    integer(8) :: arg_x2(5) = [103, 87, 88, 95, 134]
+    integer(8) :: arg_y2(5) = [11, 12, 4, 0, 10]
+    integer(4) :: res_x(5)
+    integer(8) :: res_x2(5)
+
+    integer(4), parameter :: res(5) = shiftr([12, 13, 18, 20, 67], [1, 2, 3, 4, 5])
+    integer(8), parameter :: res2(5) = shiftr([103, 87, 88, 95, 134], [11, 12, 4, 0, 10])
+
+    integer(4) :: expected_res(5) = [6, 3, 2, 1, 2]
+    integer(8) :: expected_res2(5) = [0, 0, 5, 95, 0]
+
+    integer(4), parameter :: comp1 = shiftr(12, 1)
+    integer(8), parameter :: comp2 = shiftr(103, 11)
+
+    print *, comp1
+    if (comp1 /= 6) error stop
+
+    print *, comp2
+    if (comp2 /= 0) error stop
+
+    res_x = shiftr(arg_x, arg_y)
+    res_x2 = shiftr(arg_x2, arg_y2)
+
+    do i = 1, size(res)
+        print *, res(i)
+        if (res(i) /= expected_res(i)) error stop
+    end do
+
+    do i = 1, size(res2)
+        print *, res2(i)
+        if (res2(i) /= expected_res2(i)) error stop
+    end do
+
+    do i = 1, size(res_x)
+        print *, res_x(i)
+        if (res_x(i) /= expected_res(i)) error stop
+    end do
+
+    do i = 1, size(res_x2)
+        print *, res_x2(i)
+        if (res_x2(i) /= expected_res2(i)) error stop
+    end do
+
     x = 16
     y = 2
     i = 8
