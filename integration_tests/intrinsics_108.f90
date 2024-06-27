@@ -16,6 +16,15 @@ program intrinsics_108
     integer(4) :: expected_res(5) = [6, 3, 2, 1, 2]
     integer(8) :: expected_res2(5) = [0, 0, 5, 95, 0]
 
+    integer(4), parameter :: comp1 = shiftr(12, 1)
+    integer(8), parameter :: comp2 = shiftr(103, 11)
+
+    print *, comp1
+    if (comp1 /= 6) error stop
+
+    print *, comp2
+    if (comp2 /= 0) error stop
+
     res_x = shiftr(arg_x, arg_y)
     res_x2 = shiftr(arg_x2, arg_y2)
 

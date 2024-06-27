@@ -15,6 +15,15 @@ program intrinsics_123
     integer(4) :: expected_res(5) = [24, -52, 144, 320, 2144]
     integer(8) :: expected_res2(5) = [210944, 356352, 1408, -95, -137216]
 
+    integer(4), parameter :: comp1 = shiftl(12, 1)
+    integer(8), parameter :: comp2 = shiftl(103, 11)
+
+    print *, comp1
+    if (comp1 /= 24) error stop
+
+    print *, comp2
+    if (comp2 /= 210944) error stop
+
     res_x = lshift(arg_x, arg_y)
     res_x2 = lshift(arg_x2, arg_y2)
 
@@ -37,7 +46,7 @@ program intrinsics_123
         print *, res_x2(i)
         if (res_x2(i) /= expected_res2(i)) error stop
     end do
-    
+
     x = 16
     y = 2
     i = 8

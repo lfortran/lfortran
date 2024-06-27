@@ -15,6 +15,15 @@ program intrinsics_136
     integer(4) :: expected_res(5) = [6, -4, 2, 1, 2]
     integer(8) :: expected_res2(5) = [0, 0, 5, -95, -1]
 
+    integer(4), parameter :: comp1 = rshift(12, 1)
+    integer(8), parameter :: comp2 = rshift(103, 11)
+
+    print *, comp1
+    if (comp1 /= 6) error stop
+
+    print *, comp2
+    if (comp2 /= 0) error stop
+
     res_x = rshift(arg_x, arg_y)
     res_x2 = rshift(arg_x2, arg_y2)
 
