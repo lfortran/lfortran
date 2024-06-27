@@ -7,6 +7,416 @@
                     (SymbolTable
                         2
                         {
+                            a1:
+                                (Variable
+                                    2
+                                    a1
+                                    []
+                                    Local
+                                    (TypeInquiry
+                                        Range
+                                        (Integer 4)
+                                        (IntegerConstant 11 (Integer 4))
+                                        (Integer 4)
+                                        (IntegerConstant 9 (Integer 4))
+                                    )
+                                    (IntegerConstant 9 (Integer 4))
+                                    Parameter
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            a2:
+                                (Variable
+                                    2
+                                    a2
+                                    []
+                                    Local
+                                    (TypeInquiry
+                                        Range
+                                        (Real 4)
+                                        (RealConstant
+                                            22.900000
+                                            (Real 4)
+                                        )
+                                        (Integer 4)
+                                        (IntegerConstant 37 (Integer 4))
+                                    )
+                                    (IntegerConstant 37 (Integer 4))
+                                    Parameter
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            a3:
+                                (Variable
+                                    2
+                                    a3
+                                    []
+                                    Local
+                                    (TypeInquiry
+                                        Range
+                                        (Complex 4)
+                                        (ComplexConstructor
+                                            (IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 2 (Integer 4))
+                                            (Complex 4)
+                                            (ComplexConstant
+                                                1.000000
+                                                2.000000
+                                                (Complex 4)
+                                            )
+                                        )
+                                        (Integer 4)
+                                        (IntegerConstant 37 (Integer 4))
+                                    )
+                                    (IntegerConstant 37 (Integer 4))
+                                    Parameter
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            ar1:
+                                (Variable
+                                    2
+                                    ar1
+                                    []
+                                    Local
+                                    (TypeInquiry
+                                        Range
+                                        (Array
+                                            (Integer 4)
+                                            [((IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 3 (Integer 4)))]
+                                            FixedSizeArray
+                                        )
+                                        (ArrayConstant
+                                            12
+                                            [1, 21, 13]
+                                            (Array
+                                                (Integer 4)
+                                                [((IntegerConstant 1 (Integer 4))
+                                                (IntegerConstant 3 (Integer 4)))]
+                                                FixedSizeArray
+                                            )
+                                            ColMajor
+                                        )
+                                        (Integer 4)
+                                        (IntegerConstant 9 (Integer 4))
+                                    )
+                                    (IntegerConstant 9 (Integer 4))
+                                    Parameter
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            ar2:
+                                (Variable
+                                    2
+                                    ar2
+                                    []
+                                    Local
+                                    (TypeInquiry
+                                        Range
+                                        (Array
+                                            (Real 4)
+                                            [((IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 3 (Integer 4)))]
+                                            FixedSizeArray
+                                        )
+                                        (ArrayConstant
+                                            12
+                                            [1.00000000e+00, 2.10000000e+01, 1.30000000e+01]
+                                            (Array
+                                                (Real 4)
+                                                [((IntegerConstant 1 (Integer 4))
+                                                (IntegerConstant 3 (Integer 4)))]
+                                                FixedSizeArray
+                                            )
+                                            ColMajor
+                                        )
+                                        (Integer 4)
+                                        (IntegerConstant 37 (Integer 4))
+                                    )
+                                    (IntegerConstant 37 (Integer 4))
+                                    Parameter
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            ar3:
+                                (Variable
+                                    2
+                                    ar3
+                                    []
+                                    Local
+                                    (TypeInquiry
+                                        Range
+                                        (Array
+                                            (Complex 4)
+                                            [((IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 3 (Integer 4)))]
+                                            FixedSizeArray
+                                        )
+                                        (ArrayConstructor
+                                            [(ComplexConstructor
+                                                (IntegerConstant 1 (Integer 4))
+                                                (IntegerConstant 2 (Integer 4))
+                                                (Complex 4)
+                                                (ComplexConstant
+                                                    1.000000
+                                                    2.000000
+                                                    (Complex 4)
+                                                )
+                                            )
+                                            (ComplexConstructor
+                                                (IntegerConstant 31 (Integer 4))
+                                                (IntegerConstant 4 (Integer 4))
+                                                (Complex 4)
+                                                (ComplexConstant
+                                                    31.000000
+                                                    4.000000
+                                                    (Complex 4)
+                                                )
+                                            )
+                                            (ComplexConstructor
+                                                (IntegerConstant 51 (Integer 4))
+                                                (IntegerConstant 62 (Integer 4))
+                                                (Complex 4)
+                                                (ComplexConstant
+                                                    51.000000
+                                                    62.000000
+                                                    (Complex 4)
+                                                )
+                                            )]
+                                            (Array
+                                                (Complex 4)
+                                                [((IntegerConstant 1 (Integer 4))
+                                                (IntegerConstant 3 (Integer 4)))]
+                                                FixedSizeArray
+                                            )
+                                            (ArrayConstant
+                                                12
+                                                [(1.00000000e+00, 2.00000000e+00), (3.10000000e+01, 4.00000000e+00), (5.10000000e+01, 6.20000000e+01)]
+                                                (Array
+                                                    (Complex 4)
+                                                    [((IntegerConstant 1 (Integer 4))
+                                                    (IntegerConstant 3 (Integer 4)))]
+                                                    FixedSizeArray
+                                                )
+                                                ColMajor
+                                            )
+                                            ColMajor
+                                        )
+                                        (Integer 4)
+                                        (IntegerConstant 37 (Integer 4))
+                                    )
+                                    (IntegerConstant 37 (Integer 4))
+                                    Parameter
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            arr1:
+                                (Variable
+                                    2
+                                    arr1
+                                    []
+                                    Local
+                                    (ArrayConstant
+                                        12
+                                        [1, 21, 13]
+                                        (Array
+                                            (Integer 4)
+                                            [((IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 3 (Integer 4)))]
+                                            FixedSizeArray
+                                        )
+                                        ColMajor
+                                    )
+                                    (ArrayConstant
+                                        12
+                                        [1, 21, 13]
+                                        (Array
+                                            (Integer 4)
+                                            [((IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 3 (Integer 4)))]
+                                            FixedSizeArray
+                                        )
+                                        ColMajor
+                                    )
+                                    Save
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 3 (Integer 4)))]
+                                        FixedSizeArray
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            arr2:
+                                (Variable
+                                    2
+                                    arr2
+                                    []
+                                    Local
+                                    (Cast
+                                        (ArrayConstant
+                                            12
+                                            [1.00000000e+00, 2.10000000e+01, 1.30000000e+01]
+                                            (Array
+                                                (Real 4)
+                                                [((IntegerConstant 1 (Integer 4))
+                                                (IntegerConstant 3 (Integer 4)))]
+                                                FixedSizeArray
+                                            )
+                                            ColMajor
+                                        )
+                                        RealToReal
+                                        (Array
+                                            (Real 8)
+                                            [((IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 3 (Integer 4)))]
+                                            FixedSizeArray
+                                        )
+                                        (ArrayConstant
+                                            24
+                                            [1.0000000000000000e+00, 2.1000000000000000e+01, 1.3000000000000000e+01]
+                                            (Array
+                                                (Real 8)
+                                                [((IntegerConstant 1 (Integer 4))
+                                                (IntegerConstant 3 (Integer 4)))]
+                                                FixedSizeArray
+                                            )
+                                            ColMajor
+                                        )
+                                    )
+                                    (ArrayConstant
+                                        24
+                                        [1.0000000000000000e+00, 2.1000000000000000e+01, 1.3000000000000000e+01]
+                                        (Array
+                                            (Real 8)
+                                            [((IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 3 (Integer 4)))]
+                                            FixedSizeArray
+                                        )
+                                        ColMajor
+                                    )
+                                    Save
+                                    (Array
+                                        (Real 8)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 3 (Integer 4)))]
+                                        FixedSizeArray
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            arr3:
+                                (Variable
+                                    2
+                                    arr3
+                                    []
+                                    Local
+                                    (ArrayConstructor
+                                        [(ComplexConstructor
+                                            (IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 2 (Integer 4))
+                                            (Complex 4)
+                                            (ComplexConstant
+                                                1.000000
+                                                2.000000
+                                                (Complex 4)
+                                            )
+                                        )
+                                        (ComplexConstructor
+                                            (IntegerConstant 31 (Integer 4))
+                                            (IntegerConstant 4 (Integer 4))
+                                            (Complex 4)
+                                            (ComplexConstant
+                                                31.000000
+                                                4.000000
+                                                (Complex 4)
+                                            )
+                                        )
+                                        (ComplexConstructor
+                                            (IntegerConstant 51 (Integer 4))
+                                            (IntegerConstant 62 (Integer 4))
+                                            (Complex 4)
+                                            (ComplexConstant
+                                                51.000000
+                                                62.000000
+                                                (Complex 4)
+                                            )
+                                        )]
+                                        (Array
+                                            (Complex 4)
+                                            [((IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 3 (Integer 4)))]
+                                            FixedSizeArray
+                                        )
+                                        (ArrayConstant
+                                            12
+                                            [(1.00000000e+00, 2.00000000e+00), (3.10000000e+01, 4.00000000e+00), (5.10000000e+01, 6.20000000e+01)]
+                                            (Array
+                                                (Complex 4)
+                                                [((IntegerConstant 1 (Integer 4))
+                                                (IntegerConstant 3 (Integer 4)))]
+                                                FixedSizeArray
+                                            )
+                                            ColMajor
+                                        )
+                                        ColMajor
+                                    )
+                                    (ArrayConstant
+                                        12
+                                        [(1.00000000e+00, 2.00000000e+00), (3.10000000e+01, 4.00000000e+00), (5.10000000e+01, 6.20000000e+01)]
+                                        (Array
+                                            (Complex 4)
+                                            [((IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 3 (Integer 4)))]
+                                            FixedSizeArray
+                                        )
+                                        ColMajor
+                                    )
+                                    Save
+                                    (Array
+                                        (Complex 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 3 (Integer 4)))]
+                                        FixedSizeArray
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
                             c1:
                                 (Variable
                                     2
@@ -203,57 +613,138 @@
                     intrinsics_30
                     [iso_fortran_env]
                     [(Print
+                        [(Var 2 a1)]
+                        ()
+                        ()
+                    )
+                    (If
+                        (IntegerCompare
+                            (Var 2 a1)
+                            NotEq
+                            (IntegerConstant 9 (Integer 4))
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Print
+                        [(Var 2 a2)]
+                        ()
+                        ()
+                    )
+                    (If
+                        (IntegerCompare
+                            (Var 2 a2)
+                            NotEq
+                            (IntegerConstant 37 (Integer 4))
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Print
+                        [(Var 2 a3)]
+                        ()
+                        ()
+                    )
+                    (If
+                        (IntegerCompare
+                            (Var 2 a3)
+                            NotEq
+                            (IntegerConstant 37 (Integer 4))
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Print
+                        [(Var 2 ar1)]
+                        ()
+                        ()
+                    )
+                    (If
+                        (IntegerCompare
+                            (Var 2 ar1)
+                            NotEq
+                            (IntegerConstant 9 (Integer 4))
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Print
+                        [(Var 2 ar2)]
+                        ()
+                        ()
+                    )
+                    (If
+                        (IntegerCompare
+                            (Var 2 ar2)
+                            NotEq
+                            (IntegerConstant 37 (Integer 4))
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Print
+                        [(Var 2 ar3)]
+                        ()
+                        ()
+                    )
+                    (If
+                        (IntegerCompare
+                            (Var 2 ar3)
+                            NotEq
+                            (IntegerConstant 37 (Integer 4))
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Print
                         [(TypeInquiry
                             Range
                             (Integer 4)
-                            (Var 2 i1)
+                            (Var 2 ri3)
                             (Integer 4)
                             (IntegerConstant 9 (Integer 4))
-                        )
-                        (TypeInquiry
-                            Range
-                            (Integer 8)
-                            (Var 2 i2)
-                            (Integer 4)
-                            (IntegerConstant 18 (Integer 4))
-                        )
-                        (Var 2 ri3)
-                        (Var 2 ri4)]
-                        ()
-                        ()
-                    )
-                    (Print
-                        [(TypeInquiry
-                            Range
-                            (Real 4)
-                            (Var 2 r1)
-                            (Integer 4)
-                            (IntegerConstant 37 (Integer 4))
-                        )
-                        (TypeInquiry
-                            Range
-                            (Real 8)
-                            (Var 2 r2)
-                            (Integer 4)
-                            (IntegerConstant 307 (Integer 4))
-                        )]
-                        ()
-                        ()
-                    )
-                    (Print
-                        [(TypeInquiry
-                            Range
-                            (Complex 4)
-                            (Var 2 c1)
-                            (Integer 4)
-                            (IntegerConstant 37 (Integer 4))
-                        )
-                        (TypeInquiry
-                            Range
-                            (Complex 8)
-                            (Var 2 c2)
-                            (Integer 4)
-                            (IntegerConstant 307 (Integer 4))
                         )]
                         ()
                         ()
@@ -274,6 +765,17 @@
                         )]
                         []
                     )
+                    (Print
+                        [(TypeInquiry
+                            Range
+                            (Integer 4)
+                            (Var 2 ri4)
+                            (Integer 4)
+                            (IntegerConstant 9 (Integer 4))
+                        )]
+                        ()
+                        ()
+                    )
                     (If
                         (IntegerCompare
                             (Var 2 ri4)
@@ -289,6 +791,17 @@
                             ()
                         )]
                         []
+                    )
+                    (Print
+                        [(TypeInquiry
+                            Range
+                            (Integer 4)
+                            (Var 2 i1)
+                            (Integer 4)
+                            (IntegerConstant 9 (Integer 4))
+                        )]
+                        ()
+                        ()
                     )
                     (If
                         (IntegerCompare
@@ -312,6 +825,17 @@
                         )]
                         []
                     )
+                    (Print
+                        [(TypeInquiry
+                            Range
+                            (Integer 8)
+                            (Var 2 i2)
+                            (Integer 4)
+                            (IntegerConstant 18 (Integer 4))
+                        )]
+                        ()
+                        ()
+                    )
                     (If
                         (IntegerCompare
                             (TypeInquiry
@@ -333,6 +857,17 @@
                             ()
                         )]
                         []
+                    )
+                    (Print
+                        [(TypeInquiry
+                            Range
+                            (Real 4)
+                            (Var 2 r1)
+                            (Integer 4)
+                            (IntegerConstant 37 (Integer 4))
+                        )]
+                        ()
+                        ()
                     )
                     (If
                         (IntegerCompare
@@ -356,6 +891,17 @@
                         )]
                         []
                     )
+                    (Print
+                        [(TypeInquiry
+                            Range
+                            (Real 8)
+                            (Var 2 r2)
+                            (Integer 4)
+                            (IntegerConstant 307 (Integer 4))
+                        )]
+                        ()
+                        ()
+                    )
                     (If
                         (IntegerCompare
                             (TypeInquiry
@@ -377,6 +923,17 @@
                             ()
                         )]
                         []
+                    )
+                    (Print
+                        [(TypeInquiry
+                            Range
+                            (Complex 4)
+                            (Var 2 c1)
+                            (Integer 4)
+                            (IntegerConstant 37 (Integer 4))
+                        )]
+                        ()
+                        ()
                     )
                     (If
                         (IntegerCompare
@@ -400,6 +957,17 @@
                         )]
                         []
                     )
+                    (Print
+                        [(TypeInquiry
+                            Range
+                            (Complex 8)
+                            (Var 2 c2)
+                            (Integer 4)
+                            (IntegerConstant 307 (Integer 4))
+                        )]
+                        ()
+                        ()
+                    )
                     (If
                         (IntegerCompare
                             (TypeInquiry
@@ -411,6 +979,135 @@
                             )
                             NotEq
                             (IntegerConstant 307 (Integer 4))
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Print
+                        [(TypeInquiry
+                            Range
+                            (Array
+                                (Integer 4)
+                                [((IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 3 (Integer 4)))]
+                                FixedSizeArray
+                            )
+                            (Var 2 arr1)
+                            (Integer 4)
+                            (IntegerConstant 9 (Integer 4))
+                        )]
+                        ()
+                        ()
+                    )
+                    (If
+                        (IntegerCompare
+                            (TypeInquiry
+                                Range
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 3 (Integer 4)))]
+                                    FixedSizeArray
+                                )
+                                (Var 2 arr1)
+                                (Integer 4)
+                                (IntegerConstant 9 (Integer 4))
+                            )
+                            NotEq
+                            (IntegerConstant 9 (Integer 4))
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Print
+                        [(TypeInquiry
+                            Range
+                            (Array
+                                (Real 8)
+                                [((IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 3 (Integer 4)))]
+                                FixedSizeArray
+                            )
+                            (Var 2 arr2)
+                            (Integer 4)
+                            (IntegerConstant 307 (Integer 4))
+                        )]
+                        ()
+                        ()
+                    )
+                    (If
+                        (IntegerCompare
+                            (TypeInquiry
+                                Range
+                                (Array
+                                    (Real 8)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 3 (Integer 4)))]
+                                    FixedSizeArray
+                                )
+                                (Var 2 arr2)
+                                (Integer 4)
+                                (IntegerConstant 307 (Integer 4))
+                            )
+                            NotEq
+                            (IntegerConstant 307 (Integer 4))
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Print
+                        [(TypeInquiry
+                            Range
+                            (Array
+                                (Complex 4)
+                                [((IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 3 (Integer 4)))]
+                                FixedSizeArray
+                            )
+                            (Var 2 arr3)
+                            (Integer 4)
+                            (IntegerConstant 37 (Integer 4))
+                        )]
+                        ()
+                        ()
+                    )
+                    (If
+                        (IntegerCompare
+                            (TypeInquiry
+                                Range
+                                (Array
+                                    (Complex 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 3 (Integer 4)))]
+                                    FixedSizeArray
+                                )
+                                (Var 2 arr3)
+                                (Integer 4)
+                                (IntegerConstant 37 (Integer 4))
+                            )
+                            NotEq
+                            (IntegerConstant 37 (Integer 4))
                             (Logical 4)
                             (LogicalConstant
                                 .false.
