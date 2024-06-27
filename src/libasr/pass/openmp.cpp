@@ -636,23 +636,31 @@ class DoConcurrentVisitor :
             return {thread_data_module_name, thread_data_struct};
         }
 
+        std::vector<ASR::symbol_t*> create_modules_for_lcompilers_function(const Location &loc) {
+            std::vector<ASR::symbol_t*> module_symbols;
+            ASR::symbol_t* mod_sym = create_module(loc, "iso_c_binding");
+            LCOMPILERS_ASSERT(mod_sym != nullptr && ASR::is_a<ASR::Module_t>(*mod_sym));
+            module_symbols.push_back(mod_sym);
+            mod_sym = create_module(loc, "omp_lib");
+            LCOMPILERS_ASSERT(mod_sym != nullptr && ASR::is_a<ASR::Module_t>(*mod_sym));
+            module_symbols.push_back(mod_sym);
+            return module_symbols;
+        }
+
         ASR::symbol_t* create_lcompilers_function(const Location &loc, const ASR::DoConcurrentLoop_t &do_loop,
-                    std::map<std::string, ASR::ttype_t*> &involved_symbols, std::string thread_data_module_name) {
+                    std::map<std::string, ASR::ttype_t*> &involved_symbols, std::string thread_data_module_name,
+                    std::vector<ASR::symbol_t*> module_symbols) {
             SymbolTable* current_scope_copy = current_scope;
             while (current_scope->parent != nullptr) {
                 current_scope = current_scope->parent;
             }
             current_scope = al.make_new<SymbolTable>(current_scope);
             // load modules
-            ASR::symbol_t* mod_sym = create_module(loc, "iso_c_binding");
-            LCOMPILERS_ASSERT(mod_sym != nullptr && ASR::is_a<ASR::Module_t>(*mod_sym));
-            std::string unsupported_sym_name = import_all(ASR::down_cast<ASR::Module_t>(mod_sym));
+            std::string unsupported_sym_name = import_all(ASR::down_cast<ASR::Module_t>(module_symbols[0]));
             LCOMPILERS_ASSERT(unsupported_sym_name == "");
-            mod_sym = create_module(loc, "omp_lib");
-            LCOMPILERS_ASSERT(mod_sym != nullptr && ASR::is_a<ASR::Module_t>(*mod_sym));
-            unsupported_sym_name = import_all(ASR::down_cast<ASR::Module_t>(mod_sym));
+            unsupported_sym_name = import_all(ASR::down_cast<ASR::Module_t>(module_symbols[1]));
             LCOMPILERS_ASSERT(unsupported_sym_name == "");
-            mod_sym = create_module(loc, thread_data_module_name);
+            ASR::symbol_t* mod_sym = create_module(loc, thread_data_module_name);
             LCOMPILERS_ASSERT(mod_sym != nullptr && ASR::is_a<ASR::Module_t>(*mod_sym));
             unsupported_sym_name = import_all(ASR::down_cast<ASR::Module_t>(mod_sym));
             LCOMPILERS_ASSERT(unsupported_sym_name == "");
@@ -1123,6 +1131,7 @@ class DoConcurrentVisitor :
 
             // create thread data module
             std::pair<std::string, ASR::symbol_t*> thread_data_module = create_thread_data_module(involved_symbols, x.base.base.loc);
+            std::vector<ASR::symbol_t*> module_symbols = create_modules_for_lcompilers_function(x.base.base.loc);
 
             // create external symbol for the thread data module
             ASR::symbol_t* thread_data_ext_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al, x.base.base.loc,
@@ -1266,7 +1275,7 @@ class DoConcurrentVisitor :
                     ASRUtils::expr_type(tdata_expr), nullptr))
             ));
 
-            ASR::symbol_t* lcompilers_function = create_lcompilers_function(x.base.base.loc, x, involved_symbols, thread_data_module.first);
+            ASR::symbol_t* lcompilers_function = create_lcompilers_function(x.base.base.loc, x, involved_symbols, thread_data_module.first, module_symbols);
             LCOMPILERS_ASSERT(lcompilers_function != nullptr);
             ASR::Function_t* lcompilers_func = ASR::down_cast<ASR::Function_t>(lcompilers_function);
             ASR::symbol_t* lcompilers_interface_function = create_interface_lcompilers_function(lcompilers_func);
