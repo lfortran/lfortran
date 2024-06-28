@@ -79,10 +79,10 @@ public:
     Result<std::string> get_llvm(const std::string &code,
         LocationManager &lm, LCompilers::PassManager& pass_manager,
         diag::Diagnostics &diagnostics);
-    Result<std::unique_ptr<LLVMModule>> get_llvm2(const std::string &code,
+    Result<bool> get_llvm2(const std::string &code,
         LocationManager &lm, LCompilers::PassManager& pass_manager,
         diag::Diagnostics &diagnostics);
-    Result<std::unique_ptr<LLVMModule>> get_llvm3(ASR::TranslationUnit_t &asr,
+    Result<bool> get_llvm3(ASR::TranslationUnit_t &asr,
         LCompilers::PassManager& pass_manager,
         diag::Diagnostics &diagnostics, const std::string &infile);
     Result<std::string> get_asm(const std::string &code,
@@ -111,10 +111,13 @@ public:
     Result<std::string> get_fmt(const std::string &code, LocationManager &lm,
         diag::Diagnostics &diagnostics);
 
+#ifdef HAVE_LFORTRAN_LLVM
+    std::unique_ptr<LLVMEvaluator> e;
+#endif
+
 private:
     Allocator al;
 #ifdef HAVE_LFORTRAN_LLVM
-    std::unique_ptr<LLVMEvaluator> e;
     int eval_count;
 #endif
     SymbolTable *symbol_table;

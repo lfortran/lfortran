@@ -935,7 +935,6 @@ int compile_to_object_file(const std::string &infile,
         return 0;
     }
 
-    std::unique_ptr<LCompilers::LLVMModule> m;
     diagnostics.diagnostics.clear();
     if (compiler_options.emit_debug_info) {
 #ifndef HAVE_RUNTIME_STACKTRACE
@@ -950,25 +949,23 @@ int compile_to_object_file(const std::string &infile,
         return 1;
 #endif
     }
-    LCompilers::Result<std::unique_ptr<LCompilers::LLVMModule>>
+    LCompilers::Result<bool>
         res = fe.get_llvm3(*asr, lpm, diagnostics, infile);
     std::cerr << diagnostics.render(lm, compiler_options);
-    if (res.ok) {
-        m = std::move(res.result);
-    } else {
+    if (!res.ok) {
         LCOMPILERS_ASSERT(diagnostics.has_error())
         return 5;
     }
 
     if (compiler_options.po.fast) {
-        e.opt(*m->m_m);
+        fe.e->opt();
     }
 
     // LLVM -> Machine code (saves to an object file)
     if (assembly) {
-        e.save_asm_file(*(m->m_m), outfile);
+        fe.e->save_asm_file(outfile);
     } else {
-        e.save_object_file(*(m->m_m), outfile);
+        fe.e->save_object_file(outfile);
     }
 
     return 0;
