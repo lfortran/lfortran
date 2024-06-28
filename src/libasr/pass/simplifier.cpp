@@ -954,7 +954,8 @@ class ReplaceModuleVarWithValue:
 
         ASR::Variable_t* y = ASR::down_cast<ASR::Variable_t>(
             ASRUtils::symbol_get_past_external(x->m_v));
-        if( !(check_if_ASR_owner_is_module(y->m_parent_symtab->asr_owner)) ) {
+        if( !(check_if_ASR_owner_is_module(y->m_parent_symtab->asr_owner)) ||
+            y->m_symbolic_value == nullptr ) {
             return ;
         }
 

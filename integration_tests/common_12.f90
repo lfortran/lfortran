@@ -21,5 +21,3 @@ program common_12
    if (abs(tau(1) - 5.6d0) > 1e-10) error stop
    print *, tau(1)
 end program
-
-
