@@ -828,7 +828,7 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     }
 
     void replace_Var(ASR::Var_t* x) {
-        ASR::symbol_t* x_mv = x->m_v;
+        ASR::symbol_t* x_mv = ASRUtils::symbol_get_past_external(x->m_v);
         ASR::symbol_t* asr_owner = ASRUtils::get_asr_owner(x_mv);
         if( asr_owner && ASR::is_a<ASR::Module_t>(*asr_owner) &&
             ASR::is_a<ASR::Variable_t>(*x_mv) && ASRUtils::is_array(
@@ -867,6 +867,10 @@ class ReplaceExprWithTemporaryVisitor:
         replacer.current_body = current_body;
         replacer.current_scope = current_scope;
         replacer.replace_expr(*current_expr);
+    }
+
+    void visit_Variable(const ASR::Variable_t& /*x*/) {
+        // Do nothing
     }
 
     void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
@@ -943,11 +947,13 @@ class ReplaceModuleVarWithValue:
     ReplaceModuleVarWithValue(Allocator& al_): al(al_) {}
 
     void replace_Var(ASR::Var_t* x) {
-        if( !ASR::is_a<ASR::Variable_t>(*x->m_v) ) {
+        if( !ASR::is_a<ASR::Variable_t>(
+                *ASRUtils::symbol_get_past_external(x->m_v)) ) {
             return ;
         }
 
-        ASR::Variable_t* y = ASR::down_cast<ASR::Variable_t>(x->m_v);
+        ASR::Variable_t* y = ASR::down_cast<ASR::Variable_t>(
+            ASRUtils::symbol_get_past_external(x->m_v));
         if( !(check_if_ASR_owner_is_module(y->m_parent_symtab->asr_owner)) ) {
             return ;
         }
@@ -968,15 +974,11 @@ class TransformVariableInitialiser:
     std::set<ASR::expr_t*>& exprs_with_target;
     std::map<SymbolTable*, Vec<ASR::stmt_t*>> symtab2decls;
     ReplaceModuleVarWithValue replacer;
-    Vec<std::pair<SymbolTable*, char*>>& to_be_erased;
 
     public:
 
-    TransformVariableInitialiser(Allocator& al_, std::set<ASR::expr_t*>& exprs_with_target_,
-        Vec<std::pair<SymbolTable*, char*>>& to_be_erased_): al(al_),
-        exprs_with_target(exprs_with_target_), replacer(al_), to_be_erased(to_be_erased_) {
-        to_be_erased.reserve(al, 1);
-    }
+    TransformVariableInitialiser(Allocator& al_, std::set<ASR::expr_t*>& exprs_with_target_): al(al_),
+        exprs_with_target(exprs_with_target_), replacer(al_) {}
 
     void call_replacer() {
         replacer.current_expr = current_expr;
@@ -985,7 +987,6 @@ class TransformVariableInitialiser:
 
     void visit_Variable(const ASR::Variable_t &x) {
         if( check_if_ASR_owner_is_module(x.m_parent_symtab->asr_owner) ) {
-            to_be_erased.push_back(al, std::make_pair(x.m_parent_symtab, x.m_name));
             return ;
         }
 
@@ -1336,8 +1337,9 @@ class VerifySimplifierASROutput:
     }
 
     void visit_Variable(const ASR::Variable_t& x) {
-        if( ASRUtils::is_array(x.m_type) ||
-            ASRUtils::is_aggregate_type(x.m_type) ) {
+        if( (ASRUtils::is_array(x.m_type) ||
+            ASRUtils::is_aggregate_type(x.m_type)) &&
+            !check_if_ASR_owner_is_module(x.m_parent_symtab->asr_owner) ) {
             LCOMPILERS_ASSERT(x.m_symbolic_value == nullptr);
             LCOMPILERS_ASSERT(x.m_value == nullptr);
         }
@@ -1385,14 +1387,8 @@ void pass_simplifier(Allocator &al, ASR::TranslationUnit_t &unit,
     std::set<ASR::expr_t*> exprs_with_target;
     InitialiseExprWithTarget init_expr_with_target(exprs_with_target);
     init_expr_with_target.visit_TranslationUnit(unit);
-    Vec<std::pair<SymbolTable*, char*>> to_be_erased;
-    TransformVariableInitialiser a(al, exprs_with_target, to_be_erased);
+    TransformVariableInitialiser a(al, exprs_with_target);
     a.visit_TranslationUnit(unit);
-    for( size_t i = 0; i < to_be_erased.size(); i++ ) {
-        if( to_be_erased[i].first->get_symbol(to_be_erased[i].second) ) {
-            to_be_erased[i].first->erase_symbol(to_be_erased[i].second);
-        }
-    }
     ArgSimplifier b(al, exprs_with_target);
     b.visit_TranslationUnit(unit);
     ReplaceExprWithTemporaryVisitor c(al, exprs_with_target);
