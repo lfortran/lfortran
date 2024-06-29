@@ -2876,7 +2876,7 @@ namespace Maskl {
     static inline ASR::expr_t* instantiate_Maskl(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("");
+        declare_basic_variables("_lcompilers_maskl_" + type_to_str_python(arg_types[0]));
         fill_func_arg("x", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
         /*
@@ -2920,7 +2920,7 @@ namespace Maskr {
     static inline ASR::expr_t* instantiate_Maskr(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("");
+        declare_basic_variables("_lcompilers_maskr_" + type_to_str_python(arg_types[0]));
         fill_func_arg("x", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
         /*
@@ -3320,8 +3320,8 @@ namespace Real {
     static ASR::expr_t *eval_Real(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         if (ASR::is_a<ASR::IntegerConstant_t>(*args[0])) {
-            int64_t i = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(args[0]))->m_n;
-            return make_ConstantWithType(make_RealConstant_t, static_cast<double>(i), t1, loc);
+            double i = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(args[0]))->m_n;
+            return make_ConstantWithType(make_RealConstant_t, i, t1, loc);
         } else if (ASR::is_a<ASR::RealConstant_t>(*args[0])) {
             ASR::RealConstant_t *r = ASR::down_cast<ASR::RealConstant_t>(ASRUtils::expr_value(args[0]));
             return make_ConstantWithType(make_RealConstant_t, r->m_r, t1, loc);
@@ -3338,7 +3338,7 @@ namespace Real {
         SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
         Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
         declare_basic_variables("_lcompilers_real_" + type_to_str_python(arg_types[0]));
-        fill_func_arg("a", arg_types[0]);
+        fill_func_arg("x", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
         /*
         function real(a) result(result)
@@ -3347,13 +3347,13 @@ namespace Real {
             result = a
         end function
         */
-        if (ASR::is_a<ASR::Integer_t>(*arg_types[0])) {
+        if (is_integer(*arg_types[0])) {
             body.push_back(al, b.Assignment(result, b.i2r_t(args[0], return_type)));
-        } else if (ASR::is_a<ASR::Real_t>(*arg_types[0])) {
+        } else if (is_real(*arg_types[0])) {
             body.push_back(al, b.Assignment(result, b.r2r_t(args[0], return_type)));
-        } else if (ASR::is_a<ASR::Complex_t>(*arg_types[0])) {
-            body.push_back(al, b.Assignment(result, EXPR(ASR::make_ComplexRe_t(al, loc,
-                args[0], return_type, nullptr))));
+        } else if (is_complex(*arg_types[0])) {
+            body.push_back(al, b.Assignment(result, EXPR(ASR::make_ComplexRe_t(al, loc, 
+            args[0], return_type, nullptr))));
         }
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);

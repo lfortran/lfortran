@@ -5383,6 +5383,15 @@ public:
             if (args[3] == nullptr) {
                 args.p[3] = four;
             }
+        } else if (intrinsic_name == "real") {
+            if (args[1] == nullptr) {
+                if (is_complex(*ASRUtils::expr_type(args[0]))) {
+                    int kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[0]));
+                    ASR::expr_t* val = ASRUtils::EXPR(
+                        ASR::make_IntegerConstant_t(al, loc, kind, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, kind))));
+                    args.p[1] = val;
+                }   
+            }
         }
     }
 
