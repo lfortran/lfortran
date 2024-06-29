@@ -83,7 +83,8 @@ intrinsic_funcs_args = {
     "Hypot": [
         {
             "args": [("real", "real")],
-            "ret_type_arg_idx": 0
+            "ret_type_arg_idx": 0,
+            "same_kind_arg" : 2
         }
     ],
     "Trunc": [
@@ -545,19 +546,22 @@ intrinsic_funcs_args = {
     "Iand": [
         {
             "args": [("int", "int")],
-            "ret_type_arg_idx": 0
+            "ret_type_arg_idx": 0,
+            "same_kind_arg": 2
         },
     ],
     "Ior": [
         {
             "args": [("int", "int")],
-            "ret_type_arg_idx": 0
+            "ret_type_arg_idx": 0,
+            "same_kind_arg": 2
         },
     ],
     "Ieor": [
         {
             "args": [("int", "int")],
-            "ret_type_arg_idx": 0
+            "ret_type_arg_idx": 0,
+            "same_kind_arg": 2
         },
     ],
     "Ibclr": [
@@ -710,7 +714,8 @@ intrinsic_funcs_args = {
     "Mergebits": [
         {
             "args": [("int", "int", "int")],
-            "ret_type_arg_idx": 0
+            "ret_type_arg_idx": 0,
+            "same_kind_arg": 3
         }
     ], 
     "Ishftc": [
@@ -767,7 +772,8 @@ intrinsic_funcs_args = {
     "Dshiftl": [
        {
            "args": [("int", "int", "int",)],
-           "ret_type_arg_idx": 0
+           "ret_type_arg_idx": 0,
+           "same_kind_arg": 2
        },
    ],
    "Dshiftr": [
@@ -837,6 +843,11 @@ def compute_arg_types(indent, no_of_args, args_arr):
     for i in range(no_of_args):
         src += indent + f"ASR::ttype_t *arg_type{i} = ASRUtils::expr_type({args_arr}[{i}]);\n"
 
+def compute_arg_kinds(indent, no_of_args):
+    global src
+    for i in range(no_of_args):
+        src += indent + f"int kind{i} = ASRUtils::extract_kind_from_ttype_t(arg_type{i});\n"
+
 def compute_arg_condition(no_of_args, args_lists):
     condition = []
     cond_in_msg = []
@@ -851,9 +862,16 @@ def compute_arg_condition(no_of_args, args_lists):
         cond_in_msg.append(", ".join(subcond_in_msg))
     return (f"({') || ('.join(condition)})", f"({') or ('.join(cond_in_msg)})")
 
+def compute_kind_condition(no_of_args):
+    condition = []
+    for i in range(1, no_of_args):
+        condition.append(f"kind0 == kind{i}")
+    return f"({') && ('.join(condition)})"
+
 def add_verify_arg_type_src(func_name):
     global src
     arg_infos = intrinsic_funcs_args[func_name]
+    same_kind_arg = arg_infos[0].get("same_kind_arg", False)
     no_of_args_msg = ""
     for i, arg_info in enumerate(arg_infos):
         args_lists = arg_info["args"]
@@ -866,6 +884,10 @@ def add_verify_arg_type_src(func_name):
         compute_arg_types(3 * indent, no_of_args, "x.m_args")
         condition, cond_in_msg = compute_arg_condition(no_of_args, args_lists)
         src += 3 * indent + f'ASRUtils::require_impl({condition}, "Unexpected args, {func_name} expects {cond_in_msg} as arguments", x.base.base.loc, diagnostics);\n'
+        if same_kind_arg:
+            compute_arg_kinds(3 * indent, same_kind_arg)
+            condition = compute_kind_condition(same_kind_arg)
+            src += 3 * indent + f'ASRUtils::require_impl({condition}, "Kind of all the arguments of {func_name} must be the same", x.base.base.loc, diagnostics);\n'
         src += 2 * indent + "}\n"
     src += 2 * indent + "else {\n"
     src += 3 * indent + f'ASRUtils::require_impl(false, "Unexpected number of args, {func_name} takes {no_of_args_msg} arguments, found " + std::to_string(x.n_args), x.base.base.loc, diagnostics);\n'
@@ -895,6 +917,7 @@ def add_create_func_arg_type_src(func_name):
     for i, arg_info in enumerate(arg_infos):
         args_lists = arg_info["args"]
         kind_arg = arg_info.get("kind_arg", False)
+        same_kind_arg = arg_info.get("same_kind_arg", False)
         no_of_args = len(args_lists[0])
         no_of_args_msg += " or " if i > 0 else ""
         no_of_args_msg += f"{no_of_args + int(kind_arg)}"
@@ -906,6 +929,13 @@ def add_create_func_arg_type_src(func_name):
         src += 4 * indent + f'append_error(diag, "Unexpected args, {func_name} expects {cond_in_msg} as arguments", loc);\n'
         src += 4 * indent + f'return nullptr;\n'
         src += 3 * indent + '}\n'
+        if same_kind_arg:
+            compute_arg_kinds(3 * indent, same_kind_arg)
+            condition = compute_kind_condition(same_kind_arg)
+            src += 3 * indent + f'if(!({condition}))' + ' {\n'
+            src += 4 * indent + f'append_error(diag, "Kind of all the arguments of {func_name} must be the same", loc);\n'
+            src += 4 * indent + f'return nullptr;\n'
+            src += 3 * indent + '}\n'
         src += 2 * indent + "}\n"
     src += 2 * indent + "else {\n"
     src += 3 * indent + f'append_error(diag, "Unexpected number of args, {func_name} takes {no_of_args_msg} arguments, found " + std::to_string(args.size()), loc);\n'

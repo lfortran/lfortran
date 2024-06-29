@@ -1107,17 +1107,12 @@ namespace Dshiftl {
         int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
         int64_t shift = ASR::down_cast<ASR::IntegerConstant_t>(args[2])->m_n;
-        int kind1 = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_type);
-        int kind2 = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_type);
-        if(kind1 != kind2) {
-            append_error(diag, "The kind of first argument of 'dshiftl' intrinsic must be the same as second argument", loc);
-            return nullptr;
-        }
+        int kind = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_type);
         if(shift < 0){
             append_error(diag, "The shift argument of 'dshiftl' intrinsic must be non-negative integer", loc);
             return nullptr;
         }
-        int k_val = (kind1 == 8) ? 64: 32;
+        int k_val = (kind == 8) ? 64: 32;
         int64_t val = (val1 << shift) | (val2 >> (k_val - shift));
         return make_ConstantWithType(make_IntegerConstant_t, val, t1, loc);
     }
@@ -1638,15 +1633,9 @@ namespace Not {
 namespace Iand {
 
     static ASR::expr_t *eval_Iand(Allocator &al, const Location &loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
-        int kind1 = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_type);
-        int kind2 = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_type);
-        if (kind1 != kind2) {
-            append_error(diag, "The kind of first argument of `iand` intrinsic must be the same as second argument", loc);
-            return nullptr;
-        }
         int64_t result;
         result = val1 & val2;
         return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);
@@ -1680,15 +1669,9 @@ namespace Iand {
 namespace Ior {
 
     static ASR::expr_t *eval_Ior(Allocator &al, const Location &loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
-        int kind1 = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_type);
-        int kind2 = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_type);
-        if (kind1 != kind2) {
-            append_error(diag, "The kind of first argument of `ior` intrinsic must be the same as second argument", loc);
-            return nullptr;
-        }
         int64_t result;
         result = val1 | val2;
         return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);
@@ -1722,15 +1705,9 @@ namespace Ior {
 namespace Ieor {
 
     static ASR::expr_t *eval_Ieor(Allocator &al, const Location &loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
-        int kind1 = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_type);
-        int kind2 = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_type);
-        if (kind1 != kind2) {
-            append_error(diag, "The kind of first argument of `ieor` intrinsic must be the same as second argument", loc);
-            return nullptr;
-        }
         int64_t result;
         result = val1 ^ val2;
         return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);
@@ -3425,24 +3402,14 @@ namespace Mergebits {
     }
 
     static ASR::expr_t *eval_Mergebits(Allocator &al, const Location &loc,
-        ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
-        int kind1 = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_type);
-        int kind2 = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_type);
-        int kind3 = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[2])->m_type);
+        ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+        int kind = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_type);
         int a = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int b = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
         int mask = ASR::down_cast<ASR::IntegerConstant_t>(args[2])->m_n;
         int result = 0;
-        if(kind1 != kind2) {
-            append_error(diag, "The second argument of 'merge_bits' intrinsic must be the same type and kind as first argument", loc);
-            return nullptr;
-        } else if(kind1 != kind3) {
-            append_error(diag, "The third argument of 'merge_bits' intrinsic must be the same type and kind as first argument", loc);
-            return nullptr;
-        } else{
-            result = compute_merge_bits(a, b, mask, kind1 * 8);
-            return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);
-        }
+        result = compute_merge_bits(a, b, mask, kind * 8);
+        return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);
     }
 
     static inline ASR::expr_t* instantiate_Mergebits(Allocator &al, const Location &loc,
