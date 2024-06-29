@@ -79,6 +79,11 @@ install(TARGETS lfortran
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 
+install(PROGRAMS glfortran
+        DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+
+
 
 add_executable(parse parse.cpp)
 target_link_libraries(parse lfortran_lib)
