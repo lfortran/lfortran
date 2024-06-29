@@ -446,7 +446,6 @@ class DoConcurrentVisitor :
                 pass_result.n = 0;
                 current_stmt_index = i;
                 pass_result.reserve(al, 1);
-                pass_result_allocatable.reserve(al, 1);
                 remove_original_statement = false;
                 visit_stmt(*m_body[i]);
                 for (size_t j=0; j < pass_result.size(); j++) {
