@@ -3544,7 +3544,7 @@ filename = "errors/intrinsics1.f90"
 asr = true
 
 [[test]]
-filename = "errors/intrinsics_02.f90"
+filename = "errors/intrinsics2.f90"
 asr = true
 
 [[test]]
@@ -4015,17 +4015,37 @@ filename = "openmp1.f90"
 asr_openmp = true
 
 [[test]]
-filename = "errors/intrinsics_03.f90"
+filename = "errors/intrinsics3.f90"
 asr = true
 
 [[test]]
-filename = "errors/intrinsics_04.f90"
+filename = "errors/intrinsics4.f90"
 asr = true
 
 [[test]]
-filename = "errors/intrinsics_05.f90"
+filename = "errors/intrinsics5.f90"
 asr = true
 
 [[test]]
-filename = "errors/intrinsics_06.f90"
+filename = "errors/intrinsics6.f90"
+asr = true
+
+[[test]]
+filename = "errors/intrinsics7.f90"
+asr = true
+
+[[test]]
+filename = "errors/intrinsics8.f90"
+asr = true
+
+[[test]]
+filename = "errors/intrinsics9.f90"
+asr = true
+
+[[test]]
+filename = "errors/intrinsics10.f90"
+asr = true
+
+[[test]]
+filename = "errors/intrinsics11.f90"
 asr = true
