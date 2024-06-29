@@ -2,8 +2,6 @@
     (SymbolTable
         1
         {
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin),
             m_cli2:
                 (Module
                     (SymbolTable
@@ -29,16 +27,6 @@
                                                     Public
                                                     Required
                                                     .false.
-                                                ),
-                                            real:
-                                                (ExternalSymbol
-                                                    3
-                                                    real
-                                                    5 real
-                                                    lfortran_intrinsic_builtin
-                                                    []
-                                                    real
-                                                    Private
                                                 ),
                                             valu:
                                                 (Variable
@@ -76,9 +64,10 @@
                                     [(Var 3 valu)]
                                     [(Assignment
                                         (Var 3 valu)
-                                        (Cast
-                                            (Var 3 ivalu)
-                                            IntegerToReal
+                                        (IntrinsicElementalFunction
+                                            Real
+                                            [(Var 3 ivalu)]
+                                            0
                                             (Real 8)
                                             ()
                                         )
@@ -92,7 +81,7 @@
                                 )
                         })
                     m_cli2
-                    [lfortran_intrinsic_builtin]
+                    []
                     .false.
                     .false.
                 )
