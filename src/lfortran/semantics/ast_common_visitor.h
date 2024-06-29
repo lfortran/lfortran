@@ -884,6 +884,7 @@ public:
         {"logical", {IntrinsicSignature({"i", "kind"}, 1, 2)}},
         {"cshift", {IntrinsicSignature({"array", "shift", "dim"}, 2, 3)}},
         {"eoshift", {IntrinsicSignature({"array", "shift", "boundary", "dim"}, 2, 4)}},
+        {"spread", {IntrinsicSignature({"source", "dim", "ncopies"}, 3, 3)}},
     };
 
     std::map<std::string, std::pair<std::string, std::vector<std::string>>> intrinsic_mapping = {
