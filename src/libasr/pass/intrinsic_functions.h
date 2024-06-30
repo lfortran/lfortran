@@ -2865,10 +2865,13 @@ namespace Maskl {
             diag.semantic_error_label("first argument of `maskl` must be nonnegative", {loc}, "");
             return nullptr;
         } else {
-            int64_t one = 1;
-            int64_t minus_one = -1;
-            int64_t sixty_four = 64;
-            int64_t result = (i == 64) ? minus_one : ((one << i) - one) << (sixty_four - i);
+            int64_t bit_size = (kind == 4) ? 32 : 64;
+            int64_t result;
+            if (i == 0) {
+                result = 0;
+            } else {
+                result = (i == bit_size) ? -1 : ((~0ULL) << (bit_size - i));
+            }
             return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);
         }
     }
