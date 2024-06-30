@@ -76,7 +76,7 @@
                                     ()
                                     ()
                                     Default
-                                    (StructType
+                                    (Struct
                                         7 t_2
                                     )
                                     ()
@@ -103,7 +103,7 @@
                                     7 1_t_2_type_2
                                     (Pointer
                                         (Array
-                                            (StructType
+                                            (Struct
                                                 7 t_1
                                             )
                                             [(()
@@ -116,7 +116,7 @@
                                 [(()
                                 (IntegerConstant 0 (Integer 4))
                                 ())]
-                                (StructType
+                                (Struct
                                     7 t_1
                                 )
                                 ColMajor
@@ -192,7 +192,7 @@
                                                                     5 1_t_2_type_2
                                                                     (Pointer
                                                                         (Array
-                                                                            (StructType
+                                                                            (Struct
                                                                                 2 t_1
                                                                             )
                                                                             [(()
@@ -205,7 +205,7 @@
                                                                 [(()
                                                                 (IntegerConstant 0 (Integer 4))
                                                                 ())]
-                                                                (StructType
+                                                                (Struct
                                                                     2 t_1
                                                                 )
                                                                 ColMajor
@@ -248,7 +248,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (Class
                                                         2 t_2
                                                     )
                                                     ()
@@ -260,7 +260,7 @@
                                         })
                                     sub_1
                                     (FunctionType
-                                        [(ClassType
+                                        [(Class
                                             2 t_2
                                         )
                                         (Integer 4)]
@@ -285,7 +285,7 @@
                                             5 1_t_2_type_2
                                             (Pointer
                                                 (Array
-                                                    (StructType
+                                                    (Struct
                                                         2 t_1
                                                     )
                                                     [(()
@@ -361,7 +361,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (ClassType
+                                                                    (Class
                                                                         2 t_2
                                                                     )
                                                                     ()
@@ -379,7 +379,7 @@
                                                             [(()
                                                             (IntegerConstant 0 (Integer 4))
                                                             ())]
-                                                            (ClassType
+                                                            (Class
                                                                 2 t_2
                                                             )
                                                             ColMajor
@@ -395,7 +395,7 @@
                                                                     9 1_t_2_type_2
                                                                     (Pointer
                                                                         (Array
-                                                                            (StructType
+                                                                            (Struct
                                                                                 2 t_1
                                                                             )
                                                                             [(()
@@ -408,7 +408,7 @@
                                                                 [(()
                                                                 (IntegerConstant 0 (Integer 4))
                                                                 ())]
-                                                                (StructType
+                                                                (Struct
                                                                     2 t_1
                                                                 )
                                                                 ColMajor
@@ -433,7 +433,7 @@
                                                     Default
                                                     (Allocatable
                                                         (Array
-                                                            (ClassType
+                                                            (Class
                                                                 2 t_2
                                                             )
                                                             [(()
@@ -452,7 +452,7 @@
                                     (FunctionType
                                         [(Allocatable
                                             (Array
-                                                (ClassType
+                                                (Class
                                                     2 t_2
                                                 )
                                                 [(()
@@ -481,7 +481,7 @@
                                                 [(()
                                                 (IntegerConstant 0 (Integer 4))
                                                 ())]
-                                                (ClassType
+                                                (Class
                                                     2 t_2
                                                 )
                                                 ColMajor
@@ -490,7 +490,7 @@
                                             6 1_t_2_type_2
                                             (Pointer
                                                 (Array
-                                                    (StructType
+                                                    (Struct
                                                         2 t_1
                                                     )
                                                     [(()
@@ -518,7 +518,7 @@
                                     ()
                                 ),
                             t_1:
-                                (Struct
+                                (StructType
                                     (SymbolTable
                                         3
                                         {
@@ -551,7 +551,7 @@
                                     ()
                                 ),
                             t_2:
-                                (Struct
+                                (StructType
                                     (SymbolTable
                                         4
                                         {
@@ -566,7 +566,7 @@
                                                     Default
                                                     (Pointer
                                                         (Array
-                                                            (StructType
+                                                            (Struct
                                                                 2 t_1
                                                             )
                                                             [(()

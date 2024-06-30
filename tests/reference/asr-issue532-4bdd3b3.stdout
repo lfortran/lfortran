@@ -39,6 +39,16 @@
                                                     Required
                                                     .false.
                                                 ),
+                                            real:
+                                                (ExternalSymbol
+                                                    4
+                                                    real
+                                                    7 real
+                                                    lfortran_intrinsic_builtin
+                                                    []
+                                                    real
+                                                    Private
+                                                ),
                                             x:
                                                 (Variable
                                                     4
@@ -97,10 +107,9 @@
                                             (FunctionCall
                                                 2 sfloor
                                                 ()
-                                                [((IntrinsicElementalFunction
-                                                    Real
-                                                    [(Var 4 x)]
-                                                    0
+                                                [((Cast
+                                                    (Var 4 x)
+                                                    IntegerToReal
                                                     (Real 4)
                                                     ()
                                                 ))]
@@ -194,10 +203,13 @@
                                 )
                         })
                     issue532_mod
-                    [issue532_mod]
+                    [lfortran_intrinsic_builtin
+                    issue532_mod]
                     .false.
                     .false.
-                )
+                ),
+            lfortran_intrinsic_builtin:
+                (IntrinsicModule lfortran_intrinsic_builtin)
         })
     []
 )

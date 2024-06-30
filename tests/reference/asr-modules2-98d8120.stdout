@@ -42,7 +42,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (Class
                                                         10 toml_structure
                                                     )
                                                     ()
@@ -64,7 +64,7 @@
                                         })
                                     destroy
                                     (FunctionType
-                                        [(ClassType
+                                        [(Class
                                             10 toml_structure
                                         )]
                                         ()
@@ -89,7 +89,7 @@
                                     ()
                                 ),
                             toml_ordered:
-                                (Struct
+                                (StructType
                                     (SymbolTable
                                         11
                                         {
@@ -107,7 +107,7 @@
                                     10 toml_structure
                                 ),
                             toml_structure:
-                                (Struct
+                                (StructType
                                     (SymbolTable
                                         12
                                         {
@@ -199,7 +199,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (Class
                                                         2 toml_array
                                                     )
                                                     ()
@@ -211,7 +211,7 @@
                                         })
                                     destroy
                                     (FunctionType
-                                        [(ClassType
+                                        [(Class
                                             2 toml_array
                                         )]
                                         ()
@@ -262,7 +262,7 @@
                                                 (Var 15 self)
                                                 15 1_toml_array_list
                                                 (Allocatable
-                                                    (ClassType
+                                                    (Class
                                                         2 toml_ordered
                                                     )
                                                 )
@@ -280,7 +280,7 @@
                                                 (Var 15 self)
                                                 15 1_toml_array_list
                                                 (Allocatable
-                                                    (ClassType
+                                                    (Class
                                                         2 toml_ordered
                                                     )
                                                 )
@@ -292,7 +292,7 @@
                                                 (Var 15 self)
                                                 15 1_toml_array_list
                                                 (Allocatable
-                                                    (ClassType
+                                                    (Class
                                                         2 toml_ordered
                                                     )
                                                 )
@@ -328,7 +328,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (StructType
+                                                    (Struct
                                                         2 toml_array
                                                     )
                                                     ()
@@ -340,7 +340,7 @@
                                         })
                                     new_array
                                     (FunctionType
-                                        [(StructType
+                                        [(Struct
                                             2 toml_array
                                         )]
                                         ()
@@ -365,7 +365,7 @@
                                     ()
                                 ),
                             toml_array:
-                                (Struct
+                                (StructType
                                     (SymbolTable
                                         14
                                         {
@@ -390,7 +390,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (ClassType
+                                                        (Class
                                                             2 toml_ordered
                                                         )
                                                     )
@@ -459,7 +459,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (Class
                                                         4 toml_value
                                                     )
                                                     ()
@@ -471,7 +471,7 @@
                                         })
                                     destroy
                                     (FunctionType
-                                        [(ClassType
+                                        [(Class
                                             4 toml_value
                                         )]
                                         ()
@@ -496,7 +496,7 @@
                                     ()
                                 ),
                             toml_value:
-                                (Struct
+                                (StructType
                                     (SymbolTable
                                         5
                                         {

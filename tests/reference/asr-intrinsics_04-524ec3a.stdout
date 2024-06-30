@@ -17,6 +17,16 @@
                                     real64
                                     Public
                                 ),
+                            real:
+                                (ExternalSymbol
+                                    2
+                                    real
+                                    7 real
+                                    lfortran_intrinsic_builtin
+                                    []
+                                    real
+                                    Private
+                                ),
                             sp:
                                 (ExternalSymbol
                                     2
@@ -307,10 +317,9 @@
                             (IntrinsicElementalFunction
                                 Abs
                                 [(RealBinOp
-                                    (IntrinsicElementalFunction
-                                        Real
-                                        [(Var 2 z)]
-                                        0
+                                    (Cast
+                                        (Var 2 z)
+                                        ComplexToReal
                                         (Real 8)
                                         ()
                                     )
@@ -345,9 +354,8 @@
                                 (IntrinsicElementalFunction
                                     Abs
                                     [(RealBinOp
-                                        (IntrinsicElementalFunction
-                                            Real
-                                            [(IntrinsicElementalFunction
+                                        (Cast
+                                            (IntrinsicElementalFunction
                                                 Tan
                                                 [(ComplexConstructor
                                                     (RealConstant
@@ -372,8 +380,8 @@
                                                     1.001807
                                                     (Complex 4)
                                                 )
-                                            )]
-                                            0
+                                            )
+                                            ComplexToReal
                                             (Real 4)
                                             (RealConstant
                                                 0.000258
@@ -460,7 +468,9 @@
                     )]
                 ),
             iso_fortran_env:
-                (IntrinsicModule lfortran_intrinsic_iso_fortran_env)
+                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
+            lfortran_intrinsic_builtin:
+                (IntrinsicModule lfortran_intrinsic_builtin)
         })
     []
 )

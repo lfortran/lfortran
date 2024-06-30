@@ -2,6 +2,8 @@
     (SymbolTable
         1
         {
+            lfortran_intrinsic_builtin:
+                (IntrinsicModule lfortran_intrinsic_builtin),
             matrix_01_tranpose:
                 (Program
                     (SymbolTable
@@ -222,6 +224,16 @@
                                     Public
                                     Required
                                     .false.
+                                ),
+                            real:
+                                (ExternalSymbol
+                                    2
+                                    real
+                                    4 real
+                                    lfortran_intrinsic_builtin
+                                    []
+                                    real
+                                    Private
                                 ),
                             x:
                                 (Variable
@@ -957,9 +969,8 @@
                                     (IntrinsicElementalFunction
                                         Abs
                                         [(RealBinOp
-                                            (IntrinsicElementalFunction
-                                                Real
-                                                [(ArrayItem
+                                            (Cast
+                                                (ArrayItem
                                                     (Var 2 c)
                                                     [(()
                                                     (Var 2 i)
@@ -970,15 +981,14 @@
                                                     (Complex 4)
                                                     ColMajor
                                                     ()
-                                                )]
-                                                0
+                                                )
+                                                ComplexToReal
                                                 (Real 4)
                                                 ()
                                             )
                                             Sub
-                                            (IntrinsicElementalFunction
-                                                Real
-                                                [(ArrayItem
+                                            (Cast
+                                                (ArrayItem
                                                     (Var 2 f)
                                                     [(()
                                                     (Var 2 j)
@@ -989,8 +999,8 @@
                                                     (Complex 4)
                                                     ColMajor
                                                     ()
-                                                )]
-                                                0
+                                                )
+                                                ComplexToReal
                                                 (Real 4)
                                                 ()
                                             )

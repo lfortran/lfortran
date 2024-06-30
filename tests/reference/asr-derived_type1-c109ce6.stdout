@@ -18,7 +18,7 @@
                                     Public
                                 ),
                             enum_escape:
-                                (Struct
+                                (StructType
                                     (SymbolTable
                                         3
                                         {
@@ -131,17 +131,17 @@
                                     toml_escape
                                     []
                                     Local
-                                    (StructConstructor
+                                    (StructTypeConstructor
                                         2 enum_escape
                                         [(())]
-                                        (StructType
+                                        (Struct
                                             2 enum_escape
                                         )
                                         ()
                                     )
                                     ()
                                     Parameter
-                                    (StructType
+                                    (Struct
                                         2 enum_escape
                                     )
                                     ()

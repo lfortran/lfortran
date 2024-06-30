@@ -67,7 +67,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (StructType
+                                                    (Struct
                                                         2 toml_key
                                                     )
                                                     ()
@@ -85,7 +85,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (StructType
+                                                    (Struct
                                                         2 toml_key
                                                     )
                                                     ()
@@ -97,10 +97,10 @@
                                         })
                                     compare_keys_less
                                     (FunctionType
-                                        [(StructType
+                                        [(Struct
                                             2 toml_key
                                         )
-                                        (StructType
+                                        (Struct
                                             2 toml_key
                                         )]
                                         (Logical 4)
@@ -179,7 +179,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (StructType
+                                                    (Struct
                                                         2 toml_key
                                                     )
                                                     ()
@@ -197,7 +197,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (StructType
+                                                    (Struct
                                                         2 toml_key
                                                     )
                                                     ()
@@ -209,10 +209,10 @@
                                         })
                                     compare_less
                                     (FunctionType
-                                        [(StructType
+                                        [(Struct
                                             2 toml_key
                                         )
-                                        (StructType
+                                        (Struct
                                             2 toml_key
                                         )]
                                         (Logical 4)
@@ -321,10 +321,10 @@
                                                     ()
                                                     Default
                                                     (FunctionType
-                                                        [(StructType
+                                                        [(Struct
                                                             2 toml_key
                                                         )
-                                                        (StructType
+                                                        (Struct
                                                             2 toml_key
                                                         )]
                                                         (Logical 4)
@@ -355,7 +355,7 @@
                                                     ()
                                                     Default
                                                     (Array
-                                                        (StructType
+                                                        (Struct
                                                             2 toml_key
                                                         )
                                                         [(()
@@ -404,7 +404,7 @@
                                     quicksort
                                     (FunctionType
                                         [(Array
-                                            (StructType
+                                            (Struct
                                                 2 toml_key
                                             )
                                             [(()
@@ -420,10 +420,10 @@
                                         (Integer 4)
                                         (Integer 4)
                                         (FunctionType
-                                            [(StructType
+                                            [(Struct
                                                 2 toml_key
                                             )
-                                            (StructType
+                                            (Struct
                                                 2 toml_key
                                             )]
                                             (Logical 4)
@@ -534,7 +534,7 @@
                                                             ()
                                                         )
                                                         ())]
-                                                        (StructType
+                                                        (Struct
                                                             2 toml_key
                                                         )
                                                         ColMajor
@@ -553,7 +553,7 @@
                                                             ()
                                                         )
                                                         ())]
-                                                        (StructType
+                                                        (Struct
                                                             2 toml_key
                                                         )
                                                         ColMajor
@@ -637,7 +637,7 @@
                                                 DescriptorArray
                                                 DescriptorArray
                                                 (Array
-                                                    (StructType
+                                                    (Struct
                                                         2 toml_key
                                                     )
                                                     [(()
@@ -677,7 +677,7 @@
                                                 DescriptorArray
                                                 DescriptorArray
                                                 (Array
-                                                    (StructType
+                                                    (Struct
                                                         2 toml_key
                                                     )
                                                     [(()
@@ -739,10 +739,10 @@
                                                     ()
                                                     Default
                                                     (FunctionType
-                                                        [(StructType
+                                                        [(Struct
                                                             2 toml_key
                                                         )
-                                                        (StructType
+                                                        (Struct
                                                             2 toml_key
                                                         )]
                                                         (Logical 4)
@@ -849,7 +849,7 @@
                                                     ()
                                                     Default
                                                     (Array
-                                                        (StructType
+                                                        (Struct
                                                             2 toml_key
                                                         )
                                                         [(()
@@ -899,7 +899,7 @@
                                                     Default
                                                     (Allocatable
                                                         (Array
-                                                            (StructType
+                                                            (Struct
                                                                 2 toml_key
                                                             )
                                                             [(()
@@ -917,7 +917,7 @@
                                     sort_keys
                                     (FunctionType
                                         [(Array
-                                            (StructType
+                                            (Struct
                                                 2 toml_key
                                             )
                                             [(()
@@ -931,10 +931,10 @@
                                             DescriptorArray
                                         )
                                         (FunctionType
-                                            [(StructType
+                                            [(Struct
                                                 2 toml_key
                                             )
-                                            (StructType
+                                            (Struct
                                                 2 toml_key
                                             )]
                                             (Logical 4)
@@ -1055,7 +1055,7 @@
                                                 [(()
                                                 (Var 5 i)
                                                 ())]
-                                                (StructType
+                                                (Struct
                                                     2 toml_key
                                                 )
                                                 ColMajor
@@ -1074,7 +1074,7 @@
                                                     ()
                                                 )
                                                 ())]
-                                                (StructType
+                                                (Struct
                                                     2 toml_key
                                                 )
                                                 ColMajor
@@ -1205,7 +1205,7 @@
                                     ()
                                 ),
                             toml_key:
-                                (Struct
+                                (StructType
                                     (SymbolTable
                                         3
                                         {

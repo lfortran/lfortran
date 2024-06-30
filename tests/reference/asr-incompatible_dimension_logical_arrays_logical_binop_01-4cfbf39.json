@@ -8,6 +8,6 @@
     "stdout": null,
     "stdout_hash": null,
     "stderr": "asr-incompatible_dimension_logical_arrays_logical_binop_01-4cfbf39.stderr",
-    "stderr_hash": "54eeb4568bab318f2a36a8096992246f0856e7b292b55677a43d73a9",
-    "returncode": 2
+    "stderr_hash": "7d14c7fa147138e497f014286289b2c25deda8f8e3b82430a8697eee",
+    "returncode": 1
 }

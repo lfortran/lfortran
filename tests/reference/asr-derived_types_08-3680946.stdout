@@ -96,7 +96,7 @@
                                     ()
                                     ()
                                     Default
-                                    (StructType
+                                    (Struct
                                         6 rectangle
                                     )
                                     ()
@@ -134,7 +134,7 @@
                                     ()
                                     ()
                                     Default
-                                    (StructType
+                                    (Struct
                                         6 shape
                                     )
                                     ()
@@ -354,7 +354,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (Class
                                                         2 shape
                                                     )
                                                     ()
@@ -398,7 +398,7 @@
                                         })
                                     initialize_subrout
                                     (FunctionType
-                                        [(ClassType
+                                        [(Class
                                             2 shape
                                         )
                                         (Integer 4)
@@ -470,7 +470,7 @@
                                     ()
                                 ),
                             rectangle:
-                                (Struct
+                                (StructType
                                     (SymbolTable
                                         4
                                         {
@@ -520,7 +520,7 @@
                                     2 shape
                                 ),
                             shape:
-                                (Struct
+                                (StructType
                                     (SymbolTable
                                         3
                                         {

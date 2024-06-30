@@ -64,7 +64,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (StructType
+                                                    (Struct
                                                         2 logger_type
                                                     )
                                                     ()
@@ -92,7 +92,7 @@
                                         })
                                     final_logger
                                     (FunctionType
-                                        [(StructType
+                                        [(Struct
                                             2 logger_type
                                         )]
                                         ()
@@ -117,7 +117,7 @@
                                     ()
                                 ),
                             logger_type:
-                                (Struct
+                                (StructType
                                     (SymbolTable
                                         3
                                         {

@@ -5,9 +5,9 @@
     "infile_hash": "5668cc071e9f55f2ce6475dee614a22d075cea9d84e433197a7f0ac5",
     "outfile": null,
     "outfile_hash": null,
-    "stdout": null,
-    "stdout_hash": null,
-    "stderr": "asr-incorrect_array_type_where_02-b821d8c.stderr",
-    "stderr_hash": "283fe1c585d134850afe27d9f5cdaa5c07ffcfe890b4bb815dfdbf78",
-    "returncode": 2
+    "stdout": "asr-incorrect_array_type_where_02-b821d8c.stdout",
+    "stdout_hash": "ac1ec9d6269f86efcecceacffc88523beab5c0722ecd8d91d7ef0609",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
 }

@@ -26,7 +26,7 @@
                                     ()
                                     ()
                                     Default
-                                    (StructType
+                                    (Struct
                                         11 int_matrix
                                     )
                                     ()
@@ -44,7 +44,7 @@
                                     ()
                                     ()
                                     Default
-                                    (StructType
+                                    (Struct
                                         11 int_matrix
                                     )
                                     ()
@@ -62,7 +62,7 @@
                                     ()
                                     ()
                                     Default
-                                    (StructType
+                                    (Struct
                                         11 int_matrix
                                     )
                                     ()
@@ -80,7 +80,7 @@
                                     ()
                                     ()
                                     Default
-                                    (StructType
+                                    (Struct
                                         11 int_matrix
                                     )
                                     ()
@@ -139,7 +139,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (StructType
+                                                    (Struct
                                                         11 int_matrix
                                                     )
                                                     ()
@@ -157,7 +157,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (StructType
+                                                    (Struct
                                                         11 int_matrix
                                                     )
                                                     ()
@@ -175,7 +175,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (StructType
+                                                    (Struct
                                                         11 int_matrix
                                                     )
                                                     ()
@@ -187,13 +187,13 @@
                                         })
                                     int_add_matrix
                                     (FunctionType
-                                        [(StructType
+                                        [(Struct
                                             11 int_matrix
                                         )
-                                        (StructType
+                                        (Struct
                                             11 int_matrix
                                         )]
-                                        (StructType
+                                        (Struct
                                             11 int_matrix
                                         )
                                         Source
@@ -273,7 +273,7 @@
                                     ()
                                 ),
                             int_matrix:
-                                (Struct
+                                (StructType
                                     (SymbolTable
                                         14
                                         {
@@ -336,7 +336,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (StructType
+                                                    (Struct
                                                         11 int_matrix
                                                     )
                                                     ()
@@ -354,7 +354,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (StructType
+                                                    (Struct
                                                         11 int_matrix
                                                     )
                                                     ()
@@ -441,7 +441,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (StructType
+                                                    (Struct
                                                         11 int_matrix
                                                     )
                                                     ()
@@ -469,13 +469,13 @@
                                         })
                                     int_mul_matrix
                                     (FunctionType
-                                        [(StructType
+                                        [(Struct
                                             11 int_matrix
                                         )
-                                        (StructType
+                                        (Struct
                                             11 int_matrix
                                         )]
-                                        (StructType
+                                        (Struct
                                             11 int_matrix
                                         )
                                         Source
@@ -1047,7 +1047,7 @@
                             ()
                             [((Var 11 am))
                             ((Var 11 bm))]
-                            (StructType
+                            (Struct
                                 11 int_matrix
                             )
                             ()
@@ -1062,7 +1062,7 @@
                             ()
                             [((Var 11 am))
                             ((Var 11 bm))]
-                            (StructType
+                            (Struct
                                 11 int_matrix
                             )
                             ()
@@ -1444,7 +1444,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (StructType
+                                                                    (Struct
                                                                         5 matrix
                                                                     )
                                                                     ()
@@ -1462,7 +1462,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (StructType
+                                                                    (Struct
                                                                         5 matrix
                                                                     )
                                                                     ()
@@ -1480,7 +1480,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (StructType
+                                                                    (Struct
                                                                         5 matrix
                                                                     )
                                                                     ()
@@ -1492,13 +1492,13 @@
                                                         })
                                                     add_matrix
                                                     (FunctionType
-                                                        [(StructType
+                                                        [(Struct
                                                             5 matrix
                                                         )
-                                                        (StructType
+                                                        (Struct
                                                             5 matrix
                                                         )]
-                                                        (StructType
+                                                        (Struct
                                                             5 matrix
                                                         )
                                                         Source
@@ -1586,7 +1586,7 @@
                                                     ()
                                                 ),
                                             matrix:
-                                                (Struct
+                                                (StructType
                                                     (SymbolTable
                                                         8
                                                         {
@@ -1651,7 +1651,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (StructType
+                                                                    (Struct
                                                                         5 matrix
                                                                     )
                                                                     ()
@@ -1669,7 +1669,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (StructType
+                                                                    (Struct
                                                                         5 matrix
                                                                     )
                                                                     ()
@@ -1758,7 +1758,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (StructType
+                                                                    (Struct
                                                                         5 matrix
                                                                     )
                                                                     ()
@@ -1788,13 +1788,13 @@
                                                         })
                                                     mul_matrix
                                                     (FunctionType
-                                                        [(StructType
+                                                        [(Struct
                                                             5 matrix
                                                         )
-                                                        (StructType
+                                                        (Struct
                                                             5 matrix
                                                         )]
-                                                        (StructType
+                                                        (Struct
                                                             5 matrix
                                                         )
                                                         Source

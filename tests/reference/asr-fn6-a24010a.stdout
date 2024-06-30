@@ -21,7 +21,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (Class
                                                         6 ~abstract_type
                                                     )
                                                     ()
@@ -39,7 +39,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (Class
                                                         6 ~abstract_type
                                                     )
                                                     ()
@@ -57,7 +57,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (Class
                                                         6 ~abstract_type
                                                     )
                                                     ()
@@ -75,7 +75,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (Class
                                                         6 ~abstract_type
                                                     )
                                                     ()
@@ -93,7 +93,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (Class
                                                         6 ~abstract_type
                                                     )
                                                     ()
@@ -111,7 +111,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (Class
                                                         6 ~abstract_type
                                                     )
                                                     ()
@@ -129,7 +129,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (Class
                                                         6 ~abstract_type
                                                     )
                                                     ()
@@ -147,7 +147,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (Class
                                                         6 ~abstract_type
                                                     )
                                                     ()
@@ -189,7 +189,7 @@
                                                     .false.
                                                 ),
                                             ~abstract_type:
-                                                (Struct
+                                                (StructType
                                                     (SymbolTable
                                                         7
                                                         {
@@ -210,28 +210,28 @@
                                     journal
                                     (FunctionType
                                         [(Character 1 -1 ())
-                                        (ClassType
+                                        (Class
                                             6 ~abstract_type
                                         )
-                                        (ClassType
+                                        (Class
                                             6 ~abstract_type
                                         )
-                                        (ClassType
+                                        (Class
                                             6 ~abstract_type
                                         )
-                                        (ClassType
+                                        (Class
                                             6 ~abstract_type
                                         )
-                                        (ClassType
+                                        (Class
                                             6 ~abstract_type
                                         )
-                                        (ClassType
+                                        (Class
                                             6 ~abstract_type
                                         )
-                                        (ClassType
+                                        (Class
                                             6 ~abstract_type
                                         )
-                                        (ClassType
+                                        (Class
                                             6 ~abstract_type
                                         )
                                         (Character 1 -1 ())]
@@ -315,7 +315,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (Class
                                                         3 ~abstract_type
                                                     )
                                                     ()
@@ -333,7 +333,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (Class
                                                         3 ~abstract_type
                                                     )
                                                     ()
@@ -351,7 +351,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (Class
                                                         3 ~abstract_type
                                                     )
                                                     ()
@@ -369,7 +369,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (Class
                                                         3 ~abstract_type
                                                     )
                                                     ()
@@ -387,7 +387,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (Class
                                                         3 ~abstract_type
                                                     )
                                                     ()
@@ -405,7 +405,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (Class
                                                         3 ~abstract_type
                                                     )
                                                     ()
@@ -423,7 +423,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (Class
                                                         3 ~abstract_type
                                                     )
                                                     ()
@@ -441,7 +441,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (Class
                                                         3 ~abstract_type
                                                     )
                                                     ()
@@ -486,7 +486,7 @@
                                                 (ExternalSymbol
                                                     3
                                                     len_trim
-                                                    21 len_trim
+                                                    22 len_trim
                                                     lfortran_intrinsic_string
                                                     []
                                                     len_trim
@@ -550,7 +550,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (ClassType
+                                                                    (Class
                                                                         3 ~abstract_type
                                                                     )
                                                                     ()
@@ -563,7 +563,7 @@
                                                                 (ExternalSymbol
                                                                     5
                                                                     len_trim
-                                                                    21 len_trim
+                                                                    22 len_trim
                                                                     lfortran_intrinsic_string
                                                                     []
                                                                     len_trim
@@ -572,7 +572,7 @@
                                                             ~select_type_block_:
                                                                 (Block
                                                                     (SymbolTable
-                                                                        27
+                                                                        29
                                                                         {
                                                                             
                                                                         })
@@ -619,7 +619,7 @@
                                                             ~select_type_block_1:
                                                                 (Block
                                                                     (SymbolTable
-                                                                        28
+                                                                        30
                                                                         {
                                                                             
                                                                         })
@@ -666,7 +666,7 @@
                                                             ~select_type_block_2:
                                                                 (Block
                                                                     (SymbolTable
-                                                                        29
+                                                                        31
                                                                         {
                                                                             
                                                                         })
@@ -713,7 +713,7 @@
                                                             ~select_type_block_3:
                                                                 (Block
                                                                     (SymbolTable
-                                                                        30
+                                                                        32
                                                                         {
                                                                             
                                                                         })
@@ -755,7 +755,7 @@
                                                             ~select_type_block_4:
                                                                 (Block
                                                                     (SymbolTable
-                                                                        31
+                                                                        33
                                                                         {
                                                                             
                                                                         })
@@ -797,7 +797,7 @@
                                                             ~select_type_block_5:
                                                                 (Block
                                                                     (SymbolTable
-                                                                        32
+                                                                        34
                                                                         {
                                                                             
                                                                         })
@@ -839,7 +839,7 @@
                                                             ~select_type_block_6:
                                                                 (Block
                                                                     (SymbolTable
-                                                                        33
+                                                                        35
                                                                         {
                                                                             
                                                                         })
@@ -881,13 +881,13 @@
                                                             ~select_type_block_7:
                                                                 (Block
                                                                     (SymbolTable
-                                                                        34
+                                                                        36
                                                                         {
                                                                             len_trim:
                                                                                 (ExternalSymbol
-                                                                                    34
+                                                                                    36
                                                                                     len_trim
-                                                                                    21 len_trim
+                                                                                    22 len_trim
                                                                                     lfortran_intrinsic_string
                                                                                     []
                                                                                     len_trim
@@ -924,7 +924,7 @@
                                                                                 ()
                                                                                 [((Var 5 generic))]
                                                                                 (Character 1 -3 (FunctionCall
-                                                                                    34 len_trim
+                                                                                    36 len_trim
                                                                                     ()
                                                                                     [((Var 5 generic))]
                                                                                     (Integer 4)
@@ -946,7 +946,7 @@
                                                             ~select_type_block_8:
                                                                 (Block
                                                                     (SymbolTable
-                                                                        35
+                                                                        37
                                                                         {
                                                                             
                                                                         })
@@ -988,7 +988,7 @@
                                                         })
                                                     print_generic
                                                     (FunctionType
-                                                        [(ClassType
+                                                        [(Class
                                                             3 ~abstract_type
                                                         )]
                                                         ()
@@ -1158,14 +1158,14 @@
                                                 (ExternalSymbol
                                                     3
                                                     trim
-                                                    21 trim
+                                                    22 trim
                                                     lfortran_intrinsic_string
                                                     []
                                                     trim
                                                     Private
                                                 ),
                                             ~abstract_type:
-                                                (Struct
+                                                (StructType
                                                     (SymbolTable
                                                         4
                                                         {
@@ -1185,28 +1185,28 @@
                                         })
                                     msg_scalar
                                     (FunctionType
-                                        [(ClassType
+                                        [(Class
                                             3 ~abstract_type
                                         )
-                                        (ClassType
+                                        (Class
                                             3 ~abstract_type
                                         )
-                                        (ClassType
+                                        (Class
                                             3 ~abstract_type
                                         )
-                                        (ClassType
+                                        (Class
                                             3 ~abstract_type
                                         )
-                                        (ClassType
+                                        (Class
                                             3 ~abstract_type
                                         )
-                                        (ClassType
+                                        (Class
                                             3 ~abstract_type
                                         )
-                                        (ClassType
+                                        (Class
                                             3 ~abstract_type
                                         )
-                                        (ClassType
+                                        (Class
                                             3 ~abstract_type
                                         )
                                         (Character 1 -1 ())]

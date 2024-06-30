@@ -28,7 +28,7 @@
                                     Public
                                 ),
                             base:
-                                (Struct
+                                (StructType
                                     (SymbolTable
                                         3
                                         {
@@ -66,17 +66,17 @@
                                     base_target
                                     []
                                     Local
-                                    (StructConstructor
+                                    (StructTypeConstructor
                                         2 base
                                         [((IntegerConstant 10 (Integer 4)))]
-                                        (StructType
+                                        (Struct
                                             2 base
                                         )
                                         ()
                                     )
                                     ()
                                     Default
-                                    (StructType
+                                    (Struct
                                         2 base
                                     )
                                     ()
@@ -95,7 +95,7 @@
                                     ()
                                     Default
                                     (Pointer
-                                        (ClassType
+                                        (Class
                                             2 base
                                         )
                                     )
@@ -106,7 +106,7 @@
                                     .false.
                                 ),
                             child:
-                                (Struct
+                                (StructType
                                     (SymbolTable
                                         4
                                         {
@@ -147,7 +147,7 @@
                                     ()
                                     ()
                                     Default
-                                    (StructType
+                                    (Struct
                                         2 child
                                     )
                                     ()
@@ -171,7 +171,7 @@
                                                     ()
                                                     Default
                                                     (Pointer
-                                                        (ClassType
+                                                        (Class
                                                             2 base
                                                         )
                                                     )
@@ -319,7 +319,7 @@
                                     perform_select_type
                                     (FunctionType
                                         [(Pointer
-                                            (ClassType
+                                            (Class
                                                 2 base
                                             )
                                         )]
@@ -366,11 +366,11 @@
                     []
                     [(Assignment
                         (Var 2 child_target)
-                        (StructConstructor
+                        (StructTypeConstructor
                             2 child
                             [((IntegerConstant 20 (Integer 4)))
                             ((IntegerConstant 30 (Integer 4)))]
-                            (StructType
+                            (Struct
                                 2 child
                             )
                             ()

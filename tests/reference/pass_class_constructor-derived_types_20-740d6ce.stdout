@@ -8,7 +8,7 @@
                         4
                         {
                             fpm_cmd_settings:
-                                (Struct
+                                (StructType
                                     (SymbolTable
                                         5
                                         {
@@ -66,7 +66,7 @@
                                     ()
                                 ),
                             fpm_new_settings:
-                                (Struct
+                                (StructType
                                     (SymbolTable
                                         6
                                         {
@@ -346,7 +346,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (ClassType
+                                                        (Class
                                                             4 fpm_cmd_settings
                                                         )
                                                     )
@@ -360,7 +360,7 @@
                                     get_command_line_settings
                                     (FunctionType
                                         [(Allocatable
-                                            (ClassType
+                                            (Class
                                                 4 fpm_cmd_settings
                                             )
                                         )]
@@ -382,7 +382,7 @@
                                         [((Var 7 cmd_settings)
                                         []
                                         ()
-                                        (StructType
+                                        (Struct
                                             4 fpm_new_settings
                                         ))]
                                         ()
@@ -642,7 +642,7 @@
                                     ()
                                     Default
                                     (Allocatable
-                                        (ClassType
+                                        (Class
                                             2 fpm_cmd_settings
                                         )
                                     )

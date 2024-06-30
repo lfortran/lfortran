@@ -1,0 +1,124 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            main:
+                (Program
+                    (SymbolTable
+                        3
+                        {
+                            b:
+                                (Variable
+                                    3
+                                    b
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 5 (Integer 4)))]
+                                        FixedSizeArray
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            c:
+                                (ExternalSymbol
+                                    3
+                                    c
+                                    2 c
+                                    main_module
+                                    []
+                                    c
+                                    Public
+                                )
+                        })
+                    main
+                    [main_module]
+                    [(Where
+                        (Var 3 c)
+                        [(Assignment
+                            (Var 3 b)
+                            (ArrayBroadcast
+                                (IntegerConstant 12121 (Integer 4))
+                                (ArrayConstant
+                                    4
+                                    [5]
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 1 (Integer 4)))]
+                                        FixedSizeArray
+                                    )
+                                    ColMajor
+                                )
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 5 (Integer 4)))]
+                                    FixedSizeArray
+                                )
+                                (ArrayConstant
+                                    20
+                                    [12121, 12121, 12121, 12121, 12121]
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 5 (Integer 4)))]
+                                        FixedSizeArray
+                                    )
+                                    ColMajor
+                                )
+                            )
+                            ()
+                        )]
+                        []
+                    )
+                    (Print
+                        [(Var 3 b)]
+                        ()
+                        ()
+                    )]
+                ),
+            main_module:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            c:
+                                (Variable
+                                    2
+                                    c
+                                    []
+                                    Local
+                                    (StringConstant
+                                        "hello"
+                                        (Character 1 5 ())
+                                    )
+                                    (StringConstant
+                                        "hello"
+                                        (Character 1 5 ())
+                                    )
+                                    Parameter
+                                    (Character 1 5 ())
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    main_module
+                    []
+                    .false.
+                    .false.
+                )
+        })
+    []
+)

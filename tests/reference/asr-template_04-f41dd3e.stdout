@@ -99,7 +99,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (StructType
+                                                    (Struct
                                                         146 integer_matrix
                                                     )
                                                     ()
@@ -138,7 +138,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (StructType
+                                                    (Struct
                                                         146 integer_matrix
                                                     )
                                                     ()
@@ -156,7 +156,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (StructType
+                                                    (Struct
                                                         146 integer_matrix
                                                     )
                                                     ()
@@ -168,13 +168,13 @@
                                         })
                                     __asr_back_substitute
                                     (FunctionType
-                                        [(StructType
+                                        [(Struct
                                             146 integer_matrix
                                         )
-                                        (StructType
+                                        (Struct
                                             146 integer_matrix
                                         )]
-                                        (StructType
+                                        (Struct
                                             146 integer_matrix
                                         )
                                         Source
@@ -630,7 +630,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (StructType
+                                                    (Struct
                                                         146 real_matrix
                                                     )
                                                     ()
@@ -669,7 +669,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (StructType
+                                                    (Struct
                                                         146 real_matrix
                                                     )
                                                     ()
@@ -687,7 +687,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (StructType
+                                                    (Struct
                                                         146 real_matrix
                                                     )
                                                     ()
@@ -699,13 +699,13 @@
                                         })
                                     __asr_back_substitute1
                                     (FunctionType
-                                        [(StructType
+                                        [(Struct
                                             146 real_matrix
                                         )
-                                        (StructType
+                                        (Struct
                                             146 real_matrix
                                         )]
-                                        (StructType
+                                        (Struct
                                             146 real_matrix
                                         )
                                         Source
@@ -1193,7 +1193,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (StructType
+                                                    (Struct
                                                         146 integer_matrix
                                                     )
                                                     ()
@@ -1211,7 +1211,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (StructType
+                                                    (Struct
                                                         146 integer_matrix
                                                     )
                                                     ()
@@ -1223,10 +1223,10 @@
                                         })
                                     __asr_row_eschelon
                                     (FunctionType
-                                        [(StructType
+                                        [(Struct
                                             146 integer_matrix
                                         )]
-                                        (StructType
+                                        (Struct
                                             146 integer_matrix
                                         )
                                         Source
@@ -1579,7 +1579,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (StructType
+                                                    (Struct
                                                         146 real_matrix
                                                     )
                                                     ()
@@ -1597,7 +1597,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (StructType
+                                                    (Struct
                                                         146 real_matrix
                                                     )
                                                     ()
@@ -1609,10 +1609,10 @@
                                         })
                                     __asr_row_eschelon1
                                     (FunctionType
-                                        [(StructType
+                                        [(Struct
                                             146 real_matrix
                                         )]
-                                        (StructType
+                                        (Struct
                                             146 real_matrix
                                         )
                                         Source
@@ -1905,7 +1905,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (StructType
+                                                    (Struct
                                                         146 integer_matrix
                                                     )
                                                     ()
@@ -1923,7 +1923,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (StructType
+                                                    (Struct
                                                         146 integer_matrix
                                                     )
                                                     ()
@@ -1941,7 +1941,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (StructType
+                                                    (Struct
                                                         146 integer_matrix
                                                     )
                                                     ()
@@ -1953,13 +1953,13 @@
                                         })
                                     integer_div_matrix
                                     (FunctionType
-                                        [(StructType
+                                        [(Struct
                                             146 integer_matrix
                                         )
-                                        (StructType
+                                        (Struct
                                             146 integer_matrix
                                         )]
-                                        (StructType
+                                        (Struct
                                             146 integer_matrix
                                         )
                                         Source
@@ -1986,14 +1986,14 @@
                                                 146 __asr_row_eschelon
                                                 ()
                                                 [((Var 171 x))]
-                                                (StructType
+                                                (Struct
                                                     146 integer_matrix
                                                 )
                                                 ()
                                                 ()
                                             ))
                                             ((Var 171 y))]
-                                            (StructType
+                                            (Struct
                                                 146 integer_matrix
                                             )
                                             ()
@@ -2084,7 +2084,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (StructType
+                                                                    (Struct
                                                                         146 integer_matrix
                                                                     )
                                                                     ()
@@ -2123,7 +2123,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (StructType
+                                                                    (Struct
                                                                         146 integer_matrix
                                                                     )
                                                                     ()
@@ -2141,7 +2141,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (StructType
+                                                                    (Struct
                                                                         146 integer_matrix
                                                                     )
                                                                     ()
@@ -2153,13 +2153,13 @@
                                                         })
                                                     back_substitute
                                                     (FunctionType
-                                                        [(StructType
+                                                        [(Struct
                                                             146 integer_matrix
                                                         )
-                                                        (StructType
+                                                        (Struct
                                                             146 integer_matrix
                                                         )]
-                                                        (StructType
+                                                        (Struct
                                                             146 integer_matrix
                                                         )
                                                         Source
@@ -2557,7 +2557,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (StructType
+                                                                    (Struct
                                                                         146 integer_matrix
                                                                     )
                                                                     ()
@@ -2575,7 +2575,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (StructType
+                                                                    (Struct
                                                                         146 integer_matrix
                                                                     )
                                                                     ()
@@ -2593,7 +2593,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (StructType
+                                                                    (Struct
                                                                         146 integer_matrix
                                                                     )
                                                                     ()
@@ -2605,13 +2605,13 @@
                                                         })
                                                     div_matrix
                                                     (FunctionType
-                                                        [(StructType
+                                                        [(Struct
                                                             146 integer_matrix
                                                         )
-                                                        (StructType
+                                                        (Struct
                                                             146 integer_matrix
                                                         )]
-                                                        (StructType
+                                                        (Struct
                                                             146 integer_matrix
                                                         )
                                                         Source
@@ -2638,14 +2638,14 @@
                                                                 164 row_eschelon
                                                                 ()
                                                                 [((Var 166 x))]
-                                                                (StructType
+                                                                (Struct
                                                                     146 integer_matrix
                                                                 )
                                                                 ()
                                                                 ()
                                                             ))
                                                             ((Var 166 y))]
-                                                            (StructType
+                                                            (Struct
                                                                 146 integer_matrix
                                                             )
                                                             ()
@@ -2924,7 +2924,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (StructType
+                                                                    (Struct
                                                                         146 integer_matrix
                                                                     )
                                                                     ()
@@ -2942,7 +2942,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (StructType
+                                                                    (Struct
                                                                         146 integer_matrix
                                                                     )
                                                                     ()
@@ -2954,10 +2954,10 @@
                                                         })
                                                     row_eschelon
                                                     (FunctionType
-                                                        [(StructType
+                                                        [(Struct
                                                             146 integer_matrix
                                                         )]
-                                                        (StructType
+                                                        (Struct
                                                             146 integer_matrix
                                                         )
                                                         Source
@@ -3238,7 +3238,7 @@
                                     )]
                                 ),
                             integer_matrix:
-                                (Struct
+                                (StructType
                                     (SymbolTable
                                         149
                                         {
@@ -3343,7 +3343,7 @@
                                                                                     ()
                                                                                     ()
                                                                                     Default
-                                                                                    (StructType
+                                                                                    (Struct
                                                                                         146 integer_matrix
                                                                                     )
                                                                                     ()
@@ -3382,7 +3382,7 @@
                                                                                     ()
                                                                                     ()
                                                                                     Default
-                                                                                    (StructType
+                                                                                    (Struct
                                                                                         146 integer_matrix
                                                                                     )
                                                                                     ()
@@ -3400,7 +3400,7 @@
                                                                                     ()
                                                                                     ()
                                                                                     Default
-                                                                                    (StructType
+                                                                                    (Struct
                                                                                         146 integer_matrix
                                                                                     )
                                                                                     ()
@@ -3412,13 +3412,13 @@
                                                                         })
                                                                     back_substitute
                                                                     (FunctionType
-                                                                        [(StructType
+                                                                        [(Struct
                                                                             146 integer_matrix
                                                                         )
-                                                                        (StructType
+                                                                        (Struct
                                                                             146 integer_matrix
                                                                         )]
-                                                                        (StructType
+                                                                        (Struct
                                                                             146 integer_matrix
                                                                         )
                                                                         Source
@@ -3816,7 +3816,7 @@
                                                                                     ()
                                                                                     ()
                                                                                     Default
-                                                                                    (StructType
+                                                                                    (Struct
                                                                                         146 integer_matrix
                                                                                     )
                                                                                     ()
@@ -3834,7 +3834,7 @@
                                                                                     ()
                                                                                     ()
                                                                                     Default
-                                                                                    (StructType
+                                                                                    (Struct
                                                                                         146 integer_matrix
                                                                                     )
                                                                                     ()
@@ -3852,7 +3852,7 @@
                                                                                     ()
                                                                                     ()
                                                                                     Default
-                                                                                    (StructType
+                                                                                    (Struct
                                                                                         146 integer_matrix
                                                                                     )
                                                                                     ()
@@ -3864,13 +3864,13 @@
                                                                         })
                                                                     div_matrix
                                                                     (FunctionType
-                                                                        [(StructType
+                                                                        [(Struct
                                                                             146 integer_matrix
                                                                         )
-                                                                        (StructType
+                                                                        (Struct
                                                                             146 integer_matrix
                                                                         )]
-                                                                        (StructType
+                                                                        (Struct
                                                                             146 integer_matrix
                                                                         )
                                                                         Source
@@ -3897,14 +3897,14 @@
                                                                                 153 row_eschelon
                                                                                 ()
                                                                                 [((Var 155 x))]
-                                                                                (StructType
+                                                                                (Struct
                                                                                     146 integer_matrix
                                                                                 )
                                                                                 ()
                                                                                 ()
                                                                             ))
                                                                             ((Var 155 y))]
-                                                                            (StructType
+                                                                            (Struct
                                                                                 146 integer_matrix
                                                                             )
                                                                             ()
@@ -4247,7 +4247,7 @@
                                                                                     ()
                                                                                     ()
                                                                                     Default
-                                                                                    (StructType
+                                                                                    (Struct
                                                                                         146 integer_matrix
                                                                                     )
                                                                                     ()
@@ -4265,7 +4265,7 @@
                                                                                     ()
                                                                                     ()
                                                                                     Default
-                                                                                    (StructType
+                                                                                    (Struct
                                                                                         146 integer_matrix
                                                                                     )
                                                                                     ()
@@ -4277,10 +4277,10 @@
                                                                         })
                                                                     row_eschelon
                                                                     (FunctionType
-                                                                        [(StructType
+                                                                        [(Struct
                                                                             146 integer_matrix
                                                                         )]
-                                                                        (StructType
+                                                                        (Struct
                                                                             146 integer_matrix
                                                                         )
                                                                         Source
@@ -4584,7 +4584,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (StructType
+                                                                    (Struct
                                                                         146 integer_matrix
                                                                     )
                                                                     ()
@@ -4602,7 +4602,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (StructType
+                                                                    (Struct
                                                                         146 integer_matrix
                                                                     )
                                                                     ()
@@ -4620,7 +4620,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (StructType
+                                                                    (Struct
                                                                         146 integer_matrix
                                                                     )
                                                                     ()
@@ -4632,13 +4632,13 @@
                                                         })
                                                     minus_matrix
                                                     (FunctionType
-                                                        [(StructType
+                                                        [(Struct
                                                             146 integer_matrix
                                                         )
-                                                        (StructType
+                                                        (Struct
                                                             146 integer_matrix
                                                         )]
-                                                        (StructType
+                                                        (Struct
                                                             146 integer_matrix
                                                         )
                                                         Source
@@ -4850,7 +4850,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (StructType
+                                                    (Struct
                                                         146 integer_matrix
                                                     )
                                                     ()
@@ -4884,7 +4884,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (StructType
+                                                    (Struct
                                                         146 integer_matrix
                                                     )
                                                     ()
@@ -4902,7 +4902,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (StructType
+                                                    (Struct
                                                         146 integer_matrix
                                                     )
                                                     ()
@@ -4914,13 +4914,13 @@
                                         })
                                     integer_minus_matrix
                                     (FunctionType
-                                        [(StructType
+                                        [(Struct
                                             146 integer_matrix
                                         )
-                                        (StructType
+                                        (Struct
                                             146 integer_matrix
                                         )]
-                                        (StructType
+                                        (Struct
                                             146 integer_matrix
                                         )
                                         Source
@@ -5023,7 +5023,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (StructType
+                                                    (Struct
                                                         146 integer_matrix
                                                     )
                                                     ()
@@ -5073,7 +5073,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (StructType
+                                                    (Struct
                                                         146 integer_matrix
                                                     )
                                                     ()
@@ -5091,7 +5091,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (StructType
+                                                    (Struct
                                                         146 integer_matrix
                                                     )
                                                     ()
@@ -5103,13 +5103,13 @@
                                         })
                                     integer_plus_matrix
                                     (FunctionType
-                                        [(StructType
+                                        [(Struct
                                             146 integer_matrix
                                         )
-                                        (StructType
+                                        (Struct
                                             146 integer_matrix
                                         )]
-                                        (StructType
+                                        (Struct
                                             146 integer_matrix
                                         )
                                         Source
@@ -5254,7 +5254,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (StructType
+                                                    (Struct
                                                         146 integer_matrix
                                                     )
                                                     ()
@@ -5336,7 +5336,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (StructType
+                                                    (Struct
                                                         146 integer_matrix
                                                     )
                                                     ()
@@ -5354,7 +5354,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (StructType
+                                                    (Struct
                                                         146 integer_matrix
                                                     )
                                                     ()
@@ -5366,13 +5366,13 @@
                                         })
                                     integer_times_matrix
                                     (FunctionType
-                                        [(StructType
+                                        [(Struct
                                             146 integer_matrix
                                         )
-                                        (StructType
+                                        (Struct
                                             146 integer_matrix
                                         )]
-                                        (StructType
+                                        (Struct
                                             146 integer_matrix
                                         )
                                         Source
@@ -5536,7 +5536,7 @@
                                     ()
                                     ()
                                     Default
-                                    (StructType
+                                    (Struct
                                         146 integer_matrix
                                     )
                                     ()
@@ -5554,7 +5554,7 @@
                                     ()
                                     ()
                                     Default
-                                    (StructType
+                                    (Struct
                                         146 integer_matrix
                                     )
                                     ()
@@ -5572,7 +5572,7 @@
                                     ()
                                     ()
                                     Default
-                                    (StructType
+                                    (Struct
                                         146 integer_matrix
                                     )
                                     ()
@@ -5590,7 +5590,7 @@
                                     ()
                                     ()
                                     Default
-                                    (StructType
+                                    (Struct
                                         146 integer_matrix
                                     )
                                     ()
@@ -5654,7 +5654,7 @@
                                     ()
                                     ()
                                     Default
-                                    (StructType
+                                    (Struct
                                         146 real_matrix
                                     )
                                     ()
@@ -5672,7 +5672,7 @@
                                     ()
                                     ()
                                     Default
-                                    (StructType
+                                    (Struct
                                         146 real_matrix
                                     )
                                     ()
@@ -5690,7 +5690,7 @@
                                     ()
                                     ()
                                     Default
-                                    (StructType
+                                    (Struct
                                         146 real_matrix
                                     )
                                     ()
@@ -5708,7 +5708,7 @@
                                     ()
                                     ()
                                     Default
-                                    (StructType
+                                    (Struct
                                         146 real_matrix
                                     )
                                     ()
@@ -5731,7 +5731,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (StructType
+                                                    (Struct
                                                         146 real_matrix
                                                     )
                                                     ()
@@ -5749,7 +5749,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (StructType
+                                                    (Struct
                                                         146 real_matrix
                                                     )
                                                     ()
@@ -5767,7 +5767,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (StructType
+                                                    (Struct
                                                         146 real_matrix
                                                     )
                                                     ()
@@ -5779,13 +5779,13 @@
                                         })
                                     real_div_matrix
                                     (FunctionType
-                                        [(StructType
+                                        [(Struct
                                             146 real_matrix
                                         )
-                                        (StructType
+                                        (Struct
                                             146 real_matrix
                                         )]
-                                        (StructType
+                                        (Struct
                                             146 real_matrix
                                         )
                                         Source
@@ -5812,14 +5812,14 @@
                                                 146 __asr_row_eschelon1
                                                 ()
                                                 [((Var 196 x))]
-                                                (StructType
+                                                (Struct
                                                     146 real_matrix
                                                 )
                                                 ()
                                                 ()
                                             ))
                                             ((Var 196 y))]
-                                            (StructType
+                                            (Struct
                                                 146 real_matrix
                                             )
                                             ()
@@ -5910,7 +5910,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (StructType
+                                                                    (Struct
                                                                         146 real_matrix
                                                                     )
                                                                     ()
@@ -5949,7 +5949,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (StructType
+                                                                    (Struct
                                                                         146 real_matrix
                                                                     )
                                                                     ()
@@ -5967,7 +5967,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (StructType
+                                                                    (Struct
                                                                         146 real_matrix
                                                                     )
                                                                     ()
@@ -5979,13 +5979,13 @@
                                                         })
                                                     back_substitute
                                                     (FunctionType
-                                                        [(StructType
+                                                        [(Struct
                                                             146 real_matrix
                                                         )
-                                                        (StructType
+                                                        (Struct
                                                             146 real_matrix
                                                         )]
-                                                        (StructType
+                                                        (Struct
                                                             146 real_matrix
                                                         )
                                                         Source
@@ -6383,7 +6383,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (StructType
+                                                                    (Struct
                                                                         146 real_matrix
                                                                     )
                                                                     ()
@@ -6401,7 +6401,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (StructType
+                                                                    (Struct
                                                                         146 real_matrix
                                                                     )
                                                                     ()
@@ -6419,7 +6419,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (StructType
+                                                                    (Struct
                                                                         146 real_matrix
                                                                     )
                                                                     ()
@@ -6431,13 +6431,13 @@
                                                         })
                                                     div_matrix
                                                     (FunctionType
-                                                        [(StructType
+                                                        [(Struct
                                                             146 real_matrix
                                                         )
-                                                        (StructType
+                                                        (Struct
                                                             146 real_matrix
                                                         )]
-                                                        (StructType
+                                                        (Struct
                                                             146 real_matrix
                                                         )
                                                         Source
@@ -6464,14 +6464,14 @@
                                                                 189 row_eschelon
                                                                 ()
                                                                 [((Var 191 x))]
-                                                                (StructType
+                                                                (Struct
                                                                     146 real_matrix
                                                                 )
                                                                 ()
                                                                 ()
                                                             ))
                                                             ((Var 191 y))]
-                                                            (StructType
+                                                            (Struct
                                                                 146 real_matrix
                                                             )
                                                             ()
@@ -6750,7 +6750,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (StructType
+                                                                    (Struct
                                                                         146 real_matrix
                                                                     )
                                                                     ()
@@ -6768,7 +6768,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (StructType
+                                                                    (Struct
                                                                         146 real_matrix
                                                                     )
                                                                     ()
@@ -6780,10 +6780,10 @@
                                                         })
                                                     row_eschelon
                                                     (FunctionType
-                                                        [(StructType
+                                                        [(Struct
                                                             146 real_matrix
                                                         )]
-                                                        (StructType
+                                                        (Struct
                                                             146 real_matrix
                                                         )
                                                         Source
@@ -7064,7 +7064,7 @@
                                     )]
                                 ),
                             real_matrix:
-                                (Struct
+                                (StructType
                                     (SymbolTable
                                         174
                                         {
@@ -7169,7 +7169,7 @@
                                                                                     ()
                                                                                     ()
                                                                                     Default
-                                                                                    (StructType
+                                                                                    (Struct
                                                                                         146 real_matrix
                                                                                     )
                                                                                     ()
@@ -7208,7 +7208,7 @@
                                                                                     ()
                                                                                     ()
                                                                                     Default
-                                                                                    (StructType
+                                                                                    (Struct
                                                                                         146 real_matrix
                                                                                     )
                                                                                     ()
@@ -7226,7 +7226,7 @@
                                                                                     ()
                                                                                     ()
                                                                                     Default
-                                                                                    (StructType
+                                                                                    (Struct
                                                                                         146 real_matrix
                                                                                     )
                                                                                     ()
@@ -7238,13 +7238,13 @@
                                                                         })
                                                                     back_substitute
                                                                     (FunctionType
-                                                                        [(StructType
+                                                                        [(Struct
                                                                             146 real_matrix
                                                                         )
-                                                                        (StructType
+                                                                        (Struct
                                                                             146 real_matrix
                                                                         )]
-                                                                        (StructType
+                                                                        (Struct
                                                                             146 real_matrix
                                                                         )
                                                                         Source
@@ -7642,7 +7642,7 @@
                                                                                     ()
                                                                                     ()
                                                                                     Default
-                                                                                    (StructType
+                                                                                    (Struct
                                                                                         146 real_matrix
                                                                                     )
                                                                                     ()
@@ -7660,7 +7660,7 @@
                                                                                     ()
                                                                                     ()
                                                                                     Default
-                                                                                    (StructType
+                                                                                    (Struct
                                                                                         146 real_matrix
                                                                                     )
                                                                                     ()
@@ -7678,7 +7678,7 @@
                                                                                     ()
                                                                                     ()
                                                                                     Default
-                                                                                    (StructType
+                                                                                    (Struct
                                                                                         146 real_matrix
                                                                                     )
                                                                                     ()
@@ -7690,13 +7690,13 @@
                                                                         })
                                                                     div_matrix
                                                                     (FunctionType
-                                                                        [(StructType
+                                                                        [(Struct
                                                                             146 real_matrix
                                                                         )
-                                                                        (StructType
+                                                                        (Struct
                                                                             146 real_matrix
                                                                         )]
-                                                                        (StructType
+                                                                        (Struct
                                                                             146 real_matrix
                                                                         )
                                                                         Source
@@ -7723,14 +7723,14 @@
                                                                                 178 row_eschelon
                                                                                 ()
                                                                                 [((Var 180 x))]
-                                                                                (StructType
+                                                                                (Struct
                                                                                     146 real_matrix
                                                                                 )
                                                                                 ()
                                                                                 ()
                                                                             ))
                                                                             ((Var 180 y))]
-                                                                            (StructType
+                                                                            (Struct
                                                                                 146 real_matrix
                                                                             )
                                                                             ()
@@ -8073,7 +8073,7 @@
                                                                                     ()
                                                                                     ()
                                                                                     Default
-                                                                                    (StructType
+                                                                                    (Struct
                                                                                         146 real_matrix
                                                                                     )
                                                                                     ()
@@ -8091,7 +8091,7 @@
                                                                                     ()
                                                                                     ()
                                                                                     Default
-                                                                                    (StructType
+                                                                                    (Struct
                                                                                         146 real_matrix
                                                                                     )
                                                                                     ()
@@ -8103,10 +8103,10 @@
                                                                         })
                                                                     row_eschelon
                                                                     (FunctionType
-                                                                        [(StructType
+                                                                        [(Struct
                                                                             146 real_matrix
                                                                         )]
-                                                                        (StructType
+                                                                        (Struct
                                                                             146 real_matrix
                                                                         )
                                                                         Source
@@ -8410,7 +8410,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (StructType
+                                                                    (Struct
                                                                         146 real_matrix
                                                                     )
                                                                     ()
@@ -8428,7 +8428,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (StructType
+                                                                    (Struct
                                                                         146 real_matrix
                                                                     )
                                                                     ()
@@ -8446,7 +8446,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (StructType
+                                                                    (Struct
                                                                         146 real_matrix
                                                                     )
                                                                     ()
@@ -8458,13 +8458,13 @@
                                                         })
                                                     minus_matrix
                                                     (FunctionType
-                                                        [(StructType
+                                                        [(Struct
                                                             146 real_matrix
                                                         )
-                                                        (StructType
+                                                        (Struct
                                                             146 real_matrix
                                                         )]
-                                                        (StructType
+                                                        (Struct
                                                             146 real_matrix
                                                         )
                                                         Source
@@ -8676,7 +8676,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (StructType
+                                                    (Struct
                                                         146 real_matrix
                                                     )
                                                     ()
@@ -8710,7 +8710,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (StructType
+                                                    (Struct
                                                         146 real_matrix
                                                     )
                                                     ()
@@ -8728,7 +8728,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (StructType
+                                                    (Struct
                                                         146 real_matrix
                                                     )
                                                     ()
@@ -8740,13 +8740,13 @@
                                         })
                                     real_minus_matrix
                                     (FunctionType
-                                        [(StructType
+                                        [(Struct
                                             146 real_matrix
                                         )
-                                        (StructType
+                                        (Struct
                                             146 real_matrix
                                         )]
-                                        (StructType
+                                        (Struct
                                             146 real_matrix
                                         )
                                         Source
@@ -8849,7 +8849,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (StructType
+                                                    (Struct
                                                         146 real_matrix
                                                     )
                                                     ()
@@ -8899,7 +8899,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (StructType
+                                                    (Struct
                                                         146 real_matrix
                                                     )
                                                     ()
@@ -8917,7 +8917,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (StructType
+                                                    (Struct
                                                         146 real_matrix
                                                     )
                                                     ()
@@ -8929,13 +8929,13 @@
                                         })
                                     real_plus_matrix
                                     (FunctionType
-                                        [(StructType
+                                        [(Struct
                                             146 real_matrix
                                         )
-                                        (StructType
+                                        (Struct
                                             146 real_matrix
                                         )]
-                                        (StructType
+                                        (Struct
                                             146 real_matrix
                                         )
                                         Source
@@ -9080,7 +9080,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (StructType
+                                                    (Struct
                                                         146 real_matrix
                                                     )
                                                     ()
@@ -9162,7 +9162,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (StructType
+                                                    (Struct
                                                         146 real_matrix
                                                     )
                                                     ()
@@ -9180,7 +9180,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (StructType
+                                                    (Struct
                                                         146 real_matrix
                                                     )
                                                     ()
@@ -9192,13 +9192,13 @@
                                         })
                                     real_times_matrix
                                     (FunctionType
-                                        [(StructType
+                                        [(Struct
                                             146 real_matrix
                                         )
-                                        (StructType
+                                        (Struct
                                             146 real_matrix
                                         )]
-                                        (StructType
+                                        (Struct
                                             146 real_matrix
                                         )
                                         Source
@@ -10380,7 +10380,7 @@
                             ()
                             [((Var 146 m1))
                             ((Var 146 m2))]
-                            (StructType
+                            (Struct
                                 146 integer_matrix
                             )
                             ()
@@ -10509,7 +10509,7 @@
                             ()
                             [((Var 146 m3))
                             ((Var 146 m2))]
-                            (StructType
+                            (Struct
                                 146 integer_matrix
                             )
                             ()
@@ -10916,7 +10916,7 @@
                             ()
                             [((Var 146 r1))
                             ((Var 146 r2))]
-                            (StructType
+                            (Struct
                                 146 real_matrix
                             )
                             ()
@@ -11045,7 +11045,7 @@
                             ()
                             [((Var 146 r3))
                             ((Var 146 r2))]
-                            (StructType
+                            (Struct
                                 146 real_matrix
                             )
                             ()
@@ -14619,7 +14619,7 @@
                                         113
                                         {
                                             matrix:
-                                                (Struct
+                                                (StructType
                                                     (SymbolTable
                                                         118
                                                         {
@@ -14726,7 +14726,7 @@
                                                                                                     ()
                                                                                                     ()
                                                                                                     Default
-                                                                                                    (StructType
+                                                                                                    (Struct
                                                                                                         113 matrix
                                                                                                     )
                                                                                                     ()
@@ -14767,7 +14767,7 @@
                                                                                                     ()
                                                                                                     ()
                                                                                                     Default
-                                                                                                    (StructType
+                                                                                                    (Struct
                                                                                                         113 matrix
                                                                                                     )
                                                                                                     ()
@@ -14785,7 +14785,7 @@
                                                                                                     ()
                                                                                                     ()
                                                                                                     Default
-                                                                                                    (StructType
+                                                                                                    (Struct
                                                                                                         113 matrix
                                                                                                     )
                                                                                                     ()
@@ -14797,13 +14797,13 @@
                                                                                         })
                                                                                     back_substitute
                                                                                     (FunctionType
-                                                                                        [(StructType
+                                                                                        [(Struct
                                                                                             113 matrix
                                                                                         )
-                                                                                        (StructType
+                                                                                        (Struct
                                                                                             113 matrix
                                                                                         )]
-                                                                                        (StructType
+                                                                                        (Struct
                                                                                             113 matrix
                                                                                         )
                                                                                         Source
@@ -15244,7 +15244,7 @@
                                                                                                     ()
                                                                                                     ()
                                                                                                     Default
-                                                                                                    (StructType
+                                                                                                    (Struct
                                                                                                         113 matrix
                                                                                                     )
                                                                                                     ()
@@ -15262,7 +15262,7 @@
                                                                                                     ()
                                                                                                     ()
                                                                                                     Default
-                                                                                                    (StructType
+                                                                                                    (Struct
                                                                                                         113 matrix
                                                                                                     )
                                                                                                     ()
@@ -15280,7 +15280,7 @@
                                                                                                     ()
                                                                                                     ()
                                                                                                     Default
-                                                                                                    (StructType
+                                                                                                    (Struct
                                                                                                         113 matrix
                                                                                                     )
                                                                                                     ()
@@ -15292,13 +15292,13 @@
                                                                                         })
                                                                                     div_matrix
                                                                                     (FunctionType
-                                                                                        [(StructType
+                                                                                        [(Struct
                                                                                             113 matrix
                                                                                         )
-                                                                                        (StructType
+                                                                                        (Struct
                                                                                             113 matrix
                                                                                         )]
-                                                                                        (StructType
+                                                                                        (Struct
                                                                                             113 matrix
                                                                                         )
                                                                                         Source
@@ -15325,14 +15325,14 @@
                                                                                                 125 row_eschelon
                                                                                                 ()
                                                                                                 [((Var 135 x))]
-                                                                                                (StructType
+                                                                                                (Struct
                                                                                                     113 matrix
                                                                                                 )
                                                                                                 ()
                                                                                                 ()
                                                                                             ))
                                                                                             ((Var 135 y))]
-                                                                                            (StructType
+                                                                                            (Struct
                                                                                                 113 matrix
                                                                                             )
                                                                                             ()
@@ -15856,7 +15856,7 @@
                                                                                                     ()
                                                                                                     ()
                                                                                                     Default
-                                                                                                    (StructType
+                                                                                                    (Struct
                                                                                                         113 matrix
                                                                                                     )
                                                                                                     ()
@@ -15874,7 +15874,7 @@
                                                                                                     ()
                                                                                                     ()
                                                                                                     Default
-                                                                                                    (StructType
+                                                                                                    (Struct
                                                                                                         113 matrix
                                                                                                     )
                                                                                                     ()
@@ -15886,10 +15886,10 @@
                                                                                         })
                                                                                     row_eschelon
                                                                                     (FunctionType
-                                                                                        [(StructType
+                                                                                        [(Struct
                                                                                             113 matrix
                                                                                         )]
-                                                                                        (StructType
+                                                                                        (Struct
                                                                                             113 matrix
                                                                                         )
                                                                                         Source
@@ -16370,7 +16370,7 @@
                                                                                     ()
                                                                                     ()
                                                                                     Default
-                                                                                    (StructType
+                                                                                    (Struct
                                                                                         113 matrix
                                                                                     )
                                                                                     ()
@@ -16388,7 +16388,7 @@
                                                                                     ()
                                                                                     ()
                                                                                     Default
-                                                                                    (StructType
+                                                                                    (Struct
                                                                                         113 matrix
                                                                                     )
                                                                                     ()
@@ -16406,7 +16406,7 @@
                                                                                     ()
                                                                                     ()
                                                                                     Default
-                                                                                    (StructType
+                                                                                    (Struct
                                                                                         113 matrix
                                                                                     )
                                                                                     ()
@@ -16418,13 +16418,13 @@
                                                                         })
                                                                     minus_matrix
                                                                     (FunctionType
-                                                                        [(StructType
+                                                                        [(Struct
                                                                             113 matrix
                                                                         )
-                                                                        (StructType
+                                                                        (Struct
                                                                             113 matrix
                                                                         )]
-                                                                        (StructType
+                                                                        (Struct
                                                                             113 matrix
                                                                         )
                                                                         Source
@@ -16981,7 +16981,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (StructType
+                                                                    (Struct
                                                                         113 matrix
                                                                     )
                                                                     ()
@@ -16994,7 +16994,7 @@
                                                     one
                                                     (FunctionType
                                                         []
-                                                        (StructType
+                                                        (Struct
                                                             113 matrix
                                                         )
                                                         Source
@@ -17208,7 +17208,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (StructType
+                                                                    (Struct
                                                                         113 matrix
                                                                     )
                                                                     ()
@@ -17258,7 +17258,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (StructType
+                                                                    (Struct
                                                                         113 matrix
                                                                     )
                                                                     ()
@@ -17276,7 +17276,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (StructType
+                                                                    (Struct
                                                                         113 matrix
                                                                     )
                                                                     ()
@@ -17288,13 +17288,13 @@
                                                         })
                                                     plus_matrix
                                                     (FunctionType
-                                                        [(StructType
+                                                        [(Struct
                                                             113 matrix
                                                         )
-                                                        (StructType
+                                                        (Struct
                                                             113 matrix
                                                         )]
-                                                        (StructType
+                                                        (Struct
                                                             113 matrix
                                                         )
                                                         Source
@@ -17563,7 +17563,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (StructType
+                                                                    (Struct
                                                                         113 matrix
                                                                     )
                                                                     ()
@@ -17647,7 +17647,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (StructType
+                                                                    (Struct
                                                                         113 matrix
                                                                     )
                                                                     ()
@@ -17665,7 +17665,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (StructType
+                                                                    (Struct
                                                                         113 matrix
                                                                     )
                                                                     ()
@@ -17677,13 +17677,13 @@
                                                         })
                                                     times_matrix
                                                     (FunctionType
-                                                        [(StructType
+                                                        [(Struct
                                                             113 matrix
                                                         )
-                                                        (StructType
+                                                        (Struct
                                                             113 matrix
                                                         )]
-                                                        (StructType
+                                                        (Struct
                                                             113 matrix
                                                         )
                                                         Source
@@ -17973,7 +17973,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (StructType
+                                                                    (Struct
                                                                         113 matrix
                                                                     )
                                                                     ()
@@ -17986,7 +17986,7 @@
                                                     zero
                                                     (FunctionType
                                                         []
-                                                        (StructType
+                                                        (Struct
                                                             113 matrix
                                                         )
                                                         Source

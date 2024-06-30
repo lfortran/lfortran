@@ -1,5 +1,44 @@
-semantic error: Shapes for operands are not conformable
- --> tests/errors/incompatible_dimension_logical_arrays_logical_binop_02.f90:4:14
-  |
-4 |     print *, x1 .neqv. x2
-  |              ^^        ^^ 
+Internal Compiler Error: Unhandled exception
+Traceback (most recent call last):
+[2m  File "[0m[1m[35m$DIR/src/bin/lfortran.cpp[39m[0m[2m", line 2478[0m
+    LCompilers::print_stack_on_segfault();
+[2m  File "[0m[1m[35m$DIR/src/bin/lfortran.cpp[39m[0m[2m", line 2356[0m
+    return emit_asr(arg_file, lfortran_pass_manager,
+[2m  File "[0m[1m[35m$DIR/src/bin/lfortran.cpp[39m[0m[2m", line 627[0m
+    r = fe.get_asr2(input, lm, diagnostics);
+[2m  File "[0m[1m[35m$DIR/src/lfortran/fortran_evaluator.cpp[39m[0m[2m", line 256[0m
+    Result<ASR::TranslationUnit_t*> res2 = get_asr3(*ast, diagnostics);
+[2m  File "[0m[1m[35m$DIR/src/lfortran/fortran_evaluator.cpp[39m[0m[2m", line 278[0m
+    compiler_options.symtab_only, compiler_options);
+[2m  File "[0m[1m[35m$DIR/src/lfortran/semantics/ast_to_asr.cpp[39m[0m[2m", line 107[0m
+    if (res.ok) {
+[2m  File "[0m[1m[35m$DIR/src/lfortran/semantics/ast_body_visitor.cpp[39m[0m[2m", line 3741[0m
+    }
+[2m  File "[0m[1m[35m$DIR/src/lfortran/semantics/ast_body_visitor.cpp[39m[0m[2m", line 144[0m
+    for (size_t i=0; i<x.n_items; i++) {
+[2m  File "[0m[1m[35m$DIR/src/lfortran/ast.h[39m[0m[2m", line 4878[0m
+    void visit_ast(const ast_t &b) { visit_ast_t(b, self()); }
+[2m  File "[0m[1m[35m$DIR/src/lfortran/ast.h[39m[0m[2m", line 4834[0m
+    case astType::unit: { v.visit_unit((const unit_t &)x); return; }
+[2m  File "[0m[1m[35m$DIR/src/lfortran/ast.h[39m[0m[2m", line 4881[0m
+    void visit_mod(const mod_t &b) { visit_mod_t(b, self()); }
+[2m  File "[0m[1m[35m$DIR/src/lfortran/ast.h[39m[0m[2m", line 4467[0m
+    case modType::BlockData: { v.visit_BlockData((const BlockData_t &)x); return; }
+[2m  File "[0m[1m[35m$DIR/src/lfortran/semantics/ast_body_visitor.cpp[39m[0m[2m", line 1569[0m
+    data_structure.clear();
+[2m  File "[0m[1m[35m$DIR/src/lfortran/semantics/ast_body_visitor.cpp[39m[0m[2m", line 115[0m
+    LCOMPILERS_ASSERT(current_body != nullptr)
+[2m  File "[0m[1m[35m$DIR/src/lfortran/ast.h[39m[0m[2m", line 4924[0m
+    void visit_stmt(const stmt_t &b) { visit_stmt_t(b, self()); }
+[2m  File "[0m[1m[35m$DIR/src/lfortran/ast.h[39m[0m[2m", line 4594[0m
+    case stmtType::Pragma: { v.visit_Pragma((const Pragma_t &)x); return; }
+[2m  File "[0m[1m[35m$DIR/src/lfortran/semantics/ast_body_visitor.cpp[39m[0m[2m", line 3088[0m
+[2m  File "[0m[1m[35m$DIR/src/lfortran/ast.h[39m[0m[2m", line 4976[0m
+    void visit_expr(const expr_t &b) { visit_expr_t(b, self()); }
+[2m  File "[0m[1m[35m$DIR/src/lfortran/ast.h[39m[0m[2m", line 4626[0m
+    case exprType::BoolOp: { v.visit_BoolOp((const BoolOp_t &)x); return; }
+[2m  File "[0m[1m[35m$DIR/src/lfortran/semantics/ast_common_visitor.h[39m[0m[2m", line 7450[0m
+    func->n_args >= 1 && ASRUtils::is_array(
+[2m  File "[0m[1m[35m$DIR/src/lfortran/semantics/ast_common_visitor.h[39m[0m[2m", line 478[0m
+    switch (x.m_op) {
+AssertFailed: ASR::is_a<ASR::Logical_t>(*dest_type)

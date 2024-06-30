@@ -41,7 +41,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (StructType
+                                                    (Struct
                                                         2 toml_context
                                                     )
                                                     ()
@@ -116,7 +116,7 @@
                                         [(Allocatable
                                             (Character 1 -2 ())
                                         )
-                                        (StructType
+                                        (Struct
                                             2 toml_context
                                         )]
                                         ()
@@ -305,7 +305,7 @@
                                     ()
                                 ),
                             toml_context:
-                                (Struct
+                                (StructType
                                     (SymbolTable
                                         3
                                         {

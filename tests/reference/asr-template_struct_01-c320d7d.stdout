@@ -109,7 +109,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (StructType
+                                                                    (Struct
                                                                         4 tuple
                                                                     )
                                                                     ()
@@ -139,7 +139,7 @@
                                                         })
                                                     get_fst
                                                     (FunctionType
-                                                        [(StructType
+                                                        [(Struct
                                                             4 tuple
                                                         )]
                                                         (TypeParameter
@@ -200,7 +200,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (StructType
+                                                                    (Struct
                                                                         4 tuple
                                                                     )
                                                                     ()
@@ -230,7 +230,7 @@
                                                         })
                                                     get_snd
                                                     (FunctionType
-                                                        [(StructType
+                                                        [(Struct
                                                             4 tuple
                                                         )]
                                                         (TypeParameter
@@ -286,7 +286,7 @@
                                                     .false.
                                                 ),
                                             tuple:
-                                                (Struct
+                                                (StructType
                                                     (SymbolTable
                                                         5
                                                         {
@@ -416,7 +416,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (StructType
+                                                                    (Struct
                                                                         8 int_tuple
                                                                     )
                                                                     ()
@@ -444,7 +444,7 @@
                                                         })
                                                     get_int_fst
                                                     (FunctionType
-                                                        [(StructType
+                                                        [(Struct
                                                             8 int_tuple
                                                         )]
                                                         (Integer 4)
@@ -501,7 +501,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (StructType
+                                                                    (Struct
                                                                         8 int_tuple
                                                                     )
                                                                     ()
@@ -529,7 +529,7 @@
                                                         })
                                                     get_int_snd
                                                     (FunctionType
-                                                        [(StructType
+                                                        [(Struct
                                                             8 int_tuple
                                                         )]
                                                         (Integer 4)
@@ -586,7 +586,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (StructType
+                                                                    (Struct
                                                                         8 real_tuple
                                                                     )
                                                                     ()
@@ -614,7 +614,7 @@
                                                         })
                                                     get_real_fst
                                                     (FunctionType
-                                                        [(StructType
+                                                        [(Struct
                                                             8 real_tuple
                                                         )]
                                                         (Real 4)
@@ -671,7 +671,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (StructType
+                                                                    (Struct
                                                                         8 real_tuple
                                                                     )
                                                                     ()
@@ -699,7 +699,7 @@
                                                         })
                                                     get_real_snd
                                                     (FunctionType
-                                                        [(StructType
+                                                        [(Struct
                                                             8 real_tuple
                                                         )]
                                                         (Real 4)
@@ -733,7 +733,7 @@
                                                     ()
                                                 ),
                                             int_tuple:
-                                                (Struct
+                                                (StructType
                                                     (SymbolTable
                                                         9
                                                         {
@@ -783,7 +783,7 @@
                                                     ()
                                                 ),
                                             real_tuple:
-                                                (Struct
+                                                (StructType
                                                     (SymbolTable
                                                         12
                                                         {
@@ -841,7 +841,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (StructType
+                                                    (Struct
                                                         8 int_tuple
                                                     )
                                                     ()
@@ -859,7 +859,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (StructType
+                                                    (Struct
                                                         8 real_tuple
                                                     )
                                                     ()

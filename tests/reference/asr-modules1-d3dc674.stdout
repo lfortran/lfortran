@@ -37,7 +37,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (Class
                                                         8 t1
                                                     )
                                                     ()
@@ -49,7 +49,7 @@
                                         })
                                     f
                                     (FunctionType
-                                        [(ClassType
+                                        [(Class
                                             8 t1
                                         )]
                                         (Logical 4)
@@ -74,7 +74,7 @@
                                     ()
                                 ),
                             t1:
-                                (Struct
+                                (StructType
                                     (SymbolTable
                                         9
                                         {
@@ -166,7 +166,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (Class
                                                         4 t2
                                                     )
                                                     ()
@@ -178,7 +178,7 @@
                                         })
                                     sub
                                     (FunctionType
-                                        [(ClassType
+                                        [(Class
                                             4 t2
                                         )]
                                         ()
@@ -206,7 +206,7 @@
                                                 (Var 6 self)
                                                 6 1_t2_val
                                                 (Allocatable
-                                                    (ClassType
+                                                    (Class
                                                         4 t1
                                                     )
                                                 )
@@ -237,7 +237,7 @@
                                     Public
                                 ),
                             t2:
-                                (Struct
+                                (StructType
                                     (SymbolTable
                                         5
                                         {
@@ -251,7 +251,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (ClassType
+                                                        (Class
                                                             4 t1
                                                         )
                                                     )

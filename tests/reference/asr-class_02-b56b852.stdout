@@ -33,7 +33,7 @@
                         2
                         {
                             circle:
-                                (Struct
+                                (StructType
                                     (SymbolTable
                                         3
                                         {
@@ -127,7 +127,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (Class
                                                         2 circle
                                                     )
                                                     ()
@@ -139,7 +139,7 @@
                                         })
                                     circle_area
                                     (FunctionType
-                                        [(ClassType
+                                        [(Class
                                             2 circle
                                         )]
                                         (Real 4)
@@ -242,7 +242,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (Class
                                                         2 circle
                                                     )
                                                     ()
@@ -254,7 +254,7 @@
                                         })
                                     circle_print
                                     (FunctionType
-                                        [(ClassType
+                                        [(Class
                                             2 circle
                                         )]
                                         ()
@@ -342,7 +342,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (StructType
+                                                    (Struct
                                                         2 circle
                                                     )
                                                     ()
@@ -371,13 +371,13 @@
                                     []
                                     [(Assignment
                                         (Var 6 c)
-                                        (StructConstructor
+                                        (StructTypeConstructor
                                             2 circle
                                             [((RealConstant
                                                 1.000000
                                                 (Real 4)
                                             ))]
-                                            (StructType
+                                            (Struct
                                                 2 circle
                                             )
                                             ()

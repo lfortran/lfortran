@@ -123,7 +123,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (ClassType
+                                                                    (Class
                                                                         7 intvector
                                                                     )
                                                                     ()
@@ -135,7 +135,7 @@
                                                         })
                                                     __asr_push_back
                                                     (FunctionType
-                                                        [(ClassType
+                                                        [(Class
                                                             7 intvector
                                                         )
                                                         (Integer 4)]
@@ -283,7 +283,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (ClassType
+                                                                    (Class
                                                                         7 intvector
                                                                     )
                                                                     ()
@@ -318,7 +318,7 @@
                                                         })
                                                     __asr_resize
                                                     (FunctionType
-                                                        [(ClassType
+                                                        [(Class
                                                             7 intvector
                                                         )
                                                         (Integer 4)]
@@ -547,7 +547,7 @@
                                                     .false.
                                                 ),
                                             intvector:
-                                                (Struct
+                                                (StructType
                                                     (SymbolTable
                                                         8
                                                         {
@@ -634,7 +634,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (Class
                                                         7 intvector
                                                     )
                                                     ()
@@ -663,11 +663,11 @@
                                     []
                                     [(Assignment
                                         (Var 7 v)
-                                        (StructConstructor
+                                        (StructTypeConstructor
                                             7 intvector
                                             [(())
                                             (())]
-                                            (StructType
+                                            (Struct
                                                 7 intvector
                                             )
                                             ()
@@ -763,7 +763,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (ClassType
+                                                                    (Class
                                                                         3 vector
                                                                     )
                                                                     ()
@@ -775,7 +775,7 @@
                                                         })
                                                     push_back
                                                     (FunctionType
-                                                        [(ClassType
+                                                        [(Class
                                                             3 vector
                                                         )
                                                         (TypeParameter
@@ -929,7 +929,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (ClassType
+                                                                    (Class
                                                                         3 vector
                                                                     )
                                                                     ()
@@ -966,7 +966,7 @@
                                                         })
                                                     resize
                                                     (FunctionType
-                                                        [(ClassType
+                                                        [(Class
                                                             3 vector
                                                         )
                                                         (Integer 4)]
@@ -1213,7 +1213,7 @@
                                                     .false.
                                                 ),
                                             vector:
-                                                (Struct
+                                                (StructType
                                                     (SymbolTable
                                                         4
                                                         {

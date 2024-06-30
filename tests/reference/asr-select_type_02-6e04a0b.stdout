@@ -8,7 +8,7 @@
                         2
                         {
                             point:
-                                (Struct
+                                (StructType
                                     (SymbolTable
                                         3
                                         {
@@ -109,7 +109,7 @@
                                     Public
                                 ),
                             color_point:
-                                (Struct
+                                (StructType
                                     (SymbolTable
                                         6
                                         {
@@ -150,7 +150,7 @@
                                     ()
                                     ()
                                     Default
-                                    (StructType
+                                    (Struct
                                         4 color_point
                                     )
                                     ()
@@ -168,7 +168,7 @@
                                     ()
                                     ()
                                     Default
-                                    (StructType
+                                    (Struct
                                         4 point
                                     )
                                     ()
@@ -186,7 +186,7 @@
                                     ()
                                     ()
                                     Default
-                                    (StructType
+                                    (Struct
                                         4 point_3d
                                     )
                                     ()
@@ -205,7 +205,7 @@
                                     ()
                                     Default
                                     (Pointer
-                                        (ClassType
+                                        (Class
                                             4 point
                                         )
                                     )
@@ -226,7 +226,7 @@
                                     Public
                                 ),
                             point_3d:
-                                (Struct
+                                (StructType
                                     (SymbolTable
                                         5
                                         {
@@ -293,7 +293,7 @@
                                                     ()
                                                     Default
                                                     (Pointer
-                                                        (ClassType
+                                                        (Class
                                                             4 point
                                                         )
                                                     )
@@ -375,7 +375,7 @@
                                                     ()
                                                     Default
                                                     (Pointer
-                                                        (ClassType
+                                                        (Class
                                                             4 point
                                                         )
                                                     )

@@ -45,7 +45,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (StructType
+                                                        (Struct
                                                             3 toml_table
                                                         )
                                                     )
@@ -229,7 +229,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (StructType
+                                                        (Struct
                                                             5 toml_error
                                                         )
                                                     )
@@ -249,7 +249,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (StructType
+                                                        (Struct
                                                             5 toml_table
                                                         )
                                                     )
@@ -263,7 +263,7 @@
                                     toml_parse_string
                                     (FunctionType
                                         [(Allocatable
-                                            (StructType
+                                            (Struct
                                                 5 toml_table
                                             )
                                         )
@@ -274,7 +274,7 @@
                                             CharacterArraySinglePointer
                                         )
                                         (Allocatable
-                                            (StructType
+                                            (Struct
                                                 5 toml_error
                                             )
                                         )]
@@ -316,7 +316,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (StructType
+                                                        (Struct
                                                             5 toml_error
                                                         )
                                                     )
@@ -336,7 +336,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (StructType
+                                                        (Struct
                                                             5 toml_table
                                                         )
                                                     )
@@ -366,13 +366,13 @@
                                     toml_parse_unit
                                     (FunctionType
                                         [(Allocatable
-                                            (StructType
+                                            (Struct
                                                 5 toml_table
                                             )
                                         )
                                         (Integer 4)
                                         (Allocatable
-                                            (StructType
+                                            (Struct
                                                 5 toml_error
                                             )
                                         )]
@@ -422,7 +422,7 @@
                         9
                         {
                             toml_error:
-                                (Struct
+                                (StructType
                                     (SymbolTable
                                         10
                                         {
@@ -485,7 +485,7 @@
                         12
                         {
                             toml_table:
-                                (Struct
+                                (StructType
                                     (SymbolTable
                                         13
                                         {

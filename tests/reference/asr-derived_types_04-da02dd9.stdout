@@ -75,7 +75,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (Class
                                                         2 toml_date
                                                     )
                                                     ()
@@ -90,7 +90,7 @@
                                         [(Allocatable
                                             (Character 1 -2 ())
                                         )
-                                        (ClassType
+                                        (Class
                                             2 toml_date
                                         )]
                                         ()
@@ -237,7 +237,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (Class
                                                         2 toml_datetime
                                                     )
                                                     ()
@@ -270,7 +270,7 @@
                                         [(Allocatable
                                             (Character 1 -2 ())
                                         )
-                                        (ClassType
+                                        (Class
                                             2 toml_datetime
                                         )]
                                         ()
@@ -295,7 +295,7 @@
                                                 (Var 8 rhs)
                                                 8 1_toml_datetime_date
                                                 (Allocatable
-                                                    (StructType
+                                                    (Struct
                                                         2 toml_date
                                                     )
                                                 )
@@ -313,7 +313,7 @@
                                                 (Var 8 rhs)
                                                 8 1_toml_datetime_date
                                                 (Allocatable
-                                                    (StructType
+                                                    (Struct
                                                         2 toml_date
                                                     )
                                                 )
@@ -327,7 +327,7 @@
                                                     (Var 8 rhs)
                                                     8 1_toml_datetime_time
                                                     (Allocatable
-                                                        (StructType
+                                                        (Struct
                                                             2 toml_time
                                                         )
                                                     )
@@ -345,7 +345,7 @@
                                                     (Var 8 rhs)
                                                     8 1_toml_datetime_time
                                                     (Allocatable
-                                                        (StructType
+                                                        (Struct
                                                             2 toml_time
                                                         )
                                                     )
@@ -371,7 +371,7 @@
                                                     (Var 8 rhs)
                                                     8 1_toml_datetime_time
                                                     (Allocatable
-                                                        (StructType
+                                                        (Struct
                                                             2 toml_time
                                                         )
                                                     )
@@ -387,7 +387,7 @@
                                                     (Var 8 rhs)
                                                     8 1_toml_datetime_time
                                                     (Allocatable
-                                                        (StructType
+                                                        (Struct
                                                             2 toml_time
                                                         )
                                                     )
@@ -401,7 +401,7 @@
                                                         (Var 8 rhs)
                                                         8 1_toml_datetime_time
                                                         (Allocatable
-                                                            (StructType
+                                                            (Struct
                                                                 2 toml_time
                                                             )
                                                         )
@@ -560,7 +560,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (StructType
+                                                    (Struct
                                                         2 toml_time
                                                     )
                                                     ()
@@ -593,7 +593,7 @@
                                         (Integer 4)
                                         (Integer 4)
                                         (Character 1 -1 ())]
-                                        (StructType
+                                        (Struct
                                             2 toml_time
                                         )
                                         Source
@@ -820,7 +820,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (Class
                                                         2 toml_time
                                                     )
                                                     ()
@@ -845,7 +845,7 @@
                                         [(Allocatable
                                             (Character 1 -2 ())
                                         )
-                                        (ClassType
+                                        (Class
                                             2 toml_time
                                         )]
                                         ()
@@ -1071,7 +1071,7 @@
                                     ()
                                 ),
                             toml_date:
-                                (Struct
+                                (StructType
                                     (SymbolTable
                                         4
                                         {
@@ -1156,7 +1156,7 @@
                                     ()
                                 ),
                             toml_datetime:
-                                (Struct
+                                (StructType
                                     (SymbolTable
                                         5
                                         {
@@ -1170,7 +1170,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (StructType
+                                                        (Struct
                                                             2 toml_date
                                                         )
                                                     )
@@ -1190,7 +1190,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (StructType
+                                                        (Struct
                                                             2 toml_time
                                                         )
                                                     )
@@ -1232,7 +1232,7 @@
                                     ()
                                 ),
                             toml_time:
-                                (Struct
+                                (StructType
                                     (SymbolTable
                                         3
                                         {

@@ -28,6 +28,16 @@
                                                     Required
                                                     .false.
                                                 ),
+                                            real:
+                                                (ExternalSymbol
+                                                    3
+                                                    real
+                                                    5 real
+                                                    lfortran_intrinsic_builtin
+                                                    []
+                                                    real
+                                                    Private
+                                                ),
                                             string:
                                                 (Variable
                                                     3
@@ -70,16 +80,15 @@
                                                     x
                                                     []
                                                     Local
-                                                    (IntrinsicElementalFunction
-                                                        Real
-                                                        [(TypeInquiry
+                                                    (Cast
+                                                        (TypeInquiry
                                                             Huge
                                                             (Integer 4)
                                                             (IntegerConstant 1 (Integer 4))
                                                             (Integer 4)
                                                             (IntegerConstant 2147483647 (Integer 4))
-                                                        )]
-                                                        0
+                                                        )
+                                                        IntegerToReal
                                                         (Real 4)
                                                         (RealConstant
                                                             2147483647.000000
@@ -125,9 +134,11 @@
                                 )
                         })
                     functions_12
+                    [lfortran_intrinsic_builtin]
                     []
-                    []
-                )
+                ),
+            lfortran_intrinsic_builtin:
+                (IntrinsicModule lfortran_intrinsic_builtin)
         })
     []
 )

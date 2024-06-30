@@ -31,7 +31,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (StructType
+                                                    (Struct
                                                         2 dependency_config_t
                                                     )
                                                     ()
@@ -65,7 +65,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (Class
                                                         2 dependency_tree_t
                                                     )
                                                     ()
@@ -77,10 +77,10 @@
                                         })
                                     add_dependency
                                     (FunctionType
-                                        [(ClassType
+                                        [(Class
                                             2 dependency_tree_t
                                         )
-                                        (StructType
+                                        (Struct
                                             2 dependency_config_t
                                         )]
                                         ()
@@ -118,7 +118,7 @@
                                     ()
                                 ),
                             dependency_config_t:
-                                (Struct
+                                (StructType
                                     (SymbolTable
                                         3
                                         {
@@ -172,7 +172,7 @@
                                     ()
                                 ),
                             dependency_node_t:
-                                (Struct
+                                (StructType
                                     (SymbolTable
                                         4
                                         {
@@ -272,7 +272,7 @@
                                     ()
                                 ),
                             dependency_tree_t:
-                                (Struct
+                                (StructType
                                     (SymbolTable
                                         5
                                         {
@@ -323,7 +323,7 @@
                                                     Default
                                                     (Allocatable
                                                         (Array
-                                                            (StructType
+                                                            (Struct
                                                                 2 dependency_node_t
                                                             )
                                                             [(()
@@ -452,7 +452,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (Class
                                                         2 dependency_config_t
                                                     )
                                                     ()
@@ -486,7 +486,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (Class
                                                         2 dependency_tree_t
                                                     )
                                                     ()
@@ -498,10 +498,10 @@
                                         })
                                     find_dependency
                                     (FunctionType
-                                        [(ClassType
+                                        [(Class
                                             2 dependency_tree_t
                                         )
-                                        (ClassType
+                                        (Class
                                             2 dependency_config_t
                                         )]
                                         (Integer 4)

@@ -48,7 +48,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (Class
                                                         2 bitset_type
                                                     )
                                                     ()
@@ -60,7 +60,7 @@
                                         })
                                     all_abstract
                                     (FunctionType
-                                        [(ClassType
+                                        [(Class
                                             2 bitset_type
                                         )]
                                         (Logical 4)
@@ -85,7 +85,7 @@
                                     ()
                                 ),
                             bitset_type:
-                                (Struct
+                                (StructType
                                     (SymbolTable
                                         3
                                         {

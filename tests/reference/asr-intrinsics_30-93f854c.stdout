@@ -91,29 +91,28 @@
                                     ar1
                                     []
                                     Local
-                                    (TypeInquiry
-                                        Range
+                                    (ArrayConstant
+                                        12
+                                        [9, 9, 9]
                                         (Array
                                             (Integer 4)
                                             [((IntegerConstant 1 (Integer 4))
                                             (IntegerConstant 3 (Integer 4)))]
                                             FixedSizeArray
                                         )
-                                        (ArrayConstant
-                                            12
-                                            [1, 21, 13]
-                                            (Array
-                                                (Integer 4)
-                                                [((IntegerConstant 1 (Integer 4))
-                                                (IntegerConstant 3 (Integer 4)))]
-                                                FixedSizeArray
-                                            )
-                                            ColMajor
-                                        )
-                                        (Integer 4)
-                                        (IntegerConstant 9 (Integer 4))
+                                        ColMajor
                                     )
-                                    (IntegerConstant 9 (Integer 4))
+                                    (ArrayConstant
+                                        12
+                                        [9, 9, 9]
+                                        (Array
+                                            (Integer 4)
+                                            [((IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 3 (Integer 4)))]
+                                            FixedSizeArray
+                                        )
+                                        ColMajor
+                                    )
                                     Parameter
                                     (Integer 4)
                                     ()
@@ -128,29 +127,28 @@
                                     ar2
                                     []
                                     Local
-                                    (TypeInquiry
-                                        Range
+                                    (ArrayConstant
+                                        12
+                                        [37, 37, 37]
                                         (Array
-                                            (Real 4)
+                                            (Integer 4)
                                             [((IntegerConstant 1 (Integer 4))
                                             (IntegerConstant 3 (Integer 4)))]
                                             FixedSizeArray
                                         )
-                                        (ArrayConstant
-                                            12
-                                            [1.00000000e+00, 2.10000000e+01, 1.30000000e+01]
-                                            (Array
-                                                (Real 4)
-                                                [((IntegerConstant 1 (Integer 4))
-                                                (IntegerConstant 3 (Integer 4)))]
-                                                FixedSizeArray
-                                            )
-                                            ColMajor
-                                        )
-                                        (Integer 4)
-                                        (IntegerConstant 37 (Integer 4))
+                                        ColMajor
                                     )
-                                    (IntegerConstant 37 (Integer 4))
+                                    (ArrayConstant
+                                        12
+                                        [37, 37, 37]
+                                        (Array
+                                            (Integer 4)
+                                            [((IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 3 (Integer 4)))]
+                                            FixedSizeArray
+                                        )
+                                        ColMajor
+                                    )
                                     Parameter
                                     (Integer 4)
                                     ()
@@ -165,68 +163,28 @@
                                     ar3
                                     []
                                     Local
-                                    (TypeInquiry
-                                        Range
+                                    (ArrayConstant
+                                        12
+                                        [37, 37, 37]
                                         (Array
-                                            (Complex 4)
+                                            (Integer 4)
                                             [((IntegerConstant 1 (Integer 4))
                                             (IntegerConstant 3 (Integer 4)))]
                                             FixedSizeArray
                                         )
-                                        (ArrayConstructor
-                                            [(ComplexConstructor
-                                                (IntegerConstant 1 (Integer 4))
-                                                (IntegerConstant 2 (Integer 4))
-                                                (Complex 4)
-                                                (ComplexConstant
-                                                    1.000000
-                                                    2.000000
-                                                    (Complex 4)
-                                                )
-                                            )
-                                            (ComplexConstructor
-                                                (IntegerConstant 31 (Integer 4))
-                                                (IntegerConstant 4 (Integer 4))
-                                                (Complex 4)
-                                                (ComplexConstant
-                                                    31.000000
-                                                    4.000000
-                                                    (Complex 4)
-                                                )
-                                            )
-                                            (ComplexConstructor
-                                                (IntegerConstant 51 (Integer 4))
-                                                (IntegerConstant 62 (Integer 4))
-                                                (Complex 4)
-                                                (ComplexConstant
-                                                    51.000000
-                                                    62.000000
-                                                    (Complex 4)
-                                                )
-                                            )]
-                                            (Array
-                                                (Complex 4)
-                                                [((IntegerConstant 1 (Integer 4))
-                                                (IntegerConstant 3 (Integer 4)))]
-                                                FixedSizeArray
-                                            )
-                                            (ArrayConstant
-                                                12
-                                                [(1.00000000e+00, 2.00000000e+00), (3.10000000e+01, 4.00000000e+00), (5.10000000e+01, 6.20000000e+01)]
-                                                (Array
-                                                    (Complex 4)
-                                                    [((IntegerConstant 1 (Integer 4))
-                                                    (IntegerConstant 3 (Integer 4)))]
-                                                    FixedSizeArray
-                                                )
-                                                ColMajor
-                                            )
-                                            ColMajor
-                                        )
-                                        (Integer 4)
-                                        (IntegerConstant 37 (Integer 4))
+                                        ColMajor
                                     )
-                                    (IntegerConstant 37 (Integer 4))
+                                    (ArrayConstant
+                                        12
+                                        [37, 37, 37]
+                                        (Array
+                                            (Integer 4)
+                                            [((IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 3 (Integer 4)))]
+                                            FixedSizeArray
+                                        )
+                                        ColMajor
+                                    )
                                     Parameter
                                     (Integer 4)
                                     ()
@@ -686,9 +644,16 @@
                             NotEq
                             (IntegerConstant 9 (Integer 4))
                             (Logical 4)
-                            (LogicalConstant
-                                .false.
-                                (Logical 4)
+                            (ArrayConstant
+                                12
+                                [.false., .false., .false.]
+                                (Array
+                                    (Logical 4)
+                                    [((IntegerConstant 0 (Integer 4))
+                                    (IntegerConstant 3 (Integer 4)))]
+                                    PointerToDataArray
+                                )
+                                ColMajor
                             )
                         )
                         [(ErrorStop
@@ -707,9 +672,16 @@
                             NotEq
                             (IntegerConstant 37 (Integer 4))
                             (Logical 4)
-                            (LogicalConstant
-                                .false.
-                                (Logical 4)
+                            (ArrayConstant
+                                12
+                                [.false., .false., .false.]
+                                (Array
+                                    (Logical 4)
+                                    [((IntegerConstant 0 (Integer 4))
+                                    (IntegerConstant 3 (Integer 4)))]
+                                    PointerToDataArray
+                                )
+                                ColMajor
                             )
                         )
                         [(ErrorStop
@@ -728,9 +700,16 @@
                             NotEq
                             (IntegerConstant 37 (Integer 4))
                             (Logical 4)
-                            (LogicalConstant
-                                .false.
-                                (Logical 4)
+                            (ArrayConstant
+                                12
+                                [.false., .false., .false.]
+                                (Array
+                                    (Logical 4)
+                                    [((IntegerConstant 0 (Integer 4))
+                                    (IntegerConstant 3 (Integer 4)))]
+                                    PointerToDataArray
+                                )
+                                ColMajor
                             )
                         )
                         [(ErrorStop

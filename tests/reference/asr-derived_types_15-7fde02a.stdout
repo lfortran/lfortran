@@ -63,7 +63,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (Class
                                                         2 t_1
                                                     )
                                                     ()
@@ -75,7 +75,7 @@
                                         })
                                     multiply
                                     (FunctionType
-                                        [(ClassType
+                                        [(Class
                                             2 t_1
                                         )
                                         (Real 4)]
@@ -172,7 +172,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (Class
                                                         2 t_1
                                                     )
                                                     ()
@@ -184,7 +184,7 @@
                                         })
                                     sqrt_subtract
                                     (FunctionType
-                                        [(ClassType
+                                        [(Class
                                             2 t_1
                                         )
                                         (Integer 4)]
@@ -240,7 +240,7 @@
                                     ()
                                 ),
                             t_1:
-                                (Struct
+                                (StructType
                                     (SymbolTable
                                         3
                                         {
@@ -382,7 +382,7 @@
                                     ()
                                     ()
                                     Default
-                                    (StructType
+                                    (Struct
                                         6 t_1
                                     )
                                     ()

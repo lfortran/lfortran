@@ -89,7 +89,7 @@
                         8
                         {
                             b:
-                                (Struct
+                                (StructType
                                     (SymbolTable
                                         9
                                         {
@@ -164,7 +164,7 @@
                                     ()
                                     ()
                                     Default
-                                    (StructType
+                                    (Struct
                                         8 b
                                     )
                                     ()
@@ -185,7 +185,7 @@
                         6
                         {
                             c:
-                                (Struct
+                                (StructType
                                     (SymbolTable
                                         7
                                         {
@@ -277,7 +277,7 @@
                                     ()
                                     ()
                                     Default
-                                    (StructType
+                                    (Struct
                                         6 c
                                     )
                                     ()
@@ -298,7 +298,7 @@
                         3
                         {
                             sample:
-                                (Struct
+                                (StructType
                                     (SymbolTable
                                         4
                                         {
@@ -378,7 +378,7 @@
                                     ()
                                     ()
                                     Default
-                                    (StructType
+                                    (Struct
                                         3 sample
                                     )
                                     ()

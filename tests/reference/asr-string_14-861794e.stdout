@@ -98,7 +98,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (StructType
+                                                    (Struct
                                                         2 string_type
                                                     )
                                                     ()
@@ -147,7 +147,7 @@
                                         })
                                     read_formatted
                                     (FunctionType
-                                        [(StructType
+                                        [(Struct
                                             2 string_type
                                         )
                                         (Integer 4)
@@ -189,7 +189,7 @@
                                     ()
                                 ),
                             string_type:
-                                (Struct
+                                (StructType
                                     (SymbolTable
                                         3
                                         {
@@ -285,7 +285,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (StructType
+                                                    (Struct
                                                         2 string_type
                                                     )
                                                     ()
@@ -334,7 +334,7 @@
                                         })
                                     write_formatted
                                     (FunctionType
-                                        [(StructType
+                                        [(Struct
                                             2 string_type
                                         )
                                         (Integer 4)

@@ -98,7 +98,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (Class
                                                         4 toml_character_tokenizer
                                                     )
                                                     ()
@@ -126,7 +126,7 @@
                                         })
                                     next_token
                                     (FunctionType
-                                        [(ClassType
+                                        [(Class
                                             4 toml_character_tokenizer
                                         )
                                         (Logical 4)]
@@ -163,7 +163,7 @@
                                     Public
                                 ),
                             toml_character_tokenizer:
-                                (Struct
+                                (StructType
                                     (SymbolTable
                                         5
                                         {
@@ -263,7 +263,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (Class
                                                         8 toml_tokenizer
                                                     )
                                                     ()
@@ -291,7 +291,7 @@
                                         })
                                     next_token
                                     (FunctionType
-                                        [(ClassType
+                                        [(Class
                                             8 toml_tokenizer
                                         )
                                         (Logical 4)]
@@ -341,7 +341,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (Class
                                                         8 toml_tokenizer
                                                     )
                                                     ()
@@ -360,7 +360,7 @@
                                                     ()
                                                     Default
                                                     (Pointer
-                                                        (StructType
+                                                        (Struct
                                                             8 toml_table
                                                         )
                                                     )
@@ -373,7 +373,7 @@
                                         })
                                     parse_select
                                     (FunctionType
-                                        [(ClassType
+                                        [(Class
                                             8 toml_tokenizer
                                         )]
                                         ()
@@ -398,7 +398,7 @@
                                             (Var 13 de)
                                             13 1_toml_tokenizer_current
                                             (Pointer
-                                                (StructType
+                                                (Struct
                                                     8 toml_table
                                                 )
                                             )
@@ -413,7 +413,7 @@
                                     ()
                                 ),
                             toml_table:
-                                (Struct
+                                (StructType
                                     (SymbolTable
                                         9
                                         {
@@ -452,7 +452,7 @@
                                     ()
                                 ),
                             toml_tokenizer:
-                                (Struct
+                                (StructType
                                     (SymbolTable
                                         10
                                         {
@@ -464,21 +464,21 @@
                                                     Local
                                                     (PointerNullConstant
                                                         (Pointer
-                                                            (StructType
+                                                            (Struct
                                                                 8 toml_table
                                                             )
                                                         )
                                                     )
                                                     (PointerNullConstant
                                                         (Pointer
-                                                            (StructType
+                                                            (Struct
                                                                 8 toml_table
                                                             )
                                                         )
                                                     )
                                                     Default
                                                     (Pointer
-                                                        (StructType
+                                                        (Struct
                                                             8 toml_table
                                                         )
                                                     )
@@ -512,7 +512,7 @@
                                     ()
                                 ),
                             toml_tokenizer_:
-                                (Struct
+                                (StructType
                                     (SymbolTable
                                         11
                                         {

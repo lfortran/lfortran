@@ -5,9 +5,9 @@
     "infile_hash": "2689a6754f639e286efe8693ffb765d4539b35f8e8dc3e56c053bc50",
     "outfile": null,
     "outfile_hash": null,
-    "stdout": null,
-    "stdout_hash": null,
-    "stderr": "asr-merge_bits_run-9579699.stderr",
-    "stderr_hash": "c2d5bf15339248ebc5a3de085cb8a04b5e8e755a24f9de55b60b8c76",
-    "returncode": 2
+    "stdout": "asr-merge_bits_run-9579699.stdout",
+    "stdout_hash": "8873ab92ccd90a06f9adb1ee8b2b190a80a5224f3cb4dd4c0f5ce7f4",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
 }

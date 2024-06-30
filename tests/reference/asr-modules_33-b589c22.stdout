@@ -43,7 +43,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (StructType
+                                                        (Struct
                                                             7 error_t
                                                         )
                                                     )
@@ -62,7 +62,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (StructType
+                                                    (Struct
                                                         7 package_config_t
                                                     )
                                                     ()
@@ -80,7 +80,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (Class
                                                         7 dependency_tree_t
                                                     )
                                                     ()
@@ -92,14 +92,14 @@
                                         })
                                     add_project
                                     (FunctionType
-                                        [(ClassType
+                                        [(Class
                                             7 dependency_tree_t
                                         )
-                                        (StructType
+                                        (Struct
                                             7 package_config_t
                                         )
                                         (Allocatable
-                                            (StructType
+                                            (Struct
                                                 7 error_t
                                             )
                                         )]
@@ -141,7 +141,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (StructType
+                                                        (Struct
                                                             7 error_t
                                                         )
                                                     )
@@ -192,7 +192,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (Class
                                                         7 dependency_tree_t
                                                     )
                                                     ()
@@ -204,13 +204,13 @@
                                         })
                                     add_project_dependencies
                                     (FunctionType
-                                        [(ClassType
+                                        [(Class
                                             7 dependency_tree_t
                                         )
                                         (Character 1 -1 ())
                                         (Logical 4)
                                         (Allocatable
-                                            (StructType
+                                            (Struct
                                                 7 error_t
                                             )
                                         )]
@@ -239,7 +239,7 @@
                                     ()
                                 ),
                             dependency_config_t:
-                                (Struct
+                                (StructType
                                     (SymbolTable
                                         8
                                         {
@@ -293,7 +293,7 @@
                                     ()
                                 ),
                             dependency_node_t:
-                                (Struct
+                                (StructType
                                     (SymbolTable
                                         9
                                         {
@@ -393,7 +393,7 @@
                                     7 dependency_config_t
                                 ),
                             dependency_tree_t:
-                                (Struct
+                                (StructType
                                     (SymbolTable
                                         10
                                         {
@@ -456,7 +456,7 @@
                                                     Default
                                                     (Allocatable
                                                         (Array
-                                                            (StructType
+                                                            (Struct
                                                                 7 dependency_node_t
                                                             )
                                                             [(()
@@ -572,7 +572,7 @@
                                     ()
                                 ),
                             error_t:
-                                (Struct
+                                (StructType
                                     (SymbolTable
                                         11
                                         {
@@ -607,7 +607,7 @@
                                     ()
                                 ),
                             package_config_t:
-                                (Struct
+                                (StructType
                                     (SymbolTable
                                         12
                                         {
@@ -656,7 +656,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (StructType
+                                                        (Struct
                                                             7 error_t
                                                         )
                                                     )
@@ -691,7 +691,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (Class
                                                         7 dependency_tree_t
                                                     )
                                                     ()
@@ -703,12 +703,12 @@
                                         })
                                     update_dependency
                                     (FunctionType
-                                        [(ClassType
+                                        [(Class
                                             7 dependency_tree_t
                                         )
                                         (Character 1 -1 ())
                                         (Allocatable
-                                            (StructType
+                                            (Struct
                                                 7 error_t
                                             )
                                         )]
@@ -757,7 +757,7 @@
                                     Public
                                 ),
                             fpm_model_t:
-                                (Struct
+                                (StructType
                                     (SymbolTable
                                         18
                                         {
@@ -824,7 +824,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (StructType
+                                                    (Struct
                                                         17 dependency_tree_t
                                                     )
                                                     ()
@@ -994,7 +994,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (StructType
+                                                        (Struct
                                                             4 error_t
                                                         )
                                                     )
@@ -1023,7 +1023,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (StructType
+                                                    (Struct
                                                         4 fpm_model_t
                                                     )
                                                     ()
@@ -1041,7 +1041,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (StructType
+                                                    (Struct
                                                         4 package_config_t
                                                     )
                                                     ()
@@ -1053,14 +1053,14 @@
                                         })
                                     build_model
                                     (FunctionType
-                                        [(StructType
+                                        [(Struct
                                             4 fpm_model_t
                                         )
-                                        (StructType
+                                        (Struct
                                             4 package_config_t
                                         )
                                         (Allocatable
-                                            (StructType
+                                            (Struct
                                                 4 error_t
                                             )
                                         )]
@@ -1088,7 +1088,7 @@
                                         (StructInstanceMember
                                             (Var 5 model)
                                             5 1_fpm_model_t_deps
-                                            (StructType
+                                            (Struct
                                                 5 fpm_dependency_modules_33_dependency_tree_t
                                             )
                                             ()

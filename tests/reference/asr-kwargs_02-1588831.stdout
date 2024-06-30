@@ -58,7 +58,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (Class
                                                         2 logger_type
                                                     )
                                                     ()
@@ -86,7 +86,7 @@
                                         })
                                     add_log_file
                                     (FunctionType
-                                        [(ClassType
+                                        [(Class
                                             2 logger_type
                                         )
                                         (Character 1 -1 ())
@@ -167,7 +167,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (Class
                                                         2 logger_type
                                                     )
                                                     ()
@@ -195,7 +195,7 @@
                                         })
                                     log_io_error
                                     (FunctionType
-                                        [(ClassType
+                                        [(Class
                                             2 logger_type
                                         )
                                         (Integer 4)
@@ -226,7 +226,7 @@
                                     ()
                                 ),
                             logger_type:
-                                (Struct
+                                (StructType
                                     (SymbolTable
                                         3
                                         {

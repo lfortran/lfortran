@@ -1,0 +1,38 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            intrinsics7:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            
+                        })
+                    intrinsics7
+                    []
+                    [(Print
+                        [(IntrinsicElementalFunction
+                            Hypot
+                            [(RealConstant
+                                1.000000
+                                (Real 4)
+                            )
+                            (RealConstant
+                                2.700000
+                                (Real 8)
+                            )]
+                            0
+                            (Real 4)
+                            (RealConstant
+                                2.879236
+                                (Real 4)
+                            )
+                        )]
+                        ()
+                        ()
+                    )]
+                )
+        })
+    []
+)

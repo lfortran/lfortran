@@ -39,7 +39,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (Class
                                                         2 toml_tokenizer
                                                     )
                                                     ()
@@ -78,7 +78,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (ClassType
+                                                                    (Class
                                                                         2 toml_tokenizer
                                                                     )
                                                                     ()
@@ -98,7 +98,7 @@
                                                                     Default
                                                                     (Allocatable
                                                                         (Array
-                                                                            (StructType
+                                                                            (Struct
                                                                                 2 toml_key
                                                                             )
                                                                             [(()
@@ -131,13 +131,13 @@
                                                         })
                                                     fill_stack
                                                     (FunctionType
-                                                        [(ClassType
+                                                        [(Class
                                                             2 toml_tokenizer
                                                         )
                                                         (Integer 4)
                                                         (Allocatable
                                                             (Array
-                                                                (StructType
+                                                                (Struct
                                                                     2 toml_key
                                                                 )
                                                                 [(()
@@ -249,7 +249,7 @@
                                                                     Default
                                                                     (Allocatable
                                                                         (Array
-                                                                            (StructType
+                                                                            (Struct
                                                                                 2 toml_key
                                                                             )
                                                                             [(()
@@ -268,7 +268,7 @@
                                                     (FunctionType
                                                         [(Allocatable
                                                             (Array
-                                                                (StructType
+                                                                (Struct
                                                                     2 toml_key
                                                                 )
                                                                 [(()
@@ -304,7 +304,7 @@
                                         })
                                     parse_select
                                     (FunctionType
-                                        [(ClassType
+                                        [(Class
                                             2 toml_tokenizer
                                         )]
                                         ()
@@ -345,7 +345,7 @@
                                     .false.
                                 ),
                             toml_key:
-                                (Struct
+                                (StructType
                                     (SymbolTable
                                         3
                                         {
@@ -380,7 +380,7 @@
                                     ()
                                 ),
                             toml_tokenizer:
-                                (Struct
+                                (StructType
                                     (SymbolTable
                                         4
                                         {

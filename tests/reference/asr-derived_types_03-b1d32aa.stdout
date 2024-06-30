@@ -16,7 +16,7 @@
                                     ()
                                     ()
                                     Default
-                                    (StructType
+                                    (Struct
                                         2 x
                                     )
                                     ()
@@ -26,7 +26,7 @@
                                     .false.
                                 ),
                             x:
-                                (Struct
+                                (StructType
                                     (SymbolTable
                                         3
                                         {
@@ -64,7 +64,7 @@
                                         4
                                         {
                                             a:
-                                                (Struct
+                                                (StructType
                                                     (SymbolTable
                                                         5
                                                         {
@@ -105,7 +105,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (StructType
+                                                    (Struct
                                                         4 a
                                                     )
                                                     ()
@@ -145,7 +145,7 @@
                                         6
                                         {
                                             a:
-                                                (Struct
+                                                (StructType
                                                     (SymbolTable
                                                         7
                                                         {
@@ -186,7 +186,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (StructType
+                                                    (Struct
                                                         6 a
                                                     )
                                                     ()
