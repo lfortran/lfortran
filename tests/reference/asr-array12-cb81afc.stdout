@@ -82,7 +82,7 @@
                                                             (Character 1 1 ())
                                                             [(()
                                                             ())]
-                                                            CharacterArraySinglePointer
+                                                            DescriptorArray
                                                         )
                                                     )
                                                     ()

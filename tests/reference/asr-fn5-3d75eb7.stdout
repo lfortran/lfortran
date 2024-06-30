@@ -263,7 +263,7 @@
                                                             (Character 1 -2 ())
                                                             [(()
                                                             ())]
-                                                            CharacterArraySinglePointer
+                                                            DescriptorArray
                                                         )
                                                     )
                                                     ()
@@ -319,7 +319,7 @@
                                                             (Character 1 -2 ())
                                                             [(()
                                                             ())]
-                                                            CharacterArraySinglePointer
+                                                            DescriptorArray
                                                         )
                                                     )
                                                     ()
@@ -368,7 +368,7 @@
                                                             (Character 1 -2 ())
                                                             [(()
                                                             ())]
-                                                            CharacterArraySinglePointer
+                                                            DescriptorArray
                                                         )
                                                     )
                                                     ()
