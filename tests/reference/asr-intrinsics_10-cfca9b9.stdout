@@ -7,16 +7,6 @@
                     (SymbolTable
                         2
                         {
-                            real:
-                                (ExternalSymbol
-                                    2
-                                    real
-                                    4 real
-                                    lfortran_intrinsic_builtin
-                                    []
-                                    real
-                                    Private
-                                ),
                             x:
                                 (Variable
                                     2
@@ -37,9 +27,10 @@
                     intrinsics_10
                     []
                     [(Print
-                        [(Cast
-                            (Var 2 x)
-                            IntegerToReal
+                        [(IntrinsicElementalFunction
+                            Real
+                            [(Var 2 x)]
+                            0
                             (Real 4)
                             (RealConstant
                                 3.000000
@@ -49,9 +40,7 @@
                         ()
                         ()
                     )]
-                ),
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin)
+                )
         })
     []
 )

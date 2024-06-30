@@ -1054,7 +1054,7 @@
                                                 (ExternalSymbol
                                                     6
                                                     len_trim
-                                                    23 len_trim
+                                                    22 len_trim
                                                     lfortran_intrinsic_string
                                                     []
                                                     len_trim
@@ -1136,7 +1136,7 @@
                                                 (ExternalSymbol
                                                     6
                                                     trim
-                                                    23 trim
+                                                    22 trim
                                                     lfortran_intrinsic_string
                                                     []
                                                     trim

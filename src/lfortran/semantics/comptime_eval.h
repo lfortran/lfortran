@@ -73,7 +73,6 @@ struct IntrinsicProcedures {
             // in intrinsic_function_transformation()
             // So we shouldn't even encounter them here
             {"int", {m_builtin, &eval_int, false}},
-            {"real", {m_builtin, &not_implemented, false}},
             {"is_iostat_eor", {m_builtin, &not_implemented, false}},
             {"is_iostat_end", {m_builtin, &not_implemented, false}},
             {"get_command_argument", {m_builtin, &not_implemented, false}},

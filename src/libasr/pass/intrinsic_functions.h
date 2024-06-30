@@ -158,6 +158,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     Huge,
     Popcnt,
     Poppar,
+    Real,
     SymbolicSymbol,
     SymbolicAdd,
     SymbolicSub,
@@ -2875,7 +2876,7 @@ namespace Maskl {
     static inline ASR::expr_t* instantiate_Maskl(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("");
+        declare_basic_variables("_lcompilers_maskl_" + type_to_str_python(arg_types[0]));
         fill_func_arg("x", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
         /*
@@ -2919,7 +2920,7 @@ namespace Maskr {
     static inline ASR::expr_t* instantiate_Maskr(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("");
+        declare_basic_variables("_lcompilers_maskr_" + type_to_str_python(arg_types[0]));
         fill_func_arg("x", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
         /*
@@ -3306,12 +3307,61 @@ namespace Poppar {
         */
         ASR::expr_t *func_call_poppar =Popcnt::POPCNT(b, args[0], return_type, scope);
         body.push_back(al, b.Assignment(result, Mod::MOD(b, func_call_poppar, b.i_t(2, return_type), scope)));
-        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args, body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
         return b.Call(f_sym, new_args, return_type, nullptr);
     }
 
 } // namespace Poppar
+
+namespace Real {
+
+    static ASR::expr_t *eval_Real(Allocator &al, const Location &loc,
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
+        if (ASR::is_a<ASR::IntegerConstant_t>(*args[0])) {
+            double i = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(args[0]))->m_n;
+            return make_ConstantWithType(make_RealConstant_t, i, t1, loc);
+        } else if (ASR::is_a<ASR::RealConstant_t>(*args[0])) {
+            ASR::RealConstant_t *r = ASR::down_cast<ASR::RealConstant_t>(ASRUtils::expr_value(args[0]));
+            return make_ConstantWithType(make_RealConstant_t, r->m_r, t1, loc);
+        } else if (ASR::is_a<ASR::ComplexConstant_t>(*args[0])) {
+            ASR::ComplexConstant_t *c = ASR::down_cast<ASR::ComplexConstant_t>(ASRUtils::expr_value(args[0]));
+            return make_ConstantWithType(make_RealConstant_t, c->m_re, t1, loc);
+        } else {
+            append_error(diag, "Invalid argument to `real` intrinsic", loc);
+            return nullptr;
+        }
+    }
+
+    static inline ASR::expr_t* instantiate_Real(Allocator &al, const Location &loc,
+        SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+        Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("_lcompilers_real_" + type_to_str_python(arg_types[0]));
+        fill_func_arg("x", arg_types[0]);
+        auto result = declare(fn_name, return_type, ReturnVar);
+        /*
+        function real(a) result(result)
+            real :: a
+            real :: result
+            result = a
+        end function
+        */
+        if (is_integer(*arg_types[0])) {
+            body.push_back(al, b.Assignment(result, b.i2r_t(args[0], return_type)));
+        } else if (is_real(*arg_types[0])) {
+            body.push_back(al, b.Assignment(result, b.r2r_t(args[0], return_type)));
+        } else if (is_complex(*arg_types[0])) {
+            body.push_back(al, b.Assignment(result, EXPR(ASR::make_ComplexRe_t(al, loc, 
+            args[0], return_type, nullptr))));
+        }
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, nullptr);
+    }
+
+} // namespace Real
 
 namespace Mvbits {
 
