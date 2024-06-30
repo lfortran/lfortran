@@ -1583,7 +1583,7 @@ void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,
     dims.push_back(al, dim);
     ASR::ttype_t* dest_shape_type = ASRUtils::TYPE(ASR::make_Array_t(al, loc,
         ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), dims.p, dims.size(),
-        is_value_character_array ? ASR::array_physical_typeType::CharacterArraySinglePointer: ASR::array_physical_typeType::FixedSizeArray));
+        is_value_character_array && !is_value_constant(expr2) ? ASR::array_physical_typeType::CharacterArraySinglePointer: ASR::array_physical_typeType::FixedSizeArray));
 
     ASR::expr_t* dest_shape = nullptr;
     ASR::expr_t* value = nullptr;
@@ -1610,7 +1610,7 @@ void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,
             ASRUtils::get_fixed_size_of_array(expr1_mdims, expr1_ndims) <= 256 ) {
             ASR::ttype_t* value_type = ASRUtils::TYPE(ASR::make_Array_t(al, loc,
                 ASRUtils::type_get_past_array(ASRUtils::expr_type(expr2)), dims.p, dims.size(),
-                is_value_character_array ? ASR::array_physical_typeType::CharacterArraySinglePointer: ASR::array_physical_typeType::FixedSizeArray));
+                is_value_character_array && !ASRUtils::is_value_constant(expr2) ? ASR::array_physical_typeType::CharacterArraySinglePointer: ASR::array_physical_typeType::FixedSizeArray));
             Vec<ASR::expr_t*> values;
             values.reserve(al, ASRUtils::get_fixed_size_of_array(expr1_mdims, expr1_ndims));
             for( int64_t i = 0; i < ASRUtils::get_fixed_size_of_array(expr1_mdims, expr1_ndims); i++ ) {
