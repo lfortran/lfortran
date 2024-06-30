@@ -152,14 +152,42 @@
                                         ()
                                         ((Var 3 __1_k)
                                         (ArrayBound
-                                            (Var 3 __libasr__created__var__1_x)
+                                            (FunctionCall
+                                                2 solution
+                                                ()
+                                                []
+                                                (Allocatable
+                                                    (Array
+                                                        (Real 4)
+                                                        [(()
+                                                        ())]
+                                                        DescriptorArray
+                                                    )
+                                                )
+                                                ()
+                                                ()
+                                            )
                                             (IntegerConstant 1 (Integer 4))
                                             (Integer 4)
                                             LBound
                                             ()
                                         )
                                         (ArrayBound
-                                            (Var 3 __libasr__created__var__1_x)
+                                            (FunctionCall
+                                                2 solution
+                                                ()
+                                                []
+                                                (Allocatable
+                                                    (Array
+                                                        (Real 4)
+                                                        [(()
+                                                        ())]
+                                                        DescriptorArray
+                                                    )
+                                                )
+                                                ()
+                                                ()
+                                            )
                                             (IntegerConstant 1 (Integer 4))
                                             (Integer 4)
                                             UBound
