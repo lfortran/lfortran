@@ -9,6 +9,7 @@
 #include <float.h>
 #include <limits.h>
 #include <ctype.h>
+#include <unistd.h> 
 
 #define PI 3.14159265358979323846
 #if defined(_WIN32)
@@ -2198,6 +2199,23 @@ LFORTRAN_API float _lfortran_sp_rand_num() {
 
 LFORTRAN_API double _lfortran_dp_rand_num() {
     return rand() / (double) RAND_MAX;
+}
+
+
+LFORTRAN_API void _lfortran_random_init(bool repeatable, bool image_distinct) {
+    printf("in api call\n");
+    if (repeatable) {
+        if (image_distinct) {
+            // Use a distinct seed for each image; could be based on a unique identifier (like the process ID)
+            srand(time(NULL) + getpid());
+        } else {
+            // Use a fixed seed for repeatability
+            srand(42);
+        }
+    } else {
+        // Use the current time for seeding to make the seed less predictable
+        srand(time(NULL));
+    }
 }
 
 LFORTRAN_API int64_t _lpython_open(char *path, char *flags)
