@@ -20,4 +20,10 @@ integer, parameter :: logical_kinds(1) = [4]
 
 integer, parameter :: iostat_end = -1
 
+contains
+    function compiler_version() result(version)
+        character(len=23) :: version
+        version = "LFortran version 0.37.0"
+    end function compiler_version
+
 end module
