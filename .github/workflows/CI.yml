@@ -288,12 +288,12 @@ jobs:
             node -v
             node --experimental-wasm-bigint src/lfortran/tests/test_lfortran.js
 
-      - name: Upload to wasm_builds
-        shell: bash -l {0}
-        run: |
-            ci/upload_lfortran_wasm.sh
-        env:
-          SSH_PRIVATE_KEY_WASM_BUILDS: ${{ secrets.SSH_PRIVATE_KEY_WASM_BUILDS }}
+      #- name: Upload to wasm_builds
+      #  shell: bash -l {0}
+      #  run: |
+      #      ci/upload_lfortran_wasm.sh
+      #  env:
+      #    SSH_PRIVATE_KEY_WASM_BUILDS: ${{ secrets.SSH_PRIVATE_KEY_WASM_BUILDS }}
 
   debug_outOfSource:
     name: Check Out-of-Source Debug build
