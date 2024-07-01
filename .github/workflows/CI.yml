@@ -27,7 +27,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1.8.0
+      - uses: mamba-org/setup-micromamba@v1.9.0
         with:
           environment-file: ci/environment.yml
           create-args: >-
@@ -105,7 +105,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1.8.0
+      - uses: mamba-org/setup-micromamba@v1.9.0
         with:
           environment-file: ci/environment_linux.yml
           create-args: >-
@@ -225,7 +225,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1.8.0
+      - uses: mamba-org/setup-micromamba@v1.9.0
         with:
           environment-file: ci/environment_linux.yml
           create-args: >-
@@ -304,7 +304,7 @@ jobs:
           fetch-depth: 0
           path: src
 
-      - uses: mamba-org/setup-micromamba@v1.8.0
+      - uses: mamba-org/setup-micromamba@v1.9.0
         with:
           environment-file: src/ci/environment_linux.yml
           create-args: >-
@@ -360,7 +360,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1.8.0
+      - uses: mamba-org/setup-micromamba@v1.9.0
         with:
           environment-file: ci/environment_linux.yml
           create-args: >-
@@ -410,7 +410,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1.8.0
+      - uses: mamba-org/setup-micromamba@v1.9.0
         with:
           environment-file: ci/environment_linux.yml
           create-args: >-
@@ -473,7 +473,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1.8.0
+      - uses: mamba-org/setup-micromamba@v1.9.0
         with:
           environment-file: ci/environment_linux.yml
           create-args: >-
@@ -670,7 +670,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1.8.0
+      - uses: mamba-org/setup-micromamba@v1.9.0
         with:
           environment-file: ci/environment_linux_llvm.yml
           create-args: >-
@@ -748,7 +748,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1.8.0
+      - uses: mamba-org/setup-micromamba@v1.9.0
         with:
           environment-file: ci/environment_linux_llvm.yml
           create-args: >-
@@ -844,7 +844,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1.8.0
+      - uses: mamba-org/setup-micromamba@v1.9.0
         with:
           environment-file: ci/environment_linux.yml
           create-args: >-
@@ -885,7 +885,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1.8.0
+      - uses: mamba-org/setup-micromamba@v1.9.0
         with:
           environment-file: ci/environment_linux.yml
           create-args: >-
@@ -904,7 +904,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1.8.0
+      - uses: mamba-org/setup-micromamba@v1.9.0
         with:
           environment-file: ci/environment_linux.yml
           create-args: >-
@@ -923,7 +923,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1.8.0
+      - uses: mamba-org/setup-micromamba@v1.9.0
         with:
           environment-file: ci/environment_linux.yml
           create-args: >-
@@ -973,7 +973,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1.8.0
+      - uses: mamba-org/setup-micromamba@v1.9.0
         with:
           environment-file: ci/environment_linux.yml
           create-args: >-
@@ -1015,7 +1015,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1.8.0
+      - uses: mamba-org/setup-micromamba@v1.9.0
         with:
           environment-file: ci/environment_linux.yml
           create-args: >-
@@ -1070,7 +1070,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1.8.0
+      - uses: mamba-org/setup-micromamba@v1.9.0
         with:
           environment-file: ci/environment_linux.yml
           create-args: >-
@@ -1103,7 +1103,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1.8.0
+      - uses: mamba-org/setup-micromamba@v1.9.0
         with:
           environment-file: ci/environment_docs_linux.yml
 
