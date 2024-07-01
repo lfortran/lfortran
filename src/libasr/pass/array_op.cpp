@@ -57,6 +57,10 @@ class ArrayVarAddressReplacer: public ASR::BaseExprReplacer<ArrayVarAddressRepla
         call_replacer_on_value = false;
     }
 
+    void replace_ArraySize(ASR::ArraySize_t* /*x*/) {
+
+    }
+
     void replace_Var(ASR::Var_t* x) {
         if( ASRUtils::is_array(ASRUtils::symbol_type(x->m_v)) ) {
             vars.push_back(al, current_expr);
@@ -384,7 +388,12 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
     }
 
     void visit_Assignment(const ASR::Assignment_t& x) {
-        if( !ASRUtils::is_array(ASRUtils::expr_type(x.m_target)) ) {
+        const std::vector<ASR::exprType>& skip_exprs = {
+            ASR::exprType::IntrinsicArrayFunction,
+            ASR::exprType::ArrayReshape,
+        };
+        if( !ASRUtils::is_array(ASRUtils::expr_type(x.m_target)) ||
+            std::find(skip_exprs.begin(), skip_exprs.end(), x.m_value->type) != skip_exprs.end() ) {
             return ;
         }
         ASR::Assignment_t& xx = const_cast<ASR::Assignment_t&>(x);

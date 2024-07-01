@@ -118,6 +118,8 @@ ASR::expr_t* create_temporary_variable_for_struct(Allocator& al,
 bool set_allocation_size(Allocator& al, ASR::expr_t* value, Vec<ASR::dimension_t>& allocate_dims) {
     LCOMPILERS_ASSERT(ASRUtils::is_array(ASRUtils::expr_type(value)));
     const Location& loc = value->base.loc;
+    ASR::expr_t* int32_one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
     switch( value->type ) {
         case ASR::exprType::FunctionCall: {
             ASR::FunctionCall_t* function_call = ASR::down_cast<ASR::FunctionCall_t>(value);
@@ -204,8 +206,6 @@ bool set_allocation_size(Allocator& al, ASR::expr_t* value, Vec<ASR::dimension_t
         case ASR::exprType::ArraySection: {
             ASR::ArraySection_t* array_section_t = ASR::down_cast<ASR::ArraySection_t>(value);
             allocate_dims.reserve(al, array_section_t->n_args);
-            ASR::expr_t* int32_one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
-                al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
             for( size_t i = 0; i < array_section_t->n_args; i++ ) {
                 ASR::expr_t* start = array_section_t->m_args[i].m_left;
                 ASR::expr_t* end = array_section_t->m_args[i].m_right;
@@ -222,6 +222,51 @@ bool set_allocation_size(Allocator& al, ASR::expr_t* value, Vec<ASR::dimension_t
                 allocate_dim.m_start = int32_one;
                 allocate_dim.m_length = length;
                 allocate_dims.push_back(al, allocate_dim);
+            }
+            break;
+        }
+        case ASR::exprType::IntrinsicArrayFunction: {
+            ASR::IntrinsicArrayFunction_t* intrinsic_array_function =
+                ASR::down_cast<ASR::IntrinsicArrayFunction_t>(value);
+            switch (intrinsic_array_function->m_arr_intrinsic_id) {
+                case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Count): {
+                    size_t n_dims = ASRUtils::extract_n_dims_from_ttype(
+                        intrinsic_array_function->m_type);
+                    allocate_dims.reserve(al, n_dims);
+                    for( size_t i = 0; i < n_dims; i++ ) {
+                        ASR::dimension_t allocate_dim;
+                        allocate_dim.loc = loc;
+                        allocate_dim.m_start = int32_one;
+                        ASR::expr_t* size_i_1 = ASRUtils::EXPR(ASR::make_ArraySize_t(
+                            al, loc, intrinsic_array_function->m_args[0],
+                            ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                                al, loc, i + 1, ASRUtils::expr_type(int32_one))),
+                            ASRUtils::expr_type(int32_one), nullptr));
+                        ASR::expr_t* size_i_2 = ASRUtils::EXPR(ASR::make_ArraySize_t(
+                            al, loc, intrinsic_array_function->m_args[0],
+                            ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                                al, loc, i + 2, ASRUtils::expr_type(int32_one))),
+                            ASRUtils::expr_type(int32_one), nullptr));
+                        Vec<ASR::expr_t*> merge_i_args; merge_i_args.reserve(al, 3);
+                        merge_i_args.push_back(al, size_i_1); merge_i_args.push_back(al, size_i_2);
+                        merge_i_args.push_back(al, ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loc,
+                            ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                                al, loc, i + 1, ASRUtils::expr_type(int32_one))), ASR::cmpopType::Lt,
+                                intrinsic_array_function->m_args[1],
+                                ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr)));
+                        ASR::expr_t* merge_i = ASRUtils::EXPR(ASRUtils::make_IntrinsicElementalFunction_t_util(
+                            al, loc, static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Merge),
+                            merge_i_args.p, merge_i_args.size(), 0, ASRUtils::expr_type(int32_one), nullptr));
+                        allocate_dim.m_length = merge_i;
+                        allocate_dims.push_back(al, allocate_dim);
+                    }
+                    break;
+                }
+                default: {
+                    LCOMPILERS_ASSERT_MSG(false, "ASR::IntrinsicArrayFunctions::" +
+                        std::to_string(intrinsic_array_function->m_arr_intrinsic_id)
+                        + " not handled yet in set_allocation_size");
+                }
             }
             break;
         }
