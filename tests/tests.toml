@@ -2617,6 +2617,10 @@ filename = "fixed_form4.f"
 ast = true
 
 [[test]]
+filename = "fixed_form_without_newline.f"
+ast = true
+
+[[test]]
 filename = "fixedform_doloop.f"
 ast = true
 
