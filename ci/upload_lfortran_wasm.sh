@@ -66,6 +66,6 @@ ssh-add <(echo "$SSH_PRIVATE_KEY_WASM_BUILDS" | base64 -d)
 set -x
 
 
-git push ${deploy_repo_push} main:main
+# git push ${deploy_repo_push} main:main
 echo "New commit pushed at:"
 echo "https://github.com/lfortran/wasm_builds/commit/${dest_commit}"
