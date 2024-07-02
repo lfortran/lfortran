@@ -3411,7 +3411,9 @@ public:
             type = ASRUtils::TYPE(ASR::make_Character_t(al, loc, a_kind, a_len, len_expr));
             type = ASRUtils::make_Array_t_util(
                 al, loc, type, dims.p, dims.size(), abi, is_argument,
-                dims.size() > 0 ? ASR::array_physical_typeType::CharacterArraySinglePointer : ASR::array_physical_typeType::DescriptorArray,
+                dims.size() > 0 && abi == ASR::abiType::BindC ? ASR::array_physical_typeType::CharacterArraySinglePointer :
+                                ASRUtils::is_fixed_size_array(dims.p, dims.n) ? ASR::array_physical_typeType::FixedSizeArray :
+                                ASR::array_physical_typeType::DescriptorArray,
                 dims.size() > 0 ? true : false);
             if( char_data->scope != nullptr ) {
                 char_data->type = type;

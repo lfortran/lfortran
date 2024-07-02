@@ -20,7 +20,7 @@
                                             (Character 1 4 ())
                                             [((IntegerConstant 1 (Integer 4))
                                             (IntegerConstant 3 (Integer 4)))]
-                                            CharacterArraySinglePointer
+                                            FixedSizeArray
                                         )
                                         ColMajor
                                     )
@@ -31,7 +31,7 @@
                                             (Character 1 4 ())
                                             [((IntegerConstant 1 (Integer 4))
                                             (IntegerConstant 3 (Integer 4)))]
-                                            CharacterArraySinglePointer
+                                            FixedSizeArray
                                         )
                                         ColMajor
                                     )
@@ -40,7 +40,7 @@
                                         (Character 1 4 ())
                                         [((IntegerConstant 1 (Integer 4))
                                         (IntegerConstant 3 (Integer 4)))]
-                                        CharacterArraySinglePointer
+                                        FixedSizeArray
                                     )
                                     ()
                                     Source
@@ -61,7 +61,7 @@
                                             (Character 1 1 ())
                                             [((IntegerConstant 1 (Integer 4))
                                             (IntegerConstant 3 (Integer 4)))]
-                                            CharacterArraySinglePointer
+                                            FixedSizeArray
                                         )
                                         ColMajor
                                     )
@@ -72,7 +72,7 @@
                                             (Character 1 1 ())
                                             [((IntegerConstant 1 (Integer 4))
                                             (IntegerConstant 3 (Integer 4)))]
-                                            CharacterArraySinglePointer
+                                            FixedSizeArray
                                         )
                                         ColMajor
                                     )
@@ -81,7 +81,7 @@
                                         (Character 1 1 ())
                                         [((IntegerConstant 1 (Integer 4))
                                         (IntegerConstant 3 (Integer 4)))]
-                                        CharacterArraySinglePointer
+                                        FixedSizeArray
                                     )
                                     ()
                                     Source
