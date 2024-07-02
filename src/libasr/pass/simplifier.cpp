@@ -980,6 +980,10 @@ class ReplaceExprWithTemporaryVisitor:
     ASR::is_a<ASR::symbol_t>(*asr_owner) && \
     ASR::is_a<ASR::Module_t>(*ASR::down_cast<ASR::symbol_t>(asr_owner))
 
+#define check_if_ASR_owner_is_enum(asr_owner) asr_owner && \
+    ASR::is_a<ASR::symbol_t>(*asr_owner) && \
+    ASR::is_a<ASR::Enum_t>(*ASR::down_cast<ASR::symbol_t>(asr_owner))
+
 class ReplaceModuleVarWithValue:
     public ASR::BaseExprReplacer<ReplaceModuleVarWithValue> {
 
@@ -1032,7 +1036,8 @@ class TransformVariableInitialiser:
     }
 
     void visit_Variable(const ASR::Variable_t &x) {
-        if( check_if_ASR_owner_is_module(x.m_parent_symtab->asr_owner) ) {
+        if( (check_if_ASR_owner_is_module(x.m_parent_symtab->asr_owner)) ||
+            (check_if_ASR_owner_is_enum(x.m_parent_symtab->asr_owner)) ) {
             return ;
         }
 
@@ -1385,7 +1390,8 @@ class VerifySimplifierASROutput:
     void visit_Variable(const ASR::Variable_t& x) {
         if( (ASRUtils::is_array(x.m_type) ||
             ASRUtils::is_aggregate_type(x.m_type)) &&
-            !check_if_ASR_owner_is_module(x.m_parent_symtab->asr_owner) ) {
+            !(check_if_ASR_owner_is_module(x.m_parent_symtab->asr_owner)) &&
+            !(check_if_ASR_owner_is_enum(x.m_parent_symtab->asr_owner)) ) {
             LCOMPILERS_ASSERT(x.m_symbolic_value == nullptr);
             LCOMPILERS_ASSERT(x.m_value == nullptr);
         }
