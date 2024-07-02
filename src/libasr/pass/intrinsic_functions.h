@@ -134,6 +134,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     Dprod,
     Range,
     Sign,
+    CompilerVersion,
     SignFromValue,
     Logical,
     Nint,
@@ -158,6 +159,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     Huge,
     Popcnt,
     Poppar,
+    Real,
     SymbolicSymbol,
     SymbolicAdd,
     SymbolicSub,
@@ -943,6 +945,33 @@ namespace Range {
 
 }  // namespace Range
 
+namespace CompilerVersion {
+
+    static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
+        ASRUtils::require_impl(x.n_args == 0,
+            "ASR Verify: compiler_version() takes no argument",
+            x.base.base.loc, diagnostics);
+    }
+
+    static ASR::expr_t *eval_CompilerVersion(Allocator &al, const Location &loc,
+            ASR::ttype_t */*t1*/, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& /*diag*/) {
+        ASRUtils::ASRBuilder b(al, loc);
+        return b.StringConstant(LFORTRAN_VERSION, character(-1));
+    }
+
+    static inline ASR::asr_t* create_CompilerVersion(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
+        ASR::ttype_t *return_type = character(-1);
+        ASR::expr_t *m_value = nullptr;
+        return_type = ASRUtils::extract_type(return_type);
+        m_value = eval_CompilerVersion(al, loc, return_type, args, diag);
+            if (diag.has_error()) {
+                return nullptr;
+            }
+        return ASR::make_IntrinsicElementalFunction_t(al, loc, static_cast<int64_t>(IntrinsicElementalFunctions::CompilerVersion),
+                nullptr, 0, 0, return_type, m_value);
+    }
+} // namespace CompilerVersion
+
 namespace Sign {
 
     static ASR::expr_t *eval_Sign(Allocator &al, const Location &loc,
@@ -1107,17 +1136,12 @@ namespace Dshiftl {
         int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
         int64_t shift = ASR::down_cast<ASR::IntegerConstant_t>(args[2])->m_n;
-        int kind1 = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_type);
-        int kind2 = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_type);
-        if(kind1 != kind2) {
-            append_error(diag, "The kind of first argument of 'dshiftl' intrinsic must be the same as second argument", loc);
-            return nullptr;
-        }
+        int kind = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_type);
         if(shift < 0){
             append_error(diag, "The shift argument of 'dshiftl' intrinsic must be non-negative integer", loc);
             return nullptr;
         }
-        int k_val = (kind1 == 8) ? 64: 32;
+        int k_val = (kind == 8) ? 64: 32;
         int64_t val = (val1 << shift) | (val2 >> (k_val - shift));
         return make_ConstantWithType(make_IntegerConstant_t, val, t1, loc);
     }
@@ -1638,15 +1662,9 @@ namespace Not {
 namespace Iand {
 
     static ASR::expr_t *eval_Iand(Allocator &al, const Location &loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
-        int kind1 = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_type);
-        int kind2 = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_type);
-        if (kind1 != kind2) {
-            append_error(diag, "The kind of first argument of `iand` intrinsic must be the same as second argument", loc);
-            return nullptr;
-        }
         int64_t result;
         result = val1 & val2;
         return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);
@@ -1680,15 +1698,9 @@ namespace Iand {
 namespace Ior {
 
     static ASR::expr_t *eval_Ior(Allocator &al, const Location &loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
-        int kind1 = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_type);
-        int kind2 = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_type);
-        if (kind1 != kind2) {
-            append_error(diag, "The kind of first argument of `ior` intrinsic must be the same as second argument", loc);
-            return nullptr;
-        }
         int64_t result;
         result = val1 | val2;
         return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);
@@ -1722,15 +1734,9 @@ namespace Ior {
 namespace Ieor {
 
     static ASR::expr_t *eval_Ieor(Allocator &al, const Location &loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
-        int kind1 = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_type);
-        int kind2 = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_type);
-        if (kind1 != kind2) {
-            append_error(diag, "The kind of first argument of `ieor` intrinsic must be the same as second argument", loc);
-            return nullptr;
-        }
         int64_t result;
         result = val1 ^ val2;
         return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);
@@ -2887,10 +2893,13 @@ namespace Maskl {
             diag.semantic_error_label("first argument of `maskl` must be nonnegative", {loc}, "");
             return nullptr;
         } else {
-            int64_t one = 1;
-            int64_t minus_one = -1;
-            int64_t sixty_four = 64;
-            int64_t result = (i == 64) ? minus_one : ((one << i) - one) << (sixty_four - i);
+            int64_t bit_size = (kind == 4) ? 32 : 64;
+            int64_t result;
+            if (i == 0) {
+                result = 0;
+            } else {
+                result = (i == bit_size) ? -1 : ((~0ULL) << (bit_size - i));
+            }
             return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);
         }
     }
@@ -2898,7 +2907,7 @@ namespace Maskl {
     static inline ASR::expr_t* instantiate_Maskl(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("");
+        declare_basic_variables("_lcompilers_maskl_" + type_to_str_python(arg_types[0]));
         fill_func_arg("x", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
         /*
@@ -2942,7 +2951,7 @@ namespace Maskr {
     static inline ASR::expr_t* instantiate_Maskr(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("");
+        declare_basic_variables("_lcompilers_maskr_" + type_to_str_python(arg_types[0]));
         fill_func_arg("x", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
         /*
@@ -3329,12 +3338,61 @@ namespace Poppar {
         */
         ASR::expr_t *func_call_poppar =Popcnt::POPCNT(b, args[0], return_type, scope);
         body.push_back(al, b.Assignment(result, Mod::MOD(b, func_call_poppar, b.i_t(2, return_type), scope)));
-        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args, body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
         return b.Call(f_sym, new_args, return_type, nullptr);
     }
 
 } // namespace Poppar
+
+namespace Real {
+
+    static ASR::expr_t *eval_Real(Allocator &al, const Location &loc,
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
+        if (ASR::is_a<ASR::IntegerConstant_t>(*args[0])) {
+            double i = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(args[0]))->m_n;
+            return make_ConstantWithType(make_RealConstant_t, i, t1, loc);
+        } else if (ASR::is_a<ASR::RealConstant_t>(*args[0])) {
+            ASR::RealConstant_t *r = ASR::down_cast<ASR::RealConstant_t>(ASRUtils::expr_value(args[0]));
+            return make_ConstantWithType(make_RealConstant_t, r->m_r, t1, loc);
+        } else if (ASR::is_a<ASR::ComplexConstant_t>(*args[0])) {
+            ASR::ComplexConstant_t *c = ASR::down_cast<ASR::ComplexConstant_t>(ASRUtils::expr_value(args[0]));
+            return make_ConstantWithType(make_RealConstant_t, c->m_re, t1, loc);
+        } else {
+            append_error(diag, "Invalid argument to `real` intrinsic", loc);
+            return nullptr;
+        }
+    }
+
+    static inline ASR::expr_t* instantiate_Real(Allocator &al, const Location &loc,
+        SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+        Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("_lcompilers_real_" + type_to_str_python(arg_types[0]));
+        fill_func_arg("x", arg_types[0]);
+        auto result = declare(fn_name, return_type, ReturnVar);
+        /*
+        function real(a) result(result)
+            real :: a
+            real :: result
+            result = a
+        end function
+        */
+        if (is_integer(*arg_types[0])) {
+            body.push_back(al, b.Assignment(result, b.i2r_t(args[0], return_type)));
+        } else if (is_real(*arg_types[0])) {
+            body.push_back(al, b.Assignment(result, b.r2r_t(args[0], return_type)));
+        } else if (is_complex(*arg_types[0])) {
+            body.push_back(al, b.Assignment(result, EXPR(ASR::make_ComplexRe_t(al, loc, 
+            args[0], return_type, nullptr))));
+        }
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, nullptr);
+    }
+
+} // namespace Real
 
 namespace Mvbits {
 
@@ -3425,24 +3483,14 @@ namespace Mergebits {
     }
 
     static ASR::expr_t *eval_Mergebits(Allocator &al, const Location &loc,
-        ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
-        int kind1 = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_type);
-        int kind2 = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_type);
-        int kind3 = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[2])->m_type);
+        ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+        int kind = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_type);
         int a = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int b = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
         int mask = ASR::down_cast<ASR::IntegerConstant_t>(args[2])->m_n;
         int result = 0;
-        if(kind1 != kind2) {
-            append_error(diag, "The second argument of 'merge_bits' intrinsic must be the same type and kind as first argument", loc);
-            return nullptr;
-        } else if(kind1 != kind3) {
-            append_error(diag, "The third argument of 'merge_bits' intrinsic must be the same type and kind as first argument", loc);
-            return nullptr;
-        } else{
-            result = compute_merge_bits(a, b, mask, kind1 * 8);
-            return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);
-        }
+        result = compute_merge_bits(a, b, mask, kind * 8);
+        return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);
     }
 
     static inline ASR::expr_t* instantiate_Mergebits(Allocator &al, const Location &loc,

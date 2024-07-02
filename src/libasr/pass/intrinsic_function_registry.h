@@ -63,6 +63,7 @@ inline std::string get_intrinsic_name(int64_t x) {
         INTRINSIC_NAME_CASE(Trailz)
         INTRINSIC_NAME_CASE(Isnan)
         INTRINSIC_NAME_CASE(Nearest)
+        INTRINSIC_NAME_CASE(CompilerVersion)
         INTRINSIC_NAME_CASE(Spacing)
         INTRINSIC_NAME_CASE(Modulo)
         INTRINSIC_NAME_CASE(BesselJ0)
@@ -138,6 +139,7 @@ inline std::string get_intrinsic_name(int64_t x) {
         INTRINSIC_NAME_CASE(Aint)
         INTRINSIC_NAME_CASE(Popcnt)
         INTRINSIC_NAME_CASE(Poppar)
+        INTRINSIC_NAME_CASE(Real)
         INTRINSIC_NAME_CASE(Dim)
         INTRINSIC_NAME_CASE(Anint)
         INTRINSIC_NAME_CASE(Sqrt)
@@ -279,6 +281,8 @@ namespace IntrinsicElementalFunctionRegistry {
             {&Isnan::instantiate_Isnan, &Isnan::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Nearest),
             {&Nearest::instantiate_Nearest, &Nearest::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::CompilerVersion),
+            {nullptr, &CompilerVersion::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Spacing),
             {&Spacing::instantiate_Spacing, &Spacing::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Modulo),
@@ -423,6 +427,8 @@ namespace IntrinsicElementalFunctionRegistry {
             {&Popcnt::instantiate_Popcnt, &Popcnt::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Poppar),
             {&Poppar::instantiate_Poppar, &Poppar::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Real),
+            {&Real::instantiate_Real, &Real::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Nint),
             {&Nint::instantiate_Nint, &Nint::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Anint),
@@ -590,6 +596,8 @@ namespace IntrinsicElementalFunctionRegistry {
             "isnan"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Nearest),
             "nearest"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::CompilerVersion),
+            "compiler_version"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Spacing),
             "spacing"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Modulo),
@@ -756,6 +764,8 @@ namespace IntrinsicElementalFunctionRegistry {
             "popcnt"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Poppar),
             "poppar"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Real),
+            "real"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Nint),
             "nint"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Anint),
@@ -891,6 +901,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"trailz", {&Trailz::create_Trailz, &Trailz::eval_Trailz}},
                 {"isnan", {&Isnan::create_Isnan, &Isnan::eval_Isnan}},
                 {"nearest", {&Nearest::create_Nearest, &Nearest::eval_Nearest}},
+                {"compiler_version", {&CompilerVersion::create_CompilerVersion, &CompilerVersion::eval_CompilerVersion}},
                 {"spacing", {&Spacing::create_Spacing, &Spacing::eval_Spacing}},
                 {"modulo", {&Modulo::create_Modulo, &Modulo::eval_Modulo}},
                 {"bessel_jn", {&BesselJN::create_BesselJN, &BesselJN::eval_BesselJN}},
@@ -967,6 +978,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"aint", {&Aint::create_Aint, &Aint::eval_Aint}},
                 {"popcnt", {&Popcnt::create_Popcnt, &Popcnt::eval_Popcnt}},
                 {"poppar", {&Poppar::create_Poppar, &Poppar::eval_Poppar}},
+                {"real", {&Real::create_Real, &Real::eval_Real}},
                 {"nint", {&Nint::create_Nint, &Nint::eval_Nint}},
                 {"anint", {&Anint::create_Anint, &Anint::eval_Anint}},
                 {"dim", {&Dim::create_Dim, &Dim::eval_Dim}},

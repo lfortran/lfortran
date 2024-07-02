@@ -288,12 +288,12 @@ jobs:
             node -v
             node --experimental-wasm-bigint src/lfortran/tests/test_lfortran.js
 
-      - name: Upload to wasm_builds
-        shell: bash -l {0}
-        run: |
-            ci/upload_lfortran_wasm.sh
-        env:
-          SSH_PRIVATE_KEY_WASM_BUILDS: ${{ secrets.SSH_PRIVATE_KEY_WASM_BUILDS }}
+      #- name: Upload to wasm_builds
+      #  shell: bash -l {0}
+      #  run: |
+      #      ci/upload_lfortran_wasm.sh
+      #  env:
+      #    SSH_PRIVATE_KEY_WASM_BUILDS: ${{ secrets.SSH_PRIVATE_KEY_WASM_BUILDS }}
 
   debug_outOfSource:
     name: Check Out-of-Source Debug build
@@ -653,7 +653,7 @@ jobs:
             export PATH="$(pwd)/../src/bin:$PATH"
 
             git checkout lf20
-            git checkout 80435c522b1931f8cec67d918df40a04bddff8be
+            git checkout abb1d33d6ae02d8b62a13be7f9e51f6117c67ba4
             micromamba install -c conda-forge fypp
             ./build_test_lf.sh
             ./build_test_gf.sh

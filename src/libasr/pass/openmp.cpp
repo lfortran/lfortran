@@ -436,6 +436,33 @@ class DoConcurrentVisitor :
             remove_original_statement = remove_original_statement_copy;
         }
 
+        void transform_stmts_do_loop(ASR::stmt_t **&m_body, size_t &n_body) {
+            bool remove_original_statement_copy = remove_original_statement;
+            Vec<ASR::stmt_t*> body;
+            body.reserve(al, n_body);
+            current_m_body = m_body;
+            current_n_body = n_body;
+            for (size_t i=0; i<n_body; i++) {
+                pass_result.n = 0;
+                current_stmt_index = i;
+                pass_result.reserve(al, 1);
+                remove_original_statement = false;
+                visit_stmt(*m_body[i]);
+                for (size_t j=0; j < pass_result.size(); j++) {
+                    body.push_back(al, pass_result[j]);
+                }
+                if( !remove_original_statement ) {
+                    body.push_back(al, m_body[i]);
+                }
+            }
+            m_body = body.p;
+            n_body = body.size();
+            current_m_body = nullptr;
+            current_n_body = 0;
+            pass_result.n = 0;
+            remove_original_statement = remove_original_statement_copy;
+        }
+
         std::string import_all(const ASR::Module_t* m, bool to_submodule=false) {
             // Import all symbols from the module, e.g.:
             //     use a
@@ -1306,10 +1333,14 @@ class DoConcurrentVisitor :
             pass_result.push_back(al, ASRUtils::STMT(ASR::make_SubroutineCall_t(al, x.base.base.loc, current_scope->get_symbol("gomp_parallel"), nullptr,
                                 call_args.p, call_args.n, nullptr)));
 
-            // update all reduction variables in statements after this.
-            ReductionVariableVisitor rvv(al, current_scope, ASRUtils::symbol_name(thread_data_sym), data_expr, reduction_variables);
-            for (size_t i = current_stmt_index + 1; i < current_n_body; i++) {
-                rvv.visit_stmt(*current_m_body[i]);
+            for (auto it: reduction_variables) {
+                ASR::symbol_t* actual_sym = current_scope->resolve_symbol(it);
+                ASR::symbol_t* sym = current_scope->get_symbol(std::string(ASRUtils::symbol_name(thread_data_sym)) + "_" + it);
+                LCOMPILERS_ASSERT(sym != nullptr);
+                pass_result.push_back(al, b.Assignment(
+                    b.Var(actual_sym),
+                    ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, x.base.base.loc, data_expr, sym, ASRUtils::symbol_type(sym), nullptr)
+                )));
             }
             reduction_variables.clear();
 
@@ -1353,6 +1384,15 @@ class DoConcurrentVisitor :
 
             transform_stmts(xx.m_body, xx.n_body);
             current_scope = current_scope_copy;
+        }
+
+        void visit_DoLoop(const ASR::DoLoop_t &x) {
+            ASR::DoLoop_t& xx = const_cast<ASR::DoLoop_t&>(x);
+
+            visit_do_loop_head(xx.m_head);
+
+            transform_stmts_do_loop(xx.m_body, xx.n_body);
+            transform_stmts_do_loop(xx.m_orelse, xx.n_orelse);
         }
 
 };

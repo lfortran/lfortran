@@ -21,7 +21,7 @@
                                             (Character 1 1 ())
                                             [(()
                                             ())]
-                                            CharacterArraySinglePointer
+                                            DescriptorArray
                                         )
                                     )
                                     ()
@@ -62,7 +62,7 @@
                                             (Character 1 40 ())
                                             [(()
                                             ())]
-                                            CharacterArraySinglePointer
+                                            DescriptorArray
                                         )
                                     )
                                     ()

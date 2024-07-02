@@ -133,8 +133,6 @@
                     .false.
                     ()
                 ),
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin),
             main:
                 (Program
                     (SymbolTable
@@ -201,16 +199,6 @@
                                                     Public
                                                     Required
                                                     .false.
-                                                ),
-                                            real:
-                                                (ExternalSymbol
-                                                    4
-                                                    real
-                                                    6 real
-                                                    lfortran_intrinsic_builtin
-                                                    []
-                                                    real
-                                                    Private
                                                 ),
                                             w:
                                                 (Variable
@@ -364,8 +352,9 @@
                                             (IntrinsicElementalFunction
                                                 Abs
                                                 [(RealBinOp
-                                                    (Cast
-                                                        (ArrayItem
+                                                    (IntrinsicElementalFunction
+                                                        Real
+                                                        [(ArrayItem
                                                             (Var 4 w)
                                                             [(()
                                                             (Var 4 isi)
@@ -373,8 +362,8 @@
                                                             (Complex 8)
                                                             ColMajor
                                                             ()
-                                                        )
-                                                        ComplexToReal
+                                                        )]
+                                                        0
                                                         (Real 8)
                                                         ()
                                                     )

@@ -21,7 +21,7 @@
                                             (Character 1 5 ())
                                             [(()
                                             ())]
-                                            CharacterArraySinglePointer
+                                            DescriptorArray
                                         )
                                     )
                                     ()

@@ -99,7 +99,7 @@
                                                             (Character 1 -2 ())
                                                             [(()
                                                             ())]
-                                                            CharacterArraySinglePointer
+                                                            DescriptorArray
                                                         )
                                                     )
                                                     ()
@@ -174,7 +174,7 @@
                                         ))
                                         ((ArrayPhysicalCast
                                             (Var 8 littlefile)
-                                            CharacterArraySinglePointer
+                                            DescriptorArray
                                             PointerToDataArray
                                             (Allocatable
                                                 (Array

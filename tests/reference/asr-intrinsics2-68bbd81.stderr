@@ -1,0 +1,5 @@
+semantic error: datan2 was declared as a variable, it can't be called as a function
+ --> tests/errors/intrinsics2.f90:5:14
+  |
+5 |     print *, datan2(x,y)
+  |              ^^^^^^^^^^^ help: use the compiler option "--implicit-interface" to use intrinsic functions
