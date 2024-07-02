@@ -270,6 +270,24 @@ bool set_allocation_size(Allocator& al, ASR::expr_t* value, Vec<ASR::dimension_t
             }
             break;
         }
+        case ASR::exprType::StructInstanceMember: {
+            ASR::StructInstanceMember_t* struct_instance_member_t =
+                ASR::down_cast<ASR::StructInstanceMember_t>(value);
+            size_t n_dims = ASRUtils::extract_n_dims_from_ttype(
+                ASRUtils::symbol_type(struct_instance_member_t->m_m));
+            allocate_dims.reserve(al, n_dims);
+            for( size_t i = 0; i < n_dims; i++ ) {
+                ASR::dimension_t allocate_dim;
+                allocate_dim.loc = loc;
+                allocate_dim.m_start = int32_one;
+                allocate_dim.m_length = ASRUtils::EXPR(ASR::make_ArraySize_t(
+                    al, loc, value, ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                        al, loc, i + 1, ASRUtils::expr_type(int32_one))),
+                    ASRUtils::expr_type(int32_one), nullptr));
+                allocate_dims.push_back(al, allocate_dim);
+            }
+            break;
+        }
         default: {
             LCOMPILERS_ASSERT_MSG(false, "ASR::exprType::" + std::to_string(value->type)
                 + " not handled yet in set_allocation_size");
@@ -1038,7 +1056,8 @@ class TransformVariableInitialiser:
 
     void visit_Variable(const ASR::Variable_t &x) {
         if( (check_if_ASR_owner_is_module(x.m_parent_symtab->asr_owner)) ||
-            (check_if_ASR_owner_is_enum(x.m_parent_symtab->asr_owner)) ) {
+            (check_if_ASR_owner_is_enum(x.m_parent_symtab->asr_owner)) ||
+            x.m_storage == ASR::storage_typeType::Parameter ) {
             return ;
         }
 
@@ -1392,7 +1411,8 @@ class VerifySimplifierASROutput:
         if( (ASRUtils::is_array(x.m_type) ||
             ASRUtils::is_aggregate_type(x.m_type)) &&
             !(check_if_ASR_owner_is_module(x.m_parent_symtab->asr_owner)) &&
-            !(check_if_ASR_owner_is_enum(x.m_parent_symtab->asr_owner)) ) {
+            !(check_if_ASR_owner_is_enum(x.m_parent_symtab->asr_owner)) &&
+            x.m_storage != ASR::storage_typeType::Parameter ) {
             LCOMPILERS_ASSERT(x.m_symbolic_value == nullptr);
             LCOMPILERS_ASSERT(x.m_value == nullptr);
         }
