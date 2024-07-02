@@ -1,0 +1,13 @@
+{
+    "basename": "run-derived_type_06-2623a81",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/errors/derived_type_06.f90",
+    "infile_hash": "002cfbfb5901ee3c9f0d5e33285543863528f17c4b8096e1a0e49134",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "run-derived_type_06-2623a81.stderr",
+    "stderr_hash": "13dc71322f8815413728c8a98468757fda295f39e22ab066b2874734",
+    "returncode": 1
+}
