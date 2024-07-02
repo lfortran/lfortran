@@ -26,9 +26,9 @@ cd $HOME/repos
 git clone ${deploy_repo_pull} wasm_builds
 mkdir -p wasm_builds/docs/${dest_dir}/${git_hash}
 cd wasm_builds/docs
-cp $D/src/bin/lfortran.js ${dest_dir}/${git_hash}/lfortran.js
-cp $D/src/bin/lfortran.wasm ${dest_dir}/${git_hash}/lfortran.wasm
-cp $D/src/bin/lfortran.data ${dest_dir}/${git_hash}/lfortran.data
+# cp $D/src/bin/lfortran.js ${dest_dir}/${git_hash}/lfortran.js
+# cp $D/src/bin/lfortran.wasm ${dest_dir}/${git_hash}/lfortran.wasm
+# cp $D/src/bin/lfortran.data ${dest_dir}/${git_hash}/lfortran.data
 
 echo "$git_hash" > ${dest_dir}/latest_commit # overwrite the file instead of appending to it
 python $D/ci/wasm_builds_update_json.py ${dest_dir} ${lfortran_version} ${git_hash}
@@ -66,6 +66,6 @@ ssh-add <(echo "$SSH_PRIVATE_KEY_WASM_BUILDS" | base64 -d)
 set -x
 
 
-git push ${deploy_repo_push} main:main
+# git push ${deploy_repo_push} main:main
 echo "New commit pushed at:"
 echo "https://github.com/lfortran/wasm_builds/commit/${dest_commit}"
