@@ -63,6 +63,7 @@ inline std::string get_intrinsic_name(int64_t x) {
         INTRINSIC_NAME_CASE(Trailz)
         INTRINSIC_NAME_CASE(Isnan)
         INTRINSIC_NAME_CASE(Nearest)
+        INTRINSIC_NAME_CASE(CompilerVersion)
         INTRINSIC_NAME_CASE(Spacing)
         INTRINSIC_NAME_CASE(Modulo)
         INTRINSIC_NAME_CASE(BesselJ0)
@@ -280,6 +281,8 @@ namespace IntrinsicElementalFunctionRegistry {
             {&Isnan::instantiate_Isnan, &Isnan::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Nearest),
             {&Nearest::instantiate_Nearest, &Nearest::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::CompilerVersion),
+            {nullptr, &CompilerVersion::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Spacing),
             {&Spacing::instantiate_Spacing, &Spacing::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Modulo),
@@ -593,6 +596,8 @@ namespace IntrinsicElementalFunctionRegistry {
             "isnan"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Nearest),
             "nearest"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::CompilerVersion),
+            "compiler_version"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Spacing),
             "spacing"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Modulo),
@@ -896,6 +901,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"trailz", {&Trailz::create_Trailz, &Trailz::eval_Trailz}},
                 {"isnan", {&Isnan::create_Isnan, &Isnan::eval_Isnan}},
                 {"nearest", {&Nearest::create_Nearest, &Nearest::eval_Nearest}},
+                {"compiler_version", {&CompilerVersion::create_CompilerVersion, &CompilerVersion::eval_CompilerVersion}},
                 {"spacing", {&Spacing::create_Spacing, &Spacing::eval_Spacing}},
                 {"modulo", {&Modulo::create_Modulo, &Modulo::eval_Modulo}},
                 {"bessel_jn", {&BesselJN::create_BesselJN, &BesselJN::eval_BesselJN}},
