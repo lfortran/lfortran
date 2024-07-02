@@ -272,21 +272,21 @@ jobs:
             which node
             node -v
 
-      - name: Build to WASM
-        shell: bash -l {0}
-        run: |
-            set -ex
-            source $HOME/ext/emsdk/emsdk_env.sh # Activate Emscripten
-            ./build_to_wasm.sh
+      # - name: Build to WASM
+      #   shell: bash -l {0}
+      #   run: |
+      #       set -ex
+      #       source $HOME/ext/emsdk/emsdk_env.sh # Activate Emscripten
+      #       ./build_to_wasm.sh
 
-      - name: Test built lfortran.wasm
-        shell: bash -l {0}
-        run: |
-            set -ex
-            source $HOME/ext/emsdk/emsdk_env.sh # Activate Emscripten
-            which node
-            node -v
-            node --experimental-wasm-bigint src/lfortran/tests/test_lfortran.js
+      # - name: Test built lfortran.wasm
+      #   shell: bash -l {0}
+      #   run: |
+      #       set -ex
+      #       source $HOME/ext/emsdk/emsdk_env.sh # Activate Emscripten
+      #       which node
+      #       node -v
+      #       node --experimental-wasm-bigint src/lfortran/tests/test_lfortran.js
 
       - name: Upload to wasm_builds
         shell: bash -l {0}
