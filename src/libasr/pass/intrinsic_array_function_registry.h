@@ -1457,7 +1457,7 @@ namespace Spread {
         ASRBuilder b(al, loc);
         int dim_val = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(args[1])) -> m_n;
         if (all_args_evaluated(args) &&
-            (extract_n_dims_from_ttype(expr_type(args[0])) == 1) && (dim_val == 1 or dim_val == 2)) {
+            (extract_n_dims_from_ttype(expr_type(args[0])) == 1) && (dim_val == 1 || dim_val == 2)) {
             ASR::ArrayConstant_t *arr = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(args[0]));
             int ncopies = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(args[2]))->m_n;
             size_t array_size = ASRUtils::get_fixed_size_of_array(arr->m_type);
