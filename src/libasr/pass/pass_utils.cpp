@@ -1114,7 +1114,11 @@ namespace LCompilers {
                         increment = ASR::down_cast<ASR::IntegerConstant_t>(c)->m_n;
                     } else if (c->type == ASR::exprType::IntegerUnaryMinus) {
                         ASR::IntegerUnaryMinus_t *u = ASR::down_cast<ASR::IntegerUnaryMinus_t>(c);
-                        increment = - ASR::down_cast<ASR::IntegerConstant_t>(u->m_arg)->m_n;
+                        if (ASR::is_a<ASR::IntegerConstant_t>(*u->m_arg)) {
+                            increment = - ASR::down_cast<ASR::IntegerConstant_t>(u->m_arg)->m_n;
+                        } else {
+                            not_constant_inc = true;
+                        }
                     } else {
                         // This is the case when increment operator is not a
                         // constant, and so we need some conditions to check
