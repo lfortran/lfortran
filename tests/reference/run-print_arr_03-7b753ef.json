@@ -1,0 +1,13 @@
+{
+    "basename": "run-print_arr_03-7b753ef",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/../integration_tests/print_arr_03.f90",
+    "infile_hash": "27874addcd28f1c3735765e67ccf5ff99871a671bdecac308ad1ff47",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "run-print_arr_03-7b753ef.stdout",
+    "stdout_hash": "96160a5fd372ba5bcfbdf7b6210a56b09729a25c5192ae4b19e74815",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
