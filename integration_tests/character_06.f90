@@ -3,8 +3,7 @@ integer :: a
 character :: b(1)
 a = 1
 call error_subroutine(b,a)
-end program
-
+contains
 subroutine error_subroutine(b, a)
 integer :: a, i
 character :: b(a)
@@ -15,3 +14,4 @@ do i = 1, a
 end do 
 return
 end
+end program
