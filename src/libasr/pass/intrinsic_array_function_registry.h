@@ -40,6 +40,7 @@ enum class IntrinsicArrayFunctions : int64_t {
     DotProduct,
     Cshift,
     Eoshift,
+    Spread,
     // ...
 };
 
@@ -72,6 +73,7 @@ inline std::string get_array_intrinsic_name(int64_t x) {
         ARRAY_INTRINSIC_NAME_CASE(DotProduct)
         ARRAY_INTRINSIC_NAME_CASE(Cshift)
         ARRAY_INTRINSIC_NAME_CASE(Eoshift)
+        ARRAY_INTRINSIC_NAME_CASE(Spread)
         default : {
             throw LCompilersException("pickle: intrinsic_id not implemented");
         }
@@ -1435,6 +1437,316 @@ namespace Cshift {
     }
 
 } // namespace Cshift
+
+namespace Spread {
+    static inline void verify_args(const ASR::IntrinsicArrayFunction_t &x,
+            diag::Diagnostics &diagnostics) {
+        ASRUtils::require_impl(x.n_args == 3,
+            "`spread` intrinsic accepts 3 arguments",
+            x.base.base.loc, diagnostics);
+        ASRUtils::require_impl(x.m_args[0], "`source` argument of `spread` "
+            "cannot be nullptr", x.base.base.loc, diagnostics);
+        ASRUtils::require_impl(x.m_args[1], "`dim` argument of `spread` "
+            "cannot be nullptr", x.base.base.loc, diagnostics);
+        ASRUtils::require_impl(x.m_args[2], "`ncopies` argument of `spread` "
+            "cannot be nullptr", x.base.base.loc, diagnostics);
+    }
+
+    static ASR::expr_t *eval_Spread(Allocator &al, const Location &loc,
+            ASR::ttype_t *type, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
+        ASRBuilder b(al, loc);
+        int dim_val = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(args[1])) -> m_n;
+        if (all_args_evaluated(args) &&
+            (extract_n_dims_from_ttype(expr_type(args[0])) == 1) && (dim_val == 1 or dim_val == 2)) {
+            ASR::ArrayConstant_t *arr = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(args[0]));
+            int ncopies = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(args[2]))->m_n;
+            size_t array_size = ASRUtils::get_fixed_size_of_array(arr->m_type);
+            ASR::ttype_t* arr_type = expr_type(args[0]);
+            std::vector<ASR::expr_t *> m_eles;
+            ASR::expr_t *value = nullptr;
+            if (is_integer(*arr_type)) {
+                if (dim_val == 1) {
+                    for (size_t i = 0; i < array_size; i++) {
+                        std::vector<ASR::expr_t *> res;
+                        int ele = 0;
+                        if(extract_value(ASRUtils::fetch_ArrayConstant_value(al, arr, i), ele)) {
+                            for (int j = 0; j < ncopies; j++) {
+                                res.push_back(b.i_t(ele, arr_type));
+                            }
+                        }
+                        value = b.ArrayConstant(res, extract_type(arr_type), false);
+                        res = {};
+                        m_eles.push_back(value);
+                    }
+                } else if (dim_val == 2) {
+                    for (int j = 0; j < ncopies; j++) {
+                        std::vector<ASR::expr_t *> res;
+                        int ele = 0;
+                        for (size_t i = 0; i < array_size; i++) {
+                            if(extract_value(ASRUtils::fetch_ArrayConstant_value(al, arr, i), ele)) {
+                                res.push_back(b.i_t(ele, arr_type));
+                            }
+                        } 
+                        value = b.ArrayConstant(res, extract_type(arr_type), false);
+                        res = {};
+                        m_eles.push_back(value);
+                    }
+                }
+            } else if (is_real(*arr_type)) {
+                if (dim_val == 1) {
+                    for (size_t i = 0; i < array_size; i++) {
+                        std::vector<ASR::expr_t *> res;
+                        double ele = 0;
+                        if(extract_value(ASRUtils::fetch_ArrayConstant_value(al, arr, i), ele)) {
+                            for (int j = 0; j < ncopies; j++) {
+                                res.push_back(b.f_t(ele, arr_type));
+                            }
+                        }
+                        value = b.ArrayConstant(res, extract_type(arr_type), false);
+                        res = {};
+                        m_eles.push_back(value);
+                    }
+                } else if (dim_val == 2) {
+                    for (int j = 0; j < ncopies; j++) {
+                        std::vector<ASR::expr_t *> res;
+                        double ele = 0;
+                        for (size_t i = 0; i < array_size; i++) {
+                            if(extract_value(ASRUtils::fetch_ArrayConstant_value(al, arr, i), ele)) {
+                                res.push_back(b.f_t(ele, arr_type));
+                            }
+                        }
+                        value = b.ArrayConstant(res, extract_type(arr_type), false);
+                        res = {};
+                        m_eles.push_back(value);
+                    }
+                }
+            } else if (is_logical(*arr_type)) {
+                if (dim_val == 1) {
+                    for (size_t i = 0; i < array_size; i++) {
+                        std::vector<ASR::expr_t *> res;
+                        bool ele = false;
+                        if(extract_value(ASRUtils::fetch_ArrayConstant_value(al, arr, i), ele)) {
+                            for (int j = 0; j < ncopies; j++) {
+                                res.push_back(b.bool_t(ele, arr_type));
+                            }
+                        }
+                        value = b.ArrayConstant(res, extract_type(arr_type), false);
+                        res = {};
+                        m_eles.push_back(value);
+                    }
+                } else if (dim_val == 2) {
+                    for (int j = 0; j < ncopies; j++) {
+                        std::vector<ASR::expr_t *> res;
+                        bool ele = false;
+                        for (size_t i = 0; i < array_size; i++) {
+                            if(extract_value(ASRUtils::fetch_ArrayConstant_value(al, arr, i), ele)) {
+                                res.push_back(b.bool_t(ele, arr_type));
+                            }
+                        }
+                        value = b.ArrayConstant(res, extract_type(arr_type), false);
+                        res = {};
+                        m_eles.push_back(value);
+                    }
+                }
+            } else if (is_character(*arr_type)) {
+                if (dim_val == 1) {
+                    for (size_t i = 0; i < array_size; i++) {
+                        std::vector<ASR::expr_t *> res;
+                        std::string str = "";
+                        str = ASR::down_cast<ASR::StringConstant_t>(ASRUtils::fetch_ArrayConstant_value(al, arr, i))->m_s;
+                        for (int j = 0; j < ncopies; j++) {
+                            res.push_back(b.StringConstant(str, arr_type));
+                        }
+                        value = b.ArrayConstant(res, extract_type(arr_type), false);
+                        res = {};
+                        m_eles.push_back(value);
+                    }
+                } else if (dim_val == 2) {
+                    for (int j = 0; j < ncopies; j++) {
+                        std::vector<ASR::expr_t *> res;
+                        std::string str = "";
+                        for (size_t i = 0; i < array_size; i++) {
+                            str = ASR::down_cast<ASR::StringConstant_t>(ASRUtils::fetch_ArrayConstant_value(al, arr, i))->m_s;
+                            res.push_back(b.StringConstant(str, arr_type));
+                        }
+                        value = b.ArrayConstant(res, extract_type(arr_type), false);
+                        res = {};
+                        m_eles.push_back(value);
+                    }
+                } 
+            } else if (is_complex(*arr_type)) {
+                if (dim_val == 1) {
+                    for (size_t i = 0; i < array_size; i++) {
+                        std::vector<ASR::expr_t *> res;
+                        std::complex<double> ele;
+                        if(extract_value(ASRUtils::fetch_ArrayConstant_value(al, arr, i), ele)) {
+                            for (int j = 0; j < ncopies; j++) {
+                                res.push_back(b.complex_t(ele.real(), ele.imag(), arr_type));
+                            }
+                        }
+                        value = b.ArrayConstant(res, extract_type(arr_type), false);
+                        res = {};
+                        m_eles.push_back(value);
+                    }
+                } else if (dim_val == 2) {
+                    for (int j = 0; j < ncopies; j++) {
+                        std::vector<ASR::expr_t *> res;
+                        std::complex<double> ele;
+                        for (size_t i = 0; i < array_size; i++) {
+                            if(extract_value(ASRUtils::fetch_ArrayConstant_value(al, arr, i), ele)) {
+                                res.push_back(b.complex_t(ele.real(), ele.imag(), arr_type));
+                            }
+                        }
+                        value = b.ArrayConstant(res, extract_type(arr_type), false);
+                        res = {};
+                        m_eles.push_back(value);
+                    }
+                }
+            }
+        return b.ArrayConstant(m_eles, extract_type(type), false);
+    } else {
+        append_error(diag, "`dim` argument of `spread` intrinsic is not a valid dimension index", loc);
+        return nullptr;
+        }
+    }
+
+    static inline ASR::asr_t* create_Spread(Allocator& al, const Location& loc,
+            Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
+        ASR::expr_t *source = args[0], *dim = args[1], *ncopies = args[2];
+        bool is_type_allocatable = false;
+        if (ASRUtils::is_allocatable(source)) {
+            is_type_allocatable = true;
+        }
+        ASR::ttype_t *type_source = expr_type(source);
+        ASR::ttype_t *type_dim = expr_type(dim);
+        ASR::ttype_t *type_ncopies = expr_type(ncopies);
+        ASR::ttype_t *ret_type = expr_type(source);
+        if ( !is_array(type_source) ) {
+            append_error(diag, "The argument `source` in `spread` must be of type Array", source->base.loc);
+            return nullptr;
+        }
+        if( !is_integer(*type_dim) ) {
+            append_error(diag, "The argument `dim` in `spread` must be of type Integer", dim->base.loc);
+            return nullptr;
+        }
+        if( !is_integer(*type_ncopies) ) {
+            append_error(diag, "The argument `ncopies` in `spread` must be of type Integer", ncopies->base.loc);
+            return nullptr;
+        }
+        ASR::dimension_t* source_dims = nullptr;
+        int source_rank = extract_dimensions_from_ttype(type_source, source_dims);
+        ASRUtils::require_impl(source_rank > 0, "The argument `source` in `spread` must be of rank > 0", source->base.loc, diag);
+        ASRBuilder b(al, loc);
+        int overload_id = 2;
+        int dim1 = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(args[1]))->m_n;
+        Vec<ASR::dimension_t> result_dims; result_dims.reserve(al, 2);
+        if (dim1 == 1) {
+            result_dims.push_back(al, b.set_dim(source_dims[0].m_start, ncopies));
+            result_dims.push_back(al, b.set_dim(source_dims[0].m_start, source_dims[0].m_length));
+        } else {
+            result_dims.push_back(al, b.set_dim(source_dims[0].m_start, source_dims[0].m_length));
+            result_dims.push_back(al, b.set_dim(source_dims[0].m_start, ncopies));
+        }
+        ret_type = ASRUtils::duplicate_type(al, ret_type, &result_dims);
+        
+        if (is_type_allocatable) {
+            ret_type = TYPE(ASR::make_Allocatable_t(al, loc, ret_type));
+        }
+        Vec<ASR::expr_t*> m_args; m_args.reserve(al, 3);
+        m_args.push_back(al, source); m_args.push_back(al, dim);
+        m_args.push_back(al, ncopies);
+        ASR::expr_t *value = nullptr;
+        if (all_args_evaluated(m_args)) {
+            value = eval_Spread(al, loc, ret_type, m_args, diag);
+        }
+        return make_IntrinsicArrayFunction_t_util(al, loc,
+            static_cast<int64_t>(IntrinsicArrayFunctions::Spread),
+            m_args.p, m_args.n, overload_id, ret_type, value);
+    }
+
+    static inline ASR::expr_t* instantiate_Spread(Allocator &al,
+            const Location &loc, SymbolTable *scope,
+            Vec<ASR::ttype_t*> &arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t> &m_args, int64_t /*overload_id*/) {
+        declare_basic_variables("_lcompilers_spread");
+        fill_func_arg("source", duplicate_type_with_empty_dims(al, arg_types[0]));
+        fill_func_arg("dim", arg_types[1]);
+        fill_func_arg("ncopies", arg_types[2]);
+        /*
+            spread(source, dim, ncopies)
+            if (dim == 1) then
+                do j = 1, size(source)
+                    ele = source(j)
+                    do k = 1, ncopies
+                        result(i) = ele
+                        i = i + 1
+                    end do
+                end do
+            else if (dim == 2) then
+                do j = 1, ncopies
+                    do k = 1, size(source)
+                        ele = source(k)
+                        result(i) = ele
+                        i = i + 1
+                    end do
+                end do
+            end if
+        */
+        if( !ASRUtils::is_fixed_size_array(return_type) ) {
+            bool is_allocatable = ASRUtils::is_allocatable(return_type);
+            Vec<ASR::dimension_t> empty_dims;
+            empty_dims.reserve(al, 2);
+            for( int idim = 0; idim < 2; idim++ ) {
+                ASR::dimension_t empty_dim;
+                empty_dim.loc = loc;
+                empty_dim.m_start = nullptr;
+                empty_dim.m_length = nullptr;
+                empty_dims.push_back(al, empty_dim);
+            }
+            return_type = ASRUtils::make_Array_t_util(al, loc,
+                ASRUtils::extract_type(return_type), empty_dims.p, empty_dims.size());
+            if( is_allocatable ) {
+                return_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc, return_type));
+            }
+        }
+        ASR::expr_t *result = declare("result", return_type, Out);
+        args.push_back(al, result);
+        ASR::expr_t *i = declare("i", int32, Local);
+        ASR::expr_t *j = declare("j", int32, Local);
+        ASR::expr_t *k = declare("k", int32, Local);
+        ASR::expr_t *ele = nullptr;
+        if (is_integer(*arg_types[0])) ele = declare("ele", int32, Local);
+        else if (is_real(*arg_types[0])) ele = declare("ele", real32, Local);
+        else if (is_logical(*arg_types[0])) ele = declare("ele", logical, Local);
+        else if (is_complex(*arg_types[0])) ele = declare("ele", complex32 , Local);
+        else if (is_character(*arg_types[0])) ele = declare("ele", character(1), Local); // TODO: rectify this later
+        body.push_back(al, b.Assignment(i, b.i32(1)));
+        body.push_back(al, b.If(b.Eq(args[1], b.i32(1)), {
+            b.DoLoop(j, b.i32(1), UBound(args[0], 1), {
+                b.Assignment(ele, b.ArrayItem_01(args[0], {j})),
+                b.DoLoop(k, b.i32(1), args[2], {
+                    b.Assignment(b.ArrayItem_01(result, {i}), ele),
+                    b.Assignment(i, b.Add(i, b.i32(1))),
+                }, nullptr),
+            }, nullptr),
+        }, {
+            b.DoLoop(j, b.i32(1), args[2], {
+                b.DoLoop(k, b.i32(1), UBound(args[0], 1), {
+                    b.Assignment(ele, b.ArrayItem_01(args[0], {k})),
+                    b.Assignment(b.ArrayItem_01(result, {i}), ele),
+                    b.Assignment(i, b.Add(i, b.i32(1))),
+                }, nullptr),
+            }, nullptr),
+        }));
+
+        body.push_back(al, b.Return());
+        ASR::symbol_t *fn_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+                body, nullptr, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, fn_sym);
+        return b.Call(fn_sym, m_args, return_type, nullptr);
+    }
+
+} // namespace Spread
 
 namespace Eoshift {
     static inline void verify_args(const ASR::IntrinsicArrayFunction_t &x,
@@ -3599,7 +3911,7 @@ namespace Pack {
                 }
                 return EXPR(ASRUtils::make_ArrayConstructor_t_util(al, loc, values.p, values.n, return_type, ASR::arraystorageType::ColMajor));
             } else {
-                append_error(diag, "The `dot_product` intrinsic doesn't handle kind " + std::to_string(kind) + " yet", loc);
+                append_error(diag, "The `pack` intrinsic doesn't handle kind " + std::to_string(kind) + " yet", loc);
                 return nullptr;
             }
         } else if (ASRUtils::is_integer(*type_a)) {
@@ -3624,7 +3936,7 @@ namespace Pack {
                 }
                 return EXPR(ASRUtils::make_ArrayConstructor_t_util(al, loc, values.p, values.n, return_type, ASR::arraystorageType::ColMajor));
             } else {
-                append_error(diag, "The `dot_product` intrinsic doesn't handle kind " + std::to_string(kind) + " yet", loc);
+                append_error(diag, "The `pack` intrinsic doesn't handle kind " + std::to_string(kind) + " yet", loc);
                 return nullptr;
             }
         } else if (ASRUtils::is_logical(*type_a)) {
@@ -3659,11 +3971,11 @@ namespace Pack {
                 }
                 return EXPR(ASRUtils::make_ArrayConstructor_t_util(al, loc, values.p, values.n, return_type, ASR::arraystorageType::ColMajor));
             } else {
-                append_error(diag, "The `dot_product` intrinsic doesn't handle kind " + std::to_string(kind) + " yet", loc);
+                append_error(diag, "The `pack` intrinsic doesn't handle kind " + std::to_string(kind) + " yet", loc);
                 return nullptr;
             }
         } else {
-            append_error(diag, "The `dot_product` intrinsic doesn't handle type " + ASRUtils::get_type_code(type_a) + " yet", loc);
+            append_error(diag, "The `pack` intrinsic doesn't handle type " + ASRUtils::get_type_code(type_a) + " yet", loc);
             return nullptr;
         }
         return nullptr;
@@ -4504,7 +4816,7 @@ namespace Transpose {
         Vec<ASR::dimension_t> result_dims; result_dims.reserve(al, 2);
         int overload_id = 2;
         result_dims.push_back(al, b.set_dim(matrix_a_dims[0].m_start,
-        matrix_a_dims[1].m_length));
+            matrix_a_dims[1].m_length));
         result_dims.push_back(al, b.set_dim(matrix_a_dims[1].m_start,
             matrix_a_dims[0].m_length));
         ret_type = ASRUtils::duplicate_type(al, ret_type, &result_dims);
@@ -4617,6 +4929,8 @@ namespace IntrinsicArrayFunctionRegistry {
             {&Cshift::instantiate_Cshift, &Cshift::verify_args}},
         {static_cast<int64_t>(IntrinsicArrayFunctions::Eoshift),
             {&Eoshift::instantiate_Eoshift, &Eoshift::verify_args}},
+        {static_cast<int64_t>(IntrinsicArrayFunctions::Spread),
+            {&Spread::instantiate_Spread, &Spread::verify_args}},
     };
 
     static const std::map<std::string, std::tuple<create_intrinsic_function,
@@ -4637,6 +4951,7 @@ namespace IntrinsicArrayFunctionRegistry {
         {"iparity", {&Iparity::create_Iparity, &Iparity::eval_Iparity}},
         {"cshift", {&Cshift::create_Cshift, &Cshift::eval_Cshift}},
         {"eoshift", {&Eoshift::create_Eoshift, &Eoshift::eval_Eoshift}},
+        {"spread", {&Spread::create_Spread, &Spread::eval_Spread}},
         {"transpose", {&Transpose::create_Transpose, &Transpose::eval_Transpose}},
         {"pack", {&Pack::create_Pack, &Pack::eval_Pack}},
         {"unpack", {&Unpack::create_Unpack, &Unpack::eval_Unpack}},
@@ -4689,6 +5004,7 @@ namespace IntrinsicArrayFunctionRegistry {
             id == IntrinsicArrayFunctions::Pack ||
             id == IntrinsicArrayFunctions::Cshift ||
             id == IntrinsicArrayFunctions::Eoshift ||
+            id == IntrinsicArrayFunctions::Spread ||
             id == IntrinsicArrayFunctions::Unpack ) {
             return 2; // return variable index
         } else {
