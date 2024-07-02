@@ -175,6 +175,20 @@ static inline ASR::ttype_t *type_get_past_allocatable(ASR::ttype_t *f)
     }
 }
 
+static inline ASR::expr_t* get_past_array_physical_cast(ASR::expr_t* x) {
+    if( !ASR::is_a<ASR::ArrayPhysicalCast_t>(*x) ) {
+        return x;
+    }
+    return ASR::down_cast<ASR::ArrayPhysicalCast_t>(x)->m_arg;
+}
+
+static inline ASR::expr_t* get_past_array_broadcast(ASR::expr_t* x) {
+    if( !ASR::is_a<ASR::ArrayBroadcast_t>(*x) ) {
+        return x;
+    }
+    return ASR::down_cast<ASR::ArrayBroadcast_t>(x)->m_array;
+}
+
 static inline ASR::ttype_t *type_get_past_array(ASR::ttype_t *f)
 {
     if (ASR::is_a<ASR::Array_t>(*f)) {
@@ -2098,6 +2112,11 @@ static inline bool is_logical(ASR::ttype_t &x) {
                 type_get_past_pointer(&x))));
 }
 
+static inline bool is_struct(ASR::ttype_t& x) {
+    return ASR::is_a<ASR::StructType_t>(
+        *type_get_past_array_pointer_allocatable(&x));
+}
+
 // Checking if the ttype 't' is a type parameter
 static inline bool is_type_parameter(ASR::ttype_t &x) {
     switch (x.type) {
@@ -2509,7 +2528,10 @@ static inline bool is_aggregate_type(ASR::ttype_t* asr_type) {
               ASR::is_a<ASR::UnsignedInteger_t>(*asr_type) ||
               ASR::is_a<ASR::Real_t>(*asr_type) ||
               ASR::is_a<ASR::Complex_t>(*asr_type) ||
-              ASR::is_a<ASR::Logical_t>(*asr_type));
+              ASR::is_a<ASR::Logical_t>(*asr_type) ||
+              ASR::is_a<ASR::Character_t>(
+                *ASRUtils::type_get_past_pointer(
+                    ASRUtils::type_get_past_allocatable(asr_type))));
 }
 
 static inline ASR::dimension_t* duplicate_dimensions(Allocator& al, ASR::dimension_t* m_dims, size_t n_dims);
@@ -3046,14 +3068,14 @@ inline bool dimension_expr_equal(
 
     return true;
 }
- 
+
 inline bool dimensions_compatible(ASR::dimension_t* dims_a, size_t n_dims_a,
     ASR::dimension_t* dims_b, size_t n_dims_b,
     bool check_n_dims= true){
 
     if (check_n_dims && (n_dims_a != n_dims_b)) {
         return false;
-    } 
+    }
     int total_a = get_fixed_size_of_array(dims_a,n_dims_a);
     int total_b = get_fixed_size_of_array(dims_b,n_dims_b);
     // -1 means found dimension with no value at compile time, then return true anyway.
@@ -5034,7 +5056,7 @@ inline void set_ArrayConstant_value(ASR::ArrayConstant_t* x, ASR::expr_t* value,
                 case 2: ((int16_t*)x->m_data)[i] = value_int->m_n; break;
                 case 4: ((int32_t*)x->m_data)[i] = value_int->m_n; break;
                 case 8: ((int64_t*)x->m_data)[i] = value_int->m_n; break;
-                default: 
+                default:
                     throw LCompilersException("Unsupported kind for integer array constant.");
             }
         }
@@ -5043,7 +5065,7 @@ inline void set_ArrayConstant_value(ASR::ArrayConstant_t* x, ASR::expr_t* value,
             switch (kind) {
                 case 4: ((float*)x->m_data)[i] = value_real->m_r; break;
                 case 8: ((double*)x->m_data)[i] = value_real->m_r; break;
-                default: 
+                default:
                     throw LCompilersException("Unsupported kind for real array constant.");
             }
         }
@@ -5054,7 +5076,7 @@ inline void set_ArrayConstant_value(ASR::ArrayConstant_t* x, ASR::expr_t* value,
                 case 2: ((uint16_t*)x->m_data)[i] = value_int->m_n; break;
                 case 4: ((uint32_t*)x->m_data)[i] = value_int->m_n; break;
                 case 8: ((uint64_t*)x->m_data)[i] = value_int->m_n; break;
-                default: 
+                default:
                     throw LCompilersException("Unsupported kind for unsigned integer array constant.");
             }
         }
@@ -5067,7 +5089,7 @@ inline void set_ArrayConstant_value(ASR::ArrayConstant_t* x, ASR::expr_t* value,
                 case 8:
                     ((double*)x->m_data)[i] = value_complex->m_re;
                     ((double*)x->m_data)[i+1] = value_complex->m_im; break;
-                default: 
+                default:
                     throw LCompilersException("Unsupported kind for complex array constant.");
             }
         }
@@ -5181,58 +5203,58 @@ inline ASR::expr_t* fetch_ArrayConstant_value_helper(Allocator &al, const Locati
     switch (type->type) {
         case ASR::ttypeType::Integer : {
             switch (kind) {
-                case 1: value = EXPR(ASR::make_IntegerConstant_t(al, loc, 
+                case 1: value = EXPR(ASR::make_IntegerConstant_t(al, loc,
                                     ((int8_t*)data)[i], type)); break;
-                case 2: value = EXPR(ASR::make_IntegerConstant_t(al, loc, 
+                case 2: value = EXPR(ASR::make_IntegerConstant_t(al, loc,
                                     ((int16_t*)data)[i], type)); break;
-                case 4: value = EXPR(ASR::make_IntegerConstant_t(al, loc, 
+                case 4: value = EXPR(ASR::make_IntegerConstant_t(al, loc,
                                     ((int32_t*)data)[i], type)); break;
-                case 8: value = EXPR(ASR::make_IntegerConstant_t(al, loc, 
+                case 8: value = EXPR(ASR::make_IntegerConstant_t(al, loc,
                                     ((int64_t*)data)[i], type)); break;
-                default: 
+                default:
                     throw LCompilersException("Unsupported kind for integer array constant.");
             }
             return value;
         }
         case ASR::ttypeType::Real: {
             switch (kind) {
-                case 4: value = EXPR(ASR::make_RealConstant_t(al, loc, 
+                case 4: value = EXPR(ASR::make_RealConstant_t(al, loc,
                                     ((float*)data)[i], type)); break;
-                case 8: value = EXPR(ASR::make_RealConstant_t(al, loc, 
+                case 8: value = EXPR(ASR::make_RealConstant_t(al, loc,
                                     ((double*)data)[i], type)); break;
-                default: 
+                default:
                     throw LCompilersException("Unsupported kind for real array constant.");
             }
             return value;
         }
         case ASR::ttypeType::UnsignedInteger: {
             switch (kind) {
-                case 1: value = EXPR(ASR::make_IntegerConstant_t(al, loc, 
+                case 1: value = EXPR(ASR::make_IntegerConstant_t(al, loc,
                                     ((uint8_t*)data)[i], type)); break;
-                case 2: value = EXPR(ASR::make_IntegerConstant_t(al, loc, 
+                case 2: value = EXPR(ASR::make_IntegerConstant_t(al, loc,
                                     ((uint16_t*)data)[i], type)); break;
-                case 4: value = EXPR(ASR::make_IntegerConstant_t(al, loc, 
+                case 4: value = EXPR(ASR::make_IntegerConstant_t(al, loc,
                                     ((uint32_t*)data)[i], type)); break;
-                case 8: value = EXPR(ASR::make_IntegerConstant_t(al, loc, 
+                case 8: value = EXPR(ASR::make_IntegerConstant_t(al, loc,
                                     ((uint64_t*)data)[i], type)); break;
-                default: 
+                default:
                     throw LCompilersException("Unsupported kind for unsigned integer array constant.");
             }
             return value;
         }
         case ASR::ttypeType::Complex: {
             switch (kind) {
-                case 4: value = EXPR(ASR::make_ComplexConstant_t(al, loc, 
+                case 4: value = EXPR(ASR::make_ComplexConstant_t(al, loc,
                                     *(((float*)data) + 2*i), *(((float*)data) + 2*i + 1), type)); break;
-                case 8: value = EXPR(ASR::make_ComplexConstant_t(al, loc, 
+                case 8: value = EXPR(ASR::make_ComplexConstant_t(al, loc,
                                     *(((double*)data) + 2*i), *(((double*)data) + 2*i + 1), type)); break;
-                default: 
+                default:
                     throw LCompilersException("Unsupported kind for complex array constant.");
             }
             return value;
         }
         case ASR::ttypeType::Logical: {
-            value = EXPR(ASR::make_LogicalConstant_t(al, loc, 
+            value = EXPR(ASR::make_LogicalConstant_t(al, loc,
                                 ((bool*)data)[i], type));
             return value;
         }
@@ -5241,7 +5263,7 @@ inline ASR::expr_t* fetch_ArrayConstant_value_helper(Allocator &al, const Locati
             int len = char_type->m_len;
             char* data_char = (char*)data;
             std::string str = std::string(data_char + i*len, len);
-            value = EXPR(ASR::make_StringConstant_t(al, loc, 
+            value = EXPR(ASR::make_StringConstant_t(al, loc,
                                 s2c(al, str), type));
             return value;
         }
@@ -5603,10 +5625,10 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                     dimension_.from_pointer_n_copy(al, orig_arg_array_t->m_dims, orig_arg_array_t->n_dims);
                     dimensions = &dimension_;
                 }
-                //TO DO : Add appropriate errors in 'asr_uttils.h'. 
+                //TO DO : Add appropriate errors in 'asr_uttils.h'.
                 LCOMPILERS_ASSERT_MSG(dimensions_compatible(arg_array_t->m_dims, arg_array_t->n_dims,
                     orig_arg_array_t->m_dims, orig_arg_array_t->n_dims, false),
-                    "Incompatible dimensions passed to " + (std::string)(ASR::down_cast<ASR::Function_t>(a_name_)->m_name) 
+                    "Incompatible dimensions passed to " + (std::string)(ASR::down_cast<ASR::Function_t>(a_name_)->m_name)
                     + "(" + std::to_string(get_fixed_size_of_array(arg_array_t->m_dims,arg_array_t->n_dims)) + "/" + std::to_string(get_fixed_size_of_array(orig_arg_array_t->m_dims,orig_arg_array_t->n_dims))+")");
 
                 physical_cast_arg.m_value = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
