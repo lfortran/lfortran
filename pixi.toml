@@ -3,35 +3,15 @@ name = "lfortran"
 version = "0.1.0"
 description = "Modern interactive LLVM-based Fortran compiler"
 authors = ["LFortran Maintainers <lfortran@groups.io>"]
-channels = ["conda-forge"]
+channels = ["https://fast.prefix.dev/conda-forge"]
 platforms = ["osx-arm64", "win-64", "linux-64"]
 
 [tasks]
-build0 = "bash ./build0.sh"
+start = "./build/src/bin/lfortran"
+test = "cmake --build . --parallel --target test && pytest -v"
 
-[tasks.build]
-cmd = """
-    CXXFLAGS="-stdlib=libc++ -isystem ${PWD}/.pixi/env/include" cmake . \
-        -GNinja \
-        -DCMAKE_BUILD_TYPE=Debug \
-        -DLFORTRAN_BUILD_ALL=yes \
-        -DWITH_LLVM=yes \
-        -DWITH_STACKTRACE=yes \
-        -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
-        -DCMAKE_INSTALL_PREFIX=$PIXI_PACKAGE_ROOT/inst &&
-    cmake --build . --parallel --target install
-    """
-
-[tasks.test]
-# depends_on = ["build"]
-cmd = """
-    cmake --build . --parallel --target test &&
-    pytest -v
-    """
-
-[dependencies]
-cmake = "*"
-cxx-compiler = "*"
+[feature.host.dependencies]
+llvmdev = "11.*"
 toml = "*"
 pytest = "*"
 jupyter = "*"
@@ -40,20 +20,31 @@ xeus-zmq = "3.0.0"
 nlohmann_json = "*"
 jupyter_kernel_test = "*"
 xonsh = "0.16.0"
-re2c = "*"
 numpy = "*"
 rapidjson = "*"
-ninja = "*"
 zlib = "*"
 
-[target.osx-arm64.dependencies]
-bison = "3.4"
-llvmdev = "15.*"
+[feature.host.tasks]
+# an empty task to make sure the dependencies are installed
+setup = "echo 'host dependencies installed'"
 
-[target.linux-64.dependencies]
-bison = "3.4"
-llvmdev = "15.*"
+[feature.build.dependencies]
+python = "*"
+cmake = "*"
+ninja = "*"
+cxx-compiler = "*"
+re2c = "*"
 
-[target.win-64.dependencies]
-llvmdev = "11.1.0"
+[feature.build.target.unix.dependencies]
+bison = "3.4"
+
+[feature.build.target.win.dependencies]
 m2-bison = "3.0.4"
+
+[feature.build.tasks]
+build1 = { cmd = "bash ./build1.sh", env = { CMAKE_PREFIX_PATH_LFORTRAN = "$PIXI_PROJECT_ROOT/.pixi/envs/host/" }, depends-on = ["setup"]}
+build0 = { cmd = "bash ./build0.sh" }
+
+[environments]
+build = ["build"]
+host = ["host"]
