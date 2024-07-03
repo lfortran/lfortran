@@ -3395,7 +3395,44 @@ public:
         head.m_end = end;
         head.m_increment = increment;
         head.loc = head.m_v->base.loc;
-        tmp = ASR::make_DoConcurrentLoop_t(al, x.base.base.loc, head, nullptr, 0, nullptr, 0, nullptr, 0, body.p,
+
+        Vec<ASR::reduction_expr_t> reductions; reductions.reserve(al, 1);
+        Vec<ASR::expr_t*> shared_expr; shared_expr.reserve(al, 1);
+        Vec<ASR::expr_t*> local_expr; local_expr.reserve(al, 1);
+        for (size_t i = 0; i < x.n_locality; i++ ) {
+            AST::concurrent_locality_t *locality = x.m_locality[i];
+            if ( locality->type == AST::concurrent_localityType::ConcurrentReduce ) {
+                AST::ConcurrentReduce_t *reduce = AST::down_cast<AST::ConcurrentReduce_t>(locality);
+                AST::reduce_opType op = reduce->m_op;
+                for ( size_t j = 0; j < reduce->n_vars; j++ ) {
+                    ASR::reduction_expr_t red; red.loc = x.base.base.loc;
+                    if ( op == AST::reduce_opType::ReduceAdd ) {
+                        red.m_op = ASR::reduction_opType::ReduceAdd;
+                    } else if ( op == AST::reduce_opType::ReduceMAX ) {
+                        red.m_op = ASR::reduction_opType::ReduceMAX;
+                    } else if ( op == AST::reduce_opType::ReduceMIN ) {
+                        red.m_op = ASR::reduction_opType::ReduceMIN;
+                    } else if ( op == AST::reduce_opType::ReduceMul ) {
+                        red.m_op = ASR::reduction_opType::ReduceMul;
+                    } else {
+                        throw SemanticError("Unknown reduction operation", x.base.base.loc);
+                    }
+                    red.m_arg = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, current_scope->resolve_symbol(to_lower(reduce->m_vars[j]))));
+                    reductions.push_back(al, red);
+                }
+            } else if ( locality->type == AST::concurrent_localityType::ConcurrentShared ) {
+                AST::ConcurrentShared_t *shared = AST::down_cast<AST::ConcurrentShared_t>(locality);
+                for ( size_t j = 0; j < shared->n_vars; j++ ) {
+                    shared_expr.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, current_scope->resolve_symbol(to_lower(shared->m_vars[j])))));
+                }
+            } else if ( locality->type == AST::concurrent_localityType::ConcurrentLocal ) {
+                AST::ConcurrentLocal_t *private_ = AST::down_cast<AST::ConcurrentLocal_t>(locality);
+                for ( size_t j = 0; j < private_->n_vars; j++ ) {
+                    local_expr.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, current_scope->resolve_symbol(to_lower(private_->m_vars[j])))));
+                }
+            }
+        }
+        tmp = ASR::make_DoConcurrentLoop_t(al, x.base.base.loc, head, shared_expr.p, shared_expr.n, local_expr.p, local_expr.n, reductions.p, reductions.n, body.p,
                 body.size());
     }
 
