@@ -137,6 +137,8 @@ bool set_allocation_size(Allocator& al, ASR::expr_t* value, Vec<ASR::dimension_t
                 dim_copy.loc = dim.loc;
                 dim_copy.m_start = !dim.m_start ? nullptr : duplicator.duplicate_expr(dim.m_start);
                 dim_copy.m_length = !dim.m_length ? nullptr : duplicator.duplicate_expr(dim.m_length);
+                LCOMPILERS_ASSERT(dim_copy.m_start);
+                LCOMPILERS_ASSERT(dim_copy.m_length);
                 allocate_dims.push_back(al, dim_copy);
             }
             break ;

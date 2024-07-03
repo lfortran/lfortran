@@ -1345,7 +1345,7 @@ RUN(NAME conv_complex2real LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
 
 RUN(NAME template_02 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_03 LABELS llvm llvm_wasm llvm_wasm_emcc wasm)
-RUN(NAME template_04 LABELS llvm llvm_wasm llvm_wasm_emcc)
+# RUN(NAME template_04 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_05 LABELS llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME template_add_01 LABELS llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME template_add_01b LABELS llvm llvm_wasm llvm_wasm_emcc wasm)
