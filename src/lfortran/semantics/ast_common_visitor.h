@@ -858,6 +858,7 @@ public:
         {"cshift", {IntrinsicSignature({"array", "shift", "dim"}, 2, 3)}},
         {"eoshift", {IntrinsicSignature({"array", "shift", "boundary", "dim"}, 2, 4)}},
         {"real", {IntrinsicSignature({"a", "kind"}, 1, 2)}},
+        {"spread", {IntrinsicSignature({"source", "dim", "ncopies"}, 3, 3)}},
     };
 
     std::map<std::string, std::pair<std::string, std::vector<std::string>>> intrinsic_mapping = {
@@ -8090,6 +8091,69 @@ public:
             }
             tmp = ASR::make_StructInstanceMember_t(al, loc, ASRUtils::EXPR(tmp), tmp2_m_m_ext,
                 ASRUtils::fix_scoped_type(al, tmp2_mem_type, current_scope), nullptr);
+        }
+        // Find array in the returning tmp expression. If found set tmp type to that array type.  
+        bool array_found = false;
+        ASR::ttype_t* array_type = nullptr; // will be set if only one single array is found. It'd be used to change the type of tmp.
+        ASR::asr_t* tmp_copy = tmp;
+        while(ASR::is_a<ASR::StructInstanceMember_t>(*ASRUtils::EXPR(tmp_copy)) || 
+            (ASR::is_a<ASR::ArrayItem_t>(*ASRUtils::EXPR(tmp_copy)) &&
+             ASR::is_a<ASR::StructInstanceMember_t>(*(ASR::down_cast<ASR::ArrayItem_t>(ASRUtils::EXPR(tmp_copy)))->m_v))){
+            ASR::StructInstanceMember_t* tmp2 = nullptr;
+            bool check_m_m = true; 
+            if(ASR::is_a<ASR::ArrayItem_t>(*ASRUtils::EXPR(tmp_copy))){
+                tmp2 = ASR::down_cast<ASR::StructInstanceMember_t>(ASR::down_cast<ASR::ArrayItem_t>(ASRUtils::EXPR(tmp_copy))->m_v);
+                check_m_m = false;
+            } else if (ASR::is_a<ASR::StructInstanceMember_t>(*ASRUtils::EXPR(tmp_copy))) {
+                tmp2 = ASR::down_cast<ASR::StructInstanceMember_t>(ASRUtils::EXPR(tmp_copy));
+            }
+
+            if(check_m_m){
+                ASR::ExternalSymbol_t* tmp2_m_m_ext = ASR::down_cast<ASR::ExternalSymbol_t>(tmp2->m_m);
+                if(ASR::is_a<ASR::Variable_t>(*(tmp2_m_m_ext->m_external)) && 
+                    ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable(ASRUtils::symbol_type(tmp2_m_m_ext->m_external)))){
+                    if(array_found){
+                        throw SemanticError("Two or more part references with non-zero rank must not be specified.", loc);
+                    }
+                    array_found = true;
+                    array_type = ASRUtils::duplicate_type(al,ASRUtils::symbol_type(tmp2->m_m));                        
+                }
+            }
+            if(tmp2->m_v->type == ASR::exprType::Var){
+                ASR::ttype_t* var_type = ASRUtils::expr_type(tmp2->m_v);
+                if(ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable(var_type))){
+                    if(array_found){
+                        throw SemanticError("Two or more part references with non-zero rank must not be specified.", loc);
+                    }
+                    array_found = true;
+                    array_type = ASRUtils::duplicate_type(al,var_type);
+                }
+            }
+            tmp_copy = (ASR::asr_t*)(tmp2->m_v);
+        }
+        if(array_type){
+            if(ASR::is_a<ASR::StructInstanceMember_t>(*ASRUtils::EXPR(tmp))){
+                ASR::StructInstanceMember_t* tmp2 = ASR::down_cast<ASR::StructInstanceMember_t>(ASRUtils::EXPR(tmp)); 
+                if(ASR::is_a<ASR::Array_t>(*array_type)){
+                    (ASR::down_cast<ASR::Array_t>(array_type))->m_type = ASRUtils::type_get_past_array(tmp2->m_type);
+                    tmp2->m_type = array_type;
+                }
+                if(ASR::is_a<ASR::Allocatable_t>(*array_type)){
+                    ASR::down_cast<ASR::Array_t>((ASR::down_cast<ASR::Allocatable_t>(array_type))->m_type)->m_type = ASRUtils::type_get_past_array(ASRUtils::type_get_past_allocatable(tmp2->m_type));
+                    tmp2->m_type = array_type;
+                }
+                
+            } else if (ASR::is_a<ASR::ArrayItem_t>(*ASRUtils::EXPR(tmp))) {
+                ASR::ArrayItem_t* tmp2 = ASR::down_cast<ASR::ArrayItem_t>(ASRUtils::EXPR(tmp));
+                if(ASR::is_a<ASR::Array_t>(*array_type)){
+                    (ASR::down_cast<ASR::Array_t>(array_type))->m_type = ASRUtils::type_get_past_array(tmp2->m_type);
+                    tmp2->m_type = array_type;
+                }
+                if(ASR::is_a<ASR::Allocatable_t>(*array_type)){
+                    ASR::down_cast<ASR::Array_t>((ASR::down_cast<ASR::Allocatable_t>(array_type))->m_type)->m_type = ASRUtils::type_get_past_array(ASRUtils::type_get_past_allocatable(tmp2->m_type));
+                    tmp2->m_type = array_type;
+                }
+            }
         }
     }
 

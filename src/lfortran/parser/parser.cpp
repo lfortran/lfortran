@@ -378,8 +378,11 @@ void copy_rest_of_line(std::string &out, const std::string &s, size_t &pos,
             pos++;
         }
     }
-    out += s[pos]; // Copy the last `\n'
-    pos++;
+    // not always a program end's with '\n', but when it does, copy it
+    if (s[pos] == '\n') {
+        out += s[pos];
+        pos++;
+    }
 }
 
 // Checks that newlines are computed correctly

@@ -2617,6 +2617,10 @@ filename = "fixed_form4.f"
 ast = true
 
 [[test]]
+filename = "fixed_form_without_newline.f"
+ast = true
+
+[[test]]
 filename = "fixedform_doloop.f"
 ast = true
 
@@ -3474,6 +3478,10 @@ asr = true
 [[test]]
 filename = "errors/derived_type_05.f90"
 asr = true
+
+[[test]]
+filename = "errors/derived_type_06.f90"
+run = true
 
 [[test]]
 filename = "errors/array_01.f90"
