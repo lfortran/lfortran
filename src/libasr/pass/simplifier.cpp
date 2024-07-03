@@ -12,6 +12,10 @@
 
 namespace LCompilers {
 
+const std::vector<ASR::exprType>& exprs_with_no_type = {
+    ASR::exprType::IntegerBOZ,
+};
+
 /*
 This pass collector that the BinOp only Var nodes and nothing else.
 */
@@ -575,6 +579,8 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
            in reverse order. */
         for( size_t i = 0; i < x_n_args; i++ ) {
             if( x_m_args[i].m_value &&
+                (std::find(exprs_with_no_type.begin(), exprs_with_no_type.end(),
+                    x_m_args[i].m_value->type) == exprs_with_no_type.end()) &&
                 ASRUtils::is_array(ASRUtils::expr_type(x_m_args[i].m_value)) &&
                 !ASR::is_a<ASR::Var_t>(
                     *ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value)) ) {
@@ -1187,7 +1193,9 @@ class VerifySimplifierASROutput:
         return ;
     }
 
-    #define check_for_var_if_array(expr) if( expr && ASRUtils::is_array(ASRUtils::expr_type(expr)) ) { \
+    #define check_for_var_if_array(expr) if( expr && std::find(exprs_with_no_type.begin(), \
+        exprs_with_no_type.end(), expr->type) == exprs_with_no_type.end() && \
+        ASRUtils::is_array(ASRUtils::expr_type(expr)) ) { \
             LCOMPILERS_ASSERT(ASR::is_a<ASR::Var_t>(*ASRUtils::get_past_array_physical_cast(expr))); \
         } \
 
