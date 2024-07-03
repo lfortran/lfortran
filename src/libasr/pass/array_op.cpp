@@ -393,7 +393,8 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             ASR::exprType::ArrayReshape,
         };
         if( !ASRUtils::is_array(ASRUtils::expr_type(x.m_target)) ||
-            std::find(skip_exprs.begin(), skip_exprs.end(), x.m_value->type) != skip_exprs.end() ) {
+            std::find(skip_exprs.begin(), skip_exprs.end(), x.m_value->type) != skip_exprs.end() ||
+            ASRUtils::is_simd_array(x.m_target) ) {
             return ;
         }
         ASR::Assignment_t& xx = const_cast<ASR::Assignment_t&>(x);
