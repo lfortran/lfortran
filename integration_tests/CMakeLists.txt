@@ -1623,6 +1623,18 @@ RUN(NAME selected_int_kind_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fort
 RUN(NAME capital_01 LABELS gfortran llvmImplicit)
 
 RUN(NAME do_concurrent_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME do_concurrent_02 LABELS llvm_omp)
+RUN(NAME do_concurrent_03 LABELS llvm_omp)
+RUN(NAME do_concurrent_04 LABELS llvm_omp)
+RUN(NAME do_concurrent_05 LABELS llvm_omp)
+RUN(NAME do_concurrent_06 LABELS llvm_omp)
+RUN(NAME do_concurrent_07 LABELS llvm_omp)
+RUN(NAME do_concurrent_08 LABELS llvm_omp)
+RUN(NAME do_concurrent_09 LABELS llvm_omp)
+RUN(NAME do_concurrent_10 LABELS llvm_omp)
+RUN(NAME do_concurrent_11 LABELS llvm_omp llvm) # every other `do_concurrent` test can work with llvm, the only reason
+RUN(NAME do_concurrent_12 LABELS llvm_omp llvm) # to not include is that we do a `omp_set_num_threads(xx)` call
+
 
 RUN(NAME transfer_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME transfer_02 LABELS gfortran)
