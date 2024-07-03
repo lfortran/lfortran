@@ -787,7 +787,7 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
 
     void replace_ArraySection(ASR::ArraySection_t* x) {
         if( exprs_with_target.find(*current_expr) != exprs_with_target.end() &&
-            !ASRUtils::is_simd_array(*current_expr) ) {
+            !ASRUtils::is_simd_array(x->m_v) ) {
             const Location& loc = x->base.base.loc;
             size_t value_n_dims = ASRUtils::extract_n_dims_from_ttype(
                 ASRUtils::expr_type(*current_expr));
