@@ -2531,7 +2531,8 @@ static inline bool is_aggregate_type(ASR::ttype_t* asr_type) {
               ASR::is_a<ASR::Logical_t>(*asr_type) ||
               ASR::is_a<ASR::Character_t>(
                 *ASRUtils::type_get_past_pointer(
-                    ASRUtils::type_get_past_allocatable(asr_type))));
+                    ASRUtils::type_get_past_allocatable(asr_type))) ||
+              ASR::is_a<ASR::TypeParameter_t>(*asr_type));
 }
 
 static inline ASR::dimension_t* duplicate_dimensions(Allocator& al, ASR::dimension_t* m_dims, size_t n_dims);
