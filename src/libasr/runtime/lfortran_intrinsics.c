@@ -2770,6 +2770,7 @@ LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, in
 LFORTRAN_API void _lfortran_empty_read(int32_t unit_num, int32_t* iostat) {
     if (unit_num == -1) {
         // Read from stdin
+        *iostat = 0;
         return;
     }
 
