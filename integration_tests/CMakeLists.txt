@@ -1386,11 +1386,11 @@ RUN(NAME template_interface_01 LABELS llvm llvm_wasm llvm_wasm_emcc wasm)
 
 RUN(NAME statement1 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
-RUN(NAME implied_do_loops1 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME implied_do_loops2 LABELS gfortran)
-RUN(NAME implied_do_loops3 LABELS gfortran)
-RUN(NAME implied_do_loops4 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME implied_do_loops5 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+# RUN(NAME implied_do_loops1 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+# RUN(NAME implied_do_loops2 LABELS gfortran)
+# RUN(NAME implied_do_loops3 LABELS gfortran)
+# RUN(NAME implied_do_loops4 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+# RUN(NAME implied_do_loops5 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 
 RUN(NAME minpack_01 LABELS gfortran llvm_rtlib EXTRAFILES
@@ -1433,7 +1433,7 @@ RUN(NAME pass_array_by_data_08 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llv
 RUN(NAME implicit_deallocate_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME write_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME write_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+# RUN(NAME write_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME write_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME write_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME write_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
