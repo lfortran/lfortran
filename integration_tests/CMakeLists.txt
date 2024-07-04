@@ -1712,3 +1712,4 @@ RUN(NAME openmp_31 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_32 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 
 RUN(NAME compiler_version_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME compiler_option LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
