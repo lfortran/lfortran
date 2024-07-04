@@ -658,6 +658,18 @@ jobs:
             ./build_test_lf.sh
             ./build_test_gf.sh
 
+      - name: Test SNAP
+        shell: bash -e -x -l {0}
+        run: |
+            git clone https://github.com/Pranavchiku/SNAP.git
+            cd SNAP
+            export PATH="$(pwd)/../src/bin:$PATH"
+
+            git checkout lf4
+            git checkout a03041b74bf103a0394f0cb77d449e608e94d731
+            cd ./src
+            make
+
   test_llvm:
     name: Test LLVM ${{ matrix.llvm-version }}
     runs-on: ubuntu-latest
