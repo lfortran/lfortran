@@ -2397,6 +2397,9 @@ public:
                              std::queue<std::pair<std::string, std::string>>& to_be_imported_later,
                              const Location& loc) {
         ASR::symbol_t *t = m->m_symtab->resolve_symbol(remote_sym);
+        if (remote_sym == "compiler_options") {
+            return;
+        }
         if (!t) {
             throw SemanticError("The symbol '" + remote_sym + "' not found in the module '" + msym + "'",
                 loc);
