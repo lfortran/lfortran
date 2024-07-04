@@ -5809,8 +5809,9 @@ public:
                 if (ASRUtils::is_array(var_type)) {
                     // For arrays like A(n, m) we use A(*) in BindC, so that
                     // the C ABI is just a pointer
+                    ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(var_type);
                     var_type = ASRUtils::duplicate_type_with_empty_dims(al, var_type,
-                        ASR::array_physical_typeType::PointerToDataArray, true);
+                        array_type->m_physical_type, true);
                 } else if (ASR::is_a<ASR::ArrayItem_t>(*var_expr) && compiler_options.legacy_array_sections) {
                     ASR::symbol_t* func_sym = parent_scope->resolve_symbol(func_name);
                     ASR::Function_t* func = nullptr;
