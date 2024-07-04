@@ -1,5 +1,3 @@
-
-
 module arrays_50_mod_b
     integer ::j=20
     integer ::j2=30
@@ -18,7 +16,4 @@ module arrays_50_mod_a
         if (size(o) /= 600) error stop
     end subroutine fdf
 end module arrays_50_mod_a
-
-
- 
 
