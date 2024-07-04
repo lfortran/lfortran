@@ -6355,143 +6355,6 @@ public:
         idl_nesting_level--;
     }
 
-    ASR::asr_t* create_CompilerOptions(const Location& loc) {
-        std::string result = "";
-        ASRUtils::ASRBuilder b(al, loc);
-        if (compiler_options.fixed_form) {
-            result += "--fixed_form ";
-        }
-        if (compiler_options.interactive) {
-            result += "--interactive ";
-        }
-        if (compiler_options.c_preprocessor) {
-            result += "--c_preprocessor ";
-        }
-        if (compiler_options.prescan) {
-            result += "--prescan ";
-        }
-        if (compiler_options.disable_main) {
-            result += "--disable_main ";
-        }
-        if (compiler_options.symtab_only) {
-            result += "--symtab_only ";
-        }
-        if (compiler_options.show_stacktrace) {
-            result += "--show_stacktrace ";
-        }
-        if (compiler_options.use_colors) {
-            result += "--use_colors ";
-        }
-        if (compiler_options.indent) {
-            result += "--indent ";
-        }
-        if (compiler_options.json) {
-            result += "--json ";
-        } 
-        if (compiler_options.tree) {
-            result += "--tree ";
-        }
-        if (compiler_options.visualize) {
-            result += "--visualize ";
-        }
-        if (compiler_options.fast) {
-            result += "--fast ";
-        }
-        if (compiler_options.openmp) {
-            result += "--openmp ";
-        }
-        if (compiler_options.generate_object_code) {
-            result += "--generate_object_code ";
-        }
-        if (compiler_options.no_warnings) {
-            result += "--no_warnings ";
-        }
-        if (compiler_options.disable_style) {
-            result += "--disable_style ";
-        }
-        if (compiler_options.logical_casting) {
-            result += "--logical_casting ";
-        }
-        if (compiler_options.no_error_banner) {
-            result += "--no_error_banner ";
-        }
-        if (compiler_options.enable_bounds_checking) {
-            result += "--enable_bounds_checking ";
-        }
-        if (compiler_options.new_parser) {
-            result += "--new_parser ";
-        }
-        if (compiler_options.implicit_typing) {
-            result += "--implicit_typing ";
-        }
-        if (compiler_options.implicit_interface) {
-            result += "--implicit_interface ";
-        }
-        if (compiler_options.implicit_argument_casting) {
-            result += "--implicit_argument_casting ";
-        }
-        if (compiler_options.print_leading_space) {
-            result += "--print_leading_space ";
-        }
-        if (compiler_options.rtlib) {
-            result += "--rtlib ";
-        }
-        if (compiler_options.use_loop_variable_after_loop) {
-            result += "--use_loop_variable_after_loop ";
-        }
-        if (compiler_options.emit_debug_info) {
-            result += "--emit_debug_info ";
-        }
-        if (compiler_options.emit_debug_line_column) {
-            result += "--emit_debug_line_column ";
-        }
-        if (compiler_options.enable_cpython) {
-            result += "--enable_cpython ";
-        }
-        if (compiler_options.enable_symengine) {
-            result += "--enable_symengine ";
-        }
-        if (compiler_options.link_numpy) {
-            result += "--link_numpy ";
-        }
-        if (compiler_options.run) {
-            result += "--run ";
-        }
-        if (compiler_options.legacy_array_sections) {
-            result += "--legacy_array_sections ";
-        }
-        if (compiler_options.ignore_pragma) {
-            result += "--ignore_pragma ";
-        }
-        if (compiler_options.stack_arrays) {
-            result += "--stack_arrays ";
-        }
-        if (compiler_options.wasm_html) {
-            result += "--wasm_html ";
-        }
-        if (compiler_options.openmp_lib_dir != "") {
-            result += "--openmp_lib_dir ";
-            result += compiler_options.openmp_lib_dir;
-            result += " ";
-        }
-        if (compiler_options.error_format != "") {
-            result += "--error_format ";
-            result += compiler_options.error_format;
-            result += " ";
-        }
-        if (compiler_options.target != "") {
-            result += "--target ";
-            result += compiler_options.target;
-            result += " ";
-        }
-        if (compiler_options.arg_o != "") {
-            result += "--arg_o ";
-            result += compiler_options.arg_o;
-            result += " ";
-        }
-        return (ASR::asr_t*) b.StringConstant(result, ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -1, nullptr)));
-    }
-
     ASR::asr_t* create_Shifta(const Location &loc, Vec<ASR::call_arg_t> args) {
         /*
             shifta(n, w):
@@ -6562,7 +6425,8 @@ public:
                 tmp = create_Shifta(x.base.base.loc, args);
                 return;
             } else if (var_name == "compiler_options") {
-                tmp = create_CompilerOptions(x.base.base.loc);
+                ASRUtils::ASRBuilder b(al, x.base.base.loc);
+                tmp = (ASR::asr_t*) b.StringConstant(compiler_options.generateOptionsString(), ASRUtils::TYPE(ASR::make_Character_t(al, x.base.base.loc, 1, -1, nullptr)));
                 return;
             } 
             bool is_function = true;
