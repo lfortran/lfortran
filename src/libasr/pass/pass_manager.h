@@ -217,7 +217,6 @@ namespace LCompilers {
                 // "init_expr", This pass shouldn't be needed.
                 "openmp",
                 // "implied_do_loops", Should be implemented when optimisations for ImpliedDoLoop are possible in LFortran, until then not needed.
-                "implied_do_loops",
                 "class_constructor",
                 "pass_list_expr",
                 "where",

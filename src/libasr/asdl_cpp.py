@@ -594,14 +594,14 @@ class CallReplacerOnExpressionsVisitor(ASDLVisitor):
         self.emit("}", 1)
 
     def insert_call_replacer_code(self, name, level, opt, index=""):
-        one_or_zero = name == "value" and opt
-        if name == "value" and opt:
+        one_or_zero = (name == "value" or name == "symbolic_value") and opt
+        if (name == "value" or name == "symbolic_value") and opt:
             self.emit("if (call_replacer_on_value) {", level)
         self.emit("ASR::expr_t** current_expr_copy_%d = current_expr;" % (self.current_expr_copy_variable_count), level + one_or_zero)
         self.emit("current_expr = const_cast<ASR::expr_t**>(&(x.m_%s%s));" % (name, index), level + one_or_zero)
         self.emit("self().call_replacer();", level + one_or_zero)
         self.emit("current_expr = current_expr_copy_%d;" % (self.current_expr_copy_variable_count), level + one_or_zero)
-        if name == "value" and opt:
+        if (name == "value" or name == "symbolic_value") and opt:
             self.emit("}", level)
         self.current_expr_copy_variable_count += 1
 
@@ -1325,13 +1325,13 @@ class ExprBaseReplacerVisitor(ASDLVisitor):
                         self.emit("self().replace_%s(x->m_%s);" % (field.type, field.name), level)
                     else:
                         one_or_zero = field.name == "value"
-                        if field.name == "value":
+                        if field.name == "value" or field.name == "symbolic_value":
                             self.emit("if (call_replacer_on_value) {", level)
                         self.emit("ASR::expr_t** current_expr_copy_%d = current_expr;" % (self.current_expr_copy_variable_count), level + one_or_zero)
                         self.emit("current_expr = &(x->m_%s);" % (field.name), level + one_or_zero)
                         self.emit("self().replace_%s(x->m_%s);" % (field.type, field.name), level + one_or_zero)
                         self.emit("current_expr = current_expr_copy_%d;" % (self.current_expr_copy_variable_count), level + one_or_zero)
-                        if field.name == "value":
+                        if field.name == "value" or field.name == "symbolic_value":
                             self.emit("}", level)
                         self.current_expr_copy_variable_count += 1
 

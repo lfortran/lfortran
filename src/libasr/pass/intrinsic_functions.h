@@ -1221,17 +1221,17 @@ namespace Dshiftr {
         auto final_result = declare("x", int64, Local);
         auto result = declare(fn_name , return_type, ReturnVar);
 
-        body.push_back(al, b.Assignment(final_result, b.BitLshift(b.And(b.i2i_t(args[0], int64), 
+        body.push_back(al, b.Assignment(final_result, b.BitLshift(b.And(b.i2i_t(args[0], int64),
             b.Sub(b.BitLshift(b.i64(1), b.i2i_t(args[2], int64), int64), b.i64(1))),
             b.Sub(b.Mul(b.i64(extract_kind_from_ttype_t(arg_types[0])), b.i64(8)), b.i2i_t(args[2], int64)), int64)));
 
         body.push_back(al, b.If(b.Lt(b.i2i_t(args[1], int64), b.i64(0)), {
-            b.Assignment(final_result, b.Or(final_result, b.And(b.BitRshift(b.i2i_t(args[1], int64), 
+            b.Assignment(final_result, b.Or(final_result, b.And(b.BitRshift(b.i2i_t(args[1], int64),
             b.Sub(b.Mul((b.i64(extract_kind_from_ttype_t(arg_types[0]))), b.i64(8)), b.i2i_t(args[2], int64)), int64),
-            b.Sub(b.BitLshift(b.i64(1), b.Sub(b.Mul((b.i64(extract_kind_from_ttype_t(arg_types[0]))), b.i64(8)), 
+            b.Sub(b.BitLshift(b.i64(1), b.Sub(b.Mul((b.i64(extract_kind_from_ttype_t(arg_types[0]))), b.i64(8)),
             b.i2i_t(args[2], int64)), int64), b.i64(1)))))
         }, {
-            b.Assignment(final_result, b.Or(final_result, b.BitRshift(b.i2i_t(args[1], int64), 
+            b.Assignment(final_result, b.Or(final_result, b.BitRshift(b.i2i_t(args[1], int64),
             b.Sub(b.Mul((b.i64(extract_kind_from_ttype_t(arg_types[0]))), b.i64(8)), b.i2i_t(args[2], int64)), int64)))
         }));
         body.push_back(al, b.Assignment(result, b.i2i_t(final_result, return_type)));
@@ -1264,14 +1264,14 @@ namespace Dreal {
         }
     }
 
-    static inline ASR::expr_t* instantiate_Dreal(Allocator &al, const Location &loc, 
+    static inline ASR::expr_t* instantiate_Dreal(Allocator &al, const Location &loc,
             SymbolTable* scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t> &new_args,int64_t /*overload_id*/)  {
         declare_basic_variables("_lcompilers_dreal_" + type_to_str_python(arg_types[0]));
         fill_func_arg("x", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
         body.push_back(al, b.Assignment(result, b.c2r_t(args[0], real64)));
-        
+
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
@@ -1772,7 +1772,7 @@ namespace Ibclr {
         int64_t result;
         if ( val2 < 0 ) {
             diag.semantic_error_label("`pos` argument of `ibclr` intrinsic must be non-negative", {loc}, "");
-        } 
+        }
         result = val1 & ~(1 << val2);
         return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);
     }
@@ -2886,7 +2886,7 @@ namespace Maskl {
         int32_t kind = ASRUtils::extract_kind_from_ttype_t(t1);
         int64_t i = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         if ((kind == 4 && i > 32) || (kind == 8 && i > 64)) {
-            diag.semantic_error_label(" first argument of `maskl` must be less than or equal to the BIT_SIZE of INTEGER(KIND=" 
+            diag.semantic_error_label(" first argument of `maskl` must be less than or equal to the BIT_SIZE of INTEGER(KIND="
             + std::to_string(kind) + ")", {loc}, "");
             return nullptr;
         } else if (i < 0) {
@@ -2933,7 +2933,7 @@ namespace Maskr {
         int32_t kind = ASRUtils::extract_kind_from_ttype_t(t1);
         int64_t i = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         if (((kind == 4) && i > 32) || (kind == 8 && i > 64)) {
-            diag.semantic_error_label("first argument of `maskr` must be less than or equal to the BIT_SIZE of INTEGER(KIND=" 
+            diag.semantic_error_label("first argument of `maskr` must be less than or equal to the BIT_SIZE of INTEGER(KIND="
             + std::to_string(kind) + ")", {loc}, "");
             return nullptr;
         } else if (i < 0) {
@@ -3048,7 +3048,7 @@ namespace Spacing {
             double x = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
             double result = std::fabs(std::nextafter(x, std::numeric_limits<double>::infinity()) - x);
             return make_ConstantWithType(make_RealConstant_t, result, t1, loc);
-        }   
+        }
     }
 
     static inline ASR::expr_t* instantiate_Spacing(Allocator &al, const Location &loc,
@@ -3213,7 +3213,7 @@ namespace Modulo {
             d = a - p * floor(a/p)
         end function
         */
-        if (is_real(*arg_types[0])) {                
+        if (is_real(*arg_types[0])) {
             body.push_back(al, b.Assignment(result, b.Sub(args[0], b.Mul(args[1], b.i2r_t(Floor::FLOOR(b, b.Div(args[0], args[1]), int32, scope), arg_types[1])))));
         } else {
             body.push_back(al, b.Assignment(result, b.Sub(args[0], b.Mul(args[1], Floor::FLOOR(b, b.Div(b.i2r_t(args[0], real32), b.i2r_t(args[1], real32)), int32, scope)))));
@@ -3383,7 +3383,7 @@ namespace Real {
         } else if (is_real(*arg_types[0])) {
             body.push_back(al, b.Assignment(result, b.r2r_t(args[0], return_type)));
         } else if (is_complex(*arg_types[0])) {
-            body.push_back(al, b.Assignment(result, EXPR(ASR::make_ComplexRe_t(al, loc, 
+            body.push_back(al, b.Assignment(result, EXPR(ASR::make_ComplexRe_t(al, loc,
             args[0], return_type, nullptr))));
         }
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
@@ -3511,11 +3511,11 @@ namespace Mergebits {
         if(ASRUtils::extract_kind_from_ttype_t(arg_types[0]) != ASRUtils::extract_kind_from_ttype_t(arg_types[2])){
             throw LCompilersException("The third argument of 'merge_bits' intrinsic must be the same type and kind as first argument");
         }
-        
+
         body.push_back(al, b.Assignment(result, b.i_t(0, arg_types[0])));
         body.push_back(al, b.Assignment(itr, b.i_t(0, arg_types[0])));
         body.push_back(al, b.Assignment(mask, args[2]));
-        body.push_back(al, b.Assignment(numberofbits, b.Mul(b.i_t(8, arg_types[0]), 
+        body.push_back(al, b.Assignment(numberofbits, b.Mul(b.i_t(8, arg_types[0]),
                            b.i_t(ASRUtils::extract_kind_from_ttype_t(arg_types[0]), arg_types[0]))));
         body.push_back(al, b.While(b.Lt(itr, numberofbits), {
             b.If(b.NotEq(b.i_t(0, arg_types[0]), b.And(mask, b.BitLshift(b.i_t(1, arg_types[0]), itr, arg_types[0]))), {
@@ -4854,7 +4854,7 @@ namespace ErfcScaled {
         body.push_back(al, b.Assignment(result, b.Mul(
             b.CallIntrinsic(scope, {arg_types[0]}, {b.Pow(args[0], b.f_t(2, arg_types[0]))}, arg_types[0], 0, Exp::instantiate_Exp),
             b.CallIntrinsic(scope, {arg_types[0]}, {args[0]}, arg_types[0], 0, Erfc::instantiate_Erfc))));
-        
+
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args, body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
         return b.Call(f_sym, new_args, return_type, nullptr);

@@ -13,26 +13,32 @@
 
 namespace LCompilers {
 
-class ArrayBroadcastReplacer: public ASR::BaseExprReplacer<ArrayBroadcastReplacer> {
+class RemoveArrayProcessingNodeReplacer: public ASR::BaseExprReplacer<RemoveArrayProcessingNodeReplacer> {
 
     public:
 
     Allocator& al;
 
-    ArrayBroadcastReplacer(Allocator& al_): al(al_) {
+    RemoveArrayProcessingNodeReplacer(Allocator& al_): al(al_) {
     }
 
     void replace_ArrayBroadcast(ASR::ArrayBroadcast_t* x) {
         *current_expr = x->m_array;
     }
 
+    void replace_ArrayPhysicalCast(ASR::ArrayPhysicalCast_t* x) {
+        if( !ASRUtils::is_array(ASRUtils::expr_type(x->m_arg)) ) {
+            *current_expr = x->m_arg;
+        }
+    }
+
 };
 
-class ArrayBroadcastVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayBroadcastVisitor> {
+class RemoveArrayProcessingNodeVisitor: public ASR::CallReplacerOnExpressionsVisitor<RemoveArrayProcessingNodeVisitor> {
 
     private:
 
-    ArrayBroadcastReplacer replacer;
+    RemoveArrayProcessingNodeReplacer replacer;
 
     public:
 
@@ -41,7 +47,7 @@ class ArrayBroadcastVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayB
         replacer.replace_expr(*current_expr);
     }
 
-    ArrayBroadcastVisitor(Allocator& al_): replacer(al_) {}
+    RemoveArrayProcessingNodeVisitor(Allocator& al_): replacer(al_) {}
 
 };
 
@@ -180,6 +186,35 @@ class FixTypeVisitor: public ASR::BaseWalkVisitor<FixTypeVisitor> {
             xx.m_value = nullptr;
         }
     }
+
+    void visit_IntrinsicElementalFunction(const ASR::IntrinsicElementalFunction_t& x) {
+        ASR::BaseWalkVisitor<FixTypeVisitor>::visit_IntrinsicElementalFunction(x);
+        ASR::IntrinsicElementalFunction_t& xx = const_cast<ASR::IntrinsicElementalFunction_t&>(x);
+        if( !ASRUtils::is_array(ASRUtils::expr_type(x.m_args[0])) ) {
+            xx.m_type = ASRUtils::type_get_past_array_pointer_allocatable(xx.m_type);
+            xx.m_value = nullptr;
+        }
+    }
+
+    template <typename T>
+    void visit_ArrayOp(const T& x) {
+        T& xx = const_cast<T&>(x);
+        if( !ASRUtils::is_array(ASRUtils::expr_type(xx.m_left)) &&
+            !ASRUtils::is_array(ASRUtils::expr_type(xx.m_right)) ) {
+            xx.m_type = ASRUtils::type_get_past_array_pointer_allocatable(xx.m_type);
+            xx.m_value = nullptr;
+        }
+    }
+
+    void visit_RealCompare(const ASR::RealCompare_t& x) {
+        ASR::BaseWalkVisitor<FixTypeVisitor>::visit_RealCompare(x);
+        visit_ArrayOp(x);
+    }
+
+    void visit_IntegerCompare(const ASR::IntegerCompare_t& x) {
+        ASR::BaseWalkVisitor<FixTypeVisitor>::visit_IntegerCompare(x);
+        visit_ArrayOp(x);
+    }
 };
 
 ASR::expr_t* at(Vec<ASR::expr_t*>& vec, int64_t index) {
@@ -281,7 +316,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
 
     template <typename T>
     void generate_loop(const T& x, Vec<ASR::expr_t**>& vars,
-                       Vec<const ASR::expr_t*>& fix_types_args,
+                       Vec<ASR::expr_t**>& fix_types_args,
                        const Location& loc) {
         Vec<size_t> var_ranks;
         Vec<ASR::expr_t*> vars_expr;
@@ -329,9 +364,15 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                 indices.size(), var_i_type, ASR::arraystorageType::ColMajor, nullptr));
         }
 
+        RemoveArrayProcessingNodeVisitor array_broadcast_visitor(al);
+        for( size_t i = 0; i < fix_types_args.size(); i++ ) {
+            array_broadcast_visitor.current_expr = fix_types_args[i];
+            array_broadcast_visitor.call_replacer();
+        }
+
         FixTypeVisitor fix_types(al);
         for( size_t i = 0; i < fix_types_args.size(); i++ ) {
-            fix_types.visit_expr(*fix_types_args[i]);
+            fix_types.visit_expr(*(*fix_types_args[i]));
         }
 
         size_t var_with_maxrank = 0;
@@ -418,15 +459,11 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         var_collector.current_expr = const_cast<ASR::expr_t**>(&(x.m_value));
         var_collector.call_replacer();
 
-        Vec<const ASR::expr_t*> fix_type_args;
+        Vec<ASR::expr_t**> fix_type_args;
         fix_type_args.reserve(al, 1);
-        fix_type_args.push_back(al, x.m_value);
+        fix_type_args.push_back(al, const_cast<ASR::expr_t**>(&(x.m_value)));
 
         generate_loop(x, vars, fix_type_args, loc);
-
-        ArrayBroadcastVisitor array_broadcast_visitor(al);
-        array_broadcast_visitor.current_expr = const_cast<ASR::expr_t**>(&(x.m_value));
-        array_broadcast_visitor.call_replacer();
     }
 
     void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
@@ -444,7 +481,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             }
         }
 
-        Vec<const ASR::expr_t*> fix_type_args;
+        Vec<ASR::expr_t**> fix_type_args;
         fix_type_args.reserve(al, 1);
 
         generate_loop(x, vars, fix_type_args, loc);
@@ -455,6 +492,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
 void pass_replace_array_op(Allocator &al, ASR::TranslationUnit_t &unit,
                            const LCompilers::PassOptions& /*pass_options*/) {
     ArrayOpVisitor v(al);
+    v.call_replacer_on_value = false;
     v.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor u(al);
     u.visit_TranslationUnit(unit);

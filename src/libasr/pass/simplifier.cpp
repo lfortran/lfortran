@@ -1467,6 +1467,9 @@ class InitialiseExprWithTarget: public ASR::BaseWalkVisitor<InitialiseExprWithTa
 
 void pass_simplifier(Allocator &al, ASR::TranslationUnit_t &unit,
                      const PassOptions &/*pass_options*/) {
+    // TODO: Add a visitor in asdl_cpp.py which will replace
+    // current_expr with its own `m_value` (if `m_value` is not nullptr)
+    // Call the visitor here.
     std::set<ASR::expr_t*> exprs_with_target;
     InitialiseExprWithTarget init_expr_with_target(exprs_with_target);
     init_expr_with_target.visit_TranslationUnit(unit);
