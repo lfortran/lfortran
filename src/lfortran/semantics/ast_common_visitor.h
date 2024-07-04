@@ -1201,16 +1201,11 @@ public:
 
     std::string create_getter_function(const Location& loc, ASR::symbol_t* end_sym) {
         SymbolTable* current_scope_copy = current_scope;
+        SymbolTable* parent_scope = current_scope->parent; // use parent scope instead of local to avoid unintended wrong manipulation by nested_vars pass.
         ASRUtils::ASRBuilder b(al, loc);
+        current_scope = al.make_new<SymbolTable>(parent_scope);
 
-        // get global scope
-        while (current_scope->parent) {
-            current_scope = current_scope->parent;
-        }
-        SymbolTable* global_scope = current_scope;
-        current_scope = al.make_new<SymbolTable>(global_scope);
-
-        std::string func_name = global_scope->get_unique_name("__lcompilers_get_" + std::string(ASRUtils::symbol_name(end_sym)));
+        std::string func_name = parent_scope->get_unique_name("__lcompilers_get_" + std::string(ASRUtils::symbol_name(end_sym)));
 
         // populate symbol table
         ASRUtils::SymbolDuplicator sd(al);
@@ -1227,57 +1222,43 @@ public:
                                 return_var_expr, ASR::abiType::Source,
                                 ASR::accessType::Public, ASR::deftypeType::Implementation,
                                 nullptr, false, true, false, false, false, nullptr, 0, false, false, false, nullptr));
-        global_scope->add_symbol(func_name, func_sym);
         current_scope = current_scope_copy;
+        parent_scope->add_symbol(func_name,func_sym);
 
         return func_name;
     }
 
     ASR::expr_t* get_transformed_function_call(ASR::symbol_t* end_sym) {
         /*
-            case: ./integration_tests/arrays_45.f90
-            subroutine a(cs)
-            use xx
-            real, dimension(nx), intent(in) :: cs
-            end subroutine
+            module y
+                contains
+                subroutine a(cs)
+                    use xx
+                    real, dimension(nx), intent(in) :: cs
+                end subroutine
+            end module y
 
             transform to:
-
-            pure integer function __lcompilers_get_nx()
-            use xx
-            get_nx = nx
-            end function
-
-            subroutine a(cs)
-            use xx
-            interface
+            module y
+                contains
                 pure integer function __lcompilers_get_nx()
+                use xx
+                get_nx = nx
                 end function
-            end interface
-            real, dimension(__lcompilers_get_nx()), intent(in) :: cs
-            end subroutine
+
+                subroutine a(cs)
+                    use xx
+                    real, dimension(__lcompilers_get_nx()), intent(in) :: cs
+                end subroutine
+            end module y
         */
+        SymbolTable* parent_scope = current_scope->parent;
         std::string func_name = create_getter_function(end_sym->base.loc, end_sym);
+        ASR::symbol_t* getter_func_sym = parent_scope->resolve_symbol(LCompilers::s2c(al,func_name));
+        current_function_dependencies.push_back(al,s2c(al, func_name));
 
-        ASRUtils::ASRBuilder b(al, end_sym->base.loc);
-        // create an interface
-        SymbolTable *current_scope_copy = current_scope;
-        current_scope = al.make_new<SymbolTable>(current_scope_copy);
-
-        ASR::expr_t* return_var_expr = b.Variable(current_scope, func_name, ASRUtils::symbol_type(end_sym),
-                ASR::intentType::ReturnVar);
-
-        ASR::symbol_t* func_sym = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Function_t_util(al, end_sym->base.loc,
-                                current_scope, s2c(al, func_name), nullptr, 0, nullptr, 0, nullptr, 0,
-                                return_var_expr, ASR::abiType::Source,
-                                ASR::accessType::Public, ASR::deftypeType::Interface,
-                                nullptr, false, true, false, false, false, nullptr, 0, false, false, false, nullptr));
-
-        current_scope = current_scope_copy;
-        current_scope->add_symbol(func_name, func_sym);
-
-        ASR::expr_t* func_call = ASRUtils::EXPR(ASRUtils::make_FunctionCall_t_util(al, end_sym->base.loc,
-                                func_sym, func_sym, nullptr, 0, ASRUtils::symbol_type(end_sym), nullptr, nullptr, false));
+        ASR::expr_t* func_call = ASRUtils::EXPR(ASRUtils::make_FunctionCall_t_util(al, getter_func_sym->base.loc,
+                                getter_func_sym, getter_func_sym, nullptr, 0, ASRUtils::symbol_type(end_sym), nullptr, nullptr, false));
         return func_call;
     }
 
