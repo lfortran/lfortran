@@ -653,6 +653,14 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
             x.m_##member, name_hint, al, current_body, current_scope, exprs_with_target); \
         END_VAR_CHECK
 
+    void visit_ArrayReshape(const ASR::ArrayReshape_t& x) {
+        ASR::ArrayReshape_t& xx = const_cast<ASR::ArrayReshape_t&>(x);
+
+        replace_expr_with_temporary_variable(array, "_array_reshape_array")
+
+        // replace_expr_with_temporary_variable(shape, "_array_reshape_shape")
+    }
+
     void visit_ComplexConstructor(const ASR::ComplexConstructor_t& x) {
         ASR::ComplexConstructor_t& xx = const_cast<ASR::ComplexConstructor_t&>(x);
 
