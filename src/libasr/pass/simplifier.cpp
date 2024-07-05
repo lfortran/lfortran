@@ -294,6 +294,20 @@ bool set_allocation_size(Allocator& al, ASR::expr_t* value, Vec<ASR::dimension_t
             }
             break;
         }
+        case ASR::exprType::ArrayReshape: {
+            ASR::ArrayReshape_t* array_reshape_t = ASR::down_cast<ASR::ArrayReshape_t>(value);
+            size_t n_dims = ASRUtils::extract_n_dims_from_ttype(
+                ASRUtils::expr_type(array_reshape_t->m_shape));
+            allocate_dims.reserve(al, n_dims);
+            for( size_t i = 0; i < n_dims; i++ ) {
+                ASR::dimension_t allocate_dim;
+                allocate_dim.loc = loc;
+                allocate_dim.m_start = int32_one;
+                allocate_dim.m_length = int32_one;
+                allocate_dims.push_back(al, allocate_dim);
+            }
+            break;
+        }
         default: {
             LCOMPILERS_ASSERT_MSG(false, "ASR::exprType::" + std::to_string(value->type)
                 + " not handled yet in set_allocation_size");
