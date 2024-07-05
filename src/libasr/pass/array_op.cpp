@@ -139,17 +139,23 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
     }
 
     void replace_ArrayConstructor(ASR::ArrayConstructor_t* x) {
+        LCOMPILERS_ASSERT(x->m_value != nullptr)
         if( !ASRUtils::is_fixed_size_array(x->m_type) ) {
             LCOMPILERS_ASSERT(false);
         }
 
+        ASR::ArrayConstant_t* arr_value = ASR::down_cast<ASR::ArrayConstant_t>(x->m_value);
+
         pass_result.reserve(al, x->n_args);
         const Location& loc = x->base.base.loc;
         LCOMPILERS_ASSERT(result_expr != nullptr);
+
+        ASR::Variable_t* var = ASRUtils::EXPR2VAR(result_expr); var->m_type = arr_value->m_type;
         ASR::ttype_t* result_type = ASRUtils::expr_type(result_expr);
         ASR::ttype_t* result_element_type = ASRUtils::type_get_past_array_pointer_allocatable(result_type);
-        for( int64_t i = 0; i < ASRUtils::get_fixed_size_of_array(x->m_type); i++ ) {
-            ASR::expr_t* x_i = x->m_args[i];
+
+        for( int64_t i = 0; i < ASRUtils::get_fixed_size_of_array(arr_value->m_type); i++ ) {
+            ASR::expr_t* x_i = ASRUtils::fetch_ArrayConstant_value(al, arr_value, i);
             LCOMPILERS_ASSERT(!ASRUtils::is_array(ASRUtils::expr_type(x_i)));
             Vec<ASR::array_index_t> array_index_args;
             array_index_args.reserve(al, 1);
