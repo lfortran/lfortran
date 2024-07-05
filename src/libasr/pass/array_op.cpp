@@ -138,24 +138,47 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         }
     }
 
+    bool are_all_elements_scalars(ASR::expr_t** args, size_t n) {
+        for( size_t i = 0; i < n; i++ ) {
+            if( ASRUtils::is_array(ASRUtils::expr_type(args[i])) ) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     void replace_ArrayConstructor(ASR::ArrayConstructor_t* x) {
-        LCOMPILERS_ASSERT(x->m_value != nullptr)
+        if( x->m_value == nullptr ) {
+            LCOMPILERS_ASSERT(are_all_elements_scalars(x->m_args, x->n_args))
+        }
         if( !ASRUtils::is_fixed_size_array(x->m_type) ) {
             LCOMPILERS_ASSERT(false);
         }
 
-        ASR::ArrayConstant_t* arr_value = ASR::down_cast<ASR::ArrayConstant_t>(x->m_value);
+        ASR::ttype_t* arr_type = nullptr;
+        ASR::ArrayConstant_t* arr_value = nullptr;
+        if( x->m_value ) {
+            arr_value = ASR::down_cast<ASR::ArrayConstant_t>(x->m_value);
+            arr_type = arr_value->m_type;
+        } else {
+            arr_type = x->m_type;
+        }
 
         pass_result.reserve(al, x->n_args);
         const Location& loc = x->base.base.loc;
         LCOMPILERS_ASSERT(result_expr != nullptr);
 
-        ASR::Variable_t* var = ASRUtils::EXPR2VAR(result_expr); var->m_type = arr_value->m_type;
+        ASR::Variable_t* var = ASRUtils::EXPR2VAR(result_expr); var->m_type = arr_type;
         ASR::ttype_t* result_type = ASRUtils::expr_type(result_expr);
         ASR::ttype_t* result_element_type = ASRUtils::type_get_past_array_pointer_allocatable(result_type);
 
-        for( int64_t i = 0; i < ASRUtils::get_fixed_size_of_array(arr_value->m_type); i++ ) {
-            ASR::expr_t* x_i = ASRUtils::fetch_ArrayConstant_value(al, arr_value, i);
+        for( int64_t i = 0; i < ASRUtils::get_fixed_size_of_array(arr_type); i++ ) {
+            ASR::expr_t* x_i = nullptr;
+            if( x->m_value ) {
+                x_i = ASRUtils::fetch_ArrayConstant_value(al, arr_value, i);
+            } else {
+                x_i = x->m_args[i];
+            }
             LCOMPILERS_ASSERT(!ASRUtils::is_array(ASRUtils::expr_type(x_i)));
             Vec<ASR::array_index_t> array_index_args;
             array_index_args.reserve(al, 1);
