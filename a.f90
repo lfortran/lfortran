@@ -1,4 +1,4 @@
-program intrinsics_74
+program test
     implicit none
 
     real :: x(1, 3)

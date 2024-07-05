@@ -2202,20 +2202,17 @@ LFORTRAN_API double _lfortran_dp_rand_num() {
 }
 
 
-LFORTRAN_API void _lfortran_random_init(bool repeatable, bool image_distinct) {
-    printf("in api call\n");
+LFORTRAN_API int _lfortran_random_init(bool repeatable, bool image_distinct) {
     if (repeatable) {
         if (image_distinct) {
-            // Use a distinct seed for each image; could be based on a unique identifier (like the process ID)
             srand(time(NULL) + getpid());
         } else {
-            // Use a fixed seed for repeatability
             srand(42);
         }
     } else {
-        // Use the current time for seeding to make the seed less predictable
         srand(time(NULL));
     }
+    return 0;
 }
 
 LFORTRAN_API int64_t _lpython_open(char *path, char *flags)
