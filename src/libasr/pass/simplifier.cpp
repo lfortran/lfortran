@@ -395,7 +395,6 @@ ASR::expr_t* create_and_allocate_temporary_variable_for_array(
                 al, loc, array_expr_ptr, array_expr)));
             array_expr = array_expr_ptr;
         }
-        std::cout<<"current_body: "<<current_body<<std::endl;
         current_body->push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(
             al, loc, array_var_temporary, array_expr, nullptr)));
     }

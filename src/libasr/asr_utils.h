@@ -5484,21 +5484,15 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
     ASR::FunctionType_t* func_type = get_FunctionType(a_name);
 
     for( size_t i = 0; i < n_args; i++ ) {
-        std::cout<<"i: "<<i<<" "<<n_args<<" "<<a_args[i].m_value<<std::endl;
         if( a_args[i].m_value == nullptr ||
             ASR::is_a<ASR::IntegerBOZ_t>(*a_args[i].m_value) ) {
-            std::cout<<"continue"<<std::endl;
             continue;
         }
-        std::cout<<"before"<<std::endl;
         ASR::expr_t* arg = a_args[i].m_value;
-        std::cout<<"after"<<std::endl;
         ASR::ttype_t* arg_type = ASRUtils::type_get_past_allocatable(
             ASRUtils::type_get_past_pointer(ASRUtils::expr_type(arg)));
-        std::cout<<"mid.2 "<<func_type->n_arg_types<<" "<<(i + is_method)<<std::endl;
         ASR::ttype_t* orig_arg_type = ASRUtils::type_get_past_allocatable(
             ASRUtils::type_get_past_pointer(func_type->m_arg_types[i + is_method]));
-        std::cout<<"mid.1"<<std::endl;
         if( !ASRUtils::is_intrinsic_symbol(a_name_) &&
             !(ASR::is_a<ASR::ClassType_t>(*ASRUtils::type_get_past_array(arg_type)) ||
               ASR::is_a<ASR::ClassType_t>(*ASRUtils::type_get_past_array(orig_arg_type))) &&
@@ -5638,12 +5632,10 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                     "Incompatible dimensions passed to " + (std::string)(ASR::down_cast<ASR::Function_t>(a_name_)->m_name)
                     + "(" + std::to_string(get_fixed_size_of_array(arg_array_t->m_dims,arg_array_t->n_dims)) + "/" + std::to_string(get_fixed_size_of_array(orig_arg_array_t->m_dims,orig_arg_array_t->n_dims))+")");
 
-                std::cout<<"aph.begin"<<std::endl;
                 physical_cast_arg.m_value = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
                     al, arg->base.loc, arg, arg_array_t->m_physical_type, orig_arg_array_t->m_physical_type,
                     ASRUtils::duplicate_type(al, ASRUtils::expr_type(arg), dimensions, orig_arg_array_t->m_physical_type, true),
                     nullptr));
-                std::cout<<"aph.end"<<std::endl;
                 a_args[i] = physical_cast_arg;
             }
         }
