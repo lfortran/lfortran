@@ -294,6 +294,20 @@ bool set_allocation_size(Allocator& al, ASR::expr_t* value, Vec<ASR::dimension_t
             }
             break;
         }
+        case ASR::exprType::ArrayReshape: {
+            ASR::ArrayReshape_t* array_reshape_t = ASR::down_cast<ASR::ArrayReshape_t>(value);
+            size_t n_dims = ASRUtils::extract_n_dims_from_ttype(
+                ASRUtils::expr_type(array_reshape_t->m_shape));
+            allocate_dims.reserve(al, n_dims);
+            for( size_t i = 0; i < n_dims; i++ ) {
+                ASR::dimension_t allocate_dim;
+                allocate_dim.loc = loc;
+                allocate_dim.m_start = int32_one;
+                allocate_dim.m_length = int32_one;
+                allocate_dims.push_back(al, allocate_dim);
+            }
+            break;
+        }
         default: {
             LCOMPILERS_ASSERT_MSG(false, "ASR::exprType::" + std::to_string(value->type)
                 + " not handled yet in set_allocation_size");
@@ -646,6 +660,14 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         xx.m_##member = create_and_allocate_temporary_variable_for_array( \
             x.m_##member, name_hint, al, current_body, current_scope, exprs_with_target); \
         END_VAR_CHECK
+
+    void visit_ArrayReshape(const ASR::ArrayReshape_t& x) {
+        ASR::ArrayReshape_t& xx = const_cast<ASR::ArrayReshape_t&>(x);
+
+        replace_expr_with_temporary_variable(array, "_array_reshape_array")
+
+        // replace_expr_with_temporary_variable(shape, "_array_reshape_shape")
+    }
 
     void visit_ComplexConstructor(const ASR::ComplexConstructor_t& x) {
         ASR::ComplexConstructor_t& xx = const_cast<ASR::ComplexConstructor_t&>(x);
