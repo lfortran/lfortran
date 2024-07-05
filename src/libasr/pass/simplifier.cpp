@@ -395,6 +395,7 @@ ASR::expr_t* create_and_allocate_temporary_variable_for_array(
                 al, loc, array_expr_ptr, array_expr)));
             array_expr = array_expr_ptr;
         }
+        std::cout<<"current_body: "<<current_body<<std::endl;
         current_body->push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(
             al, loc, array_var_temporary, array_expr, nullptr)));
     }
@@ -466,6 +467,14 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         T& xx = const_cast<T&>(x);
         xx.m_values = x_m_values.p;
         xx.n_values = x_m_values.size();
+    }
+
+    void visit_Variable(const ASR::Variable_t& /*x*/) {
+        // Do nothing
+    }
+
+    void visit_FunctionType(const ASR::FunctionType_t& /*x*/) {
+        // Do nothing
     }
 
     void visit_Print(const ASR::Print_t& x) {
@@ -944,6 +953,10 @@ class ReplaceExprWithTemporaryVisitor:
         // Do nothing
     }
 
+    void visit_FunctionType(const ASR::FunctionType_t& /*x*/) {
+        // Do nothing
+    }
+
     void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
         transform_stmts_impl
     }
@@ -1187,6 +1200,10 @@ class VerifySimplifierASROutput:
         if (x.m_overloaded) {
             visit_stmt(*x.m_overloaded);
         }
+    }
+
+    void visit_FunctionType(const ASR::FunctionType_t& /*x*/) {
+        // Do nothing
     }
 
     void visit_Associate(const ASR::Associate_t& /*x*/) {

@@ -211,6 +211,7 @@ namespace LCompilers {
             c_skip_pass{false} {
             _passes = {
                 "global_stmts",
+                "function_call_in_declaration",
                 "simplifier", /* Verification checks to be implemented in this pass - 1. No array, user defined type variable should have a symbolic value. 2. Print, SubroutineCall, FileWrite, IntrinsicImpureSubroutine nodes shouldn't have non-Var arguments. 3. All expressions which need a temporary should be directly linked to a target via an assignment. 4. Sizes of auxiliary allocatables should be calculated using only Var nodes (with non-array symbols), or FunctionCall returning scalars. */
                 "nested_vars",
                 "transform_optional_argument_functions",
@@ -220,7 +221,6 @@ namespace LCompilers {
                 "class_constructor",
                 "pass_list_expr",
                 "where",
-                "function_call_in_declaration",
                 "subroutine_from_function", // To be re-written after simplifier is implemented.
                 "array_op", // To be re-written without creating any auxiliary variables or allocatables, everything already done by simplifier
                 "symbolic",

@@ -32,6 +32,9 @@ class ReplaceIntrinsicFunctions: public ASR::BaseExprReplacer<ReplaceIntrinsicFu
     Allocator& al;
     SymbolTable* global_scope;
     std::map<ASR::symbol_t*, ASRUtils::IntrinsicArrayFunctions>& func2intrinsicid;
+    const std::vector<ASRUtils::IntrinsicArrayFunctions> keep_as_function_call = {
+        ASRUtils::IntrinsicArrayFunctions::Shape,
+    };
 
     public:
 
@@ -111,7 +114,11 @@ class ReplaceIntrinsicFunctions: public ASR::BaseExprReplacer<ReplaceIntrinsicFu
             global_scope, arg_types, x->m_type, new_args, x->m_overload_id);
         ASR::expr_t* func_call = current_expr_;
         *current_expr = current_expr_;
-        if (ASR::is_a<ASR::FunctionCall_t>(*func_call) && ASRUtils::is_array(x->m_type)) {
+        if (ASR::is_a<ASR::FunctionCall_t>(*func_call) && ASRUtils::is_array(x->m_type) &&
+            std::find(keep_as_function_call.begin(), keep_as_function_call.end(),
+                static_cast<ASRUtils::IntrinsicArrayFunctions>(x->m_arr_intrinsic_id))
+                == keep_as_function_call.end()
+        ) {
             ASR::symbol_t *call_sym = ASRUtils::symbol_get_past_external(
                 ASR::down_cast<ASR::FunctionCall_t>(func_call)->m_name);
             func2intrinsicid[call_sym] = (ASRUtils::IntrinsicArrayFunctions) x->m_arr_intrinsic_id;
@@ -162,24 +169,34 @@ class ReplaceFunctionCallReturningArray: public ASR::BaseExprReplacer<ReplaceFun
     result_var_(nullptr), current_scope(nullptr) {}
 
     void replace_FunctionCall(ASR::FunctionCall_t* x) {
+        std::cout<<"replace_FunctionCall.begin "<<ASRUtils::symbol_name(x->m_name)<<std::endl;
         ASR::symbol_t* x_m_name = ASRUtils::symbol_get_past_external(x->m_name);
         if( func2intrinsicid.find(x_m_name) == func2intrinsicid.end() ) {
+            std::cout<<"replace_FunctionCall.exit.1"<<std::endl;
             return ;
         }
 
         Vec<ASR::call_arg_t> new_args;
         new_args.reserve(al, x->n_args + 1);
-        new_args.from_pointer_n_copy(al, x->m_args, x->n_args);
+        for( size_t i = 0; i < x->n_args; i++ ) {
+            ASR::call_arg_t new_arg;
+            new_arg.loc = x->m_args[i].loc;
+            new_arg.m_value = x->m_args[i].m_value;
+            new_args.push_back(al, new_arg);
+        }
 
         ASR::call_arg_t new_arg;
         LCOMPILERS_ASSERT(result_var_)
         new_arg.loc = result_var_->base.loc;
         new_arg.m_value = result_var_;
         new_args.push_back(al, new_arg);
-        pass_result.push_back(al, ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(
+        std::cout<<"mid"<<std::endl;
+        ASR::stmt_t* subrout_call = ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(
             al, x->base.base.loc, x->m_name, x->m_original_name, new_args.p,
-            new_args.size(), x->m_dt, nullptr, false, false)));
-
+            new_args.size(), x->m_dt, nullptr, false, false));
+        std::cout<<"mid.1"<<std::endl;
+        pass_result.push_back(al, subrout_call);
+        std::cout<<"replace_FunctionCall.exit.2"<<std::endl;
     }
 
 };
@@ -238,7 +255,9 @@ class ReplaceFunctionCallReturningArrayVisitor : public ASR::CallReplacerOnExpre
 
         void visit_Assignment(const ASR::Assignment_t& x) {
             replacer.result_var_ = x.m_target;
+            std::cout<<"result_var_.assigned: "<<replacer.result_var_<<std::endl;
             ASR::CallReplacerOnExpressionsVisitor<ReplaceFunctionCallReturningArrayVisitor>::visit_Assignment(x);
+            replacer.result_var_ = nullptr;
         }
 
 };
@@ -246,12 +265,16 @@ class ReplaceFunctionCallReturningArrayVisitor : public ASR::CallReplacerOnExpre
 void pass_replace_intrinsic_function(Allocator &al, ASR::TranslationUnit_t &unit,
                              const LCompilers::PassOptions& /*pass_options*/) {
     std::map<ASR::symbol_t*, ASRUtils::IntrinsicArrayFunctions> func2intrinsicid;
+    std::cout<<"v.begin"<<std::endl;
     ReplaceIntrinsicFunctionsVisitor v(al, unit.m_symtab, func2intrinsicid);
     v.visit_TranslationUnit(unit);
+    std::cout<<"v.done"<<std::endl;
     ReplaceFunctionCallReturningArrayVisitor u(al, func2intrinsicid);
     u.visit_TranslationUnit(unit);
+    std::cout<<"u.done"<<std::endl;
     PassUtils::UpdateDependenciesVisitor w(al);
     w.visit_TranslationUnit(unit);
+    std::cout<<"w.done"<<std::endl;
 }
 
 
