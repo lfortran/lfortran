@@ -25,15 +25,13 @@ TEST_CASE("llvm 1") {
     //LFortran::LLVMEvaluator::print_version_message();
 
     LCompilers::LLVMEvaluator e;
-    e.add_module(R"""(
+    e.add_module_with_code(R"""(
 define i64 @f1()
 {
     ret i64 4
 }
     )""");
     CHECK(e.execfn<int64_t>("f1") == 4);
-    e.add_module("");
-//    CHECK(e.execfn<int64_t>("f1") == 4);
 
 /*
     e.add_module(R"""(
@@ -50,14 +48,14 @@ define i64 @f1()
 
 TEST_CASE("llvm 1 fail") {
     LCompilers::LLVMEvaluator e;
-    CHECK_THROWS_AS(e.add_module(R"""(
+    CHECK_THROWS_AS(e.add_module_with_code(R"""(
 define i64 @f1()
 {
     ; FAIL: "=x" is incorrect syntax
     %1 =x alloca i64
 }
         )"""), LCompilers::LCompilersException);
-    CHECK_THROWS_WITH(e.add_module(R"""(
+    CHECK_THROWS_WITH(e.add_module_with_code(R"""(
 define i64 @f1()
 {
     ; FAIL: "=x" is incorrect syntax
@@ -69,7 +67,7 @@ define i64 @f1()
 
 TEST_CASE("llvm 2") {
     LCompilers::LLVMEvaluator e;
-    e.add_module(R"""(
+    e.add_module_with_code(R"""(
 @count = global i64 0
 
 define i64 @f1()
@@ -81,7 +79,7 @@ define i64 @f1()
     )""");
     CHECK(e.execfn<int64_t>("f1") == 4);
 
-    e.add_module(R"""(
+    e.add_module_with_code(R"""(
 @count = external global i64
 
 define i64 @f2()
@@ -92,7 +90,7 @@ define i64 @f2()
     )""");
     CHECK(e.execfn<int64_t>("f2") == 4);
 
-    CHECK_THROWS_AS(e.add_module(R"""(
+    CHECK_THROWS_AS(e.add_module_with_code(R"""(
 define i64 @f3()
 {
     ; FAIL: @count is not defined
@@ -104,11 +102,11 @@ define i64 @f3()
 
 TEST_CASE("llvm 3") {
     LCompilers::LLVMEvaluator e;
-    e.add_module(R"""(
+    e.add_module_with_code(R"""(
 @count = global i64 5
     )""");
 
-    e.add_module(R"""(
+    e.add_module_with_code(R"""(
 @count = external global i64
 
 define i64 @f1()
@@ -191,7 +189,7 @@ define void @inc()
 
 TEST_CASE("llvm 4") {
     LCompilers::LLVMEvaluator e;
-    e.add_module(R"""(
+    e.add_module_with_code(R"""(
 @count = global i64 5
 
 define i64 @f1()
@@ -247,7 +245,7 @@ define void @inc2()
 
 TEST_CASE("llvm array 1") {
     LCompilers::LLVMEvaluator e;
-    e.add_module(R"""(
+    e.add_module_with_code(R"""(
 ; Sum the three elements in %a
 define i64 @sum3(i64* %a)
 {
@@ -289,7 +287,7 @@ define i64 @f()
 
 TEST_CASE("llvm array 2") {
     LCompilers::LLVMEvaluator e;
-    e.add_module(R"""(
+    e.add_module_with_code(R"""(
 %array = type {i64, [3 x i64]}
 
 ; Sum the three elements in %a
@@ -339,7 +337,7 @@ int f(int a, int b) {
 TEST_CASE("llvm callback 0") {
     LCompilers::LLVMEvaluator e;
     std::string addr = std::to_string((int64_t)f);
-    e.add_module(R"""(
+    e.add_module_with_code(R"""(
 define i64 @addrcaller(i64 %a, i64 %b)
 {
     %f = inttoptr i64 )""" + addr + R"""( to i64 (i64, i64)*
@@ -380,23 +378,22 @@ end function)";
     CHECK(LCompilers::pickle(*asr) == "(TranslationUnit (SymbolTable 1 {f: (Function (SymbolTable 2 {f: (Variable 2 f [] ReturnVar () () Default (Integer 4) () Source Public Required .false.)}) f (FunctionType [] (Integer 4) Source Implementation () .false. .false. .false. .false. .false. [] .false.) [] [] [(Assignment (Var 2 f) (IntegerConstant 5 (Integer 4)) ())] (Var 2 f) Public .false. .false. ())}) [])");
 
     // ASR -> LLVM
-    LCompilers::LLVMEvaluator e;
+    std::unique_ptr<LCompilers::LLVMEvaluator> e = std::make_unique<LCompilers::LLVMEvaluator>();
     LCompilers::PassManager lpm;
     lpm.use_default_passes();
     CompilerOptions co;
     co.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
     co.platform = LCompilers::get_platform();
-    LCompilers::Result<std::unique_ptr<LCompilers::LLVMModule>>
-        res = LCompilers::asr_to_llvm(*asr, diagnostics, e.get_context(), al,
+    LCompilers::Result<bool>
+        res = LCompilers::asr_to_llvm(*asr, diagnostics, e, al,
             lpm, co, "f", "");
     REQUIRE(res.ok);
-    std::unique_ptr<LCompilers::LLVMModule> m = std::move(res.result);
     //std::cout << "Module:" << std::endl;
     //std::cout << m->str() << std::endl;
 
     // LLVM -> Machine code -> Execution
-    e.add_module(std::move(m));
-    CHECK(e.execfn<int32_t>("f") == 5);
+    e->add_module();
+    CHECK(e->execfn<int32_t>("f") == 5);
 }
 
 TEST_CASE("ASR -> LLVM 2") {
@@ -420,20 +417,20 @@ end function)";
         diagnostics, nullptr, false, compiler_options));
     CHECK(LCompilers::pickle(*asr) == "(TranslationUnit (SymbolTable 3 {f: (Function (SymbolTable 4 {f: (Variable 4 f [] ReturnVar () () Default (Integer 4) () Source Public Required .false.)}) f (FunctionType [] (Integer 4) Source Implementation () .false. .false. .false. .false. .false. [] .false.) [] [] [(Assignment (Var 4 f) (IntegerConstant 4 (Integer 4)) ())] (Var 4 f) Public .false. .false. ())}) [])");
     // ASR -> LLVM
-    LCompilers::LLVMEvaluator e;
+    std::unique_ptr<LCompilers::LLVMEvaluator> e = std::make_unique<LCompilers::LLVMEvaluator>();
     LCompilers::PassManager lpm;
     lpm.use_default_passes();
-    LCompilers::Result<std::unique_ptr<LCompilers::LLVMModule>>
-        res = LCompilers::asr_to_llvm(*asr, diagnostics, e.get_context(), al,
+    LCompilers::Result<bool>
+        res = LCompilers::asr_to_llvm(*asr, diagnostics, e, al,
             lpm, compiler_options, "f", "");
     REQUIRE(res.ok);
-    std::unique_ptr<LCompilers::LLVMModule> m = std::move(res.result);
+    // std::unique_ptr<LCompilers::LLVMModule> m = std::move(res.result);
     //std::cout << "Module:" << std::endl;
     //std::cout << m->str() << std::endl;
 
     // LLVM -> Machine code -> Execution
-    e.add_module(std::move(m));
-    CHECK(e.execfn<int32_t>("f") == 4);
+    e->add_module();
+    CHECK(e->execfn<int32_t>("f") == 4);
 }
 
 TEST_CASE("FortranEvaluator 1") {
@@ -634,7 +631,7 @@ end module funcmod)");
 // Tests passing the complex struct by reference
 TEST_CASE("llvm complex type") {
     LCompilers::LLVMEvaluator e;
-    e.add_module(R"""(
+    e.add_module_with_code(R"""(
 %complex = type { float, float }
 
 define float @sum2(%complex* %a)
@@ -670,7 +667,7 @@ define float @f()
 // Tests passing the complex struct by value
 TEST_CASE("llvm complex type value") {
     LCompilers::LLVMEvaluator e;
-    e.add_module(R"""(
+    e.add_module_with_code(R"""(
 %complex = type { float, float }
 
 define float @sum2(%complex %a_value)
@@ -709,7 +706,7 @@ define float @f()
 // Tests passing boolean by reference
 TEST_CASE("llvm boolean type") {
     LCompilers::LLVMEvaluator e;
-    e.add_module(R"""(
+    e.add_module_with_code(R"""(
 
 define i1 @and_func(i1* %p, i1* %q)
 {
@@ -739,7 +736,7 @@ define i1 @b()
 // Tests passing boolean by value
 TEST_CASE("llvm boolean type") {
     LCompilers::LLVMEvaluator e;
-    e.add_module(R"""(
+    e.add_module_with_code(R"""(
 
 define i1 @and_func(i1 %p, i1 %q)
 {
@@ -769,7 +766,7 @@ define i1 @b()
 // Tests pointers
 TEST_CASE("llvm pointers 1") {
     LCompilers::LLVMEvaluator e;
-    e.add_module(R"""(
+    e.add_module_with_code(R"""(
 @r = global i64 0
 
 define i64 @f()
@@ -792,7 +789,7 @@ define i64 @f()
 
 TEST_CASE("llvm pointers 2") {
     LCompilers::LLVMEvaluator e;
-    e.add_module(R"""(
+    e.add_module_with_code(R"""(
 @r = global float 0.0
 
 define i64 @f()
@@ -811,7 +808,7 @@ define i64 @f()
 
 TEST_CASE("llvm pointers 3") {
     LCompilers::LLVMEvaluator e;
-    e.add_module(R"""(
+    e.add_module_with_code(R"""(
 ; Takes a variable and returns a pointer to it
 define i64 @pointer_reference(float* %var)
 {
@@ -851,7 +848,7 @@ define float @f()
 
 TEST_CASE("llvm pointers 4") {
     LCompilers::LLVMEvaluator e;
-    e.add_module(R"""(
+    e.add_module_with_code(R"""(
 ; Takes a variable and returns a pointer to it
 define float* @pointer_reference(float* %var)
 {
@@ -1293,6 +1290,59 @@ end function sub
     CHECK(r.ok);
     CHECK(r.result.type == FortranEvaluator::EvalResult::real4);
     CHECK(r.result.f32 == -1.0);
+}
+
+TEST_CASE("FortranEvaluator Function Redefinitions") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    LCompilers::Result<FortranEvaluator::EvalResult>
+    
+    r = e.evaluate2(R"(
+function f(x) result(r)
+integer :: x
+integer :: r
+r = x
+end function f
+)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::none);
+
+    r = e.evaluate2("f(1)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 1);
+    
+    r = e.evaluate2(R"(
+function f(x) result(r)
+integer :: x
+integer :: r
+r = x + 1
+end function f
+)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::none);
+    
+    r = e.evaluate2("f(1)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 2);
+    
+    r = e.evaluate2(R"(
+function f(x) result(r)
+real :: x
+real :: r
+r = x * x
+end function f
+)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::none);
+    
+    r = e.evaluate2("f(1.5)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::real4);
+    CHECK(r.result.f32 - (1.5 * 1.5) < 1e-7);
 }
 
 // This test does not work on Windows yet
