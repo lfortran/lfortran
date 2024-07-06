@@ -89,6 +89,7 @@ LFortran is a modern interactive Fortran compiler based on LLVM.
 - `--legacy-array-sections`: Enables passing array items as sections if required
 - `--ignore-pragma`: Ignores all the pragmas
 - `--stack-arrays`: Allocate memory for arrays on stack
+- `--non-standard-functions`: Enable non standard intrinsics
 
 # SUBCOMMANDS
 

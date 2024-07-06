@@ -940,6 +940,10 @@ public:
         {"and", {"iand", {"any", "any"}}},
         {"or", {"ior", {"any", "any"}}},
         {"xor", {"ieor", {"any", "any"}}},
+        {"besj0", {"bessel_j0", {"real"}}},
+        {"besj1", {"bessel_j1", {"real"}}},
+        {"besy0", {"bessel_y0", {"real"}}},
+        {"besy1", {"bessel_y1", {"real"}}},
     };
     
     ASR::asr_t *tmp;
@@ -5402,6 +5406,7 @@ public:
 
     void check_specific_type_intrinsics(std::string intrinsic_name, Vec<ASR::expr_t*> &args, const Location &loc) {
         std::set<std::string>array_intrinsic_mapping_names = {"min0", "amin0", "min1", "amin1", "dmin1", "max0", "amax", "min1", "amax1", "dmax1"};
+        std::set<std::string> non_standard_intrinsics = {"besj0", "besj1", "besy0", "besy1"};
         if (intrinsic_mapping.find(intrinsic_name) == intrinsic_mapping.end()) {
             return;
         }
@@ -5412,6 +5417,16 @@ public:
             if (args[1]) {
                 throw SemanticError("Too many arguments to call `" + intrinsic_name + "`", loc);
             }
+        }
+
+        if(compiler_options.non_standard_functions){
+            std::cout << "Non-standard functions are enabled" << std::endl;
+        } else{
+            std::cout << "Non-standard functions are disabled" << std::endl;
+        }
+
+        if(!compiler_options.non_standard_functions && non_standard_intrinsics.find(intrinsic_name) != non_standard_intrinsics.end()){
+            throw SemanticError("Intrinsic function `" + intrinsic_name + "` is not supported with implicit interface", loc);
         }
 
         for (size_t i = 0; i < arg_size; i++) {

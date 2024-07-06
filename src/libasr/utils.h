@@ -85,6 +85,7 @@ struct CompilerOptions {
     std::string openmp_lib_dir = "";
     bool generate_object_code = false;
     bool no_warnings = false;
+    bool non_standard_functions = false;
     bool disable_style = false;
     bool logical_casting = false;
     bool no_error_banner = false;
