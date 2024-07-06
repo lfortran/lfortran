@@ -5419,7 +5419,13 @@ public:
             }
         }
 
-        if(compiler_options.std_functions && non_standard_intrinsics.find(intrinsic_name) != non_standard_intrinsics.end()){
+        if(compiler_options.non_standard_functions){
+            std::cout << "Non-standard functions are enabled" << std::endl;
+        } else{
+            std::cout << "Non-standard functions are disabled" << std::endl;
+        }
+
+        if(!compiler_options.non_standard_functions && non_standard_intrinsics.find(intrinsic_name) != non_standard_intrinsics.end()){
             throw SemanticError("Intrinsic function `" + intrinsic_name + "` is not supported with implicit interface", loc);
         }
 

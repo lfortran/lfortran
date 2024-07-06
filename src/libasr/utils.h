@@ -85,6 +85,7 @@ struct CompilerOptions {
     std::string openmp_lib_dir = "";
     bool generate_object_code = false;
     bool no_warnings = false;
+    bool non_standard_functions = false;
     bool disable_style = false;
     bool logical_casting = false;
     bool no_error_banner = false;
@@ -109,7 +110,6 @@ struct CompilerOptions {
     bool ignore_pragma = false;
     bool stack_arrays = false;
     bool wasm_html = false;
-    bool std_functions = false;
     std::string emcc_embed;
     std::vector<std::string> import_paths;
     Platform platform;

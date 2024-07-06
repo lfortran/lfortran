@@ -2114,7 +2114,7 @@ int main_app(int argc, char *argv[]) {
     app.add_flag("--stack-arrays", compiler_options.stack_arrays, "Allocate memory for arrays on stack");
     app.add_flag("--wasm-html", compiler_options.wasm_html, "Generate HTML file using emscripten for LLVM->WASM");
     app.add_option("--emcc-embed", compiler_options.emcc_embed, "Embed a given file/directory using emscripten for LLVM->WASM");
-    app.add_option("--std_functions", compiler_options.std_functions, "Disable non standard intrinsics");
+    app.add_flag("--non-standard-functions", compiler_options.non_standard_functions, "Enable non standard intrinsics");
 
     /*
     * Subcommands:
@@ -2174,6 +2174,7 @@ int main_app(int argc, char *argv[]) {
         // The default LFortran behavior, do nothing
     } else if (arg_standard == "f23") {
         compiler_options.disable_style = true;
+        compiler_options.non_standard_functions = true;
         compiler_options.implicit_typing = true;
         compiler_options.implicit_argument_casting = true;
         compiler_options.implicit_interface = true;
@@ -2182,6 +2183,7 @@ int main_app(int argc, char *argv[]) {
     } else if (arg_standard == "legacy") {
         // f23
         compiler_options.disable_style = true;
+        compiler_options.non_standard_functions = true;
         compiler_options.implicit_typing = true;
         compiler_options.implicit_argument_casting = true;
         compiler_options.implicit_interface = true;
@@ -2201,6 +2203,7 @@ int main_app(int argc, char *argv[]) {
     compiler_options.use_colors = !arg_no_color;
     compiler_options.indent = !arg_no_indent;
     compiler_options.prescan = !arg_no_prescan;
+    compiler_options.non_standard_functions = false;
     // set openmp in pass options
     compiler_options.po.openmp = compiler_options.openmp;
 
