@@ -1,3 +1,5 @@
+! equivalent to openmp_09.f90
+
 subroutine parallel_factorial(n, ctr)
     use omp_lib
     use iso_fortran_env
@@ -10,18 +12,15 @@ subroutine parallel_factorial(n, ctr)
     integer :: i
     
     local_ctr = 1
-    !$omp parallel private(i) reduction(*:local_ctr)
-    !$omp do
-    do i = 1, n   
+
+    do concurrent (i=1:n) reduce(*:local_ctr)
         local_ctr = local_ctr * i
     end do
-    !$omp end do
-    !$omp end parallel
     
     ctr = ctr + local_ctr
     end subroutine
     
-    program openmp_09
+    program do_concurrent_06
     use omp_lib
     use iso_fortran_env
     integer, parameter :: n = 20    

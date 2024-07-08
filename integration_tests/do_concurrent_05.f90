@@ -1,3 +1,5 @@
+! equivalent to openmp_08.f90
+
 subroutine increment_ctr(n, ctr)
     use omp_lib
     implicit none
@@ -9,18 +11,15 @@ subroutine increment_ctr(n, ctr)
     integer :: i
     
     local_ctr = 1
-    !$omp parallel private(i) reduction(*:local_ctr)
-    !$omp do
-    do i = 1, n
+
+    do concurrent (i=1:n) reduce(*:local_ctr)
         local_ctr = local_ctr * 1.5
     end do
-    !$omp end do
-    !$omp end parallel
     
     ctr = ctr + local_ctr
 end subroutine
     
-program openmp_08
+program do_concurrent_05
     use omp_lib
     integer, parameter :: n = 10
     real :: ctr

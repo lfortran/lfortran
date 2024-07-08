@@ -1,0 +1,133 @@
+#!/usr/bin/env python
+"""
+Simple wrapper around lfortran that tries hard to match gfortran interface
+"""
+
+import argparse
+import os
+import logging
+
+logger = logging.getLogger(__name__)
+
+_supported_opt_levels = 3
+
+def build_parser():
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("-c", action="store_true")
+    parser.add_argument("-S", action="store_true")
+
+    parser.add_argument("-o", metavar="outfile")
+
+    ##
+
+    preprocessing_group = parser.add_argument_group("Preprocessing Options")
+
+    preprocessing_group.add_argument("-E", action="store_true")
+    preprocessing_group.add_argument("-cpp", action="store_true")
+    preprocessing_group.add_argument(
+        "-D", metavar="macro[=defn]", action="append", default=[]
+    )
+    preprocessing_group.add_argument("-U", metavar="macro", default=[])
+
+    ##
+
+    debugging_group = parser.add_argument_group("Debugging Options")
+
+    debugging_group.add_argument("-g", action="store_true")
+
+    ##
+
+    directory_group = parser.add_argument_group("Directory Options")
+
+    directory_group.add_argument("-I", metavar="dir", action="append", default=[])
+
+    ##
+
+    link_group = parser.add_argument_group("Link Options")
+
+    link_group.add_argument("-L", metavar="dir", action="append", default=[])
+
+    ##
+
+    codegen_group = parser.add_argument_group("Code Generation Options")
+
+    codegen_group.add_argument("-O", action="store_true")
+    for lvl in range(1 + _supported_opt_levels):
+        codegen_group.add_argument("-O{}".format(lvl), action="store_true")
+
+    codegen_group.add_argument("-fPIC", action="store_true")
+
+    ##
+
+    parser.add_argument("infile", action="append")
+
+    return parser
+
+
+##############################################################################
+
+
+def build_lfortran_command(args):
+    lfortran_args = []
+    # Default values to match gfortran behavior as closely as possible
+    lfortran_args.extend(("--fixed-form-infer", "--cpp-infer", "--implicit-interface"))
+
+    # Then forward original argument, adjusting the value if needs be.
+    if args.c:
+        lfortran_args.append("-c")
+        lfortran_args.append("--generate-object-code")
+
+    if args.S:
+        lfortran_args.append("-S")
+
+    if args.o:
+        lfortran_args.append("-o")
+        lfortran_args.append(args.o)
+
+    if args.E:
+        lfortran_args.append("-E")
+    if args.cpp:
+        lfortran_args.append("--cpp")
+    for define in args.D:
+        lfortran_args.append("-D" + define)
+    for undefine in args.U:
+        lfortran_args.append("-U" + undefine)
+    if args.g:
+        lfortran_args.append("-g")
+    for include in args.I:
+        lfortran_args.append("-I" + include)
+    for libdir in args.L:
+        lfortran_args.append("-L" + libdir)
+
+    if args.O:
+        optlvl = 1
+    else:
+        optlvl = None
+
+    for lvl in range(1 + _supported_opt_levels):
+        if getattr(args, "O{}".format(lvl)):
+            optlvl = lvl
+    if optlvl:
+        lfortran_args.append("-O{}".format(optlvl))
+
+    if args.fPIC:
+        lfortran_args.append("-fPIC")
+
+    lfortran_args.extend(args.infile)
+
+    lfortran_path = os.path.join(os.path.dirname(__file__), "lfortran")
+
+    return lfortran_path, lfortran_args
+
+
+##############################################################################
+
+if __name__ == "__main__":
+    parser = build_parser()
+    args, unknowns = parser.parse_known_args()
+    for unknown in unknowns:
+        logger.warning("Ignoring unknown argument " + unknown)
+    lfortran_path, lfortran_args = build_lfortran_command(args)
+    # Invoke lfortran
+    os.execl(lfortran_path, lfortran_path, *lfortran_args)
