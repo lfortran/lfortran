@@ -471,7 +471,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ["macos-latest", "ubuntu-latest"]
+        # os: ["macos-latest", "ubuntu-latest"]
+        os: ["macos-latest"]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -483,7 +484,7 @@ jobs:
           create-args: >-
             python=3.10
             openblas=0.3.21
-            llvm-openmp=11.1.0
+            llvm-openmp=13.0.1
 
       - name: Install Linux / macOS Packages
         if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
