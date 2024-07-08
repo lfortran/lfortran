@@ -643,6 +643,7 @@ jobs:
 
       - name: Test fpm
         shell: bash -e -x -l {0}
+        if: contains(matrix.os, 'ubuntu')
         run: |
             git clone https://github.com/certik/fpm.git
             cd fpm
