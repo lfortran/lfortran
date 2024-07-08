@@ -1997,7 +1997,7 @@ public:
         }
     }
 
-    void create_external_function(std::string sym, Location loc) {
+    void create_external_function(std::string sym, Location loc, ASR::ttype_t* determined_type = nullptr) {
         if (compiler_options.implicit_interface) {
             bool is_subroutine = false;
             external_procedures.push_back(sym);
@@ -2016,6 +2016,9 @@ public:
                 if (!is_subroutine) {
                     type = ASRUtils::symbol_type(sym_);
                 }
+            } else if (determined_type) {
+                // if explicit type provided, give preference to it.
+                type = determined_type;
             } else if (compiler_options.implicit_typing) {
                 type = implicit_dictionary[std::string(1,sym[0])];
                 if (!type) {
@@ -2566,6 +2569,7 @@ public:
                 AST::var_sym_t &s = x.m_syms[i];
                 std::string sym = to_lower(s.m_name);
                 bool is_external = check_is_external(sym);
+                bool is_attr_external = false;
                 ASR::accessType s_access = dflt_access;
                 ASR::presenceType s_presence = dflt_presence;
                 ASR::storage_typeType storage_type = dflt_storage;
@@ -2694,7 +2698,7 @@ public:
                                 excluded_from_symtab.push_back(sym);
                             } else if(sa->m_attr == AST::simple_attributeType
                                     ::AttrExternal) {
-                                create_external_function(sym, x.m_syms[i].loc);
+                                is_attr_external = true;
                                 assgnd_access[sym] = ASR::accessType::Public;
                                 if (assgnd_access.count(sym)) {
                                     s_access = assgnd_access[sym];
@@ -2757,6 +2761,7 @@ public:
                 ASR::ttype_t *type = determine_type(x.base.base.loc, sym, x.m_vartype, is_pointer,
                     is_allocatable, dims, type_declaration, s_abi,
                     (s_intent != ASRUtils::intent_local) || is_argument, is_dimension_star);
+                if ( is_attr_external ) create_external_function(sym, x.m_syms[i].loc, type);
                 current_variable_type_ = type;
 
                 ASR::expr_t* init_expr = nullptr;
