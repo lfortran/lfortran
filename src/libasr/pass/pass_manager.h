@@ -17,8 +17,6 @@
 #include <libasr/pass/replace_do_loops.h>
 #include <libasr/pass/replace_for_all.h>
 #include <libasr/pass/while_else.h>
-#include <libasr/pass/replace_init_expr.h>
-#include <libasr/pass/replace_implied_do_loops.h>
 #include <libasr/pass/replace_array_op.h>
 #include <libasr/pass/replace_select_case.h>
 #include <libasr/pass/wrap_global_stmts.h>
@@ -40,7 +38,6 @@
 #include <libasr/pass/inline_function_calls.h>
 #include <libasr/pass/dead_code_removal.h>
 #include <libasr/pass/replace_for_all.h>
-#include <libasr/pass/replace_init_expr.h>
 #include <libasr/pass/replace_select_case.h>
 #include <libasr/pass/loop_vectorise.h>
 #include <libasr/pass/update_array_dim_intrinsic_calls.h>
@@ -81,7 +78,6 @@ namespace LCompilers {
             {"do_loops", &pass_replace_do_loops},
             {"while_else", &pass_while_else},
             {"global_stmts", &pass_wrap_global_stmts},
-            {"implied_do_loops", &pass_replace_implied_do_loops},
             {"array_op", &pass_replace_array_op},
             {"symbolic", &pass_replace_symbolic},
             {"flip_sign", &pass_replace_flip_sign},
@@ -106,7 +102,6 @@ namespace LCompilers {
             {"pass_array_by_data", &pass_array_by_data},
             {"subroutine_from_function", &pass_create_subroutine_from_function},
             {"transform_optional_argument_functions", &pass_transform_optional_argument_functions},
-            {"init_expr", &pass_replace_init_expr},
             {"nested_vars", &pass_nested_vars},
             {"where", &pass_replace_where},
             {"function_call_in_declaration", &pass_replace_function_call_in_declaration},
@@ -248,9 +243,9 @@ namespace LCompilers {
                 "nested_vars",
                 "global_stmts",
                 "transform_optional_argument_functions",
-                "init_expr",
+                // "init_expr",
                 "openmp",
-                "implied_do_loops",
+                // "implied_do_loops",
                 "class_constructor",
                 "pass_list_expr",
                 "where",

@@ -109,10 +109,11 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
 
     public:
 
+    SymbolTable* current_scope;
     ASR::expr_t* result_expr;
 
     ReplaceArrayOp(Allocator& al_, Vec<ASR::stmt_t*>& pass_result_):
-        al(al_), pass_result(pass_result_) {}
+        al(al_), pass_result(pass_result_), current_scope(nullptr) {}
 
     void replace_ArrayConstant(ASR::ArrayConstant_t* x) {
         pass_result.reserve(al, x->m_n_data);
@@ -148,11 +149,18 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
     }
 
     void replace_ArrayConstructor(ASR::ArrayConstructor_t* x) {
+        // TODO: Remove this because the ArrayConstructor node should
+        // be replaced with its value already (if present) in simplifier pass.
         if( x->m_value == nullptr ) {
-            LCOMPILERS_ASSERT(are_all_elements_scalars(x->m_args, x->n_args))
-        }
-        if( !ASRUtils::is_fixed_size_array(x->m_type) ) {
-            LCOMPILERS_ASSERT(false);
+            if( !are_all_elements_scalars(x->m_args, x->n_args) ) {
+                PassUtils::ReplacerUtils::replace_ArrayConstructor(
+                    al, x, result_expr, &pass_result, current_scope);
+                return ;
+            }
+
+            if( !ASRUtils::is_fixed_size_array(x->m_type) ) {
+                LCOMPILERS_ASSERT(false);
+            }
         }
 
         ASR::ttype_t* arr_type = nullptr;
@@ -168,7 +176,6 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         const Location& loc = x->base.base.loc;
         LCOMPILERS_ASSERT(result_expr != nullptr);
 
-        ASR::Variable_t* var = ASRUtils::EXPR2VAR(result_expr); var->m_type = arr_type;
         ASR::ttype_t* result_type = ASRUtils::expr_type(result_expr);
         ASR::ttype_t* result_element_type = ASRUtils::type_get_past_array_pointer_allocatable(result_type);
 
@@ -265,6 +272,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
 
     void call_replacer() {
         replacer.current_expr = current_expr;
+        replacer.current_scope = current_scope;
         replacer.replace_expr(*current_expr);
     }
 
