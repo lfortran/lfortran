@@ -770,11 +770,6 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
             ASRUtils::get_array_intrinsic_name(x.m_arr_intrinsic_id));
     }
 
-    void visit_IntrinsicImpureFunction(const ASR::IntrinsicImpureFunction_t& x) {
-        visit_IntrinsicCall(x, "_intrinsic_array_function_" +
-            ASRUtils::get_impure_intrinsic_name(x.m_impure_intrinsic_id));
-    }
-
     void traverse_call_args(Vec<ASR::call_arg_t>& x_m_args_vec, ASR::call_arg_t* x_m_args,
         size_t x_n_args, const std::string& name_hint) {
         /* For other frontends, we might need to traverse the arguments
@@ -1046,10 +1041,6 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
             return ;
         }
         ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_ArrayItem(x);
-    }
-
-    void replace_StructInstanceMember(ASR::StructInstanceMember_t* x) {
-        replace_current_expr("_struct_instance_member_")
     }
 
     void replace_StructStaticMember(ASR::StructStaticMember_t* x) {
@@ -1494,13 +1485,6 @@ class VerifySimplifierASROutput:
         check_if_linked_to_target(x.base, x.m_type);
     }
 
-    void visit_IntrinsicImpureFunction(const ASR::IntrinsicImpureFunction_t& x) {
-        visit_IntrinsicCall(x);
-        if( ASRUtils::is_array(x.m_type) ) {
-            check_if_linked_to_target(x.base, x.m_type);
-        }
-    }
-
     void visit_StructConstructor(const ASR::StructConstructor_t& x) {
         traverse_call_args(x.m_args, x.n_args);
         check_if_linked_to_target(x.base, x.m_type);
@@ -1571,10 +1555,6 @@ class VerifySimplifierASROutput:
             return ;
         }
         ASR::BaseWalkVisitor<VerifySimplifierASROutput>::visit_ArrayItem(x);
-    }
-
-    void visit_StructInstanceMember(const ASR::StructInstanceMember_t& x) {
-        check_if_linked_to_target(x.base, x.m_type);
     }
 
     void visit_StructStaticMember(const ASR::StructStaticMember_t& x) {

@@ -74,8 +74,13 @@ class ArrayVarAddressReplacer: public ASR::BaseExprReplacer<ArrayVarAddressRepla
     }
 
     void replace_StructInstanceMember(ASR::StructInstanceMember_t* x) {
+        if( !ASRUtils::is_array(x->m_type) ) {
+            return ;
+        }
         if( ASRUtils::is_array(ASRUtils::symbol_type(x->m_m)) ) {
             vars.push_back(al, current_expr);
+        } else {
+            ASR::BaseExprReplacer<ArrayVarAddressReplacer>::replace_StructInstanceMember(x);
         }
     }
 
@@ -253,6 +258,18 @@ class FixTypeVisitor: public ASR::BaseWalkVisitor<FixTypeVisitor> {
     void visit_IntegerCompare(const ASR::IntegerCompare_t& x) {
         ASR::BaseWalkVisitor<FixTypeVisitor>::visit_IntegerCompare(x);
         visit_ArrayOp(x);
+    }
+
+    void visit_StructInstanceMember(const ASR::StructInstanceMember_t& x) {
+        ASR::BaseWalkVisitor<FixTypeVisitor>::visit_StructInstanceMember(x);
+        if( !ASRUtils::is_array(x.m_type) ) {
+            return ;
+        }
+        if( !ASRUtils::is_array(ASRUtils::expr_type(x.m_v)) &&
+            !ASRUtils::is_array(ASRUtils::symbol_type(x.m_m)) ) {
+            ASR::StructInstanceMember_t& xx = const_cast<ASR::StructInstanceMember_t&>(x);
+            xx.m_type = ASRUtils::type_get_past_array_pointer_allocatable(x.m_type);
+        }
     }
 };
 
