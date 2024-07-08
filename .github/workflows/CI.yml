@@ -498,6 +498,7 @@ jobs:
 
       - uses: hendrikmuhs/ccache-action@main
         with:
+          variant: sccache
           key: ${{ github.job }}-${{ matrix.os }}
 
       - name: Setup Platform
@@ -508,13 +509,21 @@ jobs:
             echo "CMAKE_CXX_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
             echo "ENABLE_RUNTIME_STACKTRACE=yes" >> $GITHUB_ENV
 
-      - name: Build (Linux / macOS)
+      - name: Build Linux / macOS
         shell: bash -e -l {0}
-        if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
         run: |
-            export CXXFLAGS="-Werror"
-            export CFLAGS="-Werror"
-            xonsh ci/build_tmp.xsh
+            ./build0.sh
+            cmake . -GNinja \
+              -DCMAKE_BUILD_TYPE=Debug \
+              -DWITH_LLVM=yes \
+              -DLFORTRAN_BUILD_ALL=yes \
+              -DWITH_STACKTRACE=no \
+              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
+              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
+              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+
+            cmake --build . -j16 --target install
 
       - name: Test Legacy Minpack (SciPy)
         shell: bash -e -x -l {0}
