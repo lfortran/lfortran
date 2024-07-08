@@ -236,6 +236,12 @@ if (WITH_XEUS)
     install(DIRECTORY ${XEUS_CALCSPEC_DIR}
             DESTINATION ${XJUPYTER_DATA_DIR}
             PATTERN "*.in" EXCLUDE)
+
+    # Install lfortran logo file
+    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/doc/src/_static/img/lfortran-logo.svg
+            DESTINATION ${XJUPYTER_DATA_DIR}
+            RENAME logo-svg.svg)
+
 endif()
 
 # JSON
