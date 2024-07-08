@@ -486,6 +486,7 @@ jobs:
             python=${{ matrix.python-version }}
             bison=3.4
             openblas=0.3.21
+            gfortran
 
       - uses: hendrikmuhs/ccache-action@main
         with:
