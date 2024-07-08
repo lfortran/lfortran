@@ -4532,7 +4532,9 @@ public:
                 bool is_value_data_only_array = (ASRUtils::is_array(value_type) && (
                       ASRUtils::extract_physical_type(value_type) == ASR::array_physical_typeType::PointerToDataArray ||
                       ASRUtils::extract_physical_type(value_type) == ASR::array_physical_typeType::FixedSizeArray));
-                if( LLVM::is_llvm_pointer(*value_type) ) {
+                if (LLVM::is_llvm_pointer(*value_type) &&
+                    !ASR::is_a<ASR::PointerNullConstant_t>(*x.m_value)
+                ) {
                     llvm_value = LLVM::CreateLoad(*builder, llvm_value);
                 }
                 if( is_value_data_only_array ) {

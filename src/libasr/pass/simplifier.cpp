@@ -1290,7 +1290,7 @@ class TransformVariableInitialiser:
         }
 
         ASR::Variable_t& xx = const_cast<ASR::Variable_t&>(x);
-        if( x.m_symbolic_value && x.m_symbolic_value->type != ASR::exprType::PointerNullConstant) {
+        if( x.m_symbolic_value) {
             if( symtab2decls.find(current_scope) == symtab2decls.end() ) {
                 Vec<ASR::stmt_t*> result_vec; result_vec.reserve(al, 1);
                 symtab2decls[current_scope] = result_vec;
@@ -1298,8 +1298,13 @@ class TransformVariableInitialiser:
             Vec<ASR::stmt_t*>& result_vec = symtab2decls[current_scope];
             ASR::expr_t* target = ASRUtils::EXPR(ASR::make_Var_t(al, loc, &(xx.base)));
             exprs_with_target.insert(xx.m_symbolic_value);
-            result_vec.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(
-                al, loc, target, xx.m_symbolic_value, nullptr)));
+            if (ASRUtils::is_pointer(x.m_type)) {
+                result_vec.push_back(al, ASRUtils::STMT(ASR::make_Associate_t(
+                    al, loc, target, xx.m_symbolic_value)));
+            } else {
+                result_vec.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(
+                    al, loc, target, xx.m_symbolic_value, nullptr)));
+            }
             xx.m_symbolic_value = nullptr;
             xx.m_value = nullptr;
         }
@@ -1641,8 +1646,8 @@ class VerifySimplifierASROutput:
             !(check_if_ASR_owner_is_module(x.m_parent_symtab->asr_owner)) &&
             !(check_if_ASR_owner_is_enum(x.m_parent_symtab->asr_owner)) &&
             x.m_storage != ASR::storage_typeType::Parameter ) {
-            LCOMPILERS_ASSERT(x.m_symbolic_value == nullptr || ASR::is_a<ASR::PointerNullConstant_t>(*x.m_symbolic_value));
-            LCOMPILERS_ASSERT(x.m_value == nullptr || ASR::is_a<ASR::PointerNullConstant_t>(*x.m_value));
+            LCOMPILERS_ASSERT(x.m_symbolic_value == nullptr);
+            LCOMPILERS_ASSERT(x.m_value == nullptr);
         }
     }
 
