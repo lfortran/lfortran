@@ -526,49 +526,49 @@ jobs:
             examples/example_primes
             ctest
 
-      # - name: Test Modern Minpack (Fortran-Lang)
-      #   shell: bash -e -x -l {0}
-      #   run: |
-      #       git clone https://github.com/fortran-lang/minpack modern_minpack_01
-      #       cd modern_minpack_01
-      #       git checkout c0b5aea9fcd2b83865af921a7a7e881904f8d3c2
-      #       $(pwd)/../src/bin/lfortran ./src/minpack.f90 -c --legacy-array-sections
-      #       $(pwd)/../src/bin/lfortran ./examples/example_hybrd.f90 --legacy-array-sections
-      #       $(pwd)/../src/bin/lfortran ./examples/example_hybrd1.f90 --legacy-array-sections
-      #       $(pwd)/../src/bin/lfortran ./examples/example_lmdif1.f90 --legacy-array-sections
-      #       $(pwd)/../src/bin/lfortran ./examples/example_lmder1.f90 --legacy-array-sections
+      - name: Test Modern Minpack (Fortran-Lang)
+        shell: bash -e -x -l {0}
+        run: |
+            git clone https://github.com/fortran-lang/minpack modern_minpack_01
+            cd modern_minpack_01
+            git checkout c0b5aea9fcd2b83865af921a7a7e881904f8d3c2
+            $(pwd)/../src/bin/lfortran ./src/minpack.f90 -c --legacy-array-sections
+            $(pwd)/../src/bin/lfortran ./examples/example_hybrd.f90 --legacy-array-sections
+            $(pwd)/../src/bin/lfortran ./examples/example_hybrd1.f90 --legacy-array-sections
+            $(pwd)/../src/bin/lfortran ./examples/example_lmdif1.f90 --legacy-array-sections
+            $(pwd)/../src/bin/lfortran ./examples/example_lmder1.f90 --legacy-array-sections
 
-      # - name: Test Modern Minpack (check results)
-      #   shell: bash -e -x -l {0}
-      #   run: |
-      #       git clone https://github.com/Pranavchiku/modern_minpack.git modern_minpack_02
-      #       cd modern_minpack_02
-      #       git checkout -t origin/w5
-      #       git checkout fcde66ca86348eb0c4012dbdf0f4d8dba61261d8
-      #       $(pwd)/../src/bin/lfortran ./src/minpack.f90 -c --legacy-array-sections
-      #       $(pwd)/../src/bin/lfortran ./examples/example_hybrd.f90 --legacy-array-sections
-      #       $(pwd)/../src/bin/lfortran ./examples/example_hybrd1.f90 --legacy-array-sections
-      #       $(pwd)/../src/bin/lfortran ./examples/example_lmdif1.f90 --legacy-array-sections
-      #       $(pwd)/../src/bin/lfortran ./examples/example_lmder1.f90 --legacy-array-sections
+      - name: Test Modern Minpack (check results)
+        shell: bash -e -x -l {0}
+        run: |
+            git clone https://github.com/Pranavchiku/modern_minpack.git modern_minpack_02
+            cd modern_minpack_02
+            git checkout -t origin/w5
+            git checkout fcde66ca86348eb0c4012dbdf0f4d8dba61261d8
+            $(pwd)/../src/bin/lfortran ./src/minpack.f90 -c --legacy-array-sections
+            $(pwd)/../src/bin/lfortran ./examples/example_hybrd.f90 --legacy-array-sections
+            $(pwd)/../src/bin/lfortran ./examples/example_hybrd1.f90 --legacy-array-sections
+            $(pwd)/../src/bin/lfortran ./examples/example_lmdif1.f90 --legacy-array-sections
+            $(pwd)/../src/bin/lfortran ./examples/example_lmder1.f90 --legacy-array-sections
 
-      #       # $(pwd)/../src/bin/lfortran --fast ./examples/example_hybrd.f90 --legacy-array-sections
-      #       # $(pwd)/../src/bin/lfortran --fast ./examples/example_hybrd1.f90 --legacy-array-sections
-      #       # $(pwd)/../src/bin/lfortran --fast ./examples/example_lmdif1.f90 --legacy-array-sections
-      #       # $(pwd)/../src/bin/lfortran --fast ./examples/example_lmder1.f90 --legacy-array-sections
+            # $(pwd)/../src/bin/lfortran --fast ./examples/example_hybrd.f90 --legacy-array-sections
+            # $(pwd)/../src/bin/lfortran --fast ./examples/example_hybrd1.f90 --legacy-array-sections
+            # $(pwd)/../src/bin/lfortran --fast ./examples/example_lmdif1.f90 --legacy-array-sections
+            # $(pwd)/../src/bin/lfortran --fast ./examples/example_lmder1.f90 --legacy-array-sections
 
-      # - name: Test dftatom
-      #   shell: bash -e -x -l {0}
-      #   run: |
-      #       git clone https://github.com/czgdp1807/dftatom.git
-      #       cd dftatom
-      #       git checkout -t origin/lf40
-      #       git checkout 6e0f6e7506440b042aae93e57b10444ee6c36f7a
-      #       export PATH="$(pwd)/../src/bin:$PATH"
-      #       make -f Makefile.manual
-      #       make -f Makefile.manual test
-      #       git clean -dfx
-      #       make -f Makefile.manual F90="lfortran --skip-pass=inline_function_calls,fma --fast"
-      #       make -f Makefile.manual test
+      - name: Test dftatom
+        shell: bash -e -x -l {0}
+        run: |
+            git clone https://github.com/czgdp1807/dftatom.git
+            cd dftatom
+            git checkout -t origin/lf40
+            git checkout 6e0f6e7506440b042aae93e57b10444ee6c36f7a
+            export PATH="$(pwd)/../src/bin:$PATH"
+            make -f Makefile.manual
+            make -f Makefile.manual test
+            git clean -dfx
+            make -f Makefile.manual F90="lfortran --skip-pass=inline_function_calls,fma --fast"
+            make -f Makefile.manual test
 
       # - name: Test fastGPT
       #   shell: bash -e -x -l {0}
@@ -641,40 +641,40 @@ jobs:
       #       cd ..
 
 
-      # - name: Test fpm
-      #   shell: bash -e -x -l {0}
-      #   run: |
-      #       git clone https://github.com/certik/fpm.git
-      #       cd fpm
-      #       git checkout lfortran_build_1
-      #       git checkout ab02e3a57bc286c6e75b23098c209db8c27157ea
-      #       export PATH="$(pwd)/../src/bin:$PATH"
-      #       ./build.sh
+      - name: Test fpm
+        shell: bash -e -x -l {0}
+        run: |
+            git clone https://github.com/certik/fpm.git
+            cd fpm
+            git checkout lfortran_build_1
+            git checkout ab02e3a57bc286c6e75b23098c209db8c27157ea
+            export PATH="$(pwd)/../src/bin:$PATH"
+            ./build.sh
 
-      # - name: Test stdlib
-      #   shell: bash -e -x -l {0}
-      #   run: |
-      #       git clone https://github.com/czgdp1807/stdlib.git
-      #       cd stdlib
-      #       export PATH="$(pwd)/../src/bin:$PATH"
+      - name: Test stdlib
+        shell: bash -e -x -l {0}
+        run: |
+            git clone https://github.com/czgdp1807/stdlib.git
+            cd stdlib
+            export PATH="$(pwd)/../src/bin:$PATH"
 
-      #       git checkout lf20
-      #       git checkout abb1d33d6ae02d8b62a13be7f9e51f6117c67ba4
-      #       micromamba install -c conda-forge fypp
-      #       ./build_test_lf.sh
-      #       ./build_test_gf.sh
+            git checkout lf20
+            git checkout abb1d33d6ae02d8b62a13be7f9e51f6117c67ba4
+            micromamba install -c conda-forge fypp
+            ./build_test_lf.sh
+            ./build_test_gf.sh
 
-      # - name: Test SNAP
-      #   shell: bash -e -x -l {0}
-      #   run: |
-      #       git clone https://github.com/Pranavchiku/SNAP.git
-      #       cd SNAP
-      #       export PATH="$(pwd)/../src/bin:$PATH"
+      - name: Test SNAP
+        shell: bash -e -x -l {0}
+        run: |
+            git clone https://github.com/Pranavchiku/SNAP.git
+            cd SNAP
+            export PATH="$(pwd)/../src/bin:$PATH"
 
-      #       git checkout lf4
-      #       git checkout a03041b74bf103a0394f0cb77d449e608e94d731
-      #       cd ./src
-      #       make
+            git checkout lf4
+            git checkout a03041b74bf103a0394f0cb77d449e608e94d731
+            cd ./src
+            make
 
   # test_llvm:
   #   name: Test LLVM ${{ matrix.llvm-version }}
