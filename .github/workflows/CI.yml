@@ -508,23 +508,23 @@ jobs:
             export CFLAGS="-Werror"
             xonsh ci/build_tmp.xsh
 
-      # - name: Test Legacy Minpack (SciPy)
-      #   shell: bash -e -x -l {0}
-      #   run: |
-      #       git clone https://github.com/certik/minpack.git
-      #       cd minpack
-      #       git checkout -t origin/scipy30
-      #       git checkout 409ba02a107f47ee835f3976952bbc64dd46de8a
-      #       mkdir lf
-      #       cd lf
-      #       FC="$(pwd)/../../src/bin/lfortran --intrinsic-mangling" cmake ..
-      #       make
-      #       examples/example_hybrd
-      #       examples/example_hybrd1
-      #       examples/example_lmder1
-      #       examples/example_lmdif1
-      #       examples/example_primes
-      #       ctest
+      - name: Test Legacy Minpack (SciPy)
+        shell: bash -e -x -l {0}
+        run: |
+            git clone https://github.com/certik/minpack.git
+            cd minpack
+            git checkout -t origin/scipy30
+            git checkout 409ba02a107f47ee835f3976952bbc64dd46de8a
+            mkdir lf
+            cd lf
+            FC="$(pwd)/../../src/bin/lfortran --intrinsic-mangling" cmake ..
+            make
+            examples/example_hybrd
+            examples/example_hybrd1
+            examples/example_lmder1
+            examples/example_lmdif1
+            examples/example_primes
+            ctest
 
       # - name: Test Modern Minpack (Fortran-Lang)
       #   shell: bash -e -x -l {0}
