@@ -661,7 +661,7 @@ jobs:
 
             git checkout lf20
             git checkout abb1d33d6ae02d8b62a13be7f9e51f6117c67ba4
-            micromamba install -c conda-forge fypp
+            micromamba install -c conda-forge fypp gfortran
             ./build_test_lf.sh
             ./build_test_gf.sh
 
