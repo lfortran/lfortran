@@ -492,6 +492,7 @@ RUN(NAME arrays_49 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME arrays_50 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRAFILES arrays_50_mod.f90)
 RUN(NAME global_allocatable_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME global_allocatable_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME global_array_pointer_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME global_array_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 # GFortran
