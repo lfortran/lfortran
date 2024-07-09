@@ -662,7 +662,11 @@ jobs:
             git checkout lf20
             git checkout abb1d33d6ae02d8b62a13be7f9e51f6117c67ba4
             micromamba install -c conda-forge fypp gfortran
-            ./build_test_lf.sh
+            # ./build_test_lf.sh
+            git clean -fdx
+            FC=lfortran cmake . -DTEST_DRIVE_BUILD_TESTING=OFF -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE
+            make -j8
+            ctest
             ./build_test_gf.sh
 
       - name: Test SNAP
