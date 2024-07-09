@@ -9,7 +9,6 @@
 #include <float.h>
 #include <limits.h>
 #include <ctype.h>
-#include <unistd.h> 
 
 #define PI 3.14159265358979323846
 #if defined(_WIN32)
