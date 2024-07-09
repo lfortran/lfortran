@@ -666,7 +666,7 @@ jobs:
             git checkout abb1d33d6ae02d8b62a13be7f9e51f6117c67ba4
             micromamba install -c conda-forge fypp gfortran
             git clean -fdx
-            FC=lfortran cmake . -DTEST_DRIVE_BUILD_TESTING=OFF -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE -DCMAKE_C_FLAGS="" -DCMAKE_CXX_FLAGS="" -DCMAKE_Fortran_FLAGS=""
+            FC=lfortran cmake . -DTEST_DRIVE_BUILD_TESTING=OFF -DBUILD_EXAMPLE=ON
             make -j8
             ctest
             ./build_test_gf.sh
