@@ -9969,7 +9969,7 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
     pass_manager.apply_passes(al, &asr, co.po, diagnostics);
 
     // Uncomment for debugging the ASR after the transformation
-    // std::cout << LCompilers::pickle(asr, true, false, false) << std::endl;
+    std::cout << LCompilers::pickle(asr, false, false, false) << std::endl;
 
     try {
         v.visit_asr((ASR::asr_t&)asr);
