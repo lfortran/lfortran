@@ -487,7 +487,7 @@ jobs:
             bison=3.4
             openblas=0.3.21
             llvm-openmp=14.0.4
-            cmake
+            cmake=3.26.4
 
       - uses: hendrikmuhs/ccache-action@main
         with:
@@ -655,7 +655,7 @@ jobs:
             git checkout abb1d33d6ae02d8b62a13be7f9e51f6117c67ba4
             micromamba install -c conda-forge fypp gfortran
             git clean -fdx
-            FC=lfortran cmake . -DTEST_DRIVE_BUILD_TESTING=OFF -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE
+            FC=lfortran cmake . -DTEST_DRIVE_BUILD_TESTING=OFF -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE -DCMAKE_Fortran_FLAGS="--cpp --realloc-lhs"
             make -j8
             ctest
             ./build_test_gf.sh
