@@ -664,7 +664,7 @@ jobs:
             micromamba install -c conda-forge fypp gfortran
             # ./build_test_lf.sh
             git clean -fdx
-            FC=lfortran cmake . -DTEST_DRIVE_BUILD_TESTING=OFF -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE
+            FC=lfortran cmake . -DTEST_DRIVE_BUILD_TESTING=OFF -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE -DCMAKE_C_FLAGS="" -DCMAKE_CXX_FLAGS="" -DCMAKE_Fortran_FLAGS=""
             make -j8
             ctest
             ./build_test_gf.sh
