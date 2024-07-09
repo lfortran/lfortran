@@ -422,8 +422,15 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             }
             ASR::ttype_t* var_i_type = ASRUtils::type_get_past_array_pointer_allocatable(
                 ASRUtils::expr_type(*vars[i]));
-            *vars[i] = ASRUtils::EXPR(ASR::make_ArrayItem_t(al, loc, *vars[i], indices.p,
-                indices.size(), var_i_type, ASR::arraystorageType::ColMajor, nullptr));
+            if (ASR::is_a<ASR::ArraySection_t>(**vars[i])) {
+                ASR::ArraySection_t* arr_ref = ASR::down_cast<ASR::ArraySection_t>(*vars[i]);
+                ASR::expr_t* arr_expr = arr_ref->m_v;
+                *vars[i] = ASRUtils::EXPR(ASR::make_ArrayItem_t(al, loc, arr_expr, indices.p,
+                    indices.size(), var_i_type, ASR::arraystorageType::ColMajor, nullptr));
+            } else {
+                *vars[i] = ASRUtils::EXPR(ASR::make_ArrayItem_t(al, loc, *vars[i], indices.p,
+                    indices.size(), var_i_type, ASR::arraystorageType::ColMajor, nullptr));
+            }
         }
 
         RemoveArrayProcessingNodeVisitor array_broadcast_visitor(al);
@@ -447,10 +454,19 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         ASR::do_loop_head_t do_loop_head;
         do_loop_head.loc = loc;
         do_loop_head.m_v = at(var2indices[var_with_maxrank], -1);
-        do_loop_head.m_start = PassUtils::get_bound(vars_expr[var_with_maxrank],
-            var_ranks[var_with_maxrank], "lbound", al);
-        do_loop_head.m_end = PassUtils::get_bound(vars_expr[var_with_maxrank],
-            var_ranks[var_with_maxrank], "ubound", al);
+        if (ASR::is_a<ASR::ArraySection_t>(*vars_expr[var_with_maxrank])) {
+            ASR::ArraySection_t* arr_ref = ASR::down_cast<ASR::ArraySection_t>(vars_expr[var_with_maxrank]);
+            ASR::expr_t* arr_expr = arr_ref->m_v;
+            do_loop_head.m_start = PassUtils::get_bound(arr_expr,
+                var_ranks[var_with_maxrank], "lbound", al);
+            do_loop_head.m_end = PassUtils::get_bound(arr_expr,
+                var_ranks[var_with_maxrank], "ubound", al);
+        } else {
+            do_loop_head.m_start = PassUtils::get_bound(vars_expr[var_with_maxrank],
+                var_ranks[var_with_maxrank], "lbound", al);
+            do_loop_head.m_end = PassUtils::get_bound(vars_expr[var_with_maxrank],
+                var_ranks[var_with_maxrank], "ubound", al);
+        }
         do_loop_head.m_increment = nullptr;
         Vec<ASR::stmt_t*> parent_do_loop_body; parent_do_loop_body.reserve(al, 1);
         Vec<ASR::stmt_t*> do_loop_body; do_loop_body.reserve(al, 1);
