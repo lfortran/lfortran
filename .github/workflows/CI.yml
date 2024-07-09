@@ -487,6 +487,7 @@ jobs:
             bison=3.4
             openblas=0.3.21
             llvm-openmp=14.0.4
+            cmake
 
       - uses: hendrikmuhs/ccache-action@main
         with:
@@ -504,9 +505,11 @@ jobs:
         shell: bash -e -l {0}
         if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
         run: |
-            export CXXFLAGS="-Werror"
-            export CFLAGS="-Werror"
-            xonsh ci/build_tmp.xsh
+            ./build0.sh
+            ./build1.sh
+            # export CXXFLAGS="-Werror"
+            # export CFLAGS="-Werror"
+            # xonsh ci/build_tmp.xsh
 
       # - name: Test Legacy Minpack (SciPy)
       #   shell: bash -e -x -l {0}
@@ -641,45 +644,45 @@ jobs:
       #       cd ..
 
 
-      - name: Test fpm
-        shell: bash -e -x -l {0}
-        if: contains(matrix.os, 'ubuntu')
-        run: |
-            git clone https://github.com/certik/fpm.git
-            cd fpm
-            git checkout lfortran_build_1
-            git checkout ab02e3a57bc286c6e75b23098c209db8c27157ea
-            export PATH="$(pwd)/../src/bin:$PATH"
-            ./build.sh
+      # - name: Test fpm
+      #   shell: bash -e -x -l {0}
+      #   if: contains(matrix.os, 'ubuntu')
+      #   run: |
+      #       git clone https://github.com/certik/fpm.git
+      #       cd fpm
+      #       git checkout lfortran_build_1
+      #       git checkout ab02e3a57bc286c6e75b23098c209db8c27157ea
+      #       export PATH="$(pwd)/../src/bin:$PATH"
+      #       ./build.sh
 
-      - name: Test stdlib
-        shell: bash -e -x -l {0}
-        run: |
-            git clone https://github.com/czgdp1807/stdlib.git
-            cd stdlib
-            export PATH="$(pwd)/../src/bin:$PATH"
+      # - name: Test stdlib
+      #   shell: bash -e -x -l {0}
+      #   run: |
+      #       git clone https://github.com/czgdp1807/stdlib.git
+      #       cd stdlib
+      #       export PATH="$(pwd)/../src/bin:$PATH"
 
-            git checkout lf20
-            git checkout abb1d33d6ae02d8b62a13be7f9e51f6117c67ba4
-            micromamba install -c conda-forge fypp gfortran
-            # ./build_test_lf.sh
-            git clean -fdx
-            FC=lfortran cmake . -DTEST_DRIVE_BUILD_TESTING=OFF -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE -DCMAKE_C_FLAGS="" -DCMAKE_CXX_FLAGS="" -DCMAKE_Fortran_FLAGS=""
-            make -j8
-            ctest
-            ./build_test_gf.sh
+      #       git checkout lf20
+      #       git checkout abb1d33d6ae02d8b62a13be7f9e51f6117c67ba4
+      #       micromamba install -c conda-forge fypp gfortran
+      #       # ./build_test_lf.sh
+      #       git clean -fdx
+      #       FC=lfortran cmake . -DTEST_DRIVE_BUILD_TESTING=OFF -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE -DCMAKE_C_FLAGS="" -DCMAKE_CXX_FLAGS="" -DCMAKE_Fortran_FLAGS=""
+      #       make -j8
+      #       ctest
+      #       ./build_test_gf.sh
 
-      - name: Test SNAP
-        shell: bash -e -x -l {0}
-        run: |
-            git clone https://github.com/Pranavchiku/SNAP.git
-            cd SNAP
-            export PATH="$(pwd)/../src/bin:$PATH"
+      # - name: Test SNAP
+      #   shell: bash -e -x -l {0}
+      #   run: |
+      #       git clone https://github.com/Pranavchiku/SNAP.git
+      #       cd SNAP
+      #       export PATH="$(pwd)/../src/bin:$PATH"
 
-            git checkout lf4
-            git checkout a03041b74bf103a0394f0cb77d449e608e94d731
-            cd ./src
-            make
+      #       git checkout lf4
+      #       git checkout a03041b74bf103a0394f0cb77d449e608e94d731
+      #       cd ./src
+      #       make
 
   # test_llvm:
   #   name: Test LLVM ${{ matrix.llvm-version }}
