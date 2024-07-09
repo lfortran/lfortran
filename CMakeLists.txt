@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
 
+
 set(CMAKE_USER_MAKE_RULES_OVERRIDE ${CMAKE_SOURCE_DIR}/cmake/UserOverride.cmake)
 
 # We don't execute this if we have a tarball
@@ -228,6 +229,12 @@ if (WITH_XEUS)
         "${CMAKE_CURRENT_BINARY_DIR}/share/jupyter/kernels/fortran/kernel.json"
     )
 
+    # Generate logo-svg.svg with correct paths
+    configure_file (
+        "${CMAKE_CURRENT_SOURCE_DIR}/doc/src/_static/img/lfortran-logo.svg"
+        "${CMAKE_CURRENT_BINARY_DIR}/share/jupyter/kernels/fortran/logo-svg.svg"
+    )
+
     # Configuration and data directories for Jupyter and LFortran
     set(XJUPYTER_DATA_DIR "share/jupyter" CACHE STRING "Jupyter data directory")
 
@@ -236,12 +243,6 @@ if (WITH_XEUS)
     install(DIRECTORY ${XEUS_CALCSPEC_DIR}
             DESTINATION ${XJUPYTER_DATA_DIR}
             PATTERN "*.in" EXCLUDE)
-
-    # Install lfortran logo file
-    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/doc/src/_static/img/lfortran-logo.svg
-            DESTINATION ${XJUPYTER_DATA_DIR}/kernels/fortran
-            RENAME logo-svg.svg)
-
 endif()
 
 # JSON
