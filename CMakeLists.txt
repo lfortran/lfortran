@@ -1,7 +1,5 @@
 cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
 
-add_definitions(-D__STDC_FORMAT_MACROS)
-
 set(CMAKE_USER_MAKE_RULES_OVERRIDE ${CMAKE_SOURCE_DIR}/cmake/UserOverride.cmake)
 
 # We don't execute this if we have a tarball
