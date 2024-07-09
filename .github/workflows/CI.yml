@@ -14,7 +14,7 @@ env:
   MACOSX_DEPLOYMENT_TARGET: 14.0
 
 jobs:
-  Build:
+  # Build:
   #   name: LFortran CI (${{ matrix.python-version }}, ${{ matrix.os }})
   #   runs-on: ${{ matrix.os }}
   #   strategy:
