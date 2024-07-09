@@ -2201,17 +2201,13 @@ LFORTRAN_API double _lfortran_dp_rand_num() {
 }
 
 
-LFORTRAN_API int _lfortran_random_init(bool repeatable, bool image_distinct) {
+LFORTRAN_API bool _lfortran_random_init(bool repeatable, bool image_distinct) {
     if (repeatable) {
-        if (image_distinct) {
-            srand(time(NULL) + getpid());
-        } else {
-            srand(42);
-        }
+            srand(0);
     } else {
         srand(time(NULL));
     }
-    return 0;
+    return false;
 }
 
 LFORTRAN_API int64_t _lpython_open(char *path, char *flags)
