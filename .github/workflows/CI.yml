@@ -499,9 +499,6 @@ jobs:
         run: |
             ./build0.sh
             ./build1.sh
-            # export CXXFLAGS="-Werror"
-            # export CFLAGS="-Werror"
-            # xonsh ci/build_tmp.xsh
 
       # - name: Test Legacy Minpack (SciPy)
       #   shell: bash -e -x -l {0}
@@ -658,7 +655,7 @@ jobs:
             git checkout abb1d33d6ae02d8b62a13be7f9e51f6117c67ba4
             micromamba install -c conda-forge fypp gfortran
             git clean -fdx
-            FC=lfortran cmake . -DTEST_DRIVE_BUILD_TESTING=OFF -DBUILD_EXAMPLE=ON
+            FC=lfortran cmake . -DTEST_DRIVE_BUILD_TESTING=OFF -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE
             make -j8
             ctest
             ./build_test_gf.sh
