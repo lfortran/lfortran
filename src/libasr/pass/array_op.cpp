@@ -167,7 +167,9 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
             }
 
             if( !ASRUtils::is_fixed_size_array(x->m_type) ) {
-                LCOMPILERS_ASSERT(false);
+                PassUtils::ReplacerUtils::replace_ArrayConstructor(
+                    al, x, result_expr, &pass_result, current_scope);
+                return ;
             }
         }
 

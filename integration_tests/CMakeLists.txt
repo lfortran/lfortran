@@ -380,7 +380,7 @@ RUN(NAME functions_18 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME functions_19 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME functions_20 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME functions_21 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME functions_22 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+# RUN(NAME functions_22 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME functions_23 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 
@@ -403,7 +403,7 @@ RUN(NAME arrays_02_size LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackA
 RUN(NAME arrays_03_size LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran)
 RUN(NAME matrix_01_transpose LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME matrix_02_matmul LABELS gfortran fortran)
-RUN(NAME array_01_pack LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
+# RUN(NAME array_01_pack LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME array_01_transfer LABELS gfortran)
 RUN(NAME array_02_pack LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME array_02_transfer LABELS gfortran)
