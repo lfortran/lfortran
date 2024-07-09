@@ -4,8 +4,8 @@ Simple wrapper around lfortran that tries hard to match gfortran interface
 """
 
 import argparse
-import os
 import logging
+import subprocess
 
 logger = logging.getLogger(__name__)
 
@@ -116,9 +116,7 @@ def build_lfortran_command(args):
 
     lfortran_args.extend(args.infile)
 
-    lfortran_path = os.path.join(os.path.dirname(__file__), "lfortran")
-
-    return lfortran_path, lfortran_args
+    return lfortran_args
 
 
 ##############################################################################
@@ -128,6 +126,6 @@ if __name__ == "__main__":
     args, unknowns = parser.parse_known_args()
     for unknown in unknowns:
         logger.warning("Ignoring unknown argument " + unknown)
-    lfortran_path, lfortran_args = build_lfortran_command(args)
+    lfortran_args = build_lfortran_command(args)
     # Invoke lfortran
-    os.execl(lfortran_path, lfortran_path, *lfortran_args)
+    subprocess.call(["lfortran"] + lfortran_args)
