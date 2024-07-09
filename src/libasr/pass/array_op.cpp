@@ -149,6 +149,9 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
 
     bool are_all_elements_scalars(ASR::expr_t** args, size_t n) {
         for( size_t i = 0; i < n; i++ ) {
+            if (ASR::is_a<ASR::ImpliedDoLoop_t>(*args[i])) {
+                return false;
+            }
             if( ASRUtils::is_array(ASRUtils::expr_type(args[i])) ) {
                 return false;
             }
