@@ -230,7 +230,7 @@ if (WITH_XEUS)
 
     # Generate logo-svg.svg with correct paths
     configure_file (
-        "${CMAKE_CURRENT_SOURCE_DIR}/doc/src/_static/img/lfortran-logo.svg"
+        "${CMAKE_CURRENT_SOURCE_DIR}/share/jupyter/kernels/fortran/lfortran-logo.svg"
         "${CMAKE_CURRENT_BINARY_DIR}/share/jupyter/kernels/fortran/logo-svg.svg"
     )
 
