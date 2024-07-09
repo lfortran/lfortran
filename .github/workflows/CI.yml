@@ -466,7 +466,7 @@ jobs:
             test -f inst/man/O/man/man1/lfortran.1
 
   third_party_code_compile:
-    name: LFortran CI (${{ matrix.python-version }}, ${{ matrix.os }})
+    name: Check Third Party Code Compilation
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
