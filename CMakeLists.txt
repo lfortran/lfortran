@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
 
+add_definitions(-D__STDC_FORMAT_MACROS)
+
 set(CMAKE_USER_MAKE_RULES_OVERRIDE ${CMAKE_SOURCE_DIR}/cmake/UserOverride.cmake)
 
 # We don't execute this if we have a tarball
@@ -239,7 +241,7 @@ if (WITH_XEUS)
 
     # Install lfortran logo file
     install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/doc/src/_static/img/lfortran-logo.svg
-            DESTINATION ${XJUPYTER_DATA_DIR}
+            DESTINATION ${XJUPYTER_DATA_DIR}/kernels/fortran
             RENAME logo-svg.svg)
 
 endif()
