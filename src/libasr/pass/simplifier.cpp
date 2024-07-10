@@ -489,6 +489,16 @@ bool set_allocation_size(Allocator& al, ASR::expr_t* value, Vec<ASR::dimension_t
             allocate_dims.push_back(al, allocate_dim);
             break;
         }
+        case ASR::exprType::ArrayConstant: {
+            allocate_dims.reserve(al, 1);
+            ASR::dimension_t allocate_dim;
+            allocate_dim.loc = loc;
+            allocate_dim.m_start = int32_one;
+            allocate_dim.m_length = get_ArrayConstant_size(al,
+                ASR::down_cast<ASR::ArrayConstant_t>(value));
+            allocate_dims.push_back(al, allocate_dim);
+            break;
+        }
         default: {
             LCOMPILERS_ASSERT_MSG(false, "ASR::exprType::" + std::to_string(value->type)
                 + " not handled yet in set_allocation_size");
