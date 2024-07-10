@@ -8,6 +8,8 @@
 #include <libasr/pass/intrinsic_function_registry.h>
 #include <libasr/pass/intrinsic_array_function_registry.h>
 
+#include <libasr/asr_builder.h>
+
 #include <vector>
 #include <utility>
 
@@ -292,6 +294,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
     Allocator& al;
     ReplaceArrayOp replacer;
     Vec<ASR::stmt_t*> pass_result;
+    bool realloc_lhs;
 
     public:
 
@@ -301,7 +304,8 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         replacer.replace_expr(*current_expr);
     }
 
-    ArrayOpVisitor(Allocator& al_): al(al_), replacer(al, pass_result) {
+    ArrayOpVisitor(Allocator& al_, bool realloc_lhs_):
+        al(al_), replacer(al, pass_result), realloc_lhs(realloc_lhs_) {
         pass_result.n = 0;
         pass_result.reserve(al, 0);
     }
@@ -490,6 +494,51 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         }
     }
 
+    void insert_realloc_for_target(ASR::expr_t* target, Vec<ASR::expr_t**>& vars) {
+        ASR::ttype_t* target_type = ASRUtils::expr_type(target);
+        if( realloc_lhs == false || !ASRUtils::is_allocatable(target_type) || vars.size() == 1 ) {
+            return ;
+        }
+
+        // First element in vars is target itself
+        ASR::expr_t* realloc_var = nullptr;
+        size_t target_rank = ASRUtils::extract_n_dims_from_ttype(target_type);
+        for( size_t i = 1; i < vars.size(); i++ ) {
+            size_t var_rank = ASRUtils::extract_n_dims_from_ttype(
+                ASRUtils::expr_type(*vars[i]));
+            if( target_rank == var_rank ) {
+                realloc_var = *vars[i];
+                break ;
+            }
+        }
+
+        Location loc; loc.first = 1, loc.last = 1;
+        ASRUtils::ASRBuilder builder(al, loc);
+        Vec<ASR::dimension_t> realloc_dims;
+        realloc_dims.reserve(al, target_rank);
+        for( size_t i = 0; i < target_rank; i++ ) {
+            ASR::dimension_t realloc_dim;
+            realloc_dim.loc = loc;
+            realloc_dim.m_start = builder.i32(1);
+            realloc_dim.m_length = ASRUtils::EXPR(ASR::make_ArraySize_t(
+                al, loc, realloc_var, builder.i32(i + 1), int32, nullptr));
+            realloc_dims.push_back(al, realloc_dim);
+        }
+
+        Vec<ASR::alloc_arg_t> alloc_args; alloc_args.reserve(al, 1);
+        ASR::alloc_arg_t alloc_arg;
+        alloc_arg.loc = loc;
+        alloc_arg.m_a = target;
+        alloc_arg.m_dims = realloc_dims.p;
+        alloc_arg.n_dims = realloc_dims.size();
+        alloc_arg.m_len_expr = nullptr;
+        alloc_arg.m_type = nullptr;
+        alloc_args.push_back(al, alloc_arg);
+
+        pass_result.push_back(al, ASRUtils::STMT(ASR::make_ReAlloc_t(
+            al, loc, alloc_args.p, alloc_args.size())));
+    }
+
     void visit_Assignment(const ASR::Assignment_t& x) {
         const std::vector<ASR::exprType>& skip_exprs = {
             ASR::exprType::IntrinsicArrayFunction,
@@ -514,12 +563,17 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         }
 
         Vec<ASR::expr_t**> vars;
-        Vec<ASR::expr_t*> vars_expr;
-        vars.reserve(al, 1); vars_expr.reserve(al, 1);
+        vars.reserve(al, 1);
         vars.push_back(al, const_cast<ASR::expr_t**>(&(x.m_target)));
         ArrayVarAddressCollector var_collector(al, vars);
         var_collector.current_expr = const_cast<ASR::expr_t**>(&(x.m_value));
         var_collector.call_replacer();
+
+        if( vars.size() == 1 ) {
+            return ;
+        }
+
+        insert_realloc_for_target(x.m_target, vars);
 
         Vec<ASR::expr_t**> fix_type_args;
         fix_type_args.reserve(al, 1);
@@ -552,8 +606,8 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
 };
 
 void pass_replace_array_op(Allocator &al, ASR::TranslationUnit_t &unit,
-                           const LCompilers::PassOptions& /*pass_options*/) {
-    ArrayOpVisitor v(al);
+                           const LCompilers::PassOptions& pass_options) {
+    ArrayOpVisitor v(al, pass_options.realloc_lhs);
     v.call_replacer_on_value = false;
     v.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor u(al);
