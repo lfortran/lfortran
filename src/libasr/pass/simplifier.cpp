@@ -12,6 +12,13 @@
 
 namespace LCompilers {
 
+enum targetType {
+    GeneratedTarget,
+    OriginalTarget
+};
+
+typedef std::map<ASR::expr_t*, std::pair<ASR::expr_t*, targetType>> ExprsWithTargetType;
+
 const std::vector<ASR::exprType>& exprs_with_no_type = {
     ASR::exprType::IntegerBOZ,
 };
@@ -564,12 +571,12 @@ void insert_allocate_stmt_for_struct(Allocator& al, ASR::expr_t* temporary_var,
 ASR::expr_t* create_and_allocate_temporary_variable_for_array(
     ASR::expr_t* array_expr, const std::string& name_hint, Allocator& al,
     Vec<ASR::stmt_t*>*& current_body, SymbolTable* current_scope,
-    std::map<ASR::expr_t*, ASR::expr_t*>& exprs_with_target, bool is_pointer_required=false) {
+    ExprsWithTargetType& exprs_with_target, bool is_pointer_required=false) {
     const Location& loc = array_expr->base.loc;
     ASR::expr_t* array_var_temporary = create_temporary_variable_for_array(
         al, array_expr, current_scope, name_hint, is_pointer_required);
     if( ASRUtils::is_pointer(ASRUtils::expr_type(array_var_temporary)) ) {
-        exprs_with_target[array_expr] = array_var_temporary;
+        exprs_with_target[array_expr] = std::make_pair(array_var_temporary, targetType::GeneratedTarget);
         current_body->push_back(al, ASRUtils::STMT(ASR::make_Associate_t(
             al, loc, array_var_temporary, array_expr)));
     } else {
@@ -587,10 +594,10 @@ ASR::expr_t* create_and_allocate_temporary_variable_for_array(
                 "_array_section_pointer_", tmp_type);
             current_body->push_back(al, ASRUtils::STMT(ASR::make_Associate_t(
                 al, loc, array_expr_ptr, array_expr)));
-            exprs_with_target[array_expr] = array_expr_ptr;
+            exprs_with_target[array_expr] = std::make_pair(array_expr_ptr, targetType::GeneratedTarget);
             array_expr = array_expr_ptr;
         }
-        exprs_with_target[array_expr] = array_var_temporary;
+        exprs_with_target[array_expr] = std::make_pair(array_var_temporary, targetType::GeneratedTarget);
         current_body->push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(
             al, loc, array_var_temporary, array_expr, nullptr)));
     }
@@ -600,18 +607,18 @@ ASR::expr_t* create_and_allocate_temporary_variable_for_array(
 ASR::expr_t* create_and_allocate_temporary_variable_for_struct(
     ASR::expr_t* struct_expr, const std::string& name_hint, Allocator& al,
     Vec<ASR::stmt_t*>*& current_body, SymbolTable* current_scope,
-    std::map<ASR::expr_t*, ASR::expr_t*>& exprs_with_target) {
+    ExprsWithTargetType& exprs_with_target) {
     const Location& loc = struct_expr->base.loc;
     ASR::expr_t* struct_var_temporary = create_temporary_variable_for_struct(
         al, struct_expr, current_scope, name_hint);
     if( ASRUtils::is_pointer(ASRUtils::expr_type(struct_var_temporary)) ) {
-        exprs_with_target[struct_expr] = struct_var_temporary;
+        exprs_with_target[struct_expr] = std::make_pair(struct_var_temporary, targetType::GeneratedTarget);
         current_body->push_back(al, ASRUtils::STMT(ASR::make_Associate_t(
             al, loc, struct_var_temporary, struct_expr)));
     } else {
         insert_allocate_stmt_for_struct(al, struct_var_temporary, struct_expr, current_body);
         struct_expr = ASRUtils::get_past_array_physical_cast(struct_expr);
-        exprs_with_target[struct_expr] = struct_var_temporary;
+        exprs_with_target[struct_expr] = std::make_pair(struct_var_temporary, targetType::GeneratedTarget);
         current_body->push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(
             al, loc, struct_var_temporary, struct_expr, nullptr)));
     }
@@ -625,11 +632,11 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
 
     Allocator& al;
     Vec<ASR::stmt_t*>* current_body;
-    std::map<ASR::expr_t*, ASR::expr_t*>& exprs_with_target;
+    ExprsWithTargetType& exprs_with_target;
 
     public:
 
-    ArgSimplifier(Allocator& al_, std::map<ASR::expr_t*, ASR::expr_t*>& exprs_with_target_) :
+    ArgSimplifier(Allocator& al_, ExprsWithTargetType& exprs_with_target_) :
         al(al_), current_body(nullptr), exprs_with_target(exprs_with_target_) {}
 
     void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
@@ -902,7 +909,8 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     private:
 
     Allocator& al;
-    std::map<ASR::expr_t*, ASR::expr_t*>& exprs_with_target;
+    ExprsWithTargetType& exprs_with_target;
+    bool realloc_lhs;
 
     public:
 
@@ -910,13 +918,20 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     SymbolTable* current_scope;
     bool is_assignment_target_array_section;
 
-    ReplaceExprWithTemporary(Allocator& al_, std::map<ASR::expr_t*, ASR::expr_t*>& exprs_with_target_) :
-        al(al_), exprs_with_target(exprs_with_target_), current_scope(nullptr),
+    ReplaceExprWithTemporary(Allocator& al_, ExprsWithTargetType& exprs_with_target_, bool realloc_lhs_) :
+        al(al_), exprs_with_target(exprs_with_target_), realloc_lhs(realloc_lhs_), current_scope(nullptr),
         is_assignment_target_array_section(false) {}
 
     #define is_current_expr_linked_to_target exprs_with_target.find(*current_expr) != exprs_with_target.end()
 
     #define is_current_expr_linked_to_target_then_return if( is_current_expr_linked_to_target ) { \
+            std::pair<ASR::expr_t*, targetType>& target_info = exprs_with_target[*current_expr]; \
+            ASR::expr_t* target = target_info.first; targetType target_Type = target_info.second; \
+            if( ASRUtils::is_allocatable(ASRUtils::expr_type(target)) && \
+                target_Type == targetType::OriginalTarget && \
+                realloc_lhs ) { \
+                insert_allocate_stmt_for_array(al, target, *current_expr, current_body); \
+            } \
             return ; \
         }
 
@@ -939,9 +954,11 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         }
 
         if( is_current_expr_linked_to_target && ASRUtils::is_array(x->m_type) ) {
-            ASR::expr_t* target = exprs_with_target[*current_expr];
-            if( ASRUtils::is_allocatable(ASRUtils::expr_type(target)) ||
-                ASRUtils::is_pointer(ASRUtils::expr_type(target)) ) {
+            ASR::expr_t* target = exprs_with_target[*current_expr].first;
+            targetType target_Type = exprs_with_target[*current_expr].second;
+            if( (ASRUtils::is_allocatable(ASRUtils::expr_type(target)) ||
+                 ASRUtils::is_pointer(ASRUtils::expr_type(target))) &&
+                 target_Type == targetType::OriginalTarget) {
                 force_replace_current_expr(std::string("_function_call_") +
                                            ASRUtils::symbol_name(x->m_name))
                 return ;
@@ -1138,14 +1155,14 @@ class ReplaceExprWithTemporaryVisitor:
     private:
 
     Allocator& al;
-    std::map<ASR::expr_t*, ASR::expr_t*>& exprs_with_target;
+    ExprsWithTargetType& exprs_with_target;
     Vec<ASR::stmt_t*>* current_body;
     ReplaceExprWithTemporary replacer;
 
     public:
 
-    ReplaceExprWithTemporaryVisitor(Allocator& al_, std::map<ASR::expr_t*, ASR::expr_t*>& exprs_with_target_):
-        al(al_), exprs_with_target(exprs_with_target_), replacer(al, exprs_with_target) {
+    ReplaceExprWithTemporaryVisitor(Allocator& al_, ExprsWithTargetType& exprs_with_target_, bool realloc_lhs_):
+        al(al_), exprs_with_target(exprs_with_target_), replacer(al, exprs_with_target, realloc_lhs_) {
         replacer.call_replacer_on_value = false;
         call_replacer_on_value = false;
     }
@@ -1269,13 +1286,13 @@ class TransformVariableInitialiser:
     private:
 
     Allocator& al;
-    std::map<ASR::expr_t*, ASR::expr_t*>& exprs_with_target;
+    ExprsWithTargetType& exprs_with_target;
     std::map<SymbolTable*, Vec<ASR::stmt_t*>> symtab2decls;
     ReplaceModuleVarWithValue replacer;
 
     public:
 
-    TransformVariableInitialiser(Allocator& al_, std::map<ASR::expr_t*, ASR::expr_t*>& exprs_with_target_): al(al_),
+    TransformVariableInitialiser(Allocator& al_, ExprsWithTargetType& exprs_with_target_): al(al_),
         exprs_with_target(exprs_with_target_), replacer(al_) {}
 
     void call_replacer() {
@@ -1304,7 +1321,7 @@ class TransformVariableInitialiser:
             }
             Vec<ASR::stmt_t*>& result_vec = symtab2decls[current_scope];
             ASR::expr_t* target = ASRUtils::EXPR(ASR::make_Var_t(al, loc, &(xx.base)));
-            exprs_with_target[xx.m_symbolic_value] = target;
+            exprs_with_target[xx.m_symbolic_value] = std::make_pair(target, targetType::OriginalTarget);
             if (ASRUtils::is_pointer(x.m_type)) {
                 result_vec.push_back(al, ASRUtils::STMT(ASR::make_Associate_t(
                     al, loc, target, xx.m_symbolic_value)));
@@ -1385,11 +1402,11 @@ class VerifySimplifierASROutput:
     private:
 
     Allocator& al;
-    std::map<ASR::expr_t*, ASR::expr_t*>& exprs_with_target;
+    ExprsWithTargetType& exprs_with_target;
 
     public:
 
-    VerifySimplifierASROutput(Allocator& al_, std::map<ASR::expr_t*, ASR::expr_t*>& exprs_with_target_) :
+    VerifySimplifierASROutput(Allocator& al_, ExprsWithTargetType& exprs_with_target_) :
         al(al_), exprs_with_target(exprs_with_target_) {
         visit_compile_time_value = false;
     }
@@ -1671,32 +1688,32 @@ class VerifySimplifierASROutput:
 class InitialiseExprWithTarget: public ASR::BaseWalkVisitor<InitialiseExprWithTarget> {
     private:
 
-    std::map<ASR::expr_t*, ASR::expr_t*>& exprs_with_target;
+    ExprsWithTargetType& exprs_with_target;
 
     public:
 
-    InitialiseExprWithTarget(std::map<ASR::expr_t*, ASR::expr_t*>& exprs_with_target_):
+    InitialiseExprWithTarget(ExprsWithTargetType& exprs_with_target_):
         exprs_with_target(exprs_with_target_) {}
 
     void visit_Assignment(const ASR::Assignment_t& x) {
-        exprs_with_target[x.m_value] = const_cast<ASR::expr_t*>(x.m_target);
+        exprs_with_target[x.m_value] = std::make_pair(const_cast<ASR::expr_t*>(x.m_target), targetType::OriginalTarget);
     }
 
 };
 
 void pass_simplifier(Allocator &al, ASR::TranslationUnit_t &unit,
-                     const PassOptions &/*pass_options*/) {
+                     const PassOptions &pass_options) {
     // TODO: Add a visitor in asdl_cpp.py which will replace
     // current_expr with its own `m_value` (if `m_value` is not nullptr)
     // Call the visitor here.
-    std::map<ASR::expr_t*, ASR::expr_t*> exprs_with_target;
+    ExprsWithTargetType exprs_with_target;
     InitialiseExprWithTarget init_expr_with_target(exprs_with_target);
     init_expr_with_target.visit_TranslationUnit(unit);
     TransformVariableInitialiser a(al, exprs_with_target);
     a.visit_TranslationUnit(unit);
     ArgSimplifier b(al, exprs_with_target);
     b.visit_TranslationUnit(unit);
-    ReplaceExprWithTemporaryVisitor c(al, exprs_with_target);
+    ReplaceExprWithTemporaryVisitor c(al, exprs_with_target, pass_options.realloc_lhs);
     c.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor d(al);
     d.visit_TranslationUnit(unit);

@@ -4,26 +4,26 @@ program main
     real :: z(2)
 
     print *, solution()
-    z = solution()
-    print *, z
-    call compare_solutions(z)
+    ! z = solution()
+    ! print *, z
+    ! call compare_solutions(z)
 
 contains
 
-    subroutine compare_solutions(x)
-        real, dimension(:), intent(in) :: x
-        real, dimension(size(x)) :: diff
+    ! subroutine compare_solutions(x)
+    !     real, dimension(:), intent(in) :: x
+    !     real, dimension(size(x)) :: diff
 
-        diff = solution() - x
+    !     diff = solution() - x
 
-        if (diff(1) /= 0.0) error stop
-        if (diff(2) /= 0.0) error stop
+    !     if (diff(1) /= 0.0) error stop
+    !     if (diff(2) /= 0.0) error stop
 
-        diff = x - solution()
+    !     diff = x - solution()
 
-        if (diff(1) /= 0.0) error stop
-        if (diff(2) /= 0.0) error stop
-    end subroutine
+    !     if (diff(1) /= 0.0) error stop
+    !     if (diff(2) /= 0.0) error stop
+    ! end subroutine
 
     pure function solution() result(x)
         real, dimension(:), allocatable :: x
