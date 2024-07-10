@@ -9501,12 +9501,12 @@ public:
                     tmp = lfortran_str_len(args[0]);
                     return;
                 } else if (func_name == "command_argument_count") {
-                    llvm::Function *fn = module->getFunction("_lpython_get_argc");
+                    llvm::Function *fn = module->getFunction("_lfortran_get_argc");
                     if(!fn) {
                         llvm::FunctionType *function_type = llvm::FunctionType::get(
                             llvm::Type::getInt32Ty(context), {}, false);
                         fn = llvm::Function::Create(function_type,
-                            llvm::Function::ExternalLinkage, "_lpython_get_argc", *module);
+                            llvm::Function::ExternalLinkage, "_lfortran_get_argc", *module);
                     }
                     tmp = builder->CreateCall(fn, {});
                     return;
