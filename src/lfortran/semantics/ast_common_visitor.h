@@ -6758,8 +6758,8 @@ public:
 
         ASR::Module_t *m = ASRUtils::load_module(al, tu_symtab, module_name,
                 loc, true, compiler_options.po, true,
-                [&](const std::string &msg, const Location &loc) { throw SemanticError(msg, loc); }
-                );
+                [&](const std::string &msg, const Location &loc) { throw SemanticError(msg, loc); },
+                compiler_options.generate_options_string());
 
         ASR::symbol_t *t = m->m_symtab->resolve_symbol(remote_sym);
         if (!t) {
