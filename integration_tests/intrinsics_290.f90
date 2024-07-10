@@ -7,20 +7,20 @@ program intrinsics_290
     real(sp) :: log_runtime_sp(3) = [0.875, 3.367, 2.140]
     real(dp) :: log_res_dp(3)
     real(sp) :: log_res_sp(3)
-    real(dp) :: expected2_dp(3) = [-5.7991946977686754E-002_dp, 0.52724311638808863_dp, 0.33041377334919086_dp]
-    real(sp) :: expected2_sp(3) = [-5.79919480E-02_sp, 0.527243137_sp, 0.330413789]
+    real(dp) :: expected_dp(3) = [-5.7991946977686754E-002_dp, 0.52724311638808863_dp, 0.33041377334919086_dp]
+    real(sp) :: expected_sp(3) = [-5.79919480E-02_sp, 0.527243137_sp, 0.330413789]
 
-    real(dp), parameter :: res2(3) = log10([0.875_dp, 3.367_dp, 2.140_dp])
-    real(sp), parameter :: res2_sp(3) = log10([0.875, 3.367, 2.140])
+    real(dp), parameter :: res(3) = log10([0.875_dp, 3.367_dp, 2.140_dp])
+    real(sp), parameter :: res_sp(3) = log10([0.875, 3.367, 2.140])
 
     do i = 1, 3
-        print *, res2(i)
-        if (abs(res2(i) - expected2_dp(i)) > 1e-12_dp) error stop
+        print *, res(i)
+        if (abs(res(i) - expected_dp(i)) > 1e-12_dp) error stop
     end do
 
     do i = 1, 3
-        print *, res2_sp(i)
-        if (abs(res2_sp(i) - expected2_sp(i)) > 1e-5) error stop
+        print *, res_sp(i)
+        if (abs(res_sp(i) - expected_sp(i)) > 1e-5) error stop
     end do
 
     log_res_dp = log10(log_runtime_dp)
@@ -28,12 +28,12 @@ program intrinsics_290
 
     do i = 1, 3
         print *, log_res_dp(i)
-        if (abs(log_res_dp(i) - expected2_dp(i)) > 1e-12_dp) error stop
+        if (abs(log_res_dp(i) - expected_dp(i)) > 1e-12_dp) error stop
     end do
 
     do i = 1, 3
         print *, log_res_sp(i)
-        if (abs(log_res_sp(i) - expected2_sp(i)) > 1e-5) error stop
+        if (abs(log_res_sp(i) - expected_sp(i)) > 1e-5) error stop
     end do
 
     a = log10(10.92839272_dp)
