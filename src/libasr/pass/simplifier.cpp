@@ -439,6 +439,19 @@ bool set_allocation_size(Allocator& al, ASR::expr_t* value, Vec<ASR::dimension_t
                     }
                     break;
                 }
+                case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Shape): {
+                    size_t n_dims = ASRUtils::extract_n_dims_from_ttype(
+                        intrinsic_array_function->m_type);
+                    allocate_dims.reserve(al, n_dims);
+                    for( size_t i = 0; i < n_dims; i++ ) {
+                        ASR::dimension_t allocate_dim;
+                        allocate_dim.loc = loc;
+                        allocate_dim.m_start = int32_one;
+                        allocate_dim.m_length = int32_one;
+                        allocate_dims.push_back(al, allocate_dim);
+                    }
+                    break;
+                }
                 default: {
                     LCOMPILERS_ASSERT_MSG(false, "ASR::IntrinsicArrayFunctions::" +
                         std::to_string(intrinsic_array_function->m_arr_intrinsic_id)
