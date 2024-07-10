@@ -299,6 +299,9 @@ ASR::expr_t* get_ArrayConstructor_size(Allocator& al, ASR::ArrayConstructor_t* x
 
 bool set_allocation_size(Allocator& al, ASR::expr_t* value, Vec<ASR::dimension_t>& allocate_dims) {
     LCOMPILERS_ASSERT(ASRUtils::is_array(ASRUtils::expr_type(value)));
+    if( ASRUtils::is_fixed_size_array(ASRUtils::expr_type(value)) ) {
+        return false;
+    }
     const Location& loc = value->base.loc;
     ASR::expr_t* int32_one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
                 al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
@@ -700,6 +703,11 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         ASRUtils::is_array(ASRUtils::expr_type(expr)) ) {
     #define END_VAR_CHECK }
 
+    #define call_create_and_allocate_temporary_variable(expr) ASR::expr_t* x_m_args_i = ASRUtils::get_past_array_physical_cast(expr); \
+        ASR::expr_t* array_var_temporary = create_and_allocate_temporary_variable_for_array( \
+            x_m_args_i, name_hint, al, current_body, current_scope, exprs_with_target, \
+            ASR::is_a<ASR::ArraySection_t>(*x_m_args_i));
+
     template <typename T>
     void visit_IO(const T& x, const std::string& name_hint) {
         Vec<ASR::expr_t*> x_m_values; x_m_values.reserve(al, x.n_values);
@@ -710,9 +718,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                 !ASR::is_a<ASR::Var_t>(
                     *ASRUtils::get_past_array_physical_cast(x.m_values[i])) ) {
                 visit_expr(*x.m_values[i]);
-                ASR::expr_t* array_var_temporary = create_and_allocate_temporary_variable_for_array(
-                    ASRUtils::get_past_array_physical_cast(x.m_values[i]), name_hint, al, current_body,
-                    current_scope, exprs_with_target, true);
+                call_create_and_allocate_temporary_variable(x.m_values[i])
                 x_m_values.push_back(al, array_var_temporary);
             } else {
                 x_m_values.push_back(al, x.m_values[i]);
@@ -749,9 +755,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                 !ASR::is_a<ASR::Var_t>(
                     *ASRUtils::get_past_array_physical_cast(x_m_args[i])) ) {
                 visit_expr(*x_m_args[i]);
-                ASR::expr_t* array_var_temporary = create_and_allocate_temporary_variable_for_array(
-                    ASRUtils::get_past_array_physical_cast(x_m_args[i]), name_hint, al, current_body,
-                    current_scope, exprs_with_target, true);
+                call_create_and_allocate_temporary_variable(x_m_args[i])
                 if( ASR::is_a<ASR::ArrayPhysicalCast_t>(*x_m_args[i]) ) {
                     ASR::ArrayPhysicalCast_t* x_m_args_i = ASR::down_cast<ASR::ArrayPhysicalCast_t>(x_m_args[i]);
                     array_var_temporary = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
@@ -844,9 +848,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                 !ASR::is_a<ASR::Var_t>(
                     *ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value)) ) {
                 visit_call_arg(x_m_args[i]);
-                ASR::expr_t* array_var_temporary = create_and_allocate_temporary_variable_for_array(
-                    ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value), name_hint, al,
-                    current_body, current_scope, exprs_with_target, true);
+                call_create_and_allocate_temporary_variable(x_m_args[i].m_value)
                 if( ASR::is_a<ASR::ArrayPhysicalCast_t>(*x_m_args[i].m_value) ) {
                     ASR::ArrayPhysicalCast_t* x_m_args_i = ASR::down_cast<ASR::ArrayPhysicalCast_t>(x_m_args[i].m_value);
                     array_var_temporary = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
