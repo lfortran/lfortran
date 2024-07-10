@@ -66,7 +66,8 @@ ASR::expr_t* create_temporary_variable_for_array(Allocator& al,
         value_m_dims, value_n_dims);
     bool is_allocatable = ASRUtils::is_allocatable(value_type);
     ASR::ttype_t* var_type = nullptr;
-    if( is_fixed_sized_array || is_size_only_dependent_on_arguments || is_allocatable ) {
+    if( (is_fixed_sized_array || is_size_only_dependent_on_arguments || is_allocatable) &&
+        !is_pointer_required ) {
         var_type = value_type;
     } else {
         var_type = create_array_type_with_empty_dims(al, value_n_dims, value_type);
