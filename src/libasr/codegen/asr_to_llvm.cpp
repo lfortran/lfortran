@@ -2339,10 +2339,14 @@ public:
             } else if( array_t->m_physical_type == ASR::array_physical_typeType::UnboundedPointerToDataArray ) {
                 int ptr_loads_copy = ptr_loads;
                 for( size_t idim = 0; idim < x.n_args; idim++ ) {
-                    ptr_loads = 2 - !LLVM::is_llvm_pointer(*ASRUtils::expr_type(m_dims[idim].m_start));
-                    this->visit_expr_wrapper(m_dims[idim].m_start, true);
-                    llvm::Value* dim_start = tmp;
-                    llvm_diminfo.push_back(al, dim_start);
+                    if (m_dims[idim].m_start) {
+                        ptr_loads = 2 - !LLVM::is_llvm_pointer(*ASRUtils::expr_type(m_dims[idim].m_start));
+                        this->visit_expr_wrapper(m_dims[idim].m_start, true);
+                        llvm::Value* dim_start = tmp;
+                        llvm_diminfo.push_back(al, dim_start);
+                    } else {
+                        llvm_diminfo.push_back(al, llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
+                    }
                 }
                 ptr_loads = ptr_loads_copy;
             }
@@ -8414,9 +8418,10 @@ public:
                                 }
                             }
                         } else {
-                            if( orig_arg &&
-                                !LLVM::is_llvm_pointer(*orig_arg->m_type) &&
-                                LLVM::is_llvm_pointer(*arg->m_type) ) {
+                            if (x_abi == ASR::abiType::BindC) {
+                                llvm::Type* array_data_type = llvm_utils->get_el_type(ASRUtils::type_get_past_array(arg->m_type), module.get());
+                                tmp = builder->CreateBitCast(tmp, array_data_type->getPointerTo());
+                            } else if (orig_arg && !LLVM::is_llvm_pointer(*orig_arg->m_type) && LLVM::is_llvm_pointer(*arg->m_type)) {
                                 tmp = LLVM::CreateLoad(*builder, tmp);
                             }
                         }
@@ -9038,10 +9043,16 @@ public:
                     ASR::ttype_t* expected_arg_type = ASRUtils::expr_type(expected_arg);
                     ASR::ttype_t* passed_arg_type = ASRUtils::expr_type(passed_arg);
                     if (ASR::is_a<ASR::ArrayItem_t>(*passed_arg)) {
-                        if (!ASRUtils::types_equal(expected_arg_type, passed_arg_type, true)) {
-                            throw CodeGenError("Type mismatch in subroutine call, expected `" + ASRUtils::type_to_str_python(expected_arg_type)
-                                    + "`, passed `" + ASRUtils::type_to_str_python(passed_arg_type) + "`", x.m_args[i].m_value->base.loc);
+                        if (ASRUtils::get_FunctionType(subrout_called)->m_abi == ASR::abiType::BindC) {
                         }
+                        else {
+                            if (!ASRUtils::types_equal(expected_arg_type, passed_arg_type, true)) {
+                                throw CodeGenError("Type mismatch in subroutine call, expected `"
+                                    + ASRUtils::type_to_str_python(expected_arg_type)
+                                    + "`, passed `" + ASRUtils::type_to_str_python(passed_arg_type)
+                                    + "`", x.m_args[i].m_value->base.loc);
+                            }
+                      }
                     }
                 }
             }
