@@ -569,10 +569,6 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         var_collector.current_expr = const_cast<ASR::expr_t**>(&(x.m_value));
         var_collector.call_replacer();
 
-        if( vars.size() == 1 ) {
-            return ;
-        }
-
         insert_realloc_for_target(x.m_target, vars);
 
         Vec<ASR::expr_t**> fix_type_args;
