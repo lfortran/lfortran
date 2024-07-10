@@ -2818,13 +2818,13 @@ public:
                 m_dims, n_dims, a_kind, module.get());
             llvm::Constant *ptr = module->getOrInsertGlobal(x.m_name,
                 x_ptr);
-            if (x.m_type->type == ASR::ttypeType::Allocatable){
+            if (ASRUtils::is_array(x.m_type)) { //memorize arrays only.
                 llvm::Type* type_ = llvm_utils->get_type_from_ttype_t_util(
-                            ASRUtils::type_get_past_allocatable(x.m_type), module.get(), x.m_abi);
+                           ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(x.m_type)), module.get(), x.m_abi);
                 allocatable_array_details.push_back({ptr,
                         type_,
                         x.m_type,
-                        (down_cast<ASR::Array_t>((down_cast<ASR::Allocatable_t>(x.m_type))->m_type))->n_dims});
+                        ASRUtils::extract_dimensions_from_ttype(x.m_type, m_dims)});
             }
             if (!external) {
                 if (init_value) {
