@@ -763,10 +763,16 @@ public:
         std::string runtime_func_name = "_lfortran_str_slice";
         llvm::Function *fn = module->getFunction(runtime_func_name);
         if (!fn) {
+            llvm::Type *integer_ty;
+            if (compiler_options.po.default_integer_kind == 8) {
+                integer_ty = llvm::Type::getInt64Ty(context);
+            } else {
+                integer_ty = llvm::Type::getInt32Ty(context);
+            }
             llvm::FunctionType *function_type = llvm::FunctionType::get(
                     character_type, {
-                        character_type, llvm::Type::getInt32Ty(context),
-                        llvm::Type::getInt32Ty(context), llvm::Type::getInt32Ty(context),
+                        character_type, integer_ty,
+                        integer_ty, integer_ty,
                         llvm::Type::getInt1Ty(context), llvm::Type::getInt1Ty(context)
                     }, false);
             fn = llvm::Function::Create(function_type,
@@ -6545,7 +6551,11 @@ public:
         switch( a_kind ) {
 
             case 4 : {
-                tmp = llvm::ConstantFP::get(context, llvm::APFloat((float)val));
+                if (compiler_options.po.default_integer_kind == 8) {
+                    tmp = llvm::ConstantFP::get(context, llvm::APFloat(val));
+                } else {
+                    tmp = llvm::ConstantFP::get(context, llvm::APFloat((float)val));
+                }
                 break;
             }
             case 8 : {
