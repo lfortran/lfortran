@@ -1197,16 +1197,15 @@ class ReplaceExprWithTemporaryVisitor:
     }
 
     void visit_Assignment(const ASR::Assignment_t &x) {
-        // Is there a need for a temporary here for when it's an ArraySection?
-        // if( ASR::is_a<ASR::ArraySection_t>(*x.m_target) ) {
-        //     bool is_assignment_target_array_section = replacer.is_assignment_target_array_section;
-        //     replacer.is_assignment_target_array_section = true;
-        //     ASR::expr_t** current_expr_copy_8 = current_expr;
-        //     current_expr = const_cast<ASR::expr_t**>(&(x.m_target));
-        //     call_replacer();
-        //     current_expr = current_expr_copy_8;
-        //     replacer.is_assignment_target_array_section = is_assignment_target_array_section;
-        // }
+        if( ASR::is_a<ASR::ArraySection_t>(*x.m_target) ) {
+            bool is_assignment_target_array_section = replacer.is_assignment_target_array_section;
+            replacer.is_assignment_target_array_section = true;
+            ASR::expr_t** current_expr_copy_8 = current_expr;
+            current_expr = const_cast<ASR::expr_t**>(&(x.m_target));
+            call_replacer();
+            current_expr = current_expr_copy_8;
+            replacer.is_assignment_target_array_section = is_assignment_target_array_section;
+        }
         ASR::expr_t** current_expr_copy_9 = current_expr;
         current_expr = const_cast<ASR::expr_t**>(&(x.m_value));
         call_replacer();
@@ -1541,6 +1540,10 @@ class VerifySimplifierASROutput:
     }
 
     void visit_ArrayConstant(const ASR::ArrayConstant_t& x) {
+        check_if_linked_to_target(x.base, x.m_type);
+    }
+
+    void visit_ArraySection(const ASR::ArraySection_t& x) {
         check_if_linked_to_target(x.base, x.m_type);
     }
 
