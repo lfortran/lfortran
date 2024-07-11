@@ -228,6 +228,12 @@ if (WITH_XEUS)
         "${CMAKE_CURRENT_BINARY_DIR}/share/jupyter/kernels/fortran/kernel.json"
     )
 
+    # Generate logo-svg.svg with correct paths
+    configure_file (
+        "${CMAKE_CURRENT_SOURCE_DIR}/share/jupyter/kernels/fortran/lfortran-logo.svg"
+        "${CMAKE_CURRENT_BINARY_DIR}/share/jupyter/kernels/fortran/logo-svg.svg"
+    )
+
     # Configuration and data directories for Jupyter and LFortran
     set(XJUPYTER_DATA_DIR "share/jupyter" CACHE STRING "Jupyter data directory")
 
