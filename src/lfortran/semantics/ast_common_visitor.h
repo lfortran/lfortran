@@ -3258,7 +3258,7 @@ public:
                 throw SemanticError("Kind " + std::to_string(a_kind) + " is not supported for Real",
                                 sym_type->m_kind->loc);
             }
-            a_kind = 4
+            a_kind = 4;
             type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, a_kind));
             type = ASRUtils::make_Array_t_util(al, loc, type, dims.p, dims.size(), abi, is_argument, ASR::array_physical_typeType::DescriptorArray, false, is_dimension_star);
             if (is_pointer) {
