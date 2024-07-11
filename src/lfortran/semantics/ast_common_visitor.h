@@ -3242,7 +3242,10 @@ public:
         ASR::ttype_t *type;
         type_declaration = nullptr;
 
-        int a_kind = compiler_options.po.default_integer_kind;
+        int a_kind = 4;
+        if (sym_type->m_type == AST::decl_typeType::TypeInteger) {
+            a_kind = compiler_options.po.default_integer_kind;
+        }
 
         // general assignments and checks except when it's a
         // "Character" declaration
