@@ -59,6 +59,9 @@ define i32 @main(i32 %0, i8** %1) {
   store float 1.500000e+00, float* %call_arg_value, align 4
   store float 2.000000e+00, float* %call_arg_value1, align 4
   call void @__module_callback_01_foo(float* %call_arg_value, float* %call_arg_value1)
+  br label %return
+
+return:                                           ; preds = %.entry
   ret i32 0
 }
 

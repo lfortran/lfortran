@@ -203,6 +203,9 @@ define i32 @main(i32 %0, i8** %1) {
   store %fpm_run_settings* %settings, %fpm_run_settings** %8, align 8
   store i1 true, i1* %call_arg_value, align 1
   call void @__module_modules_36_fpm_main_01_cmd_run(%fpm_run_settings_polymorphic* %6, i1* %call_arg_value)
+  br label %return
+
+return:                                           ; preds = %.entry
   ret i32 0
 }
 

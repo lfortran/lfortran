@@ -112,6 +112,9 @@ define i32 @main(i32 %0, i8** %1) {
   %44 = load float, float* %43, align 4
   %45 = fpext float %44 to double
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([10 x i8], [10 x i8]* @23, i32 0, i32 0), double %41, double %45, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @22, i32 0, i32 0))
+  br label %return
+
+return:                                           ; preds = %.entry
   ret i32 0
 }
 

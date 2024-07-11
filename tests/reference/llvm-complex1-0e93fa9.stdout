@@ -14,6 +14,9 @@ define i32 @main(i32 %0, i8** %1) {
   store float 4.000000e+00, float* %4, align 4
   %5 = load %complex_4, %complex_4* %2, align 4
   store %complex_4 %5, %complex_4* %x, align 4
+  br label %return
+
+return:                                           ; preds = %.entry
   ret i32 0
 }
 

@@ -532,6 +532,9 @@ loop.end11:                                       ; preds = %loop.head
   call void @check_real(%array** %r)
   %173 = load %array*, %array** %r, align 8
   call void @check_real_without_pointer(%array* %173)
+  br label %return
+
+return:                                           ; preds = %loop.end11
   ret i32 0
 }
 

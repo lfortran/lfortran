@@ -57,6 +57,9 @@ else5:                                            ; preds = %ifcont3
 
 ifcont6:                                          ; preds = %else5, %then4
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([13 x i8], [13 x i8]* @11, i32 0, i32 0), i32 48, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @9, i32 0, i32 0), i32 53, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @9, i32 0, i32 0), i32 57, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @10, i32 0, i32 0))
+  br label %return
+
+return:                                           ; preds = %ifcont6
   ret i32 0
 }
 

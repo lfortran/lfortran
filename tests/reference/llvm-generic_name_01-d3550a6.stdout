@@ -201,6 +201,9 @@ else8:                                            ; preds = %ifcont6
   br label %ifcont9
 
 ifcont9:                                          ; preds = %else8, %then7
+  br label %return
+
+return:                                           ; preds = %ifcont9
   ret i32 0
 }
 

@@ -90,6 +90,9 @@ define i32 @main(i32 %0, i8** %1) {
   store i8* %40, i8** %combined, align 8
   %41 = load i8*, i8** %combined, align 8
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @8, i32 0, i32 0), i8* %41, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @7, i32 0, i32 0))
+  br label %return
+
+return:                                           ; preds = %.entry
   ret i32 0
 }
 

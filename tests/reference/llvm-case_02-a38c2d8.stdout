@@ -412,6 +412,9 @@ ifcont53:                                         ; preds = %ifcont52, %then39
 ifcont54:                                         ; preds = %ifcont53, %then37
   %102 = load i32, i32* %marks, align 4
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @98, i32 0, i32 0), i8* getelementptr inbounds ([16 x i8], [16 x i8]* @97, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @95, i32 0, i32 0), i32 %102, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @96, i32 0, i32 0))
+  br label %return
+
+return:                                           ; preds = %ifcont54
   ret i32 0
 }
 

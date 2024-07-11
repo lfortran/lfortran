@@ -69,6 +69,9 @@ define i32 @main(i32 %0, i8** %1) {
   %35 = getelementptr %complex_8, %complex_8* %34, i32 0, i32 1
   %36 = load double, double* %35, align 8
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([32 x i8], [32 x i8]* @2, i32 0, i32 0), double %18, double %22, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), double %26, double %29, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), double %33, double %36, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0))
+  br label %return
+
+return:                                           ; preds = %.entry
   ret i32 0
 }
 

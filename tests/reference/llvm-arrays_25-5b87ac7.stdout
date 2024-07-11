@@ -271,6 +271,9 @@ loop.end3:                                        ; preds = %loop.head1
   %148 = load i32, i32* %147, align 4
   store i32 %148, i32* %call_arg_value4, align 4
   call void @decode_integer____0(i32* %134, i32* %call_arg_value, i32* %call_arg_value4)
+  br label %return
+
+return:                                           ; preds = %loop.end3
   ret i32 0
 }
 
