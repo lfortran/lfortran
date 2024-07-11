@@ -2433,7 +2433,6 @@ public:
                                 ASR::asr_t* get_pointer = ASR::make_GetPointer_t(al, asr_eq1->base.loc, asr_eq1, pointer_type_, nullptr);
                                 ASR::ttype_t *cptr = ASRUtils::TYPE(ASR::make_CPtr_t(al, asr_eq1->base.loc));
                                 ASR::asr_t* pointer_to_cptr = ASR::make_PointerToCPtr_t(al, asr_eq1->base.loc, ASRUtils::EXPR(get_pointer), cptr, nullptr);
-
                                 ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, asr_eq1->base.loc, compiler_options.po.default_integer_kind));
                                 ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, asr_eq1->base.loc, 1, int_type));
 
@@ -3238,7 +3237,6 @@ public:
         type_declaration = nullptr;
 
         int a_kind = compiler_options.po.default_integer_kind;
-
         // general assignments and checks except when it's a
         // "Character" declaration
         if (sym_type->m_type != AST::decl_typeType::TypeCharacter &&
@@ -3260,6 +3258,7 @@ public:
                 throw SemanticError("Kind " + std::to_string(a_kind) + " is not supported for Real",
                                 sym_type->m_kind->loc);
             }
+            a_kind = 4
             type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, a_kind));
             type = ASRUtils::make_Array_t_util(al, loc, type, dims.p, dims.size(), abi, is_argument, ASR::array_physical_typeType::DescriptorArray, false, is_dimension_star);
             if (is_pointer) {
@@ -7673,6 +7672,7 @@ public:
     }
 
     void visit_Real(const AST::Real_t &x) {
+        std::cout << "visit_Real" << std::endl;
         double r = ASRUtils::extract_real(x.m_n);
         char* s_kind;
         int r_kind = ASRUtils::extract_kind_str(x.m_n, s_kind);
