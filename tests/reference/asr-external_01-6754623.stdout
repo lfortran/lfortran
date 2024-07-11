@@ -69,7 +69,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4)
+                                                    (Complex 4)
                                                     ()
                                                     BindC
                                                     Public
@@ -80,7 +80,7 @@
                                     f
                                     (FunctionType
                                         [(Complex 4)]
-                                        (Real 4)
+                                        (Complex 4)
                                         BindC
                                         Interface
                                         ()
@@ -108,7 +108,7 @@
                         (Complex 4)
                         (FunctionType
                             []
-                            (Real 4)
+                            (Complex 4)
                             BindC
                             Interface
                             ()
@@ -138,17 +138,12 @@
                     (Var 2 f)]
                     [(Assignment
                         (Var 2 a)
-                        (Cast
-                            (FunctionCall
-                                2 f
-                                ()
-                                [((Var 2 b))]
-                                (Real 4)
-                                ()
-                                ()
-                            )
-                            RealToComplex
+                        (FunctionCall
+                            2 f
+                            ()
+                            [((Var 2 b))]
                             (Complex 4)
+                            ()
                             ()
                         )
                         ()

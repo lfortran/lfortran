@@ -2040,7 +2040,7 @@ int main_app(int argc, char *argv[]) {
     app.add_option("-D", compiler_options.c_preprocessor_defines, "Define <macro>=<value> (or 1 if <value> omitted)")->allow_extra_args(false);
     app.add_flag("--version", arg_version, "Display compiler version information");
     app.add_option("-W", linker_flags, "Linker flags")->allow_extra_args(false);
-    app.add_option("-f", f_flags, "All `-f*` flags (only -fPIC supported for now)")->allow_extra_args(false);
+    app.add_option("-f", f_flags, "All `-f*` flags (only -fPIC & -fdefault-integer-8 supported for now)")->allow_extra_args(false);
     app.add_option("-O", O_flags, "Optimization level (ignored for now)")->allow_extra_args(false);
 
     // LFortran specific options
