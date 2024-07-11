@@ -464,7 +464,8 @@ bool set_allocation_size(Allocator& al, ASR::expr_t* value, Vec<ASR::dimension_t
             ASR::IntrinsicArrayFunction_t* intrinsic_array_function =
                 ASR::down_cast<ASR::IntrinsicArrayFunction_t>(value);
             switch (intrinsic_array_function->m_arr_intrinsic_id) {
-                case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Count): {
+                case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Count):
+                case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Sum): {
                     size_t n_dims = ASRUtils::extract_n_dims_from_ttype(
                         intrinsic_array_function->m_type);
                     allocate_dims.reserve(al, n_dims);
@@ -498,19 +499,6 @@ bool set_allocation_size(Allocator& al, ASR::expr_t* value, Vec<ASR::dimension_t
                     break;
                 }
                 case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Shape): {
-                    size_t n_dims = ASRUtils::extract_n_dims_from_ttype(
-                        intrinsic_array_function->m_type);
-                    allocate_dims.reserve(al, n_dims);
-                    for( size_t i = 0; i < n_dims; i++ ) {
-                        ASR::dimension_t allocate_dim;
-                        allocate_dim.loc = loc;
-                        allocate_dim.m_start = int32_one;
-                        allocate_dim.m_length = int32_one;
-                        allocate_dims.push_back(al, allocate_dim);
-                    }
-                    break;
-                }
-                case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Sum): {
                     size_t n_dims = ASRUtils::extract_n_dims_from_ttype(
                         intrinsic_array_function->m_type);
                     allocate_dims.reserve(al, n_dims);
@@ -865,6 +853,18 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
     void visit_IntrinsicArrayFunction(const ASR::IntrinsicArrayFunction_t& x) {
         visit_IntrinsicCall(x, "_intrinsic_array_function_" +
             ASRUtils::get_array_intrinsic_name(x.m_arr_intrinsic_id));
+        ASR::IntrinsicArrayFunction_t& xx = const_cast<ASR::IntrinsicArrayFunction_t&>(x);
+        if( ASRUtils::IntrinsicArrayFunctionRegistry::get_dim_index(
+                static_cast<ASRUtils::IntrinsicArrayFunctions>(x.m_arr_intrinsic_id)) == 1 &&
+            x.n_args > 1 && ASRUtils::is_array(x.m_type) ) {
+            Vec<ASR::dimension_t> dims;
+            diag::Diagnostics diags;
+            ASRUtils::ArrIntrinsic::fill_dimensions_for_ArrIntrinsic(
+                al, ASRUtils::extract_n_dims_from_ttype(x.m_type), x.m_args[0],
+                x.m_args[1], diags, true, dims);
+            xx.m_type = ASRUtils::duplicate_type(al, x.m_type, &dims,
+                ASR::array_physical_typeType::DescriptorArray, true);
+        }
     }
 
     void traverse_call_args(Vec<ASR::call_arg_t>& x_m_args_vec, ASR::call_arg_t* x_m_args,
