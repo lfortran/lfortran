@@ -1355,6 +1355,7 @@ public:
     }
 
     void visit_IntegerConstant(const ASR::IntegerConstant_t &x) {
+        // TODO: handle IntegerBOZ
         src = std::to_string(x.m_n);
         int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
         if (kind != 4) {
@@ -1364,8 +1365,6 @@ public:
         }
         last_expr_precedence = Precedence::Ext;
     }
-
-    // void visit_IntegerBOZ(const ASR::IntegerBOZ_t &x) {}
 
     // void visit_IntegerBitNot(const ASR::IntegerBitNot_t &x) {}
 

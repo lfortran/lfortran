@@ -2604,7 +2604,7 @@ static inline ASR::expr_t* expr_value0(ASR::expr_t *f)
             return ASR::down_cast<ASR::Variable_t>(s)->m_value;
         }""" \
                     % (name, name), 2, new_line=False)
-        elif name.endswith("Constant") or name == "IntegerBOZ":
+        elif name.endswith("Constant"):
             self.emit("case ASR::exprType::%s: { return f; }"\
                     % (name), 2, new_line=False)
         else:

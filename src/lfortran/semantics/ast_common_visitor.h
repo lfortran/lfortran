@@ -4107,12 +4107,6 @@ public:
             } else {
                 throw SemanticError("int(...) must have 1 or 2 arguments", loc);
             }
-            if (ASR::is_a<ASR::IntegerBOZ_t>(*args[0].m_value)) {
-                // Things like `int(b'01011101')` are skipped for now
-                // They are converted in comptime_eval. We should probably
-                // just convert them here instead.
-                return nullptr;
-            }
             return LFortran::CommonVisitorMethods::comptime_intrinsic_int(args[0].m_value, arg1, al, loc, compiler_options);
         } else {
             return nullptr;

@@ -1052,7 +1052,6 @@ static inline bool is_value_constant(ASR::expr_t *a_value) {
     }
     switch ( a_value->type ) {
         case ASR::exprType::IntegerConstant:
-        case ASR::exprType::IntegerBOZ:
         case ASR::exprType::UnsignedIntegerConstant:
         case ASR::exprType::RealConstant:
         case ASR::exprType::ComplexConstant:
@@ -1378,11 +1377,6 @@ static inline bool extract_value(ASR::expr_t* value_expr, T& value) {
         case ASR::exprType::IntegerConstant: {
             ASR::IntegerConstant_t* const_int = ASR::down_cast<ASR::IntegerConstant_t>(value_expr);
             value = (T) const_int->m_n;
-            break;
-        }
-        case ASR::exprType::IntegerBOZ: {
-            ASR::IntegerBOZ_t* int_boz = ASR::down_cast<ASR::IntegerBOZ_t>(value_expr);
-            value = (T) int_boz->m_v;
             break;
         }
         case ASR::exprType::UnsignedIntegerConstant: {
@@ -5461,8 +5455,7 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
     ASR::FunctionType_t* func_type = get_FunctionType(a_name);
 
     for( size_t i = 0; i < n_args; i++ ) {
-        if( a_args[i].m_value == nullptr ||
-            ASR::is_a<ASR::IntegerBOZ_t>(*a_args[i].m_value) ) {
+        if( a_args[i].m_value == nullptr ) {
             continue;
         }
         ASR::expr_t* arg = a_args[i].m_value;
@@ -5690,8 +5683,7 @@ static inline ASR::asr_t* make_IntrinsicElementalFunction_t_util(
     ASR::ttype_t* a_type, ASR::expr_t* a_value) {
 
     for( size_t i = 0; i < n_args; i++ ) {
-        if( a_args[i] == nullptr ||
-            ASR::is_a<ASR::IntegerBOZ_t>(*a_args[i]) ) {
+        if( a_args[i] == nullptr ) {
             continue;
         }
         ASR::expr_t* arg = a_args[i];
@@ -5713,8 +5705,7 @@ static inline ASR::asr_t* make_IntrinsicArrayFunction_t_util(
     ASR::ttype_t* a_type, ASR::expr_t* a_value) {
 
     for( size_t i = 0; i < n_args; i++ ) {
-        if( a_args[i] == nullptr ||
-            ASR::is_a<ASR::IntegerBOZ_t>(*a_args[i]) ) {
+        if( a_args[i] == nullptr ) {
             continue;
         }
         ASR::expr_t* arg = a_args[i];
