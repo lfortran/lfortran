@@ -873,9 +873,7 @@ RUN(NAME parameter_10 LABELS gfortran llvm NOFAST fortran) # sin
 RUN(NAME parameter_11 LABELS gfortran llvm fortran) # merge
 RUN(NAME parameter_12 LABELS gfortran llvm fortran) # implied do loops
 RUN(NAME parameter_13 LABELS gfortran llvm) # compile time example
-RUN(NAME parameter_14 LABELS gfortran llvm
-    EXTRA_ARGS -fdefault-integer-8
-    GFORTRAN_ARGS -fdefault-integer-8)
+RUN(NAME parameter_14 LABELS gfortran llvm EXTRA_ARGS -fdefault-integer-8 GFORTRAN_ARGS -fdefault-integer-8)
 
 RUN(NAME modules_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran)
 RUN(NAME modules_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
