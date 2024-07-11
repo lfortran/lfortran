@@ -252,6 +252,8 @@ class ASTNodeVisitor(ASDLVisitor):
                 args.append("size_t n_%s" % (f.name))
                 lines.append("n->n_%s = n_%s;" % (f.name, f.name))
         self.emit("};", 1)
+        if ( cons.name == "IntegerConstant" ):
+            args[-1] += " = ASR::integerbozType::Decimal"
         self.emit("static inline %s_t* make_%s_t(%s) {" % (subs["mod"],
             cons.name, ", ".join(args)), 1)
         self.emit(    "%s_t *n;" % cons.name, 2)
