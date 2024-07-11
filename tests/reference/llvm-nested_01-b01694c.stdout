@@ -45,6 +45,9 @@ define i32 @main(i32 %0, i8** %1) {
   %c = alloca i32, align 4
   %2 = call i32 @__module_nested_01_a_b()
   store i32 %2, i32* %c, align 4
+  br label %return
+
+return:                                           ; preds = %.entry
   ret i32 0
 }
 

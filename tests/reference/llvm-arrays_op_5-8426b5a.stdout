@@ -4002,6 +4002,9 @@ loop.end866:                                      ; preds = %ifcont794
   store i32 1, i32* %call_arg_value872, align 4
   store i32 1, i32* %call_arg_value873, align 4
   call void @check_complex__________0(%complex_4* %748, i32* %call_arg_value867, i32* %call_arg_value868, i32* %call_arg_value869, i32* %call_arg_value870, i32* %call_arg_value871, i32* %call_arg_value872, i32* %call_arg_value873)
+  br label %return
+
+return:                                           ; preds = %loop.end866
   ret i32 0
 }
 

@@ -150,6 +150,9 @@ else20:                                           ; preds = %ifcont18
   br label %ifcont21
 
 ifcont21:                                         ; preds = %else20, %then19
+  br label %return
+
+return:                                           ; preds = %ifcont21
   ret i32 0
 }
 

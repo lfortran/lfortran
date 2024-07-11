@@ -1856,6 +1856,9 @@ else323:                                          ; preds = %ifcont321
   br label %ifcont324
 
 ifcont324:                                        ; preds = %else323, %then322
+  br label %return
+
+return:                                           ; preds = %ifcont324
   ret i32 0
 }
 

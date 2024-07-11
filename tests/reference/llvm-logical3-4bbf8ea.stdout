@@ -267,6 +267,9 @@ else23:                                           ; preds = %ifcont21
   br label %ifcont24
 
 ifcont24:                                         ; preds = %else23, %then22
+  br label %return
+
+return:                                           ; preds = %ifcont24
   ret i32 0
 }
 

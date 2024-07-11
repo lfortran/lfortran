@@ -12,6 +12,9 @@ define i32 @main(i32 %0, i8** %1) {
   store double 0x3FEFEB7A9B2C6D8B, double* %x, align 8
   %2 = load double, double* %x, align 8
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([10 x i8], [10 x i8]* @2, i32 0, i32 0), double %2, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0))
+  br label %return
+
+return:                                           ; preds = %.entry
   ret i32 0
 }
 

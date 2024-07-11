@@ -2004,6 +2004,9 @@ else63:                                           ; preds = %ifcont61
   br label %ifcont64
 
 ifcont64:                                         ; preds = %else63, %then62
+  br label %return
+
+return:                                           ; preds = %ifcont64
   ret i32 0
 }
 

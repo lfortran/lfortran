@@ -10,6 +10,9 @@ define i32 @main(i32 %0, i8** %1) {
   %2 = load i32*, i32** %x, align 8
   %3 = bitcast i32* %2 to void*
   store void* %3, void** %p, align 8
+  br label %return
+
+return:                                           ; preds = %.entry
   ret i32 0
 }
 

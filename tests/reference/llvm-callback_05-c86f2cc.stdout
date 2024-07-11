@@ -54,6 +54,9 @@ define i32 @main(i32 %0, i8** %1) {
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   store i32 5, i32* @main.x, align 4
   call void @__module_callback_05_px_call1(i32* @main.x)
+  br label %return
+
+return:                                           ; preds = %.entry
   ret i32 0
 }
 

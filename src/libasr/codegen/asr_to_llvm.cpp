@@ -3182,6 +3182,7 @@ public:
             string_init(context, *module, *builder, value.second, init_value);
             builder->CreateStore(init_value, value.first);
         }
+        proc_return = llvm::BasicBlock::Create(context, "return");
         for (size_t i=0; i<x.n_body; i++) {
             this->visit_stmt(*x.m_body[i]);
         }
@@ -3190,6 +3191,7 @@ public:
         }
         call_lcompilers_free_strings();
 
+        start_new_block(proc_return);
         llvm::Value *ret_val2 = llvm::ConstantInt::get(context,
             llvm::APInt(32, 0));
         builder->CreateRet(ret_val2);

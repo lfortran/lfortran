@@ -14,6 +14,9 @@ define i32 @main(i32 %0, i8** %1) {
   %h = alloca [24 x float], align 4
   %i = alloca [36 x i32], align 4
   %j = alloca [20 x i1], align 1
+  br label %return
+
+return:                                           ; preds = %.entry
   ret i32 0
 }
 

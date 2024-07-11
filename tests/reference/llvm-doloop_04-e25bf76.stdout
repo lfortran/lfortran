@@ -318,6 +318,9 @@ goto_target:                                      ; preds = %loop.body28
   br label %loop.head27
 
 loop.end29:                                       ; preds = %loop.head27
+  br label %return
+
+return:                                           ; preds = %loop.end29
   ret i32 0
 }
 

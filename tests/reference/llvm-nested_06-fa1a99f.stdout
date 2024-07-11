@@ -47,6 +47,9 @@ define i32 @main(i32 %0, i8** %1) {
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   store float 6.000000e+00, float* %call_arg_value, align 4
   call void @__module_nested_06_a_b(float* %call_arg_value)
+  br label %return
+
+return:                                           ; preds = %.entry
   ret i32 0
 }
 

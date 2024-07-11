@@ -157,6 +157,9 @@ else14:                                           ; preds = %ifcont12
   br label %ifcont15
 
 ifcont15:                                         ; preds = %else14, %then13
+  br label %return
+
+return:                                           ; preds = %ifcont15
   ret i32 0
 }
 

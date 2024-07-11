@@ -45,6 +45,9 @@ define i32 @main(i32 %0, i8** %1) {
   store float 0.000000e+00, float* %call_arg_value, align 4
   store float 2.000000e+00, float* %call_arg_value1, align 4
   call void @__module_dflt_intent_foo(float* %call_arg_value, float* %call_arg_value1)
+  br label %return
+
+return:                                           ; preds = %.entry
   ret i32 0
 }
 

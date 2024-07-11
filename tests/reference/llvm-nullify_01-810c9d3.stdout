@@ -15,6 +15,9 @@ define i32 @main(i32 %0, i8** %1) {
   store i32 1, i32* %2, align 4
   store i32* null, i32** %p1, align 8
   store i32* null, i32** %p2, align 8
+  br label %return
+
+return:                                           ; preds = %.entry
   ret i32 0
 }
 

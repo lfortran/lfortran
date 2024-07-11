@@ -192,6 +192,9 @@ else:                                             ; preds = %loop.end3
   br label %ifcont
 
 ifcont:                                           ; preds = %else, %then
+  br label %return
+
+return:                                           ; preds = %ifcont
   ret i32 0
 }
 

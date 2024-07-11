@@ -1250,6 +1250,9 @@ loop.end238:                                      ; preds = %ifcont217
 loop.end239:                                      ; preds = %ifcont199
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([3 x i8], [3 x i8]* @47, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @46, i32 0, i32 0))
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([3 x i8], [3 x i8]* @50, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @49, i32 0, i32 0))
+  br label %return
+
+return:                                           ; preds = %loop.end239
   ret i32 0
 }
 

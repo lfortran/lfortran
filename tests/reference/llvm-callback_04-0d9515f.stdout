@@ -46,6 +46,9 @@ define i32 @main(i32 %0, i8** %1) {
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   call void @__module_dr_fortran_cb_print_dr_fortran(void ()* @__module_dr_fortran_cb_print_dr)
   call void @__module_dr_fortran_cb_print_dr_fortran(void ()* @__module_dr_fortran_cb_print_fortran)
+  br label %return
+
+return:                                           ; preds = %.entry
   ret i32 0
 }
 
