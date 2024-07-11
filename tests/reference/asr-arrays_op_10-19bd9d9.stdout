@@ -39,8 +39,8 @@
                                                     Default
                                                     (Array
                                                         (Real 4)
-                                                        [((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 2 (Integer 4)))]
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 2 (Integer 4) Decimal))]
                                                         FixedSizeArray
                                                     )
                                                     ()
@@ -75,8 +75,8 @@
                                                 []
                                                 (Array
                                                     (Real 4)
-                                                    [((IntegerConstant 1 (Integer 4))
-                                                    (IntegerConstant 2 (Integer 4)))]
+                                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                                    (IntegerConstant 2 (Integer 4) Decimal))]
                                                     FixedSizeArray
                                                 )
                                                 ()
@@ -84,7 +84,7 @@
                                             )
                                             ()
                                             (Integer 4)
-                                            (IntegerConstant 2 (Integer 4))
+                                            (IntegerConstant 2 (Integer 4) Decimal)
                                         )]
                                         ()
                                         ()
@@ -92,7 +92,7 @@
                                     (DoLoop
                                         ()
                                         ((Var 3 i)
-                                        (IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 1 (Integer 4) Decimal)
                                         (ArraySize
                                             (FunctionCall
                                                 2 solution
@@ -100,8 +100,8 @@
                                                 []
                                                 (Array
                                                     (Real 4)
-                                                    [((IntegerConstant 1 (Integer 4))
-                                                    (IntegerConstant 2 (Integer 4)))]
+                                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                                    (IntegerConstant 2 (Integer 4) Decimal))]
                                                     FixedSizeArray
                                                 )
                                                 ()
@@ -109,7 +109,7 @@
                                             )
                                             ()
                                             (Integer 4)
-                                            (IntegerConstant 2 (Integer 4))
+                                            (IntegerConstant 2 (Integer 4) Decimal)
                                         )
                                         ())
                                         [(Assignment
@@ -135,8 +135,8 @@
                                     (DoLoop
                                         ()
                                         ((Var 3 i)
-                                        (IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 2 (Integer 4))
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 2 (Integer 4) Decimal)
                                         ())
                                         [(Print
                                             [(ArrayItem
@@ -201,8 +201,8 @@
                                                     Default
                                                     (Array
                                                         (Real 4)
-                                                        [((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 2 (Integer 4)))]
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 2 (Integer 4) Decimal))]
                                                         FixedSizeArray
                                                     )
                                                     ()
@@ -217,8 +217,8 @@
                                         []
                                         (Array
                                             (Real 4)
-                                            [((IntegerConstant 1 (Integer 4))
-                                            (IntegerConstant 2 (Integer 4)))]
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 2 (Integer 4) Decimal))]
                                             FixedSizeArray
                                         )
                                         Source
@@ -241,8 +241,8 @@
                                             [1.00000000e+00, 1.00000000e+00]
                                             (Array
                                                 (Real 4)
-                                                [((IntegerConstant 1 (Integer 4))
-                                                (IntegerConstant 2 (Integer 4)))]
+                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                (IntegerConstant 2 (Integer 4) Decimal))]
                                                 FixedSizeArray
                                             )
                                             ColMajor

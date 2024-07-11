@@ -410,7 +410,7 @@
                                     []
                                     [(Assignment
                                         (Var 8 result)
-                                        (IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 1 (Integer 4) Decimal)
                                         ()
                                     )]
                                     (Var 8 result)
@@ -460,7 +460,7 @@
                                     []
                                     [(Assignment
                                         (Var 7 result)
-                                        (IntegerConstant 0 (Integer 4))
+                                        (IntegerConstant 0 (Integer 4) Decimal)
                                         ()
                                     )]
                                     (Var 7 result)
@@ -2045,7 +2045,7 @@
                                         (FunctionCall
                                             25 triple_add_l
                                             ()
-                                            [((IntegerConstant 7 (Integer 4)))]
+                                            [((IntegerConstant 7 (Integer 4) Decimal))]
                                             (Integer 4)
                                             ()
                                             ()
@@ -2057,7 +2057,7 @@
                                         (FunctionCall
                                             25 triple_add_r
                                             ()
-                                            [((IntegerConstant 7 (Integer 4)))]
+                                            [((IntegerConstant 7 (Integer 4) Decimal))]
                                             (Integer 4)
                                             ()
                                             ()

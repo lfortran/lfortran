@@ -156,7 +156,7 @@
                                                         (ArrayItem
                                                             (Var 5 lst)
                                                             [(()
-                                                            (IntegerConstant 1 (Integer 4))
+                                                            (IntegerConstant 1 (Integer 4) Decimal)
                                                             ())]
                                                             (TypeParameter
                                                                 t
@@ -172,7 +172,7 @@
                                                         (ArrayItem
                                                             (Var 5 lst)
                                                             [(()
-                                                            (IntegerConstant 1 (Integer 4))
+                                                            (IntegerConstant 1 (Integer 4) Decimal)
                                                             ())]
                                                             (TypeParameter
                                                                 t
@@ -224,7 +224,7 @@
                                                                         (TypeParameter
                                                                             t
                                                                         )
-                                                                        [((IntegerConstant 1 (Integer 4))
+                                                                        [((IntegerConstant 1 (Integer 4) Decimal)
                                                                         (Var 6 n))]
                                                                         PointerToDataArray
                                                                     )
@@ -276,7 +276,7 @@
                                                             (TypeParameter
                                                                 t
                                                             )
-                                                            [((IntegerConstant 1 (Integer 4))
+                                                            [((IntegerConstant 1 (Integer 4) Decimal)
                                                             (FunctionParam
                                                                 0
                                                                 (Integer 4)
@@ -309,7 +309,7 @@
                                                         (ArrayItem
                                                             (Var 6 lst)
                                                             [(()
-                                                            (IntegerConstant 1 (Integer 4))
+                                                            (IntegerConstant 1 (Integer 4) Decimal)
                                                             ())]
                                                             (TypeParameter
                                                                 t
@@ -325,7 +325,7 @@
                                                         (ArrayItem
                                                             (Var 6 lst)
                                                             [(()
-                                                            (IntegerConstant 1 (Integer 4))
+                                                            (IntegerConstant 1 (Integer 4) Decimal)
                                                             ())]
                                                             (TypeParameter
                                                                 t
@@ -411,8 +411,8 @@
                                                     Default
                                                     (Array
                                                         (Integer 4)
-                                                        [((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 1 (Integer 4)))]
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 1 (Integer 4) Decimal))]
                                                         FixedSizeArray
                                                     )
                                                     ()
@@ -524,7 +524,7 @@
                                                         (ArrayItem
                                                             (Var 8 lst)
                                                             [(()
-                                                            (IntegerConstant 1 (Integer 4))
+                                                            (IntegerConstant 1 (Integer 4) Decimal)
                                                             ())]
                                                             (Integer 4)
                                                             ColMajor
@@ -538,7 +538,7 @@
                                                         (ArrayItem
                                                             (Var 8 lst)
                                                             [(()
-                                                            (IntegerConstant 1 (Integer 4))
+                                                            (IntegerConstant 1 (Integer 4) Decimal)
                                                             ())]
                                                             (Integer 4)
                                                             ColMajor
@@ -584,7 +584,7 @@
                                                                     Default
                                                                     (Array
                                                                         (Integer 4)
-                                                                        [((IntegerConstant 1 (Integer 4))
+                                                                        [((IntegerConstant 1 (Integer 4) Decimal)
                                                                         (Var 9 n))]
                                                                         PointerToDataArray
                                                                     )
@@ -632,7 +632,7 @@
                                                         [(Integer 4)
                                                         (Array
                                                             (Integer 4)
-                                                            [((IntegerConstant 1 (Integer 4))
+                                                            [((IntegerConstant 1 (Integer 4) Decimal)
                                                             (FunctionParam
                                                                 0
                                                                 (Integer 4)
@@ -661,7 +661,7 @@
                                                         (ArrayItem
                                                             (Var 9 lst)
                                                             [(()
-                                                            (IntegerConstant 1 (Integer 4))
+                                                            (IntegerConstant 1 (Integer 4) Decimal)
                                                             ())]
                                                             (Integer 4)
                                                             ColMajor
@@ -675,7 +675,7 @@
                                                         (ArrayItem
                                                             (Var 9 lst)
                                                             [(()
-                                                            (IntegerConstant 1 (Integer 4))
+                                                            (IntegerConstant 1 (Integer 4) Decimal)
                                                             ())]
                                                             (Integer 4)
                                                             ColMajor
@@ -727,25 +727,25 @@
                                         (ArrayItem
                                             (Var 7 a)
                                             [(()
-                                            (IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 1 (Integer 4) Decimal)
                                             ())]
                                             (Integer 4)
                                             ColMajor
                                             ()
                                         )
-                                        (IntegerConstant 0 (Integer 4))
+                                        (IntegerConstant 0 (Integer 4) Decimal)
                                         ()
                                     )
                                     (Assignment
                                         (Var 7 i)
-                                        (IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 1 (Integer 4) Decimal)
                                         ()
                                     )
                                     (Print
                                         [(ArrayItem
                                             (Var 7 a)
                                             [(()
-                                            (IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 1 (Integer 4) Decimal)
                                             ())]
                                             (Integer 4)
                                             ColMajor
@@ -765,8 +765,8 @@
                                                 DescriptorArray
                                                 (Array
                                                     (Integer 4)
-                                                    [((IntegerConstant 1 (Integer 4))
-                                                    (IntegerConstant 1 (Integer 4)))]
+                                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                                    (IntegerConstant 1 (Integer 4) Decimal))]
                                                     DescriptorArray
                                                 )
                                                 ()
@@ -782,7 +782,7 @@
                                         [(ArrayItem
                                             (Var 7 a)
                                             [(()
-                                            (IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 1 (Integer 4) Decimal)
                                             ())]
                                             (Integer 4)
                                             ColMajor
@@ -795,20 +795,20 @@
                                         (ArrayItem
                                             (Var 7 a)
                                             [(()
-                                            (IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 1 (Integer 4) Decimal)
                                             ())]
                                             (Integer 4)
                                             ColMajor
                                             ()
                                         )
-                                        (IntegerConstant 0 (Integer 4))
+                                        (IntegerConstant 0 (Integer 4) Decimal)
                                         ()
                                     )
                                     (Print
                                         [(ArrayItem
                                             (Var 7 a)
                                             [(()
-                                            (IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 1 (Integer 4) Decimal)
                                             ())]
                                             (Integer 4)
                                             ColMajor
@@ -826,7 +826,7 @@
                                                 (Var 7 a)
                                                 ()
                                                 (Integer 4)
-                                                (IntegerConstant 1 (Integer 4))
+                                                (IntegerConstant 1 (Integer 4) Decimal)
                                             ))
                                             ((ArrayPhysicalCast
                                                 (Var 7 a)
@@ -834,8 +834,8 @@
                                                 PointerToDataArray
                                                 (Array
                                                     (Integer 4)
-                                                    [((IntegerConstant 1 (Integer 4))
-                                                    (IntegerConstant 1 (Integer 4)))]
+                                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                                    (IntegerConstant 1 (Integer 4) Decimal))]
                                                     PointerToDataArray
                                                 )
                                                 ()
@@ -851,7 +851,7 @@
                                         [(ArrayItem
                                             (Var 7 a)
                                             [(()
-                                            (IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 1 (Integer 4) Decimal)
                                             ())]
                                             (Integer 4)
                                             ColMajor

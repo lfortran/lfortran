@@ -276,23 +276,23 @@
                         (StringSection
                             (Var 2 num)
                             (IntegerBinOp
-                                (IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 1 (Integer 4) Decimal)
                                 Sub
-                                (IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 1 (Integer 4) Decimal)
                                 (Integer 4)
-                                (IntegerConstant 0 (Integer 4))
+                                (IntegerConstant 0 (Integer 4) Decimal)
                             )
-                            (IntegerConstant 3 (Integer 4))
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 3 (Integer 4) Decimal)
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             (Character 1 -3 (IntegerBinOp
-                                (IntegerConstant 3 (Integer 4))
+                                (IntegerConstant 3 (Integer 4) Decimal)
                                 Sub
                                 (IntegerBinOp
-                                    (IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4) Decimal)
                                     Sub
-                                    (IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4) Decimal)
                                     (Integer 4)
-                                    (IntegerConstant 0 (Integer 4))
+                                    (IntegerConstant 0 (Integer 4) Decimal)
                                 )
                                 (Integer 4)
                                 ()

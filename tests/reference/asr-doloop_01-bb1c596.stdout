@@ -36,7 +36,7 @@
                             )
                             RealToInteger
                             (Integer 4)
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                         )
                         (Cast
                             (RealConstant
@@ -45,7 +45,7 @@
                             )
                             RealToInteger
                             (Integer 4)
-                            (IntegerConstant 10 (Integer 4))
+                            (IntegerConstant 10 (Integer 4) Decimal)
                         )
                         (Cast
                             (RealConstant
@@ -54,7 +54,7 @@
                             )
                             RealToInteger
                             (Integer 4)
-                            (IntegerConstant 2 (Integer 4))
+                            (IntegerConstant 2 (Integer 4) Decimal)
                         ))
                         [(Print
                             [(Var 2 i)]

@@ -375,7 +375,7 @@
                                         )
                                         [(Assignment
                                             (Var 4 bin_add)
-                                            (IntegerConstant 2 (Integer 4))
+                                            (IntegerConstant 2 (Integer 4) Decimal)
                                             ()
                                         )]
                                         [(If
@@ -396,12 +396,12 @@
                                             )
                                             [(Assignment
                                                 (Var 4 bin_add)
-                                                (IntegerConstant 0 (Integer 4))
+                                                (IntegerConstant 0 (Integer 4) Decimal)
                                                 ()
                                             )]
                                             [(Assignment
                                                 (Var 4 bin_add)
-                                                (IntegerConstant 1 (Integer 4))
+                                                (IntegerConstant 1 (Integer 4) Decimal)
                                                 ()
                                             )]
                                         )]

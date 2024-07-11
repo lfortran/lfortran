@@ -45,7 +45,7 @@
                     [interface_04_mod2]
                     [(Assignment
                         (Var 5 i)
-                        (IntegerConstant 5 (Integer 4))
+                        (IntegerConstant 5 (Integer 4) Decimal)
                         ()
                     )
                     (SubroutineCall
@@ -58,7 +58,7 @@
                         (IntegerCompare
                             (Var 5 i)
                             NotEq
-                            (IntegerConstant 6 (Integer 4))
+                            (IntegerConstant 6 (Integer 4) Decimal)
                             (Logical 4)
                             ()
                         )
@@ -124,7 +124,7 @@
                                         (IntegerBinOp
                                             (Var 3 a)
                                             Add
-                                            (IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 1 (Integer 4) Decimal)
                                             (Integer 4)
                                             ()
                                         )

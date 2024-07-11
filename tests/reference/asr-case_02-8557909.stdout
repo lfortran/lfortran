@@ -44,17 +44,17 @@
                     []
                     [(Assignment
                         (Var 2 marks)
-                        (IntegerConstant 81 (Integer 4))
+                        (IntegerConstant 81 (Integer 4) Decimal)
                         ()
                     )
                     (Select
                         (Var 2 marks)
                         [(CaseStmt_Range
-                            (IntegerConstant 91 (Integer 4))
-                            (IntegerConstant 100 (Integer 4))
+                            (IntegerConstant 91 (Integer 4) Decimal)
+                            (IntegerConstant 100 (Integer 4) Decimal)
                             [(Assignment
                                 (Var 2 out)
-                                (IntegerConstant 0 (Integer 4))
+                                (IntegerConstant 0 (Integer 4) Decimal)
                                 ()
                             )
                             (Print
@@ -67,11 +67,11 @@
                             )]
                         )
                         (CaseStmt_Range
-                            (IntegerConstant 81 (Integer 4))
-                            (IntegerConstant 90 (Integer 4))
+                            (IntegerConstant 81 (Integer 4) Decimal)
+                            (IntegerConstant 90 (Integer 4) Decimal)
                             [(Assignment
                                 (Var 2 out)
-                                (IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 1 (Integer 4) Decimal)
                                 ()
                             )
                             (Print
@@ -84,11 +84,11 @@
                             )]
                         )
                         (CaseStmt_Range
-                            (IntegerConstant 71 (Integer 4))
-                            (IntegerConstant 80 (Integer 4))
+                            (IntegerConstant 71 (Integer 4) Decimal)
+                            (IntegerConstant 80 (Integer 4) Decimal)
                             [(Assignment
                                 (Var 2 out)
-                                (IntegerConstant 2 (Integer 4))
+                                (IntegerConstant 2 (Integer 4) Decimal)
                                 ()
                             )
                             (Print
@@ -101,11 +101,11 @@
                             )]
                         )
                         (CaseStmt_Range
-                            (IntegerConstant 61 (Integer 4))
-                            (IntegerConstant 70 (Integer 4))
+                            (IntegerConstant 61 (Integer 4) Decimal)
+                            (IntegerConstant 70 (Integer 4) Decimal)
                             [(Assignment
                                 (Var 2 out)
-                                (IntegerConstant 3 (Integer 4))
+                                (IntegerConstant 3 (Integer 4) Decimal)
                                 ()
                             )
                             (Print
@@ -118,11 +118,11 @@
                             )]
                         )
                         (CaseStmt_Range
-                            (IntegerConstant 41 (Integer 4))
-                            (IntegerConstant 60 (Integer 4))
+                            (IntegerConstant 41 (Integer 4) Decimal)
+                            (IntegerConstant 60 (Integer 4) Decimal)
                             [(Assignment
                                 (Var 2 out)
-                                (IntegerConstant 4 (Integer 4))
+                                (IntegerConstant 4 (Integer 4) Decimal)
                                 ()
                             )
                             (Print
@@ -136,10 +136,10 @@
                         )
                         (CaseStmt_Range
                             ()
-                            (IntegerConstant 40 (Integer 4))
+                            (IntegerConstant 40 (Integer 4) Decimal)
                             [(Assignment
                                 (Var 2 out)
-                                (IntegerConstant 5 (Integer 4))
+                                (IntegerConstant 5 (Integer 4) Decimal)
                                 ()
                             )
                             (Print
@@ -153,7 +153,7 @@
                         )]
                         [(Assignment
                             (Var 2 out)
-                            (IntegerConstant 6 (Integer 4))
+                            (IntegerConstant 6 (Integer 4) Decimal)
                             ()
                         )
                         (Print
@@ -179,7 +179,7 @@
                         (IntegerCompare
                             (Var 2 out)
                             NotEq
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             (Logical 4)
                             ()
                         )
@@ -191,8 +191,8 @@
                     (Select
                         (Var 2 marks)
                         [(CaseStmt_Range
-                            (IntegerConstant 91 (Integer 4))
-                            (IntegerConstant 100 (Integer 4))
+                            (IntegerConstant 91 (Integer 4) Decimal)
+                            (IntegerConstant 100 (Integer 4) Decimal)
                             [(Print
                                 [(StringConstant
                                     "Excellent!"
@@ -203,8 +203,8 @@
                             )]
                         )
                         (CaseStmt_Range
-                            (IntegerConstant 81 (Integer 4))
-                            (IntegerConstant 90 (Integer 4))
+                            (IntegerConstant 81 (Integer 4) Decimal)
+                            (IntegerConstant 90 (Integer 4) Decimal)
                             [(Print
                                 [(StringConstant
                                     "Very good!"
@@ -215,8 +215,8 @@
                             )]
                         )
                         (CaseStmt_Range
-                            (IntegerConstant 71 (Integer 4))
-                            (IntegerConstant 80 (Integer 4))
+                            (IntegerConstant 71 (Integer 4) Decimal)
+                            (IntegerConstant 80 (Integer 4) Decimal)
                             [(Print
                                 [(StringConstant
                                     "Well done!"
@@ -227,8 +227,8 @@
                             )]
                         )
                         (CaseStmt_Range
-                            (IntegerConstant 61 (Integer 4))
-                            (IntegerConstant 70 (Integer 4))
+                            (IntegerConstant 61 (Integer 4) Decimal)
+                            (IntegerConstant 70 (Integer 4) Decimal)
                             [(Print
                                 [(StringConstant
                                     "Not bad!"
@@ -239,8 +239,8 @@
                             )]
                         )
                         (CaseStmt_Range
-                            (IntegerConstant 41 (Integer 4))
-                            (IntegerConstant 60 (Integer 4))
+                            (IntegerConstant 41 (Integer 4) Decimal)
+                            (IntegerConstant 60 (Integer 4) Decimal)
                             [(Print
                                 [(StringConstant
                                     "You passed!"
@@ -252,7 +252,7 @@
                         )
                         (CaseStmt_Range
                             ()
-                            (IntegerConstant 40 (Integer 4))
+                            (IntegerConstant 40 (Integer 4) Decimal)
                             [(Print
                                 [(StringConstant
                                     "Better try again!"
@@ -284,8 +284,8 @@
                     (Select
                         (Var 2 marks)
                         [(CaseStmt_Range
-                            (IntegerConstant 91 (Integer 4))
-                            (IntegerConstant 100 (Integer 4))
+                            (IntegerConstant 91 (Integer 4) Decimal)
+                            (IntegerConstant 100 (Integer 4) Decimal)
                             [(Print
                                 [(StringConstant
                                     "Excellent!"
@@ -296,8 +296,8 @@
                             )]
                         )
                         (CaseStmt_Range
-                            (IntegerConstant 81 (Integer 4))
-                            (IntegerConstant 90 (Integer 4))
+                            (IntegerConstant 81 (Integer 4) Decimal)
+                            (IntegerConstant 90 (Integer 4) Decimal)
                             [(Print
                                 [(StringConstant
                                     "Very good!"
@@ -308,8 +308,8 @@
                             )]
                         )
                         (CaseStmt_Range
-                            (IntegerConstant 71 (Integer 4))
-                            (IntegerConstant 80 (Integer 4))
+                            (IntegerConstant 71 (Integer 4) Decimal)
+                            (IntegerConstant 80 (Integer 4) Decimal)
                             [(Print
                                 [(StringConstant
                                     "Well done!"
@@ -320,8 +320,8 @@
                             )]
                         )
                         (CaseStmt_Range
-                            (IntegerConstant 61 (Integer 4))
-                            (IntegerConstant 70 (Integer 4))
+                            (IntegerConstant 61 (Integer 4) Decimal)
+                            (IntegerConstant 70 (Integer 4) Decimal)
                             [(Print
                                 [(StringConstant
                                     "Not bad!"
@@ -332,8 +332,8 @@
                             )]
                         )
                         (CaseStmt_Range
-                            (IntegerConstant 41 (Integer 4))
-                            (IntegerConstant 60 (Integer 4))
+                            (IntegerConstant 41 (Integer 4) Decimal)
+                            (IntegerConstant 60 (Integer 4) Decimal)
                             [(Print
                                 [(StringConstant
                                     "You passed!"
@@ -345,7 +345,7 @@
                         )
                         (CaseStmt_Range
                             ()
-                            (IntegerConstant 40 (Integer 4))
+                            (IntegerConstant 40 (Integer 4) Decimal)
                             [(Print
                                 [(StringConstant
                                     "Better try again!"

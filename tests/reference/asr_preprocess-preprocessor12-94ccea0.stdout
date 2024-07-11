@@ -207,7 +207,7 @@
                                 "tests/preprocessor12.f90"
                                 (Character 1 24 ())
                             ))
-                            ((IntegerConstant 7 (Integer 4)))]
+                            ((IntegerConstant 7 (Integer 4) Decimal))]
                             ()
                         )]
                         []
@@ -215,9 +215,9 @@
                     (If
                         (LogicalNot
                             (IntegerCompare
-                                (IntegerConstant 5 (Integer 4))
+                                (IntegerConstant 5 (Integer 4) Decimal)
                                 Gt
-                                (IntegerConstant 3 (Integer 4))
+                                (IntegerConstant 3 (Integer 4) Decimal)
                                 (Logical 4)
                                 (LogicalConstant
                                     .true.
@@ -237,7 +237,7 @@
                                 "tests/preprocessor12.f90"
                                 (Character 1 24 ())
                             ))
-                            ((IntegerConstant 8 (Integer 4)))]
+                            ((IntegerConstant 8 (Integer 4) Decimal))]
                             ()
                         )]
                         []
@@ -246,20 +246,20 @@
                         (LogicalNot
                             (IntegerCompare
                                 (IntegerBinOp
-                                    (IntegerConstant 5 (Integer 4))
+                                    (IntegerConstant 5 (Integer 4) Decimal)
                                     Add
                                     (IntegerBinOp
-                                        (IntegerConstant 3 (Integer 4))
+                                        (IntegerConstant 3 (Integer 4) Decimal)
                                         Mul
-                                        (IntegerConstant 8 (Integer 4))
+                                        (IntegerConstant 8 (Integer 4) Decimal)
                                         (Integer 4)
-                                        (IntegerConstant 24 (Integer 4))
+                                        (IntegerConstant 24 (Integer 4) Decimal)
                                     )
                                     (Integer 4)
-                                    (IntegerConstant 29 (Integer 4))
+                                    (IntegerConstant 29 (Integer 4) Decimal)
                                 )
                                 Gt
-                                (IntegerConstant 3 (Integer 4))
+                                (IntegerConstant 3 (Integer 4) Decimal)
                                 (Logical 4)
                                 (LogicalConstant
                                     .true.
@@ -279,7 +279,7 @@
                                 "tests/preprocessor12.f90"
                                 (Character 1 24 ())
                             ))
-                            ((IntegerConstant 9 (Integer 4)))]
+                            ((IntegerConstant 9 (Integer 4) Decimal))]
                             ()
                         )]
                         []
@@ -289,8 +289,8 @@
                             (FunctionCall
                                 2 fn
                                 ()
-                                [((IntegerConstant 3 (Integer 4)))
-                                ((IntegerConstant 5 (Integer 4)))]
+                                [((IntegerConstant 3 (Integer 4) Decimal))
+                                ((IntegerConstant 5 (Integer 4) Decimal))]
                                 (Logical 4)
                                 ()
                                 ()
@@ -305,7 +305,7 @@
                                 "tests/preprocessor12.f90"
                                 (Character 1 24 ())
                             ))
-                            ((IntegerConstant 11 (Integer 4)))]
+                            ((IntegerConstant 11 (Integer 4) Decimal))]
                             ()
                         )]
                         []
@@ -313,9 +313,9 @@
                     (If
                         (LogicalNot
                             (IntegerCompare
-                                (IntegerConstant 5 (Integer 4))
+                                (IntegerConstant 5 (Integer 4) Decimal)
                                 Lt
-                                (IntegerConstant 3 (Integer 4))
+                                (IntegerConstant 3 (Integer 4) Decimal)
                                 (Logical 4)
                                 (LogicalConstant
                                     .false.
@@ -335,7 +335,7 @@
                                 "tests/preprocessor12.f90"
                                 (Character 1 24 ())
                             ))
-                            ((IntegerConstant 13 (Integer 4)))]
+                            ((IntegerConstant 13 (Integer 4) Decimal))]
                             ()
                         )]
                         []

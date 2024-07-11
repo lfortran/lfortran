@@ -13,8 +13,8 @@
                                     a
                                     []
                                     Local
-                                    (IntegerConstant 1 (Integer 4))
-                                    (IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 1 (Integer 4) Decimal)
                                     Save
                                     (Integer 4)
                                     ()
@@ -29,8 +29,8 @@
                                     ap
                                     []
                                     Local
-                                    (IntegerConstant 1 (Integer 4))
-                                    (IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 1 (Integer 4) Decimal)
                                     Parameter
                                     (Integer 4)
                                     ()
@@ -45,8 +45,8 @@
                                     b
                                     []
                                     Local
-                                    (IntegerConstant 2 (Integer 4))
-                                    (IntegerConstant 2 (Integer 4))
+                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                    (IntegerConstant 2 (Integer 4) Decimal)
                                     Save
                                     (Integer 4)
                                     ()
@@ -61,8 +61,8 @@
                                     bp
                                     []
                                     Local
-                                    (IntegerConstant 2 (Integer 4))
-                                    (IntegerConstant 2 (Integer 4))
+                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                    (IntegerConstant 2 (Integer 4) Decimal)
                                     Parameter
                                     (Integer 4)
                                     ()
@@ -218,7 +218,7 @@
                     []
                     [(Assignment
                         (Var 2 number)
-                        (IntegerConstant 123 (Integer 4))
+                        (IntegerConstant 123 (Integer 4) Decimal)
                         ()
                     )
                     (Assignment
@@ -234,13 +234,13 @@
                             (IntrinsicElementalFunction
                                 Modulo
                                 [(Var 2 number)
-                                (IntegerConstant 2 (Integer 4))]
+                                (IntegerConstant 2 (Integer 4) Decimal)]
                                 0
                                 (Integer 4)
                                 ()
                             )
                             Eq
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             (Logical 4)
                             ()
                         )
@@ -292,7 +292,7 @@
                     )
                     (Assignment
                         (Var 2 number)
-                        (IntegerConstant 124 (Integer 4))
+                        (IntegerConstant 124 (Integer 4) Decimal)
                         ()
                     )
                     (Assignment
@@ -308,13 +308,13 @@
                             (IntrinsicElementalFunction
                                 Modulo
                                 [(Var 2 number)
-                                (IntegerConstant 2 (Integer 4))]
+                                (IntegerConstant 2 (Integer 4) Decimal)]
                                 0
                                 (Integer 4)
                                 ()
                             )
                             Eq
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             (Logical 4)
                             ()
                         )

@@ -31,12 +31,12 @@
                                     Local
                                     (IntrinsicElementalFunction
                                         SelectedIntKind
-                                        [(IntegerConstant 5 (Integer 4))]
+                                        [(IntegerConstant 5 (Integer 4) Decimal)]
                                         0
                                         (Integer 4)
-                                        (IntegerConstant 4 (Integer 4))
+                                        (IntegerConstant 4 (Integer 4) Decimal)
                                     )
-                                    (IntegerConstant 4 (Integer 4))
+                                    (IntegerConstant 4 (Integer 4) Decimal)
                                     Parameter
                                     (Integer 4)
                                     ()
@@ -59,9 +59,9 @@
                                         )]
                                         0
                                         (Integer 4)
-                                        (IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 1 (Integer 4) Decimal)
                                     )
-                                    (IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4) Decimal)
                                     Parameter
                                     (Integer 4)
                                     ()
@@ -78,14 +78,14 @@
                                     Local
                                     (IntrinsicElementalFunction
                                         SelectedRealKind
-                                        [(IntegerConstant 5 (Integer 4))
-                                        (IntegerConstant 0 (Integer 4))
-                                        (IntegerConstant 2 (Integer 4))]
+                                        [(IntegerConstant 5 (Integer 4) Decimal)
+                                        (IntegerConstant 0 (Integer 4) Decimal)
+                                        (IntegerConstant 2 (Integer 4) Decimal)]
                                         0
                                         (Integer 4)
-                                        (IntegerConstant 4 (Integer 4))
+                                        (IntegerConstant 4 (Integer 4) Decimal)
                                     )
-                                    (IntegerConstant 4 (Integer 4))
+                                    (IntegerConstant 4 (Integer 4) Decimal)
                                     Parameter
                                     (Integer 4)
                                     ()
@@ -102,14 +102,14 @@
                                     Local
                                     (IntrinsicElementalFunction
                                         SelectedRealKind
-                                        [(IntegerConstant 10 (Integer 4))
-                                        (IntegerConstant 0 (Integer 4))
-                                        (IntegerConstant 2 (Integer 4))]
+                                        [(IntegerConstant 10 (Integer 4) Decimal)
+                                        (IntegerConstant 0 (Integer 4) Decimal)
+                                        (IntegerConstant 2 (Integer 4) Decimal)]
                                         0
                                         (Integer 4)
-                                        (IntegerConstant 8 (Integer 4))
+                                        (IntegerConstant 8 (Integer 4) Decimal)
                                     )
-                                    (IntegerConstant 8 (Integer 4))
+                                    (IntegerConstant 8 (Integer 4) Decimal)
                                     Parameter
                                     (Integer 4)
                                     ()
@@ -126,12 +126,12 @@
                                     Local
                                     (IntrinsicElementalFunction
                                         SelectedIntKind
-                                        [(IntegerConstant 5 (Integer 4))]
+                                        [(IntegerConstant 5 (Integer 4) Decimal)]
                                         0
                                         (Integer 4)
-                                        (IntegerConstant 4 (Integer 4))
+                                        (IntegerConstant 4 (Integer 4) Decimal)
                                     )
-                                    (IntegerConstant 4 (Integer 4))
+                                    (IntegerConstant 4 (Integer 4) Decimal)
                                     Parameter
                                     (Integer 4)
                                     ()
@@ -148,12 +148,12 @@
                                     Local
                                     (IntrinsicElementalFunction
                                         SelectedIntKind
-                                        [(IntegerConstant 5 (Integer 8))]
+                                        [(IntegerConstant 5 (Integer 8) Decimal)]
                                         0
                                         (Integer 4)
-                                        (IntegerConstant 4 (Integer 4))
+                                        (IntegerConstant 4 (Integer 4) Decimal)
                                     )
-                                    (IntegerConstant 4 (Integer 4))
+                                    (IntegerConstant 4 (Integer 4) Decimal)
                                     Parameter
                                     (Integer 4)
                                     ()
@@ -170,12 +170,12 @@
                                     Local
                                     (IntrinsicElementalFunction
                                         SelectedIntKind
-                                        [(IntegerConstant 8 (Integer 4))]
+                                        [(IntegerConstant 8 (Integer 4) Decimal)]
                                         0
                                         (Integer 4)
-                                        (IntegerConstant 4 (Integer 4))
+                                        (IntegerConstant 4 (Integer 4) Decimal)
                                     )
-                                    (IntegerConstant 4 (Integer 4))
+                                    (IntegerConstant 4 (Integer 4) Decimal)
                                     Parameter
                                     (Integer 4)
                                     ()
@@ -192,12 +192,12 @@
                                     Local
                                     (IntrinsicElementalFunction
                                         SelectedIntKind
-                                        [(IntegerConstant 10 (Integer 4))]
+                                        [(IntegerConstant 10 (Integer 4) Decimal)]
                                         0
                                         (Integer 4)
-                                        (IntegerConstant 8 (Integer 4))
+                                        (IntegerConstant 8 (Integer 4) Decimal)
                                     )
-                                    (IntegerConstant 8 (Integer 4))
+                                    (IntegerConstant 8 (Integer 4) Decimal)
                                     Parameter
                                     (Integer 4)
                                     ()
@@ -214,14 +214,14 @@
                                     Local
                                     (IntrinsicElementalFunction
                                         SelectedRealKind
-                                        [(IntegerConstant 5 (Integer 4))
-                                        (IntegerConstant 0 (Integer 4))
-                                        (IntegerConstant 2 (Integer 4))]
+                                        [(IntegerConstant 5 (Integer 4) Decimal)
+                                        (IntegerConstant 0 (Integer 4) Decimal)
+                                        (IntegerConstant 2 (Integer 4) Decimal)]
                                         0
                                         (Integer 4)
-                                        (IntegerConstant 4 (Integer 4))
+                                        (IntegerConstant 4 (Integer 4) Decimal)
                                     )
-                                    (IntegerConstant 4 (Integer 4))
+                                    (IntegerConstant 4 (Integer 4) Decimal)
                                     Parameter
                                     (Integer 4)
                                     ()
@@ -238,14 +238,14 @@
                                     Local
                                     (IntrinsicElementalFunction
                                         SelectedRealKind
-                                        [(IntegerConstant 5 (Integer 4))
-                                        (IntegerConstant 0 (Integer 4))
-                                        (IntegerConstant 2 (Integer 4))]
+                                        [(IntegerConstant 5 (Integer 4) Decimal)
+                                        (IntegerConstant 0 (Integer 4) Decimal)
+                                        (IntegerConstant 2 (Integer 4) Decimal)]
                                         0
                                         (Integer 4)
-                                        (IntegerConstant 4 (Integer 4))
+                                        (IntegerConstant 4 (Integer 4) Decimal)
                                     )
-                                    (IntegerConstant 4 (Integer 4))
+                                    (IntegerConstant 4 (Integer 4) Decimal)
                                     Parameter
                                     (Integer 4)
                                     ()
@@ -262,14 +262,14 @@
                                     Local
                                     (IntrinsicElementalFunction
                                         SelectedRealKind
-                                        [(IntegerConstant 5 (Integer 8))
-                                        (IntegerConstant 0 (Integer 4))
-                                        (IntegerConstant 2 (Integer 4))]
+                                        [(IntegerConstant 5 (Integer 8) Decimal)
+                                        (IntegerConstant 0 (Integer 4) Decimal)
+                                        (IntegerConstant 2 (Integer 4) Decimal)]
                                         0
                                         (Integer 4)
-                                        (IntegerConstant 4 (Integer 4))
+                                        (IntegerConstant 4 (Integer 4) Decimal)
                                     )
-                                    (IntegerConstant 4 (Integer 4))
+                                    (IntegerConstant 4 (Integer 4) Decimal)
                                     Parameter
                                     (Integer 4)
                                     ()
@@ -286,14 +286,14 @@
                                     Local
                                     (IntrinsicElementalFunction
                                         SelectedRealKind
-                                        [(IntegerConstant 8 (Integer 4))
-                                        (IntegerConstant 0 (Integer 4))
-                                        (IntegerConstant 2 (Integer 4))]
+                                        [(IntegerConstant 8 (Integer 4) Decimal)
+                                        (IntegerConstant 0 (Integer 4) Decimal)
+                                        (IntegerConstant 2 (Integer 4) Decimal)]
                                         0
                                         (Integer 4)
-                                        (IntegerConstant 8 (Integer 4))
+                                        (IntegerConstant 8 (Integer 4) Decimal)
                                     )
-                                    (IntegerConstant 8 (Integer 4))
+                                    (IntegerConstant 8 (Integer 4) Decimal)
                                     Parameter
                                     (Integer 4)
                                     ()
@@ -331,16 +331,16 @@
                     )
                     (Assignment
                         (Var 2 i1)
-                        (IntegerConstant 5 (Integer 4))
+                        (IntegerConstant 5 (Integer 4) Decimal)
                         ()
                     )
                     (Print
                         [(IntrinsicElementalFunction
                             SelectedIntKind
-                            [(IntegerConstant 5 (Integer 4))]
+                            [(IntegerConstant 5 (Integer 4) Decimal)]
                             0
                             (Integer 4)
-                            (IntegerConstant 4 (Integer 4))
+                            (IntegerConstant 4 (Integer 4) Decimal)
                         )
                         (Var 2 k1)]
                         ()
@@ -349,10 +349,10 @@
                     (Print
                         [(IntrinsicElementalFunction
                             SelectedIntKind
-                            [(IntegerConstant 5 (Integer 4))]
+                            [(IntegerConstant 5 (Integer 4) Decimal)]
                             0
                             (Integer 4)
-                            (IntegerConstant 4 (Integer 4))
+                            (IntegerConstant 4 (Integer 4) Decimal)
                         )
                         (Var 2 k2)]
                         ()
@@ -361,10 +361,10 @@
                     (Print
                         [(IntrinsicElementalFunction
                             SelectedIntKind
-                            [(IntegerConstant 5 (Integer 8))]
+                            [(IntegerConstant 5 (Integer 8) Decimal)]
                             0
                             (Integer 4)
-                            (IntegerConstant 4 (Integer 4))
+                            (IntegerConstant 4 (Integer 4) Decimal)
                         )
                         (Var 2 k3)]
                         ()
@@ -373,10 +373,10 @@
                     (Print
                         [(IntrinsicElementalFunction
                             SelectedIntKind
-                            [(IntegerConstant 8 (Integer 4))]
+                            [(IntegerConstant 8 (Integer 4) Decimal)]
                             0
                             (Integer 4)
-                            (IntegerConstant 4 (Integer 4))
+                            (IntegerConstant 4 (Integer 4) Decimal)
                         )
                         (Var 2 k4)]
                         ()
@@ -385,10 +385,10 @@
                     (Print
                         [(IntrinsicElementalFunction
                             SelectedIntKind
-                            [(IntegerConstant 10 (Integer 4))]
+                            [(IntegerConstant 10 (Integer 4) Decimal)]
                             0
                             (Integer 4)
-                            (IntegerConstant 8 (Integer 4))
+                            (IntegerConstant 8 (Integer 4) Decimal)
                         )
                         (Var 2 k5)]
                         ()
@@ -397,12 +397,12 @@
                     (Print
                         [(IntrinsicElementalFunction
                             SelectedRealKind
-                            [(IntegerConstant 5 (Integer 4))
-                            (IntegerConstant 0 (Integer 4))
-                            (IntegerConstant 2 (Integer 4))]
+                            [(IntegerConstant 5 (Integer 4) Decimal)
+                            (IntegerConstant 0 (Integer 4) Decimal)
+                            (IntegerConstant 2 (Integer 4) Decimal)]
                             0
                             (Integer 4)
-                            (IntegerConstant 4 (Integer 4))
+                            (IntegerConstant 4 (Integer 4) Decimal)
                         )
                         (Var 2 k6)]
                         ()
@@ -411,12 +411,12 @@
                     (Print
                         [(IntrinsicElementalFunction
                             SelectedRealKind
-                            [(IntegerConstant 5 (Integer 4))
-                            (IntegerConstant 0 (Integer 4))
-                            (IntegerConstant 2 (Integer 4))]
+                            [(IntegerConstant 5 (Integer 4) Decimal)
+                            (IntegerConstant 0 (Integer 4) Decimal)
+                            (IntegerConstant 2 (Integer 4) Decimal)]
                             0
                             (Integer 4)
-                            (IntegerConstant 4 (Integer 4))
+                            (IntegerConstant 4 (Integer 4) Decimal)
                         )
                         (Var 2 k7)]
                         ()
@@ -425,12 +425,12 @@
                     (Print
                         [(IntrinsicElementalFunction
                             SelectedRealKind
-                            [(IntegerConstant 5 (Integer 8))
-                            (IntegerConstant 0 (Integer 4))
-                            (IntegerConstant 2 (Integer 4))]
+                            [(IntegerConstant 5 (Integer 8) Decimal)
+                            (IntegerConstant 0 (Integer 4) Decimal)
+                            (IntegerConstant 2 (Integer 4) Decimal)]
                             0
                             (Integer 4)
-                            (IntegerConstant 4 (Integer 4))
+                            (IntegerConstant 4 (Integer 4) Decimal)
                         )
                         (Var 2 k8)]
                         ()
@@ -439,12 +439,12 @@
                     (Print
                         [(IntrinsicElementalFunction
                             SelectedRealKind
-                            [(IntegerConstant 8 (Integer 4))
-                            (IntegerConstant 0 (Integer 4))
-                            (IntegerConstant 2 (Integer 4))]
+                            [(IntegerConstant 8 (Integer 4) Decimal)
+                            (IntegerConstant 0 (Integer 4) Decimal)
+                            (IntegerConstant 2 (Integer 4) Decimal)]
                             0
                             (Integer 4)
-                            (IntegerConstant 8 (Integer 4))
+                            (IntegerConstant 8 (Integer 4) Decimal)
                         )
                         (Var 2 k9)]
                         ()
@@ -459,7 +459,7 @@
                             )]
                             0
                             (Integer 4)
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                         )
                         (Var 2 k10)]
                         ()
@@ -480,8 +480,8 @@
                         [(IntrinsicElementalFunction
                             SelectedRealKind
                             [(Var 2 i1)
-                            (IntegerConstant 0 (Integer 4))
-                            (IntegerConstant 2 (Integer 4))]
+                            (IntegerConstant 0 (Integer 4) Decimal)
+                            (IntegerConstant 2 (Integer 4) Decimal)]
                             0
                             (Integer 4)
                             ()
@@ -503,12 +503,12 @@
                     (Print
                         [(IntrinsicElementalFunction
                             SelectedRealKind
-                            [(IntegerConstant 5 (Integer 4))
-                            (IntegerConstant 0 (Integer 4))
-                            (IntegerConstant 2 (Integer 4))]
+                            [(IntegerConstant 5 (Integer 4) Decimal)
+                            (IntegerConstant 0 (Integer 4) Decimal)
+                            (IntegerConstant 2 (Integer 4) Decimal)]
                             0
                             (Integer 4)
-                            (IntegerConstant 4 (Integer 4))
+                            (IntegerConstant 4 (Integer 4) Decimal)
                         )
                         (Var 2 k11)]
                         ()
@@ -517,12 +517,12 @@
                     (Print
                         [(IntrinsicElementalFunction
                             SelectedRealKind
-                            [(IntegerConstant 10 (Integer 4))
-                            (IntegerConstant 0 (Integer 4))
-                            (IntegerConstant 2 (Integer 4))]
+                            [(IntegerConstant 10 (Integer 4) Decimal)
+                            (IntegerConstant 0 (Integer 4) Decimal)
+                            (IntegerConstant 2 (Integer 4) Decimal)]
                             0
                             (Integer 4)
-                            (IntegerConstant 8 (Integer 4))
+                            (IntegerConstant 8 (Integer 4) Decimal)
                         )
                         (Var 2 k12)]
                         ()

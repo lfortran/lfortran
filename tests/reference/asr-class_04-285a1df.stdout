@@ -307,9 +307,9 @@
                             ()
                         )
                         (IntegerUnaryMinus
-                            (IntegerConstant 20 (Integer 4))
+                            (IntegerConstant 20 (Integer 4) Decimal)
                             (Integer 4)
-                            (IntegerConstant -20 (Integer 4))
+                            (IntegerConstant -20 (Integer 4) Decimal)
                         )
                         ()
                     )
@@ -327,7 +327,7 @@
                             (Integer 4)
                             ()
                         )
-                        (IntegerConstant 9 (Integer 4))
+                        (IntegerConstant 9 (Integer 4) Decimal)
                         ()
                     )
                     (Assignment
@@ -344,7 +344,7 @@
                             (Integer 4)
                             ()
                         )
-                        (IntegerConstant 11 (Integer 4))
+                        (IntegerConstant 11 (Integer 4) Decimal)
                         ()
                     )
                     (Print
@@ -450,7 +450,7 @@
                                 ()
                             )
                             NotEq
-                            (IntegerConstant 0 (Integer 4))
+                            (IntegerConstant 0 (Integer 4) Decimal)
                             (Logical 4)
                             ()
                         )

@@ -63,9 +63,9 @@
                     []
                     [(If
                         (IntegerCompare
-                            (IntegerConstant 0 (Integer 4))
+                            (IntegerConstant 0 (Integer 4) Decimal)
                             Lt
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             (Logical 4)
                             (LogicalConstant
                                 .true.
@@ -100,14 +100,14 @@
                     (SubroutineCall
                         1 f
                         ()
-                        [((IntegerConstant 1 (Integer 4)))]
+                        [((IntegerConstant 1 (Integer 4) Decimal))]
                         ()
                     )
                     (If
                         (IntegerCompare
-                            (IntegerConstant 0 (Integer 4))
+                            (IntegerConstant 0 (Integer 4) Decimal)
                             Lt
-                            (IntegerConstant 2 (Integer 4))
+                            (IntegerConstant 2 (Integer 4) Decimal)
                             (Logical 4)
                             (LogicalConstant
                                 .true.
@@ -119,9 +119,9 @@
                     )
                     (If
                         (IntegerCompare
-                            (IntegerConstant 0 (Integer 4))
+                            (IntegerConstant 0 (Integer 4) Decimal)
                             Gt
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             (Logical 4)
                             (LogicalConstant
                                 .false.
@@ -136,9 +136,9 @@
                     )
                     (If
                         (IntegerCompare
-                            (IntegerConstant 0 (Integer 4))
+                            (IntegerConstant 0 (Integer 4) Decimal)
                             Lt
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             (Logical 4)
                             (LogicalConstant
                                 .true.
@@ -148,7 +148,7 @@
                         [(SubroutineCall
                             1 f
                             ()
-                            [((IntegerConstant 2 (Integer 4)))]
+                            [((IntegerConstant 2 (Integer 4) Decimal))]
                             ()
                         )]
                         []

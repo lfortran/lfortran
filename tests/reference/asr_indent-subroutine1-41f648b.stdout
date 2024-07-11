@@ -59,14 +59,14 @@
                     []
                     [(Assignment
                         (Var 2 x)
-                        (IntegerConstant 1 (Integer 4))
+                        (IntegerConstant 1 (Integer 4) Decimal)
                         ()
                     )
                     (DoLoop
                         ()
                         ((Var 2 i)
-                        (IntegerConstant 1 (Integer 4))
-                        (IntegerConstant 10 (Integer 4))
+                        (IntegerConstant 1 (Integer 4) Decimal)
+                        (IntegerConstant 10 (Integer 4) Decimal)
                         ())
                         [(Assignment
                             (Var 2 x)
@@ -144,14 +144,14 @@
                     []
                     [(Assignment
                         (Var 3 x)
-                        (IntegerConstant 1 (Integer 4))
+                        (IntegerConstant 1 (Integer 4) Decimal)
                         ()
                     )
                     (DoLoop
                         ()
                         ((Var 3 i)
-                        (IntegerConstant 1 (Integer 4))
-                        (IntegerConstant 10 (Integer 4))
+                        (IntegerConstant 1 (Integer 4) Decimal)
+                        (IntegerConstant 10 (Integer 4) Decimal)
                         ())
                         [(Assignment
                             (Var 3 x)

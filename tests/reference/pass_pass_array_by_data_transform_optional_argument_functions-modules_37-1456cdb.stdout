@@ -361,8 +361,8 @@
                                     (Var 13 verbose)]
                                     [(Allocate
                                         [((Var 13 build_dirs)
-                                        [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 0 (Integer 4)))]
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 0 (Integer 4) Decimal))]
                                         ()
                                         ())]
                                         ()
@@ -372,7 +372,7 @@
                                     (DoLoop
                                         ()
                                         ((Var 13 i)
-                                        (IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 1 (Integer 4) Decimal)
                                         (ArraySize
                                             (Var 13 targets)
                                             ()
@@ -595,14 +595,14 @@
                                         ))
                                         ((ArrayBound
                                             (Var 10 targets)
-                                            (IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 1 (Integer 4) Decimal)
                                             (Integer 4)
                                             LBound
                                             ()
                                         ))
                                         ((ArraySize
                                             (Var 10 targets)
-                                            (IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 1 (Integer 4) Decimal)
                                             (Integer 4)
                                             ()
                                         ))

@@ -76,22 +76,22 @@
                     []
                     [(Assignment
                         (Var 2 from)
-                        (IntegerConstant 10 (Integer 4))
+                        (IntegerConstant 10 (Integer 4) Decimal)
                         ()
                     )
                     (Assignment
                         (Var 2 to)
-                        (IntegerConstant 4 (Integer 4))
+                        (IntegerConstant 4 (Integer 4) Decimal)
                         ()
                     )
                     (Assignment
                         (Var 2 from8)
-                        (IntegerConstant 10 (Integer 8))
+                        (IntegerConstant 10 (Integer 8) Decimal)
                         ()
                     )
                     (Assignment
                         (Var 2 to8)
-                        (IntegerConstant 4 (Integer 8))
+                        (IntegerConstant 4 (Integer 8) Decimal)
                         ()
                     )
                     (Assignment
@@ -99,10 +99,10 @@
                         (IntrinsicElementalFunction
                             Mvbits
                             [(Var 2 from)
-                            (IntegerConstant 2 (Integer 4))
-                            (IntegerConstant 2 (Integer 4))
+                            (IntegerConstant 2 (Integer 4) Decimal)
+                            (IntegerConstant 2 (Integer 4) Decimal)
                             (Var 2 to)
-                            (IntegerConstant 0 (Integer 4))]
+                            (IntegerConstant 0 (Integer 4) Decimal)]
                             0
                             (Integer 4)
                             ()
@@ -113,7 +113,7 @@
                         (IntegerCompare
                             (Var 2 from)
                             NotEq
-                            (IntegerConstant 10 (Integer 4))
+                            (IntegerConstant 10 (Integer 4) Decimal)
                             (Logical 4)
                             ()
                         )
@@ -126,7 +126,7 @@
                         (IntegerCompare
                             (Var 2 to)
                             NotEq
-                            (IntegerConstant 6 (Integer 4))
+                            (IntegerConstant 6 (Integer 4) Decimal)
                             (Logical 4)
                             ()
                         )
@@ -140,10 +140,10 @@
                         (IntrinsicElementalFunction
                             Mvbits
                             [(Var 2 from8)
-                            (IntegerConstant 2 (Integer 4))
-                            (IntegerConstant 2 (Integer 4))
+                            (IntegerConstant 2 (Integer 4) Decimal)
+                            (IntegerConstant 2 (Integer 4) Decimal)
                             (Var 2 to8)
-                            (IntegerConstant 0 (Integer 4))]
+                            (IntegerConstant 0 (Integer 4) Decimal)]
                             0
                             (Integer 8)
                             ()
@@ -155,10 +155,10 @@
                             (Var 2 from8)
                             NotEq
                             (Cast
-                                (IntegerConstant 10 (Integer 4))
+                                (IntegerConstant 10 (Integer 4) Decimal)
                                 IntegerToInteger
                                 (Integer 8)
-                                (IntegerConstant 10 (Integer 8))
+                                (IntegerConstant 10 (Integer 8) Decimal)
                             )
                             (Logical 4)
                             ()
@@ -172,7 +172,7 @@
                         (IntegerCompare
                             (Var 2 to8)
                             NotEq
-                            (IntegerConstant 6 (Integer 8))
+                            (IntegerConstant 6 (Integer 8) Decimal)
                             (Logical 4)
                             ()
                         )
@@ -186,10 +186,10 @@
                         (IntrinsicElementalFunction
                             Mvbits
                             [(Var 2 from)
-                            (IntegerConstant 0 (Integer 4))
-                            (IntegerConstant 2 (Integer 4))
+                            (IntegerConstant 0 (Integer 4) Decimal)
+                            (IntegerConstant 2 (Integer 4) Decimal)
                             (Var 2 to)
-                            (IntegerConstant 2 (Integer 4))]
+                            (IntegerConstant 2 (Integer 4) Decimal)]
                             0
                             (Integer 4)
                             ()
@@ -200,7 +200,7 @@
                         (IntegerCompare
                             (Var 2 from)
                             NotEq
-                            (IntegerConstant 10 (Integer 4))
+                            (IntegerConstant 10 (Integer 4) Decimal)
                             (Logical 4)
                             ()
                         )
@@ -213,7 +213,7 @@
                         (IntegerCompare
                             (Var 2 to)
                             NotEq
-                            (IntegerConstant 10 (Integer 4))
+                            (IntegerConstant 10 (Integer 4) Decimal)
                             (Logical 4)
                             ()
                         )
@@ -227,10 +227,10 @@
                         (IntrinsicElementalFunction
                             Mvbits
                             [(Var 2 from8)
-                            (IntegerConstant 0 (Integer 4))
-                            (IntegerConstant 2 (Integer 4))
+                            (IntegerConstant 0 (Integer 4) Decimal)
+                            (IntegerConstant 2 (Integer 4) Decimal)
                             (Var 2 to8)
-                            (IntegerConstant 2 (Integer 4))]
+                            (IntegerConstant 2 (Integer 4) Decimal)]
                             0
                             (Integer 8)
                             ()
@@ -242,10 +242,10 @@
                             (Var 2 from8)
                             NotEq
                             (Cast
-                                (IntegerConstant 10 (Integer 4))
+                                (IntegerConstant 10 (Integer 4) Decimal)
                                 IntegerToInteger
                                 (Integer 8)
-                                (IntegerConstant 10 (Integer 8))
+                                (IntegerConstant 10 (Integer 8) Decimal)
                             )
                             (Logical 4)
                             ()
@@ -259,7 +259,7 @@
                         (IntegerCompare
                             (Var 2 to8)
                             NotEq
-                            (IntegerConstant 10 (Integer 8))
+                            (IntegerConstant 10 (Integer 8) Decimal)
                             (Logical 4)
                             ()
                         )
@@ -271,29 +271,29 @@
                     (Assignment
                         (Var 2 from)
                         (IntegerUnaryMinus
-                            (IntegerConstant 20 (Integer 4))
+                            (IntegerConstant 20 (Integer 4) Decimal)
                             (Integer 4)
-                            (IntegerConstant -20 (Integer 4))
+                            (IntegerConstant -20 (Integer 4) Decimal)
                         )
                         ()
                     )
                     (Assignment
                         (Var 2 to)
-                        (IntegerConstant 4 (Integer 4))
+                        (IntegerConstant 4 (Integer 4) Decimal)
                         ()
                     )
                     (Assignment
                         (Var 2 from8)
                         (IntegerUnaryMinus
-                            (IntegerConstant 20 (Integer 8))
+                            (IntegerConstant 20 (Integer 8) Decimal)
                             (Integer 8)
-                            (IntegerConstant -20 (Integer 8))
+                            (IntegerConstant -20 (Integer 8) Decimal)
                         )
                         ()
                     )
                     (Assignment
                         (Var 2 to8)
-                        (IntegerConstant 4 (Integer 8))
+                        (IntegerConstant 4 (Integer 8) Decimal)
                         ()
                     )
                     (Assignment
@@ -301,10 +301,10 @@
                         (IntrinsicElementalFunction
                             Mvbits
                             [(Var 2 from)
-                            (IntegerConstant 29 (Integer 4))
-                            (IntegerConstant 2 (Integer 4))
+                            (IntegerConstant 29 (Integer 4) Decimal)
+                            (IntegerConstant 2 (Integer 4) Decimal)
                             (Var 2 to)
-                            (IntegerConstant 2 (Integer 4))]
+                            (IntegerConstant 2 (Integer 4) Decimal)]
                             0
                             (Integer 4)
                             ()
@@ -316,9 +316,9 @@
                             (Var 2 from)
                             NotEq
                             (IntegerUnaryMinus
-                                (IntegerConstant 20 (Integer 4))
+                                (IntegerConstant 20 (Integer 4) Decimal)
                                 (Integer 4)
-                                (IntegerConstant -20 (Integer 4))
+                                (IntegerConstant -20 (Integer 4) Decimal)
                             )
                             (Logical 4)
                             ()
@@ -332,7 +332,7 @@
                         (IntegerCompare
                             (Var 2 to)
                             NotEq
-                            (IntegerConstant 12 (Integer 4))
+                            (IntegerConstant 12 (Integer 4) Decimal)
                             (Logical 4)
                             ()
                         )
@@ -346,10 +346,10 @@
                         (IntrinsicElementalFunction
                             Mvbits
                             [(Var 2 from8)
-                            (IntegerConstant 29 (Integer 4))
-                            (IntegerConstant 2 (Integer 4))
+                            (IntegerConstant 29 (Integer 4) Decimal)
+                            (IntegerConstant 2 (Integer 4) Decimal)
                             (Var 2 to8)
-                            (IntegerConstant 2 (Integer 4))]
+                            (IntegerConstant 2 (Integer 4) Decimal)]
                             0
                             (Integer 8)
                             ()
@@ -362,13 +362,13 @@
                             NotEq
                             (Cast
                                 (IntegerUnaryMinus
-                                    (IntegerConstant 20 (Integer 4))
+                                    (IntegerConstant 20 (Integer 4) Decimal)
                                     (Integer 4)
-                                    (IntegerConstant -20 (Integer 4))
+                                    (IntegerConstant -20 (Integer 4) Decimal)
                                 )
                                 IntegerToInteger
                                 (Integer 8)
-                                (IntegerConstant -20 (Integer 8))
+                                (IntegerConstant -20 (Integer 8) Decimal)
                             )
                             (Logical 4)
                             ()
@@ -382,7 +382,7 @@
                         (IntegerCompare
                             (Var 2 to8)
                             NotEq
-                            (IntegerConstant 12 (Integer 8))
+                            (IntegerConstant 12 (Integer 8) Decimal)
                             (Logical 4)
                             ()
                         )
@@ -396,10 +396,10 @@
                         (IntrinsicElementalFunction
                             Mvbits
                             [(Var 2 from)
-                            (IntegerConstant 2 (Integer 4))
-                            (IntegerConstant 2 (Integer 4))
+                            (IntegerConstant 2 (Integer 4) Decimal)
+                            (IntegerConstant 2 (Integer 4) Decimal)
                             (Var 2 to)
-                            (IntegerConstant 29 (Integer 4))]
+                            (IntegerConstant 29 (Integer 4) Decimal)]
                             0
                             (Integer 4)
                             ()
@@ -411,9 +411,9 @@
                             (Var 2 from)
                             NotEq
                             (IntegerUnaryMinus
-                                (IntegerConstant 20 (Integer 4))
+                                (IntegerConstant 20 (Integer 4) Decimal)
                                 (Integer 4)
-                                (IntegerConstant -20 (Integer 4))
+                                (IntegerConstant -20 (Integer 4) Decimal)
                             )
                             (Logical 4)
                             ()
@@ -427,7 +427,7 @@
                         (IntegerCompare
                             (Var 2 to)
                             NotEq
-                            (IntegerConstant 1610612748 (Integer 4))
+                            (IntegerConstant 1610612748 (Integer 4) Decimal)
                             (Logical 4)
                             ()
                         )
@@ -441,10 +441,10 @@
                         (IntrinsicElementalFunction
                             Mvbits
                             [(Var 2 from8)
-                            (IntegerConstant 2 (Integer 4))
-                            (IntegerConstant 2 (Integer 4))
+                            (IntegerConstant 2 (Integer 4) Decimal)
+                            (IntegerConstant 2 (Integer 4) Decimal)
                             (Var 2 to8)
-                            (IntegerConstant 29 (Integer 4))]
+                            (IntegerConstant 29 (Integer 4) Decimal)]
                             0
                             (Integer 8)
                             ()
@@ -457,13 +457,13 @@
                             NotEq
                             (Cast
                                 (IntegerUnaryMinus
-                                    (IntegerConstant 20 (Integer 4))
+                                    (IntegerConstant 20 (Integer 4) Decimal)
                                     (Integer 4)
-                                    (IntegerConstant -20 (Integer 4))
+                                    (IntegerConstant -20 (Integer 4) Decimal)
                                 )
                                 IntegerToInteger
                                 (Integer 8)
-                                (IntegerConstant -20 (Integer 8))
+                                (IntegerConstant -20 (Integer 8) Decimal)
                             )
                             (Logical 4)
                             ()
@@ -477,7 +477,7 @@
                         (IntegerCompare
                             (Var 2 to8)
                             NotEq
-                            (IntegerConstant 1610612748 (Integer 8))
+                            (IntegerConstant 1610612748 (Integer 8) Decimal)
                             (Logical 4)
                             ()
                         )

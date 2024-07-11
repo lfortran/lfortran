@@ -926,8 +926,8 @@
                                         (FunctionCall
                                             10 add_integer
                                             ()
-                                            [((IntegerConstant 5 (Integer 4)))
-                                            ((IntegerConstant 9 (Integer 4)))]
+                                            [((IntegerConstant 5 (Integer 4) Decimal))
+                                            ((IntegerConstant 9 (Integer 4) Decimal))]
                                             (Integer 4)
                                             ()
                                             ()
@@ -939,9 +939,9 @@
                                         (FunctionCall
                                             10 add_integer2
                                             ()
-                                            [((IntegerConstant 5 (Integer 4)))
-                                            ((IntegerConstant 9 (Integer 4)))
-                                            ((IntegerConstant 10 (Integer 4)))]
+                                            [((IntegerConstant 5 (Integer 4) Decimal))
+                                            ((IntegerConstant 9 (Integer 4) Decimal))
+                                            ((IntegerConstant 10 (Integer 4) Decimal))]
                                             (Integer 4)
                                             ()
                                             ()

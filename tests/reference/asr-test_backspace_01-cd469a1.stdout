@@ -29,8 +29,8 @@
                                     u
                                     []
                                     Local
-                                    (IntegerConstant 10 (Integer 4))
-                                    (IntegerConstant 10 (Integer 4))
+                                    (IntegerConstant 10 (Integer 4) Decimal)
+                                    (IntegerConstant 10 (Integer 4) Decimal)
                                     Save
                                     (Integer 4)
                                     ()
@@ -44,7 +44,7 @@
                     []
                     [(FileOpen
                         0
-                        (IntegerConstant 10 (Integer 4))
+                        (IntegerConstant 10 (Integer 4) Decimal)
                         (StringConstant
                             "file_01_data.txt"
                             (Character 1 16 ())

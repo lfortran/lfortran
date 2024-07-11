@@ -216,7 +216,7 @@
                                                             [((ArrayItem
                                                                 (Var 14 a)
                                                                 [(()
-                                                                (IntegerConstant 1 (Integer 4))
+                                                                (IntegerConstant 1 (Integer 4) Decimal)
                                                                 ())]
                                                                 (TypeParameter
                                                                     t
@@ -235,7 +235,7 @@
                                                     (DoLoop
                                                         ()
                                                         ((Var 14 i)
-                                                        (IntegerConstant 1 (Integer 4))
+                                                        (IntegerConstant 1 (Integer 4) Decimal)
                                                         (ArraySize
                                                             (Var 14 a)
                                                             ()
@@ -294,7 +294,7 @@
                                                                         (TypeParameter
                                                                             t
                                                                         )
-                                                                        [((IntegerConstant 1 (Integer 4))
+                                                                        [((IntegerConstant 1 (Integer 4) Decimal)
                                                                         (Var 15 n))]
                                                                         PointerToDataArray
                                                                     )
@@ -362,7 +362,7 @@
                                                             (TypeParameter
                                                                 t
                                                             )
-                                                            [((IntegerConstant 1 (Integer 4))
+                                                            [((IntegerConstant 1 (Integer 4) Decimal)
                                                             (FunctionParam
                                                                 0
                                                                 (Integer 4)
@@ -396,7 +396,7 @@
                                                             [((ArrayItem
                                                                 (Var 15 a)
                                                                 [(()
-                                                                (IntegerConstant 1 (Integer 4))
+                                                                (IntegerConstant 1 (Integer 4) Decimal)
                                                                 ())]
                                                                 (TypeParameter
                                                                     t
@@ -415,7 +415,7 @@
                                                     (DoLoop
                                                         ()
                                                         ((Var 15 i)
-                                                        (IntegerConstant 1 (Integer 4))
+                                                        (IntegerConstant 1 (Integer 4) Decimal)
                                                         (ArraySize
                                                             (Var 15 a)
                                                             ()
@@ -856,8 +856,8 @@
                                                     Default
                                                     (Array
                                                         (Integer 4)
-                                                        [((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 10 (Integer 4)))]
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 10 (Integer 4) Decimal))]
                                                         FixedSizeArray
                                                     )
                                                     ()
@@ -877,8 +877,8 @@
                                                     Default
                                                     (Array
                                                         (Integer 4)
-                                                        [((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 10 (Integer 4)))]
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 10 (Integer 4) Decimal))]
                                                         FixedSizeArray
                                                     )
                                                     ()
@@ -992,7 +992,7 @@
                                                             [((ArrayItem
                                                                 (Var 17 a)
                                                                 [(()
-                                                                (IntegerConstant 1 (Integer 4))
+                                                                (IntegerConstant 1 (Integer 4) Decimal)
                                                                 ())]
                                                                 (Integer 4)
                                                                 ColMajor
@@ -1007,7 +1007,7 @@
                                                     (DoLoop
                                                         ()
                                                         ((Var 17 i)
-                                                        (IntegerConstant 1 (Integer 4))
+                                                        (IntegerConstant 1 (Integer 4) Decimal)
                                                         (ArraySize
                                                             (Var 17 a)
                                                             ()
@@ -1060,7 +1060,7 @@
                                                                     Default
                                                                     (Array
                                                                         (Integer 4)
-                                                                        [((IntegerConstant 1 (Integer 4))
+                                                                        [((IntegerConstant 1 (Integer 4) Decimal)
                                                                         (Var 18 n))]
                                                                         PointerToDataArray
                                                                     )
@@ -1124,7 +1124,7 @@
                                                         [(Integer 4)
                                                         (Array
                                                             (Integer 4)
-                                                            [((IntegerConstant 1 (Integer 4))
+                                                            [((IntegerConstant 1 (Integer 4) Decimal)
                                                             (FunctionParam
                                                                 0
                                                                 (Integer 4)
@@ -1155,7 +1155,7 @@
                                                             [((ArrayItem
                                                                 (Var 18 a)
                                                                 [(()
-                                                                (IntegerConstant 1 (Integer 4))
+                                                                (IntegerConstant 1 (Integer 4) Decimal)
                                                                 ())]
                                                                 (Integer 4)
                                                                 ColMajor
@@ -1170,7 +1170,7 @@
                                                     (DoLoop
                                                         ()
                                                         ((Var 18 i)
-                                                        (IntegerConstant 1 (Integer 4))
+                                                        (IntegerConstant 1 (Integer 4) Decimal)
                                                         (ArraySize
                                                             (Var 18 a)
                                                             ()
@@ -1260,12 +1260,12 @@
                                     [(DoLoop
                                         ()
                                         ((Var 16 i)
-                                        (IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 1 (Integer 4) Decimal)
                                         (ArraySize
                                             (Var 16 a)
                                             ()
                                             (Integer 4)
-                                            (IntegerConstant 10 (Integer 4))
+                                            (IntegerConstant 10 (Integer 4) Decimal)
                                         )
                                         ())
                                         [(Assignment
@@ -1307,8 +1307,8 @@
                                                 DescriptorArray
                                                 (Array
                                                     (Integer 4)
-                                                    [((IntegerConstant 1 (Integer 4))
-                                                    (IntegerConstant 10 (Integer 4)))]
+                                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                                    (IntegerConstant 10 (Integer 4) Decimal))]
                                                     DescriptorArray
                                                 )
                                                 ()
@@ -1328,7 +1328,7 @@
                                                 (Var 16 b)
                                                 ()
                                                 (Integer 4)
-                                                (IntegerConstant 10 (Integer 4))
+                                                (IntegerConstant 10 (Integer 4) Decimal)
                                             ))
                                             ((ArrayPhysicalCast
                                                 (Var 16 b)
@@ -1336,8 +1336,8 @@
                                                 PointerToDataArray
                                                 (Array
                                                     (Integer 4)
-                                                    [((IntegerConstant 1 (Integer 4))
-                                                    (IntegerConstant 10 (Integer 4)))]
+                                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                                    (IntegerConstant 10 (Integer 4) Decimal))]
                                                     PointerToDataArray
                                                 )
                                                 ()
@@ -1633,7 +1633,7 @@
                                     [(Var 4 x)]
                                     [(Assignment
                                         (Var 4 r)
-                                        (IntegerConstant 0 (Integer 4))
+                                        (IntegerConstant 0 (Integer 4) Decimal)
                                         ()
                                     )]
                                     (Var 4 r)
@@ -1700,7 +1700,7 @@
                                     [(Assignment
                                         (Var 6 r)
                                         (Cast
-                                            (IntegerConstant 0 (Integer 4))
+                                            (IntegerConstant 0 (Integer 4) Decimal)
                                             IntegerToReal
                                             (Real 4)
                                             (RealConstant

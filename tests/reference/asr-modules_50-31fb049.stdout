@@ -149,7 +149,7 @@
                                                             (ArrayItem
                                                                 (Var 5 modules_used)
                                                                 [(()
-                                                                (IntegerConstant 1 (Integer 4))
+                                                                (IntegerConstant 1 (Integer 4) Decimal)
                                                                 ())]
                                                                 (StructType
                                                                     4 int_t
@@ -161,7 +161,7 @@
                                                             (Integer 4)
                                                             ()
                                                         )
-                                                        (IntegerConstant 2 (Integer 4))
+                                                        (IntegerConstant 2 (Integer 4) Decimal)
                                                         ()
                                                     )
                                                     (Assignment
@@ -234,8 +234,8 @@
                                     []
                                     [(Allocate
                                         [((Var 5 modules_used)
-                                        [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 1 (Integer 4)))]
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 1 (Integer 4) Decimal))]
                                         ()
                                         ())]
                                         ()
@@ -247,7 +247,7 @@
                                             (ArrayItem
                                                 (Var 5 modules_used)
                                                 [(()
-                                                (IntegerConstant 1 (Integer 4))
+                                                (IntegerConstant 1 (Integer 4) Decimal)
                                                 ())]
                                                 (StructType
                                                     4 int_t
@@ -259,7 +259,7 @@
                                             (Integer 4)
                                             ()
                                         )
-                                        (IntegerConstant 0 (Integer 4))
+                                        (IntegerConstant 0 (Integer 4) Decimal)
                                         ()
                                     )
                                     (SubroutineCall
@@ -278,7 +278,7 @@
                                             (ArrayItem
                                                 (Var 5 modules_used)
                                                 [(()
-                                                (IntegerConstant 1 (Integer 4))
+                                                (IntegerConstant 1 (Integer 4) Decimal)
                                                 ())]
                                                 (StructType
                                                     4 int_t
@@ -299,7 +299,7 @@
                                                 (ArrayItem
                                                     (Var 5 modules_used)
                                                     [(()
-                                                    (IntegerConstant 1 (Integer 4))
+                                                    (IntegerConstant 1 (Integer 4) Decimal)
                                                     ())]
                                                     (StructType
                                                         4 int_t
@@ -312,7 +312,7 @@
                                                 ()
                                             )
                                             NotEq
-                                            (IntegerConstant 2 (Integer 4))
+                                            (IntegerConstant 2 (Integer 4) Decimal)
                                             (Logical 4)
                                             ()
                                         )

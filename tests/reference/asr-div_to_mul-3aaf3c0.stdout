@@ -79,8 +79,8 @@
                                     y
                                     []
                                     Local
-                                    (IntegerConstant 2 (Integer 4))
-                                    (IntegerConstant 2 (Integer 4))
+                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                    (IntegerConstant 2 (Integer 4) Decimal)
                                     Save
                                     (Integer 4)
                                     ()
@@ -227,7 +227,7 @@
                                         (Var 2 x)
                                         Div
                                         (Cast
-                                            (IntegerConstant 2 (Integer 4))
+                                            (IntegerConstant 2 (Integer 4) Decimal)
                                             IntegerToReal
                                             (Real 4)
                                             (RealConstant
@@ -269,12 +269,12 @@
                                         (IntegerBinOp
                                             (Var 2 y)
                                             Div
-                                            (IntegerConstant 2 (Integer 4))
+                                            (IntegerConstant 2 (Integer 4) Decimal)
                                             (Integer 4)
                                             ()
                                         )
                                         Sub
-                                        (IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 1 (Integer 4) Decimal)
                                         (Integer 4)
                                         ()
                                     )]

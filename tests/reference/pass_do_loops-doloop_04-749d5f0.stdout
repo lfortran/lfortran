@@ -60,18 +60,18 @@
                     []
                     [(Assignment
                         (Var 2 j)
-                        (IntegerConstant 0 (Integer 4))
+                        (IntegerConstant 0 (Integer 4) Decimal)
                         ()
                     )
                     (Assignment
                         (Var 2 k)
-                        (IntegerConstant 2 (Integer 4))
+                        (IntegerConstant 2 (Integer 4) Decimal)
                         ()
                     )
                     (Assignment
                         (Var 2 i)
                         (IntegerBinOp
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             Sub
                             (Var 2 k)
                             (Integer 4)
@@ -86,7 +86,7 @@
                                 (IntegerCompare
                                     (Var 2 k)
                                     Gt
-                                    (IntegerConstant 0 (Integer 4))
+                                    (IntegerConstant 0 (Integer 4) Decimal)
                                     (Logical 4)
                                     ()
                                 )
@@ -100,7 +100,7 @@
                                         ()
                                     )
                                     LtE
-                                    (IntegerConstant 10 (Integer 4))
+                                    (IntegerConstant 10 (Integer 4) Decimal)
                                     (Logical 4)
                                     ()
                                 )
@@ -112,7 +112,7 @@
                                 (IntegerCompare
                                     (Var 2 k)
                                     LtE
-                                    (IntegerConstant 0 (Integer 4))
+                                    (IntegerConstant 0 (Integer 4) Decimal)
                                     (Logical 4)
                                     ()
                                 )
@@ -126,7 +126,7 @@
                                         ()
                                     )
                                     GtE
-                                    (IntegerConstant 10 (Integer 4))
+                                    (IntegerConstant 10 (Integer 4) Decimal)
                                     (Logical 4)
                                     ()
                                 )
@@ -164,7 +164,7 @@
                         (IntegerCompare
                             (Var 2 j)
                             NotEq
-                            (IntegerConstant 25 (Integer 4))
+                            (IntegerConstant 25 (Integer 4) Decimal)
                             (Logical 4)
                             ()
                         )
@@ -180,22 +180,22 @@
                     )
                     (Assignment
                         (Var 2 j)
-                        (IntegerConstant 0 (Integer 4))
+                        (IntegerConstant 0 (Integer 4) Decimal)
                         ()
                     )
                     (Assignment
                         (Var 2 k)
                         (IntegerUnaryMinus
-                            (IntegerConstant 2 (Integer 4))
+                            (IntegerConstant 2 (Integer 4) Decimal)
                             (Integer 4)
-                            (IntegerConstant -2 (Integer 4))
+                            (IntegerConstant -2 (Integer 4) Decimal)
                         )
                         ()
                     )
                     (Assignment
                         (Var 2 i)
                         (IntegerBinOp
-                            (IntegerConstant 10 (Integer 4))
+                            (IntegerConstant 10 (Integer 4) Decimal)
                             Sub
                             (Var 2 k)
                             (Integer 4)
@@ -210,7 +210,7 @@
                                 (IntegerCompare
                                     (Var 2 k)
                                     Gt
-                                    (IntegerConstant 0 (Integer 4))
+                                    (IntegerConstant 0 (Integer 4) Decimal)
                                     (Logical 4)
                                     ()
                                 )
@@ -224,7 +224,7 @@
                                         ()
                                     )
                                     LtE
-                                    (IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4) Decimal)
                                     (Logical 4)
                                     ()
                                 )
@@ -236,7 +236,7 @@
                                 (IntegerCompare
                                     (Var 2 k)
                                     LtE
-                                    (IntegerConstant 0 (Integer 4))
+                                    (IntegerConstant 0 (Integer 4) Decimal)
                                     (Logical 4)
                                     ()
                                 )
@@ -250,7 +250,7 @@
                                         ()
                                     )
                                     GtE
-                                    (IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4) Decimal)
                                     (Logical 4)
                                     ()
                                 )
@@ -288,7 +288,7 @@
                         (IntegerCompare
                             (Var 2 j)
                             NotEq
-                            (IntegerConstant 30 (Integer 4))
+                            (IntegerConstant 30 (Integer 4) Decimal)
                             (Logical 4)
                             ()
                         )
@@ -304,15 +304,15 @@
                     )
                     (Assignment
                         (Var 2 j)
-                        (IntegerConstant 0 (Integer 4))
+                        (IntegerConstant 0 (Integer 4) Decimal)
                         ()
                     )
                     (Assignment
                         (Var 2 i)
                         (IntegerBinOp
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             Sub
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             (Integer 4)
                             ()
                         )
@@ -324,12 +324,12 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 1 (Integer 4) Decimal)
                                 (Integer 4)
                                 ()
                             )
                             LtE
-                            (IntegerConstant 10 (Integer 4))
+                            (IntegerConstant 10 (Integer 4) Decimal)
                             (Logical 4)
                             ()
                         )
@@ -338,7 +338,7 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 1 (Integer 4) Decimal)
                                 (Integer 4)
                                 ()
                             )
@@ -359,7 +359,7 @@
                             (IntegerCompare
                                 (Var 2 i)
                                 Eq
-                                (IntegerConstant 2 (Integer 4))
+                                (IntegerConstant 2 (Integer 4) Decimal)
                                 (Logical 4)
                                 ()
                             )
@@ -374,7 +374,7 @@
                         (IntegerCompare
                             (Var 2 j)
                             NotEq
-                            (IntegerConstant 3 (Integer 4))
+                            (IntegerConstant 3 (Integer 4) Decimal)
                             (Logical 4)
                             ()
                         )
@@ -385,15 +385,15 @@
                     )
                     (Assignment
                         (Var 2 j)
-                        (IntegerConstant 0 (Integer 4))
+                        (IntegerConstant 0 (Integer 4) Decimal)
                         ()
                     )
                     (Assignment
                         (Var 2 i)
                         (IntegerBinOp
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             Sub
-                            (IntegerConstant 2 (Integer 4))
+                            (IntegerConstant 2 (Integer 4) Decimal)
                             (Integer 4)
                             ()
                         )
@@ -405,12 +405,12 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 2 (Integer 4))
+                                (IntegerConstant 2 (Integer 4) Decimal)
                                 (Integer 4)
                                 ()
                             )
                             LtE
-                            (IntegerConstant 10 (Integer 4))
+                            (IntegerConstant 10 (Integer 4) Decimal)
                             (Logical 4)
                             ()
                         )
@@ -419,7 +419,7 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 2 (Integer 4))
+                                (IntegerConstant 2 (Integer 4) Decimal)
                                 (Integer 4)
                                 ()
                             )
@@ -440,7 +440,7 @@
                             (IntegerCompare
                                 (Var 2 i)
                                 Eq
-                                (IntegerConstant 3 (Integer 4))
+                                (IntegerConstant 3 (Integer 4) Decimal)
                                 (Logical 4)
                                 ()
                             )
@@ -455,7 +455,7 @@
                         (IntegerCompare
                             (Var 2 j)
                             NotEq
-                            (IntegerConstant 4 (Integer 4))
+                            (IntegerConstant 4 (Integer 4) Decimal)
                             (Logical 4)
                             ()
                         )
@@ -466,12 +466,12 @@
                     )
                     (Assignment
                         (Var 2 j)
-                        (IntegerConstant 0 (Integer 4))
+                        (IntegerConstant 0 (Integer 4) Decimal)
                         ()
                     )
                     (Assignment
                         (Var 2 i)
-                        (IntegerConstant 1 (Integer 4))
+                        (IntegerConstant 1 (Integer 4) Decimal)
                         ()
                     )
                     (WhileLoop
@@ -495,7 +495,7 @@
                             (IntegerCompare
                                 (Var 2 i)
                                 Eq
-                                (IntegerConstant 2 (Integer 4))
+                                (IntegerConstant 2 (Integer 4) Decimal)
                                 (Logical 4)
                                 ()
                             )
@@ -509,7 +509,7 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 1 (Integer 4) Decimal)
                                 (Integer 4)
                                 ()
                             )
@@ -521,7 +521,7 @@
                         (IntegerCompare
                             (Var 2 j)
                             NotEq
-                            (IntegerConstant 3 (Integer 4))
+                            (IntegerConstant 3 (Integer 4) Decimal)
                             (Logical 4)
                             ()
                         )
@@ -532,13 +532,13 @@
                     )
                     (Assignment
                         (Var 2 k)
-                        (IntegerConstant 2 (Integer 4))
+                        (IntegerConstant 2 (Integer 4) Decimal)
                         ()
                     )
                     (Assignment
                         (Var 2 i)
                         (IntegerBinOp
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             Sub
                             (Var 2 k)
                             (Integer 4)
@@ -553,7 +553,7 @@
                                 (IntegerCompare
                                     (Var 2 k)
                                     Gt
-                                    (IntegerConstant 0 (Integer 4))
+                                    (IntegerConstant 0 (Integer 4) Decimal)
                                     (Logical 4)
                                     ()
                                 )
@@ -567,7 +567,7 @@
                                         ()
                                     )
                                     LtE
-                                    (IntegerConstant 10 (Integer 4))
+                                    (IntegerConstant 10 (Integer 4) Decimal)
                                     (Logical 4)
                                     ()
                                 )
@@ -579,7 +579,7 @@
                                 (IntegerCompare
                                     (Var 2 k)
                                     LtE
-                                    (IntegerConstant 0 (Integer 4))
+                                    (IntegerConstant 0 (Integer 4) Decimal)
                                     (Logical 4)
                                     ()
                                 )
@@ -593,7 +593,7 @@
                                         ()
                                     )
                                     GtE
-                                    (IntegerConstant 10 (Integer 4))
+                                    (IntegerConstant 10 (Integer 4) Decimal)
                                     (Logical 4)
                                     ()
                                 )

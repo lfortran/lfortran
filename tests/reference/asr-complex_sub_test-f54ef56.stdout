@@ -101,7 +101,7 @@
                         (Var 2 x)
                         (ComplexBinOp
                             (Cast
-                                (IntegerConstant 2 (Integer 4))
+                                (IntegerConstant 2 (Integer 4) Decimal)
                                 IntegerToComplex
                                 (Complex 4)
                                 (ComplexConstant

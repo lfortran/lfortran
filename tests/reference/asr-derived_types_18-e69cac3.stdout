@@ -103,7 +103,7 @@
                             (Integer 4)
                             ()
                         )
-                        (IntegerConstant 123 (Integer 4))
+                        (IntegerConstant 123 (Integer 4) Decimal)
                         ()
                     )
                     (Assignment
@@ -140,7 +140,7 @@
                                 ()
                             )
                             NotEq
-                            (IntegerConstant 123 (Integer 4))
+                            (IntegerConstant 123 (Integer 4) Decimal)
                             (Logical 4)
                             ()
                         )

@@ -17,8 +17,8 @@
                                         [(ImpliedDoLoop
                                             [(Var 2 j)]
                                             (Var 2 j)
-                                            (IntegerConstant 1 (Integer 4))
-                                            (IntegerConstant 10 (Integer 4))
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 10 (Integer 4) Decimal)
                                             ()
                                             (Integer 4)
                                             (ArrayConstant
@@ -26,8 +26,8 @@
                                                 [1, 2, 3, ...., 8, 9, 10]
                                                 (Array
                                                     (Integer 4)
-                                                    [((IntegerConstant 1 (Integer 4))
-                                                    (IntegerConstant 10 (Integer 4)))]
+                                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                                    (IntegerConstant 10 (Integer 4) Decimal))]
                                                     FixedSizeArray
                                                 )
                                                 ColMajor
@@ -35,7 +35,7 @@
                                         )]
                                         (Array
                                             (Integer 4)
-                                            [((IntegerConstant 1 (Integer 4))
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
                                             ())]
                                             DescriptorArray
                                         )
@@ -44,8 +44,8 @@
                                             [1, 2, 3, ...., 8, 9, 10]
                                             (Array
                                                 (Integer 4)
-                                                [((IntegerConstant 1 (Integer 4))
-                                                (IntegerConstant 10 (Integer 4)))]
+                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                (IntegerConstant 10 (Integer 4) Decimal))]
                                                 DescriptorArray
                                             )
                                             ColMajor
@@ -57,8 +57,8 @@
                                         [1, 2, 3, ...., 8, 9, 10]
                                         (Array
                                             (Integer 4)
-                                            [((IntegerConstant 1 (Integer 4))
-                                            (IntegerConstant 10 (Integer 4)))]
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 10 (Integer 4) Decimal))]
                                             DescriptorArray
                                         )
                                         ColMajor
@@ -66,8 +66,8 @@
                                     Save
                                     (Array
                                         (Integer 4)
-                                        [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 10 (Integer 4)))]
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 10 (Integer 4) Decimal))]
                                         FixedSizeArray
                                     )
                                     ()
@@ -120,8 +120,8 @@
                                         [(ImpliedDoLoop
                                             [(Var 2 j)]
                                             (Var 2 j)
-                                            (IntegerConstant 1 (Integer 4))
-                                            (IntegerConstant 3 (Integer 4))
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 3 (Integer 4) Decimal)
                                             ()
                                             (Integer 4)
                                             (ArrayConstant
@@ -129,8 +129,8 @@
                                                 [1, 2, 3]
                                                 (Array
                                                     (Integer 4)
-                                                    [((IntegerConstant 1 (Integer 4))
-                                                    (IntegerConstant 3 (Integer 4)))]
+                                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                                    (IntegerConstant 3 (Integer 4) Decimal))]
                                                     FixedSizeArray
                                                 )
                                                 ColMajor
@@ -166,8 +166,8 @@
                                 ()
                             )]
                             (Var 2 j)
-                            (IntegerConstant 1 (Integer 4))
-                            (IntegerConstant 10 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (IntegerConstant 10 (Integer 4) Decimal)
                             ()
                             (Integer 4)
                             (ArrayConstant
@@ -175,8 +175,8 @@
                                 [1, 2, 3, ...., 8, 9, 10]
                                 (Array
                                     (Integer 4)
-                                    [((IntegerConstant 1 (Integer 4))
-                                    (IntegerConstant 10 (Integer 4)))]
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 10 (Integer 4) Decimal))]
                                     FixedSizeArray
                                 )
                                 ColMajor

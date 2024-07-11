@@ -21,9 +21,9 @@
                                             (Real 8)
                                         )
                                         (Integer 4)
-                                        (IntegerConstant 8 (Integer 4))
+                                        (IntegerConstant 8 (Integer 4) Decimal)
                                     )
-                                    (IntegerConstant 8 (Integer 4))
+                                    (IntegerConstant 8 (Integer 4) Decimal)
                                     Parameter
                                     (Integer 4)
                                     ()
@@ -263,7 +263,7 @@
                                     (Var 2 x_ceil)
                                     Sub
                                     (Cast
-                                        (IntegerConstant 64 (Integer 4))
+                                        (IntegerConstant 64 (Integer 4) Decimal)
                                         IntegerToReal
                                         (Real 4)
                                         (RealConstant
@@ -300,9 +300,9 @@
                                     Sub
                                     (Cast
                                         (IntegerUnaryMinus
-                                            (IntegerConstant 63 (Integer 4))
+                                            (IntegerConstant 63 (Integer 4) Decimal)
                                             (Integer 4)
-                                            (IntegerConstant -63 (Integer 4))
+                                            (IntegerConstant -63 (Integer 4) Decimal)
                                         )
                                         IntegerToReal
                                         (Real 4)
@@ -335,7 +335,7 @@
                         (IntegerCompare
                             (Var 2 z_ceil)
                             NotEq
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             (Logical 4)
                             ()
                         )
@@ -349,9 +349,9 @@
                             (Var 2 w_ceil)
                             NotEq
                             (IntegerUnaryMinus
-                                (IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 1 (Integer 4) Decimal)
                                 (Integer 4)
-                                (IntegerConstant -1 (Integer 4))
+                                (IntegerConstant -1 (Integer 4) Decimal)
                             )
                             (Logical 4)
                             ()

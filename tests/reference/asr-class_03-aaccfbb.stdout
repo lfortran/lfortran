@@ -312,7 +312,7 @@
                                 "Smith"
                                 (Character 1 5 ())
                             ))
-                            ((IntegerConstant 1984 (Integer 4)))
+                            ((IntegerConstant 1984 (Integer 4) Decimal))
                             ((StringConstant
                                 "M"
                                 (Character 1 1 ())
@@ -338,7 +338,7 @@
                                     "Smith"
                                     (Character 1 5 ())
                                 ))
-                                ((IntegerConstant 1984 (Integer 4)))
+                                ((IntegerConstant 1984 (Integer 4) Decimal))
                                 ((StringConstant
                                     "F"
                                     (Character 1 1 ())
@@ -348,7 +348,7 @@
                                 )
                                 ()
                             ))
-                            ((IntegerConstant 2003 (Integer 4)))
+                            ((IntegerConstant 2003 (Integer 4) Decimal))
                             ((StringConstant
                                 "sales"
                                 (Character 1 5 ())

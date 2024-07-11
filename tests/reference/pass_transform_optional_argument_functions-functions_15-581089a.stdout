@@ -228,13 +228,13 @@
                     [functions_15_module_1]
                     [(Assignment
                         (Var 4 a)
-                        (IntegerConstant 1 (Integer 4))
+                        (IntegerConstant 1 (Integer 4) Decimal)
                         ()
                     )
                     (Assignment
                         (Var 4 b)
                         (Cast
-                            (IntegerConstant 2 (Integer 4))
+                            (IntegerConstant 2 (Integer 4) Decimal)
                             IntegerToReal
                             (Real 4)
                             (RealConstant
@@ -261,7 +261,7 @@
                             .true.
                             (Logical 4)
                         ))
-                        ((IntegerConstant 5 (Integer 4)))
+                        ((IntegerConstant 5 (Integer 4) Decimal))
                         ((LogicalConstant
                             .true.
                             (Logical 4)
@@ -311,7 +311,7 @@
                             .false.
                             (Logical 4)
                         ))
-                        ((IntegerConstant 78 (Integer 4)))
+                        ((IntegerConstant 78 (Integer 4) Decimal))
                         ((LogicalConstant
                             .true.
                             (Logical 4)
@@ -360,7 +360,7 @@
                         (IntegerCompare
                             (Var 4 a)
                             NotEq
-                            (IntegerConstant 144288208 (Integer 4))
+                            (IntegerConstant 144288208 (Integer 4) Decimal)
                             (Logical 4)
                             ()
                         )
@@ -401,7 +401,7 @@
                         (FunctionCall
                             4 f
                             ()
-                            [((IntegerConstant 42 (Integer 4)))
+                            [((IntegerConstant 42 (Integer 4) Decimal))
                             ((LogicalConstant
                                 .true.
                                 (Logical 4)
@@ -604,7 +604,7 @@
                                                         (Var 3 b)
                                                         Pow
                                                         (Cast
-                                                            (IntegerConstant 2 (Integer 4))
+                                                            (IntegerConstant 2 (Integer 4) Decimal)
                                                             IntegerToReal
                                                             (Real 4)
                                                             (RealConstant
@@ -669,7 +669,7 @@
                                                     (Var 3 b)
                                                     Pow
                                                     (Cast
-                                                        (IntegerConstant 2 (Integer 4))
+                                                        (IntegerConstant 2 (Integer 4) Decimal)
                                                         IntegerToReal
                                                         (Real 4)
                                                         (RealConstant

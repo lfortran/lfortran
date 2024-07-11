@@ -19,9 +19,9 @@
                                             (Character 1 1 ())
                                         )
                                         (Integer 4)
-                                        (IntegerConstant 48 (Integer 4))
+                                        (IntegerConstant 48 (Integer 4) Decimal)
                                     )
-                                    (IntegerConstant 48 (Integer 4))
+                                    (IntegerConstant 48 (Integer 4) Decimal)
                                     Parameter
                                     (Integer 4)
                                     ()
@@ -42,9 +42,9 @@
                                             (Character 1 1 ())
                                         )
                                         (Integer 4)
-                                        (IntegerConstant 53 (Integer 4))
+                                        (IntegerConstant 53 (Integer 4) Decimal)
                                     )
-                                    (IntegerConstant 53 (Integer 4))
+                                    (IntegerConstant 53 (Integer 4) Decimal)
                                     Parameter
                                     (Integer 4)
                                     ()
@@ -65,9 +65,9 @@
                                             (Character 1 1 ())
                                         )
                                         (Integer 4)
-                                        (IntegerConstant 57 (Integer 4))
+                                        (IntegerConstant 57 (Integer 4) Decimal)
                                     )
-                                    (IntegerConstant 57 (Integer 4))
+                                    (IntegerConstant 57 (Integer 4) Decimal)
                                     Parameter
                                     (Integer 4)
                                     ()
@@ -83,7 +83,7 @@
                         (IntegerCompare
                             (Var 2 ia0)
                             NotEq
-                            (IntegerConstant 48 (Integer 4))
+                            (IntegerConstant 48 (Integer 4) Decimal)
                             (Logical 4)
                             (LogicalConstant
                                 .false.
@@ -99,7 +99,7 @@
                         (IntegerCompare
                             (Var 2 ia5)
                             NotEq
-                            (IntegerConstant 53 (Integer 4))
+                            (IntegerConstant 53 (Integer 4) Decimal)
                             (Logical 4)
                             (LogicalConstant
                                 .false.
@@ -115,7 +115,7 @@
                         (IntegerCompare
                             (Var 2 ia9)
                             NotEq
-                            (IntegerConstant 57 (Integer 4))
+                            (IntegerConstant 57 (Integer 4) Decimal)
                             (Logical 4)
                             (LogicalConstant
                                 .false.

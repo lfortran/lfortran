@@ -949,12 +949,12 @@
                                     )
                                     (Assignment
                                         (Var 10 a)
-                                        (IntegerConstant 5 (Integer 4))
+                                        (IntegerConstant 5 (Integer 4) Decimal)
                                         ()
                                     )
                                     (Assignment
                                         (Var 10 b)
-                                        (IntegerConstant 9 (Integer 4))
+                                        (IntegerConstant 9 (Integer 4) Decimal)
                                         ()
                                     )
                                     (Print
@@ -986,7 +986,7 @@
                                                 ()
                                             )
                                             NotEq
-                                            (IntegerConstant 14 (Integer 4))
+                                            (IntegerConstant 14 (Integer 4) Decimal)
                                             (Logical 4)
                                             ()
                                         )

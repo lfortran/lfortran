@@ -21,9 +21,9 @@
                                             (Real 8)
                                         )
                                         (Integer 4)
-                                        (IntegerConstant 8 (Integer 4))
+                                        (IntegerConstant 8 (Integer 4) Decimal)
                                     )
-                                    (IntegerConstant 8 (Integer 4))
+                                    (IntegerConstant 8 (Integer 4) Decimal)
                                     Parameter
                                     (Integer 4)
                                     ()
@@ -119,11 +119,11 @@
                                         [(RealBinOp
                                             (Cast
                                                 (IntegerBinOp
-                                                    (IntegerConstant 3 (Integer 4))
+                                                    (IntegerConstant 3 (Integer 4) Decimal)
                                                     Add
-                                                    (IntegerConstant 4 (Integer 4))
+                                                    (IntegerConstant 4 (Integer 4) Decimal)
                                                     (Integer 4)
-                                                    (IntegerConstant 7 (Integer 4))
+                                                    (IntegerConstant 7 (Integer 4) Decimal)
                                                 )
                                                 IntegerToReal
                                                 (Real 4)
@@ -184,8 +184,8 @@
                                     y2
                                     []
                                     Local
-                                    (IntegerConstant 3 (Integer 4))
-                                    (IntegerConstant 3 (Integer 4))
+                                    (IntegerConstant 3 (Integer 4) Decimal)
+                                    (IntegerConstant 3 (Integer 4) Decimal)
                                     Parameter
                                     (Integer 4)
                                     ()
@@ -214,7 +214,7 @@
                     )
                     (Assignment
                         (Var 2 y)
-                        (IntegerConstant 3 (Integer 4))
+                        (IntegerConstant 3 (Integer 4) Decimal)
                         ()
                     )
                     (Print
@@ -223,11 +223,11 @@
                             [(RealBinOp
                                 (Cast
                                     (IntegerBinOp
-                                        (IntegerConstant 3 (Integer 4))
+                                        (IntegerConstant 3 (Integer 4) Decimal)
                                         Add
-                                        (IntegerConstant 4 (Integer 4))
+                                        (IntegerConstant 4 (Integer 4) Decimal)
                                         (Integer 4)
-                                        (IntegerConstant 7 (Integer 4))
+                                        (IntegerConstant 7 (Integer 4) Decimal)
                                     )
                                     IntegerToReal
                                     (Real 4)
@@ -265,7 +265,7 @@
                                     (IntegerBinOp
                                         (Var 2 y)
                                         Add
-                                        (IntegerConstant 4 (Integer 4))
+                                        (IntegerConstant 4 (Integer 4) Decimal)
                                         (Integer 4)
                                         ()
                                     )
@@ -296,9 +296,9 @@
                                     (IntegerBinOp
                                         (Var 2 y2)
                                         Add
-                                        (IntegerConstant 4 (Integer 4))
+                                        (IntegerConstant 4 (Integer 4) Decimal)
                                         (Integer 4)
-                                        (IntegerConstant 7 (Integer 4))
+                                        (IntegerConstant 7 (Integer 4) Decimal)
                                     )
                                     IntegerToReal
                                     (Real 4)
@@ -337,7 +337,7 @@
                                         (Var 2 x)
                                         Add
                                         (Cast
-                                            (IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 1 (Integer 4) Decimal)
                                             IntegerToReal
                                             (Real 4)
                                             (RealConstant
@@ -360,7 +360,7 @@
                                 )
                                 Pow
                                 (Cast
-                                    (IntegerConstant 2 (Integer 4))
+                                    (IntegerConstant 2 (Integer 4) Decimal)
                                     IntegerToReal
                                     (Real 4)
                                     (RealConstant
@@ -382,7 +382,7 @@
                                         (Var 2 x)
                                         Add
                                         (Cast
-                                            (IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 1 (Integer 4) Decimal)
                                             IntegerToReal
                                             (Real 4)
                                             (RealConstant
@@ -405,7 +405,7 @@
                                 )
                                 Pow
                                 (Cast
-                                    (IntegerConstant 2 (Integer 4))
+                                    (IntegerConstant 2 (Integer 4) Decimal)
                                     IntegerToReal
                                     (Real 4)
                                     (RealConstant

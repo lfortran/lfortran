@@ -125,9 +125,9 @@
                                             (Real 8)
                                         )
                                         (Integer 4)
-                                        (IntegerConstant 8 (Integer 4))
+                                        (IntegerConstant 8 (Integer 4) Decimal)
                                     )
-                                    (IntegerConstant 8 (Integer 4))
+                                    (IntegerConstant 8 (Integer 4) Decimal)
                                     Parameter
                                     (Integer 4)
                                     ()
@@ -147,8 +147,8 @@
                                     Default
                                     (Array
                                         (Character 1 1 ())
-                                        [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 3 (Integer 4)))]
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 3 (Integer 4) Decimal))]
                                         FixedSizeArray
                                     )
                                     ()
@@ -184,8 +184,8 @@
                                     Default
                                     (Array
                                         (Integer 8)
-                                        [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 4 (Integer 4)))]
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 4 (Integer 4) Decimal))]
                                         FixedSizeArray
                                     )
                                     ()
@@ -285,8 +285,8 @@
                                     Default
                                     (Array
                                         (Integer 4)
-                                        [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 3 (Integer 4)))]
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 3 (Integer 4) Decimal))]
                                         FixedSizeArray
                                     )
                                     ()
@@ -308,7 +308,7 @@
                             )]
                             0
                             (Integer 4)
-                            (IntegerConstant 32 (Integer 4))
+                            (IntegerConstant 32 (Integer 4) Decimal)
                         )
                         ()
                     )
@@ -320,7 +320,7 @@
                                 (Character 1 1 ())
                             )
                             (Integer 4)
-                            (IntegerConstant 32 (Integer 4))
+                            (IntegerConstant 32 (Integer 4) Decimal)
                         )
                         ()
                     )
@@ -334,7 +334,7 @@
                             )]
                             0
                             (Integer 8)
-                            (IntegerConstant 65 (Integer 8))
+                            (IntegerConstant 65 (Integer 8) Decimal)
                         )
                         ()
                     )
@@ -346,7 +346,7 @@
                                 (Character 1 1 ())
                             )
                             (Integer 8)
-                            (IntegerConstant 97 (Integer 8))
+                            (IntegerConstant 97 (Integer 8) Decimal)
                         )
                         ()
                     )
@@ -360,7 +360,7 @@
                             )]
                             0
                             (Integer 8)
-                            (IntegerConstant 90 (Integer 8))
+                            (IntegerConstant 90 (Integer 8) Decimal)
                         )
                         ()
                     )
@@ -372,7 +372,7 @@
                                 (Character 1 1 ())
                             )
                             (Integer 8)
-                            (IntegerConstant 122 (Integer 8))
+                            (IntegerConstant 122 (Integer 8) Decimal)
                         )
                         ()
                     )
@@ -380,7 +380,7 @@
                         (Var 2 c_1)
                         (IntrinsicElementalFunction
                             Char
-                            [(IntegerConstant 100 (Integer 4))]
+                            [(IntegerConstant 100 (Integer 4) Decimal)]
                             0
                             (Character 1 1 ())
                             (StringConstant
@@ -397,8 +397,8 @@
                             ["a", "b", "c"]
                             (Array
                                 (Character 1 1 ())
-                                [((IntegerConstant 1 (Integer 4))
-                                (IntegerConstant 3 (Integer 4)))]
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 3 (Integer 4) Decimal))]
                                 FixedSizeArray
                             )
                             ColMajor
@@ -412,8 +412,8 @@
                             [97, 98, 99]
                             (Array
                                 (Integer 4)
-                                [((IntegerConstant 1 (Integer 4))
-                                (IntegerConstant 3 (Integer 4)))]
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 3 (Integer 4) Decimal))]
                                 FixedSizeArray
                             )
                             ColMajor
@@ -424,7 +424,7 @@
                         (IntegerCompare
                             (Var 2 i)
                             NotEq
-                            (IntegerConstant 32 (Integer 4))
+                            (IntegerConstant 32 (Integer 4) Decimal)
                             (Logical 4)
                             ()
                         )
@@ -437,7 +437,7 @@
                         (IntegerCompare
                             (Var 2 j)
                             NotEq
-                            (IntegerConstant 32 (Integer 4))
+                            (IntegerConstant 32 (Integer 4) Decimal)
                             (Logical 4)
                             ()
                         )
@@ -451,10 +451,10 @@
                             (Var 2 li_1)
                             NotEq
                             (Cast
-                                (IntegerConstant 65 (Integer 4))
+                                (IntegerConstant 65 (Integer 4) Decimal)
                                 IntegerToInteger
                                 (Integer 8)
-                                (IntegerConstant 65 (Integer 8))
+                                (IntegerConstant 65 (Integer 8) Decimal)
                             )
                             (Logical 4)
                             ()
@@ -469,10 +469,10 @@
                             (Var 2 lj_1)
                             NotEq
                             (Cast
-                                (IntegerConstant 97 (Integer 4))
+                                (IntegerConstant 97 (Integer 4) Decimal)
                                 IntegerToInteger
                                 (Integer 8)
-                                (IntegerConstant 97 (Integer 8))
+                                (IntegerConstant 97 (Integer 8) Decimal)
                             )
                             (Logical 4)
                             ()
@@ -487,10 +487,10 @@
                             (Var 2 li_2)
                             NotEq
                             (Cast
-                                (IntegerConstant 90 (Integer 4))
+                                (IntegerConstant 90 (Integer 4) Decimal)
                                 IntegerToInteger
                                 (Integer 8)
-                                (IntegerConstant 90 (Integer 8))
+                                (IntegerConstant 90 (Integer 8) Decimal)
                             )
                             (Logical 4)
                             ()
@@ -505,10 +505,10 @@
                             (Var 2 lj_2)
                             NotEq
                             (Cast
-                                (IntegerConstant 122 (Integer 4))
+                                (IntegerConstant 122 (Integer 4) Decimal)
                                 IntegerToInteger
                                 (Integer 8)
-                                (IntegerConstant 122 (Integer 8))
+                                (IntegerConstant 122 (Integer 8) Decimal)
                             )
                             (Logical 4)
                             ()
@@ -525,8 +525,8 @@
                             [32, 99, 100, 101]
                             (Array
                                 (Integer 8)
-                                [((IntegerConstant 1 (Integer 4))
-                                (IntegerConstant 4 (Integer 4)))]
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 4 (Integer 4) Decimal))]
                                 FixedSizeArray
                             )
                             ColMajor
@@ -538,7 +538,7 @@
                             (ArrayItem
                                 (Var 2 int_res)
                                 [(()
-                                (IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 1 (Integer 4) Decimal)
                                 ())]
                                 (Integer 8)
                                 ColMajor
@@ -546,10 +546,10 @@
                             )
                             NotEq
                             (Cast
-                                (IntegerConstant 32 (Integer 4))
+                                (IntegerConstant 32 (Integer 4) Decimal)
                                 IntegerToInteger
                                 (Integer 8)
-                                (IntegerConstant 32 (Integer 8))
+                                (IntegerConstant 32 (Integer 8) Decimal)
                             )
                             (Logical 4)
                             ()
@@ -567,14 +567,14 @@
                                 (ArrayItem
                                     (Var 2 int_res)
                                     [(()
-                                    (IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4) Decimal)
                                     ())]
                                     (Integer 8)
                                     ColMajor
                                     ()
                                 )
                                 (Integer 4)
-                                (IntegerConstant 8 (Integer 4))
+                                (IntegerConstant 8 (Integer 4) Decimal)
                             )
                             NotEq
                             (Var 2 dp)
@@ -594,7 +594,7 @@
                             (ArrayItem
                                 (Var 2 int_res)
                                 [(()
-                                (IntegerConstant 2 (Integer 4))
+                                (IntegerConstant 2 (Integer 4) Decimal)
                                 ())]
                                 (Integer 8)
                                 ColMajor
@@ -602,10 +602,10 @@
                             )
                             NotEq
                             (Cast
-                                (IntegerConstant 99 (Integer 4))
+                                (IntegerConstant 99 (Integer 4) Decimal)
                                 IntegerToInteger
                                 (Integer 8)
-                                (IntegerConstant 99 (Integer 8))
+                                (IntegerConstant 99 (Integer 8) Decimal)
                             )
                             (Logical 4)
                             ()
@@ -623,14 +623,14 @@
                                 (ArrayItem
                                     (Var 2 int_res)
                                     [(()
-                                    (IntegerConstant 2 (Integer 4))
+                                    (IntegerConstant 2 (Integer 4) Decimal)
                                     ())]
                                     (Integer 8)
                                     ColMajor
                                     ()
                                 )
                                 (Integer 4)
-                                (IntegerConstant 8 (Integer 4))
+                                (IntegerConstant 8 (Integer 4) Decimal)
                             )
                             NotEq
                             (Var 2 dp)
@@ -650,7 +650,7 @@
                             (ArrayItem
                                 (Var 2 int_res)
                                 [(()
-                                (IntegerConstant 3 (Integer 4))
+                                (IntegerConstant 3 (Integer 4) Decimal)
                                 ())]
                                 (Integer 8)
                                 ColMajor
@@ -658,10 +658,10 @@
                             )
                             NotEq
                             (Cast
-                                (IntegerConstant 100 (Integer 4))
+                                (IntegerConstant 100 (Integer 4) Decimal)
                                 IntegerToInteger
                                 (Integer 8)
-                                (IntegerConstant 100 (Integer 8))
+                                (IntegerConstant 100 (Integer 8) Decimal)
                             )
                             (Logical 4)
                             ()
@@ -679,14 +679,14 @@
                                 (ArrayItem
                                     (Var 2 int_res)
                                     [(()
-                                    (IntegerConstant 3 (Integer 4))
+                                    (IntegerConstant 3 (Integer 4) Decimal)
                                     ())]
                                     (Integer 8)
                                     ColMajor
                                     ()
                                 )
                                 (Integer 4)
-                                (IntegerConstant 8 (Integer 4))
+                                (IntegerConstant 8 (Integer 4) Decimal)
                             )
                             NotEq
                             (Var 2 dp)
@@ -706,7 +706,7 @@
                             (ArrayItem
                                 (Var 2 int_res)
                                 [(()
-                                (IntegerConstant 4 (Integer 4))
+                                (IntegerConstant 4 (Integer 4) Decimal)
                                 ())]
                                 (Integer 8)
                                 ColMajor
@@ -714,10 +714,10 @@
                             )
                             NotEq
                             (Cast
-                                (IntegerConstant 101 (Integer 4))
+                                (IntegerConstant 101 (Integer 4) Decimal)
                                 IntegerToInteger
                                 (Integer 8)
-                                (IntegerConstant 101 (Integer 8))
+                                (IntegerConstant 101 (Integer 8) Decimal)
                             )
                             (Logical 4)
                             ()
@@ -735,14 +735,14 @@
                                 (ArrayItem
                                     (Var 2 int_res)
                                     [(()
-                                    (IntegerConstant 4 (Integer 4))
+                                    (IntegerConstant 4 (Integer 4) Decimal)
                                     ())]
                                     (Integer 8)
                                     ColMajor
                                     ()
                                 )
                                 (Integer 4)
-                                (IntegerConstant 8 (Integer 4))
+                                (IntegerConstant 8 (Integer 4) Decimal)
                             )
                             NotEq
                             (Var 2 dp)
@@ -772,7 +772,7 @@
                         (IntegerCompare
                             (Var 2 c)
                             NotEq
-                            (IntegerConstant 100 (Integer 4))
+                            (IntegerConstant 100 (Integer 4) Decimal)
                             (Logical 4)
                             ()
                         )
@@ -805,14 +805,14 @@
                     )
                     (Assignment
                         (Var 2 c)
-                        (IntegerConstant 100 (Integer 4))
+                        (IntegerConstant 100 (Integer 4) Decimal)
                         ()
                     )
                     (Assignment
                         (Var 2 c_1)
                         (IntrinsicElementalFunction
                             Achar
-                            [(IntegerConstant 100 (Integer 4))]
+                            [(IntegerConstant 100 (Integer 4) Decimal)]
                             0
                             (Character 1 1 ())
                             (StringConstant
@@ -869,7 +869,7 @@
                         (Var 2 c_1)
                         (IntrinsicElementalFunction
                             Char
-                            [(IntegerConstant 100 (Integer 4))]
+                            [(IntegerConstant 100 (Integer 4) Decimal)]
                             0
                             (Character 1 1 ())
                             (StringConstant
@@ -938,7 +938,7 @@
                                 (Character 1 1 ())
                             )
                             (Integer 4)
-                            (IntegerConstant 101 (Integer 4))
+                            (IntegerConstant 101 (Integer 4) Decimal)
                         )
                         ()
                     )
@@ -946,7 +946,7 @@
                         (IntegerCompare
                             (Var 2 c)
                             NotEq
-                            (IntegerConstant 101 (Integer 4))
+                            (IntegerConstant 101 (Integer 4) Decimal)
                             (Logical 4)
                             ()
                         )
@@ -968,7 +968,7 @@
                         (IntegerCompare
                             (Var 2 c)
                             NotEq
-                            (IntegerConstant 101 (Integer 4))
+                            (IntegerConstant 101 (Integer 4) Decimal)
                             (Logical 4)
                             ()
                         )
@@ -987,7 +987,7 @@
                             )]
                             0
                             (Integer 4)
-                            (IntegerConstant 101 (Integer 4))
+                            (IntegerConstant 101 (Integer 4) Decimal)
                         )
                         ()
                     )
@@ -995,7 +995,7 @@
                         (IntegerCompare
                             (Var 2 c)
                             NotEq
-                            (IntegerConstant 101 (Integer 4))
+                            (IntegerConstant 101 (Integer 4) Decimal)
                             (Logical 4)
                             ()
                         )
@@ -1019,7 +1019,7 @@
                         (IntegerCompare
                             (Var 2 c)
                             NotEq
-                            (IntegerConstant 101 (Integer 4))
+                            (IntegerConstant 101 (Integer 4) Decimal)
                             (Logical 4)
                             ()
                         )
@@ -1049,7 +1049,7 @@
                                 ()
                             )
                             NotEq
-                            (IntegerConstant 97 (Integer 4))
+                            (IntegerConstant 97 (Integer 4) Decimal)
                             (Logical 4)
                             ()
                         )
@@ -1079,7 +1079,7 @@
                                 ()
                             )
                             NotEq
-                            (IntegerConstant 98 (Integer 4))
+                            (IntegerConstant 98 (Integer 4) Decimal)
                             (Logical 4)
                             ()
                         )
@@ -1109,7 +1109,7 @@
                                 ()
                             )
                             NotEq
-                            (IntegerConstant 35 (Integer 4))
+                            (IntegerConstant 35 (Integer 4) Decimal)
                             (Logical 4)
                             ()
                         )
@@ -1127,7 +1127,7 @@
                             )]
                             0
                             (Integer 4)
-                            (IntegerConstant 97 (Integer 4))
+                            (IntegerConstant 97 (Integer 4) Decimal)
                         )]
                         ()
                         ()
@@ -1142,10 +1142,10 @@
                                 )]
                                 0
                                 (Integer 4)
-                                (IntegerConstant 97 (Integer 4))
+                                (IntegerConstant 97 (Integer 4) Decimal)
                             )
                             NotEq
-                            (IntegerConstant 97 (Integer 4))
+                            (IntegerConstant 97 (Integer 4) Decimal)
                             (Logical 4)
                             (LogicalConstant
                                 .false.
@@ -1166,7 +1166,7 @@
                             )]
                             0
                             (Integer 4)
-                            (IntegerConstant 98 (Integer 4))
+                            (IntegerConstant 98 (Integer 4) Decimal)
                         )]
                         ()
                         ()
@@ -1181,10 +1181,10 @@
                                 )]
                                 0
                                 (Integer 4)
-                                (IntegerConstant 98 (Integer 4))
+                                (IntegerConstant 98 (Integer 4) Decimal)
                             )
                             NotEq
-                            (IntegerConstant 98 (Integer 4))
+                            (IntegerConstant 98 (Integer 4) Decimal)
                             (Logical 4)
                             (LogicalConstant
                                 .false.
@@ -1205,7 +1205,7 @@
                             )]
                             0
                             (Integer 4)
-                            (IntegerConstant 67 (Integer 4))
+                            (IntegerConstant 67 (Integer 4) Decimal)
                         )]
                         ()
                         ()
@@ -1220,10 +1220,10 @@
                                 )]
                                 0
                                 (Integer 4)
-                                (IntegerConstant 67 (Integer 4))
+                                (IntegerConstant 67 (Integer 4) Decimal)
                             )
                             NotEq
-                            (IntegerConstant 67 (Integer 4))
+                            (IntegerConstant 67 (Integer 4) Decimal)
                             (Logical 4)
                             (LogicalConstant
                                 .false.
@@ -1244,7 +1244,7 @@
                             )]
                             0
                             (Integer 4)
-                            (IntegerConstant 35 (Integer 4))
+                            (IntegerConstant 35 (Integer 4) Decimal)
                         )]
                         ()
                         ()
@@ -1259,10 +1259,10 @@
                                 )]
                                 0
                                 (Integer 4)
-                                (IntegerConstant 35 (Integer 4))
+                                (IntegerConstant 35 (Integer 4) Decimal)
                             )
                             NotEq
-                            (IntegerConstant 35 (Integer 4))
+                            (IntegerConstant 35 (Integer 4) Decimal)
                             (Logical 4)
                             (LogicalConstant
                                 .false.
@@ -1286,7 +1286,7 @@
                                 ()
                             )
                             (Integer 4)
-                            (IntegerConstant 4 (Integer 4))
+                            (IntegerConstant 4 (Integer 4) Decimal)
                         )]
                         ()
                         ()
@@ -1304,10 +1304,10 @@
                                     ()
                                 )
                                 (Integer 4)
-                                (IntegerConstant 4 (Integer 4))
+                                (IntegerConstant 4 (Integer 4) Decimal)
                             )
                             NotEq
-                            (IntegerConstant 4 (Integer 4))
+                            (IntegerConstant 4 (Integer 4) Decimal)
                             (Logical 4)
                             (LogicalConstant
                                 .false.
@@ -1331,7 +1331,7 @@
                                 ()
                             )
                             (Integer 4)
-                            (IntegerConstant 8 (Integer 4))
+                            (IntegerConstant 8 (Integer 4) Decimal)
                         )]
                         ()
                         ()
@@ -1349,10 +1349,10 @@
                                     ()
                                 )
                                 (Integer 4)
-                                (IntegerConstant 8 (Integer 4))
+                                (IntegerConstant 8 (Integer 4) Decimal)
                             )
                             NotEq
-                            (IntegerConstant 8 (Integer 4))
+                            (IntegerConstant 8 (Integer 4) Decimal)
                             (Logical 4)
                             (LogicalConstant
                                 .false.
@@ -1376,10 +1376,10 @@
                                 )]
                                 0
                                 (Integer 4)
-                                (IntegerConstant 97 (Integer 4))
+                                (IntegerConstant 97 (Integer 4) Decimal)
                             )
                             (Integer 4)
-                            (IntegerConstant 4 (Integer 4))
+                            (IntegerConstant 4 (Integer 4) Decimal)
                         )]
                         ()
                         ()
@@ -1397,13 +1397,13 @@
                                     )]
                                     0
                                     (Integer 4)
-                                    (IntegerConstant 97 (Integer 4))
+                                    (IntegerConstant 97 (Integer 4) Decimal)
                                 )
                                 (Integer 4)
-                                (IntegerConstant 4 (Integer 4))
+                                (IntegerConstant 4 (Integer 4) Decimal)
                             )
                             NotEq
-                            (IntegerConstant 4 (Integer 4))
+                            (IntegerConstant 4 (Integer 4) Decimal)
                             (Logical 4)
                             (LogicalConstant
                                 .false.
@@ -1427,10 +1427,10 @@
                                 )]
                                 0
                                 (Integer 8)
-                                (IntegerConstant 97 (Integer 8))
+                                (IntegerConstant 97 (Integer 8) Decimal)
                             )
                             (Integer 4)
-                            (IntegerConstant 8 (Integer 4))
+                            (IntegerConstant 8 (Integer 4) Decimal)
                         )]
                         ()
                         ()
@@ -1448,13 +1448,13 @@
                                     )]
                                     0
                                     (Integer 8)
-                                    (IntegerConstant 97 (Integer 8))
+                                    (IntegerConstant 97 (Integer 8) Decimal)
                                 )
                                 (Integer 4)
-                                (IntegerConstant 8 (Integer 4))
+                                (IntegerConstant 8 (Integer 4) Decimal)
                             )
                             NotEq
-                            (IntegerConstant 8 (Integer 4))
+                            (IntegerConstant 8 (Integer 4) Decimal)
                             (Logical 4)
                             (LogicalConstant
                                 .false.
@@ -1473,8 +1473,8 @@
                             0
                             (Array
                                 (Integer 4)
-                                [((IntegerConstant 1 (Integer 4))
-                                (IntegerConstant 3 (Integer 4)))]
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 3 (Integer 4) Decimal))]
                                 FixedSizeArray
                             )
                             ()
@@ -1493,8 +1493,8 @@
                                         0
                                         (Array
                                             (Integer 4)
-                                            [((IntegerConstant 1 (Integer 4))
-                                            (IntegerConstant 3 (Integer 4)))]
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 3 (Integer 4) Decimal))]
                                             FixedSizeArray
                                         )
                                         ()
@@ -1503,8 +1503,8 @@
                                     (Var 2 x)
                                     (Array
                                         (Logical 4)
-                                        [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 3 (Integer 4)))]
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 3 (Integer 4) Decimal))]
                                         FixedSizeArray
                                     )
                                     ()
@@ -1513,8 +1513,8 @@
                                 DescriptorArray
                                 (Array
                                     (Logical 4)
-                                    [((IntegerConstant 1 (Integer 4))
-                                    (IntegerConstant 3 (Integer 4)))]
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 3 (Integer 4) Decimal))]
                                     DescriptorArray
                                 )
                                 ()

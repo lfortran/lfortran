@@ -18,8 +18,8 @@
                                     Default
                                     (Array
                                         (Character 1 1 ())
-                                        [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 4 (Integer 4)))]
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 4 (Integer 4) Decimal))]
                                         FixedSizeArray
                                     )
                                     ()
@@ -36,19 +36,19 @@
                             (Var 2 char_arr)
                             [((ArrayBound
                                 (Var 2 char_arr)
-                                (IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 1 (Integer 4) Decimal)
                                 (Integer 4)
                                 LBound
-                                (IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 1 (Integer 4) Decimal)
                             )
                             (ArrayBound
                                 (Var 2 char_arr)
-                                (IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 1 (Integer 4) Decimal)
                                 (Integer 4)
                                 UBound
-                                (IntegerConstant 4 (Integer 4))
+                                (IntegerConstant 4 (Integer 4) Decimal)
                             )
-                            (IntegerConstant 1 (Integer 4)))]
+                            (IntegerConstant 1 (Integer 4) Decimal))]
                             (Array
                                 (Character 1 1 ())
                                 [(()
@@ -68,19 +68,19 @@
                                     (Var 2 char_arr)
                                     [((ArrayBound
                                         (Var 2 char_arr)
-                                        (IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 1 (Integer 4) Decimal)
                                         (Integer 4)
                                         LBound
-                                        (IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 1 (Integer 4) Decimal)
                                     )
                                     (ArrayBound
                                         (Var 2 char_arr)
-                                        (IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 1 (Integer 4) Decimal)
                                         (Integer 4)
                                         UBound
-                                        (IntegerConstant 4 (Integer 4))
+                                        (IntegerConstant 4 (Integer 4) Decimal)
                                     )
-                                    (IntegerConstant 1 (Integer 4)))]
+                                    (IntegerConstant 1 (Integer 4) Decimal))]
                                     (Array
                                         (Character 1 1 ())
                                         [(()
@@ -92,8 +92,8 @@
                                 0
                                 (Array
                                     (Integer 4)
-                                    [((IntegerConstant 1 (Integer 4))
-                                    (IntegerConstant 1 (Integer 4)))]
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 1 (Integer 4) Decimal))]
                                     FixedSizeArray
                                 )
                                 ()

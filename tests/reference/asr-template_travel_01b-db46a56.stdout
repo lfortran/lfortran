@@ -1311,10 +1311,10 @@
                                         (FunctionCall
                                             12 avg_integer_s_from_t
                                             ()
-                                            [((IntegerConstant 1 (Integer 4)))
-                                            ((IntegerConstant 3 (Integer 4)))
-                                            ((IntegerConstant 20 (Integer 4)))
-                                            ((IntegerConstant 4 (Integer 4)))]
+                                            [((IntegerConstant 1 (Integer 4) Decimal))
+                                            ((IntegerConstant 3 (Integer 4) Decimal))
+                                            ((IntegerConstant 20 (Integer 4) Decimal))
+                                            ((IntegerConstant 4 (Integer 4) Decimal))]
                                             (Integer 4)
                                             ()
                                             ()
@@ -1326,9 +1326,9 @@
                                         (FunctionCall
                                             12 avg_integer_s_from_s
                                             ()
-                                            [((IntegerConstant 1 (Integer 4)))
+                                            [((IntegerConstant 1 (Integer 4) Decimal))
                                             ((Var 12 i1))
-                                            ((IntegerConstant 15 (Integer 4)))
+                                            ((IntegerConstant 15 (Integer 4) Decimal))
                                             ((Var 12 i1))]
                                             (Integer 4)
                                             ()

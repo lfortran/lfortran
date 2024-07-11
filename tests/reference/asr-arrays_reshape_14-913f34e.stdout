@@ -19,8 +19,8 @@
                                             [-14, 3, 0, -2, 19, 1]
                                             (Array
                                                 (Integer 4)
-                                                [((IntegerConstant 1 (Integer 4))
-                                                (IntegerConstant 6 (Integer 4)))]
+                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                (IntegerConstant 6 (Integer 4) Decimal))]
                                                 FixedSizeArray
                                             )
                                             ColMajor
@@ -31,8 +31,8 @@
                                                 [2, 3]
                                                 (Array
                                                     (Integer 4)
-                                                    [((IntegerConstant 1 (Integer 4))
-                                                    (IntegerConstant 2 (Integer 4)))]
+                                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                                    (IntegerConstant 2 (Integer 4) Decimal))]
                                                     FixedSizeArray
                                                 )
                                                 ColMajor
@@ -41,8 +41,8 @@
                                             DescriptorArray
                                             (Array
                                                 (Integer 4)
-                                                [((IntegerConstant 1 (Integer 4))
-                                                (IntegerConstant 2 (Integer 4)))]
+                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                (IntegerConstant 2 (Integer 4) Decimal))]
                                                 DescriptorArray
                                             )
                                             ()
@@ -59,10 +59,10 @@
                                     Save
                                     (Array
                                         (Integer 4)
-                                        [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 2 (Integer 4)))
-                                        ((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 3 (Integer 4)))]
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 2 (Integer 4) Decimal))
+                                        ((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 3 (Integer 4) Decimal))]
                                         FixedSizeArray
                                     )
                                     ()
@@ -87,10 +87,10 @@
                                                     Default
                                                     (Array
                                                         (Real 8)
-                                                        [((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 16 (Integer 4)))
-                                                        ((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 16 (Integer 4)))]
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 16 (Integer 4) Decimal))
+                                                        ((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 16 (Integer 4) Decimal))]
                                                         FixedSizeArray
                                                     )
                                                     ()
@@ -110,8 +110,8 @@
                                                     Default
                                                     (Array
                                                         (Real 8)
-                                                        [((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 256 (Integer 4)))]
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 256 (Integer 4) Decimal))]
                                                         FixedSizeArray
                                                     )
                                                     ()
@@ -131,12 +131,12 @@
                                                     Default
                                                     (Array
                                                         (Real 8)
-                                                        [((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 16 (Integer 4)))
-                                                        ((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 16 (Integer 4)))
-                                                        ((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 16 (Integer 4)))]
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 16 (Integer 4) Decimal))
+                                                        ((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 16 (Integer 4) Decimal))
+                                                        ((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 16 (Integer 4) Decimal))]
                                                         FixedSizeArray
                                                     )
                                                     ()
@@ -257,8 +257,8 @@
                                                     Default
                                                     (Array
                                                         (Integer 4)
-                                                        [((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 2 (Integer 4)))]
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 2 (Integer 4) Decimal))]
                                                         FixedSizeArray
                                                     )
                                                     ()
@@ -278,8 +278,8 @@
                                                     Default
                                                     (Array
                                                         (Integer 4)
-                                                        [((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 3 (Integer 4)))]
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 3 (Integer 4) Decimal))]
                                                         FixedSizeArray
                                                     )
                                                     ()
@@ -330,8 +330,8 @@
                                     (DoLoop
                                         ()
                                         ((Var 4 k)
-                                        (IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 256 (Integer 4))
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 256 (Integer 4) Decimal)
                                         ())
                                         [(Assignment
                                             (Var 4 i)
@@ -339,12 +339,12 @@
                                                 (IntegerBinOp
                                                     (Var 4 k)
                                                     Sub
-                                                    (IntegerConstant 1 (Integer 4))
+                                                    (IntegerConstant 1 (Integer 4) Decimal)
                                                     (Integer 4)
                                                     ()
                                                 )
                                                 Div
-                                                (IntegerConstant 16 (Integer 4))
+                                                (IntegerConstant 16 (Integer 4) Decimal)
                                                 (Integer 4)
                                                 ()
                                             )
@@ -356,7 +356,7 @@
                                                 (IntegerBinOp
                                                     (Var 4 k)
                                                     Sub
-                                                    (IntegerConstant 1 (Integer 4))
+                                                    (IntegerConstant 1 (Integer 4) Decimal)
                                                     (Integer 4)
                                                     ()
                                                 )
@@ -364,7 +364,7 @@
                                                 (IntegerBinOp
                                                     (Var 4 i)
                                                     Mul
-                                                    (IntegerConstant 16 (Integer 4))
+                                                    (IntegerConstant 16 (Integer 4) Decimal)
                                                     (Integer 4)
                                                     ()
                                                 )
@@ -417,26 +417,26 @@
                                         (ArrayItem
                                             (Var 4 newshape)
                                             [(()
-                                            (IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 1 (Integer 4) Decimal)
                                             ())]
                                             (Integer 4)
                                             ColMajor
                                             ()
                                         )
-                                        (IntegerConstant 16 (Integer 4))
+                                        (IntegerConstant 16 (Integer 4) Decimal)
                                         ()
                                     )
                                     (Assignment
                                         (ArrayItem
                                             (Var 4 newshape)
                                             [(()
-                                            (IntegerConstant 2 (Integer 4))
+                                            (IntegerConstant 2 (Integer 4) Decimal)
                                             ())]
                                             (Integer 4)
                                             ColMajor
                                             ()
                                         )
-                                        (IntegerConstant 16 (Integer 4))
+                                        (IntegerConstant 16 (Integer 4) Decimal)
                                         ()
                                     )
                                     (Assignment
@@ -449,8 +449,8 @@
                                                 DescriptorArray
                                                 (Array
                                                     (Integer 4)
-                                                    [((IntegerConstant 1 (Integer 4))
-                                                    (IntegerConstant 2 (Integer 4)))]
+                                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                                    (IntegerConstant 2 (Integer 4) Decimal))]
                                                     DescriptorArray
                                                 )
                                                 ()
@@ -468,14 +468,14 @@
                                     (DoLoop
                                         ()
                                         ((Var 4 i)
-                                        (IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 16 (Integer 4))
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 16 (Integer 4) Decimal)
                                         ())
                                         [(DoLoop
                                             ()
                                             ((Var 4 j)
-                                            (IntegerConstant 1 (Integer 4))
-                                            (IntegerConstant 16 (Integer 4))
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 16 (Integer 4) Decimal)
                                             ())
                                             [(If
                                                 (RealCompare
@@ -501,7 +501,7 @@
                                                                         (IntegerBinOp
                                                                             (Var 4 i)
                                                                             Sub
-                                                                            (IntegerConstant 1 (Integer 4))
+                                                                            (IntegerConstant 1 (Integer 4) Decimal)
                                                                             (Integer 4)
                                                                             ()
                                                                         )
@@ -517,7 +517,7 @@
                                                                     (IntegerBinOp
                                                                         (Var 4 j)
                                                                         Sub
-                                                                        (IntegerConstant 1 (Integer 4))
+                                                                        (IntegerConstant 1 (Integer 4) Decimal)
                                                                         (Integer 4)
                                                                         ()
                                                                     )
@@ -566,39 +566,39 @@
                                         (ArrayItem
                                             (Var 4 newshape1)
                                             [(()
-                                            (IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 1 (Integer 4) Decimal)
                                             ())]
                                             (Integer 4)
                                             ColMajor
                                             ()
                                         )
-                                        (IntegerConstant 16 (Integer 4))
+                                        (IntegerConstant 16 (Integer 4) Decimal)
                                         ()
                                     )
                                     (Assignment
                                         (ArrayItem
                                             (Var 4 newshape1)
                                             [(()
-                                            (IntegerConstant 2 (Integer 4))
+                                            (IntegerConstant 2 (Integer 4) Decimal)
                                             ())]
                                             (Integer 4)
                                             ColMajor
                                             ()
                                         )
-                                        (IntegerConstant 16 (Integer 4))
+                                        (IntegerConstant 16 (Integer 4) Decimal)
                                         ()
                                     )
                                     (Assignment
                                         (ArrayItem
                                             (Var 4 newshape1)
                                             [(()
-                                            (IntegerConstant 3 (Integer 4))
+                                            (IntegerConstant 3 (Integer 4) Decimal)
                                             ())]
                                             (Integer 4)
                                             ColMajor
                                             ()
                                         )
-                                        (IntegerConstant 16 (Integer 4))
+                                        (IntegerConstant 16 (Integer 4) Decimal)
                                         ()
                                     )
                                     (Assignment
@@ -611,8 +611,8 @@
                                                 DescriptorArray
                                                 (Array
                                                     (Integer 4)
-                                                    [((IntegerConstant 1 (Integer 4))
-                                                    (IntegerConstant 3 (Integer 4)))]
+                                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                                    (IntegerConstant 3 (Integer 4) Decimal))]
                                                     DescriptorArray
                                                 )
                                                 ()
@@ -630,20 +630,20 @@
                                     (DoLoop
                                         ()
                                         ((Var 4 i)
-                                        (IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 16 (Integer 4))
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 16 (Integer 4) Decimal)
                                         ())
                                         [(DoLoop
                                             ()
                                             ((Var 4 j)
-                                            (IntegerConstant 1 (Integer 4))
-                                            (IntegerConstant 16 (Integer 4))
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 16 (Integer 4) Decimal)
                                             ())
                                             [(DoLoop
                                                 ()
                                                 ((Var 4 k)
-                                                (IntegerConstant 1 (Integer 4))
-                                                (IntegerConstant 16 (Integer 4))
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                (IntegerConstant 16 (Integer 4) Decimal)
                                                 ())
                                                 [(If
                                                     (RealCompare
@@ -673,7 +673,7 @@
                                                                                 (IntegerBinOp
                                                                                     (Var 4 i)
                                                                                     Sub
-                                                                                    (IntegerConstant 1 (Integer 4))
+                                                                                    (IntegerConstant 1 (Integer 4) Decimal)
                                                                                     (Integer 4)
                                                                                     ()
                                                                                 )
@@ -689,7 +689,7 @@
                                                                             (IntegerBinOp
                                                                                 (Var 4 j)
                                                                                 Sub
-                                                                                (IntegerConstant 1 (Integer 4))
+                                                                                (IntegerConstant 1 (Integer 4) Decimal)
                                                                                 (Integer 4)
                                                                                 ()
                                                                             )
@@ -705,7 +705,7 @@
                                                                         (IntegerBinOp
                                                                             (Var 4 k)
                                                                             Sub
-                                                                            (IntegerConstant 1 (Integer 4))
+                                                                            (IntegerConstant 1 (Integer 4) Decimal)
                                                                             (Integer 4)
                                                                             ()
                                                                         )
@@ -797,8 +797,8 @@
                                                     Default
                                                     (Array
                                                         (Real 8)
-                                                        [((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 256 (Integer 4)))]
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 256 (Integer 4) Decimal))]
                                                         FixedSizeArray
                                                     )
                                                     ()
@@ -818,12 +818,12 @@
                                                     Default
                                                     (Array
                                                         (Real 8)
-                                                        [((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 16 (Integer 4)))
-                                                        ((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 16 (Integer 4)))
-                                                        ((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 16 (Integer 4)))]
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 16 (Integer 4) Decimal))
+                                                        ((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 16 (Integer 4) Decimal))
+                                                        ((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 16 (Integer 4) Decimal))]
                                                         FixedSizeArray
                                                     )
                                                     ()
@@ -843,8 +843,8 @@
                                                     Default
                                                     (Array
                                                         (Real 8)
-                                                        [((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 4096 (Integer 4)))]
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 4096 (Integer 4) Decimal))]
                                                         FixedSizeArray
                                                     )
                                                     ()
@@ -944,8 +944,8 @@
                                                     Default
                                                     (Array
                                                         (Integer 4)
-                                                        [((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 1 (Integer 4)))]
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 1 (Integer 4) Decimal))]
                                                         FixedSizeArray
                                                     )
                                                     ()
@@ -965,8 +965,8 @@
                                                     Default
                                                     (Array
                                                         (Integer 4)
-                                                        [((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 1 (Integer 4)))]
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 1 (Integer 4) Decimal))]
                                                         FixedSizeArray
                                                     )
                                                     ()
@@ -1020,13 +1020,13 @@
                                         (ArrayItem
                                             (Var 3 newshape)
                                             [(()
-                                            (IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 1 (Integer 4) Decimal)
                                             ())]
                                             (Integer 4)
                                             ColMajor
                                             ()
                                         )
-                                        (IntegerConstant 256 (Integer 4))
+                                        (IntegerConstant 256 (Integer 4) Decimal)
                                         ()
                                     )
                                     (Assignment
@@ -1039,8 +1039,8 @@
                                                 DescriptorArray
                                                 (Array
                                                     (Integer 4)
-                                                    [((IntegerConstant 1 (Integer 4))
-                                                    (IntegerConstant 1 (Integer 4)))]
+                                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                                    (IntegerConstant 1 (Integer 4) Decimal))]
                                                     DescriptorArray
                                                 )
                                                 ()
@@ -1058,8 +1058,8 @@
                                     (DoLoop
                                         ()
                                         ((Var 3 k)
-                                        (IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 256 (Integer 4))
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 256 (Integer 4) Decimal)
                                         ())
                                         [(Assignment
                                             (Var 3 i)
@@ -1067,12 +1067,12 @@
                                                 (IntegerBinOp
                                                     (Var 3 k)
                                                     Sub
-                                                    (IntegerConstant 1 (Integer 4))
+                                                    (IntegerConstant 1 (Integer 4) Decimal)
                                                     (Integer 4)
                                                     ()
                                                 )
                                                 Div
-                                                (IntegerConstant 16 (Integer 4))
+                                                (IntegerConstant 16 (Integer 4) Decimal)
                                                 (Integer 4)
                                                 ()
                                             )
@@ -1084,7 +1084,7 @@
                                                 (IntegerBinOp
                                                     (Var 3 k)
                                                     Sub
-                                                    (IntegerConstant 1 (Integer 4))
+                                                    (IntegerConstant 1 (Integer 4) Decimal)
                                                     (Integer 4)
                                                     ()
                                                 )
@@ -1092,7 +1092,7 @@
                                                 (IntegerBinOp
                                                     (Var 3 i)
                                                     Mul
-                                                    (IntegerConstant 16 (Integer 4))
+                                                    (IntegerConstant 16 (Integer 4) Decimal)
                                                     (Integer 4)
                                                     ()
                                                 )
@@ -1172,20 +1172,20 @@
                                     (DoLoop
                                         ()
                                         ((Var 3 i)
-                                        (IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 16 (Integer 4))
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 16 (Integer 4) Decimal)
                                         ())
                                         [(DoLoop
                                             ()
                                             ((Var 3 j)
-                                            (IntegerConstant 1 (Integer 4))
-                                            (IntegerConstant 16 (Integer 4))
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 16 (Integer 4) Decimal)
                                             ())
                                             [(DoLoop
                                                 ()
                                                 ((Var 3 k)
-                                                (IntegerConstant 1 (Integer 4))
-                                                (IntegerConstant 16 (Integer 4))
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                (IntegerConstant 16 (Integer 4) Decimal)
                                                 ())
                                                 [(Assignment
                                                     (ArrayItem
@@ -1211,7 +1211,7 @@
                                                                         (IntegerBinOp
                                                                             (Var 3 i)
                                                                             Sub
-                                                                            (IntegerConstant 1 (Integer 4))
+                                                                            (IntegerConstant 1 (Integer 4) Decimal)
                                                                             (Integer 4)
                                                                             ()
                                                                         )
@@ -1219,7 +1219,7 @@
                                                                         (IntegerBinOp
                                                                             (Var 3 j)
                                                                             Sub
-                                                                            (IntegerConstant 1 (Integer 4))
+                                                                            (IntegerConstant 1 (Integer 4) Decimal)
                                                                             (Integer 4)
                                                                             ()
                                                                         )
@@ -1230,7 +1230,7 @@
                                                                     (IntegerBinOp
                                                                         (Var 3 k)
                                                                         Sub
-                                                                        (IntegerConstant 1 (Integer 4))
+                                                                        (IntegerConstant 1 (Integer 4) Decimal)
                                                                         (Integer 4)
                                                                         ()
                                                                     )
@@ -1265,13 +1265,13 @@
                                         (ArrayItem
                                             (Var 3 newshape1)
                                             [(()
-                                            (IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 1 (Integer 4) Decimal)
                                             ())]
                                             (Integer 4)
                                             ColMajor
                                             ()
                                         )
-                                        (IntegerConstant 4096 (Integer 4))
+                                        (IntegerConstant 4096 (Integer 4) Decimal)
                                         ()
                                     )
                                     (Assignment
@@ -1284,8 +1284,8 @@
                                                 DescriptorArray
                                                 (Array
                                                     (Integer 4)
-                                                    [((IntegerConstant 1 (Integer 4))
-                                                    (IntegerConstant 1 (Integer 4)))]
+                                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                                    (IntegerConstant 1 (Integer 4) Decimal))]
                                                     DescriptorArray
                                                 )
                                                 ()
@@ -1303,8 +1303,8 @@
                                     (DoLoop
                                         ()
                                         ((Var 3 l)
-                                        (IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 4096 (Integer 4))
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 4096 (Integer 4) Decimal)
                                         ())
                                         [(Assignment
                                             (Var 3 i)
@@ -1312,12 +1312,12 @@
                                                 (IntegerBinOp
                                                     (Var 3 l)
                                                     Sub
-                                                    (IntegerConstant 1 (Integer 4))
+                                                    (IntegerConstant 1 (Integer 4) Decimal)
                                                     (Integer 4)
                                                     ()
                                                 )
                                                 Div
-                                                (IntegerConstant 256 (Integer 4))
+                                                (IntegerConstant 256 (Integer 4) Decimal)
                                                 (Integer 4)
                                                 ()
                                             )
@@ -1330,7 +1330,7 @@
                                                     (IntegerBinOp
                                                         (Var 3 l)
                                                         Sub
-                                                        (IntegerConstant 1 (Integer 4))
+                                                        (IntegerConstant 1 (Integer 4) Decimal)
                                                         (Integer 4)
                                                         ()
                                                     )
@@ -1338,7 +1338,7 @@
                                                     (IntegerBinOp
                                                         (Var 3 i)
                                                         Mul
-                                                        (IntegerConstant 256 (Integer 4))
+                                                        (IntegerConstant 256 (Integer 4) Decimal)
                                                         (Integer 4)
                                                         ()
                                                     )
@@ -1346,7 +1346,7 @@
                                                     ()
                                                 )
                                                 Div
-                                                (IntegerConstant 16 (Integer 4))
+                                                (IntegerConstant 16 (Integer 4) Decimal)
                                                 (Integer 4)
                                                 ()
                                             )
@@ -1359,7 +1359,7 @@
                                                     (IntegerBinOp
                                                         (Var 3 l)
                                                         Sub
-                                                        (IntegerConstant 1 (Integer 4))
+                                                        (IntegerConstant 1 (Integer 4) Decimal)
                                                         (Integer 4)
                                                         ()
                                                     )
@@ -1367,7 +1367,7 @@
                                                     (IntegerBinOp
                                                         (Var 3 i)
                                                         Mul
-                                                        (IntegerConstant 256 (Integer 4))
+                                                        (IntegerConstant 256 (Integer 4) Decimal)
                                                         (Integer 4)
                                                         ()
                                                     )
@@ -1378,7 +1378,7 @@
                                                 (IntegerBinOp
                                                     (Var 3 j)
                                                     Mul
-                                                    (IntegerConstant 16 (Integer 4))
+                                                    (IntegerConstant 16 (Integer 4) Decimal)
                                                     (Integer 4)
                                                     ()
                                                 )
@@ -1488,10 +1488,10 @@
                                                     Default
                                                     (Array
                                                         (Real 8)
-                                                        [((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 16 (Integer 4)))
-                                                        ((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 16 (Integer 4)))]
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 16 (Integer 4) Decimal))
+                                                        ((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 16 (Integer 4) Decimal))]
                                                         FixedSizeArray
                                                     )
                                                     ()
@@ -1511,8 +1511,8 @@
                                                     Default
                                                     (Array
                                                         (Real 8)
-                                                        [((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 4096 (Integer 4)))]
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 4096 (Integer 4) Decimal))]
                                                         FixedSizeArray
                                                     )
                                                     ()
@@ -1607,14 +1607,14 @@
                                     [(DoLoop
                                         ()
                                         ((Var 5 i)
-                                        (IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 16 (Integer 4))
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 16 (Integer 4) Decimal)
                                         ())
                                         [(DoLoop
                                             ()
                                             ((Var 5 j)
-                                            (IntegerConstant 1 (Integer 4))
-                                            (IntegerConstant 16 (Integer 4))
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 16 (Integer 4) Decimal)
                                             ())
                                             [(Assignment
                                                 (ArrayItem
@@ -1636,7 +1636,7 @@
                                                                 (IntegerBinOp
                                                                     (Var 5 i)
                                                                     Sub
-                                                                    (IntegerConstant 1 (Integer 4))
+                                                                    (IntegerConstant 1 (Integer 4) Decimal)
                                                                     (Integer 4)
                                                                     ()
                                                                 )
@@ -1644,7 +1644,7 @@
                                                                 (IntegerBinOp
                                                                     (Var 5 j)
                                                                     Sub
-                                                                    (IntegerConstant 1 (Integer 4))
+                                                                    (IntegerConstant 1 (Integer 4) Decimal)
                                                                     (Integer 4)
                                                                     ()
                                                                 )
@@ -1682,10 +1682,10 @@
                                             DescriptorArray
                                             (Array
                                                 (Real 8)
-                                                [((IntegerConstant 1 (Integer 4))
-                                                (IntegerConstant 16 (Integer 4)))
-                                                ((IntegerConstant 1 (Integer 4))
-                                                (IntegerConstant 16 (Integer 4)))]
+                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                (IntegerConstant 16 (Integer 4) Decimal))
+                                                ((IntegerConstant 1 (Integer 4) Decimal)
+                                                (IntegerConstant 16 (Integer 4) Decimal))]
                                                 DescriptorArray
                                             )
                                             ()
@@ -1695,8 +1695,8 @@
                                     (DoLoop
                                         ()
                                         ((Var 5 l)
-                                        (IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 4096 (Integer 4))
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 4096 (Integer 4) Decimal)
                                         ())
                                         [(Assignment
                                             (Var 5 i)
@@ -1704,12 +1704,12 @@
                                                 (IntegerBinOp
                                                     (Var 5 l)
                                                     Sub
-                                                    (IntegerConstant 1 (Integer 4))
+                                                    (IntegerConstant 1 (Integer 4) Decimal)
                                                     (Integer 4)
                                                     ()
                                                 )
                                                 Div
-                                                (IntegerConstant 256 (Integer 4))
+                                                (IntegerConstant 256 (Integer 4) Decimal)
                                                 (Integer 4)
                                                 ()
                                             )
@@ -1722,7 +1722,7 @@
                                                     (IntegerBinOp
                                                         (Var 5 l)
                                                         Sub
-                                                        (IntegerConstant 1 (Integer 4))
+                                                        (IntegerConstant 1 (Integer 4) Decimal)
                                                         (Integer 4)
                                                         ()
                                                     )
@@ -1730,7 +1730,7 @@
                                                     (IntegerBinOp
                                                         (Var 5 i)
                                                         Mul
-                                                        (IntegerConstant 256 (Integer 4))
+                                                        (IntegerConstant 256 (Integer 4) Decimal)
                                                         (Integer 4)
                                                         ()
                                                     )
@@ -1738,7 +1738,7 @@
                                                     ()
                                                 )
                                                 Div
-                                                (IntegerConstant 16 (Integer 4))
+                                                (IntegerConstant 16 (Integer 4) Decimal)
                                                 (Integer 4)
                                                 ()
                                             )
@@ -1751,7 +1751,7 @@
                                                     (IntegerBinOp
                                                         (Var 5 l)
                                                         Sub
-                                                        (IntegerConstant 1 (Integer 4))
+                                                        (IntegerConstant 1 (Integer 4) Decimal)
                                                         (Integer 4)
                                                         ()
                                                     )
@@ -1759,7 +1759,7 @@
                                                     (IntegerBinOp
                                                         (Var 5 i)
                                                         Mul
-                                                        (IntegerConstant 256 (Integer 4))
+                                                        (IntegerConstant 256 (Integer 4) Decimal)
                                                         (Integer 4)
                                                         ()
                                                     )
@@ -1770,7 +1770,7 @@
                                                 (IntegerBinOp
                                                     (Var 5 j)
                                                     Mul
-                                                    (IntegerConstant 16 (Integer 4))
+                                                    (IntegerConstant 16 (Integer 4) Decimal)
                                                     (Integer 4)
                                                     ()
                                                 )
@@ -1834,8 +1834,8 @@
                                             DescriptorArray
                                             (Array
                                                 (Real 8)
-                                                [((IntegerConstant 1 (Integer 4))
-                                                (IntegerConstant 4096 (Integer 4)))]
+                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                (IntegerConstant 4096 (Integer 4) Decimal))]
                                                 DescriptorArray
                                             )
                                             ()

@@ -324,11 +324,11 @@
                                     Default
                                     (Array
                                         (Real 4)
-                                        [((IntegerConstant 1 (Integer 4))
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 2 d1))
-                                        ((IntegerConstant 1 (Integer 4))
+                                        ((IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 2 e1))
-                                        ((IntegerConstant 1 (Integer 4))
+                                        ((IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 2 f1))]
                                         PointerToDataArray
                                     )
@@ -349,7 +349,7 @@
                                     Default
                                     (Array
                                         (Integer 4)
-                                        [((IntegerConstant 1 (Integer 4))
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 2 e1))]
                                         PointerToDataArray
                                     )
@@ -381,33 +381,33 @@
                         (ArrayItem
                             (Var 2 y)
                             [(()
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             ())]
                             (Integer 4)
                             ColMajor
                             ()
                         )
-                        (IntegerConstant 3 (Integer 4))
+                        (IntegerConstant 3 (Integer 4) Decimal)
                         ()
                     )
                     (Assignment
                         (ArrayItem
                             (Var 2 x)
                             [(()
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             ())
                             (()
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             ())
                             (()
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             ())]
                             (Real 4)
                             ColMajor
                             ()
                         )
                         (Cast
-                            (IntegerConstant 3 (Integer 4))
+                            (IntegerConstant 3 (Integer 4) Decimal)
                             IntegerToReal
                             (Real 4)
                             (RealConstant
@@ -419,18 +419,18 @@
                     )
                     (Assignment
                         (Var 2 a)
-                        (IntegerConstant 1 (Integer 4))
+                        (IntegerConstant 1 (Integer 4) Decimal)
                         ()
                     )
                     (Assignment
                         (Var 2 b)
-                        (IntegerConstant 2 (Integer 4))
+                        (IntegerConstant 2 (Integer 4) Decimal)
                         ()
                     )
                     (Assignment
                         (Var 2 d)
                         (Cast
-                            (IntegerConstant 3 (Integer 4))
+                            (IntegerConstant 3 (Integer 4) Decimal)
                             IntegerToReal
                             (Real 4)
                             (RealConstant
@@ -443,7 +443,7 @@
                     (Assignment
                         (Var 2 f)
                         (Cast
-                            (IntegerConstant 4 (Integer 4))
+                            (IntegerConstant 4 (Integer 4) Decimal)
                             IntegerToReal
                             (Real 4)
                             (RealConstant
@@ -456,7 +456,7 @@
                     (Assignment
                         (Var 2 h)
                         (Cast
-                            (IntegerConstant 5 (Integer 4))
+                            (IntegerConstant 5 (Integer 4) Decimal)
                             IntegerToReal
                             (Real 8)
                             (RealConstant
@@ -469,7 +469,7 @@
                     (Assignment
                         (Var 2 i)
                         (Cast
-                            (IntegerConstant 6 (Integer 4))
+                            (IntegerConstant 6 (Integer 4) Decimal)
                             IntegerToReal
                             (Real 8)
                             (RealConstant
@@ -482,7 +482,7 @@
                     (Assignment
                         (Var 2 l)
                         (Cast
-                            (IntegerConstant 7 (Integer 4))
+                            (IntegerConstant 7 (Integer 4) Decimal)
                             IntegerToComplex
                             (Complex 4)
                             (ComplexConstant
@@ -496,7 +496,7 @@
                     (Assignment
                         (Var 2 m)
                         (Cast
-                            (IntegerConstant 8 (Integer 4))
+                            (IntegerConstant 8 (Integer 4) Decimal)
                             IntegerToComplex
                             (Complex 4)
                             (ComplexConstant
@@ -510,7 +510,7 @@
                     (Assignment
                         (Var 2 o)
                         (Cast
-                            (IntegerConstant 9 (Integer 4))
+                            (IntegerConstant 9 (Integer 4) Decimal)
                             IntegerToReal
                             (Real 8)
                             (RealConstant
@@ -523,7 +523,7 @@
                     (Assignment
                         (Var 2 p)
                         (Cast
-                            (IntegerConstant 10 (Integer 4))
+                            (IntegerConstant 10 (Integer 4) Decimal)
                             IntegerToReal
                             (Real 8)
                             (RealConstant

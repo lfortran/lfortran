@@ -187,7 +187,7 @@
                                                             ()
                                                         )
                                                         Add
-                                                        (IntegerConstant 1 (Integer 4))
+                                                        (IntegerConstant 1 (Integer 4) Decimal)
                                                         (Integer 4)
                                                         ()
                                                     )]
@@ -423,7 +423,7 @@
                                                             [(()
                                                             (ArrayBound
                                                                 (Var 4 keywords)
-                                                                (IntegerConstant 1 (Integer 4))
+                                                                (IntegerConstant 1 (Integer 4) Decimal)
                                                                 (Integer 4)
                                                                 LBound
                                                                 ()
@@ -436,7 +436,7 @@
                                                         (Integer 4)
                                                         ()
                                                     )
-                                                    (IntegerConstant 8 (Integer 4))]
+                                                    (IntegerConstant 8 (Integer 4) Decimal)]
                                                     0
                                                     (Integer 4)
                                                     ()
@@ -452,7 +452,7 @@
                                                                 [(()
                                                                 (ArrayBound
                                                                     (Var 4 keywords)
-                                                                    (IntegerConstant 1 (Integer 4))
+                                                                    (IntegerConstant 1 (Integer 4) Decimal)
                                                                     (Integer 4)
                                                                     LBound
                                                                     ()
@@ -465,7 +465,7 @@
                                                             (Integer 4)
                                                             ()
                                                         )
-                                                        (IntegerConstant 8 (Integer 4))]
+                                                        (IntegerConstant 8 (Integer 4) Decimal)]
                                                         0
                                                         (Integer 4)
                                                         ()
@@ -554,7 +554,7 @@
                                                                 [(()
                                                                 (ArrayBound
                                                                     (Var 4 keywords)
-                                                                    (IntegerConstant 1 (Integer 4))
+                                                                    (IntegerConstant 1 (Integer 4) Decimal)
                                                                     (Integer 4)
                                                                     LBound
                                                                     ()
@@ -567,7 +567,7 @@
                                                             (Integer 4)
                                                             ()
                                                         )
-                                                        (IntegerConstant 8 (Integer 4))]
+                                                        (IntegerConstant 8 (Integer 4) Decimal)]
                                                         0
                                                         (Integer 4)
                                                         ()
@@ -583,7 +583,7 @@
                                                                     [(()
                                                                     (ArrayBound
                                                                         (Var 4 keywords)
-                                                                        (IntegerConstant 1 (Integer 4))
+                                                                        (IntegerConstant 1 (Integer 4) Decimal)
                                                                         (Integer 4)
                                                                         LBound
                                                                         ()
@@ -596,7 +596,7 @@
                                                                 (Integer 4)
                                                                 ()
                                                             )
-                                                            (IntegerConstant 8 (Integer 4))]
+                                                            (IntegerConstant 8 (Integer 4) Decimal)]
                                                             0
                                                             (Integer 4)
                                                             ()
@@ -673,12 +673,12 @@
                                                     )
                                                     ()
                                                     ()
-                                                    (IntegerConstant 1 (Integer 4))
+                                                    (IntegerConstant 1 (Integer 4) Decimal)
                                                     (Character 1 -2 ())
                                                     ()
                                                 )]
                                                 (Var 4 i)
-                                                (IntegerConstant 1 (Integer 4))
+                                                (IntegerConstant 1 (Integer 4) Decimal)
                                                 (ArraySize
                                                     (Var 4 keywords)
                                                     ()
@@ -697,7 +697,7 @@
                                                                     [(()
                                                                     (ArrayBound
                                                                         (Var 4 keywords)
-                                                                        (IntegerConstant 1 (Integer 4))
+                                                                        (IntegerConstant 1 (Integer 4) Decimal)
                                                                         (Integer 4)
                                                                         LBound
                                                                         ()
@@ -710,7 +710,7 @@
                                                                 (Integer 4)
                                                                 ()
                                                             )
-                                                            (IntegerConstant 8 (Integer 4))]
+                                                            (IntegerConstant 8 (Integer 4) Decimal)]
                                                             0
                                                             (Integer 4)
                                                             ()

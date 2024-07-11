@@ -43,7 +43,7 @@
                     []
                     [(Assignment
                         (Var 2 f)
-                        (IntegerConstant 42 (Integer 4))
+                        (IntegerConstant 42 (Integer 4) Decimal)
                         ()
                     )]
                     (Var 2 f)
@@ -93,7 +93,7 @@
                     []
                     [(Assignment
                         (Var 3 g)
-                        (IntegerConstant 42 (Integer 4))
+                        (IntegerConstant 42 (Integer 4) Decimal)
                         ()
                     )]
                     (Var 3 g)
@@ -143,7 +143,7 @@
                     []
                     [(Assignment
                         (Var 4 h)
-                        (IntegerConstant 42 (Integer 4))
+                        (IntegerConstant 42 (Integer 4) Decimal)
                         ()
                     )]
                     (Var 4 h)

@@ -13,8 +13,8 @@
                                     int
                                     []
                                     Local
-                                    (IntegerConstant 4 (Integer 4))
-                                    (IntegerConstant 4 (Integer 4))
+                                    (IntegerConstant 4 (Integer 4) Decimal)
+                                    (IntegerConstant 4 (Integer 4) Decimal)
                                     Save
                                     (Integer 4)
                                     ()
@@ -68,9 +68,9 @@
                             )
                             NotEq
                             (IntegerUnaryMinus
-                                (IntegerConstant 4 (Integer 4))
+                                (IntegerConstant 4 (Integer 4) Decimal)
                                 (Integer 4)
-                                (IntegerConstant -4 (Integer 4))
+                                (IntegerConstant -4 (Integer 4) Decimal)
                             )
                             (Logical 4)
                             ()
@@ -83,9 +83,9 @@
                     (Assignment
                         (Var 4 int)
                         (IntegerUnaryMinus
-                            (IntegerConstant 4 (Integer 4))
+                            (IntegerConstant 4 (Integer 4) Decimal)
                             (Integer 4)
-                            (IntegerConstant -4 (Integer 4))
+                            (IntegerConstant -4 (Integer 4) Decimal)
                         )
                         ()
                     )
@@ -101,9 +101,9 @@
                             )
                             NotEq
                             (IntegerUnaryMinus
-                                (IntegerConstant 4 (Integer 4))
+                                (IntegerConstant 4 (Integer 4) Decimal)
                                 (Integer 4)
-                                (IntegerConstant -4 (Integer 4))
+                                (IntegerConstant -4 (Integer 4) Decimal)
                             )
                             (Logical 4)
                             ()
@@ -185,7 +185,7 @@
                                         (IntegerCompare
                                             (Var 3 int)
                                             GtE
-                                            (IntegerConstant 0 (Integer 4))
+                                            (IntegerConstant 0 (Integer 4) Decimal)
                                             (Logical 4)
                                             ()
                                         )
