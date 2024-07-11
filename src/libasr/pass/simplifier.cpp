@@ -877,7 +877,10 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                     x_m_args[i].m_value->type) == exprs_with_no_type.end()) &&
                 ASRUtils::is_array(ASRUtils::expr_type(x_m_args[i].m_value)) &&
                 !ASR::is_a<ASR::Var_t>(
-                    *ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value)) ) {
+                    *ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value)) &&
+                (!ASRUtils::is_fixed_size_array(ASRUtils::expr_type(x_m_args[i].m_value)) ||
+                  (ASRUtils::is_fixed_size_array(ASRUtils::expr_type(x_m_args[i].m_value)) &&
+                   ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(x_m_args[i].m_value)) > 0)) ) {
                 visit_call_arg(x_m_args[i]);
                 call_create_and_allocate_temporary_variable(x_m_args[i].m_value)
                 if( ASR::is_a<ASR::ArrayPhysicalCast_t>(*x_m_args[i].m_value) ) {
@@ -1099,7 +1102,10 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     }
 
     void replace_ArrayConstructor(ASR::ArrayConstructor_t* x) {
-        replace_current_expr("_array_constructor_")
+        if( ASRUtils::is_fixed_size_array(x->m_type) &&
+            ASRUtils::get_fixed_size_of_array(x->m_type) > 0 ) {
+            replace_current_expr("_array_constructor_")
+        }
     }
 
     void replace_ArrayConstant(ASR::ArrayConstant_t* x) {
@@ -1525,7 +1531,10 @@ class VerifySimplifierASROutput:
 
     #define check_for_var_if_array(expr) if( expr && std::find(exprs_with_no_type.begin(), \
         exprs_with_no_type.end(), expr->type) == exprs_with_no_type.end() && \
-        ASRUtils::is_array(ASRUtils::expr_type(expr)) ) { \
+        ASRUtils::is_array(ASRUtils::expr_type(expr)) && \
+        (!ASRUtils::is_fixed_size_array(ASRUtils::expr_type(expr)) || \
+        (ASRUtils::is_fixed_size_array(ASRUtils::expr_type(expr)) && \
+        ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(expr)) > 0)) ) { \
             LCOMPILERS_ASSERT(ASR::is_a<ASR::Var_t>(*ASRUtils::get_past_array_physical_cast(expr))); \
         } \
 
