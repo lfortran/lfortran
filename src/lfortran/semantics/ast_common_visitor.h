@@ -7628,8 +7628,9 @@ public:
         }
         std::string boz_str = s.substr(2, s.size() - 2);
         int64_t boz_int = std::stoll(boz_str, nullptr, base);
-        tmp = ASR::make_IntegerBOZ_t(al, x.base.base.loc, boz_int,
-                                boz_type, nullptr);
+        ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
+        tmp = ASR::make_IntegerConstant_t(al, x.base.base.loc, boz_int,
+                int_type, boz_type);
     }
 
     void visit_Num(const AST::Num_t &x) {
