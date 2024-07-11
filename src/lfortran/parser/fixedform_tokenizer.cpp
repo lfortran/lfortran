@@ -1062,6 +1062,11 @@ struct FixedFormRecursiveDescent {
             return true;
         }
 
+        if (next_is(cur, "cycle")){
+            push_token_advance(cur, "cycle");
+            tokenize_line(cur);
+        }
+
         if (l != -1) {
             // Undo the label, as it will be handled later
             undo_label(cur);
