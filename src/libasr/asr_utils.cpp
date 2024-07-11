@@ -293,7 +293,8 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
                             const Location &loc, bool intrinsic,
                             LCompilers::PassOptions& pass_options,
                             bool run_verify,
-                            const std::function<void (const std::string &, const Location &)> err) {
+                            const std::function<void (const std::string &, const Location &)> err,
+                            std::string options_string) {
     LCOMPILERS_ASSERT(symtab);
     if (symtab->get_symbol(module_name) != nullptr) {
         ASR::symbol_t *m = symtab->get_symbol(module_name);
@@ -322,6 +323,18 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
     ASR::Module_t *mod2 = extract_module(*mod1);
     symtab->add_symbol(module_name, (ASR::symbol_t*)mod2);
     mod2->m_symtab->parent = symtab;
+    if ( std::string( mod2->m_name ) == "lfortran_intrinsic_iso_fortran_env" && mod2->m_intrinsic ) {
+        SymbolTable* current_scope = al.make_new<SymbolTable>(mod2->m_symtab);
+        ASRUtils::ASRBuilder b(al, mod2->base.base.loc);
+        ASR::ttype_t* return_type = ASRUtils::TYPE(ASR::make_Character_t(al, mod2->base.base.loc, 1, options_string.size(), nullptr));
+        ASR::expr_t* return_var = b.Variable(current_scope, "compiler_options", return_type, ASR::intentType::ReturnVar);
+        Vec<ASR::stmt_t*> body; body.reserve(al, 1);
+        body.push_back(al, b.Assignment(return_var, b.StringConstant(options_string, return_type)));
+        mod2->m_symtab->add_symbol("compiler_options", ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Function_t_util(al,
+                        mod2->base.base.loc, current_scope, s2c(al,"compiler_options"), nullptr, 0, nullptr, 0,
+                        body.p, body.n, return_var, ASR::abiType::Source, ASR::accessType::Public, ASR::deftypeType::Implementation,
+                        nullptr, false, false, false, false, false, nullptr, 0, false, false, false, nullptr)));
+    }
     mod2->m_loaded_from_mod = true;
     LCOMPILERS_ASSERT(symtab->resolve_symbol(module_name));
 

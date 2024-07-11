@@ -412,7 +412,8 @@ public:
             ASR::symbol_t* submod_parent = (ASR::symbol_t*)(ASRUtils::load_module(al, global_scope,
                                                 parent_name, x.base.base.loc, false,
                                                 compiler_options.po, true,
-                                                [&](const std::string &msg, const Location &loc) { throw SemanticError(msg, loc); }
+                                                [&](const std::string &msg, const Location &loc) { throw SemanticError(msg, loc); },
+                                                compiler_options.generate_options_string()
                                                 ));
             ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(submod_parent);
             std::string unsupported_sym_name = import_all(m, true);
@@ -2595,7 +2596,8 @@ public:
             }
             t = (ASR::symbol_t*)(ASRUtils::load_module(al, tu_symtab,
                 msym, x.base.base.loc, false, compiler_options.po, true,
-                [&](const std::string &msg, const Location &loc) { throw SemanticError(msg, loc); }
+                [&](const std::string &msg, const Location &loc) { throw SemanticError(msg, loc); },
+                compiler_options.generate_options_string()
                 ));
         }
         if (!ASR::is_a<ASR::Module_t>(*t)) {

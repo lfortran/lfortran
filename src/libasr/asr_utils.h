@@ -1979,7 +1979,8 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
                             const Location &loc, bool intrinsic,
                             LCompilers::PassOptions& pass_options,
                             bool run_verify,
-                            const std::function<void (const std::string &, const Location &)> err);
+                            const std::function<void (const std::string &, const Location &)> err,
+                            std::string options_string = "");
 
 ASR::TranslationUnit_t* find_and_load_module(Allocator &al, const std::string &msym,
                                                 SymbolTable &symtab, bool intrinsic,

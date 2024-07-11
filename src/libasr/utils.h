@@ -114,6 +114,143 @@ struct CompilerOptions {
     Platform platform;
 
     CompilerOptions () : platform{get_platform()} {};
+
+    // Method to generate the options string
+    std::string generate_options_string() const {
+        std::string result;
+        if (fixed_form) {
+            result += "--fixed_form ";
+        }
+        if (interactive) {
+            result += "--interactive ";
+        }
+        if (c_preprocessor) {
+            result += "--c_preprocessor ";
+        }
+        if (!prescan) {
+            result += "--no-prescan ";
+        }
+        if (disable_main) {
+            result += "--disable_main ";
+        }
+        if (symtab_only) {
+            result += "--symtab_only ";
+        }
+        if (show_stacktrace) {
+            result += "--show_stacktrace ";
+        }
+        if (use_colors) {
+            result += "--use_colors ";
+        }
+        if (indent) {
+            result += "--indent ";
+        }
+        if (json) {
+            result += "--json ";
+        } 
+        if (tree) {
+            result += "--tree ";
+        }
+        if (visualize) {
+            result += "--visualize ";
+        }
+        if (fast) {
+            result += "--fast ";
+        }
+        if (openmp) {
+            result += "--openmp ";
+        }
+        if (generate_object_code) {
+            result += "--generate_object_code ";
+        }
+        if (no_warnings) {
+            result += "--no_warnings ";
+        }
+        if (disable_style) {
+            result += "--disable_style ";
+        }
+        if (logical_casting) {
+            result += "--logical_casting ";
+        }
+        if (no_error_banner) {
+            result += "--no_error_banner ";
+        }
+        if (enable_bounds_checking) {
+            result += "--enable_bounds_checking ";
+        }
+        if (new_parser) {
+            result += "--new_parser ";
+        }
+        if (implicit_typing) {
+            result += "--implicit_typing ";
+        }
+        if (implicit_interface) {
+            result += "--implicit_interface ";
+        }
+        if (implicit_argument_casting) {
+            result += "--implicit_argument_casting ";
+        }
+        if (print_leading_space) {
+            result += "--print_leading_space ";
+        }
+        if (rtlib) {
+            result += "--rtlib ";
+        }
+        if (use_loop_variable_after_loop) {
+            result += "--use_loop_variable_after_loop ";
+        }
+        if (emit_debug_info) {
+            result += "--emit_debug_info ";
+        }
+        if (emit_debug_line_column) {
+            result += "--emit_debug_line_column ";
+        }
+        if (enable_cpython) {
+            result += "--enable_cpython ";
+        }
+        if (enable_symengine) {
+            result += "--enable_symengine ";
+        }
+        if (link_numpy) {
+            result += "--link_numpy ";
+        }
+        if (run) {
+            result += "--run ";
+        }
+        if (legacy_array_sections) {
+            result += "--legacy_array_sections ";
+        }
+        if (ignore_pragma) {
+            result += "--ignore_pragma ";
+        }
+        if (stack_arrays) {
+            result += "--stack_arrays ";
+        }
+        if (wasm_html) {
+            result += "--wasm_html ";
+        }
+        if (openmp_lib_dir != "") {
+            result += "--openmp_lib_dir ";
+            result += openmp_lib_dir;
+            result += " ";
+        }
+        if (error_format != "") {
+            result += "--error_format ";
+            result += error_format;
+            result += " ";
+        }
+        if (target != "") {
+            result += "--target ";
+            result += target;
+            result += " ";
+        }
+        if (arg_o != "") {
+            result += "--arg_o ";
+            result += arg_o;
+            result += " ";
+        }
+        return result;
+    }
 };
 
 bool read_file(const std::string &filename, std::string &text);
