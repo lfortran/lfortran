@@ -6594,6 +6594,7 @@ public:
             throw CodeGenError("ConstArray type not supported yet");
         }
         // Create <n x float> type, where `n` is the length of the `x` constant array
+        std::cout<<"size: "<<ASRUtils::get_fixed_size_of_array(x.m_type)<<std::endl;
         llvm::Type* type_fxn = FIXED_VECTOR_TYPE::get(el_type, ASRUtils::get_fixed_size_of_array(x.m_type));
         // Create a pointer <n x float>* to a stack allocated <n x float>
         llvm::AllocaInst *p_fxn = builder->CreateAlloca(type_fxn, nullptr);
