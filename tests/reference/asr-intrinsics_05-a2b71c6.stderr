@@ -1,5 +1,0 @@
-semantic error: The kind of first argument of `ior` intrinsic must be the same as second argument
- --> tests/errors/intrinsics_05.f90:2:14
-  |
-2 |     print *, ior(1, 1_8)
-  |              ^^^^^^^^^^^ 
