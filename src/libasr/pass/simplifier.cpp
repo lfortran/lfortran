@@ -861,7 +861,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
             diag::Diagnostics diags;
             ASRUtils::ArrIntrinsic::fill_dimensions_for_ArrIntrinsic(
                 al, ASRUtils::extract_n_dims_from_ttype(x.m_type), x.m_args[0],
-                x.m_args[1], diags, true, dims);
+                x.m_args[1], diags, !ASRUtils::is_value_constant(x.m_args[1]), dims);
             xx.m_type = ASRUtils::duplicate_type(al, x.m_type, &dims,
                 ASR::array_physical_typeType::DescriptorArray, true);
         }

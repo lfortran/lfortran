@@ -5016,8 +5016,6 @@ namespace IntrinsicArrayFunctionRegistry {
             id == IntrinsicArrayFunctions::Spread ||
             id == IntrinsicArrayFunctions::Unpack ) {
             return 2; // return variable index
-        } else {
-            LCOMPILERS_ASSERT(false);
         }
         return -1;
     }
