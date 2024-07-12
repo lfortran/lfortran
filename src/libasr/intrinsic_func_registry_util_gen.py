@@ -720,7 +720,7 @@ intrinsic_funcs_args = {
     ], 
     "Ishftc": [
         {
-            "args": [("int", "int")],
+            "args": [("int", "int", "int")],
             "ret_type_arg_idx": 0
         },
     ],

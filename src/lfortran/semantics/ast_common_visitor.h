@@ -840,7 +840,7 @@ public:
         {"selected_real_kind", {IntrinsicSignature({"p", "r", "radix"}, 0, 3)}},
         {"nearest", {IntrinsicSignature({"x", "s"}, 2, 2)}},
         {"compiler_version", {IntrinsicSignature({}, 0, 0)}},
-        {"ishftc", {IntrinsicSignature({"i", "shift"}, 2, 2)}},
+        {"ishftc", {IntrinsicSignature({"i", "shift", "size"}, 2, 3)}},
         {"ichar", {IntrinsicSignature({"C", "kind"}, 1, 2)}},
         {"char", {IntrinsicSignature({"I", "kind"}, 1, 2)}},
         {"achar", {IntrinsicSignature({"I", "kind"}, 1, 2)}},
@@ -5391,6 +5391,16 @@ public:
                         ASR::make_IntegerConstant_t(al, loc, kind, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, kind))));
                     args.p[1] = val;
                 }   
+            }
+        } else if (intrinsic_name == "ishftc"){
+            if(args[2] == nullptr){
+                int max_value = 64;
+                int kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[0]));
+                ASR::ttype_t *int_type = ASRUtils::TYPE(
+                    ASR::make_Integer_t(al, loc, kind));
+                ASR::expr_t* val = ASRUtils::EXPR(
+                    ASR::make_IntegerConstant_t(al, loc, max_value, int_type));
+                args.p[2] = val;
             }
         }
     }
