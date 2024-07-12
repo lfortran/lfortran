@@ -48,6 +48,8 @@ public:
         }
         s.append(" ");
         this->visit_ttype(*x.m_type);
+        s.append(" ");
+        this->visit_integerbozType(x.m_intboz_type);
         s.append(")");
     }
     void visit_Module(const ASR::Module_t &x) {

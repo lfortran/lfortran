@@ -82,8 +82,8 @@
                                     Save
                                     (Array
                                         (Real 8)
-                                        [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 5 (Integer 4)))]
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 5 (Integer 4) Decimal))]
                                         FixedSizeArray
                                     )
                                     ()
@@ -103,10 +103,10 @@
                                     Save
                                     (Array
                                         (Real 8)
-                                        [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 5 (Integer 4)))
-                                        ((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 5 (Integer 4)))]
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 5 (Integer 4) Decimal))
+                                        ((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 5 (Integer 4) Decimal))]
                                         FixedSizeArray
                                     )
                                     ()
@@ -126,12 +126,12 @@
                                     Save
                                     (Array
                                         (Real 8)
-                                        [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 5 (Integer 4)))
-                                        ((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 6 (Integer 4)))
-                                        ((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 7 (Integer 4)))]
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 5 (Integer 4) Decimal))
+                                        ((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 6 (Integer 4) Decimal))
+                                        ((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 7 (Integer 4) Decimal))]
                                         FixedSizeArray
                                     )
                                     ()
@@ -225,8 +225,8 @@
                                     Save
                                     (Array
                                         (Real 8)
-                                        [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 5 (Integer 4)))]
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 5 (Integer 4) Decimal))]
                                         FixedSizeArray
                                     )
                                     ()
@@ -246,10 +246,10 @@
                                     Save
                                     (Array
                                         (Real 8)
-                                        [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 5 (Integer 4)))
-                                        ((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 5 (Integer 4)))]
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 5 (Integer 4) Decimal))
+                                        ((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 5 (Integer 4) Decimal))]
                                         FixedSizeArray
                                     )
                                     ()
@@ -269,12 +269,12 @@
                                     Save
                                     (Array
                                         (Real 8)
-                                        [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 5 (Integer 4)))
-                                        ((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 6 (Integer 4)))
-                                        ((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 7 (Integer 4)))]
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 5 (Integer 4) Decimal))
+                                        ((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 6 (Integer 4) Decimal))
+                                        ((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 7 (Integer 4) Decimal))]
                                         FixedSizeArray
                                     )
                                     ()
@@ -473,8 +473,8 @@
                                                     Save
                                                     (Array
                                                         (Real 8)
-                                                        [((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 5 (Integer 4)))]
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 5 (Integer 4) Decimal))]
                                                         FixedSizeArray
                                                     )
                                                     ()
@@ -494,10 +494,10 @@
                                                     Save
                                                     (Array
                                                         (Real 8)
-                                                        [((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 5 (Integer 4)))
-                                                        ((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 5 (Integer 4)))]
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 5 (Integer 4) Decimal))
+                                                        ((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 5 (Integer 4) Decimal))]
                                                         FixedSizeArray
                                                     )
                                                     ()
@@ -517,12 +517,12 @@
                                                     Save
                                                     (Array
                                                         (Real 8)
-                                                        [((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 5 (Integer 4)))
-                                                        ((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 6 (Integer 4)))
-                                                        ((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 7 (Integer 4)))]
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 5 (Integer 4) Decimal))
+                                                        ((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 6 (Integer 4) Decimal))
+                                                        ((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 7 (Integer 4) Decimal))]
                                                         FixedSizeArray
                                                     )
                                                     ()
@@ -652,8 +652,8 @@
                                                     Save
                                                     (Array
                                                         (Real 8)
-                                                        [((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 5 (Integer 4)))]
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 5 (Integer 4) Decimal))]
                                                         FixedSizeArray
                                                     )
                                                     ()
@@ -673,10 +673,10 @@
                                                     Save
                                                     (Array
                                                         (Real 8)
-                                                        [((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 5 (Integer 4)))
-                                                        ((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 5 (Integer 4)))]
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 5 (Integer 4) Decimal))
+                                                        ((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 5 (Integer 4) Decimal))]
                                                         FixedSizeArray
                                                     )
                                                     ()
@@ -696,12 +696,12 @@
                                                     Save
                                                     (Array
                                                         (Real 8)
-                                                        [((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 5 (Integer 4)))
-                                                        ((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 6 (Integer 4)))
-                                                        ((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 7 (Integer 4)))]
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 5 (Integer 4) Decimal))
+                                                        ((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 6 (Integer 4) Decimal))
+                                                        ((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 7 (Integer 4) Decimal))]
                                                         FixedSizeArray
                                                     )
                                                     ()
@@ -826,8 +826,8 @@
                                                     Save
                                                     (Array
                                                         (Real 8)
-                                                        [((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 5 (Integer 4)))]
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 5 (Integer 4) Decimal))]
                                                         FixedSizeArray
                                                     )
                                                     ()
@@ -847,10 +847,10 @@
                                                     Save
                                                     (Array
                                                         (Real 8)
-                                                        [((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 5 (Integer 4)))
-                                                        ((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 5 (Integer 4)))]
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 5 (Integer 4) Decimal))
+                                                        ((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 5 (Integer 4) Decimal))]
                                                         FixedSizeArray
                                                     )
                                                     ()
@@ -870,12 +870,12 @@
                                                     Save
                                                     (Array
                                                         (Real 8)
-                                                        [((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 5 (Integer 4)))
-                                                        ((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 6 (Integer 4)))
-                                                        ((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 7 (Integer 4)))]
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 5 (Integer 4) Decimal))
+                                                        ((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 6 (Integer 4) Decimal))
+                                                        ((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 7 (Integer 4) Decimal))]
                                                         FixedSizeArray
                                                     )
                                                     ()
@@ -989,8 +989,8 @@
                                                     Save
                                                     (Array
                                                         (Real 8)
-                                                        [((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 5 (Integer 4)))]
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 5 (Integer 4) Decimal))]
                                                         FixedSizeArray
                                                     )
                                                     ()
@@ -1010,10 +1010,10 @@
                                                     Save
                                                     (Array
                                                         (Real 8)
-                                                        [((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 5 (Integer 4)))
-                                                        ((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 5 (Integer 4)))]
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 5 (Integer 4) Decimal))
+                                                        ((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 5 (Integer 4) Decimal))]
                                                         FixedSizeArray
                                                     )
                                                     ()
@@ -1033,12 +1033,12 @@
                                                     Save
                                                     (Array
                                                         (Real 8)
-                                                        [((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 5 (Integer 4)))
-                                                        ((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 6 (Integer 4)))
-                                                        ((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 7 (Integer 4)))]
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 5 (Integer 4) Decimal))
+                                                        ((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 6 (Integer 4) Decimal))
+                                                        ((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 7 (Integer 4) Decimal))]
                                                         FixedSizeArray
                                                     )
                                                     ()
@@ -1182,8 +1182,8 @@
                                                     Save
                                                     (Array
                                                         (Real 8)
-                                                        [((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 5 (Integer 4)))]
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 5 (Integer 4) Decimal))]
                                                         FixedSizeArray
                                                     )
                                                     ()
@@ -1203,10 +1203,10 @@
                                                     Save
                                                     (Array
                                                         (Real 8)
-                                                        [((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 5 (Integer 4)))
-                                                        ((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 5 (Integer 4)))]
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 5 (Integer 4) Decimal))
+                                                        ((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 5 (Integer 4) Decimal))]
                                                         FixedSizeArray
                                                     )
                                                     ()
@@ -1226,12 +1226,12 @@
                                                     Save
                                                     (Array
                                                         (Real 8)
-                                                        [((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 5 (Integer 4)))
-                                                        ((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 6 (Integer 4)))
-                                                        ((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 7 (Integer 4)))]
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 5 (Integer 4) Decimal))
+                                                        ((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 6 (Integer 4) Decimal))
+                                                        ((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 7 (Integer 4) Decimal))]
                                                         FixedSizeArray
                                                     )
                                                     ()
@@ -1329,8 +1329,8 @@
                                                     Save
                                                     (Array
                                                         (Real 8)
-                                                        [((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 5 (Integer 4)))]
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 5 (Integer 4) Decimal))]
                                                         FixedSizeArray
                                                     )
                                                     ()
@@ -1350,10 +1350,10 @@
                                                     Save
                                                     (Array
                                                         (Real 8)
-                                                        [((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 5 (Integer 4)))
-                                                        ((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 5 (Integer 4)))]
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 5 (Integer 4) Decimal))
+                                                        ((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 5 (Integer 4) Decimal))]
                                                         FixedSizeArray
                                                     )
                                                     ()
@@ -1373,12 +1373,12 @@
                                                     Save
                                                     (Array
                                                         (Real 8)
-                                                        [((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 5 (Integer 4)))
-                                                        ((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 6 (Integer 4)))
-                                                        ((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 7 (Integer 4)))]
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 5 (Integer 4) Decimal))
+                                                        ((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 6 (Integer 4) Decimal))
+                                                        ((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 7 (Integer 4) Decimal))]
                                                         FixedSizeArray
                                                     )
                                                     ()
@@ -1517,8 +1517,8 @@
                                     Save
                                     (Array
                                         (Real 8)
-                                        [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 5 (Integer 4)))]
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 5 (Integer 4) Decimal))]
                                         FixedSizeArray
                                     )
                                     ()
@@ -1538,10 +1538,10 @@
                                     Save
                                     (Array
                                         (Real 8)
-                                        [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 5 (Integer 4)))
-                                        ((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 5 (Integer 4)))]
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 5 (Integer 4) Decimal))
+                                        ((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 5 (Integer 4) Decimal))]
                                         FixedSizeArray
                                     )
                                     ()
@@ -1561,12 +1561,12 @@
                                     Save
                                     (Array
                                         (Real 8)
-                                        [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 5 (Integer 4)))
-                                        ((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 6 (Integer 4)))
-                                        ((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 7 (Integer 4)))]
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 5 (Integer 4) Decimal))
+                                        ((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 6 (Integer 4) Decimal))
+                                        ((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 7 (Integer 4) Decimal))]
                                         FixedSizeArray
                                     )
                                     ()

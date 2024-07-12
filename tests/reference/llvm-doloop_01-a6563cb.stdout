@@ -469,6 +469,9 @@ else59:                                           ; preds = %loop.end57
 ifcont60:                                         ; preds = %else59, %then58
   %122 = load i32, i32* %j, align 4
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @65, i32 0, i32 0), i32 %122, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @64, i32 0, i32 0))
+  br label %return
+
+return:                                           ; preds = %ifcont60
   ret i32 0
 }
 

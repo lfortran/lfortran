@@ -53,9 +53,9 @@
                                             (Real 8)
                                         )
                                         (Integer 4)
-                                        (IntegerConstant 8 (Integer 4))
+                                        (IntegerConstant 8 (Integer 4) Decimal)
                                     )
-                                    (IntegerConstant 8 (Integer 4))
+                                    (IntegerConstant 8 (Integer 4) Decimal)
                                     Parameter
                                     (Integer 4)
                                     ()
@@ -78,9 +78,9 @@
                                             (Real 4)
                                         )
                                         (Integer 4)
-                                        (IntegerConstant 4 (Integer 4))
+                                        (IntegerConstant 4 (Integer 4) Decimal)
                                     )
-                                    (IntegerConstant 4 (Integer 4))
+                                    (IntegerConstant 4 (Integer 4) Decimal)
                                     Parameter
                                     (Integer 4)
                                     ()
@@ -103,9 +103,9 @@
                                             (Real 4)
                                         )
                                         (Integer 4)
-                                        (IntegerConstant 4 (Integer 4))
+                                        (IntegerConstant 4 (Integer 4) Decimal)
                                     )
-                                    (IntegerConstant 4 (Integer 4))
+                                    (IntegerConstant 4 (Integer 4) Decimal)
                                     Parameter
                                     (Integer 4)
                                     ()
@@ -120,7 +120,7 @@
                     [(Assignment
                         (Var 2 a)
                         (Cast
-                            (IntegerConstant 5 (Integer 4))
+                            (IntegerConstant 5 (Integer 4) Decimal)
                             IntegerToReal
                             (Real 4)
                             (RealConstant

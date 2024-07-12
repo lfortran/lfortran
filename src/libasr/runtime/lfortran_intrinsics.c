@@ -2921,6 +2921,10 @@ LFORTRAN_API int32_t _lpython_get_argc() {
     return _argc;
 }
 
+LFORTRAN_API int32_t _lfortran_get_argc() {
+    return _argc - 1;
+}
+
 LFORTRAN_API char *_lpython_get_argv(int32_t index) {
     return _argv[index];
 }

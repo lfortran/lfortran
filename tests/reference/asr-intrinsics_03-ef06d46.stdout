@@ -40,11 +40,11 @@
                                     []
                                     Local
                                     (IntegerUnaryMinus
-                                        (IntegerConstant 12 (Integer 4))
+                                        (IntegerConstant 12 (Integer 4) Decimal)
                                         (Integer 4)
-                                        (IntegerConstant -12 (Integer 4))
+                                        (IntegerConstant -12 (Integer 4) Decimal)
                                     )
-                                    (IntegerConstant -12 (Integer 4))
+                                    (IntegerConstant -12 (Integer 4) Decimal)
                                     Save
                                     (Integer 4)
                                     ()
@@ -385,7 +385,7 @@
                                 ()
                             )
                             NotEq
-                            (IntegerConstant 12 (Integer 4))
+                            (IntegerConstant 12 (Integer 4) Decimal)
                             (Logical 4)
                             ()
                         )

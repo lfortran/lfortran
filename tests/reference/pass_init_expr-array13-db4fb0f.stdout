@@ -34,8 +34,8 @@
                                     Save
                                     (Array
                                         (Integer 4)
-                                        [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 5 (Integer 4)))]
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 5 (Integer 4) Decimal))]
                                         FixedSizeArray
                                     )
                                     ()
@@ -51,7 +51,7 @@
                         (Var 2 __1_k)
                         (ArrayBound
                             (Var 2 numbers)
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             (Integer 4)
                             LBound
                             ()
@@ -68,7 +68,7 @@
                             RowMajor
                             ()
                         )
-                        (IntegerConstant 5 (Integer 4))
+                        (IntegerConstant 5 (Integer 4) Decimal)
                         ()
                     )
                     (Assignment
@@ -76,7 +76,7 @@
                         (IntegerBinOp
                             (Var 2 __1_k)
                             Add
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             (Integer 4)
                             ()
                         )
@@ -92,7 +92,7 @@
                             RowMajor
                             ()
                         )
-                        (IntegerConstant 4 (Integer 4))
+                        (IntegerConstant 4 (Integer 4) Decimal)
                         ()
                     )
                     (Assignment
@@ -100,7 +100,7 @@
                         (IntegerBinOp
                             (Var 2 __1_k)
                             Add
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             (Integer 4)
                             ()
                         )
@@ -116,7 +116,7 @@
                             RowMajor
                             ()
                         )
-                        (IntegerConstant 2 (Integer 4))
+                        (IntegerConstant 2 (Integer 4) Decimal)
                         ()
                     )
                     (Assignment
@@ -124,7 +124,7 @@
                         (IntegerBinOp
                             (Var 2 __1_k)
                             Add
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             (Integer 4)
                             ()
                         )
@@ -140,7 +140,7 @@
                             RowMajor
                             ()
                         )
-                        (IntegerConstant 1 (Integer 4))
+                        (IntegerConstant 1 (Integer 4) Decimal)
                         ()
                     )
                     (Assignment
@@ -148,7 +148,7 @@
                         (IntegerBinOp
                             (Var 2 __1_k)
                             Add
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             (Integer 4)
                             ()
                         )
@@ -164,7 +164,7 @@
                             RowMajor
                             ()
                         )
-                        (IntegerConstant 3 (Integer 4))
+                        (IntegerConstant 3 (Integer 4) Decimal)
                         ()
                     )
                     (Assignment
@@ -172,7 +172,7 @@
                         (IntegerBinOp
                             (Var 2 __1_k)
                             Add
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             (Integer 4)
                             ()
                         )

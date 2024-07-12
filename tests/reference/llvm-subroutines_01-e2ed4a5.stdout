@@ -200,6 +200,9 @@ else25:                                           ; preds = %ifcont22
   br label %ifcont26
 
 ifcont26:                                         ; preds = %else25, %then24
+  br label %return
+
+return:                                           ; preds = %ifcont26
   ret i32 0
 }
 

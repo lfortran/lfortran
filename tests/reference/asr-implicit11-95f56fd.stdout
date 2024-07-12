@@ -78,7 +78,7 @@
                     [(Assignment
                         (Var 2 z)
                         (Cast
-                            (IntegerConstant 5 (Integer 4))
+                            (IntegerConstant 5 (Integer 4) Decimal)
                             IntegerToComplex
                             (Complex 8)
                             (ComplexConstant
@@ -173,7 +173,7 @@
                     [(Assignment
                         (Var 3 z)
                         (Cast
-                            (IntegerConstant 5 (Integer 4))
+                            (IntegerConstant 5 (Integer 4) Decimal)
                             IntegerToComplex
                             (Complex 8)
                             (ComplexConstant

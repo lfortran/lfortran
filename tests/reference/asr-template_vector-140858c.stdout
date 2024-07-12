@@ -164,7 +164,7 @@
                                                                 ()
                                                             )
                                                             Add
-                                                            (IntegerConstant 1 (Integer 4))
+                                                            (IntegerConstant 1 (Integer 4) Decimal)
                                                             (Integer 4)
                                                             ()
                                                         )
@@ -375,7 +375,7 @@
                                                                 )
                                                                 ()
                                                             )
-                                                            [((IntegerConstant 1 (Integer 4))
+                                                            [((IntegerConstant 1 (Integer 4) Decimal)
                                                             (Var 10 n))]
                                                             ()
                                                             ())]
@@ -404,7 +404,7 @@
                                                     )
                                                     (Allocate
                                                         [((Var 10 tmp)
-                                                        [((IntegerConstant 1 (Integer 4))
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (StructInstanceMember
                                                             (Var 10 this)
                                                             10 1_intvector_sz
@@ -420,7 +420,7 @@
                                                     (DoLoop
                                                         ()
                                                         ((Var 10 i)
-                                                        (IntegerConstant 1 (Integer 4))
+                                                        (IntegerConstant 1 (Integer 4) Decimal)
                                                         (StructInstanceMember
                                                             (Var 10 this)
                                                             10 1_intvector_sz
@@ -477,7 +477,7 @@
                                                             )
                                                             ()
                                                         )
-                                                        [((IntegerConstant 1 (Integer 4))
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (Var 10 n))]
                                                         ()
                                                         ())]
@@ -500,14 +500,14 @@
                                                                 )
                                                                 ()
                                                             )
-                                                            [((IntegerConstant 1 (Integer 4))
+                                                            [((IntegerConstant 1 (Integer 4) Decimal)
                                                             (StructInstanceMember
                                                                 (Var 10 this)
                                                                 10 1_intvector_sz
                                                                 (Integer 4)
                                                                 ()
                                                             )
-                                                            (IntegerConstant 1 (Integer 4)))]
+                                                            (IntegerConstant 1 (Integer 4) Decimal))]
                                                             (Allocatable
                                                                 (Array
                                                                     (Integer 4)
@@ -806,7 +806,7 @@
                                                                 ()
                                                             )
                                                             Add
-                                                            (IntegerConstant 1 (Integer 4))
+                                                            (IntegerConstant 1 (Integer 4) Decimal)
                                                             (Integer 4)
                                                             ()
                                                         )
@@ -1027,7 +1027,7 @@
                                                                 )
                                                                 ()
                                                             )
-                                                            [((IntegerConstant 1 (Integer 4))
+                                                            [((IntegerConstant 1 (Integer 4) Decimal)
                                                             (Var 6 n))]
                                                             ()
                                                             ())]
@@ -1056,7 +1056,7 @@
                                                     )
                                                     (Allocate
                                                         [((Var 6 tmp)
-                                                        [((IntegerConstant 1 (Integer 4))
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (StructInstanceMember
                                                             (Var 6 this)
                                                             6 1_vector_sz
@@ -1072,7 +1072,7 @@
                                                     (DoLoop
                                                         ()
                                                         ((Var 6 i)
-                                                        (IntegerConstant 1 (Integer 4))
+                                                        (IntegerConstant 1 (Integer 4) Decimal)
                                                         (StructInstanceMember
                                                             (Var 6 this)
                                                             6 1_vector_sz
@@ -1137,7 +1137,7 @@
                                                             )
                                                             ()
                                                         )
-                                                        [((IntegerConstant 1 (Integer 4))
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (Var 6 n))]
                                                         ()
                                                         ())]
@@ -1162,14 +1162,14 @@
                                                                 )
                                                                 ()
                                                             )
-                                                            [((IntegerConstant 1 (Integer 4))
+                                                            [((IntegerConstant 1 (Integer 4) Decimal)
                                                             (StructInstanceMember
                                                                 (Var 6 this)
                                                                 6 1_vector_sz
                                                                 (Integer 4)
                                                                 ()
                                                             )
-                                                            (IntegerConstant 1 (Integer 4)))]
+                                                            (IntegerConstant 1 (Integer 4) Decimal))]
                                                             (Allocatable
                                                                 (Array
                                                                     (TypeParameter
@@ -1270,8 +1270,8 @@
                                                                     sz
                                                                     []
                                                                     Local
-                                                                    (IntegerConstant 0 (Integer 4))
-                                                                    (IntegerConstant 0 (Integer 4))
+                                                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                                                    (IntegerConstant 0 (Integer 4) Decimal)
                                                                     Save
                                                                     (Integer 4)
                                                                     ()

@@ -3182,6 +3182,7 @@ public:
             string_init(context, *module, *builder, value.second, init_value);
             builder->CreateStore(init_value, value.first);
         }
+        proc_return = llvm::BasicBlock::Create(context, "return");
         for (size_t i=0; i<x.n_body; i++) {
             this->visit_stmt(*x.m_body[i]);
         }
@@ -3190,6 +3191,7 @@ public:
         }
         call_lcompilers_free_strings();
 
+        start_new_block(proc_return);
         llvm::Value *ret_val2 = llvm::ConstantInt::get(context,
             llvm::APInt(32, 0));
         builder->CreateRet(ret_val2);
@@ -9504,12 +9506,12 @@ public:
                     tmp = lfortran_str_len(args[0]);
                     return;
                 } else if (func_name == "command_argument_count") {
-                    llvm::Function *fn = module->getFunction("_lpython_get_argc");
+                    llvm::Function *fn = module->getFunction("_lfortran_get_argc");
                     if(!fn) {
                         llvm::FunctionType *function_type = llvm::FunctionType::get(
                             llvm::Type::getInt32Ty(context), {}, false);
                         fn = llvm::Function::Create(function_type,
-                            llvm::Function::ExternalLinkage, "_lpython_get_argc", *module);
+                            llvm::Function::ExternalLinkage, "_lfortran_get_argc", *module);
                     }
                     tmp = builder->CreateCall(fn, {});
                     return;

@@ -129,6 +129,9 @@ define i32 @main(i32 %0, i8** %1) {
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @35, i32 0, i32 0), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @34, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @32, i32 0, i32 0), i32 %16, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @33, i32 0, i32 0))
   %17 = call i32 @__module_operator_overloading_01_overload_asterisk_m_bin_add(i1* %f, i1* %f)
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @39, i32 0, i32 0), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @38, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @36, i32 0, i32 0), i32 %17, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @37, i32 0, i32 0))
+  br label %return
+
+return:                                           ; preds = %.entry
   ret i32 0
 }
 

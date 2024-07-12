@@ -584,12 +584,12 @@
                                                                             (IntegerBinOp
                                                                                 (Var 3 istart)
                                                                                 Sub
-                                                                                (IntegerConstant 1 (Integer 4))
+                                                                                (IntegerConstant 1 (Integer 4) Decimal)
                                                                                 (Integer 4)
                                                                                 ()
                                                                             )
                                                                             ()
-                                                                            (IntegerConstant 1 (Integer 4))
+                                                                            (IntegerConstant 1 (Integer 4) Decimal)
                                                                             (Character 1 -1 ())
                                                                             ()
                                                                         )
@@ -631,12 +631,12 @@
                                                                             (IntegerBinOp
                                                                                 (Var 3 istart)
                                                                                 Sub
-                                                                                (IntegerConstant 1 (Integer 4))
+                                                                                (IntegerConstant 1 (Integer 4) Decimal)
                                                                                 (Integer 4)
                                                                                 ()
                                                                             )
                                                                             ()
-                                                                            (IntegerConstant 1 (Integer 4))
+                                                                            (IntegerConstant 1 (Integer 4) Decimal)
                                                                             (Character 1 -1 ())
                                                                             ()
                                                                         )
@@ -678,12 +678,12 @@
                                                                             (IntegerBinOp
                                                                                 (Var 3 istart)
                                                                                 Sub
-                                                                                (IntegerConstant 1 (Integer 4))
+                                                                                (IntegerConstant 1 (Integer 4) Decimal)
                                                                                 (Integer 4)
                                                                                 ()
                                                                             )
                                                                             ()
-                                                                            (IntegerConstant 1 (Integer 4))
+                                                                            (IntegerConstant 1 (Integer 4) Decimal)
                                                                             (Character 1 -1 ())
                                                                             ()
                                                                         )
@@ -725,12 +725,12 @@
                                                                             (IntegerBinOp
                                                                                 (Var 3 istart)
                                                                                 Sub
-                                                                                (IntegerConstant 1 (Integer 4))
+                                                                                (IntegerConstant 1 (Integer 4) Decimal)
                                                                                 (Integer 4)
                                                                                 ()
                                                                             )
                                                                             ()
-                                                                            (IntegerConstant 1 (Integer 4))
+                                                                            (IntegerConstant 1 (Integer 4) Decimal)
                                                                             (Character 1 -1 ())
                                                                             ()
                                                                         )
@@ -767,12 +767,12 @@
                                                                             (IntegerBinOp
                                                                                 (Var 3 istart)
                                                                                 Sub
-                                                                                (IntegerConstant 1 (Integer 4))
+                                                                                (IntegerConstant 1 (Integer 4) Decimal)
                                                                                 (Integer 4)
                                                                                 ()
                                                                             )
                                                                             ()
-                                                                            (IntegerConstant 1 (Integer 4))
+                                                                            (IntegerConstant 1 (Integer 4) Decimal)
                                                                             (Character 1 -1 ())
                                                                             ()
                                                                         )
@@ -809,12 +809,12 @@
                                                                             (IntegerBinOp
                                                                                 (Var 3 istart)
                                                                                 Sub
-                                                                                (IntegerConstant 1 (Integer 4))
+                                                                                (IntegerConstant 1 (Integer 4) Decimal)
                                                                                 (Integer 4)
                                                                                 ()
                                                                             )
                                                                             ()
-                                                                            (IntegerConstant 1 (Integer 4))
+                                                                            (IntegerConstant 1 (Integer 4) Decimal)
                                                                             (Character 1 -1 ())
                                                                             ()
                                                                         )
@@ -851,12 +851,12 @@
                                                                             (IntegerBinOp
                                                                                 (Var 3 istart)
                                                                                 Sub
-                                                                                (IntegerConstant 1 (Integer 4))
+                                                                                (IntegerConstant 1 (Integer 4) Decimal)
                                                                                 (Integer 4)
                                                                                 ()
                                                                             )
                                                                             ()
-                                                                            (IntegerConstant 1 (Integer 4))
+                                                                            (IntegerConstant 1 (Integer 4) Decimal)
                                                                             (Character 1 -1 ())
                                                                             ()
                                                                         )
@@ -902,12 +902,12 @@
                                                                             (IntegerBinOp
                                                                                 (Var 3 istart)
                                                                                 Sub
-                                                                                (IntegerConstant 1 (Integer 4))
+                                                                                (IntegerConstant 1 (Integer 4) Decimal)
                                                                                 (Integer 4)
                                                                                 ()
                                                                             )
                                                                             ()
-                                                                            (IntegerConstant 1 (Integer 4))
+                                                                            (IntegerConstant 1 (Integer 4) Decimal)
                                                                             (Character 1 -1 ())
                                                                             ()
                                                                         )
@@ -958,12 +958,12 @@
                                                                             (IntegerBinOp
                                                                                 (Var 3 istart)
                                                                                 Sub
-                                                                                (IntegerConstant 1 (Integer 4))
+                                                                                (IntegerConstant 1 (Integer 4) Decimal)
                                                                                 (Integer 4)
                                                                                 ()
                                                                             )
                                                                             ()
-                                                                            (IntegerConstant 1 (Integer 4))
+                                                                            (IntegerConstant 1 (Integer 4) Decimal)
                                                                             (Character 1 -1 ())
                                                                             ()
                                                                         )
@@ -1257,7 +1257,7 @@
                                                     ()
                                                 )
                                                 Add
-                                                (IntegerConstant 1 (Integer 4))
+                                                (IntegerConstant 1 (Integer 4) Decimal)
                                                 (Integer 4)
                                                 ()
                                             )
@@ -1273,13 +1273,13 @@
                                         )
                                         (Assignment
                                             (Var 3 increment)
-                                            (IntegerConstant 2 (Integer 4))
+                                            (IntegerConstant 2 (Integer 4) Decimal)
                                             ()
                                         )]
                                     )
                                     (Assignment
                                         (Var 3 istart)
-                                        (IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 1 (Integer 4) Decimal)
                                         ()
                                     )
                                     (Assignment

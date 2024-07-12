@@ -81,6 +81,9 @@ define i32 @main(i32 %0, i8** %1) {
   %10 = getelementptr %circle_polymorphic, %circle_polymorphic* %8, i32 0, i32 1
   store %circle* %c, %circle** %10, align 8
   call void @__module_class_circle1_circle_print(%circle_polymorphic* %8)
+  br label %return
+
+return:                                           ; preds = %.entry
   ret i32 0
 }
 

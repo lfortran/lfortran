@@ -43,6 +43,9 @@ define i32 @main(i32 %0, i8** %1) {
   %6 = icmp eq i1 %5, false
   %7 = select i1 %6, i8* getelementptr inbounds ([6 x i8], [6 x i8]* @9, i32 0, i32 0), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @10, i32 0, i32 0)
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @11, i32 0, i32 0), i8* getelementptr inbounds ([6 x i8], [6 x i8]* @8, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @6, i32 0, i32 0), i8* %7, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @7, i32 0, i32 0))
+  br label %return
+
+return:                                           ; preds = %.entry
   ret i32 0
 }
 

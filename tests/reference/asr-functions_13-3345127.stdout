@@ -47,13 +47,13 @@
                                                     .false.
                                                     (Logical 4)
                                                 )
-                                                (IntegerConstant 4 (Integer 4))]
+                                                (IntegerConstant 4 (Integer 4) Decimal)]
                                                 0
                                                 (Integer 4)
-                                                (IntegerConstant 2 (Integer 4))
+                                                (IntegerConstant 2 (Integer 4) Decimal)
                                             )
                                             NotEq
-                                            (IntegerConstant 2 (Integer 4))
+                                            (IntegerConstant 2 (Integer 4) Decimal)
                                             (Logical 4)
                                             (LogicalConstant
                                                 .false.
@@ -81,13 +81,13 @@
                                                     .true.
                                                     (Logical 4)
                                                 )
-                                                (IntegerConstant 4 (Integer 4))]
+                                                (IntegerConstant 4 (Integer 4) Decimal)]
                                                 0
                                                 (Integer 4)
-                                                (IntegerConstant 6 (Integer 4))
+                                                (IntegerConstant 6 (Integer 4) Decimal)
                                             )
                                             NotEq
-                                            (IntegerConstant 6 (Integer 4))
+                                            (IntegerConstant 6 (Integer 4) Decimal)
                                             (Logical 4)
                                             (LogicalConstant
                                                 .false.
@@ -115,13 +115,13 @@
                                                     .false.
                                                     (Logical 4)
                                                 )
-                                                (IntegerConstant 4 (Integer 4))]
+                                                (IntegerConstant 4 (Integer 4) Decimal)]
                                                 0
                                                 (Integer 4)
-                                                (IntegerConstant 0 (Integer 4))
+                                                (IntegerConstant 0 (Integer 4) Decimal)
                                             )
                                             NotEq
-                                            (IntegerConstant 0 (Integer 4))
+                                            (IntegerConstant 0 (Integer 4) Decimal)
                                             (Logical 4)
                                             (LogicalConstant
                                                 .false.
@@ -215,13 +215,13 @@
                                                     .false.
                                                     (Logical 4)
                                                 )
-                                                (IntegerConstant 4 (Integer 4))]
+                                                (IntegerConstant 4 (Integer 4) Decimal)]
                                                 0
                                                 (Integer 4)
-                                                (IntegerConstant 1 (Integer 4))
+                                                (IntegerConstant 1 (Integer 4) Decimal)
                                             )
                                             NotEq
-                                            (IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 1 (Integer 4) Decimal)
                                             (Logical 4)
                                             (LogicalConstant
                                                 .false.
@@ -249,13 +249,13 @@
                                                     .false.
                                                     (Logical 4)
                                                 )
-                                                (IntegerConstant 4 (Integer 4))]
+                                                (IntegerConstant 4 (Integer 4) Decimal)]
                                                 0
                                                 (Integer 4)
-                                                (IntegerConstant 3 (Integer 4))
+                                                (IntegerConstant 3 (Integer 4) Decimal)
                                             )
                                             NotEq
-                                            (IntegerConstant 3 (Integer 4))
+                                            (IntegerConstant 3 (Integer 4) Decimal)
                                             (Logical 4)
                                             (LogicalConstant
                                                 .false.
@@ -283,13 +283,13 @@
                                                     .false.
                                                     (Logical 4)
                                                 )
-                                                (IntegerConstant 4 (Integer 4))]
+                                                (IntegerConstant 4 (Integer 4) Decimal)]
                                                 0
                                                 (Integer 4)
-                                                (IntegerConstant 1 (Integer 4))
+                                                (IntegerConstant 1 (Integer 4) Decimal)
                                             )
                                             NotEq
-                                            (IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 1 (Integer 4) Decimal)
                                             (Logical 4)
                                             (LogicalConstant
                                                 .false.
@@ -317,13 +317,13 @@
                                                     .true.
                                                     (Logical 4)
                                                 )
-                                                (IntegerConstant 4 (Integer 4))]
+                                                (IntegerConstant 4 (Integer 4) Decimal)]
                                                 0
                                                 (Integer 4)
-                                                (IntegerConstant 7 (Integer 4))
+                                                (IntegerConstant 7 (Integer 4) Decimal)
                                             )
                                             NotEq
-                                            (IntegerConstant 7 (Integer 4))
+                                            (IntegerConstant 7 (Integer 4) Decimal)
                                             (Logical 4)
                                             (LogicalConstant
                                                 .false.
@@ -351,13 +351,13 @@
                                                     .false.
                                                     (Logical 4)
                                                 )
-                                                (IntegerConstant 4 (Integer 4))]
+                                                (IntegerConstant 4 (Integer 4) Decimal)]
                                                 0
                                                 (Integer 4)
-                                                (IntegerConstant 0 (Integer 4))
+                                                (IntegerConstant 0 (Integer 4) Decimal)
                                             )
                                             NotEq
-                                            (IntegerConstant 0 (Integer 4))
+                                            (IntegerConstant 0 (Integer 4) Decimal)
                                             (Logical 4)
                                             (LogicalConstant
                                                 .false.

@@ -994,6 +994,12 @@ struct FixedFormRecursiveDescent {
             return true;
         }
 
+        if (next_is(cur, "exit")) {
+            push_token_advance(cur, "exit");
+            tokenize_line(cur);
+            return true;
+        }
+
         if (next_is(cur, "goto")) {
             push_token_advance(cur, "goto");
             tokenize_line(cur);
@@ -1060,6 +1066,11 @@ struct FixedFormRecursiveDescent {
         if (next_is(cur, "assign")) {
             lex_assign(cur);
             return true;
+        }
+
+        if (next_is(cur, "cycle")){
+            push_token_advance(cur, "cycle");
+            tokenize_line(cur);
         }
 
         if (l != -1) {

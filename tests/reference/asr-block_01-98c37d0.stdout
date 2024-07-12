@@ -70,7 +70,7 @@
                                                     [(Assignment
                                                         (Var 4 b)
                                                         (Cast
-                                                            (IntegerConstant 3 (Integer 4))
+                                                            (IntegerConstant 3 (Integer 4) Decimal)
                                                             IntegerToReal
                                                             (Real 4)
                                                             (RealConstant
@@ -84,9 +84,9 @@
                                                         (Var 4 c)
                                                         (Cast
                                                             (IntegerUnaryMinus
-                                                                (IntegerConstant 3 (Integer 4))
+                                                                (IntegerConstant 3 (Integer 4) Decimal)
                                                                 (Integer 4)
-                                                                (IntegerConstant -3 (Integer 4))
+                                                                (IntegerConstant -3 (Integer 4) Decimal)
                                                             )
                                                             IntegerToReal
                                                             (Real 4)
@@ -186,12 +186,12 @@
                     []
                     [(Assignment
                         (Var 2 a)
-                        (IntegerConstant 1 (Integer 4))
+                        (IntegerConstant 1 (Integer 4) Decimal)
                         ()
                     )
                     (Assignment
                         (Var 2 b)
-                        (IntegerConstant 2 (Integer 4))
+                        (IntegerConstant 2 (Integer 4) Decimal)
                         ()
                     )
                     (AssociateBlockCall
@@ -201,7 +201,7 @@
                         (IntegerCompare
                             (Var 2 b)
                             NotEq
-                            (IntegerConstant 2 (Integer 4))
+                            (IntegerConstant 2 (Integer 4) Decimal)
                             (Logical 4)
                             ()
                         )
@@ -214,7 +214,7 @@
                         (IntegerCompare
                             (Var 2 d)
                             NotEq
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             (Logical 4)
                             ()
                         )

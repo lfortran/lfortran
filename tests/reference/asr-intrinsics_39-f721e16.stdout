@@ -64,8 +64,8 @@
                                     Default
                                     (Array
                                         (Integer 4)
-                                        [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 8 (Integer 4)))]
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 8 (Integer 4) Decimal))]
                                         FixedSizeArray
                                     )
                                     ()
@@ -105,8 +105,8 @@
                             PointerToDataArray
                             (Array
                                 (Integer 4)
-                                [((IntegerConstant 1 (Integer 4))
-                                (IntegerConstant 8 (Integer 4)))]
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 8 (Integer 4) Decimal))]
                                 PointerToDataArray
                             )
                             ()
@@ -143,8 +143,8 @@
                             PointerToDataArray
                             (Array
                                 (Integer 4)
-                                [((IntegerConstant 1 (Integer 4))
-                                (IntegerConstant 8 (Integer 4)))]
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 8 (Integer 4) Decimal))]
                                 PointerToDataArray
                             )
                             ()

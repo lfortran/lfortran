@@ -859,6 +859,9 @@ else56:                                           ; preds = %ifcont54
   br label %ifcont57
 
 ifcont57:                                         ; preds = %else56, %then55
+  br label %return
+
+return:                                           ; preds = %ifcont57
   ret i32 0
 }
 

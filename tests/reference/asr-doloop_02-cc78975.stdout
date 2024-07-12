@@ -76,17 +76,17 @@
                     []
                     [(Assignment
                         (Var 2 j)
-                        (IntegerConstant 0 (Integer 4))
+                        (IntegerConstant 0 (Integer 4) Decimal)
                         ()
                     )
                     (Assignment
                         (Var 2 a)
-                        (IntegerConstant 1 (Integer 4))
+                        (IntegerConstant 1 (Integer 4) Decimal)
                         ()
                     )
                     (Assignment
                         (Var 2 b)
-                        (IntegerConstant 10 (Integer 4))
+                        (IntegerConstant 10 (Integer 4) Decimal)
                         ()
                     )
                     (DoLoop
@@ -112,7 +112,7 @@
                         (IntegerCompare
                             (Var 2 j)
                             NotEq
-                            (IntegerConstant 55 (Integer 4))
+                            (IntegerConstant 55 (Integer 4) Decimal)
                             (Logical 4)
                             ()
                         )
@@ -128,20 +128,20 @@
                     )
                     (Assignment
                         (Var 2 a)
-                        (IntegerConstant 0 (Integer 4))
+                        (IntegerConstant 0 (Integer 4) Decimal)
                         ()
                     )
                     (DoLoop
                         ()
                         ((Var 2 i)
-                        (IntegerConstant 1 (Integer 4))
-                        (IntegerConstant 10 (Integer 4))
+                        (IntegerConstant 1 (Integer 4) Decimal)
+                        (IntegerConstant 10 (Integer 4) Decimal)
                         ())
                         [(DoLoop
                             ()
                             ((Var 2 j)
-                            (IntegerConstant 1 (Integer 4))
-                            (IntegerConstant 10 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (IntegerConstant 10 (Integer 4) Decimal)
                             ())
                             [(Assignment
                                 (Var 2 a)
@@ -153,12 +153,12 @@
                                             (IntegerBinOp
                                                 (Var 2 i)
                                                 Sub
-                                                (IntegerConstant 1 (Integer 4))
+                                                (IntegerConstant 1 (Integer 4) Decimal)
                                                 (Integer 4)
                                                 ()
                                             )
                                             Mul
-                                            (IntegerConstant 10 (Integer 4))
+                                            (IntegerConstant 10 (Integer 4) Decimal)
                                             (Integer 4)
                                             ()
                                         )
@@ -182,16 +182,16 @@
                             NotEq
                             (IntegerBinOp
                                 (IntegerBinOp
-                                    (IntegerConstant 100 (Integer 4))
+                                    (IntegerConstant 100 (Integer 4) Decimal)
                                     Mul
-                                    (IntegerConstant 101 (Integer 4))
+                                    (IntegerConstant 101 (Integer 4) Decimal)
                                     (Integer 4)
-                                    (IntegerConstant 10100 (Integer 4))
+                                    (IntegerConstant 10100 (Integer 4) Decimal)
                                 )
                                 Div
-                                (IntegerConstant 2 (Integer 4))
+                                (IntegerConstant 2 (Integer 4) Decimal)
                                 (Integer 4)
-                                (IntegerConstant 5050 (Integer 4))
+                                (IntegerConstant 5050 (Integer 4) Decimal)
                             )
                             (Logical 4)
                             ()
@@ -208,19 +208,19 @@
                     )
                     (Assignment
                         (Var 2 a)
-                        (IntegerConstant 0 (Integer 4))
+                        (IntegerConstant 0 (Integer 4) Decimal)
                         ()
                     )
                     (DoLoop
                         ()
                         ((Var 2 i)
-                        (IntegerConstant 1 (Integer 4))
-                        (IntegerConstant 10 (Integer 4))
+                        (IntegerConstant 1 (Integer 4) Decimal)
+                        (IntegerConstant 10 (Integer 4) Decimal)
                         ())
                         [(DoLoop
                             ()
                             ((Var 2 j)
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             (Var 2 i)
                             ())
                             [(Assignment
@@ -242,7 +242,7 @@
                         (IntegerCompare
                             (Var 2 a)
                             NotEq
-                            (IntegerConstant 220 (Integer 4))
+                            (IntegerConstant 220 (Integer 4) Decimal)
                             (Logical 4)
                             ()
                         )

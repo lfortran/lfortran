@@ -343,6 +343,7 @@ RUN(NAME cycle_and_exit2 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME cycle_and_exit3 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME cycle_and_exit4 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME cycle_and_exit5 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME cycle_and_exit6 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME goto_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME goto_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -854,6 +855,7 @@ RUN(NAME intrinsics_288 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) #
 RUN(NAME intrinsics_289 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # ishftc
 RUN(NAME intrinsics_290 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # log10
 RUN(NAME intrinsics_291 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # log10
+RUN(NAME intrinsics_292 LABELS gfortran llvm) # command_argument_count
 
 RUN(NAME passing_array_01 LABELS gfortran fortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME passing_array_02 LABELS gfortran fortran llvm llvm_wasm llvm_wasm_emcc)
@@ -873,6 +875,7 @@ RUN(NAME parameter_10 LABELS gfortran llvm NOFAST fortran) # sin
 RUN(NAME parameter_11 LABELS gfortran llvm fortran) # merge
 RUN(NAME parameter_12 LABELS gfortran llvm fortran) # implied do loops
 RUN(NAME parameter_13 LABELS gfortran llvm) # compile time example
+RUN(NAME parameter_14 LABELS gfortran llvm EXTRA_ARGS -fdefault-integer-8 GFORTRAN_ARGS -fdefault-integer-8)
 
 RUN(NAME modules_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran)
 RUN(NAME modules_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
@@ -1264,6 +1267,8 @@ RUN(NAME return_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME return_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # contains module
 RUN(NAME return_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME return_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
+RUN(NAME return_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
+RUN(NAME return_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
 
 RUN(NAME file_01 LABELS gfortran llvm COPY_TO_BIN file_01_data.txt)
 RUN(NAME file_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc COPY_TO_BIN file_01_data.txt)

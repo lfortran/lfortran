@@ -222,8 +222,8 @@
                                         (StructType
                                             8 string_t
                                         )
-                                        [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 2 (Integer 4)))]
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 2 (Integer 4) Decimal))]
                                         FixedSizeArray
                                     )
                                     ()
@@ -238,7 +238,7 @@
                     [(Allocate
                         [((Var 8 char_str_alloc)
                         []
-                        (IntegerConstant 40 (Integer 4))
+                        (IntegerConstant 40 (Integer 4) Decimal)
                         ())]
                         ()
                         ()
@@ -257,7 +257,7 @@
                             (ArrayItem
                                 (Var 8 string_var)
                                 [(()
-                                (IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 1 (Integer 4) Decimal)
                                 ())]
                                 (StructType
                                     8 string_t
@@ -287,7 +287,7 @@
                             (ArrayItem
                                 (Var 8 string_var)
                                 [(()
-                                (IntegerConstant 2 (Integer 4))
+                                (IntegerConstant 2 (Integer 4) Decimal)
                                 ())]
                                 (StructType
                                     8 string_t
@@ -310,7 +310,7 @@
                             8 fnv_1a@fnv_1a_char
                             8 fnv_1a
                             [((Var 8 char_str))
-                            ((IntegerConstant 2166136261 (Integer 8)))]
+                            ((IntegerConstant 2166136261 (Integer 8) Decimal))]
                             (Integer 8)
                             ()
                             ()
@@ -362,13 +362,13 @@
                                     (StructType
                                         8 string_t
                                     )
-                                    [((IntegerConstant 1 (Integer 4))
-                                    (IntegerConstant 2 (Integer 4)))]
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 2 (Integer 4) Decimal))]
                                     DescriptorArray
                                 )
                                 ()
                             ))
-                            ((IntegerConstant 2166136261 (Integer 8)))]
+                            ((IntegerConstant 2166136261 (Integer 8) Decimal))]
                             (Integer 8)
                             ()
                             ()
@@ -388,8 +388,8 @@
                                     (StructType
                                         8 string_t
                                     )
-                                    [((IntegerConstant 1 (Integer 4))
-                                    (IntegerConstant 2 (Integer 4)))]
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 2 (Integer 4) Decimal))]
                                     DescriptorArray
                                 )
                                 ()
@@ -433,8 +433,8 @@
                                     (StructType
                                         8 string_t
                                     )
-                                    [((IntegerConstant 1 (Integer 4))
-                                    (IntegerConstant 2 (Integer 4)))]
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 2 (Integer 4) Decimal))]
                                     DescriptorArray
                                 )
                                 ()
@@ -507,8 +507,8 @@
                                     (StructType
                                         8 string_t
                                     )
-                                    [((IntegerConstant 1 (Integer 4))
-                                    (IntegerConstant 2 (Integer 4)))]
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 2 (Integer 4) Decimal))]
                                     DescriptorArray
                                 )
                                 ()
@@ -598,8 +598,8 @@
                                                     fnv_offset_32
                                                     []
                                                     Local
-                                                    (IntegerConstant 2166136261 (Integer 8))
-                                                    (IntegerConstant 2166136261 (Integer 8))
+                                                    (IntegerConstant 2166136261 (Integer 8) Decimal)
+                                                    (IntegerConstant 2166136261 (Integer 8) Decimal)
                                                     Parameter
                                                     (Integer 8)
                                                     ()
@@ -614,8 +614,8 @@
                                                     fnv_prime_32
                                                     []
                                                     Local
-                                                    (IntegerConstant 16777619 (Integer 8))
-                                                    (IntegerConstant 16777619 (Integer 8))
+                                                    (IntegerConstant 16777619 (Integer 8) Decimal)
+                                                    (IntegerConstant 16777619 (Integer 8) Decimal)
                                                     Parameter
                                                     (Integer 8)
                                                     ()
@@ -741,7 +741,7 @@
                                     (DoLoop
                                         ()
                                         ((Var 4 i)
-                                        (IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 1 (Integer 4) Decimal)
                                         (StringLen
                                             (Var 4 input)
                                             (Integer 4)
@@ -905,7 +905,7 @@
                                                 (ArrayItem
                                                     (Var 5 input)
                                                     [(()
-                                                    (IntegerConstant 1 (Integer 4))
+                                                    (IntegerConstant 1 (Integer 4) Decimal)
                                                     ())]
                                                     (StructType
                                                         2 string_t
@@ -929,7 +929,7 @@
                                     (DoLoop
                                         ()
                                         ((Var 5 i)
-                                        (IntegerConstant 2 (Integer 4))
+                                        (IntegerConstant 2 (Integer 4) Decimal)
                                         (ArraySize
                                             (Var 5 input)
                                             ()
@@ -1209,7 +1209,7 @@
                                                 ()
                                             )
                                             NotEq
-                                            (IntegerConstant 0 (Integer 4))
+                                            (IntegerConstant 0 (Integer 4) Decimal)
                                             (Logical 4)
                                             ()
                                         )
@@ -1229,23 +1229,23 @@
                                                                 [(StringSection
                                                                     (Var 6 name)
                                                                     (IntegerBinOp
-                                                                        (IntegerConstant 1 (Integer 4))
+                                                                        (IntegerConstant 1 (Integer 4) Decimal)
                                                                         Sub
-                                                                        (IntegerConstant 1 (Integer 4))
+                                                                        (IntegerConstant 1 (Integer 4) Decimal)
                                                                         (Integer 4)
-                                                                        (IntegerConstant 0 (Integer 4))
+                                                                        (IntegerConstant 0 (Integer 4) Decimal)
                                                                     )
-                                                                    (IntegerConstant 1 (Integer 4))
-                                                                    (IntegerConstant 1 (Integer 4))
+                                                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                                                    (IntegerConstant 1 (Integer 4) Decimal)
                                                                     (Character 1 -3 (IntegerBinOp
-                                                                        (IntegerConstant 1 (Integer 4))
+                                                                        (IntegerConstant 1 (Integer 4) Decimal)
                                                                         Sub
                                                                         (IntegerBinOp
-                                                                            (IntegerConstant 1 (Integer 4))
+                                                                            (IntegerConstant 1 (Integer 4) Decimal)
                                                                             Sub
-                                                                            (IntegerConstant 1 (Integer 4))
+                                                                            (IntegerConstant 1 (Integer 4) Decimal)
                                                                             (Integer 4)
-                                                                            (IntegerConstant 0 (Integer 4))
+                                                                            (IntegerConstant 0 (Integer 4) Decimal)
                                                                         )
                                                                         (Integer 4)
                                                                         ()
@@ -1265,13 +1265,13 @@
                                                                     .false.
                                                                     (Logical 4)
                                                                 )
-                                                                (IntegerConstant 4 (Integer 4))]
+                                                                (IntegerConstant 4 (Integer 4) Decimal)]
                                                                 0
                                                                 (Integer 4)
                                                                 ()
                                                             )
                                                             Eq
-                                                            (IntegerConstant 0 (Integer 4))
+                                                            (IntegerConstant 0 (Integer 4) Decimal)
                                                             (Logical 4)
                                                             ()
                                                         )
@@ -1288,13 +1288,13 @@
                                                                 .false.
                                                                 (Logical 4)
                                                             )
-                                                            (IntegerConstant 4 (Integer 4))]
+                                                            (IntegerConstant 4 (Integer 4) Decimal)]
                                                             0
                                                             (Integer 4)
                                                             ()
                                                         )
                                                         Eq
-                                                        (IntegerConstant 0 (Integer 4))
+                                                        (IntegerConstant 0 (Integer 4) Decimal)
                                                         (Logical 4)
                                                         ()
                                                     )
@@ -1309,7 +1309,7 @@
                                                         ()
                                                     )
                                                     LtE
-                                                    (IntegerConstant 63 (Integer 4))
+                                                    (IntegerConstant 63 (Integer 4) Decimal)
                                                     (Logical 4)
                                                     ()
                                                 )
@@ -1490,7 +1490,7 @@
                                                 ()
                                             )
                                             Lt
-                                            (IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 1 (Integer 4) Decimal)
                                             (Logical 4)
                                             ()
                                         )
@@ -1534,7 +1534,7 @@
                                             (ArrayItem
                                                 (Var 7 strings)
                                                 [(()
-                                                (IntegerConstant 1 (Integer 4))
+                                                (IntegerConstant 1 (Integer 4) Decimal)
                                                 ())]
                                                 (StructType
                                                     2 string_t
@@ -1553,7 +1553,7 @@
                                     (DoLoop
                                         ()
                                         ((Var 7 i)
-                                        (IntegerConstant 2 (Integer 4))
+                                        (IntegerConstant 2 (Integer 4) Decimal)
                                         (ArraySize
                                             (Var 7 strings)
                                             ()

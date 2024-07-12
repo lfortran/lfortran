@@ -768,6 +768,9 @@ else11:                                           ; preds = %ifcont9
   br label %ifcont12
 
 ifcont12:                                         ; preds = %else11, %then10
+  br label %return
+
+return:                                           ; preds = %ifcont12
   ret i32 0
 }
 

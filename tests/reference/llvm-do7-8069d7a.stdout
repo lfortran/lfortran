@@ -39,6 +39,9 @@ loop.body:                                        ; preds = %loop.head
   br label %loop.head
 
 loop.end:                                         ; preds = %loop.head
+  br label %return
+
+return:                                           ; preds = %loop.end
   ret i32 0
 }
 

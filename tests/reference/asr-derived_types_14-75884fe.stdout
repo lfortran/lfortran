@@ -18,8 +18,8 @@
                                                     boolean
                                                     []
                                                     Local
-                                                    (IntegerConstant 102 (Integer 4))
-                                                    (IntegerConstant 102 (Integer 4))
+                                                    (IntegerConstant 102 (Integer 4) Decimal)
+                                                    (IntegerConstant 102 (Integer 4) Decimal)
                                                     Save
                                                     (Integer 4)
                                                     ()
@@ -34,8 +34,8 @@
                                                     datetime
                                                     []
                                                     Local
-                                                    (IntegerConstant 105 (Integer 4))
-                                                    (IntegerConstant 105 (Integer 4))
+                                                    (IntegerConstant 105 (Integer 4) Decimal)
+                                                    (IntegerConstant 105 (Integer 4) Decimal)
                                                     Save
                                                     (Integer 4)
                                                     ()
@@ -50,8 +50,8 @@
                                                     float
                                                     []
                                                     Local
-                                                    (IntegerConstant 104 (Integer 4))
-                                                    (IntegerConstant 104 (Integer 4))
+                                                    (IntegerConstant 104 (Integer 4) Decimal)
+                                                    (IntegerConstant 104 (Integer 4) Decimal)
                                                     Save
                                                     (Integer 4)
                                                     ()
@@ -66,8 +66,8 @@
                                                     int
                                                     []
                                                     Local
-                                                    (IntegerConstant 103 (Integer 4))
-                                                    (IntegerConstant 103 (Integer 4))
+                                                    (IntegerConstant 103 (Integer 4) Decimal)
+                                                    (IntegerConstant 103 (Integer 4) Decimal)
                                                     Save
                                                     (Integer 4)
                                                     ()
@@ -82,8 +82,8 @@
                                                     invalid
                                                     []
                                                     Local
-                                                    (IntegerConstant 100 (Integer 4))
-                                                    (IntegerConstant 100 (Integer 4))
+                                                    (IntegerConstant 100 (Integer 4) Decimal)
+                                                    (IntegerConstant 100 (Integer 4) Decimal)
                                                     Save
                                                     (Integer 4)
                                                     ()
@@ -98,8 +98,8 @@
                                                     string
                                                     []
                                                     Local
-                                                    (IntegerConstant 101 (Integer 4))
-                                                    (IntegerConstant 101 (Integer 4))
+                                                    (IntegerConstant 101 (Integer 4) Decimal)
+                                                    (IntegerConstant 101 (Integer 4) Decimal)
                                                     Save
                                                     (Integer 4)
                                                     ()
@@ -375,7 +375,7 @@
                                                 (Var 2 toml_type)
                                                 6 1_enum_type_string
                                                 (Integer 4)
-                                                (IntegerConstant 101 (Integer 4))
+                                                (IntegerConstant 101 (Integer 4) Decimal)
                                             )
                                             ()
                                         )
@@ -397,7 +397,7 @@
                                                 (Var 2 toml_type)
                                                 6 1_enum_type_boolean
                                                 (Integer 4)
-                                                (IntegerConstant 102 (Integer 4))
+                                                (IntegerConstant 102 (Integer 4) Decimal)
                                             )
                                             ()
                                         )
@@ -419,7 +419,7 @@
                                                 (Var 2 toml_type)
                                                 6 1_enum_type_int
                                                 (Integer 4)
-                                                (IntegerConstant 103 (Integer 4))
+                                                (IntegerConstant 103 (Integer 4) Decimal)
                                             )
                                             ()
                                         )
@@ -441,7 +441,7 @@
                                                 (Var 2 toml_type)
                                                 6 1_enum_type_float
                                                 (Integer 4)
-                                                (IntegerConstant 104 (Integer 4))
+                                                (IntegerConstant 104 (Integer 4) Decimal)
                                             )
                                             ()
                                         )
@@ -463,7 +463,7 @@
                                                 (Var 2 toml_type)
                                                 6 1_enum_type_datetime
                                                 (Integer 4)
-                                                (IntegerConstant 105 (Integer 4))
+                                                (IntegerConstant 105 (Integer 4) Decimal)
                                             )
                                             ()
                                         )
@@ -476,7 +476,7 @@
                                             (Var 2 toml_type)
                                             6 1_enum_type_invalid
                                             (Integer 4)
-                                            (IntegerConstant 100 (Integer 4))
+                                            (IntegerConstant 100 (Integer 4) Decimal)
                                         )
                                         ()
                                     )]

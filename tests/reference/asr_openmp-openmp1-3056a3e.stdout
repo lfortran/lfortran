@@ -93,7 +93,7 @@
                     (Var 2 ctr)]
                     [(DoConcurrentLoop
                         ((Var 2 i)
-                        (IntegerConstant 1 (Integer 4))
+                        (IntegerConstant 1 (Integer 4) Decimal)
                         (Var 2 n)
                         ())
                         []
@@ -105,7 +105,7 @@
                             (IntegerBinOp
                                 (Var 2 local_ctr)
                                 Add
-                                (IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 1 (Integer 4) Decimal)
                                 (Integer 4)
                                 ()
                             )
@@ -156,8 +156,8 @@
                                     n
                                     []
                                     Local
-                                    (IntegerConstant 1000000 (Integer 4))
-                                    (IntegerConstant 1000000 (Integer 4))
+                                    (IntegerConstant 1000000 (Integer 4) Decimal)
+                                    (IntegerConstant 1000000 (Integer 4) Decimal)
                                     Parameter
                                     (Integer 4)
                                     ()
@@ -171,7 +171,7 @@
                     []
                     [(Assignment
                         (Var 3 ctr)
-                        (IntegerConstant 0 (Integer 4))
+                        (IntegerConstant 0 (Integer 4) Decimal)
                         ()
                     )
                     (SubroutineCall

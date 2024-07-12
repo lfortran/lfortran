@@ -49,7 +49,7 @@
                                     [(Assignment
                                         (Var 5 a)
                                         (IntegerBinOp
-                                            (IntegerConstant 3 (Integer 4))
+                                            (IntegerConstant 3 (Integer 4) Decimal)
                                             Add
                                             (FunctionCall
                                                 4 b
@@ -132,7 +132,7 @@
                                     []
                                     [(Assignment
                                         (Var 3 b)
-                                        (IntegerConstant 5 (Integer 4))
+                                        (IntegerConstant 5 (Integer 4) Decimal)
                                         ()
                                     )]
                                     (Var 3 b)

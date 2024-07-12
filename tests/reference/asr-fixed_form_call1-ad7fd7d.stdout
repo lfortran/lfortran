@@ -219,7 +219,7 @@
                             (Character 1 6 ())
                         ))
                         ((Var 2 lw))
-                        ((IntegerConstant 1 (Integer 4)))]
+                        ((IntegerConstant 1 (Integer 4) Decimal))]
                         ()
                     )
                     (SubroutineCall
@@ -231,18 +231,18 @@
                         ))
                         ((IntegerBinOp
                             (IntegerBinOp
-                                (IntegerConstant 16 (Integer 4))
+                                (IntegerConstant 16 (Integer 4) Decimal)
                                 Mul
                                 (Var 2 m)
                                 (Integer 4)
                                 ()
                             )
                             Add
-                            (IntegerConstant 70 (Integer 4))
+                            (IntegerConstant 70 (Integer 4) Decimal)
                             (Integer 4)
                             ()
                         ))
-                        ((IntegerConstant 1 (Integer 4)))]
+                        ((IntegerConstant 1 (Integer 4) Decimal))]
                         ()
                     )
                     (Return)]

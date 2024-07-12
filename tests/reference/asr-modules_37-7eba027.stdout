@@ -316,8 +316,8 @@
                                     (Var 9 verbose)]
                                     [(Allocate
                                         [((Var 9 build_dirs)
-                                        [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 0 (Integer 4)))]
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 0 (Integer 4) Decimal))]
                                         ()
                                         ())]
                                         ()
@@ -327,7 +327,7 @@
                                     (DoLoop
                                         ()
                                         ((Var 9 i)
-                                        (IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 1 (Integer 4) Decimal)
                                         (ArraySize
                                             (Var 9 targets)
                                             ()

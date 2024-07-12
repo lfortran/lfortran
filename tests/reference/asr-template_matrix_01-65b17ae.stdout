@@ -216,9 +216,9 @@
                                             15 1_int_matrix_elements
                                             (Array
                                                 (Integer 4)
-                                                [((IntegerConstant 1 (Integer 4))
+                                                [((IntegerConstant 1 (Integer 4) Decimal)
                                                 (Var 11 n))
-                                                ((IntegerConstant 1 (Integer 4))
+                                                ((IntegerConstant 1 (Integer 4) Decimal)
                                                 (Var 11 n))]
                                                 FixedSizeArray
                                             )
@@ -232,9 +232,9 @@
                                                 15 1_int_matrix_elements
                                                 (Array
                                                     (Integer 4)
-                                                    [((IntegerConstant 1 (Integer 4))
+                                                    [((IntegerConstant 1 (Integer 4) Decimal)
                                                     (Var 11 n))
-                                                    ((IntegerConstant 1 (Integer 4))
+                                                    ((IntegerConstant 1 (Integer 4) Decimal)
                                                     (Var 11 n))]
                                                     FixedSizeArray
                                                 )
@@ -245,9 +245,9 @@
                                                 15 1_int_matrix_elements
                                                 (Array
                                                     (Integer 4)
-                                                    [((IntegerConstant 1 (Integer 4))
+                                                    [((IntegerConstant 1 (Integer 4) Decimal)
                                                     (Var 11 n))
-                                                    ((IntegerConstant 1 (Integer 4))
+                                                    ((IntegerConstant 1 (Integer 4) Decimal)
                                                     (Var 11 n))]
                                                     FixedSizeArray
                                                 )
@@ -255,9 +255,9 @@
                                             ))]
                                             (Array
                                                 (Integer 4)
-                                                [((IntegerConstant 1 (Integer 4))
+                                                [((IntegerConstant 1 (Integer 4) Decimal)
                                                 (Var 11 n))
-                                                ((IntegerConstant 1 (Integer 4))
+                                                ((IntegerConstant 1 (Integer 4) Decimal)
                                                 (Var 11 n))]
                                                 FixedSizeArray
                                             )
@@ -288,9 +288,9 @@
                                                     Default
                                                     (Array
                                                         (Integer 4)
-                                                        [((IntegerConstant 1 (Integer 4))
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (Var 11 n))
-                                                        ((IntegerConstant 1 (Integer 4))
+                                                        ((IntegerConstant 1 (Integer 4) Decimal)
                                                         (Var 11 n))]
                                                         FixedSizeArray
                                                     )
@@ -374,7 +374,7 @@
                                                     Default
                                                     (Array
                                                         (Integer 4)
-                                                        [((IntegerConstant 1 (Integer 4))
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (Var 11 n))]
                                                         FixedSizeArray
                                                     )
@@ -496,13 +496,13 @@
                                     [(DoLoop
                                         ()
                                         ((Var 16 i)
-                                        (IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 11 n)
                                         ())
                                         [(DoLoop
                                             ()
                                             ((Var 16 j)
-                                            (IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 1 (Integer 4) Decimal)
                                             (Var 11 n)
                                             ())
                                             [(Assignment
@@ -516,9 +516,9 @@
                                                             16 1_int_matrix_elements
                                                             (Array
                                                                 (Integer 4)
-                                                                [((IntegerConstant 1 (Integer 4))
+                                                                [((IntegerConstant 1 (Integer 4) Decimal)
                                                                 (Var 11 n))
-                                                                ((IntegerConstant 1 (Integer 4))
+                                                                ((IntegerConstant 1 (Integer 4) Decimal)
                                                                 (Var 11 n))]
                                                                 FixedSizeArray
                                                             )
@@ -533,18 +533,18 @@
                                                                 16 1_int_matrix_elements
                                                                 (Array
                                                                     (Integer 4)
-                                                                    [((IntegerConstant 1 (Integer 4))
+                                                                    [((IntegerConstant 1 (Integer 4) Decimal)
                                                                     (Var 11 n))
-                                                                    ((IntegerConstant 1 (Integer 4))
+                                                                    ((IntegerConstant 1 (Integer 4) Decimal)
                                                                     (Var 11 n))]
                                                                     FixedSizeArray
                                                                 )
                                                                 ()
                                                             )
-                                                            (IntegerConstant 2 (Integer 4))
+                                                            (IntegerConstant 2 (Integer 4) Decimal)
                                                             (Integer 4)
                                                             LBound
-                                                            (IntegerConstant 1 (Integer 4))
+                                                            (IntegerConstant 1 (Integer 4) Decimal)
                                                         )
                                                         (ArrayBound
                                                             (StructInstanceMember
@@ -552,20 +552,20 @@
                                                                 16 1_int_matrix_elements
                                                                 (Array
                                                                     (Integer 4)
-                                                                    [((IntegerConstant 1 (Integer 4))
+                                                                    [((IntegerConstant 1 (Integer 4) Decimal)
                                                                     (Var 11 n))
-                                                                    ((IntegerConstant 1 (Integer 4))
+                                                                    ((IntegerConstant 1 (Integer 4) Decimal)
                                                                     (Var 11 n))]
                                                                     FixedSizeArray
                                                                 )
                                                                 ()
                                                             )
-                                                            (IntegerConstant 2 (Integer 4))
+                                                            (IntegerConstant 2 (Integer 4) Decimal)
                                                             (Integer 4)
                                                             UBound
                                                             ()
                                                         )
-                                                        (IntegerConstant 1 (Integer 4)))]
+                                                        (IntegerConstant 1 (Integer 4) Decimal))]
                                                         (Array
                                                             (Integer 4)
                                                             [(()
@@ -580,9 +580,9 @@
                                                             16 1_int_matrix_elements
                                                             (Array
                                                                 (Integer 4)
-                                                                [((IntegerConstant 1 (Integer 4))
+                                                                [((IntegerConstant 1 (Integer 4) Decimal)
                                                                 (Var 11 n))
-                                                                ((IntegerConstant 1 (Integer 4))
+                                                                ((IntegerConstant 1 (Integer 4) Decimal)
                                                                 (Var 11 n))]
                                                                 FixedSizeArray
                                                             )
@@ -594,18 +594,18 @@
                                                                 16 1_int_matrix_elements
                                                                 (Array
                                                                     (Integer 4)
-                                                                    [((IntegerConstant 1 (Integer 4))
+                                                                    [((IntegerConstant 1 (Integer 4) Decimal)
                                                                     (Var 11 n))
-                                                                    ((IntegerConstant 1 (Integer 4))
+                                                                    ((IntegerConstant 1 (Integer 4) Decimal)
                                                                     (Var 11 n))]
                                                                     FixedSizeArray
                                                                 )
                                                                 ()
                                                             )
-                                                            (IntegerConstant 1 (Integer 4))
+                                                            (IntegerConstant 1 (Integer 4) Decimal)
                                                             (Integer 4)
                                                             LBound
-                                                            (IntegerConstant 1 (Integer 4))
+                                                            (IntegerConstant 1 (Integer 4) Decimal)
                                                         )
                                                         (ArrayBound
                                                             (StructInstanceMember
@@ -613,20 +613,20 @@
                                                                 16 1_int_matrix_elements
                                                                 (Array
                                                                     (Integer 4)
-                                                                    [((IntegerConstant 1 (Integer 4))
+                                                                    [((IntegerConstant 1 (Integer 4) Decimal)
                                                                     (Var 11 n))
-                                                                    ((IntegerConstant 1 (Integer 4))
+                                                                    ((IntegerConstant 1 (Integer 4) Decimal)
                                                                     (Var 11 n))]
                                                                     FixedSizeArray
                                                                 )
                                                                 ()
                                                             )
-                                                            (IntegerConstant 1 (Integer 4))
+                                                            (IntegerConstant 1 (Integer 4) Decimal)
                                                             (Integer 4)
                                                             UBound
                                                             ()
                                                         )
-                                                        (IntegerConstant 1 (Integer 4)))
+                                                        (IntegerConstant 1 (Integer 4) Decimal))
                                                         (()
                                                         (Var 16 j)
                                                         ())]
@@ -654,7 +654,7 @@
                                                 (ArrayItem
                                                     (Var 16 dot)
                                                     [(()
-                                                    (IntegerConstant 1 (Integer 4))
+                                                    (IntegerConstant 1 (Integer 4) Decimal)
                                                     ())]
                                                     (Integer 4)
                                                     ColMajor
@@ -665,7 +665,7 @@
                                             (DoLoop
                                                 ()
                                                 ((Var 16 k)
-                                                (IntegerConstant 2 (Integer 4))
+                                                (IntegerConstant 2 (Integer 4) Decimal)
                                                 (Var 11 n)
                                                 ())
                                                 [(Assignment
@@ -698,9 +698,9 @@
                                                         16 1_int_matrix_elements
                                                         (Array
                                                             (Integer 4)
-                                                            [((IntegerConstant 1 (Integer 4))
+                                                            [((IntegerConstant 1 (Integer 4) Decimal)
                                                             (Var 11 n))
-                                                            ((IntegerConstant 1 (Integer 4))
+                                                            ((IntegerConstant 1 (Integer 4) Decimal)
                                                             (Var 11 n))]
                                                             FixedSizeArray
                                                         )
@@ -761,8 +761,8 @@
                                     n
                                     []
                                     Local
-                                    (IntegerConstant 2 (Integer 4))
-                                    (IntegerConstant 2 (Integer 4))
+                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                    (IntegerConstant 2 (Integer 4) Decimal)
                                     Parameter
                                     (Integer 4)
                                     ()
@@ -971,13 +971,13 @@
                     [(DoLoop
                         ()
                         ((Var 11 i)
-                        (IntegerConstant 1 (Integer 4))
+                        (IntegerConstant 1 (Integer 4) Decimal)
                         (Var 11 n)
                         ())
                         [(DoLoop
                             ()
                             ((Var 11 j)
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             (Var 11 n)
                             ())
                             [(Assignment
@@ -987,9 +987,9 @@
                                         11 1_int_matrix_elements
                                         (Array
                                             (Integer 4)
-                                            [((IntegerConstant 1 (Integer 4))
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
                                             (Var 11 n))
-                                            ((IntegerConstant 1 (Integer 4))
+                                            ((IntegerConstant 1 (Integer 4) Decimal)
                                             (Var 11 n))]
                                             FixedSizeArray
                                         )
@@ -1015,9 +1015,9 @@
                                         11 1_int_matrix_elements
                                         (Array
                                             (Integer 4)
-                                            [((IntegerConstant 1 (Integer 4))
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
                                             (Var 11 n))
-                                            ((IntegerConstant 1 (Integer 4))
+                                            ((IntegerConstant 1 (Integer 4) Decimal)
                                             (Var 11 n))]
                                             FixedSizeArray
                                         )
@@ -1077,19 +1077,19 @@
                                 11 1_int_matrix_elements
                                 (Array
                                     (Integer 4)
-                                    [((IntegerConstant 1 (Integer 4))
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
                                     (Var 11 n))
-                                    ((IntegerConstant 1 (Integer 4))
+                                    ((IntegerConstant 1 (Integer 4) Decimal)
                                     (Var 11 n))]
                                     FixedSizeArray
                                 )
                                 ()
                             )
                             [(()
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             ())
                             (()
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             ())]
                             (Integer 4)
                             ColMajor
@@ -1101,19 +1101,19 @@
                                 11 1_int_matrix_elements
                                 (Array
                                     (Integer 4)
-                                    [((IntegerConstant 1 (Integer 4))
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
                                     (Var 11 n))
-                                    ((IntegerConstant 1 (Integer 4))
+                                    ((IntegerConstant 1 (Integer 4) Decimal)
                                     (Var 11 n))]
                                     FixedSizeArray
                                 )
                                 ()
                             )
                             [(()
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             ())
                             (()
-                            (IntegerConstant 2 (Integer 4))
+                            (IntegerConstant 2 (Integer 4) Decimal)
                             ())]
                             (Integer 4)
                             ColMajor
@@ -1129,19 +1129,19 @@
                                 11 1_int_matrix_elements
                                 (Array
                                     (Integer 4)
-                                    [((IntegerConstant 1 (Integer 4))
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
                                     (Var 11 n))
-                                    ((IntegerConstant 1 (Integer 4))
+                                    ((IntegerConstant 1 (Integer 4) Decimal)
                                     (Var 11 n))]
                                     FixedSizeArray
                                 )
                                 ()
                             )
                             [(()
-                            (IntegerConstant 2 (Integer 4))
+                            (IntegerConstant 2 (Integer 4) Decimal)
                             ())
                             (()
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             ())]
                             (Integer 4)
                             ColMajor
@@ -1153,19 +1153,19 @@
                                 11 1_int_matrix_elements
                                 (Array
                                     (Integer 4)
-                                    [((IntegerConstant 1 (Integer 4))
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
                                     (Var 11 n))
-                                    ((IntegerConstant 1 (Integer 4))
+                                    ((IntegerConstant 1 (Integer 4) Decimal)
                                     (Var 11 n))]
                                     FixedSizeArray
                                 )
                                 ()
                             )
                             [(()
-                            (IntegerConstant 2 (Integer 4))
+                            (IntegerConstant 2 (Integer 4) Decimal)
                             ())
                             (()
-                            (IntegerConstant 2 (Integer 4))
+                            (IntegerConstant 2 (Integer 4) Decimal)
                             ())]
                             (Integer 4)
                             ColMajor
@@ -1173,7 +1173,7 @@
                         )
                         (IntrinsicElementalFunction
                             Achar
-                            [(IntegerConstant 10 (Integer 4))]
+                            [(IntegerConstant 10 (Integer 4) Decimal)]
                             0
                             (Character 1 1 ())
                             (StringConstant
@@ -1191,19 +1191,19 @@
                                 11 1_int_matrix_elements
                                 (Array
                                     (Integer 4)
-                                    [((IntegerConstant 1 (Integer 4))
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
                                     (Var 11 n))
-                                    ((IntegerConstant 1 (Integer 4))
+                                    ((IntegerConstant 1 (Integer 4) Decimal)
                                     (Var 11 n))]
                                     FixedSizeArray
                                 )
                                 ()
                             )
                             [(()
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             ())
                             (()
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             ())]
                             (Integer 4)
                             ColMajor
@@ -1215,19 +1215,19 @@
                                 11 1_int_matrix_elements
                                 (Array
                                     (Integer 4)
-                                    [((IntegerConstant 1 (Integer 4))
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
                                     (Var 11 n))
-                                    ((IntegerConstant 1 (Integer 4))
+                                    ((IntegerConstant 1 (Integer 4) Decimal)
                                     (Var 11 n))]
                                     FixedSizeArray
                                 )
                                 ()
                             )
                             [(()
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             ())
                             (()
-                            (IntegerConstant 2 (Integer 4))
+                            (IntegerConstant 2 (Integer 4) Decimal)
                             ())]
                             (Integer 4)
                             ColMajor
@@ -1243,19 +1243,19 @@
                                 11 1_int_matrix_elements
                                 (Array
                                     (Integer 4)
-                                    [((IntegerConstant 1 (Integer 4))
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
                                     (Var 11 n))
-                                    ((IntegerConstant 1 (Integer 4))
+                                    ((IntegerConstant 1 (Integer 4) Decimal)
                                     (Var 11 n))]
                                     FixedSizeArray
                                 )
                                 ()
                             )
                             [(()
-                            (IntegerConstant 2 (Integer 4))
+                            (IntegerConstant 2 (Integer 4) Decimal)
                             ())
                             (()
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             ())]
                             (Integer 4)
                             ColMajor
@@ -1267,19 +1267,19 @@
                                 11 1_int_matrix_elements
                                 (Array
                                     (Integer 4)
-                                    [((IntegerConstant 1 (Integer 4))
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
                                     (Var 11 n))
-                                    ((IntegerConstant 1 (Integer 4))
+                                    ((IntegerConstant 1 (Integer 4) Decimal)
                                     (Var 11 n))]
                                     FixedSizeArray
                                 )
                                 ()
                             )
                             [(()
-                            (IntegerConstant 2 (Integer 4))
+                            (IntegerConstant 2 (Integer 4) Decimal)
                             ())
                             (()
-                            (IntegerConstant 2 (Integer 4))
+                            (IntegerConstant 2 (Integer 4) Decimal)
                             ())]
                             (Integer 4)
                             ColMajor
@@ -1523,9 +1523,9 @@
                                                                 (TypeParameter
                                                                     t
                                                                 )
-                                                                [((IntegerConstant 1 (Integer 4))
+                                                                [((IntegerConstant 1 (Integer 4) Decimal)
                                                                 (Var 5 n))
-                                                                ((IntegerConstant 1 (Integer 4))
+                                                                ((IntegerConstant 1 (Integer 4) Decimal)
                                                                 (Var 5 n))]
                                                                 PointerToDataArray
                                                             )
@@ -1541,9 +1541,9 @@
                                                                     (TypeParameter
                                                                         t
                                                                     )
-                                                                    [((IntegerConstant 1 (Integer 4))
+                                                                    [((IntegerConstant 1 (Integer 4) Decimal)
                                                                     (Var 5 n))
-                                                                    ((IntegerConstant 1 (Integer 4))
+                                                                    ((IntegerConstant 1 (Integer 4) Decimal)
                                                                     (Var 5 n))]
                                                                     PointerToDataArray
                                                                 )
@@ -1556,9 +1556,9 @@
                                                                     (TypeParameter
                                                                         t
                                                                     )
-                                                                    [((IntegerConstant 1 (Integer 4))
+                                                                    [((IntegerConstant 1 (Integer 4) Decimal)
                                                                     (Var 5 n))
-                                                                    ((IntegerConstant 1 (Integer 4))
+                                                                    ((IntegerConstant 1 (Integer 4) Decimal)
                                                                     (Var 5 n))]
                                                                     PointerToDataArray
                                                                 )
@@ -1568,9 +1568,9 @@
                                                                 (TypeParameter
                                                                     t
                                                                 )
-                                                                [((IntegerConstant 1 (Integer 4))
+                                                                [((IntegerConstant 1 (Integer 4) Decimal)
                                                                 (Var 5 n))
-                                                                ((IntegerConstant 1 (Integer 4))
+                                                                ((IntegerConstant 1 (Integer 4) Decimal)
                                                                 (Var 5 n))]
                                                                 PointerToDataArray
                                                             )
@@ -1603,9 +1603,9 @@
                                                                         (TypeParameter
                                                                             t
                                                                         )
-                                                                        [((IntegerConstant 1 (Integer 4))
+                                                                        [((IntegerConstant 1 (Integer 4) Decimal)
                                                                         (Var 5 n))
-                                                                        ((IntegerConstant 1 (Integer 4))
+                                                                        ((IntegerConstant 1 (Integer 4) Decimal)
                                                                         (Var 5 n))]
                                                                         PointerToDataArray
                                                                     )
@@ -1691,7 +1691,7 @@
                                                                         (TypeParameter
                                                                             t
                                                                         )
-                                                                        [((IntegerConstant 1 (Integer 4))
+                                                                        [((IntegerConstant 1 (Integer 4) Decimal)
                                                                         (Var 5 n))]
                                                                         PointerToDataArray
                                                                     )
@@ -1815,13 +1815,13 @@
                                                     [(DoLoop
                                                         ()
                                                         ((Var 10 i)
-                                                        (IntegerConstant 1 (Integer 4))
+                                                        (IntegerConstant 1 (Integer 4) Decimal)
                                                         (Var 5 n)
                                                         ())
                                                         [(DoLoop
                                                             ()
                                                             ((Var 10 j)
-                                                            (IntegerConstant 1 (Integer 4))
+                                                            (IntegerConstant 1 (Integer 4) Decimal)
                                                             (Var 5 n)
                                                             ())
                                                             [(Assignment
@@ -1837,9 +1837,9 @@
                                                                                 (TypeParameter
                                                                                     t
                                                                                 )
-                                                                                [((IntegerConstant 1 (Integer 4))
+                                                                                [((IntegerConstant 1 (Integer 4) Decimal)
                                                                                 (Var 5 n))
-                                                                                ((IntegerConstant 1 (Integer 4))
+                                                                                ((IntegerConstant 1 (Integer 4) Decimal)
                                                                                 (Var 5 n))]
                                                                                 PointerToDataArray
                                                                             )
@@ -1856,18 +1856,18 @@
                                                                                     (TypeParameter
                                                                                         t
                                                                                     )
-                                                                                    [((IntegerConstant 1 (Integer 4))
+                                                                                    [((IntegerConstant 1 (Integer 4) Decimal)
                                                                                     (Var 5 n))
-                                                                                    ((IntegerConstant 1 (Integer 4))
+                                                                                    ((IntegerConstant 1 (Integer 4) Decimal)
                                                                                     (Var 5 n))]
                                                                                     PointerToDataArray
                                                                                 )
                                                                                 ()
                                                                             )
-                                                                            (IntegerConstant 2 (Integer 4))
+                                                                            (IntegerConstant 2 (Integer 4) Decimal)
                                                                             (Integer 4)
                                                                             LBound
-                                                                            (IntegerConstant 1 (Integer 4))
+                                                                            (IntegerConstant 1 (Integer 4) Decimal)
                                                                         )
                                                                         (ArrayBound
                                                                             (StructInstanceMember
@@ -1877,20 +1877,20 @@
                                                                                     (TypeParameter
                                                                                         t
                                                                                     )
-                                                                                    [((IntegerConstant 1 (Integer 4))
+                                                                                    [((IntegerConstant 1 (Integer 4) Decimal)
                                                                                     (Var 5 n))
-                                                                                    ((IntegerConstant 1 (Integer 4))
+                                                                                    ((IntegerConstant 1 (Integer 4) Decimal)
                                                                                     (Var 5 n))]
                                                                                     PointerToDataArray
                                                                                 )
                                                                                 ()
                                                                             )
-                                                                            (IntegerConstant 2 (Integer 4))
+                                                                            (IntegerConstant 2 (Integer 4) Decimal)
                                                                             (Integer 4)
                                                                             UBound
                                                                             ()
                                                                         )
-                                                                        (IntegerConstant 1 (Integer 4)))]
+                                                                        (IntegerConstant 1 (Integer 4) Decimal))]
                                                                         (Array
                                                                             (TypeParameter
                                                                                 t
@@ -1909,9 +1909,9 @@
                                                                                 (TypeParameter
                                                                                     t
                                                                                 )
-                                                                                [((IntegerConstant 1 (Integer 4))
+                                                                                [((IntegerConstant 1 (Integer 4) Decimal)
                                                                                 (Var 5 n))
-                                                                                ((IntegerConstant 1 (Integer 4))
+                                                                                ((IntegerConstant 1 (Integer 4) Decimal)
                                                                                 (Var 5 n))]
                                                                                 PointerToDataArray
                                                                             )
@@ -1925,18 +1925,18 @@
                                                                                     (TypeParameter
                                                                                         t
                                                                                     )
-                                                                                    [((IntegerConstant 1 (Integer 4))
+                                                                                    [((IntegerConstant 1 (Integer 4) Decimal)
                                                                                     (Var 5 n))
-                                                                                    ((IntegerConstant 1 (Integer 4))
+                                                                                    ((IntegerConstant 1 (Integer 4) Decimal)
                                                                                     (Var 5 n))]
                                                                                     PointerToDataArray
                                                                                 )
                                                                                 ()
                                                                             )
-                                                                            (IntegerConstant 1 (Integer 4))
+                                                                            (IntegerConstant 1 (Integer 4) Decimal)
                                                                             (Integer 4)
                                                                             LBound
-                                                                            (IntegerConstant 1 (Integer 4))
+                                                                            (IntegerConstant 1 (Integer 4) Decimal)
                                                                         )
                                                                         (ArrayBound
                                                                             (StructInstanceMember
@@ -1946,20 +1946,20 @@
                                                                                     (TypeParameter
                                                                                         t
                                                                                     )
-                                                                                    [((IntegerConstant 1 (Integer 4))
+                                                                                    [((IntegerConstant 1 (Integer 4) Decimal)
                                                                                     (Var 5 n))
-                                                                                    ((IntegerConstant 1 (Integer 4))
+                                                                                    ((IntegerConstant 1 (Integer 4) Decimal)
                                                                                     (Var 5 n))]
                                                                                     PointerToDataArray
                                                                                 )
                                                                                 ()
                                                                             )
-                                                                            (IntegerConstant 1 (Integer 4))
+                                                                            (IntegerConstant 1 (Integer 4) Decimal)
                                                                             (Integer 4)
                                                                             UBound
                                                                             ()
                                                                         )
-                                                                        (IntegerConstant 1 (Integer 4)))
+                                                                        (IntegerConstant 1 (Integer 4) Decimal))
                                                                         (()
                                                                         (Var 10 j)
                                                                         ())]
@@ -1991,7 +1991,7 @@
                                                                 (ArrayItem
                                                                     (Var 10 dot)
                                                                     [(()
-                                                                    (IntegerConstant 1 (Integer 4))
+                                                                    (IntegerConstant 1 (Integer 4) Decimal)
                                                                     ())]
                                                                     (TypeParameter
                                                                         t
@@ -2004,7 +2004,7 @@
                                                             (DoLoop
                                                                 ()
                                                                 ((Var 10 k)
-                                                                (IntegerConstant 2 (Integer 4))
+                                                                (IntegerConstant 2 (Integer 4) Decimal)
                                                                 (Var 5 n)
                                                                 ())
                                                                 [(Assignment
@@ -2043,9 +2043,9 @@
                                                                             (TypeParameter
                                                                                 t
                                                                             )
-                                                                            [((IntegerConstant 1 (Integer 4))
+                                                                            [((IntegerConstant 1 (Integer 4) Decimal)
                                                                             (Var 5 n))
-                                                                            ((IntegerConstant 1 (Integer 4))
+                                                                            ((IntegerConstant 1 (Integer 4) Decimal)
                                                                             (Var 5 n))]
                                                                             PointerToDataArray
                                                                         )

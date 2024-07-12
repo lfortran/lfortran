@@ -172,10 +172,10 @@
                                         [(Var 2 x1)]
                                         0
                                         (Integer 8)
-                                        (IntegerConstant 3 (Integer 8))
+                                        (IntegerConstant 3 (Integer 8) Decimal)
                                     )
                                     NotEq
-                                    (IntegerConstant 3 (Integer 8))
+                                    (IntegerConstant 3 (Integer 8) Decimal)
                                     (Logical 4)
                                     (LogicalConstant
                                         .false.
@@ -189,10 +189,10 @@
                                         [(Var 2 x2)]
                                         0
                                         (Integer 4)
-                                        (IntegerConstant 3 (Integer 4))
+                                        (IntegerConstant 3 (Integer 4) Decimal)
                                     )
                                     NotEq
-                                    (IntegerConstant 3 (Integer 4))
+                                    (IntegerConstant 3 (Integer 4) Decimal)
                                     (Logical 4)
                                     (LogicalConstant
                                         .false.
@@ -212,10 +212,10 @@
                                     [(Var 2 x3)]
                                     0
                                     (Integer 4)
-                                    (IntegerConstant 3 (Integer 4))
+                                    (IntegerConstant 3 (Integer 4) Decimal)
                                 )
                                 NotEq
-                                (IntegerConstant 3 (Integer 4))
+                                (IntegerConstant 3 (Integer 4) Decimal)
                                 (Logical 4)
                                 (LogicalConstant
                                     .false.
@@ -242,13 +242,13 @@
                                         [(Var 2 y1)]
                                         0
                                         (Integer 4)
-                                        (IntegerConstant -4 (Integer 4))
+                                        (IntegerConstant -4 (Integer 4) Decimal)
                                     )
                                     NotEq
                                     (IntegerUnaryMinus
-                                        (IntegerConstant 4 (Integer 4))
+                                        (IntegerConstant 4 (Integer 4) Decimal)
                                         (Integer 4)
-                                        (IntegerConstant -4 (Integer 4))
+                                        (IntegerConstant -4 (Integer 4) Decimal)
                                     )
                                     (Logical 4)
                                     (LogicalConstant
@@ -263,13 +263,13 @@
                                         [(Var 2 y2)]
                                         0
                                         (Integer 4)
-                                        (IntegerConstant -4 (Integer 4))
+                                        (IntegerConstant -4 (Integer 4) Decimal)
                                     )
                                     NotEq
                                     (IntegerUnaryMinus
-                                        (IntegerConstant 4 (Integer 4))
+                                        (IntegerConstant 4 (Integer 4) Decimal)
                                         (Integer 4)
-                                        (IntegerConstant -4 (Integer 4))
+                                        (IntegerConstant -4 (Integer 4) Decimal)
                                     )
                                     (Logical 4)
                                     (LogicalConstant
@@ -290,18 +290,18 @@
                                     [(Var 2 y3)]
                                     0
                                     (Integer 8)
-                                    (IntegerConstant -4 (Integer 8))
+                                    (IntegerConstant -4 (Integer 8) Decimal)
                                 )
                                 NotEq
                                 (Cast
                                     (IntegerUnaryMinus
-                                        (IntegerConstant 4 (Integer 4))
+                                        (IntegerConstant 4 (Integer 4) Decimal)
                                         (Integer 4)
-                                        (IntegerConstant -4 (Integer 4))
+                                        (IntegerConstant -4 (Integer 4) Decimal)
                                     )
                                     IntegerToInteger
                                     (Integer 8)
-                                    (IntegerConstant -4 (Integer 8))
+                                    (IntegerConstant -4 (Integer 8) Decimal)
                                 )
                                 (Logical 4)
                                 (LogicalConstant
@@ -326,21 +326,21 @@
                             [(Var 2 x1)]
                             0
                             (Integer 4)
-                            (IntegerConstant 3 (Integer 4))
+                            (IntegerConstant 3 (Integer 4) Decimal)
                         )
                         (IntrinsicElementalFunction
                             Floor
                             [(Var 2 x2)]
                             0
                             (Integer 4)
-                            (IntegerConstant 3 (Integer 4))
+                            (IntegerConstant 3 (Integer 4) Decimal)
                         )
                         (IntrinsicElementalFunction
                             Floor
                             [(Var 2 x3)]
                             0
                             (Integer 4)
-                            (IntegerConstant 3 (Integer 4))
+                            (IntegerConstant 3 (Integer 4) Decimal)
                         )]
                         ()
                         ()
@@ -351,21 +351,21 @@
                             [(Var 2 y1)]
                             0
                             (Integer 4)
-                            (IntegerConstant -4 (Integer 4))
+                            (IntegerConstant -4 (Integer 4) Decimal)
                         )
                         (IntrinsicElementalFunction
                             Floor
                             [(Var 2 y2)]
                             0
                             (Integer 4)
-                            (IntegerConstant -4 (Integer 4))
+                            (IntegerConstant -4 (Integer 4) Decimal)
                         )
                         (IntrinsicElementalFunction
                             Floor
                             [(Var 2 y3)]
                             0
                             (Integer 4)
-                            (IntegerConstant -4 (Integer 4))
+                            (IntegerConstant -4 (Integer 4) Decimal)
                         )]
                         ()
                         ()

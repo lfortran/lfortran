@@ -18,8 +18,8 @@
                                     Default
                                     (Array
                                         (Complex 4)
-                                        [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 3 (Integer 4)))]
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 3 (Integer 4) Decimal))]
                                         FixedSizeArray
                                     )
                                     ()
@@ -39,8 +39,8 @@
                                     Default
                                     (Array
                                         (Complex 4)
-                                        [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 4 (Integer 4)))]
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 4 (Integer 4) Decimal))]
                                         FixedSizeArray
                                     )
                                     ()
@@ -60,10 +60,10 @@
                                     Default
                                     (Array
                                         (Complex 4)
-                                        [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 2 (Integer 4)))
-                                        ((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 2 (Integer 4)))]
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 2 (Integer 4) Decimal))
+                                        ((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 2 (Integer 4) Decimal))]
                                         FixedSizeArray
                                     )
                                     ()
@@ -110,8 +110,8 @@
                     [(DoLoop
                         ()
                         ((Var 2 i)
-                        (IntegerConstant 1 (Integer 4))
-                        (IntegerConstant 3 (Integer 4))
+                        (IntegerConstant 1 (Integer 4) Decimal)
+                        (IntegerConstant 3 (Integer 4) Decimal)
                         ())
                         [(Assignment
                             (ArrayItem
@@ -127,7 +127,7 @@
                                 (IntegerBinOp
                                     (Var 2 i)
                                     Add
-                                    (IntegerConstant 10 (Integer 4))
+                                    (IntegerConstant 10 (Integer 4) Decimal)
                                     (Integer 4)
                                     ()
                                 )
@@ -144,7 +144,7 @@
                             (ArrayItem
                                 (Var 2 a)
                                 [(()
-                                (IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 1 (Integer 4) Decimal)
                                 ())]
                                 (Complex 4)
                                 ColMajor
@@ -152,7 +152,7 @@
                             )
                             NotEq
                             (Cast
-                                (IntegerConstant 11 (Integer 4))
+                                (IntegerConstant 11 (Integer 4) Decimal)
                                 IntegerToComplex
                                 (Complex 4)
                                 (ComplexConstant
@@ -174,7 +174,7 @@
                             (ArrayItem
                                 (Var 2 a)
                                 [(()
-                                (IntegerConstant 2 (Integer 4))
+                                (IntegerConstant 2 (Integer 4) Decimal)
                                 ())]
                                 (Complex 4)
                                 ColMajor
@@ -182,7 +182,7 @@
                             )
                             NotEq
                             (Cast
-                                (IntegerConstant 12 (Integer 4))
+                                (IntegerConstant 12 (Integer 4) Decimal)
                                 IntegerToComplex
                                 (Complex 4)
                                 (ComplexConstant
@@ -204,7 +204,7 @@
                             (ArrayItem
                                 (Var 2 a)
                                 [(()
-                                (IntegerConstant 3 (Integer 4))
+                                (IntegerConstant 3 (Integer 4) Decimal)
                                 ())]
                                 (Complex 4)
                                 ColMajor
@@ -212,7 +212,7 @@
                             )
                             NotEq
                             (Cast
-                                (IntegerConstant 13 (Integer 4))
+                                (IntegerConstant 13 (Integer 4) Decimal)
                                 IntegerToComplex
                                 (Complex 4)
                                 (ComplexConstant
@@ -232,8 +232,8 @@
                     (DoLoop
                         ()
                         ((Var 2 i)
-                        (IntegerConstant 11 (Integer 4))
-                        (IntegerConstant 14 (Integer 4))
+                        (IntegerConstant 11 (Integer 4) Decimal)
+                        (IntegerConstant 14 (Integer 4) Decimal)
                         ())
                         [(Assignment
                             (ArrayItem
@@ -242,7 +242,7 @@
                                 (IntegerBinOp
                                     (Var 2 i)
                                     Sub
-                                    (IntegerConstant 10 (Integer 4))
+                                    (IntegerConstant 10 (Integer 4) Decimal)
                                     (Integer 4)
                                     ()
                                 )
@@ -266,7 +266,7 @@
                             (ArrayItem
                                 (Var 2 b)
                                 [(()
-                                (IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 1 (Integer 4) Decimal)
                                 ())]
                                 (Complex 4)
                                 ColMajor
@@ -274,7 +274,7 @@
                             )
                             NotEq
                             (Cast
-                                (IntegerConstant 11 (Integer 4))
+                                (IntegerConstant 11 (Integer 4) Decimal)
                                 IntegerToComplex
                                 (Complex 4)
                                 (ComplexConstant
@@ -296,7 +296,7 @@
                             (ArrayItem
                                 (Var 2 b)
                                 [(()
-                                (IntegerConstant 2 (Integer 4))
+                                (IntegerConstant 2 (Integer 4) Decimal)
                                 ())]
                                 (Complex 4)
                                 ColMajor
@@ -304,7 +304,7 @@
                             )
                             NotEq
                             (Cast
-                                (IntegerConstant 12 (Integer 4))
+                                (IntegerConstant 12 (Integer 4) Decimal)
                                 IntegerToComplex
                                 (Complex 4)
                                 (ComplexConstant
@@ -326,7 +326,7 @@
                             (ArrayItem
                                 (Var 2 b)
                                 [(()
-                                (IntegerConstant 3 (Integer 4))
+                                (IntegerConstant 3 (Integer 4) Decimal)
                                 ())]
                                 (Complex 4)
                                 ColMajor
@@ -334,7 +334,7 @@
                             )
                             NotEq
                             (Cast
-                                (IntegerConstant 13 (Integer 4))
+                                (IntegerConstant 13 (Integer 4) Decimal)
                                 IntegerToComplex
                                 (Complex 4)
                                 (ComplexConstant
@@ -356,7 +356,7 @@
                             (ArrayItem
                                 (Var 2 b)
                                 [(()
-                                (IntegerConstant 4 (Integer 4))
+                                (IntegerConstant 4 (Integer 4) Decimal)
                                 ())]
                                 (Complex 4)
                                 ColMajor
@@ -364,7 +364,7 @@
                             )
                             NotEq
                             (Cast
-                                (IntegerConstant 14 (Integer 4))
+                                (IntegerConstant 14 (Integer 4) Decimal)
                                 IntegerToComplex
                                 (Complex 4)
                                 (ComplexConstant
@@ -384,8 +384,8 @@
                     (DoLoop
                         ()
                         ((Var 2 i)
-                        (IntegerConstant 1 (Integer 4))
-                        (IntegerConstant 3 (Integer 4))
+                        (IntegerConstant 1 (Integer 4) Decimal)
+                        (IntegerConstant 3 (Integer 4) Decimal)
                         ())
                         [(Assignment
                             (ArrayItem
@@ -409,7 +409,7 @@
                                 )
                                 Sub
                                 (Cast
-                                    (IntegerConstant 10 (Integer 4))
+                                    (IntegerConstant 10 (Integer 4) Decimal)
                                     IntegerToComplex
                                     (Complex 4)
                                     (ComplexConstant
@@ -430,7 +430,7 @@
                             (ArrayItem
                                 (Var 2 b)
                                 [(()
-                                (IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 1 (Integer 4) Decimal)
                                 ())]
                                 (Complex 4)
                                 ColMajor
@@ -438,7 +438,7 @@
                             )
                             NotEq
                             (Cast
-                                (IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 1 (Integer 4) Decimal)
                                 IntegerToComplex
                                 (Complex 4)
                                 (ComplexConstant
@@ -460,7 +460,7 @@
                             (ArrayItem
                                 (Var 2 b)
                                 [(()
-                                (IntegerConstant 2 (Integer 4))
+                                (IntegerConstant 2 (Integer 4) Decimal)
                                 ())]
                                 (Complex 4)
                                 ColMajor
@@ -468,7 +468,7 @@
                             )
                             NotEq
                             (Cast
-                                (IntegerConstant 2 (Integer 4))
+                                (IntegerConstant 2 (Integer 4) Decimal)
                                 IntegerToComplex
                                 (Complex 4)
                                 (ComplexConstant
@@ -490,7 +490,7 @@
                             (ArrayItem
                                 (Var 2 b)
                                 [(()
-                                (IntegerConstant 3 (Integer 4))
+                                (IntegerConstant 3 (Integer 4) Decimal)
                                 ())]
                                 (Complex 4)
                                 ColMajor
@@ -498,7 +498,7 @@
                             )
                             NotEq
                             (Cast
-                                (IntegerConstant 3 (Integer 4))
+                                (IntegerConstant 3 (Integer 4) Decimal)
                                 IntegerToComplex
                                 (Complex 4)
                                 (ComplexConstant
@@ -519,7 +519,7 @@
                         (ArrayItem
                             (Var 2 b)
                             [(()
-                            (IntegerConstant 4 (Integer 4))
+                            (IntegerConstant 4 (Integer 4) Decimal)
                             ())]
                             (Complex 4)
                             ColMajor
@@ -531,7 +531,7 @@
                                     (ArrayItem
                                         (Var 2 b)
                                         [(()
-                                        (IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 1 (Integer 4) Decimal)
                                         ())]
                                         (Complex 4)
                                         ColMajor
@@ -541,7 +541,7 @@
                                     (ArrayItem
                                         (Var 2 b)
                                         [(()
-                                        (IntegerConstant 2 (Integer 4))
+                                        (IntegerConstant 2 (Integer 4) Decimal)
                                         ())]
                                         (Complex 4)
                                         ColMajor
@@ -554,7 +554,7 @@
                                 (ArrayItem
                                     (Var 2 b)
                                     [(()
-                                    (IntegerConstant 3 (Integer 4))
+                                    (IntegerConstant 3 (Integer 4) Decimal)
                                     ())]
                                     (Complex 4)
                                     ColMajor
@@ -567,7 +567,7 @@
                             (ArrayItem
                                 (Var 2 a)
                                 [(()
-                                (IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 1 (Integer 4) Decimal)
                                 ())]
                                 (Complex 4)
                                 ColMajor
@@ -583,7 +583,7 @@
                             (ArrayItem
                                 (Var 2 b)
                                 [(()
-                                (IntegerConstant 4 (Integer 4))
+                                (IntegerConstant 4 (Integer 4) Decimal)
                                 ())]
                                 (Complex 4)
                                 ColMajor
@@ -591,7 +591,7 @@
                             )
                             NotEq
                             (Cast
-                                (IntegerConstant 17 (Integer 4))
+                                (IntegerConstant 17 (Integer 4) Decimal)
                                 IntegerToComplex
                                 (Complex 4)
                                 (ComplexConstant
@@ -612,7 +612,7 @@
                         (ArrayItem
                             (Var 2 b)
                             [(()
-                            (IntegerConstant 4 (Integer 4))
+                            (IntegerConstant 4 (Integer 4) Decimal)
                             ())]
                             (Complex 4)
                             ColMajor
@@ -621,7 +621,7 @@
                         (ArrayItem
                             (Var 2 a)
                             [(()
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             ())]
                             (Complex 4)
                             ColMajor
@@ -634,7 +634,7 @@
                             (ArrayItem
                                 (Var 2 b)
                                 [(()
-                                (IntegerConstant 4 (Integer 4))
+                                (IntegerConstant 4 (Integer 4) Decimal)
                                 ())]
                                 (Complex 4)
                                 ColMajor
@@ -642,7 +642,7 @@
                             )
                             NotEq
                             (Cast
-                                (IntegerConstant 11 (Integer 4))
+                                (IntegerConstant 11 (Integer 4) Decimal)
                                 IntegerToComplex
                                 (Complex 4)
                                 (ComplexConstant
@@ -662,14 +662,14 @@
                     (DoLoop
                         ()
                         ((Var 2 i)
-                        (IntegerConstant 1 (Integer 4))
-                        (IntegerConstant 2 (Integer 4))
+                        (IntegerConstant 1 (Integer 4) Decimal)
+                        (IntegerConstant 2 (Integer 4) Decimal)
                         ())
                         [(DoLoop
                             ()
                             ((Var 2 j)
-                            (IntegerConstant 1 (Integer 4))
-                            (IntegerConstant 2 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (IntegerConstant 2 (Integer 4) Decimal)
                             ())
                             [(Assignment
                                 (ArrayItem
@@ -694,7 +694,7 @@
                                             ()
                                         )
                                         Add
-                                        (IntegerConstant 10 (Integer 4))
+                                        (IntegerConstant 10 (Integer 4) Decimal)
                                         (Integer 4)
                                         ()
                                     )
@@ -713,10 +713,10 @@
                             (ArrayItem
                                 (Var 2 c)
                                 [(()
-                                (IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 1 (Integer 4) Decimal)
                                 ())
                                 (()
-                                (IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 1 (Integer 4) Decimal)
                                 ())]
                                 (Complex 4)
                                 ColMajor
@@ -724,7 +724,7 @@
                             )
                             NotEq
                             (Cast
-                                (IntegerConstant 12 (Integer 4))
+                                (IntegerConstant 12 (Integer 4) Decimal)
                                 IntegerToComplex
                                 (Complex 4)
                                 (ComplexConstant
@@ -746,10 +746,10 @@
                             (ArrayItem
                                 (Var 2 c)
                                 [(()
-                                (IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 1 (Integer 4) Decimal)
                                 ())
                                 (()
-                                (IntegerConstant 2 (Integer 4))
+                                (IntegerConstant 2 (Integer 4) Decimal)
                                 ())]
                                 (Complex 4)
                                 ColMajor
@@ -757,7 +757,7 @@
                             )
                             NotEq
                             (Cast
-                                (IntegerConstant 13 (Integer 4))
+                                (IntegerConstant 13 (Integer 4) Decimal)
                                 IntegerToComplex
                                 (Complex 4)
                                 (ComplexConstant
@@ -779,10 +779,10 @@
                             (ArrayItem
                                 (Var 2 c)
                                 [(()
-                                (IntegerConstant 2 (Integer 4))
+                                (IntegerConstant 2 (Integer 4) Decimal)
                                 ())
                                 (()
-                                (IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 1 (Integer 4) Decimal)
                                 ())]
                                 (Complex 4)
                                 ColMajor
@@ -790,7 +790,7 @@
                             )
                             NotEq
                             (Cast
-                                (IntegerConstant 13 (Integer 4))
+                                (IntegerConstant 13 (Integer 4) Decimal)
                                 IntegerToComplex
                                 (Complex 4)
                                 (ComplexConstant
@@ -812,10 +812,10 @@
                             (ArrayItem
                                 (Var 2 c)
                                 [(()
-                                (IntegerConstant 2 (Integer 4))
+                                (IntegerConstant 2 (Integer 4) Decimal)
                                 ())
                                 (()
-                                (IntegerConstant 2 (Integer 4))
+                                (IntegerConstant 2 (Integer 4) Decimal)
                                 ())]
                                 (Complex 4)
                                 ColMajor
@@ -823,7 +823,7 @@
                             )
                             NotEq
                             (Cast
-                                (IntegerConstant 14 (Integer 4))
+                                (IntegerConstant 14 (Integer 4) Decimal)
                                 IntegerToComplex
                                 (Complex 4)
                                 (ComplexConstant

@@ -111,7 +111,7 @@
                                     [(Allocate
                                         [((Var 6 lhs)
                                         []
-                                        (IntegerConstant 10 (Integer 4))
+                                        (IntegerConstant 10 (Integer 4) Decimal)
                                         ())]
                                         ()
                                         ()
@@ -881,7 +881,7 @@
                                         [(Allocate
                                             [((Var 7 lhs)
                                             []
-                                            (IntegerConstant 12 (Integer 4))
+                                            (IntegerConstant 12 (Integer 4) Decimal)
                                             ())]
                                             ()
                                             ()
@@ -950,7 +950,7 @@
                                         [(Allocate
                                             [((Var 7 lhs)
                                             []
-                                            (IntegerConstant 8 (Integer 4))
+                                            (IntegerConstant 8 (Integer 4) Decimal)
                                             ())]
                                             ()
                                             ()
@@ -1081,8 +1081,8 @@
                                                     day
                                                     []
                                                     Local
-                                                    (IntegerConstant 0 (Integer 4))
-                                                    (IntegerConstant 0 (Integer 4))
+                                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                                    (IntegerConstant 0 (Integer 4) Decimal)
                                                     Save
                                                     (Integer 4)
                                                     ()
@@ -1097,8 +1097,8 @@
                                                     month
                                                     []
                                                     Local
-                                                    (IntegerConstant 0 (Integer 4))
-                                                    (IntegerConstant 0 (Integer 4))
+                                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                                    (IntegerConstant 0 (Integer 4) Decimal)
                                                     Save
                                                     (Integer 4)
                                                     ()
@@ -1124,8 +1124,8 @@
                                                     year
                                                     []
                                                     Local
-                                                    (IntegerConstant 0 (Integer 4))
-                                                    (IntegerConstant 0 (Integer 4))
+                                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                                    (IntegerConstant 0 (Integer 4) Decimal)
                                                     Save
                                                     (Integer 4)
                                                     ()
@@ -1242,8 +1242,8 @@
                                                     hour
                                                     []
                                                     Local
-                                                    (IntegerConstant 0 (Integer 4))
-                                                    (IntegerConstant 0 (Integer 4))
+                                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                                    (IntegerConstant 0 (Integer 4) Decimal)
                                                     Save
                                                     (Integer 4)
                                                     ()
@@ -1276,8 +1276,8 @@
                                                     minute
                                                     []
                                                     Local
-                                                    (IntegerConstant 0 (Integer 4))
-                                                    (IntegerConstant 0 (Integer 4))
+                                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                                    (IntegerConstant 0 (Integer 4) Decimal)
                                                     Save
                                                     (Integer 4)
                                                     ()
@@ -1292,8 +1292,8 @@
                                                     second
                                                     []
                                                     Local
-                                                    (IntegerConstant 0 (Integer 4))
-                                                    (IntegerConstant 0 (Integer 4))
+                                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                                    (IntegerConstant 0 (Integer 4) Decimal)
                                                     Save
                                                     (Integer 4)
                                                     ()

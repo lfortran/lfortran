@@ -85,7 +85,7 @@
                             [((Var 6 string))]
                             (Array
                                 (Integer 4)
-                                [((IntegerConstant 1 (Integer 4))
+                                [((IntegerConstant 1 (Integer 4) Decimal)
                                 (StringLen
                                     (Var 6 string)
                                     (Integer 4)
@@ -106,7 +106,7 @@
                             [((Var 6 string))]
                             (Array
                                 (Real 4)
-                                [((IntegerConstant 1 (Integer 4))
+                                [((IntegerConstant 1 (Integer 4) Decimal)
                                 (StringLen
                                     (Var 6 string)
                                     (Integer 4)
@@ -158,7 +158,7 @@
                                                     Default
                                                     (Array
                                                         (Integer 4)
-                                                        [((IntegerConstant 1 (Integer 4))
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (StringLen
                                                             (Var 4 s)
                                                             (Integer 4)
@@ -194,7 +194,7 @@
                                         [(Character 1 -1 ())]
                                         (Array
                                             (Integer 4)
-                                            [((IntegerConstant 1 (Integer 4))
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
                                             (StringLen
                                                 (FunctionParam
                                                     0
@@ -222,7 +222,7 @@
                                     [(DoLoop
                                         ()
                                         ((Var 4 i)
-                                        (IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 1 (Integer 4) Decimal)
                                         (StringLen
                                             (Var 4 s)
                                             (Integer 4)
@@ -239,7 +239,7 @@
                                                 ColMajor
                                                 ()
                                             )
-                                            (IntegerConstant 2 (Integer 4))
+                                            (IntegerConstant 2 (Integer 4) Decimal)
                                             ()
                                         )]
                                         []
@@ -282,7 +282,7 @@
                                                     Default
                                                     (Array
                                                         (Real 4)
-                                                        [((IntegerConstant 1 (Integer 4))
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (StringLen
                                                             (Var 5 s)
                                                             (Integer 4)
@@ -318,7 +318,7 @@
                                         [(Character 1 -1 ())]
                                         (Array
                                             (Real 4)
-                                            [((IntegerConstant 1 (Integer 4))
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
                                             (StringLen
                                                 (FunctionParam
                                                     0
@@ -346,7 +346,7 @@
                                     [(DoLoop
                                         ()
                                         ((Var 5 i)
-                                        (IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 1 (Integer 4) Decimal)
                                         (StringLen
                                             (Var 5 s)
                                             (Integer 4)

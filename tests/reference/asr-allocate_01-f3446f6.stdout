@@ -302,7 +302,7 @@
                                     [(Assignment
                                         (Var 4 r)
                                         (Cast
-                                            (IntegerConstant 0 (Integer 4))
+                                            (IntegerConstant 0 (Integer 4) Decimal)
                                             IntegerToComplex
                                             (Complex 4)
                                             (ComplexConstant
@@ -318,14 +318,14 @@
                                         ((Var 4 i)
                                         (ArrayBound
                                             (Var 4 c)
-                                            (IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 1 (Integer 4) Decimal)
                                             (Integer 4)
                                             LBound
                                             ()
                                         )
                                         (ArrayBound
                                             (Var 4 c)
-                                            (IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 1 (Integer 4) Decimal)
                                             (Integer 4)
                                             UBound
                                             ()
@@ -336,14 +336,14 @@
                                             ((Var 4 j)
                                             (ArrayBound
                                                 (Var 4 c)
-                                                (IntegerConstant 2 (Integer 4))
+                                                (IntegerConstant 2 (Integer 4) Decimal)
                                                 (Integer 4)
                                                 LBound
                                                 ()
                                             )
                                             (ArrayBound
                                                 (Var 4 c)
-                                                (IntegerConstant 2 (Integer 4))
+                                                (IntegerConstant 2 (Integer 4) Decimal)
                                                 (Integer 4)
                                                 UBound
                                                 ()
@@ -354,14 +354,14 @@
                                                 ((Var 4 k)
                                                 (ArrayBound
                                                     (Var 4 c)
-                                                    (IntegerConstant 3 (Integer 4))
+                                                    (IntegerConstant 3 (Integer 4) Decimal)
                                                     (Integer 4)
                                                     LBound
                                                     ()
                                                 )
                                                 (ArrayBound
                                                     (Var 4 c)
-                                                    (IntegerConstant 3 (Integer 4))
+                                                    (IntegerConstant 3 (Integer 4) Decimal)
                                                     (Integer 4)
                                                     UBound
                                                     ()
@@ -612,7 +612,7 @@
                                         [((Var 3 c_copy)
                                         [((ArrayBound
                                             (Var 3 a)
-                                            (IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 1 (Integer 4) Decimal)
                                             (Integer 4)
                                             LBound
                                             ()
@@ -621,7 +621,7 @@
                                             (IntegerBinOp
                                                 (ArrayBound
                                                     (Var 3 a)
-                                                    (IntegerConstant 1 (Integer 4))
+                                                    (IntegerConstant 1 (Integer 4) Decimal)
                                                     (Integer 4)
                                                     UBound
                                                     ()
@@ -629,7 +629,7 @@
                                                 Sub
                                                 (ArrayBound
                                                     (Var 3 a)
-                                                    (IntegerConstant 1 (Integer 4))
+                                                    (IntegerConstant 1 (Integer 4) Decimal)
                                                     (Integer 4)
                                                     LBound
                                                     ()
@@ -638,13 +638,13 @@
                                                 ()
                                             )
                                             Add
-                                            (IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 1 (Integer 4) Decimal)
                                             (Integer 4)
                                             ()
                                         ))
                                         ((ArrayBound
                                             (Var 3 b)
-                                            (IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 1 (Integer 4) Decimal)
                                             (Integer 4)
                                             LBound
                                             ()
@@ -653,7 +653,7 @@
                                             (IntegerBinOp
                                                 (ArrayBound
                                                     (Var 3 b)
-                                                    (IntegerConstant 1 (Integer 4))
+                                                    (IntegerConstant 1 (Integer 4) Decimal)
                                                     (Integer 4)
                                                     UBound
                                                     ()
@@ -661,7 +661,7 @@
                                                 Sub
                                                 (ArrayBound
                                                     (Var 3 b)
-                                                    (IntegerConstant 1 (Integer 4))
+                                                    (IntegerConstant 1 (Integer 4) Decimal)
                                                     (Integer 4)
                                                     LBound
                                                     ()
@@ -670,13 +670,13 @@
                                                 ()
                                             )
                                             Add
-                                            (IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 1 (Integer 4) Decimal)
                                             (Integer 4)
                                             ()
                                         ))
                                         ((ArrayBound
                                             (Var 3 b)
-                                            (IntegerConstant 2 (Integer 4))
+                                            (IntegerConstant 2 (Integer 4) Decimal)
                                             (Integer 4)
                                             LBound
                                             ()
@@ -685,7 +685,7 @@
                                             (IntegerBinOp
                                                 (ArrayBound
                                                     (Var 3 b)
-                                                    (IntegerConstant 2 (Integer 4))
+                                                    (IntegerConstant 2 (Integer 4) Decimal)
                                                     (Integer 4)
                                                     UBound
                                                     ()
@@ -693,7 +693,7 @@
                                                 Sub
                                                 (ArrayBound
                                                     (Var 3 b)
-                                                    (IntegerConstant 2 (Integer 4))
+                                                    (IntegerConstant 2 (Integer 4) Decimal)
                                                     (Integer 4)
                                                     LBound
                                                     ()
@@ -702,7 +702,7 @@
                                                 ()
                                             )
                                             Add
-                                            (IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 1 (Integer 4) Decimal)
                                             (Integer 4)
                                             ()
                                         ))]
@@ -716,7 +716,7 @@
                                         [((Var 3 c)
                                         [((ArrayBound
                                             (Var 3 a)
-                                            (IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 1 (Integer 4) Decimal)
                                             (Integer 4)
                                             LBound
                                             ()
@@ -725,7 +725,7 @@
                                             (IntegerBinOp
                                                 (ArrayBound
                                                     (Var 3 a)
-                                                    (IntegerConstant 1 (Integer 4))
+                                                    (IntegerConstant 1 (Integer 4) Decimal)
                                                     (Integer 4)
                                                     UBound
                                                     ()
@@ -733,7 +733,7 @@
                                                 Sub
                                                 (ArrayBound
                                                     (Var 3 a)
-                                                    (IntegerConstant 1 (Integer 4))
+                                                    (IntegerConstant 1 (Integer 4) Decimal)
                                                     (Integer 4)
                                                     LBound
                                                     ()
@@ -742,13 +742,13 @@
                                                 ()
                                             )
                                             Add
-                                            (IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 1 (Integer 4) Decimal)
                                             (Integer 4)
                                             ()
                                         ))
                                         ((ArrayBound
                                             (Var 3 b)
-                                            (IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 1 (Integer 4) Decimal)
                                             (Integer 4)
                                             LBound
                                             ()
@@ -757,7 +757,7 @@
                                             (IntegerBinOp
                                                 (ArrayBound
                                                     (Var 3 b)
-                                                    (IntegerConstant 1 (Integer 4))
+                                                    (IntegerConstant 1 (Integer 4) Decimal)
                                                     (Integer 4)
                                                     UBound
                                                     ()
@@ -765,7 +765,7 @@
                                                 Sub
                                                 (ArrayBound
                                                     (Var 3 b)
-                                                    (IntegerConstant 1 (Integer 4))
+                                                    (IntegerConstant 1 (Integer 4) Decimal)
                                                     (Integer 4)
                                                     LBound
                                                     ()
@@ -774,13 +774,13 @@
                                                 ()
                                             )
                                             Add
-                                            (IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 1 (Integer 4) Decimal)
                                             (Integer 4)
                                             ()
                                         ))
                                         ((ArrayBound
                                             (Var 3 b)
-                                            (IntegerConstant 2 (Integer 4))
+                                            (IntegerConstant 2 (Integer 4) Decimal)
                                             (Integer 4)
                                             LBound
                                             ()
@@ -789,7 +789,7 @@
                                             (IntegerBinOp
                                                 (ArrayBound
                                                     (Var 3 b)
-                                                    (IntegerConstant 2 (Integer 4))
+                                                    (IntegerConstant 2 (Integer 4) Decimal)
                                                     (Integer 4)
                                                     UBound
                                                     ()
@@ -797,7 +797,7 @@
                                                 Sub
                                                 (ArrayBound
                                                     (Var 3 b)
-                                                    (IntegerConstant 2 (Integer 4))
+                                                    (IntegerConstant 2 (Integer 4) Decimal)
                                                     (Integer 4)
                                                     LBound
                                                     ()
@@ -806,7 +806,7 @@
                                                 ()
                                             )
                                             Add
-                                            (IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 1 (Integer 4) Decimal)
                                             (Integer 4)
                                             ()
                                         ))]
@@ -821,14 +821,14 @@
                                         ((Var 3 i)
                                         (ArrayBound
                                             (Var 3 a)
-                                            (IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 1 (Integer 4) Decimal)
                                             (Integer 4)
                                             LBound
                                             ()
                                         )
                                         (ArrayBound
                                             (Var 3 a)
-                                            (IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 1 (Integer 4) Decimal)
                                             (Integer 4)
                                             UBound
                                             ()
@@ -839,14 +839,14 @@
                                             ((Var 3 j)
                                             (ArrayBound
                                                 (Var 3 b)
-                                                (IntegerConstant 1 (Integer 4))
+                                                (IntegerConstant 1 (Integer 4) Decimal)
                                                 (Integer 4)
                                                 LBound
                                                 ()
                                             )
                                             (ArrayBound
                                                 (Var 3 b)
-                                                (IntegerConstant 1 (Integer 4))
+                                                (IntegerConstant 1 (Integer 4) Decimal)
                                                 (Integer 4)
                                                 UBound
                                                 ()
@@ -857,14 +857,14 @@
                                                 ((Var 3 k)
                                                 (ArrayBound
                                                     (Var 3 b)
-                                                    (IntegerConstant 2 (Integer 4))
+                                                    (IntegerConstant 2 (Integer 4) Decimal)
                                                     (Integer 4)
                                                     LBound
                                                     ()
                                                 )
                                                 (ArrayBound
                                                     (Var 3 b)
-                                                    (IntegerConstant 2 (Integer 4))
+                                                    (IntegerConstant 2 (Integer 4) Decimal)
                                                     (Integer 4)
                                                     UBound
                                                     ()
@@ -1001,16 +1001,16 @@
                     []
                     [(Assignment
                         (Var 2 n)
-                        (IntegerConstant 10 (Integer 4))
+                        (IntegerConstant 10 (Integer 4) Decimal)
                         ()
                     )
                     (Allocate
                         [((Var 2 a)
-                        [((IntegerConstant 5 (Integer 4))
+                        [((IntegerConstant 5 (Integer 4) Decimal)
                         (IntegerBinOp
                             (Var 2 n)
                             Add
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             (Integer 4)
                             ()
                         ))]
@@ -1026,7 +1026,7 @@
                         (IntegerBinOp
                             (IntegerBinOp
                                 (IntegerBinOp
-                                    (IntegerConstant 2 (Integer 4))
+                                    (IntegerConstant 2 (Integer 4) Decimal)
                                     Mul
                                     (Var 2 n)
                                     (Integer 4)
@@ -1038,7 +1038,7 @@
                                 ()
                             )
                             Add
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             (Integer 4)
                             ()
                         ))
@@ -1046,7 +1046,7 @@
                         (IntegerBinOp
                             (IntegerBinOp
                                 (IntegerBinOp
-                                    (IntegerConstant 3 (Integer 4))
+                                    (IntegerConstant 3 (Integer 4) Decimal)
                                     Mul
                                     (Var 2 n)
                                     (Integer 4)
@@ -1058,7 +1058,7 @@
                                 ()
                             )
                             Add
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             (Integer 4)
                             ()
                         ))]
@@ -1080,7 +1080,7 @@
                             (IntegerBinOp
                                 (Var 2 n)
                                 Add
-                                (IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 1 (Integer 4) Decimal)
                                 (Integer 4)
                                 ()
                             )
@@ -1105,21 +1105,21 @@
                                 (IntegerBinOp
                                     (Var 2 n)
                                     Add
-                                    (IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4) Decimal)
                                     (Integer 4)
                                     ()
                                 )
                                 Mul
                                 (IntegerBinOp
                                     (IntegerBinOp
-                                        (IntegerConstant 2 (Integer 4))
+                                        (IntegerConstant 2 (Integer 4) Decimal)
                                         Mul
                                         (Var 2 n)
                                         (Integer 4)
                                         ()
                                     )
                                     Add
-                                    (IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4) Decimal)
                                     (Integer 4)
                                     ()
                                 )
@@ -1139,14 +1139,14 @@
                         ((Var 2 i)
                         (ArrayBound
                             (Var 2 a)
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             (Integer 4)
                             LBound
                             ()
                         )
                         (ArrayBound
                             (Var 2 a)
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             (Integer 4)
                             UBound
                             ()
@@ -1172,14 +1172,14 @@
                         ((Var 2 i)
                         (ArrayBound
                             (Var 2 b)
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             (Integer 4)
                             LBound
                             ()
                         )
                         (ArrayBound
                             (Var 2 b)
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             (Integer 4)
                             UBound
                             ()
@@ -1190,14 +1190,14 @@
                             ((Var 2 j)
                             (ArrayBound
                                 (Var 2 b)
-                                (IntegerConstant 2 (Integer 4))
+                                (IntegerConstant 2 (Integer 4) Decimal)
                                 (Integer 4)
                                 LBound
                                 ()
                             )
                             (ArrayBound
                                 (Var 2 b)
-                                (IntegerConstant 2 (Integer 4))
+                                (IntegerConstant 2 (Integer 4) Decimal)
                                 (Integer 4)
                                 UBound
                                 ()
@@ -1250,13 +1250,13 @@
                             (IntegerCompare
                                 (ArrayBound
                                     (Var 2 c)
-                                    (IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4) Decimal)
                                     (Integer 4)
                                     LBound
                                     ()
                                 )
                                 NotEq
-                                (IntegerConstant 5 (Integer 4))
+                                (IntegerConstant 5 (Integer 4) Decimal)
                                 (Logical 4)
                                 ()
                             )
@@ -1264,7 +1264,7 @@
                             (IntegerCompare
                                 (ArrayBound
                                     (Var 2 c)
-                                    (IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4) Decimal)
                                     (Integer 4)
                                     UBound
                                     ()
@@ -1273,7 +1273,7 @@
                                 (IntegerBinOp
                                     (Var 2 n)
                                     Add
-                                    (IntegerConstant 5 (Integer 4))
+                                    (IntegerConstant 5 (Integer 4) Decimal)
                                     (Integer 4)
                                     ()
                                 )
@@ -1293,7 +1293,7 @@
                             (IntegerCompare
                                 (ArrayBound
                                     (Var 2 c)
-                                    (IntegerConstant 2 (Integer 4))
+                                    (IntegerConstant 2 (Integer 4) Decimal)
                                     (Integer 4)
                                     LBound
                                     ()
@@ -1307,14 +1307,14 @@
                             (IntegerCompare
                                 (ArrayBound
                                     (Var 2 c)
-                                    (IntegerConstant 2 (Integer 4))
+                                    (IntegerConstant 2 (Integer 4) Decimal)
                                     (Integer 4)
                                     UBound
                                     ()
                                 )
                                 NotEq
                                 (IntegerBinOp
-                                    (IntegerConstant 2 (Integer 4))
+                                    (IntegerConstant 2 (Integer 4) Decimal)
                                     Mul
                                     (Var 2 n)
                                     (Integer 4)
@@ -1336,7 +1336,7 @@
                             (IntegerCompare
                                 (ArrayBound
                                     (Var 2 c)
-                                    (IntegerConstant 3 (Integer 4))
+                                    (IntegerConstant 3 (Integer 4) Decimal)
                                     (Integer 4)
                                     LBound
                                     ()
@@ -1350,14 +1350,14 @@
                             (IntegerCompare
                                 (ArrayBound
                                     (Var 2 c)
-                                    (IntegerConstant 3 (Integer 4))
+                                    (IntegerConstant 3 (Integer 4) Decimal)
                                     (Integer 4)
                                     UBound
                                     ()
                                 )
                                 NotEq
                                 (IntegerBinOp
-                                    (IntegerConstant 3 (Integer 4))
+                                    (IntegerConstant 3 (Integer 4) Decimal)
                                     Mul
                                     (Var 2 n)
                                     (Integer 4)
@@ -1379,14 +1379,14 @@
                         ((Var 2 i)
                         (ArrayBound
                             (Var 2 a)
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             (Integer 4)
                             LBound
                             ()
                         )
                         (ArrayBound
                             (Var 2 a)
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             (Integer 4)
                             UBound
                             ()
@@ -1420,14 +1420,14 @@
                         ((Var 2 i)
                         (ArrayBound
                             (Var 2 b)
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             (Integer 4)
                             LBound
                             ()
                         )
                         (ArrayBound
                             (Var 2 b)
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             (Integer 4)
                             UBound
                             ()
@@ -1438,14 +1438,14 @@
                             ((Var 2 j)
                             (ArrayBound
                                 (Var 2 b)
-                                (IntegerConstant 2 (Integer 4))
+                                (IntegerConstant 2 (Integer 4) Decimal)
                                 (Integer 4)
                                 LBound
                                 ()
                             )
                             (ArrayBound
                                 (Var 2 b)
-                                (IntegerConstant 2 (Integer 4))
+                                (IntegerConstant 2 (Integer 4) Decimal)
                                 (Integer 4)
                                 UBound
                                 ()
@@ -1495,14 +1495,14 @@
                         ((Var 2 i)
                         (ArrayBound
                             (Var 2 c)
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             (Integer 4)
                             LBound
                             ()
                         )
                         (ArrayBound
                             (Var 2 c)
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             (Integer 4)
                             UBound
                             ()
@@ -1513,14 +1513,14 @@
                             ((Var 2 j)
                             (ArrayBound
                                 (Var 2 c)
-                                (IntegerConstant 2 (Integer 4))
+                                (IntegerConstant 2 (Integer 4) Decimal)
                                 (Integer 4)
                                 LBound
                                 ()
                             )
                             (ArrayBound
                                 (Var 2 c)
-                                (IntegerConstant 2 (Integer 4))
+                                (IntegerConstant 2 (Integer 4) Decimal)
                                 (Integer 4)
                                 UBound
                                 ()
@@ -1531,14 +1531,14 @@
                                 ((Var 2 k)
                                 (ArrayBound
                                     (Var 2 c)
-                                    (IntegerConstant 3 (Integer 4))
+                                    (IntegerConstant 3 (Integer 4) Decimal)
                                     (Integer 4)
                                     LBound
                                     ()
                                 )
                                 (ArrayBound
                                     (Var 2 c)
-                                    (IntegerConstant 3 (Integer 4))
+                                    (IntegerConstant 3 (Integer 4) Decimal)
                                     (Integer 4)
                                     UBound
                                     ()

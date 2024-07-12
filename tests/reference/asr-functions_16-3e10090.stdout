@@ -489,7 +489,7 @@
                                                         ()
                                                     )
                                                     Div
-                                                    (IntegerConstant 2 (Integer 4))
+                                                    (IntegerConstant 2 (Integer 4) Decimal)
                                                     (Integer 4)
                                                     ()
                                                 )
@@ -511,7 +511,7 @@
                                             (IntegerBinOp
                                                 (Var 6 low)
                                                 Add
-                                                (IntegerConstant 1 (Integer 4))
+                                                (IntegerConstant 1 (Integer 4) Decimal)
                                                 (Integer 4)
                                                 ()
                                             )
@@ -568,7 +568,7 @@
                                                     (IntegerBinOp
                                                         (Var 6 last)
                                                         Add
-                                                        (IntegerConstant 1 (Integer 4))
+                                                        (IntegerConstant 1 (Integer 4) Decimal)
                                                         (Integer 4)
                                                         ()
                                                     )
@@ -662,7 +662,7 @@
                                             ((IntegerBinOp
                                                 (Var 6 pivot)
                                                 Sub
-                                                (IntegerConstant 1 (Integer 4))
+                                                (IntegerConstant 1 (Integer 4) Decimal)
                                                 (Integer 4)
                                                 ()
                                             ))
@@ -701,7 +701,7 @@
                                             ((IntegerBinOp
                                                 (Var 6 pivot)
                                                 Add
-                                                (IntegerConstant 1 (Integer 4))
+                                                (IntegerConstant 1 (Integer 4) Decimal)
                                                 (Integer 4)
                                                 ()
                                             ))
@@ -967,7 +967,7 @@
                                     (Var 5 compare)]
                                     [(Assignment
                                         (Var 5 low)
-                                        (IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 1 (Integer 4) Decimal)
                                         ()
                                     )
                                     (Assignment
@@ -987,7 +987,7 @@
                                     )
                                     (Allocate
                                         [((Var 5 indexarray)
-                                        [((IntegerConstant 1 (Integer 4))
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 5 high))]
                                         ()
                                         ())]
@@ -1005,7 +1005,7 @@
                                             )]
                                             (Array
                                                 (Integer 4)
-                                                [((IntegerConstant 1 (Integer 4))
+                                                [((IntegerConstant 1 (Integer 4) Decimal)
                                                 ())]
                                                 DescriptorArray
                                             )

@@ -312,7 +312,7 @@
                                                         (Var 6 res)
                                                         (RealBinOp
                                                             (Cast
-                                                                (IntegerConstant 2 (Integer 4))
+                                                                (IntegerConstant 2 (Integer 4) Decimal)
                                                                 IntegerToReal
                                                                 (Real 4)
                                                                 (RealConstant
@@ -445,7 +445,7 @@
                                     []
                                     Local
                                     (Cast
-                                        (IntegerConstant 0 (Integer 4))
+                                        (IntegerConstant 0 (Integer 4) Decimal)
                                         IntegerToReal
                                         (Real 4)
                                         (RealConstant

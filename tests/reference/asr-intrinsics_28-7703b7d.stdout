@@ -13,8 +13,8 @@
                                     a
                                     []
                                     Local
-                                    (IntegerConstant 10 (Integer 4))
-                                    (IntegerConstant 10 (Integer 4))
+                                    (IntegerConstant 10 (Integer 4) Decimal)
+                                    (IntegerConstant 10 (Integer 4) Decimal)
                                     Parameter
                                     (Integer 4)
                                     ()
@@ -30,11 +30,11 @@
                                     []
                                     Local
                                     (IntegerUnaryMinus
-                                        (IntegerConstant 20 (Integer 4))
+                                        (IntegerConstant 20 (Integer 4) Decimal)
                                         (Integer 4)
-                                        (IntegerConstant -20 (Integer 4))
+                                        (IntegerConstant -20 (Integer 4) Decimal)
                                     )
-                                    (IntegerConstant -20 (Integer 4))
+                                    (IntegerConstant -20 (Integer 4) Decimal)
                                     Parameter
                                     (Integer 4)
                                     ()
@@ -49,8 +49,8 @@
                                     c
                                     []
                                     Local
-                                    (IntegerConstant 30 (Integer 4))
-                                    (IntegerConstant 30 (Integer 4))
+                                    (IntegerConstant 30 (Integer 4) Decimal)
+                                    (IntegerConstant 30 (Integer 4) Decimal)
                                     Parameter
                                     (Integer 4)
                                     ()
@@ -66,11 +66,11 @@
                                     []
                                     Local
                                     (IntegerUnaryMinus
-                                        (IntegerConstant 40 (Integer 4))
+                                        (IntegerConstant 40 (Integer 4) Decimal)
                                         (Integer 4)
-                                        (IntegerConstant -40 (Integer 4))
+                                        (IntegerConstant -40 (Integer 4) Decimal)
                                     )
-                                    (IntegerConstant -40 (Integer 4))
+                                    (IntegerConstant -40 (Integer 4) Decimal)
                                     Parameter
                                     (Integer 4)
                                     ()
@@ -85,8 +85,8 @@
                                     e
                                     []
                                     Local
-                                    (IntegerConstant 0 (Integer 4))
-                                    (IntegerConstant 0 (Integer 4))
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
                                     Parameter
                                     (Integer 4)
                                     ()
@@ -101,8 +101,8 @@
                                     f
                                     []
                                     Local
-                                    (IntegerConstant 50 (Integer 4))
-                                    (IntegerConstant 50 (Integer 4))
+                                    (IntegerConstant 50 (Integer 4) Decimal)
+                                    (IntegerConstant 50 (Integer 4) Decimal)
                                     Parameter
                                     (Integer 4)
                                     ()
@@ -126,13 +126,13 @@
                                 (Var 2 f)]
                                 0
                                 (Integer 4)
-                                (IntegerConstant -40 (Integer 4))
+                                (IntegerConstant -40 (Integer 4) Decimal)
                             )
                             NotEq
                             (IntegerUnaryMinus
-                                (IntegerConstant 40 (Integer 4))
+                                (IntegerConstant 40 (Integer 4) Decimal)
                                 (Integer 4)
-                                (IntegerConstant -40 (Integer 4))
+                                (IntegerConstant -40 (Integer 4) Decimal)
                             )
                             (Logical 4)
                             (LogicalConstant
@@ -157,10 +157,10 @@
                                 (Var 2 f)]
                                 0
                                 (Integer 4)
-                                (IntegerConstant 50 (Integer 4))
+                                (IntegerConstant 50 (Integer 4) Decimal)
                             )
                             NotEq
-                            (IntegerConstant 50 (Integer 4))
+                            (IntegerConstant 50 (Integer 4) Decimal)
                             (Logical 4)
                             (LogicalConstant
                                 .false.
@@ -180,10 +180,10 @@
                                 (Var 2 b)]
                                 0
                                 (Integer 4)
-                                (IntegerConstant 10 (Integer 4))
+                                (IntegerConstant 10 (Integer 4) Decimal)
                             )
                             NotEq
-                            (IntegerConstant 10 (Integer 4))
+                            (IntegerConstant 10 (Integer 4) Decimal)
                             (Logical 4)
                             (LogicalConstant
                                 .false.
@@ -203,13 +203,13 @@
                                 (Var 2 b)]
                                 0
                                 (Integer 4)
-                                (IntegerConstant -20 (Integer 4))
+                                (IntegerConstant -20 (Integer 4) Decimal)
                             )
                             NotEq
                             (IntegerUnaryMinus
-                                (IntegerConstant 20 (Integer 4))
+                                (IntegerConstant 20 (Integer 4) Decimal)
                                 (Integer 4)
-                                (IntegerConstant -20 (Integer 4))
+                                (IntegerConstant -20 (Integer 4) Decimal)
                             )
                             (Logical 4)
                             (LogicalConstant
@@ -231,10 +231,10 @@
                                 (Var 2 c)]
                                 0
                                 (Integer 4)
-                                (IntegerConstant 30 (Integer 4))
+                                (IntegerConstant 30 (Integer 4) Decimal)
                             )
                             NotEq
-                            (IntegerConstant 30 (Integer 4))
+                            (IntegerConstant 30 (Integer 4) Decimal)
                             (Logical 4)
                             (LogicalConstant
                                 .false.

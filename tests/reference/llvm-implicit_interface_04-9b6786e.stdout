@@ -171,6 +171,9 @@ ifcont:                                           ; preds = %else, %then
   %23 = add i32 %22, 1
   store i32 %23, i32* %__1_k, align 4
   call void @driver(void (i32*, i32*, i32*)* @implicit_interface_check, i32* getelementptr inbounds ([3 x i32], [3 x i32]* @main.b, i32 0, i32 0), i32* @main.n)
+  br label %return
+
+return:                                           ; preds = %ifcont
   ret i32 0
 }
 

@@ -10,6 +10,9 @@ define i32 @main(i32 %0, i8** %1) {
   store float 1.000000e+00, float* %r, align 4
   store float 2.000000e+00, float* %r, align 4
   store float 3.000000e+00, float* %r, align 4
+  br label %return
+
+return:                                           ; preds = %.entry
   ret i32 0
 }
 

@@ -18,8 +18,8 @@
                                     Default
                                     (Array
                                         (Real 4)
-                                        [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 3 (Integer 4)))]
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 3 (Integer 4) Decimal))]
                                         FixedSizeArray
                                     )
                                     ()
@@ -96,7 +96,7 @@
                                             (Var 4 a)
                                             Gt
                                             (Cast
-                                                (IntegerConstant 0 (Integer 4))
+                                                (IntegerConstant 0 (Integer 4) Decimal)
                                                 IntegerToReal
                                                 (Real 4)
                                                 (RealConstant
@@ -236,7 +236,7 @@
                                     (Assignment
                                         (Var 3 r)
                                         (Cast
-                                            (IntegerConstant 0 (Integer 4))
+                                            (IntegerConstant 0 (Integer 4) Decimal)
                                             IntegerToReal
                                             (Real 4)
                                             (RealConstant
@@ -249,7 +249,7 @@
                                     (DoLoop
                                         ()
                                         ((Var 3 i)
-                                        (IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 1 (Integer 4) Decimal)
                                         (ArraySize
                                             (Var 3 a)
                                             ()
@@ -291,14 +291,14 @@
                         (ArrayItem
                             (Var 2 a)
                             [(()
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             ())]
                             (Real 4)
                             ColMajor
                             ()
                         )
                         (Cast
-                            (IntegerConstant 3 (Integer 4))
+                            (IntegerConstant 3 (Integer 4) Decimal)
                             IntegerToReal
                             (Real 4)
                             (RealConstant
@@ -312,14 +312,14 @@
                         (ArrayItem
                             (Var 2 a)
                             [(()
-                            (IntegerConstant 2 (Integer 4))
+                            (IntegerConstant 2 (Integer 4) Decimal)
                             ())]
                             (Real 4)
                             ColMajor
                             ()
                         )
                         (Cast
-                            (IntegerConstant 2 (Integer 4))
+                            (IntegerConstant 2 (Integer 4) Decimal)
                             IntegerToReal
                             (Real 4)
                             (RealConstant
@@ -333,14 +333,14 @@
                         (ArrayItem
                             (Var 2 a)
                             [(()
-                            (IntegerConstant 3 (Integer 4))
+                            (IntegerConstant 3 (Integer 4) Decimal)
                             ())]
                             (Real 4)
                             ColMajor
                             ()
                         )
                         (Cast
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             IntegerToReal
                             (Real 4)
                             (RealConstant
@@ -361,8 +361,8 @@
                                 DescriptorArray
                                 (Array
                                     (Real 4)
-                                    [((IntegerConstant 1 (Integer 4))
-                                    (IntegerConstant 3 (Integer 4)))]
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 3 (Integer 4) Decimal))]
                                     DescriptorArray
                                 )
                                 ()
@@ -382,7 +382,7 @@
                                     (Var 2 b)
                                     Sub
                                     (Cast
-                                        (IntegerConstant 6 (Integer 4))
+                                        (IntegerConstant 6 (Integer 4) Decimal)
                                         IntegerToReal
                                         (Real 4)
                                         (RealConstant

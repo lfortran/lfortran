@@ -16,11 +16,11 @@
                                     (TypeInquiry
                                         Range
                                         (Integer 4)
-                                        (IntegerConstant 11 (Integer 4))
+                                        (IntegerConstant 11 (Integer 4) Decimal)
                                         (Integer 4)
-                                        (IntegerConstant 9 (Integer 4))
+                                        (IntegerConstant 9 (Integer 4) Decimal)
                                     )
-                                    (IntegerConstant 9 (Integer 4))
+                                    (IntegerConstant 9 (Integer 4) Decimal)
                                     Parameter
                                     (Integer 4)
                                     ()
@@ -43,9 +43,9 @@
                                             (Real 4)
                                         )
                                         (Integer 4)
-                                        (IntegerConstant 37 (Integer 4))
+                                        (IntegerConstant 37 (Integer 4) Decimal)
                                     )
-                                    (IntegerConstant 37 (Integer 4))
+                                    (IntegerConstant 37 (Integer 4) Decimal)
                                     Parameter
                                     (Integer 4)
                                     ()
@@ -64,8 +64,8 @@
                                         Range
                                         (Complex 4)
                                         (ComplexConstructor
-                                            (IntegerConstant 1 (Integer 4))
-                                            (IntegerConstant 2 (Integer 4))
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 2 (Integer 4) Decimal)
                                             (Complex 4)
                                             (ComplexConstant
                                                 1.000000
@@ -74,9 +74,9 @@
                                             )
                                         )
                                         (Integer 4)
-                                        (IntegerConstant 37 (Integer 4))
+                                        (IntegerConstant 37 (Integer 4) Decimal)
                                     )
-                                    (IntegerConstant 37 (Integer 4))
+                                    (IntegerConstant 37 (Integer 4) Decimal)
                                     Parameter
                                     (Integer 4)
                                     ()
@@ -95,8 +95,8 @@
                                         Range
                                         (Array
                                             (Integer 4)
-                                            [((IntegerConstant 1 (Integer 4))
-                                            (IntegerConstant 3 (Integer 4)))]
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 3 (Integer 4) Decimal))]
                                             FixedSizeArray
                                         )
                                         (ArrayConstant
@@ -104,16 +104,16 @@
                                             [1, 21, 13]
                                             (Array
                                                 (Integer 4)
-                                                [((IntegerConstant 1 (Integer 4))
-                                                (IntegerConstant 3 (Integer 4)))]
+                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                (IntegerConstant 3 (Integer 4) Decimal))]
                                                 FixedSizeArray
                                             )
                                             ColMajor
                                         )
                                         (Integer 4)
-                                        (IntegerConstant 9 (Integer 4))
+                                        (IntegerConstant 9 (Integer 4) Decimal)
                                     )
-                                    (IntegerConstant 9 (Integer 4))
+                                    (IntegerConstant 9 (Integer 4) Decimal)
                                     Parameter
                                     (Integer 4)
                                     ()
@@ -132,8 +132,8 @@
                                         Range
                                         (Array
                                             (Real 4)
-                                            [((IntegerConstant 1 (Integer 4))
-                                            (IntegerConstant 3 (Integer 4)))]
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 3 (Integer 4) Decimal))]
                                             FixedSizeArray
                                         )
                                         (ArrayConstant
@@ -141,16 +141,16 @@
                                             [1.00000000e+00, 2.10000000e+01, 1.30000000e+01]
                                             (Array
                                                 (Real 4)
-                                                [((IntegerConstant 1 (Integer 4))
-                                                (IntegerConstant 3 (Integer 4)))]
+                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                (IntegerConstant 3 (Integer 4) Decimal))]
                                                 FixedSizeArray
                                             )
                                             ColMajor
                                         )
                                         (Integer 4)
-                                        (IntegerConstant 37 (Integer 4))
+                                        (IntegerConstant 37 (Integer 4) Decimal)
                                     )
-                                    (IntegerConstant 37 (Integer 4))
+                                    (IntegerConstant 37 (Integer 4) Decimal)
                                     Parameter
                                     (Integer 4)
                                     ()
@@ -169,14 +169,14 @@
                                         Range
                                         (Array
                                             (Complex 4)
-                                            [((IntegerConstant 1 (Integer 4))
-                                            (IntegerConstant 3 (Integer 4)))]
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 3 (Integer 4) Decimal))]
                                             FixedSizeArray
                                         )
                                         (ArrayConstructor
                                             [(ComplexConstructor
-                                                (IntegerConstant 1 (Integer 4))
-                                                (IntegerConstant 2 (Integer 4))
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                (IntegerConstant 2 (Integer 4) Decimal)
                                                 (Complex 4)
                                                 (ComplexConstant
                                                     1.000000
@@ -185,8 +185,8 @@
                                                 )
                                             )
                                             (ComplexConstructor
-                                                (IntegerConstant 31 (Integer 4))
-                                                (IntegerConstant 4 (Integer 4))
+                                                (IntegerConstant 31 (Integer 4) Decimal)
+                                                (IntegerConstant 4 (Integer 4) Decimal)
                                                 (Complex 4)
                                                 (ComplexConstant
                                                     31.000000
@@ -195,8 +195,8 @@
                                                 )
                                             )
                                             (ComplexConstructor
-                                                (IntegerConstant 51 (Integer 4))
-                                                (IntegerConstant 62 (Integer 4))
+                                                (IntegerConstant 51 (Integer 4) Decimal)
+                                                (IntegerConstant 62 (Integer 4) Decimal)
                                                 (Complex 4)
                                                 (ComplexConstant
                                                     51.000000
@@ -206,8 +206,8 @@
                                             )]
                                             (Array
                                                 (Complex 4)
-                                                [((IntegerConstant 1 (Integer 4))
-                                                (IntegerConstant 3 (Integer 4)))]
+                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                (IntegerConstant 3 (Integer 4) Decimal))]
                                                 FixedSizeArray
                                             )
                                             (ArrayConstant
@@ -215,8 +215,8 @@
                                                 [(1.00000000e+00, 2.00000000e+00), (3.10000000e+01, 4.00000000e+00), (5.10000000e+01, 6.20000000e+01)]
                                                 (Array
                                                     (Complex 4)
-                                                    [((IntegerConstant 1 (Integer 4))
-                                                    (IntegerConstant 3 (Integer 4)))]
+                                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                                    (IntegerConstant 3 (Integer 4) Decimal))]
                                                     FixedSizeArray
                                                 )
                                                 ColMajor
@@ -224,9 +224,9 @@
                                             ColMajor
                                         )
                                         (Integer 4)
-                                        (IntegerConstant 37 (Integer 4))
+                                        (IntegerConstant 37 (Integer 4) Decimal)
                                     )
-                                    (IntegerConstant 37 (Integer 4))
+                                    (IntegerConstant 37 (Integer 4) Decimal)
                                     Parameter
                                     (Integer 4)
                                     ()
@@ -246,8 +246,8 @@
                                         [1, 21, 13]
                                         (Array
                                             (Integer 4)
-                                            [((IntegerConstant 1 (Integer 4))
-                                            (IntegerConstant 3 (Integer 4)))]
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 3 (Integer 4) Decimal))]
                                             FixedSizeArray
                                         )
                                         ColMajor
@@ -257,8 +257,8 @@
                                         [1, 21, 13]
                                         (Array
                                             (Integer 4)
-                                            [((IntegerConstant 1 (Integer 4))
-                                            (IntegerConstant 3 (Integer 4)))]
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 3 (Integer 4) Decimal))]
                                             FixedSizeArray
                                         )
                                         ColMajor
@@ -266,8 +266,8 @@
                                     Save
                                     (Array
                                         (Integer 4)
-                                        [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 3 (Integer 4)))]
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 3 (Integer 4) Decimal))]
                                         FixedSizeArray
                                     )
                                     ()
@@ -288,8 +288,8 @@
                                             [1.00000000e+00, 2.10000000e+01, 1.30000000e+01]
                                             (Array
                                                 (Real 4)
-                                                [((IntegerConstant 1 (Integer 4))
-                                                (IntegerConstant 3 (Integer 4)))]
+                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                (IntegerConstant 3 (Integer 4) Decimal))]
                                                 FixedSizeArray
                                             )
                                             ColMajor
@@ -297,8 +297,8 @@
                                         RealToReal
                                         (Array
                                             (Real 8)
-                                            [((IntegerConstant 1 (Integer 4))
-                                            (IntegerConstant 3 (Integer 4)))]
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 3 (Integer 4) Decimal))]
                                             FixedSizeArray
                                         )
                                         (ArrayConstant
@@ -306,8 +306,8 @@
                                             [1.0000000000000000e+00, 2.1000000000000000e+01, 1.3000000000000000e+01]
                                             (Array
                                                 (Real 8)
-                                                [((IntegerConstant 1 (Integer 4))
-                                                (IntegerConstant 3 (Integer 4)))]
+                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                (IntegerConstant 3 (Integer 4) Decimal))]
                                                 FixedSizeArray
                                             )
                                             ColMajor
@@ -318,8 +318,8 @@
                                         [1.0000000000000000e+00, 2.1000000000000000e+01, 1.3000000000000000e+01]
                                         (Array
                                             (Real 8)
-                                            [((IntegerConstant 1 (Integer 4))
-                                            (IntegerConstant 3 (Integer 4)))]
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 3 (Integer 4) Decimal))]
                                             FixedSizeArray
                                         )
                                         ColMajor
@@ -327,8 +327,8 @@
                                     Save
                                     (Array
                                         (Real 8)
-                                        [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 3 (Integer 4)))]
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 3 (Integer 4) Decimal))]
                                         FixedSizeArray
                                     )
                                     ()
@@ -345,8 +345,8 @@
                                     Local
                                     (ArrayConstructor
                                         [(ComplexConstructor
-                                            (IntegerConstant 1 (Integer 4))
-                                            (IntegerConstant 2 (Integer 4))
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 2 (Integer 4) Decimal)
                                             (Complex 4)
                                             (ComplexConstant
                                                 1.000000
@@ -355,8 +355,8 @@
                                             )
                                         )
                                         (ComplexConstructor
-                                            (IntegerConstant 31 (Integer 4))
-                                            (IntegerConstant 4 (Integer 4))
+                                            (IntegerConstant 31 (Integer 4) Decimal)
+                                            (IntegerConstant 4 (Integer 4) Decimal)
                                             (Complex 4)
                                             (ComplexConstant
                                                 31.000000
@@ -365,8 +365,8 @@
                                             )
                                         )
                                         (ComplexConstructor
-                                            (IntegerConstant 51 (Integer 4))
-                                            (IntegerConstant 62 (Integer 4))
+                                            (IntegerConstant 51 (Integer 4) Decimal)
+                                            (IntegerConstant 62 (Integer 4) Decimal)
                                             (Complex 4)
                                             (ComplexConstant
                                                 51.000000
@@ -376,8 +376,8 @@
                                         )]
                                         (Array
                                             (Complex 4)
-                                            [((IntegerConstant 1 (Integer 4))
-                                            (IntegerConstant 3 (Integer 4)))]
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 3 (Integer 4) Decimal))]
                                             FixedSizeArray
                                         )
                                         (ArrayConstant
@@ -385,8 +385,8 @@
                                             [(1.00000000e+00, 2.00000000e+00), (3.10000000e+01, 4.00000000e+00), (5.10000000e+01, 6.20000000e+01)]
                                             (Array
                                                 (Complex 4)
-                                                [((IntegerConstant 1 (Integer 4))
-                                                (IntegerConstant 3 (Integer 4)))]
+                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                (IntegerConstant 3 (Integer 4) Decimal))]
                                                 FixedSizeArray
                                             )
                                             ColMajor
@@ -398,8 +398,8 @@
                                         [(1.00000000e+00, 2.00000000e+00), (3.10000000e+01, 4.00000000e+00), (5.10000000e+01, 6.20000000e+01)]
                                         (Array
                                             (Complex 4)
-                                            [((IntegerConstant 1 (Integer 4))
-                                            (IntegerConstant 3 (Integer 4)))]
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 3 (Integer 4) Decimal))]
                                             FixedSizeArray
                                         )
                                         ColMajor
@@ -407,8 +407,8 @@
                                     Save
                                     (Array
                                         (Complex 4)
-                                        [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 3 (Integer 4)))]
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 3 (Integer 4) Decimal))]
                                         FixedSizeArray
                                     )
                                     ()
@@ -576,9 +576,9 @@
                                         (Integer 1)
                                         (Var 2 i3)
                                         (Integer 4)
-                                        (IntegerConstant 2 (Integer 4))
+                                        (IntegerConstant 2 (Integer 4) Decimal)
                                     )
-                                    (IntegerConstant 2 (Integer 4))
+                                    (IntegerConstant 2 (Integer 4) Decimal)
                                     Parameter
                                     (Integer 4)
                                     ()
@@ -598,9 +598,9 @@
                                         (Integer 2)
                                         (Var 2 i4)
                                         (Integer 4)
-                                        (IntegerConstant 4 (Integer 4))
+                                        (IntegerConstant 4 (Integer 4) Decimal)
                                     )
-                                    (IntegerConstant 4 (Integer 4))
+                                    (IntegerConstant 4 (Integer 4) Decimal)
                                     Parameter
                                     (Integer 4)
                                     ()
@@ -621,7 +621,7 @@
                         (IntegerCompare
                             (Var 2 a1)
                             NotEq
-                            (IntegerConstant 9 (Integer 4))
+                            (IntegerConstant 9 (Integer 4) Decimal)
                             (Logical 4)
                             (LogicalConstant
                                 .false.
@@ -642,7 +642,7 @@
                         (IntegerCompare
                             (Var 2 a2)
                             NotEq
-                            (IntegerConstant 37 (Integer 4))
+                            (IntegerConstant 37 (Integer 4) Decimal)
                             (Logical 4)
                             (LogicalConstant
                                 .false.
@@ -663,7 +663,7 @@
                         (IntegerCompare
                             (Var 2 a3)
                             NotEq
-                            (IntegerConstant 37 (Integer 4))
+                            (IntegerConstant 37 (Integer 4) Decimal)
                             (Logical 4)
                             (LogicalConstant
                                 .false.
@@ -684,7 +684,7 @@
                         (IntegerCompare
                             (Var 2 ar1)
                             NotEq
-                            (IntegerConstant 9 (Integer 4))
+                            (IntegerConstant 9 (Integer 4) Decimal)
                             (Logical 4)
                             (LogicalConstant
                                 .false.
@@ -705,7 +705,7 @@
                         (IntegerCompare
                             (Var 2 ar2)
                             NotEq
-                            (IntegerConstant 37 (Integer 4))
+                            (IntegerConstant 37 (Integer 4) Decimal)
                             (Logical 4)
                             (LogicalConstant
                                 .false.
@@ -726,7 +726,7 @@
                         (IntegerCompare
                             (Var 2 ar3)
                             NotEq
-                            (IntegerConstant 37 (Integer 4))
+                            (IntegerConstant 37 (Integer 4) Decimal)
                             (Logical 4)
                             (LogicalConstant
                                 .false.
@@ -744,7 +744,7 @@
                             (Integer 4)
                             (Var 2 ri3)
                             (Integer 4)
-                            (IntegerConstant 9 (Integer 4))
+                            (IntegerConstant 9 (Integer 4) Decimal)
                         )]
                         ()
                         ()
@@ -753,7 +753,7 @@
                         (IntegerCompare
                             (Var 2 ri3)
                             NotEq
-                            (IntegerConstant 2 (Integer 4))
+                            (IntegerConstant 2 (Integer 4) Decimal)
                             (Logical 4)
                             (LogicalConstant
                                 .false.
@@ -771,7 +771,7 @@
                             (Integer 4)
                             (Var 2 ri4)
                             (Integer 4)
-                            (IntegerConstant 9 (Integer 4))
+                            (IntegerConstant 9 (Integer 4) Decimal)
                         )]
                         ()
                         ()
@@ -780,7 +780,7 @@
                         (IntegerCompare
                             (Var 2 ri4)
                             NotEq
-                            (IntegerConstant 4 (Integer 4))
+                            (IntegerConstant 4 (Integer 4) Decimal)
                             (Logical 4)
                             (LogicalConstant
                                 .false.
@@ -798,7 +798,7 @@
                             (Integer 4)
                             (Var 2 i1)
                             (Integer 4)
-                            (IntegerConstant 9 (Integer 4))
+                            (IntegerConstant 9 (Integer 4) Decimal)
                         )]
                         ()
                         ()
@@ -810,10 +810,10 @@
                                 (Integer 4)
                                 (Var 2 i1)
                                 (Integer 4)
-                                (IntegerConstant 9 (Integer 4))
+                                (IntegerConstant 9 (Integer 4) Decimal)
                             )
                             NotEq
-                            (IntegerConstant 9 (Integer 4))
+                            (IntegerConstant 9 (Integer 4) Decimal)
                             (Logical 4)
                             (LogicalConstant
                                 .false.
@@ -831,7 +831,7 @@
                             (Integer 8)
                             (Var 2 i2)
                             (Integer 4)
-                            (IntegerConstant 18 (Integer 4))
+                            (IntegerConstant 18 (Integer 4) Decimal)
                         )]
                         ()
                         ()
@@ -843,10 +843,10 @@
                                 (Integer 8)
                                 (Var 2 i2)
                                 (Integer 4)
-                                (IntegerConstant 18 (Integer 4))
+                                (IntegerConstant 18 (Integer 4) Decimal)
                             )
                             NotEq
-                            (IntegerConstant 18 (Integer 4))
+                            (IntegerConstant 18 (Integer 4) Decimal)
                             (Logical 4)
                             (LogicalConstant
                                 .false.
@@ -864,7 +864,7 @@
                             (Real 4)
                             (Var 2 r1)
                             (Integer 4)
-                            (IntegerConstant 37 (Integer 4))
+                            (IntegerConstant 37 (Integer 4) Decimal)
                         )]
                         ()
                         ()
@@ -876,10 +876,10 @@
                                 (Real 4)
                                 (Var 2 r1)
                                 (Integer 4)
-                                (IntegerConstant 37 (Integer 4))
+                                (IntegerConstant 37 (Integer 4) Decimal)
                             )
                             NotEq
-                            (IntegerConstant 37 (Integer 4))
+                            (IntegerConstant 37 (Integer 4) Decimal)
                             (Logical 4)
                             (LogicalConstant
                                 .false.
@@ -897,7 +897,7 @@
                             (Real 8)
                             (Var 2 r2)
                             (Integer 4)
-                            (IntegerConstant 307 (Integer 4))
+                            (IntegerConstant 307 (Integer 4) Decimal)
                         )]
                         ()
                         ()
@@ -909,10 +909,10 @@
                                 (Real 8)
                                 (Var 2 r2)
                                 (Integer 4)
-                                (IntegerConstant 307 (Integer 4))
+                                (IntegerConstant 307 (Integer 4) Decimal)
                             )
                             NotEq
-                            (IntegerConstant 307 (Integer 4))
+                            (IntegerConstant 307 (Integer 4) Decimal)
                             (Logical 4)
                             (LogicalConstant
                                 .false.
@@ -930,7 +930,7 @@
                             (Complex 4)
                             (Var 2 c1)
                             (Integer 4)
-                            (IntegerConstant 37 (Integer 4))
+                            (IntegerConstant 37 (Integer 4) Decimal)
                         )]
                         ()
                         ()
@@ -942,10 +942,10 @@
                                 (Complex 4)
                                 (Var 2 c1)
                                 (Integer 4)
-                                (IntegerConstant 37 (Integer 4))
+                                (IntegerConstant 37 (Integer 4) Decimal)
                             )
                             NotEq
-                            (IntegerConstant 37 (Integer 4))
+                            (IntegerConstant 37 (Integer 4) Decimal)
                             (Logical 4)
                             (LogicalConstant
                                 .false.
@@ -963,7 +963,7 @@
                             (Complex 8)
                             (Var 2 c2)
                             (Integer 4)
-                            (IntegerConstant 307 (Integer 4))
+                            (IntegerConstant 307 (Integer 4) Decimal)
                         )]
                         ()
                         ()
@@ -975,10 +975,10 @@
                                 (Complex 8)
                                 (Var 2 c2)
                                 (Integer 4)
-                                (IntegerConstant 307 (Integer 4))
+                                (IntegerConstant 307 (Integer 4) Decimal)
                             )
                             NotEq
-                            (IntegerConstant 307 (Integer 4))
+                            (IntegerConstant 307 (Integer 4) Decimal)
                             (Logical 4)
                             (LogicalConstant
                                 .false.
@@ -995,13 +995,13 @@
                             Range
                             (Array
                                 (Integer 4)
-                                [((IntegerConstant 1 (Integer 4))
-                                (IntegerConstant 3 (Integer 4)))]
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 3 (Integer 4) Decimal))]
                                 FixedSizeArray
                             )
                             (Var 2 arr1)
                             (Integer 4)
-                            (IntegerConstant 9 (Integer 4))
+                            (IntegerConstant 9 (Integer 4) Decimal)
                         )]
                         ()
                         ()
@@ -1012,16 +1012,16 @@
                                 Range
                                 (Array
                                     (Integer 4)
-                                    [((IntegerConstant 1 (Integer 4))
-                                    (IntegerConstant 3 (Integer 4)))]
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 3 (Integer 4) Decimal))]
                                     FixedSizeArray
                                 )
                                 (Var 2 arr1)
                                 (Integer 4)
-                                (IntegerConstant 9 (Integer 4))
+                                (IntegerConstant 9 (Integer 4) Decimal)
                             )
                             NotEq
-                            (IntegerConstant 9 (Integer 4))
+                            (IntegerConstant 9 (Integer 4) Decimal)
                             (Logical 4)
                             (LogicalConstant
                                 .false.
@@ -1038,13 +1038,13 @@
                             Range
                             (Array
                                 (Real 8)
-                                [((IntegerConstant 1 (Integer 4))
-                                (IntegerConstant 3 (Integer 4)))]
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 3 (Integer 4) Decimal))]
                                 FixedSizeArray
                             )
                             (Var 2 arr2)
                             (Integer 4)
-                            (IntegerConstant 307 (Integer 4))
+                            (IntegerConstant 307 (Integer 4) Decimal)
                         )]
                         ()
                         ()
@@ -1055,16 +1055,16 @@
                                 Range
                                 (Array
                                     (Real 8)
-                                    [((IntegerConstant 1 (Integer 4))
-                                    (IntegerConstant 3 (Integer 4)))]
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 3 (Integer 4) Decimal))]
                                     FixedSizeArray
                                 )
                                 (Var 2 arr2)
                                 (Integer 4)
-                                (IntegerConstant 307 (Integer 4))
+                                (IntegerConstant 307 (Integer 4) Decimal)
                             )
                             NotEq
-                            (IntegerConstant 307 (Integer 4))
+                            (IntegerConstant 307 (Integer 4) Decimal)
                             (Logical 4)
                             (LogicalConstant
                                 .false.
@@ -1081,13 +1081,13 @@
                             Range
                             (Array
                                 (Complex 4)
-                                [((IntegerConstant 1 (Integer 4))
-                                (IntegerConstant 3 (Integer 4)))]
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 3 (Integer 4) Decimal))]
                                 FixedSizeArray
                             )
                             (Var 2 arr3)
                             (Integer 4)
-                            (IntegerConstant 37 (Integer 4))
+                            (IntegerConstant 37 (Integer 4) Decimal)
                         )]
                         ()
                         ()
@@ -1098,16 +1098,16 @@
                                 Range
                                 (Array
                                     (Complex 4)
-                                    [((IntegerConstant 1 (Integer 4))
-                                    (IntegerConstant 3 (Integer 4)))]
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 3 (Integer 4) Decimal))]
                                     FixedSizeArray
                                 )
                                 (Var 2 arr3)
                                 (Integer 4)
-                                (IntegerConstant 37 (Integer 4))
+                                (IntegerConstant 37 (Integer 4) Decimal)
                             )
                             NotEq
-                            (IntegerConstant 37 (Integer 4))
+                            (IntegerConstant 37 (Integer 4) Decimal)
                             (Logical 4)
                             (LogicalConstant
                                 .false.

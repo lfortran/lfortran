@@ -131,8 +131,8 @@
                     [(SubroutineCall
                         1 dzror_main__lcompilers
                         1 dzror_main__lcompilers
-                        [((IntegerConstant 2 (Integer 4)))
-                        ((IntegerConstant 0 (Integer 4)))
+                        [((IntegerConstant 2 (Integer 4) Decimal))
+                        ((IntegerConstant 0 (Integer 4) Decimal))
                         ((ArrayPhysicalCast
                             (Var 3 r)
                             DescriptorArray
@@ -219,7 +219,7 @@
                                     Default
                                     (Array
                                         (Real 4)
-                                        [((IntegerConstant 1 (Integer 4))
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 2 n))]
                                         PointerToDataArray
                                     )
@@ -267,7 +267,7 @@
                         [(Integer 4)
                         (Array
                             (Real 4)
-                            [((IntegerConstant 1 (Integer 4))
+                            [((IntegerConstant 1 (Integer 4) Decimal)
                             (FunctionParam
                                 0
                                 (Integer 4)
@@ -293,7 +293,7 @@
                     [(SubroutineCall
                         1 dzror_main__lcompilers
                         1 dzror_main__lcompilers
-                        [((IntegerConstant 1 (Integer 4)))
+                        [((IntegerConstant 1 (Integer 4) Decimal))
                         ((Var 2 n))
                         ((Var 2 r))]
                         ()
@@ -462,7 +462,7 @@
                                     Default
                                     (Array
                                         (Real 4)
-                                        [((IntegerConstant 1 (Integer 4))
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 4 n))]
                                         PointerToDataArray
                                     )
@@ -511,7 +511,7 @@
                         (Integer 4)
                         (Array
                             (Real 4)
-                            [((IntegerConstant 1 (Integer 4))
+                            [((IntegerConstant 1 (Integer 4) Decimal)
                             (FunctionParam
                                 1
                                 (Integer 4)
@@ -539,7 +539,7 @@
                         (IntegerCompare
                             (Var 4 entry__lcompilers)
                             Eq
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             (Logical 4)
                             ()
                         )
@@ -553,7 +553,7 @@
                         (IntegerCompare
                             (Var 4 entry__lcompilers)
                             Eq
-                            (IntegerConstant 2 (Integer 4))
+                            (IntegerConstant 2 (Integer 4) Decimal)
                             (Logical 4)
                             ()
                         )
@@ -587,15 +587,15 @@
                                 0
                                 (Array
                                     (Integer 4)
-                                    [((IntegerConstant 1 (Integer 4))
-                                    (IntegerConstant 1 (Integer 4)))]
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 1 (Integer 4) Decimal))]
                                     FixedSizeArray
                                 )
                                 ()
                             )
                             (Array
                                 (Real 4)
-                                [((IntegerConstant 1 (Integer 4))
+                                [((IntegerConstant 1 (Integer 4) Decimal)
                                 (Var 4 n))]
                                 PointerToDataArray
                             )
@@ -647,8 +647,8 @@
                                     Default
                                     (Array
                                         (Real 4)
-                                        [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 10 (Integer 4)))]
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 10 (Integer 4) Decimal))]
                                         FixedSizeArray
                                     )
                                     ()
@@ -663,15 +663,15 @@
                     [(SubroutineCall
                         1 dzror
                         ()
-                        [((IntegerConstant 10 (Integer 4)))
+                        [((IntegerConstant 10 (Integer 4) Decimal))
                         ((ArrayPhysicalCast
                             (Var 5 r)
                             FixedSizeArray
                             PointerToDataArray
                             (Array
                                 (Real 4)
-                                [((IntegerConstant 1 (Integer 4))
-                                (IntegerConstant 10 (Integer 4)))]
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 10 (Integer 4) Decimal))]
                                 PointerToDataArray
                             )
                             ()
@@ -681,8 +681,8 @@
                     (DoLoop
                         ()
                         ((Var 5 i)
-                        (IntegerConstant 1 (Integer 4))
-                        (IntegerConstant 10 (Integer 4))
+                        (IntegerConstant 1 (Integer 4) Decimal)
+                        (IntegerConstant 10 (Integer 4) Decimal)
                         ())
                         [(If
                             (RealCompare

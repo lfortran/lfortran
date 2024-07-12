@@ -106,8 +106,8 @@
                                     Default
                                     (Array
                                         (Integer 4)
-                                        [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 3 (Integer 4)))]
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 3 (Integer 4) Decimal))]
                                         FixedSizeArray
                                     )
                                     ()
@@ -127,8 +127,8 @@
                                     Default
                                     (Array
                                         (Integer 4)
-                                        [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 3 (Integer 4)))]
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 3 (Integer 4) Decimal))]
                                         FixedSizeArray
                                     )
                                     ()
@@ -143,22 +143,22 @@
                     [(Assignment
                         (Var 2 x)
                         (ArrayBroadcast
-                            (IntegerConstant 3 (Integer 4))
+                            (IntegerConstant 3 (Integer 4) Decimal)
                             (ArrayConstant
                                 4
                                 [3]
                                 (Array
                                     (Integer 4)
-                                    [((IntegerConstant 1 (Integer 4))
-                                    (IntegerConstant 1 (Integer 4)))]
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 1 (Integer 4) Decimal))]
                                     FixedSizeArray
                                 )
                                 ColMajor
                             )
                             (Array
                                 (Integer 4)
-                                [((IntegerConstant 1 (Integer 4))
-                                (IntegerConstant 3 (Integer 4)))]
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 3 (Integer 4) Decimal))]
                                 FixedSizeArray
                             )
                             (ArrayConstant
@@ -166,8 +166,8 @@
                                 [3, 3, 3]
                                 (Array
                                     (Integer 4)
-                                    [((IntegerConstant 1 (Integer 4))
-                                    (IntegerConstant 3 (Integer 4)))]
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 3 (Integer 4) Decimal))]
                                     FixedSizeArray
                                 )
                                 ColMajor
@@ -184,8 +184,8 @@
                             DescriptorArray
                             (Array
                                 (Integer 4)
-                                [((IntegerConstant 1 (Integer 4))
-                                (IntegerConstant 3 (Integer 4)))]
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 3 (Integer 4) Decimal))]
                                 DescriptorArray
                             )
                             ()
@@ -196,8 +196,8 @@
                             DescriptorArray
                             (Array
                                 (Integer 4)
-                                [((IntegerConstant 1 (Integer 4))
-                                (IntegerConstant 3 (Integer 4)))]
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 3 (Integer 4) Decimal))]
                                 DescriptorArray
                             )
                             ()

@@ -108,9 +108,9 @@
                     []
                     [(FileRewind
                         0
-                        (IntegerConstant 9 (Integer 4))
+                        (IntegerConstant 9 (Integer 4) Decimal)
                         (Var 2 ios)
-                        (IntegerConstant 10 (Integer 4))
+                        (IntegerConstant 10 (Integer 4) Decimal)
                     )
                     (FileInquire
                         0
@@ -150,10 +150,10 @@
                     )
                     (FileInquire
                         0
-                        (IntegerConstant 4 (Integer 4))
+                        (IntegerConstant 4 (Integer 4) Decimal)
                         ()
                         (Var 2 ios)
-                        (IntegerConstant 20 (Integer 4))
+                        (IntegerConstant 20 (Integer 4) Decimal)
                         ()
                         ()
                         ()

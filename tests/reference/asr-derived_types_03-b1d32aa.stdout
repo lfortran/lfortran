@@ -231,7 +231,7 @@
                                     []
                                     [(Assignment
                                         (Var 6 z)
-                                        (IntegerConstant 5 (Integer 4))
+                                        (IntegerConstant 5 (Integer 4) Decimal)
                                         ()
                                     )]
                                     (Var 6 z)

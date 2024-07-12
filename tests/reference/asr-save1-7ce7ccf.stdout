@@ -14,7 +14,7 @@
                                     []
                                     Local
                                     (Cast
-                                        (IntegerConstant 5 (Integer 4))
+                                        (IntegerConstant 5 (Integer 4) Decimal)
                                         IntegerToReal
                                         (Real 4)
                                         (RealConstant
@@ -41,7 +41,7 @@
                                     []
                                     Local
                                     (Cast
-                                        (IntegerConstant 5 (Integer 4))
+                                        (IntegerConstant 5 (Integer 4) Decimal)
                                         IntegerToReal
                                         (Real 4)
                                         (RealConstant
@@ -110,7 +110,7 @@
                                     []
                                     Local
                                     (Cast
-                                        (IntegerConstant 5 (Integer 4))
+                                        (IntegerConstant 5 (Integer 4) Decimal)
                                         IntegerToReal
                                         (Real 4)
                                         (RealConstant
@@ -137,7 +137,7 @@
                                     []
                                     Local
                                     (Cast
-                                        (IntegerConstant 5 (Integer 4))
+                                        (IntegerConstant 5 (Integer 4) Decimal)
                                         IntegerToReal
                                         (Real 4)
                                         (RealConstant
@@ -231,7 +231,7 @@
                                                     []
                                                     Local
                                                     (Cast
-                                                        (IntegerConstant 5 (Integer 4))
+                                                        (IntegerConstant 5 (Integer 4) Decimal)
                                                         IntegerToReal
                                                         (Real 4)
                                                         (RealConstant
@@ -258,7 +258,7 @@
                                                     []
                                                     Local
                                                     (Cast
-                                                        (IntegerConstant 5 (Integer 4))
+                                                        (IntegerConstant 5 (Integer 4) Decimal)
                                                         IntegerToReal
                                                         (Real 4)
                                                         (RealConstant
@@ -331,7 +331,7 @@
                                                     []
                                                     Local
                                                     (Cast
-                                                        (IntegerConstant 5 (Integer 4))
+                                                        (IntegerConstant 5 (Integer 4) Decimal)
                                                         IntegerToReal
                                                         (Real 4)
                                                         (RealConstant
@@ -358,7 +358,7 @@
                                                     []
                                                     Local
                                                     (Cast
-                                                        (IntegerConstant 5 (Integer 4))
+                                                        (IntegerConstant 5 (Integer 4) Decimal)
                                                         IntegerToReal
                                                         (Real 4)
                                                         (RealConstant
@@ -426,7 +426,7 @@
                                     []
                                     Local
                                     (Cast
-                                        (IntegerConstant 5 (Integer 4))
+                                        (IntegerConstant 5 (Integer 4) Decimal)
                                         IntegerToReal
                                         (Real 4)
                                         (RealConstant
@@ -453,7 +453,7 @@
                                     []
                                     Local
                                     (Cast
-                                        (IntegerConstant 5 (Integer 4))
+                                        (IntegerConstant 5 (Integer 4) Decimal)
                                         IntegerToReal
                                         (Real 4)
                                         (RealConstant
@@ -507,7 +507,7 @@
                                     []
                                     Local
                                     (Cast
-                                        (IntegerConstant 5 (Integer 4))
+                                        (IntegerConstant 5 (Integer 4) Decimal)
                                         IntegerToReal
                                         (Real 4)
                                         (RealConstant
@@ -534,7 +534,7 @@
                                     []
                                     Local
                                     (Cast
-                                        (IntegerConstant 5 (Integer 4))
+                                        (IntegerConstant 5 (Integer 4) Decimal)
                                         IntegerToReal
                                         (Real 4)
                                         (RealConstant

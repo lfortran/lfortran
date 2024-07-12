@@ -18,8 +18,8 @@
                                         [.true., .true., .true.]
                                         (Array
                                             (Logical 4)
-                                            [((IntegerConstant 1 (Integer 4))
-                                            (IntegerConstant 3 (Integer 4)))]
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 3 (Integer 4) Decimal))]
                                             FixedSizeArray
                                         )
                                         ColMajor
@@ -29,8 +29,8 @@
                                         [.true., .true., .true.]
                                         (Array
                                             (Logical 4)
-                                            [((IntegerConstant 1 (Integer 4))
-                                            (IntegerConstant 3 (Integer 4)))]
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 3 (Integer 4) Decimal))]
                                             FixedSizeArray
                                         )
                                         ColMajor
@@ -38,8 +38,8 @@
                                     Save
                                     (Array
                                         (Logical 4)
-                                        [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 3 (Integer 4)))]
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 3 (Integer 4) Decimal))]
                                         FixedSizeArray
                                     )
                                     ()
@@ -77,8 +77,8 @@
                                     [.true., .true.]
                                     (Array
                                         (Logical 4)
-                                        [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 2 (Integer 4)))]
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 2 (Integer 4) Decimal))]
                                         FixedSizeArray
                                     )
                                     ColMajor
@@ -87,8 +87,8 @@
                                 DescriptorArray
                                 (Array
                                     (Logical 4)
-                                    [((IntegerConstant 1 (Integer 4))
-                                    (IntegerConstant 2 (Integer 4)))]
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 2 (Integer 4) Decimal))]
                                     DescriptorArray
                                 )
                                 ()
@@ -112,8 +112,8 @@
                                     [.true., .false.]
                                     (Array
                                         (Logical 4)
-                                        [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 2 (Integer 4)))]
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 2 (Integer 4) Decimal))]
                                         FixedSizeArray
                                     )
                                     ColMajor
@@ -122,8 +122,8 @@
                                 DescriptorArray
                                 (Array
                                     (Logical 4)
-                                    [((IntegerConstant 1 (Integer 4))
-                                    (IntegerConstant 2 (Integer 4)))]
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 2 (Integer 4) Decimal))]
                                     DescriptorArray
                                 )
                                 ()
@@ -147,8 +147,8 @@
                                     [.false.]
                                     (Array
                                         (Logical 4)
-                                        [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 1 (Integer 4)))]
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 1 (Integer 4) Decimal))]
                                         FixedSizeArray
                                     )
                                     ColMajor
@@ -157,8 +157,8 @@
                                 DescriptorArray
                                 (Array
                                     (Logical 4)
-                                    [((IntegerConstant 1 (Integer 4))
-                                    (IntegerConstant 1 (Integer 4)))]
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 1 (Integer 4) Decimal))]
                                     DescriptorArray
                                 )
                                 ()
@@ -182,8 +182,8 @@
                                     [.true.]
                                     (Array
                                         (Logical 4)
-                                        [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 1 (Integer 4)))]
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 1 (Integer 4) Decimal))]
                                         FixedSizeArray
                                     )
                                     ColMajor
@@ -192,8 +192,8 @@
                                 DescriptorArray
                                 (Array
                                     (Logical 4)
-                                    [((IntegerConstant 1 (Integer 4))
-                                    (IntegerConstant 1 (Integer 4)))]
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 1 (Integer 4) Decimal))]
                                     DescriptorArray
                                 )
                                 ()
@@ -217,8 +217,8 @@
                                 DescriptorArray
                                 (Array
                                     (Logical 4)
-                                    [((IntegerConstant 1 (Integer 4))
-                                    (IntegerConstant 3 (Integer 4)))]
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 3 (Integer 4) Decimal))]
                                     DescriptorArray
                                 )
                                 ()
@@ -236,9 +236,9 @@
                             [(ArrayPhysicalCast
                                 (ArrayConstructor
                                     [(IntegerCompare
-                                        (IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 1 (Integer 4) Decimal)
                                         Eq
-                                        (IntegerConstant 2 (Integer 4))
+                                        (IntegerConstant 2 (Integer 4) Decimal)
                                         (Logical 4)
                                         (LogicalConstant
                                             .false.
@@ -246,9 +246,9 @@
                                         )
                                     )
                                     (IntegerCompare
-                                        (IntegerConstant 0 (Integer 4))
+                                        (IntegerConstant 0 (Integer 4) Decimal)
                                         Eq
-                                        (IntegerConstant 0 (Integer 4))
+                                        (IntegerConstant 0 (Integer 4) Decimal)
                                         (Logical 4)
                                         (LogicalConstant
                                             .true.
@@ -257,8 +257,8 @@
                                     )]
                                     (Array
                                         (Logical 4)
-                                        [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 2 (Integer 4)))]
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 2 (Integer 4) Decimal))]
                                         FixedSizeArray
                                     )
                                     (ArrayConstant
@@ -266,8 +266,8 @@
                                         [.false., .true.]
                                         (Array
                                             (Logical 4)
-                                            [((IntegerConstant 1 (Integer 4))
-                                            (IntegerConstant 2 (Integer 4)))]
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 2 (Integer 4) Decimal))]
                                             FixedSizeArray
                                         )
                                         ColMajor
@@ -278,8 +278,8 @@
                                 DescriptorArray
                                 (Array
                                     (Logical 4)
-                                    [((IntegerConstant 1 (Integer 4))
-                                    (IntegerConstant 2 (Integer 4)))]
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 2 (Integer 4) Decimal))]
                                     DescriptorArray
                                 )
                                 ()
@@ -302,8 +302,8 @@
                                     [(Var 2 l)]
                                     (Array
                                         (Logical 4)
-                                        [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 1 (Integer 4)))]
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 1 (Integer 4) Decimal))]
                                         FixedSizeArray
                                     )
                                     ()
@@ -313,8 +313,8 @@
                                 DescriptorArray
                                 (Array
                                     (Logical 4)
-                                    [((IntegerConstant 1 (Integer 4))
-                                    (IntegerConstant 1 (Integer 4)))]
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 1 (Integer 4) Decimal))]
                                     DescriptorArray
                                 )
                                 ()
@@ -342,8 +342,8 @@
                                     )]
                                     (Array
                                         (Logical 4)
-                                        [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 3 (Integer 4)))]
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 3 (Integer 4) Decimal))]
                                         FixedSizeArray
                                     )
                                     ()
@@ -353,8 +353,8 @@
                                 DescriptorArray
                                 (Array
                                     (Logical 4)
-                                    [((IntegerConstant 1 (Integer 4))
-                                    (IntegerConstant 3 (Integer 4)))]
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 3 (Integer 4) Decimal))]
                                     DescriptorArray
                                 )
                                 ()

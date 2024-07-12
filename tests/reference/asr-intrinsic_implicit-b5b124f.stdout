@@ -78,11 +78,11 @@
                         (Cast
                             (IntrinsicElementalFunction
                                 Max
-                                [(IntegerConstant 1 (Integer 4))
-                                (IntegerConstant 2 (Integer 4))]
+                                [(IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 2 (Integer 4) Decimal)]
                                 0
                                 (Integer 4)
-                                (IntegerConstant 2 (Integer 4))
+                                (IntegerConstant 2 (Integer 4) Decimal)
                             )
                             IntegerToReal
                             (Real 4)
@@ -98,18 +98,18 @@
                         (Cast
                             (IntrinsicElementalFunction
                                 Max
-                                [(IntegerConstant 1 (Integer 4))
+                                [(IntegerConstant 1 (Integer 4) Decimal)
                                 (IntegerBinOp
-                                    (IntegerConstant 2 (Integer 4))
+                                    (IntegerConstant 2 (Integer 4) Decimal)
                                     Div
-                                    (IntegerConstant 2 (Integer 4))
+                                    (IntegerConstant 2 (Integer 4) Decimal)
                                     (Integer 4)
-                                    (IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4) Decimal)
                                 )
-                                (IntegerConstant 1 (Integer 4))]
+                                (IntegerConstant 1 (Integer 4) Decimal)]
                                 0
                                 (Integer 4)
-                                (IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 1 (Integer 4) Decimal)
                             )
                             IntegerToReal
                             (Real 4)

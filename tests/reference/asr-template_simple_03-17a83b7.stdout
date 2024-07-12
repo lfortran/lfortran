@@ -169,7 +169,7 @@
                                     [(Var 7 arg)]
                                     [(Assignment
                                         (Var 7 res)
-                                        (IntegerConstant 0 (Integer 4))
+                                        (IntegerConstant 0 (Integer 4) Decimal)
                                         ()
                                     )]
                                     (Var 7 res)
@@ -653,7 +653,7 @@
                                                         (FunctionCall
                                                             15 cast
                                                             ()
-                                                            [((IntegerConstant 0 (Integer 4)))]
+                                                            [((IntegerConstant 0 (Integer 4) Decimal))]
                                                             (TypeParameter
                                                                 t
                                                             )
@@ -666,7 +666,7 @@
                                                         (IntegerCompare
                                                             (Var 22 n)
                                                             Gt
-                                                            (IntegerConstant 0 (Integer 4))
+                                                            (IntegerConstant 0 (Integer 4) Decimal)
                                                             (Logical 4)
                                                             ()
                                                         )
@@ -675,7 +675,7 @@
                                                             (ArrayItem
                                                                 (Var 22 arr)
                                                                 [(()
-                                                                (IntegerConstant 1 (Integer 4))
+                                                                (IntegerConstant 1 (Integer 4) Decimal)
                                                                 ())]
                                                                 (TypeParameter
                                                                     t
@@ -688,7 +688,7 @@
                                                         (DoLoop
                                                             ()
                                                             ((Var 22 i)
-                                                            (IntegerConstant 2 (Integer 4))
+                                                            (IntegerConstant 2 (Integer 4) Decimal)
                                                             (Var 22 n)
                                                             ())
                                                             [(Assignment
@@ -1093,7 +1093,7 @@
                                                         (IntegerCompare
                                                             (Var 19 n)
                                                             Gt
-                                                            (IntegerConstant 0 (Integer 4))
+                                                            (IntegerConstant 0 (Integer 4) Decimal)
                                                             (Logical 4)
                                                             ()
                                                         )
@@ -1139,7 +1139,7 @@
                                                             (FunctionCall
                                                                 15 cast
                                                                 ()
-                                                                [((IntegerConstant 0 (Integer 4)))]
+                                                                [((IntegerConstant 0 (Integer 4) Decimal))]
                                                                 (TypeParameter
                                                                     t
                                                                 )
@@ -1496,7 +1496,7 @@
                                                         (FunctionCall
                                                             11 cast
                                                             ()
-                                                            [((IntegerConstant 0 (Integer 4)))]
+                                                            [((IntegerConstant 0 (Integer 4) Decimal))]
                                                             (TypeParameter
                                                                 t
                                                             )
@@ -1509,7 +1509,7 @@
                                                         (IntegerCompare
                                                             (Var 14 n)
                                                             Gt
-                                                            (IntegerConstant 0 (Integer 4))
+                                                            (IntegerConstant 0 (Integer 4) Decimal)
                                                             (Logical 4)
                                                             ()
                                                         )
@@ -1518,7 +1518,7 @@
                                                             (ArrayItem
                                                                 (Var 14 arr)
                                                                 [(()
-                                                                (IntegerConstant 1 (Integer 4))
+                                                                (IntegerConstant 1 (Integer 4) Decimal)
                                                                 ())]
                                                                 (TypeParameter
                                                                     t
@@ -1531,7 +1531,7 @@
                                                         (DoLoop
                                                             ()
                                                             ((Var 14 i)
-                                                            (IntegerConstant 2 (Integer 4))
+                                                            (IntegerConstant 2 (Integer 4) Decimal)
                                                             (Var 14 n)
                                                             ())
                                                             [(Assignment
@@ -1880,7 +1880,7 @@
                                                         (FunctionCall
                                                             2 cast_integer
                                                             ()
-                                                            [((IntegerConstant 0 (Integer 4)))]
+                                                            [((IntegerConstant 0 (Integer 4) Decimal))]
                                                             (Integer 4)
                                                             ()
                                                             ()
@@ -1891,7 +1891,7 @@
                                                         (IntegerCompare
                                                             (Var 25 n)
                                                             Gt
-                                                            (IntegerConstant 0 (Integer 4))
+                                                            (IntegerConstant 0 (Integer 4) Decimal)
                                                             (Logical 4)
                                                             ()
                                                         )
@@ -1900,7 +1900,7 @@
                                                             (ArrayItem
                                                                 (Var 25 arr)
                                                                 [(()
-                                                                (IntegerConstant 1 (Integer 4))
+                                                                (IntegerConstant 1 (Integer 4) Decimal)
                                                                 ())]
                                                                 (Integer 4)
                                                                 ColMajor
@@ -1911,7 +1911,7 @@
                                                         (DoLoop
                                                             ()
                                                             ((Var 25 i)
-                                                            (IntegerConstant 2 (Integer 4))
+                                                            (IntegerConstant 2 (Integer 4) Decimal)
                                                             (Var 25 n)
                                                             ())
                                                             [(Assignment
@@ -2058,7 +2058,7 @@
                                                         (FunctionCall
                                                             2 cast_real
                                                             ()
-                                                            [((IntegerConstant 0 (Integer 4)))]
+                                                            [((IntegerConstant 0 (Integer 4) Decimal))]
                                                             (Real 4)
                                                             ()
                                                             ()
@@ -2069,7 +2069,7 @@
                                                         (IntegerCompare
                                                             (Var 28 n)
                                                             Gt
-                                                            (IntegerConstant 0 (Integer 4))
+                                                            (IntegerConstant 0 (Integer 4) Decimal)
                                                             (Logical 4)
                                                             ()
                                                         )
@@ -2078,7 +2078,7 @@
                                                             (ArrayItem
                                                                 (Var 28 arr)
                                                                 [(()
-                                                                (IntegerConstant 1 (Integer 4))
+                                                                (IntegerConstant 1 (Integer 4) Decimal)
                                                                 ())]
                                                                 (Real 4)
                                                                 ColMajor
@@ -2089,7 +2089,7 @@
                                                         (DoLoop
                                                             ()
                                                             ((Var 28 i)
-                                                            (IntegerConstant 2 (Integer 4))
+                                                            (IntegerConstant 2 (Integer 4) Decimal)
                                                             (Var 28 n)
                                                             ())
                                                             [(Assignment
@@ -2236,7 +2236,7 @@
                                                         (IntegerCompare
                                                             (Var 24 n)
                                                             Gt
-                                                            (IntegerConstant 0 (Integer 4))
+                                                            (IntegerConstant 0 (Integer 4) Decimal)
                                                             (Logical 4)
                                                             ()
                                                         )
@@ -2276,7 +2276,7 @@
                                                             (FunctionCall
                                                                 2 cast_integer
                                                                 ()
-                                                                [((IntegerConstant 0 (Integer 4)))]
+                                                                [((IntegerConstant 0 (Integer 4) Decimal))]
                                                                 (Integer 4)
                                                                 ()
                                                                 ()
@@ -2403,7 +2403,7 @@
                                                         (IntegerCompare
                                                             (Var 27 n)
                                                             Gt
-                                                            (IntegerConstant 0 (Integer 4))
+                                                            (IntegerConstant 0 (Integer 4) Decimal)
                                                             (Logical 4)
                                                             ()
                                                         )
@@ -2443,7 +2443,7 @@
                                                             (FunctionCall
                                                                 2 cast_real
                                                                 ()
-                                                                [((IntegerConstant 0 (Integer 4)))]
+                                                                [((IntegerConstant 0 (Integer 4) Decimal))]
                                                                 (Real 4)
                                                                 ()
                                                                 ()
@@ -2468,8 +2468,8 @@
                                                     Default
                                                     (Array
                                                         (Integer 4)
-                                                        [((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 10 (Integer 4)))]
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 10 (Integer 4) Decimal))]
                                                         FixedSizeArray
                                                     )
                                                     ()
@@ -2489,8 +2489,8 @@
                                                     Default
                                                     (Array
                                                         (Real 4)
-                                                        [((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 10 (Integer 4)))]
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 10 (Integer 4) Decimal))]
                                                         FixedSizeArray
                                                     )
                                                     ()
@@ -2756,12 +2756,12 @@
                                     [(DoLoop
                                         ()
                                         ((Var 20 i)
-                                        (IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 1 (Integer 4) Decimal)
                                         (ArraySize
                                             (Var 20 a_i)
                                             ()
                                             (Integer 4)
-                                            (IntegerConstant 10 (Integer 4))
+                                            (IntegerConstant 10 (Integer 4) Decimal)
                                         )
                                         ())
                                         [(Assignment
@@ -2808,8 +2808,8 @@
                                                 DescriptorArray
                                                 (Array
                                                     (Integer 4)
-                                                    [((IntegerConstant 1 (Integer 4))
-                                                    (IntegerConstant 10 (Integer 4)))]
+                                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                                    (IntegerConstant 10 (Integer 4) Decimal))]
                                                     DescriptorArray
                                                 )
                                                 ()
@@ -2831,8 +2831,8 @@
                                                 DescriptorArray
                                                 (Array
                                                     (Real 4)
-                                                    [((IntegerConstant 1 (Integer 4))
-                                                    (IntegerConstant 10 (Integer 4)))]
+                                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                                    (IntegerConstant 10 (Integer 4) Decimal))]
                                                     DescriptorArray
                                                 )
                                                 ()

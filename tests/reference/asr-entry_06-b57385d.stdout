@@ -90,8 +90,8 @@
                                     Default
                                     (Array
                                         (Real 8)
-                                        [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 2 (Integer 4)))]
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 2 (Integer 4) Decimal))]
                                         FixedSizeArray
                                     )
                                     ()
@@ -117,8 +117,8 @@
                                             DescriptorArray
                                             (Array
                                                 (Real 8)
-                                                [((IntegerConstant 1 (Integer 4))
-                                                (IntegerConstant 2 (Integer 4)))]
+                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                (IntegerConstant 2 (Integer 4) Decimal))]
                                                 DescriptorArray
                                             )
                                             ()
@@ -231,7 +231,7 @@
                         (FunctionCall
                             1 mvndfn_main__lcompilers
                             1 mvndfn_main__lcompilers
-                            [((IntegerConstant 1 (Integer 4)))
+                            [((IntegerConstant 1 (Integer 4) Decimal))
                             ((Var 2 w))]
                             (Real 8)
                             ()
@@ -348,7 +348,7 @@
                         (IntegerCompare
                             (Var 4 entry__lcompilers)
                             Eq
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             (Logical 4)
                             ()
                         )
@@ -362,7 +362,7 @@
                         (IntegerCompare
                             (Var 4 entry__lcompilers)
                             Eq
-                            (IntegerConstant 2 (Integer 4))
+                            (IntegerConstant 2 (Integer 4) Decimal)
                             (Logical 4)
                             ()
                         )
@@ -380,7 +380,7 @@
                         (ArrayItem
                             (Var 4 w)
                             [(()
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             ())]
                             (Real 8)
                             ColMajor
@@ -396,7 +396,7 @@
                         (ArrayItem
                             (Var 4 w)
                             [(()
-                            (IntegerConstant 2 (Integer 4))
+                            (IntegerConstant 2 (Integer 4) Decimal)
                             ())]
                             (Real 8)
                             ColMajor
@@ -416,7 +416,7 @@
                                     (ArrayItem
                                         (Var 4 w)
                                         [(()
-                                        (IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 1 (Integer 4) Decimal)
                                         ())]
                                         (Real 8)
                                         ColMajor
@@ -463,7 +463,7 @@
                                     (ArrayItem
                                         (Var 4 w)
                                         [(()
-                                        (IntegerConstant 2 (Integer 4))
+                                        (IntegerConstant 2 (Integer 4) Decimal)
                                         ())]
                                         (Real 8)
                                         ColMajor
@@ -518,7 +518,7 @@
                         (ArrayItem
                             (Var 4 w)
                             [(()
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             ())]
                             (Real 8)
                             ColMajor
@@ -534,7 +534,7 @@
                         (ArrayItem
                             (Var 4 w)
                             [(()
-                            (IntegerConstant 2 (Integer 4))
+                            (IntegerConstant 2 (Integer 4) Decimal)
                             ())]
                             (Real 8)
                             ColMajor
@@ -554,7 +554,7 @@
                                     (ArrayItem
                                         (Var 4 w)
                                         [(()
-                                        (IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 1 (Integer 4) Decimal)
                                         ())]
                                         (Real 8)
                                         ColMajor
@@ -601,7 +601,7 @@
                                     (ArrayItem
                                         (Var 4 w)
                                         [(()
-                                        (IntegerConstant 2 (Integer 4))
+                                        (IntegerConstant 2 (Integer 4) Decimal)
                                         ())]
                                         (Real 8)
                                         ColMajor
@@ -737,7 +737,7 @@
                         (FunctionCall
                             1 mvndfn_main__lcompilers
                             1 mvndfn_main__lcompilers
-                            [((IntegerConstant 2 (Integer 4)))
+                            [((IntegerConstant 2 (Integer 4) Decimal))
                             ((Var 3 w))]
                             (Real 8)
                             ()

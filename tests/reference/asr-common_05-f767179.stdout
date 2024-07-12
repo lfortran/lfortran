@@ -55,8 +55,8 @@
                                                     Default
                                                     (Array
                                                         (Integer 4)
-                                                        [((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 5 (Integer 4)))]
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 5 (Integer 4) Decimal))]
                                                         FixedSizeArray
                                                     )
                                                     ()
@@ -184,7 +184,7 @@
                             (Integer 4)
                             ()
                         )
-                        (IntegerConstant 1 (Integer 4))
+                        (IntegerConstant 1 (Integer 4) Decimal)
                         ()
                     )
                     (Assignment
@@ -194,7 +194,7 @@
                             (Integer 4)
                             ()
                         )
-                        (IntegerConstant 2 (Integer 4))
+                        (IntegerConstant 2 (Integer 4) Decimal)
                         ()
                     )
                     (Assignment
@@ -203,29 +203,29 @@
                             2 1_block_1_c
                             (Array
                                 (Integer 4)
-                                [((IntegerConstant 1 (Integer 4))
-                                (IntegerConstant 5 (Integer 4)))]
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 5 (Integer 4) Decimal))]
                                 FixedSizeArray
                             )
                             ()
                         )
                         (ArrayBroadcast
-                            (IntegerConstant 3 (Integer 4))
+                            (IntegerConstant 3 (Integer 4) Decimal)
                             (ArrayConstant
                                 4
                                 [5]
                                 (Array
                                     (Integer 4)
-                                    [((IntegerConstant 1 (Integer 4))
-                                    (IntegerConstant 1 (Integer 4)))]
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 1 (Integer 4) Decimal))]
                                     FixedSizeArray
                                 )
                                 ColMajor
                             )
                             (Array
                                 (Integer 4)
-                                [((IntegerConstant 1 (Integer 4))
-                                (IntegerConstant 5 (Integer 4)))]
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 5 (Integer 4) Decimal))]
                                 FixedSizeArray
                             )
                             (ArrayConstant
@@ -233,8 +233,8 @@
                                 [3, 3, 3, 3, 3]
                                 (Array
                                     (Integer 4)
-                                    [((IntegerConstant 1 (Integer 4))
-                                    (IntegerConstant 5 (Integer 4)))]
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 5 (Integer 4) Decimal))]
                                     FixedSizeArray
                                 )
                                 ColMajor
@@ -244,7 +244,7 @@
                     )
                     (Assignment
                         (Var 2 d)
-                        (IntegerConstant 4 (Integer 4))
+                        (IntegerConstant 4 (Integer 4) Decimal)
                         ()
                     )
                     (Assignment
@@ -260,14 +260,14 @@
                                 2 1_block_1_c
                                 (Array
                                     (Integer 4)
-                                    [((IntegerConstant 1 (Integer 4))
-                                    (IntegerConstant 5 (Integer 4)))]
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 5 (Integer 4) Decimal))]
                                     FixedSizeArray
                                 )
                                 ()
                             )
                             [(()
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             ())]
                             (Integer 4)
                             ColMajor
@@ -304,7 +304,7 @@
                             ()
                         )
                         (IntegerBinOp
-                            (IntegerConstant 5 (Integer 4))
+                            (IntegerConstant 5 (Integer 4) Decimal)
                             Mul
                             (StructInstanceMember
                                 (Var 2 struct_instance_block_1)
@@ -370,14 +370,14 @@
                                         2 1_block_1_c
                                         (Array
                                             (Integer 4)
-                                            [((IntegerConstant 1 (Integer 4))
-                                            (IntegerConstant 5 (Integer 4)))]
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 5 (Integer 4) Decimal))]
                                             FixedSizeArray
                                         )
                                         ()
                                     )
                                     [(()
-                                    (IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4) Decimal)
                                     ())]
                                     (Integer 4)
                                     ColMajor
@@ -420,7 +420,7 @@
                             ()
                         )
                         [(CaseStmt
-                            [(IntegerConstant 1 (Integer 4))]
+                            [(IntegerConstant 1 (Integer 4) Decimal)]
                             [(Assignment
                                 (Var 2 d)
                                 (IntegerBinOp
@@ -445,7 +445,7 @@
                             .false.
                         )
                         (CaseStmt
-                            [(IntegerConstant 2 (Integer 4))]
+                            [(IntegerConstant 2 (Integer 4) Decimal)]
                             [(Assignment
                                 (Var 2 d)
                                 (IntegerBinOp
@@ -547,7 +547,7 @@
                                     ()
                                 )
                                 Sub
-                                (IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 1 (Integer 4) Decimal)
                                 (Integer 4)
                                 ()
                             )
@@ -563,27 +563,27 @@
                             (Integer 4)
                             ()
                         )
-                        (IntegerConstant 1 (Integer 4))
+                        (IntegerConstant 1 (Integer 4) Decimal)
                         (ArrayItem
                             (StructInstanceMember
                                 (Var 2 struct_instance_block_1)
                                 2 1_block_1_c
                                 (Array
                                     (Integer 4)
-                                    [((IntegerConstant 1 (Integer 4))
-                                    (IntegerConstant 5 (Integer 4)))]
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 5 (Integer 4) Decimal))]
                                     FixedSizeArray
                                 )
                                 ()
                             )
                             [(()
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             ())]
                             (Integer 4)
                             ColMajor
                             ()
                         )
-                        (IntegerConstant 1 (Integer 4)))
+                        (IntegerConstant 1 (Integer 4) Decimal))
                         [(Assignment
                             (Var 2 d)
                             (IntegerBinOp
@@ -625,8 +625,8 @@
                             2 1_block_1_c
                             (Array
                                 (Integer 4)
-                                [((IntegerConstant 1 (Integer 4))
-                                (IntegerConstant 5 (Integer 4)))]
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 5 (Integer 4) Decimal))]
                                 FixedSizeArray
                             )
                             ()
@@ -644,7 +644,7 @@
                                 ()
                             )
                             NotEq
-                            (IntegerConstant 4 (Integer 4))
+                            (IntegerConstant 4 (Integer 4) Decimal)
                             (Logical 4)
                             ()
                         )
@@ -662,7 +662,7 @@
                                 ()
                             )
                             NotEq
-                            (IntegerConstant 3 (Integer 4))
+                            (IntegerConstant 3 (Integer 4) Decimal)
                             (Logical 4)
                             ()
                         )
@@ -679,8 +679,8 @@
                             (Integer 4)
                             ()
                         )
-                        (IntegerConstant 1 (Integer 4))
-                        (IntegerConstant 5 (Integer 4))
+                        (IntegerConstant 1 (Integer 4) Decimal)
+                        (IntegerConstant 5 (Integer 4) Decimal)
                         ())
                         [(If
                             (IntegerCompare
@@ -690,8 +690,8 @@
                                         2 1_block_1_c
                                         (Array
                                             (Integer 4)
-                                            [((IntegerConstant 1 (Integer 4))
-                                            (IntegerConstant 5 (Integer 4)))]
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 5 (Integer 4) Decimal))]
                                             FixedSizeArray
                                         )
                                         ()
@@ -709,7 +709,7 @@
                                     ()
                                 )
                                 NotEq
-                                (IntegerConstant 3 (Integer 4))
+                                (IntegerConstant 3 (Integer 4) Decimal)
                                 (Logical 4)
                                 ()
                             )
@@ -724,7 +724,7 @@
                         (IntegerCompare
                             (Var 2 d)
                             NotEq
-                            (IntegerConstant 6 (Integer 4))
+                            (IntegerConstant 6 (Integer 4) Decimal)
                             (Logical 4)
                             ()
                         )

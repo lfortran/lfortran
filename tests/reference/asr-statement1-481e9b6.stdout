@@ -116,9 +116,9 @@
                                             (Real 8)
                                         )
                                         (Integer 4)
-                                        (IntegerConstant 8 (Integer 4))
+                                        (IntegerConstant 8 (Integer 4) Decimal)
                                     )
-                                    (IntegerConstant 8 (Integer 4))
+                                    (IntegerConstant 8 (Integer 4) Decimal)
                                     Parameter
                                     (Integer 4)
                                     ()
@@ -384,8 +384,8 @@
                         (FunctionCall
                             2 sfloat
                             ()
-                            [((IntegerConstant 1 (Integer 4)))
-                            ((IntegerConstant 8 (Integer 4)))]
+                            [((IntegerConstant 1 (Integer 4) Decimal))
+                            ((IntegerConstant 8 (Integer 4) Decimal))]
                             (Real 4)
                             ()
                             ()
@@ -400,7 +400,7 @@
                                     (Var 2 ti)
                                     Sub
                                     (Cast
-                                        (IntegerConstant 8 (Integer 4))
+                                        (IntegerConstant 8 (Integer 4) Decimal)
                                         IntegerToReal
                                         (Real 4)
                                         (RealConstant
@@ -434,8 +434,8 @@
                             (FunctionCall
                                 2 sfloat
                                 ()
-                                [((IntegerConstant 12 (Integer 4)))
-                                ((IntegerConstant 9 (Integer 4)))]
+                                [((IntegerConstant 12 (Integer 4) Decimal))
+                                ((IntegerConstant 9 (Integer 4) Decimal))]
                                 (Real 4)
                                 ()
                                 ()
@@ -489,15 +489,15 @@
                                     (FunctionCall
                                         2 dfloat
                                         ()
-                                        [((IntegerConstant 5 (Integer 4)))
-                                        ((IntegerConstant 4 (Integer 4)))]
+                                        [((IntegerConstant 5 (Integer 4) Decimal))
+                                        ((IntegerConstant 4 (Integer 4) Decimal))]
                                         (Real 8)
                                         ()
                                         ()
                                     )
                                     Sub
                                     (Cast
-                                        (IntegerConstant 9 (Integer 4))
+                                        (IntegerConstant 9 (Integer 4) Decimal)
                                         IntegerToReal
                                         (Real 8)
                                         (RealConstant
@@ -538,14 +538,14 @@
                             (FunctionCall
                                 2 ifloat
                                 ()
-                                [((IntegerConstant 5 (Integer 4)))
-                                ((IntegerConstant 4 (Integer 4)))]
+                                [((IntegerConstant 5 (Integer 4) Decimal))
+                                ((IntegerConstant 4 (Integer 4) Decimal))]
                                 (Integer 4)
                                 ()
                                 ()
                             )
                             NotEq
-                            (IntegerConstant 9 (Integer 4))
+                            (IntegerConstant 9 (Integer 4) Decimal)
                             (Logical 4)
                             ()
                         )

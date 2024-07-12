@@ -11,6 +11,9 @@ define i32 @main(i32 %0, i8** %1) {
   %2 = load i32, i32* %i, align 4
   %3 = sitofp i32 %2 to float
   store float %3, float* %r, align 4
+  br label %return
+
+return:                                           ; preds = %.entry
   ret i32 0
 }
 

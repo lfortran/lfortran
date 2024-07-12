@@ -79,6 +79,7 @@ src/libasr/pass/intrinsic_function_registry_util.h
 src/lfortran/config.h
 src/libasr/config.h
 share/jupyter/kernels/fortran/kernel.json
+share/jupyter/kernels/fortran/logo-svg.svg
 src/runtime/*.o.empty.c
 src/runtime/tests/test_abs
 src/runtime/tests/test_bit

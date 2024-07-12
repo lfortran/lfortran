@@ -158,7 +158,7 @@
                                     (DoLoop
                                         ()
                                         ((Var 13 i)
-                                        (IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 1 (Integer 4) Decimal)
                                         (StructInstanceMember
                                             (Var 13 self)
                                             13 1_toml_vector_n
@@ -399,7 +399,7 @@
                                             (Integer 4)
                                             ()
                                         )
-                                        (IntegerConstant 0 (Integer 4))
+                                        (IntegerConstant 0 (Integer 4) Decimal)
                                         ()
                                     )
                                     (If
@@ -427,10 +427,10 @@
                                                 )
                                                 ()
                                             )
-                                            [((IntegerConstant 1 (Integer 4))
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
                                             (IntrinsicElementalFunction
                                                 Min
-                                                [(IntegerConstant 1 (Integer 4))
+                                                [(IntegerConstant 1 (Integer 4) Decimal)
                                                 (Var 12 n)]
                                                 0
                                                 (Integer 4)
@@ -533,8 +533,8 @@
                                                     n
                                                     []
                                                     Local
-                                                    (IntegerConstant 0 (Integer 4))
-                                                    (IntegerConstant 0 (Integer 4))
+                                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                                    (IntegerConstant 0 (Integer 4) Decimal)
                                                     Save
                                                     (Integer 4)
                                                     ()
