@@ -6596,7 +6596,6 @@ public:
             throw CodeGenError("ConstArray type not supported yet");
         }
         // Create <n x float> type, where `n` is the length of the `x` constant array
-        std::cout<<"size: "<<ASRUtils::get_fixed_size_of_array(x.m_type)<<std::endl;
         llvm::Type* type_fxn = FIXED_VECTOR_TYPE::get(el_type, ASRUtils::get_fixed_size_of_array(x.m_type));
         // Create a pointer <n x float>* to a stack allocated <n x float>
         llvm::AllocaInst *p_fxn = builder->CreateAlloca(type_fxn, nullptr);
@@ -9972,7 +9971,7 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
     pass_manager.apply_passes(al, &asr, co.po, diagnostics);
 
     // Uncomment for debugging the ASR after the transformation
-    std::cout << LCompilers::pickle(asr, false, false, false) << std::endl;
+    // std::cout << LCompilers::pickle(asr, false, false, false) << std::endl;
 
     try {
         v.visit_asr((ASR::asr_t&)asr);

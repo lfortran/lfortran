@@ -20,7 +20,6 @@ enum targetType {
 typedef std::map<ASR::expr_t*, std::pair<ASR::expr_t*, targetType>> ExprsWithTargetType;
 
 const std::vector<ASR::exprType>& exprs_with_no_type = {
-    ASR::exprType::IntegerBOZ,
 };
 
 /*
@@ -1102,10 +1101,7 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     }
 
     void replace_ArrayConstructor(ASR::ArrayConstructor_t* x) {
-        if( ASRUtils::is_fixed_size_array(x->m_type) &&
-            ASRUtils::get_fixed_size_of_array(x->m_type) > 0 ) {
-            replace_current_expr("_array_constructor_")
-        }
+        replace_current_expr("_array_constructor_")
     }
 
     void replace_ArrayConstant(ASR::ArrayConstant_t* x) {

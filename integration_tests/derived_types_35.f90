@@ -37,9 +37,9 @@ program derived_types_35
 
     open(newunit=io, form="formatted", file="derived_types_35_file.txt")
     read(io, *, iostat=iostat, iomsg=iomsg) x
-    ! close(io)
+    close(io)
 
-    ! print *, x%a
-    ! if (x%a /= 125) error stop
+    print *, x%a
+    if (x%a /= 125) error stop
 
 end program

@@ -121,11 +121,20 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
 
     SymbolTable* current_scope;
     ASR::expr_t* result_expr;
+    bool& remove_original_stmt;
 
-    ReplaceArrayOp(Allocator& al_, Vec<ASR::stmt_t*>& pass_result_):
-        al(al_), pass_result(pass_result_), current_scope(nullptr) {}
+    ReplaceArrayOp(Allocator& al_, Vec<ASR::stmt_t*>& pass_result_,
+                   bool& remove_original_stmt_):
+        al(al_), pass_result(pass_result_),
+        current_scope(nullptr), remove_original_stmt(remove_original_stmt_) {}
+
+    #define remove_original_stmt_if_size_0(type) if( ASRUtils::get_fixed_size_of_array(type) == 0 ) { \
+            remove_original_stmt = true; \
+            return ; \
+        } \
 
     void replace_ArrayConstant(ASR::ArrayConstant_t* x) {
+        remove_original_stmt_if_size_0(x->m_type)
         pass_result.reserve(al, x->m_n_data);
         const Location& loc = x->base.base.loc;
         LCOMPILERS_ASSERT(result_expr != nullptr);
@@ -186,6 +195,8 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         } else {
             arr_type = x->m_type;
         }
+
+        remove_original_stmt_if_size_0(arr_type)
 
         pass_result.reserve(al, x->n_args);
         const Location& loc = x->base.base.loc;
@@ -295,6 +306,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
     ReplaceArrayOp replacer;
     Vec<ASR::stmt_t*> pass_result;
     bool realloc_lhs;
+    bool remove_original_stmt;
 
     public:
 
@@ -305,7 +317,8 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
     }
 
     ArrayOpVisitor(Allocator& al_, bool realloc_lhs_):
-        al(al_), replacer(al, pass_result), realloc_lhs(realloc_lhs_) {
+        al(al_), replacer(al, pass_result, remove_original_stmt),
+        realloc_lhs(realloc_lhs_), remove_original_stmt(false) {
         pass_result.n = 0;
         pass_result.reserve(al, 0);
     }
@@ -316,13 +329,17 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         for (size_t i = 0; i < n_body; i++) {
             pass_result.n = 0;
             pass_result.reserve(al, 1);
+            remove_original_stmt = false;
             visit_stmt(*m_body[i]);
             if( pass_result.size() > 0 ) {
                 for (size_t j=0; j < pass_result.size(); j++) {
                     body.push_back(al, pass_result[j]);
                 }
             } else {
-                body.push_back(al, m_body[i]);
+                if( !remove_original_stmt ) {
+                    body.push_back(al, m_body[i]);
+                    remove_original_stmt = false;
+                }
             }
         }
         m_body = body.p;
