@@ -738,7 +738,22 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                 visit_expr(*x.m_values[i]);
                 call_create_and_allocate_temporary_variable(x.m_values[i])
                 x_m_values.push_back(al, array_var_temporary);
-            } else {
+            } else if( ASRUtils::is_struct(*ASRUtils::expr_type(x.m_values[i])) &&
+                       !ASR::is_a<ASR::Var_t>(
+                            *ASRUtils::get_past_array_physical_cast(x.m_values[i])) ) {
+                visit_expr(*x.m_values[i]);
+                ASR::expr_t* struct_var_temporary = create_and_allocate_temporary_variable_for_struct(
+                    ASRUtils::get_past_array_physical_cast(x.m_values[i]), name_hint, al, current_body,
+                    current_scope, exprs_with_target);
+                if( ASR::is_a<ASR::ArrayPhysicalCast_t>(*x.m_values[i]) ) {
+                    ASR::ArrayPhysicalCast_t* x_m_values_i = ASR::down_cast<ASR::ArrayPhysicalCast_t>(x.m_values[i]);
+                    struct_var_temporary = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
+                        al, struct_var_temporary->base.loc, struct_var_temporary,
+                        ASRUtils::extract_physical_type(ASRUtils::expr_type(struct_var_temporary)),
+                        x_m_values_i->m_new, x_m_values_i->m_type, nullptr));
+                }
+                x_m_values.push_back(al, struct_var_temporary);
+            }  else {
                 x_m_values.push_back(al, x.m_values[i]);
             }
         }
@@ -1182,7 +1197,17 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     }
 
     void replace_OverloadedUnaryMinus(ASR::OverloadedUnaryMinus_t* x) {
-        replace_current_expr("_overloaded_unary_minus_")
+        LCOMPILERS_ASSERT(x->m_overloaded);
+        std::pair<ASR::expr_t*, targetType> target_Info =
+            std::make_pair(nullptr, targetType::GeneratedTarget);
+        if( exprs_with_target.find(*current_expr) != exprs_with_target.end() ) {
+            target_Info = exprs_with_target[*current_expr];
+        }
+        *current_expr = x->m_overloaded;
+        if( target_Info.first != nullptr ) {
+            exprs_with_target[*current_expr] = target_Info;
+        }
+        ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_expr(*current_expr);
     }
 
     void replace_OverloadedStringConcat(ASR::OverloadedStringConcat_t* x) {
@@ -1229,8 +1254,6 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
             replace_expr(*current_expr);
         }
     }
-
-
 
 };
 
