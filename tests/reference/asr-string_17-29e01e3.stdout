@@ -116,7 +116,7 @@
                                         )]
                                         [(Assignment
                                             (Var 4 length)
-                                            (IntegerConstant 0 (Integer 4))
+                                            (IntegerConstant 0 (Integer 4) Decimal)
                                             ()
                                         )]
                                     )]

@@ -51,7 +51,7 @@
                             )
                             Mul
                             (Cast
-                                (IntegerConstant 2 (Integer 4))
+                                (IntegerConstant 2 (Integer 4) Decimal)
                                 IntegerToReal
                                 (Real 4)
                                 (RealConstant
@@ -71,7 +71,7 @@
                         (Var 2 r)
                         (RealBinOp
                             (Cast
-                                (IntegerConstant 2 (Integer 4))
+                                (IntegerConstant 2 (Integer 4) Decimal)
                                 IntegerToReal
                                 (Real 4)
                                 (RealConstant
@@ -96,7 +96,7 @@
                         (Var 2 r)
                         (RealBinOp
                             (Cast
-                                (IntegerConstant 2 (Integer 4))
+                                (IntegerConstant 2 (Integer 4) Decimal)
                                 IntegerToReal
                                 (Real 4)
                                 (RealConstant
@@ -107,7 +107,7 @@
                             Mul
                             (RealBinOp
                                 (Cast
-                                    (IntegerConstant 3 (Integer 4))
+                                    (IntegerConstant 3 (Integer 4) Decimal)
                                     IntegerToReal
                                     (Real 4)
                                     (RealConstant
@@ -138,7 +138,7 @@
                         (Var 2 r)
                         (RealBinOp
                             (Cast
-                                (IntegerConstant 2 (Integer 4))
+                                (IntegerConstant 2 (Integer 4) Decimal)
                                 IntegerToReal
                                 (Real 4)
                                 (RealConstant
@@ -154,7 +154,7 @@
                                 )
                                 Sub
                                 (Cast
-                                    (IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4) Decimal)
                                     IntegerToReal
                                     (Real 4)
                                     (RealConstant
@@ -180,11 +180,11 @@
                         (Var 2 r)
                         (Cast
                             (IntegerBinOp
-                                (IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 1 (Integer 4) Decimal)
                                 Div
-                                (IntegerConstant 2 (Integer 4))
+                                (IntegerConstant 2 (Integer 4) Decimal)
                                 (Integer 4)
-                                (IntegerConstant 0 (Integer 4))
+                                (IntegerConstant 0 (Integer 4) Decimal)
                             )
                             IntegerToReal
                             (Real 4)
@@ -204,7 +204,7 @@
                             )
                             Div
                             (Cast
-                                (IntegerConstant 2 (Integer 4))
+                                (IntegerConstant 2 (Integer 4) Decimal)
                                 IntegerToReal
                                 (Real 4)
                                 (RealConstant
@@ -224,7 +224,7 @@
                         (Var 2 r)
                         (RealBinOp
                             (Cast
-                                (IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 1 (Integer 4) Decimal)
                                 IntegerToReal
                                 (Real 4)
                                 (RealConstant
@@ -255,7 +255,7 @@
                                 )
                                 Mul
                                 (Cast
-                                    (IntegerConstant 2 (Integer 4))
+                                    (IntegerConstant 2 (Integer 4) Decimal)
                                     IntegerToReal
                                     (Real 4)
                                     (RealConstant
@@ -271,7 +271,7 @@
                             )
                             RealToInteger
                             (Integer 4)
-                            (IntegerConstant 2 (Integer 4))
+                            (IntegerConstant 2 (Integer 4) Decimal)
                         )
                         ()
                     )
@@ -280,7 +280,7 @@
                         (Cast
                             (RealBinOp
                                 (Cast
-                                    (IntegerConstant 2 (Integer 4))
+                                    (IntegerConstant 2 (Integer 4) Decimal)
                                     IntegerToReal
                                     (Real 4)
                                     (RealConstant
@@ -301,7 +301,7 @@
                             )
                             RealToInteger
                             (Integer 4)
-                            (IntegerConstant 2 (Integer 4))
+                            (IntegerConstant 2 (Integer 4) Decimal)
                         )
                         ()
                     )
@@ -310,7 +310,7 @@
                         (Cast
                             (RealBinOp
                                 (Cast
-                                    (IntegerConstant 2 (Integer 4))
+                                    (IntegerConstant 2 (Integer 4) Decimal)
                                     IntegerToReal
                                     (Real 4)
                                     (RealConstant
@@ -321,7 +321,7 @@
                                 Mul
                                 (RealBinOp
                                     (Cast
-                                        (IntegerConstant 3 (Integer 4))
+                                        (IntegerConstant 3 (Integer 4) Decimal)
                                         IntegerToReal
                                         (Real 4)
                                         (RealConstant
@@ -348,7 +348,7 @@
                             )
                             RealToInteger
                             (Integer 4)
-                            (IntegerConstant 8 (Integer 4))
+                            (IntegerConstant 8 (Integer 4) Decimal)
                         )
                         ()
                     )
@@ -357,7 +357,7 @@
                         (Cast
                             (RealBinOp
                                 (Cast
-                                    (IntegerConstant 2 (Integer 4))
+                                    (IntegerConstant 2 (Integer 4) Decimal)
                                     IntegerToReal
                                     (Real 4)
                                     (RealConstant
@@ -373,7 +373,7 @@
                                     )
                                     Sub
                                     (Cast
-                                        (IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 1 (Integer 4) Decimal)
                                         IntegerToReal
                                         (Real 4)
                                         (RealConstant
@@ -395,18 +395,18 @@
                             )
                             RealToInteger
                             (Integer 4)
-                            (IntegerConstant 4 (Integer 4))
+                            (IntegerConstant 4 (Integer 4) Decimal)
                         )
                         ()
                     )
                     (Assignment
                         (Var 2 i)
                         (IntegerBinOp
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             Div
-                            (IntegerConstant 2 (Integer 4))
+                            (IntegerConstant 2 (Integer 4) Decimal)
                             (Integer 4)
-                            (IntegerConstant 0 (Integer 4))
+                            (IntegerConstant 0 (Integer 4) Decimal)
                         )
                         ()
                     )
@@ -420,7 +420,7 @@
                                 )
                                 Div
                                 (Cast
-                                    (IntegerConstant 2 (Integer 4))
+                                    (IntegerConstant 2 (Integer 4) Decimal)
                                     IntegerToReal
                                     (Real 4)
                                     (RealConstant
@@ -436,7 +436,7 @@
                             )
                             RealToInteger
                             (Integer 4)
-                            (IntegerConstant 0 (Integer 4))
+                            (IntegerConstant 0 (Integer 4) Decimal)
                         )
                         ()
                     )
@@ -445,7 +445,7 @@
                         (Cast
                             (RealBinOp
                                 (Cast
-                                    (IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4) Decimal)
                                     IntegerToReal
                                     (Real 4)
                                     (RealConstant
@@ -466,7 +466,7 @@
                             )
                             RealToInteger
                             (Integer 4)
-                            (IntegerConstant 0 (Integer 4))
+                            (IntegerConstant 0 (Integer 4) Decimal)
                         )
                         ()
                     )]

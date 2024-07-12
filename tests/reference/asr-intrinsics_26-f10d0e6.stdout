@@ -23,8 +23,8 @@
                                     i
                                     []
                                     Local
-                                    (IntegerConstant 31 (Integer 4))
-                                    (IntegerConstant 31 (Integer 4))
+                                    (IntegerConstant 31 (Integer 4) Decimal)
+                                    (IntegerConstant 31 (Integer 4) Decimal)
                                     Save
                                     (Integer 4)
                                     ()
@@ -41,7 +41,7 @@
                             4 all_set
                             ()
                             [((Var 4 i))
-                            ((IntegerConstant 5 (Integer 4)))]
+                            ((IntegerConstant 5 (Integer 4) Decimal))]
                             (Logical 4)
                             ()
                             ()
@@ -155,11 +155,11 @@
                                     (DoLoop
                                         ()
                                         ((Var 3 pos)
-                                        (IntegerConstant 0 (Integer 4))
+                                        (IntegerConstant 0 (Integer 4) Decimal)
                                         (IntegerBinOp
                                             (Var 3 num_bits)
                                             Sub
-                                            (IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 1 (Integer 4) Decimal)
                                             (Integer 4)
                                             ()
                                         )

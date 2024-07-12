@@ -18,8 +18,8 @@
                                     Save
                                     (Array
                                         (Real 4)
-                                        [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 5 (Integer 4)))]
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 5 (Integer 4) Decimal))]
                                         FixedSizeArray
                                     )
                                     ()
@@ -39,10 +39,10 @@
                                     Save
                                     (Array
                                         (Real 4)
-                                        [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 5 (Integer 4)))
-                                        ((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 4 (Integer 4)))]
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 5 (Integer 4) Decimal))
+                                        ((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 4 (Integer 4) Decimal))]
                                         FixedSizeArray
                                     )
                                     ()
@@ -58,7 +58,7 @@
                                     []
                                     Local
                                     (Cast
-                                        (IntegerConstant 5 (Integer 4))
+                                        (IntegerConstant 5 (Integer 4) Decimal)
                                         IntegerToReal
                                         (Real 4)
                                         (RealConstant
@@ -85,7 +85,7 @@
                                     []
                                     Local
                                     (Cast
-                                        (IntegerConstant 5 (Integer 4))
+                                        (IntegerConstant 5 (Integer 4) Decimal)
                                         IntegerToReal
                                         (Real 4)
                                         (RealConstant
@@ -142,8 +142,8 @@
                                     Save
                                     (Array
                                         (Real 4)
-                                        [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 5 (Integer 4)))]
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 5 (Integer 4) Decimal))]
                                         FixedSizeArray
                                     )
                                     ()
@@ -163,10 +163,10 @@
                                     Save
                                     (Array
                                         (Real 4)
-                                        [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 5 (Integer 4)))
-                                        ((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 4 (Integer 4)))]
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 5 (Integer 4) Decimal))
+                                        ((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 4 (Integer 4) Decimal))]
                                         FixedSizeArray
                                     )
                                     ()
@@ -198,7 +198,7 @@
                                     []
                                     Local
                                     (Cast
-                                        (IntegerConstant 5 (Integer 4))
+                                        (IntegerConstant 5 (Integer 4) Decimal)
                                         IntegerToReal
                                         (Real 4)
                                         (RealConstant
@@ -225,7 +225,7 @@
                                     []
                                     Local
                                     (Cast
-                                        (IntegerConstant 5 (Integer 4))
+                                        (IntegerConstant 5 (Integer 4) Decimal)
                                         IntegerToReal
                                         (Real 4)
                                         (RealConstant
@@ -302,8 +302,8 @@
                                     Save
                                     (Array
                                         (Real 4)
-                                        [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 5 (Integer 4)))]
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 5 (Integer 4) Decimal))]
                                         FixedSizeArray
                                     )
                                     ()
@@ -323,10 +323,10 @@
                                     Save
                                     (Array
                                         (Real 4)
-                                        [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 5 (Integer 4)))
-                                        ((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 4 (Integer 4)))]
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 5 (Integer 4) Decimal))
+                                        ((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 4 (Integer 4) Decimal))]
                                         FixedSizeArray
                                     )
                                     ()
@@ -351,8 +351,8 @@
                                                     Save
                                                     (Array
                                                         (Real 4)
-                                                        [((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 5 (Integer 4)))]
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 5 (Integer 4) Decimal))]
                                                         FixedSizeArray
                                                     )
                                                     ()
@@ -372,10 +372,10 @@
                                                     Save
                                                     (Array
                                                         (Real 4)
-                                                        [((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 5 (Integer 4)))
-                                                        ((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 4 (Integer 4)))]
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 5 (Integer 4) Decimal))
+                                                        ((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 4 (Integer 4) Decimal))]
                                                         FixedSizeArray
                                                     )
                                                     ()
@@ -407,7 +407,7 @@
                                                     []
                                                     Local
                                                     (Cast
-                                                        (IntegerConstant 5 (Integer 4))
+                                                        (IntegerConstant 5 (Integer 4) Decimal)
                                                         IntegerToReal
                                                         (Real 4)
                                                         (RealConstant
@@ -434,7 +434,7 @@
                                                     []
                                                     Local
                                                     (Cast
-                                                        (IntegerConstant 5 (Integer 4))
+                                                        (IntegerConstant 5 (Integer 4) Decimal)
                                                         IntegerToReal
                                                         (Real 4)
                                                         (RealConstant
@@ -511,8 +511,8 @@
                                                     Save
                                                     (Array
                                                         (Real 4)
-                                                        [((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 5 (Integer 4)))]
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 5 (Integer 4) Decimal))]
                                                         FixedSizeArray
                                                     )
                                                     ()
@@ -532,10 +532,10 @@
                                                     Save
                                                     (Array
                                                         (Real 4)
-                                                        [((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 5 (Integer 4)))
-                                                        ((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 4 (Integer 4)))]
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 5 (Integer 4) Decimal))
+                                                        ((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 4 (Integer 4) Decimal))]
                                                         FixedSizeArray
                                                     )
                                                     ()
@@ -551,7 +551,7 @@
                                                     []
                                                     Local
                                                     (Cast
-                                                        (IntegerConstant 5 (Integer 4))
+                                                        (IntegerConstant 5 (Integer 4) Decimal)
                                                         IntegerToReal
                                                         (Real 4)
                                                         (RealConstant
@@ -578,7 +578,7 @@
                                                     []
                                                     Local
                                                     (Cast
-                                                        (IntegerConstant 5 (Integer 4))
+                                                        (IntegerConstant 5 (Integer 4) Decimal)
                                                         IntegerToReal
                                                         (Real 4)
                                                         (RealConstant
@@ -646,7 +646,7 @@
                                     []
                                     Local
                                     (Cast
-                                        (IntegerConstant 5 (Integer 4))
+                                        (IntegerConstant 5 (Integer 4) Decimal)
                                         IntegerToReal
                                         (Real 4)
                                         (RealConstant
@@ -673,7 +673,7 @@
                                     []
                                     Local
                                     (Cast
-                                        (IntegerConstant 5 (Integer 4))
+                                        (IntegerConstant 5 (Integer 4) Decimal)
                                         IntegerToReal
                                         (Real 4)
                                         (RealConstant
@@ -731,8 +731,8 @@
                                     Save
                                     (Array
                                         (Real 4)
-                                        [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 5 (Integer 4)))]
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 5 (Integer 4) Decimal))]
                                         FixedSizeArray
                                     )
                                     ()
@@ -752,10 +752,10 @@
                                     Save
                                     (Array
                                         (Real 4)
-                                        [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 5 (Integer 4)))
-                                        ((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 4 (Integer 4)))]
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 5 (Integer 4) Decimal))
+                                        ((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 4 (Integer 4) Decimal))]
                                         FixedSizeArray
                                     )
                                     ()
@@ -771,7 +771,7 @@
                                     []
                                     Local
                                     (Cast
-                                        (IntegerConstant 5 (Integer 4))
+                                        (IntegerConstant 5 (Integer 4) Decimal)
                                         IntegerToReal
                                         (Real 4)
                                         (RealConstant
@@ -798,7 +798,7 @@
                                     []
                                     Local
                                     (Cast
-                                        (IntegerConstant 5 (Integer 4))
+                                        (IntegerConstant 5 (Integer 4) Decimal)
                                         IntegerToReal
                                         (Real 4)
                                         (RealConstant

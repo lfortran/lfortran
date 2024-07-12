@@ -68,13 +68,13 @@
                                     .false.
                                     (Logical 4)
                                 )
-                                (IntegerConstant 4 (Integer 4))]
+                                (IntegerConstant 4 (Integer 4) Decimal)]
                                 0
                                 (Integer 4)
                                 ()
                             )
                             Eq
-                            (IntegerConstant 0 (Integer 4))
+                            (IntegerConstant 0 (Integer 4) Decimal)
                             (Logical 4)
                             ()
                         )
@@ -99,7 +99,7 @@
                                     .false.
                                     (Logical 4)
                                 )
-                                (IntegerConstant 4 (Integer 4))]
+                                (IntegerConstant 4 (Integer 4) Decimal)]
                                 0
                                 (Integer 4)
                                 ()

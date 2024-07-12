@@ -446,17 +446,17 @@
                                     )
                                     (Allocate
                                         [((Var 3 a_2)
-                                        [((IntegerConstant 1 (Integer 4))
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 3 n))]
                                         ()
                                         ())
                                         ((Var 3 b_2)
-                                        [((IntegerConstant 1 (Integer 4))
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 3 n))]
                                         ()
                                         ())
                                         ((Var 3 c_2)
-                                        [((IntegerConstant 1 (Integer 4))
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 3 n))]
                                         ()
                                         ())]
@@ -466,22 +466,22 @@
                                     )
                                     (Allocate
                                         [((Var 3 ab)
-                                        [((IntegerConstant 1 (Integer 4))
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 3 n))]
                                         ()
                                         ())
                                         ((Var 3 bc)
-                                        [((IntegerConstant 1 (Integer 4))
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 3 n))]
                                         ()
                                         ())
                                         ((Var 3 ca)
-                                        [((IntegerConstant 1 (Integer 4))
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 3 n))]
                                         ()
                                         ())
                                         ((Var 3 abc)
-                                        [((IntegerConstant 1 (Integer 4))
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 3 n))]
                                         ()
                                         ())]
@@ -491,7 +491,7 @@
                                     )
                                     (Assignment
                                         (Var 3 status)
-                                        (IntegerConstant 0 (Integer 4))
+                                        (IntegerConstant 0 (Integer 4) Decimal)
                                         ()
                                     )
                                     (Assignment
@@ -547,15 +547,15 @@
                                         (IntegerBinOp
                                             (IntegerBinOp
                                                 (ArrayBroadcast
-                                                    (IntegerConstant 2 (Integer 4))
+                                                    (IntegerConstant 2 (Integer 4) Decimal)
                                                     (IntrinsicArrayFunction
                                                         Shape
                                                         [(Var 3 a)]
                                                         0
                                                         (Array
                                                             (Integer 4)
-                                                            [((IntegerConstant 1 (Integer 4))
-                                                            (IntegerConstant 1 (Integer 4)))]
+                                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                                            (IntegerConstant 1 (Integer 4) Decimal))]
                                                             FixedSizeArray
                                                         )
                                                         ()
@@ -597,15 +597,15 @@
                                         (IntegerBinOp
                                             (IntegerBinOp
                                                 (ArrayBroadcast
-                                                    (IntegerConstant 2 (Integer 4))
+                                                    (IntegerConstant 2 (Integer 4) Decimal)
                                                     (IntrinsicArrayFunction
                                                         Shape
                                                         [(Var 3 b)]
                                                         0
                                                         (Array
                                                             (Integer 4)
-                                                            [((IntegerConstant 1 (Integer 4))
-                                                            (IntegerConstant 1 (Integer 4)))]
+                                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                                            (IntegerConstant 1 (Integer 4) Decimal))]
                                                             FixedSizeArray
                                                         )
                                                         ()
@@ -647,15 +647,15 @@
                                         (IntegerBinOp
                                             (IntegerBinOp
                                                 (ArrayBroadcast
-                                                    (IntegerConstant 2 (Integer 4))
+                                                    (IntegerConstant 2 (Integer 4) Decimal)
                                                     (IntrinsicArrayFunction
                                                         Shape
                                                         [(Var 3 c)]
                                                         0
                                                         (Array
                                                             (Integer 4)
-                                                            [((IntegerConstant 1 (Integer 4))
-                                                            (IntegerConstant 1 (Integer 4)))]
+                                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                                            (IntegerConstant 1 (Integer 4) Decimal))]
                                                             FixedSizeArray
                                                         )
                                                         ()
@@ -698,15 +698,15 @@
                                             (IntegerBinOp
                                                 (IntegerBinOp
                                                     (ArrayBroadcast
-                                                        (IntegerConstant 2 (Integer 4))
+                                                        (IntegerConstant 2 (Integer 4) Decimal)
                                                         (IntrinsicArrayFunction
                                                             Shape
                                                             [(Var 3 a)]
                                                             0
                                                             (Array
                                                                 (Integer 4)
-                                                                [((IntegerConstant 1 (Integer 4))
-                                                                (IntegerConstant 1 (Integer 4)))]
+                                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                                (IntegerConstant 1 (Integer 4) Decimal))]
                                                                 FixedSizeArray
                                                             )
                                                             ()
@@ -755,7 +755,7 @@
                                     )
                                     (Assignment
                                         (Var 3 status)
-                                        (IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 1 (Integer 4) Decimal)
                                         ()
                                     )
                                     (ImplicitDeallocate
@@ -778,22 +778,22 @@
                     []
                     [(Assignment
                         (Var 2 n)
-                        (IntegerConstant 10 (Integer 4))
+                        (IntegerConstant 10 (Integer 4) Decimal)
                         ()
                     )
                     (Allocate
                         [((Var 2 a)
-                        [((IntegerConstant 1 (Integer 4))
+                        [((IntegerConstant 1 (Integer 4) Decimal)
                         (Var 2 n))]
                         ()
                         ())
                         ((Var 2 b)
-                        [((IntegerConstant 1 (Integer 4))
+                        [((IntegerConstant 1 (Integer 4) Decimal)
                         (Var 2 n))]
                         ()
                         ())
                         ((Var 2 c)
-                        [((IntegerConstant 1 (Integer 4))
+                        [((IntegerConstant 1 (Integer 4) Decimal)
                         (Var 2 n))]
                         ()
                         ())]
@@ -804,15 +804,15 @@
                     (Assignment
                         (Var 2 a)
                         (ArrayBroadcast
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             (IntrinsicArrayFunction
                                 Shape
                                 [(Var 2 a)]
                                 0
                                 (Array
                                     (Integer 4)
-                                    [((IntegerConstant 1 (Integer 4))
-                                    (IntegerConstant 1 (Integer 4)))]
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 1 (Integer 4) Decimal))]
                                     FixedSizeArray
                                 )
                                 ()
@@ -832,15 +832,15 @@
                     (Assignment
                         (Var 2 b)
                         (ArrayBroadcast
-                            (IntegerConstant 2 (Integer 4))
+                            (IntegerConstant 2 (Integer 4) Decimal)
                             (IntrinsicArrayFunction
                                 Shape
                                 [(Var 2 b)]
                                 0
                                 (Array
                                     (Integer 4)
-                                    [((IntegerConstant 1 (Integer 4))
-                                    (IntegerConstant 1 (Integer 4)))]
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 1 (Integer 4) Decimal))]
                                     FixedSizeArray
                                 )
                                 ()
@@ -860,15 +860,15 @@
                     (Assignment
                         (Var 2 c)
                         (ArrayBroadcast
-                            (IntegerConstant 3 (Integer 4))
+                            (IntegerConstant 3 (Integer 4) Decimal)
                             (IntrinsicArrayFunction
                                 Shape
                                 [(Var 2 c)]
                                 0
                                 (Array
                                     (Integer 4)
-                                    [((IntegerConstant 1 (Integer 4))
-                                    (IntegerConstant 1 (Integer 4)))]
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 1 (Integer 4) Decimal))]
                                     FixedSizeArray
                                 )
                                 ()

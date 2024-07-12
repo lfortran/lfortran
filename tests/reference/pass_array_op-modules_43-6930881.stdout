@@ -57,8 +57,8 @@
                     [modules_43_fpm_sources]
                     [(Allocate
                         [((Var 5 sources)
-                        [((IntegerConstant 1 (Integer 4))
-                        (IntegerConstant 1 (Integer 4)))]
+                        [((IntegerConstant 1 (Integer 4) Decimal)
+                        (IntegerConstant 1 (Integer 4) Decimal))]
                         ()
                         ())]
                         ()
@@ -128,8 +128,8 @@
                                                     Default
                                                     (Array
                                                         (Logical 4)
-                                                        [((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 10 (Integer 4)))]
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 10 (Integer 4) Decimal))]
                                                         FixedSizeArray
                                                     )
                                                     ()
@@ -174,8 +174,8 @@
                                                     Default
                                                     (Array
                                                         (Logical 4)
-                                                        [((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 10 (Integer 4)))]
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 10 (Integer 4) Decimal))]
                                                         FixedSizeArray
                                                     )
                                                     ()
@@ -238,8 +238,8 @@
                                     [(Var 4 sources)]
                                     [(Allocate
                                         [((Var 4 dir_sources)
-                                        [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 1 (Integer 4)))]
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 1 (Integer 4) Decimal))]
                                         ()
                                         ())]
                                         ()
@@ -262,7 +262,7 @@
                                             (Var 4 __1_v)
                                             (ArrayBound
                                                 (Var 4 exclude_source)
-                                                (IntegerConstant 1 (Integer 4))
+                                                (IntegerConstant 1 (Integer 4) Decimal)
                                                 (Integer 4)
                                                 LBound
                                                 ()
@@ -274,14 +274,14 @@
                                             ((Var 4 __1_t)
                                             (ArrayBound
                                                 (Var 4 __libasr__created__var__0__logicalnot_unary_op_res)
-                                                (IntegerConstant 1 (Integer 4))
+                                                (IntegerConstant 1 (Integer 4) Decimal)
                                                 (Integer 4)
                                                 LBound
                                                 ()
                                             )
                                             (ArrayBound
                                                 (Var 4 __libasr__created__var__0__logicalnot_unary_op_res)
-                                                (IntegerConstant 1 (Integer 4))
+                                                (IntegerConstant 1 (Integer 4) Decimal)
                                                 (Integer 4)
                                                 UBound
                                                 ()
@@ -317,7 +317,7 @@
                                                 (IntegerBinOp
                                                     (Var 4 __1_v)
                                                     Add
-                                                    (IntegerConstant 1 (Integer 4))
+                                                    (IntegerConstant 1 (Integer 4) Decimal)
                                                     (Integer 4)
                                                     ()
                                                 )
@@ -336,8 +336,8 @@
                                                     DescriptorArray
                                                     (Array
                                                         (Logical 4)
-                                                        [((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 10 (Integer 4)))]
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 10 (Integer 4) Decimal))]
                                                         DescriptorArray
                                                     )
                                                     ()
@@ -357,8 +357,8 @@
                                                                         (Var 4 exclude_source)
                                                                         (Array
                                                                             (Logical 4)
-                                                                            [((IntegerConstant 1 (Integer 4))
-                                                                            (IntegerConstant 10 (Integer 4)))]
+                                                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                                                            (IntegerConstant 10 (Integer 4) Decimal))]
                                                                             FixedSizeArray
                                                                         )
                                                                         ()
@@ -367,8 +367,8 @@
                                                                     DescriptorArray
                                                                     (Array
                                                                         (Logical 4)
-                                                                        [((IntegerConstant 1 (Integer 4))
-                                                                        (IntegerConstant 10 (Integer 4)))]
+                                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                                        (IntegerConstant 10 (Integer 4) Decimal))]
                                                                         DescriptorArray
                                                                     )
                                                                     ()
@@ -397,8 +397,8 @@
                                                             (Var 4 exclude_source)
                                                             (Array
                                                                 (Logical 4)
-                                                                [((IntegerConstant 1 (Integer 4))
-                                                                (IntegerConstant 10 (Integer 4)))]
+                                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                                (IntegerConstant 10 (Integer 4) Decimal))]
                                                                 FixedSizeArray
                                                             )
                                                             ()
@@ -407,8 +407,8 @@
                                                         DescriptorArray
                                                         (Array
                                                             (Logical 4)
-                                                            [((IntegerConstant 1 (Integer 4))
-                                                            (IntegerConstant 10 (Integer 4)))]
+                                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                                            (IntegerConstant 10 (Integer 4) Decimal))]
                                                             DescriptorArray
                                                         )
                                                         ()
@@ -428,8 +428,8 @@
                                                                             (Var 4 exclude_source)
                                                                             (Array
                                                                                 (Logical 4)
-                                                                                [((IntegerConstant 1 (Integer 4))
-                                                                                (IntegerConstant 10 (Integer 4)))]
+                                                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                                                (IntegerConstant 10 (Integer 4) Decimal))]
                                                                                 FixedSizeArray
                                                                             )
                                                                             ()
@@ -438,8 +438,8 @@
                                                                         DescriptorArray
                                                                         (Array
                                                                             (Logical 4)
-                                                                            [((IntegerConstant 1 (Integer 4))
-                                                                            (IntegerConstant 10 (Integer 4)))]
+                                                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                                                            (IntegerConstant 10 (Integer 4) Decimal))]
                                                                             DescriptorArray
                                                                         )
                                                                         ()

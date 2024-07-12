@@ -75,9 +75,9 @@
                                                         [(TypeInquiry
                                                             Huge
                                                             (Integer 4)
-                                                            (IntegerConstant 1 (Integer 4))
+                                                            (IntegerConstant 1 (Integer 4) Decimal)
                                                             (Integer 4)
-                                                            (IntegerConstant 2147483647 (Integer 4))
+                                                            (IntegerConstant 2147483647 (Integer 4) Decimal)
                                                         )]
                                                         0
                                                         (Real 4)

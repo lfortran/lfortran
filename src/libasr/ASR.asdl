@@ -88,8 +88,7 @@ expr
     | EnumConstructor(symbol dt_sym, expr* args, ttype type, expr? value)
     | UnionTypeConstructor(symbol dt_sym, expr* args, ttype type, expr? value)
     | ImpliedDoLoop(expr* values, expr var, expr start, expr end, expr? increment, ttype type, expr? value)
-    | IntegerConstant(int n, ttype type)
-    | IntegerBOZ(int v, integerboz intboz_type, ttype? type)
+    | IntegerConstant(int n, ttype type, integerboz intboz_type)
     | IntegerBitNot(expr arg, ttype type, expr? value)
     | IntegerUnaryMinus(expr arg, ttype type, expr? value)
     | IntegerCompare(expr left, cmpop op, expr right, ttype type, expr? value)
@@ -230,7 +229,7 @@ binop = Add | Sub | Mul | Div | Pow | BitAnd | BitOr | BitXor | BitLShift | BitR
 reduction_op = ReduceAdd | ReduceSub | ReduceMul | ReduceMIN | ReduceMAX
 logicalbinop = And | Or | Xor | NEqv | Eqv
 cmpop = Eq | NotEq | Lt | LtE | Gt | GtE
-integerboz = Binary | Hex | Octal
+integerboz = Binary | Hex | Octal | Decimal
 arraybound = LBound | UBound
 arraystorage = RowMajor | ColMajor
 string_format_kind = FormatFortran | FormatC | FormatPythonPercent | FormatPythonFString | FormatPythonFormat

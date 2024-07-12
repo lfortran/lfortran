@@ -244,13 +244,8 @@ struct IntrinsicProcedures {
         }
     }
 
-    static ASR::expr_t *eval_int(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &compiler_options) {
+    static ASR::expr_t *eval_int(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &/*compiler_options*/) {
         ASR::expr_t* int_expr = args[0];
-        if( int_expr->type == ASR::exprType::IntegerBOZ ) {
-            ASR::IntegerBOZ_t *boz_expr = ASR::down_cast<ASR::IntegerBOZ_t>(int_expr);
-            ASR::ttype_t* tmp_int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, compiler_options.po.default_integer_kind));
-            return ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(al, loc, boz_expr->m_v, tmp_int_type));;
-        }
         ASR::ttype_t* int_type = ASRUtils::expr_type(int_expr);
         int int_kind = ASRUtils::extract_kind_from_ttype_t(int_type);
         if (ASR::is_a<ASR::Integer_t>(*int_type)) {

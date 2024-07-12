@@ -13,8 +13,8 @@
                                     a
                                     []
                                     Local
-                                    (IntegerConstant 1 (Integer 4))
-                                    (IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 1 (Integer 4) Decimal)
                                     Save
                                     (Integer 4)
                                     ()
@@ -29,8 +29,8 @@
                                     ap
                                     []
                                     Local
-                                    (IntegerConstant 1 (Integer 4))
-                                    (IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 1 (Integer 4) Decimal)
                                     Parameter
                                     (Integer 4)
                                     ()
@@ -45,8 +45,8 @@
                                     b
                                     []
                                     Local
-                                    (IntegerConstant 2 (Integer 4))
-                                    (IntegerConstant 2 (Integer 4))
+                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                    (IntegerConstant 2 (Integer 4) Decimal)
                                     Save
                                     (Integer 4)
                                     ()
@@ -61,8 +61,8 @@
                                     bp
                                     []
                                     Local
-                                    (IntegerConstant 2 (Integer 4))
-                                    (IntegerConstant 2 (Integer 4))
+                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                    (IntegerConstant 2 (Integer 4) Decimal)
                                     Parameter
                                     (Integer 4)
                                     ()
@@ -203,8 +203,8 @@
                                     marks_fixed
                                     []
                                     Local
-                                    (IntegerConstant 94 (Integer 4))
-                                    (IntegerConstant 94 (Integer 4))
+                                    (IntegerConstant 94 (Integer 4) Decimal)
+                                    (IntegerConstant 94 (Integer 4) Decimal)
                                     Parameter
                                     (Integer 4)
                                     ()
@@ -268,18 +268,18 @@
                     )
                     (Assignment
                         (Var 2 marks)
-                        (IntegerConstant 94 (Integer 4))
+                        (IntegerConstant 94 (Integer 4) Decimal)
                         ()
                     )
                     (Select
                         (Var 2 marks)
                         [(CaseStmt_Range
                             (IntegerBinOp
-                                (IntegerConstant 40 (Integer 4))
+                                (IntegerConstant 40 (Integer 4) Decimal)
                                 Add
                                 (Var 2 bp)
                                 (Integer 4)
-                                (IntegerConstant 42 (Integer 4))
+                                (IntegerConstant 42 (Integer 4) Decimal)
                             )
                             ()
                             [(Print
@@ -294,11 +294,11 @@
                         (CaseStmt_Range
                             ()
                             (IntegerBinOp
-                                (IntegerConstant 39 (Integer 4))
+                                (IntegerConstant 39 (Integer 4) Decimal)
                                 Sub
                                 (Var 2 ap)
                                 (Integer 4)
-                                (IntegerConstant 38 (Integer 4))
+                                (IntegerConstant 38 (Integer 4) Decimal)
                             )
                             [(Print
                                 [(StringConstant

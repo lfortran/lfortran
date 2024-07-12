@@ -12,7 +12,7 @@
                     preprocessor8
                     []
                     [(Print
-                        [(IntegerConstant 1 (Integer 4))]
+                        [(IntegerConstant 1 (Integer 4) Decimal)]
                         ()
                         ()
                     )
@@ -57,12 +57,12 @@
                         ()
                     )
                     (Print
-                        [(IntegerConstant 19 (Integer 4))]
+                        [(IntegerConstant 19 (Integer 4) Decimal)]
                         ()
                         ()
                     )
                     (Print
-                        [(IntegerConstant 20 (Integer 4))]
+                        [(IntegerConstant 20 (Integer 4) Decimal)]
                         ()
                         ()
                     )]

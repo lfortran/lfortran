@@ -97,12 +97,12 @@
                                     [(Var 3 c)]
                                     [(Allocate
                                         [((Var 3 c)
-                                        [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 3 (Integer 4)))
-                                        ((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 3 (Integer 4)))
-                                        ((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 3 (Integer 4)))]
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 3 (Integer 4) Decimal))
+                                        ((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 3 (Integer 4) Decimal))
+                                        ((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 3 (Integer 4) Decimal))]
                                         ()
                                         ())]
                                         ()
@@ -113,19 +113,19 @@
                                         (ArrayItem
                                             (Var 3 c)
                                             [(()
-                                            (IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 1 (Integer 4) Decimal)
                                             ())
                                             (()
-                                            (IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 1 (Integer 4) Decimal)
                                             ())
                                             (()
-                                            (IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 1 (Integer 4) Decimal)
                                             ())]
                                             (Integer 4)
                                             ColMajor
                                             ()
                                         )
-                                        (IntegerConstant 99 (Integer 4))
+                                        (IntegerConstant 99 (Integer 4) Decimal)
                                         ()
                                     )]
                                     ()
@@ -215,13 +215,13 @@
                                         [(ArrayItem
                                             (Var 4 x)
                                             [(()
-                                            (IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 1 (Integer 4) Decimal)
                                             ())
                                             (()
-                                            (IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 1 (Integer 4) Decimal)
                                             ())
                                             (()
-                                            (IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 1 (Integer 4) Decimal)
                                             ())]
                                             (Integer 4)
                                             ColMajor
@@ -235,20 +235,20 @@
                                             (ArrayItem
                                                 (Var 4 x)
                                                 [(()
-                                                (IntegerConstant 1 (Integer 4))
+                                                (IntegerConstant 1 (Integer 4) Decimal)
                                                 ())
                                                 (()
-                                                (IntegerConstant 1 (Integer 4))
+                                                (IntegerConstant 1 (Integer 4) Decimal)
                                                 ())
                                                 (()
-                                                (IntegerConstant 1 (Integer 4))
+                                                (IntegerConstant 1 (Integer 4) Decimal)
                                                 ())]
                                                 (Integer 4)
                                                 ColMajor
                                                 ()
                                             )
                                             NotEq
-                                            (IntegerConstant 8 (Integer 4))
+                                            (IntegerConstant 8 (Integer 4) Decimal)
                                             (Logical 4)
                                             ()
                                         )
@@ -270,13 +270,13 @@
                                         [(ArrayItem
                                             (Var 4 x)
                                             [(()
-                                            (IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 1 (Integer 4) Decimal)
                                             ())
                                             (()
-                                            (IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 1 (Integer 4) Decimal)
                                             ())
                                             (()
-                                            (IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 1 (Integer 4) Decimal)
                                             ())]
                                             (Integer 4)
                                             ColMajor
@@ -290,20 +290,20 @@
                                             (ArrayItem
                                                 (Var 4 x)
                                                 [(()
-                                                (IntegerConstant 1 (Integer 4))
+                                                (IntegerConstant 1 (Integer 4) Decimal)
                                                 ())
                                                 (()
-                                                (IntegerConstant 1 (Integer 4))
+                                                (IntegerConstant 1 (Integer 4) Decimal)
                                                 ())
                                                 (()
-                                                (IntegerConstant 1 (Integer 4))
+                                                (IntegerConstant 1 (Integer 4) Decimal)
                                                 ())]
                                                 (Integer 4)
                                                 ColMajor
                                                 ()
                                             )
                                             NotEq
-                                            (IntegerConstant 99 (Integer 4))
+                                            (IntegerConstant 99 (Integer 4) Decimal)
                                             (Logical 4)
                                             ()
                                         )
@@ -316,24 +316,24 @@
                                         (ArrayItem
                                             (Var 4 x)
                                             [(()
-                                            (IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 1 (Integer 4) Decimal)
                                             ())
                                             (()
-                                            (IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 1 (Integer 4) Decimal)
                                             ())
                                             (()
-                                            (IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 1 (Integer 4) Decimal)
                                             ())]
                                             (Integer 4)
                                             ColMajor
                                             ()
                                         )
-                                        (IntegerConstant 8 (Integer 4))
+                                        (IntegerConstant 8 (Integer 4) Decimal)
                                         ()
                                     )
                                     (Assignment
                                         (Var 4 r)
-                                        (IntegerConstant 0 (Integer 4))
+                                        (IntegerConstant 0 (Integer 4) Decimal)
                                         ()
                                     )]
                                     (Var 4 r)
@@ -429,13 +429,13 @@
                                         [(ArrayItem
                                             (Var 5 c)
                                             [(()
-                                            (IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 1 (Integer 4) Decimal)
                                             ())
                                             (()
-                                            (IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 1 (Integer 4) Decimal)
                                             ())
                                             (()
-                                            (IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 1 (Integer 4) Decimal)
                                             ())]
                                             (Integer 4)
                                             ColMajor
@@ -449,20 +449,20 @@
                                             (ArrayItem
                                                 (Var 5 c)
                                                 [(()
-                                                (IntegerConstant 1 (Integer 4))
+                                                (IntegerConstant 1 (Integer 4) Decimal)
                                                 ())
                                                 (()
-                                                (IntegerConstant 1 (Integer 4))
+                                                (IntegerConstant 1 (Integer 4) Decimal)
                                                 ())
                                                 (()
-                                                (IntegerConstant 1 (Integer 4))
+                                                (IntegerConstant 1 (Integer 4) Decimal)
                                                 ())]
                                                 (Integer 4)
                                                 ColMajor
                                                 ()
                                             )
                                             NotEq
-                                            (IntegerConstant 99 (Integer 4))
+                                            (IntegerConstant 99 (Integer 4) Decimal)
                                             (Logical 4)
                                             ()
                                         )
@@ -475,19 +475,19 @@
                                         (ArrayItem
                                             (Var 5 c)
                                             [(()
-                                            (IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 1 (Integer 4) Decimal)
                                             ())
                                             (()
-                                            (IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 1 (Integer 4) Decimal)
                                             ())
                                             (()
-                                            (IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 1 (Integer 4) Decimal)
                                             ())]
                                             (Integer 4)
                                             ColMajor
                                             ()
                                         )
-                                        (IntegerConstant 8 (Integer 4))
+                                        (IntegerConstant 8 (Integer 4) Decimal)
                                         ()
                                     )]
                                     ()
@@ -533,17 +533,17 @@
                     []
                     [(Assignment
                         (Var 2 stat)
-                        (IntegerConstant 1 (Integer 4))
+                        (IntegerConstant 1 (Integer 4) Decimal)
                         ()
                     )
                     (Allocate
                         [((Var 2 c)
-                        [((IntegerConstant 1 (Integer 4))
-                        (IntegerConstant 3 (Integer 4)))
-                        ((IntegerConstant 1 (Integer 4))
-                        (IntegerConstant 3 (Integer 4)))
-                        ((IntegerConstant 1 (Integer 4))
-                        (IntegerConstant 3 (Integer 4)))]
+                        [((IntegerConstant 1 (Integer 4) Decimal)
+                        (IntegerConstant 3 (Integer 4) Decimal))
+                        ((IntegerConstant 1 (Integer 4) Decimal)
+                        (IntegerConstant 3 (Integer 4) Decimal))
+                        ((IntegerConstant 1 (Integer 4) Decimal)
+                        (IntegerConstant 3 (Integer 4) Decimal))]
                         ()
                         ())]
                         (Var 2 stat)
@@ -554,7 +554,7 @@
                         (IntegerCompare
                             (Var 2 stat)
                             NotEq
-                            (IntegerConstant 0 (Integer 4))
+                            (IntegerConstant 0 (Integer 4) Decimal)
                             (Logical 4)
                             ()
                         )
@@ -567,19 +567,19 @@
                         (ArrayItem
                             (Var 2 c)
                             [(()
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             ())
                             (()
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             ())
                             (()
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             ())]
                             (Integer 4)
                             ColMajor
                             ()
                         )
-                        (IntegerConstant 3 (Integer 4))
+                        (IntegerConstant 3 (Integer 4) Decimal)
                         ()
                     )
                     (ImplicitDeallocate
@@ -608,20 +608,20 @@
                             (ArrayItem
                                 (Var 2 c)
                                 [(()
-                                (IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 1 (Integer 4) Decimal)
                                 ())
                                 (()
-                                (IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 1 (Integer 4) Decimal)
                                 ())
                                 (()
-                                (IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 1 (Integer 4) Decimal)
                                 ())]
                                 (Integer 4)
                                 ColMajor
                                 ()
                             )
                             NotEq
-                            (IntegerConstant 8 (Integer 4))
+                            (IntegerConstant 8 (Integer 4) Decimal)
                             (Logical 4)
                             ()
                         )
@@ -634,13 +634,13 @@
                         [(ArrayItem
                             (Var 2 c)
                             [(()
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             ())
                             (()
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             ())
                             (()
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             ())]
                             (Integer 4)
                             ColMajor

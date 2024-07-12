@@ -28,7 +28,7 @@
                     []
                     [(Assignment
                         (Var 2 x)
-                        (IntegerConstant 24 (Integer 4))
+                        (IntegerConstant 24 (Integer 4) Decimal)
                         ()
                     )
                     (Print

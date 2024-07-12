@@ -519,7 +519,7 @@
                             (Integer 4)
                             ()
                         )
-                        (IntegerConstant 8 (Integer 4))
+                        (IntegerConstant 8 (Integer 4) Decimal)
                         ()
                     )
                     (Associate

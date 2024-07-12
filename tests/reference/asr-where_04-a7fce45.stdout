@@ -39,8 +39,8 @@
                                                     Default
                                                     (Array
                                                         (Real 4)
-                                                        [((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 2 (Integer 4)))]
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 2 (Integer 4) Decimal))]
                                                         FixedSizeArray
                                                     )
                                                     ()
@@ -74,8 +74,8 @@
                                             [0.00000000e+00, 0.00000000e+00]
                                             (Array
                                                 (Real 4)
-                                                [((IntegerConstant 1 (Integer 4))
-                                                (IntegerConstant 2 (Integer 4)))]
+                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                (IntegerConstant 2 (Integer 4) Decimal))]
                                                 FixedSizeArray
                                             )
                                             ColMajor
@@ -156,8 +156,8 @@
                                                         0
                                                         (Array
                                                             (Integer 4)
-                                                            [((IntegerConstant 1 (Integer 4))
-                                                            (IntegerConstant 1 (Integer 4)))]
+                                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                                            (IntegerConstant 1 (Integer 4) Decimal))]
                                                             FixedSizeArray
                                                         )
                                                         ()
@@ -217,7 +217,7 @@
                                                     (ArrayItem
                                                         (Var 3 reldiff)
                                                         [(()
-                                                        (IntegerConstant 1 (Integer 4))
+                                                        (IntegerConstant 1 (Integer 4) Decimal)
                                                         ())]
                                                         (Real 4)
                                                         ColMajor
@@ -256,7 +256,7 @@
                                                     (ArrayItem
                                                         (Var 3 reldiff)
                                                         [(()
-                                                        (IntegerConstant 2 (Integer 4))
+                                                        (IntegerConstant 2 (Integer 4) Decimal)
                                                         ())]
                                                         (Real 4)
                                                         ColMajor
@@ -358,8 +358,8 @@
                                             [1.00000001e-01, 1.00000001e-01]
                                             (Array
                                                 (Real 4)
-                                                [((IntegerConstant 1 (Integer 4))
-                                                (IntegerConstant 2 (Integer 4)))]
+                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                (IntegerConstant 2 (Integer 4) Decimal))]
                                                 FixedSizeArray
                                             )
                                             ColMajor

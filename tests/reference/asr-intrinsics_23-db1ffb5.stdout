@@ -16,11 +16,11 @@
                                     (TypeInquiry
                                         Huge
                                         (Integer 4)
-                                        (IntegerConstant 0 (Integer 4))
+                                        (IntegerConstant 0 (Integer 4) Decimal)
                                         (Integer 4)
-                                        (IntegerConstant 2147483647 (Integer 4))
+                                        (IntegerConstant 2147483647 (Integer 4) Decimal)
                                     )
-                                    (IntegerConstant 2147483647 (Integer 4))
+                                    (IntegerConstant 2147483647 (Integer 4) Decimal)
                                     Parameter
                                     (Integer 4)
                                     ()
@@ -38,11 +38,11 @@
                                     (TypeInquiry
                                         Huge
                                         (Integer 8)
-                                        (IntegerConstant 0 (Integer 8))
+                                        (IntegerConstant 0 (Integer 8) Decimal)
                                         (Integer 8)
-                                        (IntegerConstant 9223372036854775807 (Integer 8))
+                                        (IntegerConstant 9223372036854775807 (Integer 8) Decimal)
                                     )
-                                    (IntegerConstant 9223372036854775807 (Integer 8))
+                                    (IntegerConstant 9223372036854775807 (Integer 8) Decimal)
                                     Parameter
                                     (Integer 8)
                                     ()
@@ -128,16 +128,16 @@
                         [(TypeInquiry
                             Huge
                             (Integer 4)
-                            (IntegerConstant 0 (Integer 4))
+                            (IntegerConstant 0 (Integer 4) Decimal)
                             (Integer 4)
-                            (IntegerConstant 2147483647 (Integer 4))
+                            (IntegerConstant 2147483647 (Integer 4) Decimal)
                         )
                         (TypeInquiry
                             Huge
                             (Integer 8)
-                            (IntegerConstant 0 (Integer 8))
+                            (IntegerConstant 0 (Integer 8) Decimal)
                             (Integer 8)
-                            (IntegerConstant 9223372036854775807 (Integer 8))
+                            (IntegerConstant 9223372036854775807 (Integer 8) Decimal)
                         )
                         (TypeInquiry
                             Huge

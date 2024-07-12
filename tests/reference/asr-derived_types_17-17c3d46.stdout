@@ -213,8 +213,8 @@
                                                     num
                                                     []
                                                     Local
-                                                    (IntegerConstant 100 (Integer 4))
-                                                    (IntegerConstant 100 (Integer 4))
+                                                    (IntegerConstant 100 (Integer 4) Decimal)
+                                                    (IntegerConstant 100 (Integer 4) Decimal)
                                                     Save
                                                     (Integer 4)
                                                     ()

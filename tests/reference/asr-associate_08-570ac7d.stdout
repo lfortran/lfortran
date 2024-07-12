@@ -92,7 +92,7 @@
                         7 sub_1
                         ()
                         [((Var 7 type_1))
-                        ((IntegerConstant 123 (Integer 4)))]
+                        ((IntegerConstant 123 (Integer 4) Decimal))]
                         ()
                     )
                     (Print
@@ -114,7 +114,7 @@
                                     ()
                                 )
                                 [(()
-                                (IntegerConstant 0 (Integer 4))
+                                (IntegerConstant 0 (Integer 4) Decimal)
                                 ())]
                                 (StructType
                                     7 t_1
@@ -203,7 +203,7 @@
                                                                     ()
                                                                 )
                                                                 [(()
-                                                                (IntegerConstant 0 (Integer 4))
+                                                                (IntegerConstant 0 (Integer 4) Decimal)
                                                                 ())]
                                                                 (StructType
                                                                     2 t_1
@@ -295,8 +295,8 @@
                                             )
                                             ()
                                         )
-                                        [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 0 (Integer 4)))]
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 0 (Integer 4) Decimal))]
                                         ()
                                         ())]
                                         ()
@@ -377,7 +377,7 @@
                                                         (ArrayItem
                                                             (Var 6 progress)
                                                             [(()
-                                                            (IntegerConstant 0 (Integer 4))
+                                                            (IntegerConstant 0 (Integer 4) Decimal)
                                                             ())]
                                                             (ClassType
                                                                 2 t_2
@@ -406,7 +406,7 @@
                                                                     ()
                                                                 )
                                                                 [(()
-                                                                (IntegerConstant 0 (Integer 4))
+                                                                (IntegerConstant 0 (Integer 4) Decimal)
                                                                 ())]
                                                                 (StructType
                                                                     2 t_1
@@ -418,7 +418,7 @@
                                                             (Integer 4)
                                                             ()
                                                         )
-                                                        (IntegerConstant 345 (Integer 4))
+                                                        (IntegerConstant 345 (Integer 4) Decimal)
                                                         ()
                                                     )]
                                                 ),
@@ -479,7 +479,7 @@
                                             (ArrayItem
                                                 (Var 6 progress)
                                                 [(()
-                                                (IntegerConstant 0 (Integer 4))
+                                                (IntegerConstant 0 (Integer 4) Decimal)
                                                 ())]
                                                 (ClassType
                                                     2 t_2
@@ -500,8 +500,8 @@
                                             )
                                             ()
                                         )
-                                        [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 0 (Integer 4)))]
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 0 (Integer 4) Decimal))]
                                         ()
                                         ())]
                                         ()

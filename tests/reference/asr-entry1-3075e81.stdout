@@ -29,7 +29,7 @@
                     [(Assignment
                         (Var 2 dummy)
                         (Cast
-                            (IntegerConstant 10 (Integer 4))
+                            (IntegerConstant 10 (Integer 4) Decimal)
                             IntegerToReal
                             (Real 4)
                             (RealConstant
@@ -94,7 +94,7 @@
                     [(SubroutineCall
                         1 x_main__lcompilers
                         1 x_main__lcompilers
-                        [((IntegerConstant 1 (Integer 4)))
+                        [((IntegerConstant 1 (Integer 4) Decimal))
                         ((Var 3 dummy))]
                         ()
                     )]
@@ -165,7 +165,7 @@
                         (IntegerCompare
                             (Var 5 entry__lcompilers)
                             Eq
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             (Logical 4)
                             ()
                         )
@@ -179,7 +179,7 @@
                         (IntegerCompare
                             (Var 5 entry__lcompilers)
                             Eq
-                            (IntegerConstant 2 (Integer 4))
+                            (IntegerConstant 2 (Integer 4) Decimal)
                             (Logical 4)
                             ()
                         )
@@ -273,7 +273,7 @@
                     [(SubroutineCall
                         1 x_main__lcompilers
                         1 x_main__lcompilers
-                        [((IntegerConstant 2 (Integer 4)))
+                        [((IntegerConstant 2 (Integer 4) Decimal))
                         ((Var 4 dummy))]
                         ()
                     )]

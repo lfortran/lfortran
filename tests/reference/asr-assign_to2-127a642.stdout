@@ -80,7 +80,7 @@
                     )
                     (Assignment
                         (Var 2 next)
-                        (IntegerConstant 30 (Integer 4))
+                        (IntegerConstant 30 (Integer 4) Decimal)
                         ()
                     )
                     (Assignment
@@ -90,7 +90,7 @@
                     )
                     (Assignment
                         (Var 2 i)
-                        (IntegerConstant 1 (Integer 4))
+                        (IntegerConstant 1 (Integer 4) Decimal)
                         ()
                     )
                     (GoToTarget
@@ -100,7 +100,7 @@
                     (Select
                         (Var 2 next)
                         [(CaseStmt
-                            [(IntegerConstant 30 (Integer 4))]
+                            [(IntegerConstant 30 (Integer 4) Decimal)]
                             [(GoTo
                                 30
                                 30
@@ -108,7 +108,7 @@
                             .false.
                         )
                         (CaseStmt
-                            [(IntegerConstant 50 (Integer 4))]
+                            [(IntegerConstant 50 (Integer 4) Decimal)]
                             [(GoTo
                                 50
                                 50
@@ -116,7 +116,7 @@
                             .false.
                         )
                         (CaseStmt
-                            [(IntegerConstant 70 (Integer 4))]
+                            [(IntegerConstant 70 (Integer 4) Decimal)]
                             [(GoTo
                                 70
                                 70
@@ -132,9 +132,9 @@
                     )
                     (If
                         (IntegerCompare
-                            (IntegerConstant 0 (Integer 4))
+                            (IntegerConstant 0 (Integer 4) Decimal)
                             Lt
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             (Logical 4)
                             (LogicalConstant
                                 .true.
@@ -152,13 +152,13 @@
                         50
                     )
                     (Print
-                        [(IntegerConstant 50 (Integer 4))]
+                        [(IntegerConstant 50 (Integer 4) Decimal)]
                         ()
                         ()
                     )
                     (Assignment
                         (Var 2 next)
-                        (IntegerConstant 50 (Integer 4))
+                        (IntegerConstant 50 (Integer 4) Decimal)
                         ()
                     )
                     (GoToTarget
@@ -166,7 +166,7 @@
                         70
                     )
                     (Print
-                        [(IntegerConstant 70 (Integer 4))]
+                        [(IntegerConstant 70 (Integer 4) Decimal)]
                         ()
                         ()
                     )]

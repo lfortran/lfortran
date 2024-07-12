@@ -28,14 +28,14 @@
                     []
                     [(Assignment
                         (Var 2 a)
-                        (IntegerConstant 1 (Integer 4))
+                        (IntegerConstant 1 (Integer 4) Decimal)
                         ()
                     )
                     (If
                         (IntegerCompare
                             (Var 2 a)
                             LtE
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             (Logical 4)
                             ()
                         )

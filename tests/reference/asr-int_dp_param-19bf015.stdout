@@ -13,8 +13,8 @@
                                     prec1
                                     []
                                     Local
-                                    (IntegerConstant 4 (Integer 4))
-                                    (IntegerConstant 4 (Integer 4))
+                                    (IntegerConstant 4 (Integer 4) Decimal)
+                                    (IntegerConstant 4 (Integer 4) Decimal)
                                     Parameter
                                     (Integer 4)
                                     ()
@@ -29,8 +29,8 @@
                                     prec2
                                     []
                                     Local
-                                    (IntegerConstant 8 (Integer 4))
-                                    (IntegerConstant 8 (Integer 4))
+                                    (IntegerConstant 8 (Integer 4) Decimal)
+                                    (IntegerConstant 8 (Integer 4) Decimal)
                                     Parameter
                                     (Integer 4)
                                     ()
@@ -45,8 +45,8 @@
                                     u
                                     []
                                     Local
-                                    (IntegerConstant 2147483647 (Integer 4))
-                                    (IntegerConstant 2147483647 (Integer 4))
+                                    (IntegerConstant 2147483647 (Integer 4) Decimal)
+                                    (IntegerConstant 2147483647 (Integer 4) Decimal)
                                     Save
                                     (Integer 4)
                                     ()
@@ -62,12 +62,12 @@
                                     []
                                     Local
                                     (Cast
-                                        (IntegerConstant 2147483647 (Integer 4))
+                                        (IntegerConstant 2147483647 (Integer 4) Decimal)
                                         IntegerToInteger
                                         (Integer 8)
-                                        (IntegerConstant 2147483647 (Integer 8))
+                                        (IntegerConstant 2147483647 (Integer 8) Decimal)
                                     )
-                                    (IntegerConstant 2147483647 (Integer 8))
+                                    (IntegerConstant 2147483647 (Integer 8) Decimal)
                                     Save
                                     (Integer 8)
                                     ()

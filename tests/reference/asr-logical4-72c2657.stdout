@@ -61,7 +61,7 @@
                     [(Assignment
                         (Var 2 a)
                         (Cast
-                            (IntegerConstant 2 (Integer 4))
+                            (IntegerConstant 2 (Integer 4) Decimal)
                             IntegerToLogical
                             (Logical 4)
                             ()
@@ -72,9 +72,9 @@
                         (Var 2 b)
                         (Cast
                             (IntegerUnaryMinus
-                                (IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 1 (Integer 4) Decimal)
                                 (Integer 4)
-                                (IntegerConstant -1 (Integer 4))
+                                (IntegerConstant -1 (Integer 4) Decimal)
                             )
                             IntegerToLogical
                             (Logical 4)
@@ -85,7 +85,7 @@
                     (Assignment
                         (Var 2 c)
                         (Cast
-                            (IntegerConstant 0 (Integer 4))
+                            (IntegerConstant 0 (Integer 4) Decimal)
                             IntegerToLogical
                             (Logical 4)
                             ()

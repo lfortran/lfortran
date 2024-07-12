@@ -272,7 +272,7 @@
                                                             (ArrayItem
                                                                 (Var 6 __lcompilers_created__nested_context__prune_build_targets_modules_used)
                                                                 [(()
-                                                                (IntegerConstant 1 (Integer 4))
+                                                                (IntegerConstant 1 (Integer 4) Decimal)
                                                                 ())]
                                                                 (StructType
                                                                     4 int_t
@@ -284,7 +284,7 @@
                                                             (Integer 4)
                                                             ()
                                                         )
-                                                        (IntegerConstant 2 (Integer 4))
+                                                        (IntegerConstant 2 (Integer 4) Decimal)
                                                         ()
                                                     )
                                                     (ExplicitDeallocate
@@ -292,7 +292,7 @@
                                                     )
                                                     (Allocate
                                                         [((Var 6 __libasr__created__var__0__array_constructor_)
-                                                        [((IntegerConstant 1 (Integer 4))
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (ArraySize
                                                             (Var 6 __lcompilers_created__nested_context__prune_build_targets_modules_used)
                                                             ()
@@ -309,7 +309,7 @@
                                                         (Var 6 __1_k)
                                                         (ArrayBound
                                                             (Var 6 __libasr__created__var__0__array_constructor_)
-                                                            (IntegerConstant 1 (Integer 4))
+                                                            (IntegerConstant 1 (Integer 4) Decimal)
                                                             (Integer 4)
                                                             LBound
                                                             ()
@@ -321,14 +321,14 @@
                                                         ((Var 6 __1_t)
                                                         (ArrayBound
                                                             (Var 6 __lcompilers_created__nested_context__prune_build_targets_modules_used)
-                                                            (IntegerConstant 1 (Integer 4))
+                                                            (IntegerConstant 1 (Integer 4) Decimal)
                                                             (Integer 4)
                                                             LBound
                                                             ()
                                                         )
                                                         (ArrayBound
                                                             (Var 6 __lcompilers_created__nested_context__prune_build_targets_modules_used)
-                                                            (IntegerConstant 1 (Integer 4))
+                                                            (IntegerConstant 1 (Integer 4) Decimal)
                                                             (Integer 4)
                                                             UBound
                                                             ()
@@ -364,7 +364,7 @@
                                                             (IntegerBinOp
                                                                 (Var 6 __1_k)
                                                                 Add
-                                                                (IntegerConstant 1 (Integer 4))
+                                                                (IntegerConstant 1 (Integer 4) Decimal)
                                                                 (Integer 4)
                                                                 ()
                                                             )
@@ -428,8 +428,8 @@
                                     []
                                     [(Allocate
                                         [((Var 5 modules_used)
-                                        [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 1 (Integer 4)))]
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 1 (Integer 4) Decimal))]
                                         ()
                                         ())]
                                         ()
@@ -441,7 +441,7 @@
                                             (ArrayItem
                                                 (Var 5 modules_used)
                                                 [(()
-                                                (IntegerConstant 1 (Integer 4))
+                                                (IntegerConstant 1 (Integer 4) Decimal)
                                                 ())]
                                                 (StructType
                                                     4 int_t
@@ -453,7 +453,7 @@
                                             (Integer 4)
                                             ()
                                         )
-                                        (IntegerConstant 0 (Integer 4))
+                                        (IntegerConstant 0 (Integer 4) Decimal)
                                         ()
                                     )
                                     (Associate
@@ -480,7 +480,7 @@
                                             (ArrayItem
                                                 (Var 5 modules_used)
                                                 [(()
-                                                (IntegerConstant 1 (Integer 4))
+                                                (IntegerConstant 1 (Integer 4) Decimal)
                                                 ())]
                                                 (StructType
                                                     4 int_t
@@ -501,7 +501,7 @@
                                                 (ArrayItem
                                                     (Var 5 modules_used)
                                                     [(()
-                                                    (IntegerConstant 1 (Integer 4))
+                                                    (IntegerConstant 1 (Integer 4) Decimal)
                                                     ())]
                                                     (StructType
                                                         4 int_t
@@ -514,7 +514,7 @@
                                                 ()
                                             )
                                             NotEq
-                                            (IntegerConstant 2 (Integer 4))
+                                            (IntegerConstant 2 (Integer 4) Decimal)
                                             (Logical 4)
                                             ()
                                         )

@@ -182,7 +182,8 @@
                                                         "last_line": 2,
                                                         "last_column": 28
                                                     }
-                                                }
+                                                },
+                                                "intboz_type": "Decimal"
                                             },
                                             "loc": {
                                                 "first": 50,
@@ -214,7 +215,8 @@
                                                         "last_line": 2,
                                                         "last_column": 28
                                                     }
-                                                }
+                                                },
+                                                "intboz_type": "Decimal"
                                             },
                                             "loc": {
                                                 "first": 50,

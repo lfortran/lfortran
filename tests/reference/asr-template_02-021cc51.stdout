@@ -169,7 +169,7 @@
                                     )
                                     (Allocate
                                         [((Var 12 pos)
-                                        [((IntegerConstant 1 (Integer 4))
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 12 n))]
                                         ()
                                         ())]
@@ -181,7 +181,7 @@
                                         (IntegerCompare
                                             (Var 12 n)
                                             Lt
-                                            (IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 1 (Integer 4) Decimal)
                                             (Logical 4)
                                             ()
                                         )
@@ -191,15 +191,15 @@
                                     (Assignment
                                         (Var 12 pos)
                                         (ArrayBroadcast
-                                            (IntegerConstant 0 (Integer 4))
+                                            (IntegerConstant 0 (Integer 4) Decimal)
                                             (IntrinsicArrayFunction
                                                 Shape
                                                 [(Var 12 pos)]
                                                 0
                                                 (Array
                                                     (Integer 4)
-                                                    [((IntegerConstant 1 (Integer 4))
-                                                    (IntegerConstant 1 (Integer 4)))]
+                                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                                    (IntegerConstant 1 (Integer 4) Decimal))]
                                                     FixedSizeArray
                                                 )
                                                 ()
@@ -220,24 +220,24 @@
                                         (ArrayItem
                                             (Var 12 pos)
                                             [(()
-                                            (IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 1 (Integer 4) Decimal)
                                             ())]
                                             (Integer 4)
                                             ColMajor
                                             ()
                                         )
-                                        (IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 1 (Integer 4) Decimal)
                                         ()
                                     )
                                     (Assignment
                                         (Var 12 j)
-                                        (IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 1 (Integer 4) Decimal)
                                         ()
                                     )
                                     (DoLoop
                                         ()
                                         ((Var 12 i)
-                                        (IntegerConstant 2 (Integer 4))
+                                        (IntegerConstant 2 (Integer 4) Decimal)
                                         (Var 12 n)
                                         ())
                                         [(If
@@ -259,7 +259,7 @@
                                                     (IntegerBinOp
                                                         (Var 12 i)
                                                         Sub
-                                                        (IntegerConstant 1 (Integer 4))
+                                                        (IntegerConstant 1 (Integer 4) Decimal)
                                                         (Integer 4)
                                                         ()
                                                     )
@@ -277,7 +277,7 @@
                                                 (IntegerBinOp
                                                     (Var 12 j)
                                                     Add
-                                                    (IntegerConstant 1 (Integer 4))
+                                                    (IntegerConstant 1 (Integer 4) Decimal)
                                                     (Integer 4)
                                                     ()
                                                 )
@@ -302,7 +302,7 @@
                                     )
                                     (Allocate
                                         [((Var 12 mask)
-                                        [((IntegerConstant 1 (Integer 4))
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 12 j))]
                                         ()
                                         ())]
@@ -313,7 +313,7 @@
                                     (DoLoop
                                         ()
                                         ((Var 12 i)
-                                        (IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 12 j)
                                         ())
                                         [(Assignment
@@ -510,7 +510,7 @@
                                     )
                                     (Allocate
                                         [((Var 10 pos)
-                                        [((IntegerConstant 1 (Integer 4))
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 10 n))]
                                         ()
                                         ())]
@@ -522,7 +522,7 @@
                                         (IntegerCompare
                                             (Var 10 n)
                                             Lt
-                                            (IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 1 (Integer 4) Decimal)
                                             (Logical 4)
                                             ()
                                         )
@@ -532,15 +532,15 @@
                                     (Assignment
                                         (Var 10 pos)
                                         (ArrayBroadcast
-                                            (IntegerConstant 0 (Integer 4))
+                                            (IntegerConstant 0 (Integer 4) Decimal)
                                             (IntrinsicArrayFunction
                                                 Shape
                                                 [(Var 10 pos)]
                                                 0
                                                 (Array
                                                     (Integer 4)
-                                                    [((IntegerConstant 1 (Integer 4))
-                                                    (IntegerConstant 1 (Integer 4)))]
+                                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                                    (IntegerConstant 1 (Integer 4) Decimal))]
                                                     FixedSizeArray
                                                 )
                                                 ()
@@ -561,24 +561,24 @@
                                         (ArrayItem
                                             (Var 10 pos)
                                             [(()
-                                            (IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 1 (Integer 4) Decimal)
                                             ())]
                                             (Integer 4)
                                             ColMajor
                                             ()
                                         )
-                                        (IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 1 (Integer 4) Decimal)
                                         ()
                                     )
                                     (Assignment
                                         (Var 10 j)
-                                        (IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 1 (Integer 4) Decimal)
                                         ()
                                     )
                                     (DoLoop
                                         ()
                                         ((Var 10 i)
-                                        (IntegerConstant 2 (Integer 4))
+                                        (IntegerConstant 2 (Integer 4) Decimal)
                                         (Var 10 n)
                                         ())
                                         [(If
@@ -600,7 +600,7 @@
                                                     (IntegerBinOp
                                                         (Var 10 i)
                                                         Sub
-                                                        (IntegerConstant 1 (Integer 4))
+                                                        (IntegerConstant 1 (Integer 4) Decimal)
                                                         (Integer 4)
                                                         ()
                                                     )
@@ -618,7 +618,7 @@
                                                 (IntegerBinOp
                                                     (Var 10 j)
                                                     Add
-                                                    (IntegerConstant 1 (Integer 4))
+                                                    (IntegerConstant 1 (Integer 4) Decimal)
                                                     (Integer 4)
                                                     ()
                                                 )
@@ -643,7 +643,7 @@
                                     )
                                     (Allocate
                                         [((Var 10 mask)
-                                        [((IntegerConstant 1 (Integer 4))
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 10 j))]
                                         ()
                                         ())]
@@ -654,7 +654,7 @@
                                     (DoLoop
                                         ()
                                         ((Var 10 i)
-                                        (IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 10 j)
                                         ())
                                         [(Assignment
@@ -910,8 +910,8 @@
                                     [3, 3, 6, ...., 2, 2, 1]
                                     (Array
                                         (Integer 4)
-                                        [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 7 (Integer 4)))]
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 7 (Integer 4) Decimal))]
                                         FixedSizeArray
                                     )
                                     ColMajor
@@ -920,8 +920,8 @@
                                 DescriptorArray
                                 (Array
                                     (Integer 4)
-                                    [((IntegerConstant 1 (Integer 4))
-                                    (IntegerConstant 7 (Integer 4)))]
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 7 (Integer 4) Decimal))]
                                     DescriptorArray
                                 )
                                 ()
@@ -950,8 +950,8 @@
                                     ["a", "a", "b", ...., "p", "p", "o"]
                                     (Array
                                         (Character 1 1 ())
-                                        [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 7 (Integer 4)))]
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 7 (Integer 4) Decimal))]
                                         FixedSizeArray
                                     )
                                     ColMajor
@@ -960,8 +960,8 @@
                                 DescriptorArray
                                 (Array
                                     (Character 1 1 ())
-                                    [((IntegerConstant 1 (Integer 4))
-                                    (IntegerConstant 7 (Integer 4)))]
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 7 (Integer 4) Decimal))]
                                     DescriptorArray
                                 )
                                 ()
@@ -1157,7 +1157,7 @@
                                                     )
                                                     (Allocate
                                                         [((Var 7 pos)
-                                                        [((IntegerConstant 1 (Integer 4))
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (Var 7 n))]
                                                         ()
                                                         ())]
@@ -1169,7 +1169,7 @@
                                                         (IntegerCompare
                                                             (Var 7 n)
                                                             Lt
-                                                            (IntegerConstant 1 (Integer 4))
+                                                            (IntegerConstant 1 (Integer 4) Decimal)
                                                             (Logical 4)
                                                             ()
                                                         )
@@ -1179,15 +1179,15 @@
                                                     (Assignment
                                                         (Var 7 pos)
                                                         (ArrayBroadcast
-                                                            (IntegerConstant 0 (Integer 4))
+                                                            (IntegerConstant 0 (Integer 4) Decimal)
                                                             (IntrinsicArrayFunction
                                                                 Shape
                                                                 [(Var 7 pos)]
                                                                 0
                                                                 (Array
                                                                     (Integer 4)
-                                                                    [((IntegerConstant 1 (Integer 4))
-                                                                    (IntegerConstant 1 (Integer 4)))]
+                                                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                                                    (IntegerConstant 1 (Integer 4) Decimal))]
                                                                     FixedSizeArray
                                                                 )
                                                                 ()
@@ -1208,24 +1208,24 @@
                                                         (ArrayItem
                                                             (Var 7 pos)
                                                             [(()
-                                                            (IntegerConstant 1 (Integer 4))
+                                                            (IntegerConstant 1 (Integer 4) Decimal)
                                                             ())]
                                                             (Integer 4)
                                                             ColMajor
                                                             ()
                                                         )
-                                                        (IntegerConstant 1 (Integer 4))
+                                                        (IntegerConstant 1 (Integer 4) Decimal)
                                                         ()
                                                     )
                                                     (Assignment
                                                         (Var 7 j)
-                                                        (IntegerConstant 1 (Integer 4))
+                                                        (IntegerConstant 1 (Integer 4) Decimal)
                                                         ()
                                                     )
                                                     (DoLoop
                                                         ()
                                                         ((Var 7 i)
-                                                        (IntegerConstant 2 (Integer 4))
+                                                        (IntegerConstant 2 (Integer 4) Decimal)
                                                         (Var 7 n)
                                                         ())
                                                         [(If
@@ -1249,7 +1249,7 @@
                                                                     (IntegerBinOp
                                                                         (Var 7 i)
                                                                         Sub
-                                                                        (IntegerConstant 1 (Integer 4))
+                                                                        (IntegerConstant 1 (Integer 4) Decimal)
                                                                         (Integer 4)
                                                                         ()
                                                                     )
@@ -1269,7 +1269,7 @@
                                                                 (IntegerBinOp
                                                                     (Var 7 j)
                                                                     Add
-                                                                    (IntegerConstant 1 (Integer 4))
+                                                                    (IntegerConstant 1 (Integer 4) Decimal)
                                                                     (Integer 4)
                                                                     ()
                                                                 )
@@ -1294,7 +1294,7 @@
                                                     )
                                                     (Allocate
                                                         [((Var 7 mask)
-                                                        [((IntegerConstant 1 (Integer 4))
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (Var 7 j))]
                                                         ()
                                                         ())]
@@ -1305,7 +1305,7 @@
                                                     (DoLoop
                                                         ()
                                                         ((Var 7 i)
-                                                        (IntegerConstant 1 (Integer 4))
+                                                        (IntegerConstant 1 (Integer 4) Decimal)
                                                         (Var 7 j)
                                                         ())
                                                         [(Assignment

@@ -4107,12 +4107,6 @@ public:
             } else {
                 throw SemanticError("int(...) must have 1 or 2 arguments", loc);
             }
-            if (ASR::is_a<ASR::IntegerBOZ_t>(*args[0].m_value)) {
-                // Things like `int(b'01011101')` are skipped for now
-                // They are converted in comptime_eval. We should probably
-                // just convert them here instead.
-                return nullptr;
-            }
             return LFortran::CommonVisitorMethods::comptime_intrinsic_int(args[0].m_value, arg1, al, loc, compiler_options);
         } else {
             return nullptr;
@@ -7628,8 +7622,9 @@ public:
         }
         std::string boz_str = s.substr(2, s.size() - 2);
         int64_t boz_int = std::stoll(boz_str, nullptr, base);
-        tmp = ASR::make_IntegerBOZ_t(al, x.base.base.loc, boz_int,
-                                boz_type, nullptr);
+        ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
+        tmp = ASR::make_IntegerConstant_t(al, x.base.base.loc, boz_int,
+                int_type, boz_type);
     }
 
     void visit_Num(const AST::Num_t &x) {

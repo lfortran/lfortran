@@ -28,7 +28,7 @@
                     []
                     [(Assignment
                         (Var 2 i)
-                        (IntegerConstant 5 (Integer 4))
+                        (IntegerConstant 5 (Integer 4) Decimal)
                         ()
                     )
                     (Print
@@ -40,7 +40,7 @@
                         [(IntegerBinOp
                             (Var 2 i)
                             Add
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             (Integer 4)
                             ()
                         )]

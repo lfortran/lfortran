@@ -18,8 +18,8 @@
                                     Default
                                     (Array
                                         (Real 4)
-                                        [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 5 (Integer 4)))]
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 5 (Integer 4) Decimal))]
                                         FixedSizeArray
                                     )
                                     ()
@@ -51,7 +51,7 @@
                         (ArrayItem
                             (Var 2 a)
                             [(()
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             ())]
                             (Real 4)
                             ColMajor
@@ -67,7 +67,7 @@
                         (ArrayItem
                             (Var 2 a)
                             [(()
-                            (IntegerConstant 2 (Integer 4))
+                            (IntegerConstant 2 (Integer 4) Decimal)
                             ())]
                             (Real 4)
                             ColMajor
@@ -83,7 +83,7 @@
                         (ArrayItem
                             (Var 2 a)
                             [(()
-                            (IntegerConstant 3 (Integer 4))
+                            (IntegerConstant 3 (Integer 4) Decimal)
                             ())]
                             (Real 4)
                             ColMajor
@@ -99,7 +99,7 @@
                         (ArrayItem
                             (Var 2 a)
                             [(()
-                            (IntegerConstant 4 (Integer 4))
+                            (IntegerConstant 4 (Integer 4) Decimal)
                             ())]
                             (Real 4)
                             ColMajor
@@ -115,7 +115,7 @@
                         (ArrayItem
                             (Var 2 a)
                             [(()
-                            (IntegerConstant 5 (Integer 4))
+                            (IntegerConstant 5 (Integer 4) Decimal)
                             ())]
                             (Real 4)
                             ColMajor
@@ -140,7 +140,7 @@
                                     (ArrayItem
                                         (Var 2 a)
                                         [(()
-                                        (IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 1 (Integer 4) Decimal)
                                         ())]
                                         (Real 4)
                                         ColMajor
@@ -179,7 +179,7 @@
                                     (ArrayItem
                                         (Var 2 a)
                                         [(()
-                                        (IntegerConstant 2 (Integer 4))
+                                        (IntegerConstant 2 (Integer 4) Decimal)
                                         ())]
                                         (Real 4)
                                         ColMajor
@@ -218,7 +218,7 @@
                                     (ArrayItem
                                         (Var 2 a)
                                         [(()
-                                        (IntegerConstant 3 (Integer 4))
+                                        (IntegerConstant 3 (Integer 4) Decimal)
                                         ())]
                                         (Real 4)
                                         ColMajor
@@ -257,7 +257,7 @@
                                     (ArrayItem
                                         (Var 2 a)
                                         [(()
-                                        (IntegerConstant 4 (Integer 4))
+                                        (IntegerConstant 4 (Integer 4) Decimal)
                                         ())]
                                         (Real 4)
                                         ColMajor
@@ -296,7 +296,7 @@
                                     (ArrayItem
                                         (Var 2 a)
                                         [(()
-                                        (IntegerConstant 5 (Integer 4))
+                                        (IntegerConstant 5 (Integer 4) Decimal)
                                         ())]
                                         (Real 4)
                                         ColMajor

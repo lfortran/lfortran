@@ -34,8 +34,8 @@
                                     Default
                                     (Array
                                         (Integer 4)
-                                        [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 3 (Integer 4)))]
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 3 (Integer 4) Decimal))]
                                         FixedSizeArray
                                     )
                                     ()
@@ -52,14 +52,14 @@
                         ((Var 2 __1_t)
                         (ArrayBound
                             (Var 2 x)
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             (Integer 4)
                             LBound
                             ()
                         )
                         (ArrayBound
                             (Var 2 x)
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             (Integer 4)
                             UBound
                             ()
@@ -75,7 +75,7 @@
                                 RowMajor
                                 ()
                             )
-                            (IntegerConstant 23 (Integer 4))
+                            (IntegerConstant 23 (Integer 4) Decimal)
                             ()
                         )]
                         []

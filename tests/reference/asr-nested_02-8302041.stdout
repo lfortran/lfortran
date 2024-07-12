@@ -62,7 +62,7 @@
                                                     []
                                                     []
                                                     [(Print
-                                                        [(IntegerConstant 5 (Integer 4))]
+                                                        [(IntegerConstant 5 (Integer 4) Decimal)]
                                                         ()
                                                         ()
                                                     )]

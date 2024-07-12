@@ -29,7 +29,7 @@
                     [(SubroutineCall
                         1 prini_main__lcompilers
                         1 prini_main__lcompilers
-                        [((IntegerConstant 2 (Integer 4)))]
+                        [((IntegerConstant 2 (Integer 4) Decimal))]
                         ()
                     )]
                     ()
@@ -65,7 +65,7 @@
                     [(SubroutineCall
                         1 prini_main__lcompilers
                         1 prini_main__lcompilers
-                        [((IntegerConstant 1 (Integer 4)))]
+                        [((IntegerConstant 1 (Integer 4) Decimal))]
                         ()
                     )]
                     ()
@@ -148,7 +148,7 @@
                         (IntegerCompare
                             (Var 4 entry__lcompilers)
                             Eq
-                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             (Logical 4)
                             ()
                         )
@@ -162,7 +162,7 @@
                         (IntegerCompare
                             (Var 4 entry__lcompilers)
                             Eq
-                            (IntegerConstant 2 (Integer 4))
+                            (IntegerConstant 2 (Integer 4) Decimal)
                             (Logical 4)
                             ()
                         )

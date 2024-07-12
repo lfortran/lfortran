@@ -50,8 +50,8 @@
                                     Default
                                     (Array
                                         (Real 4)
-                                        [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 100 (Integer 4)))]
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 100 (Integer 4) Decimal))]
                                         FixedSizeArray
                                     )
                                     ()
@@ -74,8 +74,8 @@
                     (DoLoop
                         ()
                         ((Var 2 j)
-                        (IntegerConstant 1 (Integer 4))
-                        (IntegerConstant 100 (Integer 4))
+                        (IntegerConstant 1 (Integer 4) Decimal)
+                        (IntegerConstant 100 (Integer 4) Decimal)
                         ())
                         [(Assignment
                             (Var 2 s)
@@ -101,7 +101,7 @@
                                 (Var 2 s)
                                 GtE
                                 (Cast
-                                    (IntegerConstant 1000000 (Integer 4))
+                                    (IntegerConstant 1000000 (Integer 4) Decimal)
                                     IntegerToReal
                                     (Real 4)
                                     (RealConstant

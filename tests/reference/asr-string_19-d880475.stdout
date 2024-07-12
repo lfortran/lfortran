@@ -395,7 +395,7 @@
                                                     Default
                                                     (Array
                                                         (Integer 4)
-                                                        [((IntegerConstant 1 (Integer 4))
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (StringLen
                                                             (Var 7 string)
                                                             (Integer 4)
@@ -431,7 +431,7 @@
                                         [(Character 1 -1 ())]
                                         (Array
                                             (Integer 4)
-                                            [((IntegerConstant 1 (Integer 4))
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
                                             (StringLen
                                                 (FunctionParam
                                                     0
@@ -525,7 +525,7 @@
                                             [((Var 8 string))]
                                             (Array
                                                 (Integer 4)
-                                                [((IntegerConstant 1 (Integer 4))
+                                                [((IntegerConstant 1 (Integer 4) Decimal)
                                                 (StringLen
                                                     (Var 8 string)
                                                     (Integer 4)

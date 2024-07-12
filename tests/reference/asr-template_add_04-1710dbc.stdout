@@ -196,11 +196,11 @@
                                                     (DoLoop
                                                         ()
                                                         ((Var 7 i)
-                                                        (IntegerConstant 1 (Integer 4))
+                                                        (IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerBinOp
                                                             (Var 5 mult)
                                                             Sub
-                                                            (IntegerConstant 1 (Integer 4))
+                                                            (IntegerConstant 1 (Integer 4) Decimal)
                                                             (Integer 4)
                                                             ()
                                                         )
@@ -802,11 +802,11 @@
                                                     (DoLoop
                                                         ()
                                                         ((Var 11 i)
-                                                        (IntegerConstant 1 (Integer 4))
+                                                        (IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerBinOp
                                                             (Var 10 n)
                                                             Sub
-                                                            (IntegerConstant 1 (Integer 4))
+                                                            (IntegerConstant 1 (Integer 4) Decimal)
                                                             (Integer 4)
                                                             ()
                                                         )
@@ -862,8 +862,8 @@
                                                     n
                                                     []
                                                     Local
-                                                    (IntegerConstant 10 (Integer 4))
-                                                    (IntegerConstant 10 (Integer 4))
+                                                    (IntegerConstant 10 (Integer 4) Decimal)
+                                                    (IntegerConstant 10 (Integer 4) Decimal)
                                                     Parameter
                                                     (Integer 4)
                                                     ()
