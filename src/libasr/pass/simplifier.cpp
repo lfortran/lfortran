@@ -5,6 +5,7 @@
 #include <libasr/pass/pass_utils.h>
 #include <libasr/pass/intrinsic_function_registry.h>
 #include <libasr/pass/intrinsic_array_function_registry.h>
+#include <libasr/pickle.h>
 
 #include <vector>
 #include <utility>
@@ -777,6 +778,68 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
 
     void visit_FileWrite(const ASR::FileWrite_t& x) {
         visit_IO(x, "file_write");
+    }
+
+    ASR::expr_t* visit_BinOp_expr(ASR::expr_t* expr, const std::string& name_hint) {
+        if( ASRUtils::is_array(ASRUtils::expr_type(expr)) &&
+            !ASR::is_a<ASR::Var_t>(
+                *ASRUtils::get_past_array_physical_cast(expr)) ) {
+            visit_expr(*expr);
+            call_create_and_allocate_temporary_variable(expr)
+            return array_var_temporary;
+        } else if( ASRUtils::is_struct(*ASRUtils::expr_type(expr)) &&
+                    !ASR::is_a<ASR::Var_t>(
+                        *ASRUtils::get_past_array_physical_cast(expr)) ) {
+            visit_expr(*expr);
+            ASR::expr_t* struct_var_temporary = create_and_allocate_temporary_variable_for_struct(
+                ASRUtils::get_past_array_physical_cast(expr), name_hint, al, current_body,
+                current_scope, exprs_with_target);
+            if( ASR::is_a<ASR::ArrayPhysicalCast_t>(*expr) ) {
+                ASR::ArrayPhysicalCast_t* x_m_values_i = ASR::down_cast<ASR::ArrayPhysicalCast_t>(expr);
+                struct_var_temporary = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
+                    al, struct_var_temporary->base.loc, struct_var_temporary,
+                    ASRUtils::extract_physical_type(ASRUtils::expr_type(struct_var_temporary)),
+                    x_m_values_i->m_new, x_m_values_i->m_type, nullptr));
+            }
+            return struct_var_temporary;
+        } else {
+            return expr;
+        }
+    }
+
+    template <typename T>
+    std::pair<ASR::expr_t*, ASR::expr_t*> visit_BinOpUtil(T* binop, const std::string& name_hint) {
+        ASR::expr_t* left = visit_BinOp_expr(binop->m_left, name_hint + "_left_");
+        ASR::expr_t* right = visit_BinOp_expr(binop->m_right, name_hint + "_right_");
+        return std::make_pair(left, right);
+    }
+
+    void visit_IntegerBinOp(const ASR::IntegerBinOp_t& x) {
+        ASR::IntegerBinOp_t& xx = const_cast<ASR::IntegerBinOp_t&>(x);
+        std::pair<ASR::expr_t*, ASR::expr_t*> binop = visit_BinOpUtil(&xx, "integer_binop");
+        xx.m_left = binop.first;
+        xx.m_right = binop.second;
+    }
+
+    void visit_RealBinOp(const ASR::RealBinOp_t& x) {
+        ASR::RealBinOp_t& xx = const_cast<ASR::RealBinOp_t&>(x);
+        std::pair<ASR::expr_t*, ASR::expr_t*> binop = visit_BinOpUtil(&xx, "real_binop");
+        xx.m_left = binop.first;
+        xx.m_right = binop.second;
+    }
+
+    void visit_ComplexBinOp(const ASR::ComplexBinOp_t& x) {
+        ASR::ComplexBinOp_t& xx = const_cast<ASR::ComplexBinOp_t&>(x);
+        std::pair<ASR::expr_t*, ASR::expr_t*> binop = visit_BinOpUtil(&xx, "complex_binop");
+        xx.m_left = binop.first;
+        xx.m_right = binop.second;
+    }
+
+    void visit_LogicalBinOp(const ASR::LogicalBinOp_t& x) {
+        ASR::LogicalBinOp_t& xx = const_cast<ASR::LogicalBinOp_t&>(x);
+        std::pair<ASR::expr_t*, ASR::expr_t*> binop = visit_BinOpUtil(&xx, "logical_binop");
+        xx.m_left = binop.first;
+        xx.m_right = binop.second;
     }
 
     void traverse_args(Vec<ASR::expr_t*>& x_m_args_vec, ASR::expr_t** x_m_args,
