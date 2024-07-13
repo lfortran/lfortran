@@ -416,24 +416,7 @@ bool set_allocation_size(Allocator& al, ASR::expr_t* value, Vec<ASR::dimension_t
             ASR::IntrinsicElementalFunction_t* intrinsic_elemental_function =
                 ASR::down_cast<ASR::IntrinsicElementalFunction_t>(value);
             switch (intrinsic_elemental_function->m_intrinsic_id) {
-                case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Sin): {
-                    size_t n_dims = ASRUtils::extract_n_dims_from_ttype(
-                        intrinsic_elemental_function->m_type);
-                    allocate_dims.reserve(al, n_dims);
-                    for( size_t i = 0; i < n_dims; i++ ) {
-                        ASR::dimension_t allocate_dim;
-                        allocate_dim.loc = loc;
-                        allocate_dim.m_start = int32_one;
-                        ASR::expr_t* size_i_1 = ASRUtils::EXPR(ASR::make_ArraySize_t(
-                            al, loc, intrinsic_elemental_function->m_args[0],
-                            ASRUtils::EXPR(ASR::make_IntegerConstant_t(
-                                al, loc, i + 1, ASRUtils::expr_type(int32_one))),
-                            ASRUtils::expr_type(int32_one), nullptr));
-                        allocate_dim.m_length = size_i_1;
-                        allocate_dims.push_back(al, allocate_dim);
-                    }
-                    break;
-                }
+                case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Sin):
                 case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Abs): {
                     size_t n_dims = ASRUtils::extract_n_dims_from_ttype(
                         intrinsic_elemental_function->m_type);
@@ -568,6 +551,17 @@ bool set_allocation_size(Allocator& al, ASR::expr_t* value, Vec<ASR::dimension_t
             allocate_dim.m_start = int32_one;
             allocate_dim.m_length = get_ArrayConstant_size(al,
                 ASR::down_cast<ASR::ArrayConstant_t>(value));
+            allocate_dims.push_back(al, allocate_dim);
+            break;
+        }
+        case ASR::exprType::ArrayBroadcast: {
+            allocate_dims.reserve(al, 1);
+            ASR::dimension_t allocate_dim;
+            allocate_dim.loc = loc;
+            allocate_dim.m_start = int32_one;
+            ASR::expr_t* int32_two = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                al, loc, 2, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
+            allocate_dim.m_length = int32_two;
             allocate_dims.push_back(al, allocate_dim);
             break;
         }
