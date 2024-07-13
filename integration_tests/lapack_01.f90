@@ -62,7 +62,10 @@ program lapack_01
    d = [4, 5, 6]
    e = [1, 2]
    call dpttrf(n, d, e, info)
-   print *, "d: ", d
-   print *, "e: ", e
+   print *, "sum(d): ", sum(d)
+   if ( abs(sum(d) - 13.907894736842106) > 1e-6 ) error stop
+   print *, "sum(e): ", sum(e)
+   if ( abs(sum(e) - 0.67105263157894735) > 1e-7 ) error stop
    print *, "info: ", info
+   if ( info /= 0 ) error stop
 end program
