@@ -2762,6 +2762,18 @@ public:
                     is_allocatable, dims, type_declaration, s_abi,
                     (s_intent != ASRUtils::intent_local) || is_argument, is_dimension_star);
                 if ( is_attr_external ) create_external_function(sym, x.m_syms[i].loc, type);
+                if ( current_scope->get_symbol( sym ) != nullptr && ( is_external && !is_attr_external ) ) {
+                    /*
+                        return type of external function is specified
+                        external :: x
+                        integer :: x -> we are handling this case
+                    */
+                    ASR::symbol_t *sym_ = current_scope->get_symbol(sym);
+                    LCOMPILERS_ASSERT( sym_ != nullptr );
+                    // set function return type as `type`
+                    ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(sym_);
+                    ASRUtils::EXPR2VAR(f->m_return_var)->m_type = type;
+                }
                 current_variable_type_ = type;
 
                 ASR::expr_t* init_expr = nullptr;
