@@ -2772,7 +2772,7 @@ public:
                     LCOMPILERS_ASSERT( sym_ != nullptr );
                     // set function return type as `type`
                     ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(sym_);
-                    ASR::down_cast<ASR::Variable_t>(ASR::down_cast<ASR::Var_t>(f->m_return_var)->m_v)->m_type = type;
+                    ASRUtils::EXPR2VAR(f->m_return_var)->m_type = type;
                 }
                 current_variable_type_ = type;
 
