@@ -849,6 +849,7 @@ public:
         {"dshiftl", {IntrinsicSignature({"i", "j", "shift"}, 3, 3)}},
         {"dshiftr", {IntrinsicSignature({"i", "j", "shift"}, 3, 3)}},
         {"random_number", {IntrinsicSignature({"r"}, 1, 1)}},
+        {"random_init", {IntrinsicSignature({"repeatable", "image"}, 2, 2)}},
         {"mvbits", {IntrinsicSignature({"from", "frompos", "len", "to", "topos"}, 5, 5)}},
         {"modulo", {IntrinsicSignature({"a", "p"}, 2, 2)}},
         {"bessel_jn", {IntrinsicSignature({"n", "x"}, 2, 2)}},

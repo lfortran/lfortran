@@ -20,6 +20,7 @@ the code size.
 
 enum class IntrinsicImpureSubroutines : int64_t {
     RandomNumber,
+    RandomInit,
     // ...
 };
 
@@ -38,6 +39,56 @@ typedef void (*verify_subroutine)(
     diag::Diagnostics&);
 
 typedef ASR::expr_t* (*get_initial_value_sub)(Allocator&, ASR::ttype_t*);
+
+namespace RandomInit {
+
+    static inline void verify_args(const ASR::IntrinsicImpureSubroutine_t& x, diag::Diagnostics& diagnostics) {
+        if (x.n_args == 2) {
+            ASRUtils::require_impl(x.m_overload_id == 0, "Overload Id for random_init expected to be 0, found " + std::to_string(x.m_overload_id), x.base.base.loc, diagnostics);
+            ASRUtils::require_impl(ASRUtils::is_logical(*ASRUtils::expr_type(x.m_args[0])), "First argument must be of logical type", x.base.base.loc, diagnostics);
+            ASRUtils::require_impl(ASRUtils::is_logical(*ASRUtils::expr_type(x.m_args[1])), "Second argument must be of logical type", x.base.base.loc, diagnostics);
+        } else {
+            ASRUtils::require_impl(false, "Unexpected number of args, random_init takes 2 arguments, found " + std::to_string(x.n_args), x.base.base.loc, diagnostics);
+        }
+    }
+
+    static inline ASR::asr_t* create_RandomInit(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
+        Vec<ASR::expr_t*> m_args; m_args.reserve(al, 2);
+        m_args.push_back(al, args[0]);
+        m_args.push_back(al, args[1]);
+        return ASR::make_IntrinsicImpureSubroutine_t(al, loc, static_cast<int64_t>(IntrinsicImpureSubroutines::RandomInit), m_args.p, m_args.n, 0);
+    }
+
+    static inline ASR::stmt_t* instantiate_RandomInit(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        
+        std::string c_func_name = "_lfortran_random_init";
+        std::string new_name = "_lcompilers_random_init_";
+
+        declare_basic_variables(new_name);
+        fill_func_arg_sub("repeatable", arg_types[0], InOut);
+        fill_func_arg_sub("image_distinct", arg_types[1], InOut);
+        SymbolTable *fn_symtab_1 = al.make_new<SymbolTable>(fn_symtab);
+        Vec<ASR::expr_t*> args_1; args_1.reserve(al, 0);
+        ASR::expr_t *return_var_1 = b.Variable(fn_symtab_1, c_func_name,
+           ASRUtils::type_get_past_array(ASRUtils::type_get_past_allocatable(arg_types[0])),
+           ASRUtils::intent_return_var, ASR::abiType::BindC, false);
+        SetChar dep_1; dep_1.reserve(al, 1);
+        Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 1);
+        ASR::symbol_t *s = make_ASR_Function_t(c_func_name, fn_symtab_1, dep_1, args_1,
+            body_1, return_var_1, ASR::abiType::BindC, ASR::deftypeType::Interface, s2c(al, c_func_name));
+        fn_symtab->add_symbol(c_func_name, s);
+        dep.push_back(al, s2c(al, c_func_name));
+        Vec<ASR::expr_t*> call_args; call_args.reserve(al, 0);
+        body.push_back(al, b.Assignment(args[0], b.Call(s, call_args, arg_types[0])));
+        body.push_back(al, b.Assignment(args[1], b.Call(s, call_args, arg_types[1])));
+        ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, nullptr, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, new_symbol);
+        return b.SubroutineCall(new_symbol, new_args);
+    }
+} // namespace RandomInit
 
 namespace RandomNumber {
 

@@ -2200,6 +2200,16 @@ LFORTRAN_API double _lfortran_dp_rand_num() {
     return rand() / (double) RAND_MAX;
 }
 
+
+LFORTRAN_API bool _lfortran_random_init(bool repeatable, bool image_distinct) {
+    if (repeatable) {
+            srand(0);
+    } else {
+        srand(time(NULL));
+    }
+    return false;
+}
+
 LFORTRAN_API int64_t _lpython_open(char *path, char *flags)
 {
     FILE *fd;
