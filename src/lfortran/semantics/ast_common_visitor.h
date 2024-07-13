@@ -1206,11 +1206,11 @@ public:
         current_scope = al.make_new<SymbolTable>(parent_scope);
 
         std::string func_name = parent_scope->get_unique_name("__lcompilers_get_" + std::string(ASRUtils::symbol_name(end_sym)));
-
-        // populate symbol table
-        ASRUtils::SymbolDuplicator sd(al);
-        sd.duplicate_symbol(end_sym, current_scope);
-        end_sym = current_scope->resolve_symbol(ASRUtils::symbol_name(end_sym));
+        if (ASR::is_a<ASR::ExternalSymbol_t>(*end_sym)) {
+            ASRUtils::SymbolDuplicator sd(al);
+            sd.duplicate_symbol(end_sym, current_scope);
+            end_sym = current_scope->resolve_symbol(ASRUtils::symbol_name(end_sym));
+        }
         ASR::expr_t* return_var_expr = b.Variable(current_scope, func_name, ASRUtils::symbol_type(end_sym),
                                 ASR::intentType::ReturnVar);
         // populate body
