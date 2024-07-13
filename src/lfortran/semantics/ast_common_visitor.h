@@ -1206,11 +1206,11 @@ public:
         current_scope = al.make_new<SymbolTable>(parent_scope);
 
         std::string func_name = parent_scope->get_unique_name("__lcompilers_get_" + std::string(ASRUtils::symbol_name(end_sym)));
-
-        // populate symbol table
-        ASRUtils::SymbolDuplicator sd(al);
-        sd.duplicate_symbol(end_sym, current_scope);
-        end_sym = current_scope->resolve_symbol(ASRUtils::symbol_name(end_sym));
+        if (ASR::is_a<ASR::ExternalSymbol_t>(*end_sym)) {
+            ASRUtils::SymbolDuplicator sd(al);
+            sd.duplicate_symbol(end_sym, current_scope);
+            end_sym = current_scope->resolve_symbol(ASRUtils::symbol_name(end_sym));
+        }
         ASR::expr_t* return_var_expr = b.Variable(current_scope, func_name, ASRUtils::symbol_type(end_sym),
                                 ASR::intentType::ReturnVar);
         // populate body
@@ -2762,6 +2762,18 @@ public:
                     is_allocatable, dims, type_declaration, s_abi,
                     (s_intent != ASRUtils::intent_local) || is_argument, is_dimension_star);
                 if ( is_attr_external ) create_external_function(sym, x.m_syms[i].loc, type);
+                if ( current_scope->get_symbol( sym ) != nullptr && ( is_external && !is_attr_external ) ) {
+                    /*
+                        return type of external function is specified
+                        external :: x
+                        integer :: x -> we are handling this case
+                    */
+                    ASR::symbol_t *sym_ = current_scope->get_symbol(sym);
+                    LCOMPILERS_ASSERT( sym_ != nullptr );
+                    // set function return type as `type`
+                    ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(sym_);
+                    ASRUtils::EXPR2VAR(f->m_return_var)->m_type = type;
+                }
                 current_variable_type_ = type;
 
                 ASR::expr_t* init_expr = nullptr;
