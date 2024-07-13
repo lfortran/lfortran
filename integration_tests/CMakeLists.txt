@@ -1494,6 +1494,7 @@ RUN(NAME dealloc_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --r
 RUN(NAME dealloc_02 LABELS gfortran)
 
 RUN(NAME double_complex_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME dpttrf LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME common_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME common_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
