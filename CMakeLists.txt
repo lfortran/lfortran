@@ -25,7 +25,7 @@ execute_process(
     ERROR_QUIET
   )
 
-string(REPLACE "v" "" GIT_TAG ${GIT_TAG})  # Remove the "v" prefix
+string(REPLACE "v" " " GIT_TAG ${GIT_TAG})  # Remove the "v" prefix
 string(REPLACE "." ";" TAG_PARTS ${GIT_TAG})
 
 list(GET TAG_PARTS 0 LFORTRAN_VERSION_MAJOR)

@@ -14,6 +14,9 @@ CPreprocessor::CPreprocessor(CompilerOptions &compiler_options)
     md.expansion = "1";
     macro_definitions["__LFORTRAN__"] = md;
 
+    md.expansion = "\"" + std::string(LFORTRAN_VERSION) + "\"";
+    macro_definitions["__VERSION__"] = md;
+
     #if defined(LFORTRAN_MAJOR)
     md.expansion = std::to_string(LFORTRAN_MAJOR);
     #else
