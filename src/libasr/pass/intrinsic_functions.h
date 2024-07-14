@@ -3601,8 +3601,8 @@ namespace Leadz {
 
 namespace Ishftc {
 
-    static uint64_t cutoff_extra_bits(uint64_t num, uint32_t bits_size) {
-        if (bits_size == 64) {
+    static uint64_t cutoff_extra_bits(uint64_t num, uint32_t bits_size, uint32_t max_bits_size) {
+        if (bits_size == max_bits_size) {
             return num;
         }
         return (num & ((1lu << bits_size) - 1lu));
@@ -3613,32 +3613,31 @@ namespace Ishftc {
         uint64_t val = (uint64_t)ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t shift_signed = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
         int kind = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_type);
-        uint32_t bits_size = 8u * (uint32_t)kind;
-        uint32_t max_bits_size = bits_size;
-        if (args.size() == 3) {
-            max_bits_size = std::min((uint32_t)ASR::down_cast<ASR::IntegerConstant_t>(args[2])->m_n, bits_size);
-            if (max_bits_size <= 0 || max_bits_size > bits_size) {
-                append_error(diag, "The SIZE argument must be greater than zero and less than or equal to BIT_SIZE('I')", loc);
-                return nullptr;
-            }
+        uint32_t bits_size = (uint32_t)ASR::down_cast<ASR::IntegerConstant_t>(args[2])->m_n;
+        uint32_t max_bits_size = 64;
+        if (bits_size > (uint32_t)(8 * kind)) {
+            append_error(diag, "The SIZE argument must be greater than zero and less than or equal to BIT_SIZE('I')", loc);
+            return nullptr;
+        }
+        if(std::abs(shift_signed) > bits_size){
+            append_error(diag, "The SHIFT argument must be less than or equal to the of SIZE argument", loc);
+            return nullptr;
         }
         bool negative_shift = (shift_signed < 0);
         uint32_t shift = abs(shift_signed);
 
-        if (shift >= max_bits_size) {
+        if (shift > max_bits_size) {
             append_error(diag, "The absolute value of SHIFT argument must be less than SIZE", loc);
             return nullptr;
         }
 
-        val = cutoff_extra_bits(val, max_bits_size);
-
+        val = cutoff_extra_bits(val, bits_size, max_bits_size);
         uint64_t result;
         if (negative_shift) {
-            result = (val >> shift) | cutoff_extra_bits(val << (max_bits_size - shift), max_bits_size);
+            result = (val >> shift) | cutoff_extra_bits(val << (bits_size - shift), bits_size, max_bits_size);
         } else {
-            result = cutoff_extra_bits(val << shift, max_bits_size) | (val >> (max_bits_size - shift));
+            result = cutoff_extra_bits(val << shift, bits_size, max_bits_size) | ((val >> (bits_size - shift)));
         }
-
         return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);
     }
 

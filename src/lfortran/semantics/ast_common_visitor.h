@@ -5394,12 +5394,13 @@ public:
             }
         } else if (intrinsic_name == "ishftc"){
             if(args[2] == nullptr){
-                int max_value = 64;
+                int value;
                 int kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[0]));
+                value = kind*8;
                 ASR::ttype_t *int_type = ASRUtils::TYPE(
                     ASR::make_Integer_t(al, loc, kind));
                 ASR::expr_t* val = ASRUtils::EXPR(
-                    ASR::make_IntegerConstant_t(al, loc, max_value, int_type));
+                    ASR::make_IntegerConstant_t(al, loc, value, int_type));
                 args.p[2] = val;
             }
         }
