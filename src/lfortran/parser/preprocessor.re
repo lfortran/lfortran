@@ -36,7 +36,7 @@ CPreprocessor::CPreprocessor(CompilerOptions &compiler_options)
     #else
     md.expansion = "0";
     #endif
-    macro_definitions["__LFORTRAN_PATCH__"] = md;
+    macro_definitions["__LFORTRAN_PATCHLEVEL__"] = md;
 
     if (compiler_options.platform == Platform::Windows) {
         md.expansion = "1";
