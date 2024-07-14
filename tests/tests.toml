@@ -3987,6 +3987,10 @@ filename = "errors/sqrt_neg.f90"
 asr = true
 
 [[test]]
+filename = "errors/ishftc_size.f90"
+asr = true
+
+[[test]]
 filename = "errors/merge_bits_comp.f90"
 asr = true
 
