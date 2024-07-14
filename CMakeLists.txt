@@ -14,29 +14,6 @@ endif()
 file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/version" LFORTRAN_VERSION)
 string(REGEX MATCH "^[^-]*" LFORTRAN_NO_TAG_VERSION ${LFORTRAN_VERSION})
 
-# Get version numbers from the git tag, if the tag is v1.2.3 we get
-# LFORTRAN_VERSION_MAJOR=1
-# LFORTRAN_VERSION_MINOR=2
-# LFORTRAN_VERSION_PATCH=3
-execute_process(
-    COMMAND git describe --tags --abbrev=0
-    OUTPUT_VARIABLE GIT_TAG
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-    ERROR_QUIET
-  )
-
-string(REPLACE "v" " " GIT_TAG ${GIT_TAG})  # Remove the "v" prefix
-string(REPLACE "." ";" TAG_PARTS ${GIT_TAG})
-
-list(GET TAG_PARTS 0 LFORTRAN_VERSION_MAJOR)
-list(GET TAG_PARTS 1 LFORTRAN_VERSION_MINOR)
-list(GET TAG_PARTS 2 LFORTRAN_VERSION_PATCH)
-
-message(STATUS "Git Tag: ${GIT_TAG}")
-message(STATUS "Version Major: ${LFORTRAN_VERSION_MAJOR}")
-message(STATUS "Version Minor: ${LFORTRAN_VERSION_MINOR}")
-message(STATUS "Version Patch: ${LFORTRAN_VERSION_PATCH}")
-
 project(lfortran
         VERSION ${LFORTRAN_NO_TAG_VERSION}
         DESCRIPTION "A modern open-source interactive Fortran compiler"
