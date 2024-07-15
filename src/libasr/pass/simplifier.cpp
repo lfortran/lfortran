@@ -1081,6 +1081,15 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
 
         replace_expr_with_temporary_variable(arg, "_real_sqrt_")
     }
+
+    void visit_ArrayBound(const ASR::ArrayBound_t& x) {
+        ASR::ArrayBound_t& xx = const_cast<ASR::ArrayBound_t&>(x);
+
+        replace_expr_with_temporary_variable(v, "_array_bound_")
+        if (x.m_dim) {
+            replace_expr_with_temporary_variable(dim, "_array_bound_dim_")
+        }
+    }
 };
 
 class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemporary> {
@@ -1323,6 +1332,9 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         replace_current_expr("_real_sqrt_")
     }
 
+    void replace_ArrayBound(ASR::ArrayBound_t* x) {
+        replace_current_expr("_array_bound_")
+    }
 };
 
 class ReplaceExprWithTemporaryVisitor:
@@ -1830,6 +1842,12 @@ class VerifySimplifierASROutput:
     void visit_RealSqrt(const ASR::RealSqrt_t& x) {
         check_for_var_if_array(x.m_arg);
         check_if_linked_to_target(x.base, x.m_type);
+    }
+
+    void visit_ArrayBound(const ASR::ArrayBound_t& x) {
+        check_for_var_if_array(x.m_v);
+        check_for_var_if_array(x.m_dim);
+        
     }
 
     void visit_Variable(const ASR::Variable_t& x) {
