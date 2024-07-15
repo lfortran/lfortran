@@ -846,6 +846,14 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         CallReplacerOnExpressionsVisitor::visit_RealCompare(x);
     }
 
+    void visit_IntegerCompare(const ASR::IntegerCompare_t& x) {
+        ASR::IntegerCompare_t& xx = const_cast<ASR::IntegerCompare_t&>(x);
+        std::pair<ASR::expr_t*, ASR::expr_t*> binop = visit_BinOpUtil(&xx, "integer_compare");
+        xx.m_left = binop.first;
+        xx.m_right = binop.second;
+        CallReplacerOnExpressionsVisitor::visit_IntegerCompare(x);
+    }
+
     void traverse_args(Vec<ASR::expr_t*>& x_m_args_vec, ASR::expr_t** x_m_args,
         size_t x_n_args, const std::string& name_hint) {
         /* For other frontends, we might need to traverse the arguments
@@ -1313,19 +1321,6 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
 
     void replace_RealSqrt(ASR::RealSqrt_t* x) {
         replace_current_expr("_real_sqrt_")
-    }
-
-    void replace_Var(ASR::Var_t* x) {
-        ASR::symbol_t* x_mv = ASRUtils::symbol_get_past_external(x->m_v);
-        ASR::symbol_t* asr_owner = ASRUtils::get_asr_owner(x_mv);
-        if( asr_owner && ASR::is_a<ASR::Module_t>(*asr_owner) &&
-            ASR::is_a<ASR::Variable_t>(*x_mv) && ASRUtils::is_array(
-                ASRUtils::symbol_type(x_mv)) ) {
-            ASR::Variable_t* variable = ASR::down_cast<ASR::Variable_t>(x_mv);
-            LCOMPILERS_ASSERT(variable->m_symbolic_value);
-            *current_expr = variable->m_symbolic_value;
-            replace_expr(*current_expr);
-        }
     }
 
 };
