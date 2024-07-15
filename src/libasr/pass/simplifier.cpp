@@ -416,6 +416,7 @@ bool set_allocation_size(Allocator& al, ASR::expr_t* value, Vec<ASR::dimension_t
             ASR::IntrinsicElementalFunction_t* intrinsic_elemental_function =
                 ASR::down_cast<ASR::IntrinsicElementalFunction_t>(value);
             switch (intrinsic_elemental_function->m_intrinsic_id) {
+                case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Real):
                 case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Sin):
                 case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Abs): {
                     size_t n_dims = ASRUtils::extract_n_dims_from_ttype(
@@ -1043,6 +1044,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         ASR::Cast_t& xx = const_cast<ASR::Cast_t&>(x);
 
         replace_expr_with_temporary_variable(arg, "_cast_")
+        CallReplacerOnExpressionsVisitor::visit_Cast(x);
     }
 
     void visit_ComplexRe(const ASR::ComplexRe_t& x) {
@@ -1134,6 +1136,11 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     void replace_IntrinsicImpureFunction(ASR::IntrinsicImpureFunction_t* x) {
         replace_current_expr(std::string("_intrinsic_impure_function_") +
             ASRUtils::get_impure_intrinsic_name(x->m_impure_intrinsic_id))
+    }
+
+    void replace_IntrinsicElementalFunction(ASR::IntrinsicElementalFunction_t* x) {
+        replace_current_expr(std::string("_intrinsic_elemental_function_") +
+            ASRUtils::get_intrinsic_name(x->m_intrinsic_id))
     }
 
     void replace_StructTypeConstructor(ASR::StructConstructor_t* x) {
