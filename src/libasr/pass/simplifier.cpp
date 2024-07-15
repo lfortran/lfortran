@@ -769,6 +769,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
 
     void visit_Print(const ASR::Print_t& x) {
         visit_IO(x, "print");
+        CallReplacerOnExpressionsVisitor::visit_Print(x);
     }
 
     void visit_FileWrite(const ASR::FileWrite_t& x) {
@@ -835,6 +836,14 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         std::pair<ASR::expr_t*, ASR::expr_t*> binop = visit_BinOpUtil(&xx, "logical_binop");
         xx.m_left = binop.first;
         xx.m_right = binop.second;
+    }
+
+    void visit_RealCompare(const ASR::RealCompare_t& x) {
+        ASR::RealCompare_t& xx = const_cast<ASR::RealCompare_t&>(x);
+        std::pair<ASR::expr_t*, ASR::expr_t*> binop = visit_BinOpUtil(&xx, "real_compare");
+        xx.m_left = binop.first;
+        xx.m_right = binop.second;
+        CallReplacerOnExpressionsVisitor::visit_RealCompare(x);
     }
 
     void traverse_args(Vec<ASR::expr_t*>& x_m_args_vec, ASR::expr_t** x_m_args,
