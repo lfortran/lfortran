@@ -763,16 +763,28 @@ public:
         std::string runtime_func_name = "_lfortran_str_slice";
         llvm::Function *fn = module->getFunction(runtime_func_name);
         if (!fn) {
-            llvm::Type *integer_ty;
-            if (compiler_options.po.default_integer_kind == 8) {
-                integer_ty = llvm::Type::getInt64Ty(context);
-            } else {
-                integer_ty = llvm::Type::getInt32Ty(context);
-            }
             llvm::FunctionType *function_type = llvm::FunctionType::get(
                     character_type, {
-                        character_type, integer_ty,
-                        integer_ty, integer_ty,
+                        character_type, llvm::Type::getInt32Ty(context),
+                        llvm::Type::getInt32Ty(context), llvm::Type::getInt32Ty(context),
+                        llvm::Type::getInt1Ty(context), llvm::Type::getInt1Ty(context)
+                    }, false);
+            fn = llvm::Function::Create(function_type,
+                    llvm::Function::ExternalLinkage, runtime_func_name, *module);
+        }
+        return builder->CreateCall(fn, {str, idx1, idx2, step, left_present, right_present});
+    }
+
+    llvm::Value* lfortran_str_slice8(llvm::Value* str, llvm::Value* idx1, llvm::Value* idx2,
+                    llvm::Value* step, llvm::Value* left_present, llvm::Value* right_present)
+    {
+        std::string runtime_func_name = "_lfortran_str_slice";
+        llvm::Function *fn = module->getFunction(runtime_func_name);
+        if (!fn) {
+            llvm::FunctionType *function_type = llvm::FunctionType::get(
+                    character_type, {
+                        character_type, llvm::Type::getInt64Ty(context),
+                        llvm::Type::getInt64Ty(context), llvm::Type::getInt64Ty(context),
                         llvm::Type::getInt1Ty(context), llvm::Type::getInt1Ty(context)
                     }, false);
             fn = llvm::Function::Create(function_type,
@@ -2420,7 +2432,6 @@ public:
         llvm::Value *step = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
         llvm::Value *present = llvm::ConstantInt::get(context, llvm::APInt(1, 1));
         llvm::Value *p = lfortran_str_slice(str, idx1, idx2, step, present, present);
-
         tmp = builder->CreateAlloca(character_type, nullptr);
         builder->CreateStore(p, tmp);
     }
@@ -6181,7 +6192,12 @@ public:
             step = llvm::ConstantInt::get(context,
                 llvm::APInt(32, 1));
         }
-        tmp = lfortran_str_slice(str, left, right, step, left_present, right_present);
+        int x_step_kind = (ASRUtils::extract_kind_from_ttype_t(down_cast<ASR::IntegerConstant_t>(x.m_step)->m_type));
+        if (x_step_kind == 8) {
+            tmp = lfortran_str_slice8(str, left, right, step, left_present, right_present);
+        } else {
+            tmp = lfortran_str_slice(str, left, right, step, left_present, right_present);
+        }
     }
 
     void visit_RealCopySign(const ASR::RealCopySign_t& x) {
