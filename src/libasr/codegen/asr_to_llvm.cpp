@@ -1050,6 +1050,21 @@ public:
                 ASR::ttype_t* asr_data_type = ASRUtils::duplicate_type_without_dims(al,
                     curr_arg_m_a_type, curr_arg_m_a_type->base.loc);
                 llvm::Type* llvm_data_type = llvm_utils->get_type_from_ttype_t_util(asr_data_type, module.get());
+                llvm_utils->create_if_else(
+                    builder->CreateICmpEQ(
+                        builder->CreatePtrToInt(CreateLoad(x_arr), llvm::Type::getInt32Ty(context)),
+                        builder->CreatePtrToInt(
+                            llvm::ConstantPointerNull::get(x_arr->getType()->getPointerTo()),
+                            llvm::Type::getInt32Ty(context))),
+                    [&]() {
+                        llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(
+                            ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(
+                                ASRUtils::expr_type(tmp_expr))), module.get());
+                        llvm::Value* ptr_ = builder->CreateAlloca(type, nullptr);
+                        arr_descr->fill_dimension_descriptor(ptr_, n_dims);
+                        LLVM::CreateStore(*builder, ptr_, x_arr);
+                    },
+                    []() {});
                 fill_malloc_array_details(x_arr, llvm_data_type, curr_arg.m_dims, curr_arg.n_dims, realloc);
                 if( ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(ASRUtils::expr_type(tmp_expr)))) {
                     allocate_array_members_of_struct_arrays(LLVM::CreateLoad(*builder, x_arr),
