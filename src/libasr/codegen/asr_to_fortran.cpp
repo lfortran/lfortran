@@ -1248,6 +1248,7 @@ public:
         out = "call ";
         switch ( x.m_intrinsic_id ) {
             SET_INTRINSIC_SUBROUTINE_NAME(RandomNumber, "random_number");
+            SET_INTRINSIC_SUBROUTINE_NAME(RandomInit, "random_init");
             default : {
                 throw LCompilersException("IntrinsicImpureSubroutine: `"
                     + ASRUtils::get_intrinsic_name(x.m_intrinsic_id)

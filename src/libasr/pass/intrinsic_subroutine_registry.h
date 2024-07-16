@@ -20,6 +20,7 @@ namespace ASRUtils {
 inline std::string get_intrinsic_subroutine_name(int x) {
     switch (x) {
         INTRINSIC_SUBROUTINE_NAME_CASE(RandomNumber)
+        INTRINSIC_SUBROUTINE_NAME_CASE(RandomInit)
         default : {
             throw LCompilersException("pickle: intrinsic_id not implemented");
         }
@@ -35,17 +36,22 @@ namespace IntrinsicImpureSubroutineRegistry {
                    verify_subroutine>>& intrinsic_subroutine_by_id_db = {
         {static_cast<int64_t>(IntrinsicImpureSubroutines::RandomNumber),
             {&RandomNumber::instantiate_RandomNumber, &RandomNumber::verify_args}},
+        {static_cast<int64_t>(IntrinsicImpureSubroutines::RandomInit),
+            {&RandomInit::instantiate_RandomInit, &RandomInit::verify_args}},
     };
 
     static const std::map<int64_t, std::string>& intrinsic_subroutine_id_to_name = {
         {static_cast<int64_t>(IntrinsicImpureSubroutines::RandomNumber),
             "random_number"},
+        {static_cast<int64_t>(IntrinsicImpureSubroutines::RandomInit),
+            "random_init"},
     };
 
 
     static const std::map<std::string,
         create_intrinsic_subroutine>& intrinsic_subroutine_by_name_db = {
                 {"random_number", &RandomNumber::create_RandomNumber},
+                {"random_init", &RandomInit::create_RandomInit},
     };
 
     static inline bool is_intrinsic_subroutine(const std::string& name) {

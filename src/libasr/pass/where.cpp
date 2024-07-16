@@ -391,6 +391,34 @@ public:
         return if_stmt;
     }
 
+    ASR::stmt_t* nested_do_loop(Location &loc,ASR::expr_t* left_array,Vec<ASR::expr_t*> &idx_vars,Vec<ASR::stmt_t*> &do_loop_body_deep,int current_idx=0){
+        // Base Case.
+        if(current_idx == (int)idx_vars.size()){
+            return nullptr;
+        }
+
+        // Create Head.
+        ASR::do_loop_head_t head;
+        head.loc = loc;
+        head.m_v = idx_vars[current_idx];
+        head.m_start = PassUtils::get_bound(left_array, current_idx+1, "lbound", al);
+        head.m_end = PassUtils::get_bound(left_array, current_idx+1, "ubound", al);
+        ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+        head.m_increment = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, int32_type));
+
+        // Create Body
+        ASR::stmt_t* nested = nested_do_loop(loc, left_array, idx_vars, do_loop_body_deep, current_idx+1); 
+        Vec<ASR::stmt_t*> do_loop_body;
+        do_loop_body.reserve(al, 1);
+        if(!nested){
+            // Use the do_loop_body initialized in the caller function when we hit last idx_var.
+            do_loop_body = do_loop_body_deep; 
+        } else {
+            do_loop_body.push_back(al, nested);
+        }
+
+        return ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr, head, do_loop_body.p, do_loop_body.size(), nullptr, 0));
+    }
     void visit_Where(const ASR::Where_t& x) {
         ASR::Where_t& xx = const_cast<ASR::Where_t&>(x);
         Location loc = x.base.base.loc;
@@ -416,15 +444,10 @@ public:
             throw LCompilersException("Unsupported type, " + std::to_string(test->type));
         }
 
-        // Construct a do loop
-        ASR::stmt_t* doloop = nullptr;
-
-        // create a index variable
+        // create index variables.
         Vec<ASR::expr_t*> idx_vars;
-        PassUtils::create_idx_vars(idx_vars, 1, loc, al, current_scope);
+        PassUtils::create_idx_vars(idx_vars, ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(left)), loc, al, current_scope);
         ASR::expr_t* var = idx_vars[0];
-
-        ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
 
         if (ASR::is_a<ASR::FunctionCall_t>(*left)) {
             // Create an assignment `return_var = left` and replace function call with return_var
@@ -454,19 +477,13 @@ public:
             log_bin_op->m_left = opt_left;
         }
 
-        // create do loop head
-        ASR::do_loop_head_t head;
-        head.loc = loc;
-        head.m_v = var;
-        head.m_start = PassUtils::get_bound(opt_left?opt_left:left, 1, "lbound", al);
-        head.m_end = PassUtils::get_bound(opt_left?opt_left:left, 1, "ubound", al);
-        head.m_increment = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, int32_type));
-
-        // create do loop body
+        //Create do loop.
+        ASR::stmt_t* doloop = nullptr;
         Vec<ASR::stmt_t*> do_loop_body;
         do_loop_body.reserve(al, 1);
 
         // create an if statement
+        // TO DO : fix handle_if function to handle arraySections properly while doing looping on multiple dimensions.
         if (int_cmp) {
             if_stmt = handle_If(xx, ASRUtils::EXPR((ASR::asr_t*)int_cmp), var, loc, idx_vars);
         } else if (real_cmp) {
@@ -477,9 +494,9 @@ public:
         if (assign_stmt) {
             pass_result.push_back(al, assign_stmt);
         }
-        do_loop_body.push_back(al, if_stmt);
 
-        doloop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, 0, head, do_loop_body.p, do_loop_body.size(), nullptr, 0));
+        do_loop_body.push_back(al, if_stmt);
+        doloop = nested_do_loop(loc, opt_left?opt_left:left, idx_vars, do_loop_body);
         pass_result.push_back(al, doloop);
     }
 };
