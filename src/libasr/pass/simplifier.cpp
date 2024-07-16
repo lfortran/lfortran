@@ -766,6 +766,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                 x_m_values.push_back(al, ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, loc,
                     array_con_args.p, array_con_args.size(), type, ASR::arraystorageType::ColMajor)));
             } else {
+                visit_expr(*x_values[i]);
                 x_m_values.push_back(al, x_values[i]);
             }
         }
@@ -789,10 +790,15 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
     }
 
     void visit_FileWrite(const ASR::FileWrite_t& x) {
-        LCOMPILERS_ASSERT(x.n_values == 1);
-        ASR::StringFormat_t* str_format = ASR::down_cast<ASR::StringFormat_t>(x.m_values[0]);
-        visit_IO(str_format->m_args, str_format->n_args, "file_write");
+        ASR::FileWrite_t& xx = const_cast<ASR::FileWrite_t&>(x);
+        visit_IO(xx.m_values, xx.n_values, "file_write");
         CallReplacerOnExpressionsVisitor::visit_FileWrite(x);
+    }
+
+    void visit_StringFormat(const ASR::StringFormat_t& x) {
+        ASR::StringFormat_t& xx = const_cast<ASR::StringFormat_t&>(x);
+        visit_IO(xx.m_args, xx.n_args, "string_format");
+        CallReplacerOnExpressionsVisitor::visit_StringFormat(x);
     }
 
     ASR::expr_t* visit_BinOp_expr(ASR::expr_t* expr, const std::string& name_hint) {
