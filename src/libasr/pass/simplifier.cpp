@@ -417,7 +417,6 @@ bool set_allocation_size(Allocator& al, ASR::expr_t* value, Vec<ASR::dimension_t
                 ASR::down_cast<ASR::IntrinsicElementalFunction_t>(value);
             switch (intrinsic_elemental_function->m_intrinsic_id) {
                 case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Real):
-                case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Exp):
                 case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Sin):
                 case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Abs): {
                     size_t n_dims = ASRUtils::extract_n_dims_from_ttype(
