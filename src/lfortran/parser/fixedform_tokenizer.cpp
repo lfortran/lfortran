@@ -1409,7 +1409,6 @@ struct FixedFormRecursiveDescent {
             next_line(cur); // Does not generate any code?
             while(lex_procedure(cur));
         }
-        //std::cout << "CUR IS: " << cur << std::endl;
         if (next_is(cur, "endprogram")) {
             push_token_advance(cur, "endprogram");
             tokenize_line(cur);
