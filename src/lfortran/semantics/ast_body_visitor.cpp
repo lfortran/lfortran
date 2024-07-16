@@ -1577,6 +1577,8 @@ public:
         v->m_body = body.p;
         v->n_body = body.size();
 
+        replace_ArrayItem_in_SubroutineCall(al, compiler_options.legacy_array_sections, current_scope);
+
         for (size_t i=0; i<x.n_contains; i++) {
             visit_program_unit(*x.m_contains[i]);
         }
@@ -2052,6 +2054,8 @@ public:
         v->n_body = body.size();
         v->m_dependencies = func_deps.p;
         v->n_dependencies = func_deps.size();
+
+        replace_ArrayItem_in_SubroutineCall(al, compiler_options.legacy_array_sections, current_scope);
 
         for (size_t i=0; i<x.n_contains; i++) {
             visit_program_unit(*x.m_contains[i]);
