@@ -338,6 +338,7 @@ bool set_allocation_size(Allocator& al, ASR::expr_t* value, Vec<ASR::dimension_t
         case ASR::exprType::ComplexCompare:
         case ASR::exprType::LogicalCompare:
         case ASR::exprType::UnsignedIntegerCompare:
+        case ASR::exprType::StringCompare:
         case ASR::exprType::IntegerUnaryMinus:
         case ASR::exprType::RealUnaryMinus:
         case ASR::exprType::ComplexUnaryMinus: {
@@ -419,16 +420,25 @@ bool set_allocation_size(Allocator& al, ASR::expr_t* value, Vec<ASR::dimension_t
                 case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Real):
                 case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Sin):
                 case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Exp):
-                case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Abs): {
+                case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Abs):
+                case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Merge): {
                     size_t n_dims = ASRUtils::extract_n_dims_from_ttype(
                         intrinsic_elemental_function->m_type);
                     allocate_dims.reserve(al, n_dims);
+                    int64_t first_array_arg = -1;
+                    for(int64_t i = 0; i < (int64_t) intrinsic_elemental_function->n_args; i++) {
+                        if( ASRUtils::is_array(ASRUtils::expr_type(intrinsic_elemental_function->m_args[i])) ) {
+                            first_array_arg = i;
+                            break;
+                        }
+                    }
+                    LCOMPILERS_ASSERT(first_array_arg != -1)
                     for( size_t i = 0; i < n_dims; i++ ) {
                         ASR::dimension_t allocate_dim;
                         allocate_dim.loc = loc;
                         allocate_dim.m_start = int32_one;
                         ASR::expr_t* size_i_1 = ASRUtils::EXPR(ASR::make_ArraySize_t(
-                            al, loc, intrinsic_elemental_function->m_args[0],
+                            al, loc, intrinsic_elemental_function->m_args[first_array_arg],
                             ASRUtils::EXPR(ASR::make_IntegerConstant_t(
                                 al, loc, i + 1, ASRUtils::expr_type(int32_one))),
                             ASRUtils::expr_type(int32_one), nullptr));

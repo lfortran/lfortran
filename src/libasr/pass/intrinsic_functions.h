@@ -2988,9 +2988,12 @@ namespace Merge {
             const Location &loc, SymbolTable *scope,
             Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        ASR::ttype_t *tsource_type = ASRUtils::duplicate_type(al, arg_types[0]);
-        ASR::ttype_t *fsource_type = ASRUtils::duplicate_type(al, arg_types[1]);
-        ASR::ttype_t *mask_type = ASRUtils::duplicate_type(al, arg_types[2]);
+        ASR::ttype_t *tsource_type = ASRUtils::duplicate_type(al,
+            ASRUtils::type_get_past_array_pointer_allocatable(arg_types[0]));
+        ASR::ttype_t *fsource_type = ASRUtils::duplicate_type(al,
+            ASRUtils::type_get_past_array_pointer_allocatable(arg_types[1]));
+        ASR::ttype_t *mask_type = ASRUtils::duplicate_type(al,
+            ASRUtils::type_get_past_array_pointer_allocatable(arg_types[2]));
         if( ASR::is_a<ASR::Character_t>(*tsource_type) ) {
             ASR::Character_t* tsource_char = ASR::down_cast<ASR::Character_t>(tsource_type);
             ASR::Character_t* fsource_char = ASR::down_cast<ASR::Character_t>(fsource_type);
