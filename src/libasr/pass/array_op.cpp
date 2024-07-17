@@ -562,22 +562,31 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
     }
 
     void visit_Assignment(const ASR::Assignment_t& x) {
+        ASR::Assignment_t& xx = const_cast<ASR::Assignment_t&>(x);
         const std::vector<ASR::exprType>& skip_exprs = {
             ASR::exprType::IntrinsicArrayFunction,
             ASR::exprType::ArrayReshape,
         };
-        if( !ASRUtils::is_array(ASRUtils::expr_type(x.m_target)) ||
-            std::find(skip_exprs.begin(), skip_exprs.end(), x.m_value->type) != skip_exprs.end() ||
-            (ASRUtils::is_simd_array(x.m_target) && ASRUtils::is_simd_array(x.m_value)) ) {
+        if ( ASR::is_a<ASR::IntrinsicArrayFunction_t>(*xx.m_value) ) {
+            // We need to do this because, we may have an assignment
+            // in which IntrinsicArrayFunction is evaluated already and
+            // value is an ArrayConstant, thus we need to unroll it.
+            ASR::IntrinsicArrayFunction_t* iaf = ASR::down_cast<ASR::IntrinsicArrayFunction_t>(xx.m_value);
+            if ( iaf->m_value != nullptr ) {
+                xx.m_value = iaf->m_value;
+            }
+        }
+        if( !ASRUtils::is_array(ASRUtils::expr_type(xx.m_target)) ||
+            std::find(skip_exprs.begin(), skip_exprs.end(), xx.m_value->type) != skip_exprs.end() ||
+            (ASRUtils::is_simd_array(xx.m_target) && ASRUtils::is_simd_array(xx.m_value)) ) {
             return ;
         }
-        ASR::Assignment_t& xx = const_cast<ASR::Assignment_t&>(x);
-        xx.m_value = ASRUtils::get_past_array_broadcast(x.m_value);
+        xx.m_value = ASRUtils::get_past_array_broadcast(xx.m_value);
         const Location loc = x.base.base.loc;
-        if( call_replace_on_expr(x.m_value->type) ) {
-            replacer.result_expr = x.m_target;
+        if( call_replace_on_expr(xx.m_value->type) ) {
+            replacer.result_expr = xx.m_target;
             ASR::expr_t** current_expr_copy = current_expr;
-            current_expr = const_cast<ASR::expr_t**>(&x.m_value);
+            current_expr = const_cast<ASR::expr_t**>(&xx.m_value);
             this->call_replacer();
             current_expr = current_expr_copy;
             replacer.result_expr = nullptr;
@@ -586,24 +595,24 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
 
         Vec<ASR::expr_t**> vars;
         vars.reserve(al, 1);
-        vars.push_back(al, const_cast<ASR::expr_t**>(&(x.m_target)));
+        vars.push_back(al, const_cast<ASR::expr_t**>(&(xx.m_target)));
         ArrayVarAddressCollector var_collector(al, vars);
-        var_collector.current_expr = const_cast<ASR::expr_t**>(&(x.m_value));
+        var_collector.current_expr = const_cast<ASR::expr_t**>(&(xx.m_value));
         var_collector.call_replacer();
 
         if( vars.size() == 1 &&
             !(
                 !ASRUtils::is_array(ASRUtils::expr_type(
-                    ASRUtils::get_past_array_broadcast(x.m_value)))
+                    ASRUtils::get_past_array_broadcast(xx.m_value)))
         ) ) {
             return ;
         }
 
-        insert_realloc_for_target(x.m_target, vars);
+        insert_realloc_for_target(xx.m_target, vars);
 
         Vec<ASR::expr_t**> fix_type_args;
         fix_type_args.reserve(al, 1);
-        fix_type_args.push_back(al, const_cast<ASR::expr_t**>(&(x.m_value)));
+        fix_type_args.push_back(al, const_cast<ASR::expr_t**>(&(xx.m_value)));
 
         generate_loop(x, vars, fix_type_args, loc);
     }
