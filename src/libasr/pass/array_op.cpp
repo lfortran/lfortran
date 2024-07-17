@@ -324,6 +324,10 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         pass_result.reserve(al, 0);
     }
 
+    void visit_Variable(const ASR::Variable_t& /*x*/) {
+        // Do nothing
+    }
+
     void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
         Vec<ASR::stmt_t*> body;
         body.reserve(al, n_body);
