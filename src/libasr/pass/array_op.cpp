@@ -126,7 +126,8 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
     ReplaceArrayOp(Allocator& al_, Vec<ASR::stmt_t*>& pass_result_,
                    bool& remove_original_stmt_):
         al(al_), pass_result(pass_result_),
-        current_scope(nullptr), remove_original_stmt(remove_original_stmt_) {}
+        current_scope(nullptr), result_expr(nullptr),
+        remove_original_stmt(remove_original_stmt_) {}
 
     #define remove_original_stmt_if_size_0(type) if( ASRUtils::get_fixed_size_of_array(type) == 0 ) { \
             remove_original_stmt = true; \
