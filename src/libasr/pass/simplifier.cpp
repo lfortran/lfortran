@@ -417,8 +417,8 @@ bool set_allocation_size(Allocator& al, ASR::expr_t* value, Vec<ASR::dimension_t
                 ASR::down_cast<ASR::IntrinsicElementalFunction_t>(value);
             switch (intrinsic_elemental_function->m_intrinsic_id) {
                 case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Real):
-                case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Exp):
                 case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Sin):
+                case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Exp):
                 case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Abs): {
                     size_t n_dims = ASRUtils::extract_n_dims_from_ttype(
                         intrinsic_elemental_function->m_type);
@@ -840,6 +840,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         std::pair<ASR::expr_t*, ASR::expr_t*> binop = visit_BinOpUtil(&xx, "integer_binop");
         xx.m_left = binop.first;
         xx.m_right = binop.second;
+        CallReplacerOnExpressionsVisitor::visit_IntegerBinOp(x);
     }
 
     void visit_RealBinOp(const ASR::RealBinOp_t& x) {
@@ -847,6 +848,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         std::pair<ASR::expr_t*, ASR::expr_t*> binop = visit_BinOpUtil(&xx, "real_binop");
         xx.m_left = binop.first;
         xx.m_right = binop.second;
+        CallReplacerOnExpressionsVisitor::visit_RealBinOp(x);
     }
 
     void visit_ComplexBinOp(const ASR::ComplexBinOp_t& x) {
@@ -861,6 +863,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         std::pair<ASR::expr_t*, ASR::expr_t*> binop = visit_BinOpUtil(&xx, "logical_binop");
         xx.m_left = binop.first;
         xx.m_right = binop.second;
+        CallReplacerOnExpressionsVisitor::visit_LogicalBinOp(x);
     }
 
     void visit_RealCompare(const ASR::RealCompare_t& x) {
