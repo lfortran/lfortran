@@ -494,6 +494,33 @@ bool set_allocation_size(Allocator& al, ASR::expr_t* value, Vec<ASR::dimension_t
                     }
                     break;
                 }
+                case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Pack): {
+                    size_t n_dims = ASRUtils::extract_n_dims_from_ttype(
+                        intrinsic_array_function->m_type);
+                    allocate_dims.reserve(al, n_dims);
+                    for ( size_t i = 0; i < n_dims; i++ ) {
+                        ASR::dimension_t allocate_dim;
+                        allocate_dim.loc = loc;
+                        allocate_dim.m_start = int32_one;
+                        ASR::expr_t* size_i_1 = nullptr;
+                        if (intrinsic_array_function->n_args == 3) {
+                            size_i_1 = ASRUtils::EXPR(ASR::make_ArraySize_t(
+                                al, loc, intrinsic_array_function->m_args[2],
+                                ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                                    al, loc, i + 1, ASRUtils::expr_type(int32_one))),
+                                ASRUtils::expr_type(int32_one), nullptr));
+                        } else {
+                            Vec<ASR::expr_t*> count_i_args; count_i_args.reserve(al, 1);
+                            count_i_args.push_back(al, intrinsic_array_function->m_args[1]);
+                            size_i_1 = ASRUtils::EXPR(ASRUtils::make_IntrinsicArrayFunction_t_util(
+                                al, loc, static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Count),
+                                count_i_args.p, count_i_args.size(), 0, ASRUtils::expr_type(int32_one), nullptr));
+                        }
+                        allocate_dim.m_length = size_i_1;
+                        allocate_dims.push_back(al, allocate_dim);
+                    }
+                    break;
+                }
                 case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Shape): {
                     size_t n_dims = ASRUtils::extract_n_dims_from_ttype(
                         intrinsic_array_function->m_type);
