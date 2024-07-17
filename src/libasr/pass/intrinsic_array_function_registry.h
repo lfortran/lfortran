@@ -894,7 +894,7 @@ static inline ASR::expr_t* instantiate_ArrIntrinsic(Allocator &al,
             return_type_ = ASRUtils::make_Array_t_util(al, loc,
                 ASRUtils::extract_type(return_type_), empty_dims.p, empty_dims.size());
             if( is_allocatable ) {
-                return_type_ = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc, return_type_));
+                return_type_ = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, loc, return_type_));
             }
         }
         ASR::expr_t *result = declare("result", return_type_, Out);
@@ -1365,7 +1365,7 @@ namespace Cshift {
             ret_type = ASRUtils::duplicate_type(al, ret_type, &result_dims);
         }
         if (is_type_allocatable) {
-            ret_type = TYPE(ASR::make_Allocatable_t(al, loc, ret_type));
+            ret_type = TYPE(ASRUtils::make_Allocatable_t_util(al, loc, ret_type));
         }
         Vec<ASR::expr_t*> m_args; m_args.reserve(al, 2);
         m_args.push_back(al, array); m_args.push_back(al, shift);
@@ -1412,7 +1412,7 @@ namespace Cshift {
             return_type_ = ASRUtils::make_Array_t_util(al, loc,
                 ASRUtils::extract_type(return_type_), empty_dims.p, empty_dims.size());
             if( is_allocatable ) {
-                return_type_ = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc, return_type_));
+                return_type_ = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, loc, return_type_));
             }
         }
         ASR::expr_t *result = declare("result", return_type_, Out);
@@ -1659,7 +1659,7 @@ namespace Spread {
         ret_type = ASRUtils::duplicate_type(al, ret_type, &result_dims);
 
         if (is_type_allocatable) {
-            ret_type = TYPE(ASR::make_Allocatable_t(al, loc, ret_type));
+            ret_type = TYPE(ASRUtils::make_Allocatable_t_util(al, loc, ret_type));
         }
         Vec<ASR::expr_t*> m_args; m_args.reserve(al, 3);
         m_args.push_back(al, source); m_args.push_back(al, dim);
@@ -1715,7 +1715,7 @@ namespace Spread {
             return_type = ASRUtils::make_Array_t_util(al, loc,
                 ASRUtils::extract_type(return_type), empty_dims.p, empty_dims.size());
             if( is_allocatable ) {
-                return_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc, return_type));
+                return_type = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, loc, return_type));
             }
         }
         ASR::expr_t *result = declare("result", return_type, Out);
@@ -1893,7 +1893,7 @@ namespace Eoshift {
             ret_type = ASRUtils::duplicate_type(al, ret_type, &result_dims);
         }
         if (is_type_allocatable) {
-            ret_type = TYPE(ASR::make_Allocatable_t(al, loc, ret_type));
+            ret_type = TYPE(ASRUtils::make_Allocatable_t_util(al, loc, ret_type));
         }
         ASR::expr_t *final_boundary = nullptr;
         if(is_boundary_present){
@@ -1967,7 +1967,7 @@ namespace Eoshift {
             return_type_ = ASRUtils::make_Array_t_util(al, loc,
                 ASRUtils::extract_type(return_type_), empty_dims.p, empty_dims.size());
             if( is_allocatable ) {
-                return_type_ = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc, return_type_));
+                return_type_ = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, loc, return_type_));
             }
         }
         ASR::expr_t *result = declare("result", return_type_, Out);
@@ -3109,7 +3109,7 @@ namespace MatMul {
         }
         ret_type = ASRUtils::duplicate_type(al, ret_type, &result_dims);
         if (is_type_allocatable) {
-            ret_type = TYPE(ASR::make_Allocatable_t(al, loc, ret_type));
+            ret_type = TYPE(ASRUtils::make_Allocatable_t_util(al, loc, ret_type));
         }
         ASR::expr_t *value = eval_MatMul(al, loc, ret_type, args, diag);
         return make_IntrinsicArrayFunction_t_util(al, loc,
@@ -3150,7 +3150,7 @@ namespace MatMul {
             return_type_ = ASRUtils::make_Array_t_util(al, loc,
                 ASRUtils::extract_type(return_type_), empty_dims.p, empty_dims.size());
             if( is_allocatable ) {
-                return_type_ = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc, return_type_));
+                return_type_ = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, loc, return_type_));
             }
         }
         ASR::expr_t *result = declare("result", return_type_, Out);
@@ -4078,7 +4078,7 @@ namespace Pack {
             is_type_allocatable = true;
         }
         if (is_type_allocatable) {
-            ret_type = TYPE(ASR::make_Allocatable_t(al, loc, ret_type));
+            ret_type = TYPE(ASRUtils::make_Allocatable_t_util(al, loc, ret_type));
         }
         Vec<ASR::expr_t*> m_args; m_args.reserve(al, 2);
         m_args.push_back(al, array); m_args.push_back(al, mask);
@@ -4449,7 +4449,7 @@ namespace Unpack {
         }
         ret_type = ASRUtils::duplicate_type(al, ret_type, &result_dims);
         if (is_type_allocatable) {
-            ret_type = TYPE(ASR::make_Allocatable_t(al, loc, ret_type));
+            ret_type = TYPE(ASRUtils::make_Allocatable_t_util(al, loc, ret_type));
         }
         Vec<ASR::expr_t*> m_args; m_args.reserve(al, 3);
         m_args.push_back(al, vector); m_args.push_back(al, mask); m_args.push_back(al, field);
@@ -4830,7 +4830,7 @@ namespace Transpose {
             matrix_a_dims[0].m_length));
         ret_type = ASRUtils::duplicate_type(al, ret_type, &result_dims);
         if (is_type_allocatable) {
-            ret_type = TYPE(ASR::make_Allocatable_t(al, loc, ret_type));
+            ret_type = TYPE(ASRUtils::make_Allocatable_t_util(al, loc, ret_type));
         }
         ASR::expr_t *value = nullptr;
         if (all_args_evaluated(args)) {
@@ -4869,7 +4869,7 @@ namespace Transpose {
             return_type_ = ASRUtils::make_Array_t_util(al, loc,
                 ASRUtils::extract_type(return_type_), empty_dims.p, empty_dims.size());
             if( is_allocatable ) {
-                return_type_ = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc, return_type_));
+                return_type_ = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, loc, return_type_));
             }
         }
         ASR::expr_t *result = declare("result", return_type_, Out);

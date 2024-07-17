@@ -2759,6 +2759,11 @@ static inline ASR::ttype_t* duplicate_type_without_dims(Allocator& al, const ASR
     }
 }
 
+static inline ASR::asr_t* make_Allocatable_t_util(Allocator& al, const Location& loc, ASR::ttype_t* type) {
+    return ASR::make_Allocatable_t(
+        al, loc, duplicate_type_with_empty_dims(al, type));
+}
+
 inline std::string remove_trailing_white_spaces(std::string str) {
     int end = str.size() - 1;
     while (end >= 0 && str[end] == ' ') {
@@ -3713,7 +3718,7 @@ static inline ASR::symbol_t* import_struct_instance_member(Allocator& al, ASR::s
     }
 
     if( ASR::is_a<ASR::Allocatable_t>(*mem_type_) ) {
-        mem_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al,
+        mem_type = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al,
         mem_type->base.loc, mem_type));
     } else if( ASR::is_a<ASR::Pointer_t>(*mem_type_) ) {
         mem_type = ASRUtils::TYPE(ASR::make_Pointer_t(al,
@@ -4976,7 +4981,7 @@ static inline void import_struct_t(Allocator& al,
             if( is_pointer ) {
                 var_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, var_type));
             } else if( is_allocatable ) {
-                var_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc, var_type));
+                var_type = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, loc, var_type));
             }
         }
     } else if( ASR::is_a<ASR::Character_t>(*var_type_unwrapped) ) {
@@ -4990,7 +4995,7 @@ static inline void import_struct_t(Allocator& al,
             if( is_pointer ) {
                 var_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, var_type));
             } else if( is_allocatable ) {
-                var_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc, var_type));
+                var_type = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, loc, var_type));
             }
         }
     }

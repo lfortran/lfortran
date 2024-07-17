@@ -85,7 +85,7 @@ ASR::expr_t* create_temporary_variable_for_array(Allocator& al,
                 var_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, var_type->base.loc, var_type));
             }
         } else {
-            var_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, var_type->base.loc, var_type));
+            var_type = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, var_type->base.loc, var_type));
         }
     }
 
