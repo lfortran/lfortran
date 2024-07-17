@@ -710,10 +710,11 @@ jobs:
             cd SNAP
             export PATH="$(pwd)/../src/bin:$PATH"
 
-            git checkout lf4
-            git checkout a03041b74bf103a0394f0cb77d449e608e94d731
+            git checkout lf5
+            git checkout 995bffd104013fad37aca8c10ee916b8b4044cb2
             cd ./src
-            make
+            make -j8
+            ./gsnap ../qasnap/sample/inp out
 
   test_llvm:
     name: Test LLVM ${{ matrix.llvm-version }}

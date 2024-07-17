@@ -1325,7 +1325,7 @@ struct FixedFormRecursiveDescent {
         push_token_advance(cur, "while");
         tokenize_line(cur); // tokenize rest of line where `do while` starts
         while (!next_is(cur, "enddo\n")) {
-            tokenize_line(cur);
+            lex_body_statement(cur);
         }
         push_token_advance(cur, "enddo");
         tokenize_line(cur);
@@ -1540,7 +1540,6 @@ struct FixedFormRecursiveDescent {
         // we can define a global assignment
         unsigned char *nline = cur; next_line(nline);
         // eat_label(cur);
-
         if (next_is(cur, "include")) {
             push_token_advance(cur, "include");
             tokenize_line(cur);
@@ -1587,7 +1586,6 @@ bool FixedFormTokenizer::tokenize_input(diag::Diagnostics &diagnostics, Allocato
         f.t.string_start = string_start;
         f.t.cur_line = string_start;
         f.t.line_num = 1;
-
         f.lex_global_scope(cur);
         tokens = std::move(f.tokens);
         stypes = std::move(f.stypes);
