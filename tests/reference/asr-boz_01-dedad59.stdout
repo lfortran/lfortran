@@ -54,33 +54,56 @@
                                     Public
                                     Required
                                     .false.
-                                ),
-                            int:
-                                (ExternalSymbol
-                                    2
-                                    int
-                                    4 int
-                                    lfortran_intrinsic_builtin
-                                    []
-                                    int
-                                    Private
                                 )
                         })
                     boz_01
                     []
                     [(Assignment
                         (Var 2 boz_1)
-                        (IntegerConstant 93 (Integer 4) Binary)
+                        (IntrinsicElementalFunction
+                            Int
+                            [(IntegerConstant 93 (Integer 4) Binary)]
+                            0
+                            (Integer 4)
+                            (Cast
+                                (IntegerConstant 93 (Integer 4) Binary)
+                                IntegerToInteger
+                                (Integer 4)
+                                (IntegerConstant 93 (Integer 4) Decimal)
+                            )
+                        )
                         ()
                     )
                     (Assignment
                         (Var 2 boz_2)
-                        (IntegerConstant 1255 (Integer 4) Octal)
+                        (IntrinsicElementalFunction
+                            Int
+                            [(IntegerConstant 1255 (Integer 4) Octal)]
+                            0
+                            (Integer 4)
+                            (Cast
+                                (IntegerConstant 1255 (Integer 4) Octal)
+                                IntegerToInteger
+                                (Integer 4)
+                                (IntegerConstant 1255 (Integer 4) Decimal)
+                            )
+                        )
                         ()
                     )
                     (Assignment
                         (Var 2 boz_3)
-                        (IntegerConstant 2748 (Integer 4) Hex)
+                        (IntrinsicElementalFunction
+                            Int
+                            [(IntegerConstant 2748 (Integer 4) Hex)]
+                            0
+                            (Integer 4)
+                            (Cast
+                                (IntegerConstant 2748 (Integer 4) Hex)
+                                IntegerToInteger
+                                (Integer 4)
+                                (IntegerConstant 2748 (Integer 4) Decimal)
+                            )
+                        )
                         ()
                     )
                     (Print
@@ -90,9 +113,7 @@
                         ()
                         ()
                     )]
-                ),
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin)
+                )
         })
     []
 )
