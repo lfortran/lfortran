@@ -89,6 +89,7 @@ inline std::string get_intrinsic_name(int64_t x) {
         INTRINSIC_NAME_CASE(Llt)
         INTRINSIC_NAME_CASE(Lge)
         INTRINSIC_NAME_CASE(Lle)
+        INTRINSIC_NAME_CASE(Int)
         INTRINSIC_NAME_CASE(Exponent)
         INTRINSIC_NAME_CASE(Fraction)
         INTRINSIC_NAME_CASE(SetExponent)
@@ -221,6 +222,8 @@ namespace IntrinsicElementalFunctionRegistry {
             {&BesselY0::instantiate_BesselY0, &BesselY0::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::BesselY1),
             {&BesselY1::instantiate_BesselY1, &BesselY1::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Int),
+            {&Int::instantiate_Int, &Int::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Asind),
             {&Asind::instantiate_Asind, &Asind::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Acosd),
@@ -546,6 +549,8 @@ namespace IntrinsicElementalFunctionRegistry {
             "trunc"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Fix),
             "fix"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Int),
+            "int"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Sin),
             "sin"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Cos),
@@ -995,6 +1000,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"tiny", {&Tiny::create_Tiny, &Tiny::eval_Tiny}},
                 {"bit_size", {&BitSize::create_BitSize, &BitSize::eval_BitSize}},
                 {"new_line", {&NewLine::create_NewLine, &NewLine::eval_NewLine}},
+                {"int", {&Int::create_Int, &Int::eval_Int}},
                 {"conjg", {&Conjg::create_Conjg, &Conjg::eval_Conjg}},
                 {"huge", {&Huge::create_Huge, &Huge::eval_Huge}},
                 {"Symbol", {&SymbolicSymbol::create_SymbolicSymbol, &SymbolicSymbol::eval_SymbolicSymbol}},
