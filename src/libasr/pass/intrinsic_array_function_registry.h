@@ -4110,7 +4110,9 @@ namespace Pack {
             ret_type = ASRUtils::duplicate_type(al, ASRUtils::type_get_past_allocatable(return_type), nullptr, ASRUtils::extract_physical_type(return_type), true);
             LCOMPILERS_ASSERT(ASR::is_a<ASR::Array_t>(*ret_type));
             ASR::Array_t *ret_type_array = ASR::down_cast<ASR::Array_t>(ret_type);
-            if (ASR::is_a<ASR::FunctionCall_t>(*ret_type_array->m_dims[0].m_length)) {
+            if (ret_type_array->m_dims[0].m_length &&
+                ASR::is_a<ASR::FunctionCall_t>(*ret_type_array->m_dims[0].m_length)
+            ) {
                 ASR::FunctionCall_t *func_call = ASR::down_cast<ASR::FunctionCall_t>(ret_type_array->m_dims[0].m_length);
                 if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*func_call->m_args[0].m_value)) {
                     ASR::ArrayPhysicalCast_t *array_cast = ASR::down_cast<ASR::ArrayPhysicalCast_t>(func_call->m_args[0].m_value);
@@ -4123,7 +4125,9 @@ namespace Pack {
                 } else {
                     ret_type = return_type;
                 }
-            } else if (ASR::is_a<ASR::IntrinsicArrayFunction_t>(*ret_type_array->m_dims[0].m_length)) {
+            } else if (ret_type_array->m_dims[0].m_length &&
+                ASR::is_a<ASR::IntrinsicArrayFunction_t>(*ret_type_array->m_dims[0].m_length)
+            ) {
                 ASR::IntrinsicArrayFunction_t *intrinsic_array = ASR::down_cast<ASR::IntrinsicArrayFunction_t>(ret_type_array->m_dims[0].m_length);
                 if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*intrinsic_array->m_args[0])) {
                     ASR::ArrayPhysicalCast_t *array_cast = ASR::down_cast<ASR::ArrayPhysicalCast_t>(intrinsic_array->m_args[0]);
