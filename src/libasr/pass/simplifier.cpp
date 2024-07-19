@@ -925,10 +925,10 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         /* For other frontends, we might need to traverse the arguments
            in reverse order. */
         for( size_t i = 0; i < x_n_args; i++ ) {
+            visit_expr(*x_m_args[i]);
             if( ASRUtils::is_array(ASRUtils::expr_type(x_m_args[i])) &&
                 !ASR::is_a<ASR::Var_t>(
                     *ASRUtils::get_past_array_physical_cast(x_m_args[i])) ) {
-                visit_expr(*x_m_args[i]);
                 call_create_and_allocate_temporary_variable(x_m_args[i])
                 if( ASR::is_a<ASR::ArrayPhysicalCast_t>(*x_m_args[i]) ) {
                     ASR::ArrayPhysicalCast_t* x_m_args_i = ASR::down_cast<ASR::ArrayPhysicalCast_t>(x_m_args[i]);
@@ -941,7 +941,6 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
             } else if( ASRUtils::is_struct(*ASRUtils::expr_type(x_m_args[i])) &&
                        !ASR::is_a<ASR::Var_t>(
                             *ASRUtils::get_past_array_physical_cast(x_m_args[i])) ) {
-                visit_expr(*x_m_args[i]);
                 ASR::expr_t* struct_var_temporary = create_and_allocate_temporary_variable_for_struct(
                     ASRUtils::get_past_array_physical_cast(x_m_args[i]), name_hint, al, current_body,
                     current_scope, exprs_with_target);
