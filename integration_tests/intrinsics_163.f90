@@ -132,6 +132,38 @@ program intrinsics_163
     res_8 = ishftc(-9223372036854775807_8, -63_8)
     print *, res_8
     if (res_8 /= 3) error stop
+
+    res_1 = ishftc(10_1, 2_1, 4_1)
+    print *, res_1
+    if (res_1 /= 10) error stop
  
+    res_1 = ishftc(10_1, -2_1, 7_1)
+    print *, res_1
+    if (res_1 /= 66) error stop
  
+    res_2 = ishftc(10_2, 2_2, 6_2)
+    print *, res_2
+    if (res_2 /= 40) error stop
+ 
+    res_2 = ishftc(10_2, -2_2, 11_2)
+    print *, res_2
+    if (res_2 /= 1026) error stop
+
+    res_4 = ishftc(10_4, 2_4, 13_4)
+    print *, res_4
+    if (res_4 /= 40) error stop
+ 
+    res_4 = ishftc(10_4, -2_4, 31_4)
+    print *, res_4
+    if (res_4 /= 1073741826) error stop
+
+ 
+    res_8 = ishftc(10_8, 2_8, 62_8)
+    print *, res_8
+    if (res_8 /= 40_8) error stop
+ 
+    res_8 = ishftc(10_8, -2_8, 59_8)
+    print *, res_8
+    if (res_8 /= 288230376151711746_8) error stop
+
  end program

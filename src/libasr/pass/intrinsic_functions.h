@@ -3613,14 +3613,24 @@ namespace Ishftc {
         uint64_t val = (uint64_t)ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t shift_signed = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
         int kind = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_type);
-        bool negative_shift = (shift_signed < 0);
-        uint32_t shift = abs(shift_signed);
-        uint32_t bits_size = 8u * (uint32_t)kind;
+        uint32_t bits_size = (uint32_t)ASR::down_cast<ASR::IntegerConstant_t>(args[2])->m_n;
         uint32_t max_bits_size = 64;
-        if (bits_size < shift) {
-            append_error(diag, "The absolute value of SHIFT argument must be less than or equal to BIT_SIZE('I')", loc);
+        if (bits_size > (uint32_t)(8 * kind)) {
+            append_error(diag, "The SIZE argument must be greater than zero and less than or equal to BIT_SIZE('I')", loc);
             return nullptr;
         }
+        if(std::abs(shift_signed) > bits_size){
+            append_error(diag, "The SHIFT argument must be less than or equal to the of SIZE argument", loc);
+            return nullptr;
+        }
+        bool negative_shift = (shift_signed < 0);
+        uint32_t shift = abs(shift_signed);
+
+        if (shift > max_bits_size) {
+            append_error(diag, "The absolute value of SHIFT argument must be less than SIZE", loc);
+            return nullptr;
+        }
+
         val = cutoff_extra_bits(val, bits_size, max_bits_size);
         uint64_t result;
         if (negative_shift) {
@@ -3636,6 +3646,7 @@ namespace Ishftc {
             Vec<ASR::call_arg_t>& /*new_args*/, int64_t /*overload_id*/) {
         // TO DO: Implement the runtime function for ISHFTC
         throw LCompilersException("Runtime implementation for `ishftc` is not yet implemented.");
+        return nullptr;
     }
 
 } // namespace Ishftc
