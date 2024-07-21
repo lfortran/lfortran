@@ -417,6 +417,12 @@ bool set_allocation_size(Allocator& al, ASR::expr_t* value, Vec<ASR::dimension_t
             ASR::IntrinsicElementalFunction_t* intrinsic_elemental_function =
                 ASR::down_cast<ASR::IntrinsicElementalFunction_t>(value);
             switch (intrinsic_elemental_function->m_intrinsic_id) {
+                case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::BesselJ0):
+                case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::BesselJ1):
+                case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::BesselJN):
+                case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::BesselY0):
+                case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::BesselY1):
+                case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::BesselYN):
                 case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Real):
                 case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Sin):
                 case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Exp):
@@ -449,7 +455,7 @@ bool set_allocation_size(Allocator& al, ASR::expr_t* value, Vec<ASR::dimension_t
                 }
                 default: {
                     LCOMPILERS_ASSERT_MSG(false, "ASR::IntrinsicElementalFunctions::" +
-                        std::to_string(intrinsic_elemental_function->m_intrinsic_id)
+                        ASRUtils::get_intrinsic_name(intrinsic_elemental_function->m_intrinsic_id)
                         + " not handled yet in set_allocation_size");
                 }
             }
@@ -459,6 +465,7 @@ bool set_allocation_size(Allocator& al, ASR::expr_t* value, Vec<ASR::dimension_t
             ASR::IntrinsicArrayFunction_t* intrinsic_array_function =
                 ASR::down_cast<ASR::IntrinsicArrayFunction_t>(value);
             switch (intrinsic_array_function->m_arr_intrinsic_id) {
+                case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::All):
                 case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Any):
                 case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Count):
                 case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Parity):
@@ -537,7 +544,7 @@ bool set_allocation_size(Allocator& al, ASR::expr_t* value, Vec<ASR::dimension_t
                 }
                 default: {
                     LCOMPILERS_ASSERT_MSG(false, "ASR::IntrinsicArrayFunctions::" +
-                        std::to_string(intrinsic_array_function->m_arr_intrinsic_id)
+                        ASRUtils::get_array_intrinsic_name(intrinsic_array_function->m_arr_intrinsic_id)
                         + " not handled yet in set_allocation_size");
                 }
             }

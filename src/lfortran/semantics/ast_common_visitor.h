@@ -570,6 +570,9 @@ inline static void visit_BoolOp(Allocator &al, const AST::BoolOp_t &x,
     }
 
     ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, left, right);
+    if ( ASRUtils::is_array(right_type) ) {
+        left_type = ASRUtils::duplicate_type(al, right_type);
+    }
     asr = ASR::make_LogicalBinOp_t(al, x.base.base.loc, left, op, right, left_type, value);
 
   }
