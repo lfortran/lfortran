@@ -1818,26 +1818,20 @@ namespace Eoshift {
         int shift = 0;
         if (extract_value(expr_value(args[1]), shift)) {
             if (shift < 0) {
-                shift = m_eles.size() + shift;
-            }
-            std::rotate(m_eles.begin(), m_eles.begin() + shift, m_eles.end());
-        }
-        if (extract_value(expr_value(args[1]), shift)) {
-            if(shift > 0) {
+                std::rotate(m_eles.begin(), m_eles.begin() + m_eles.size() + shift, m_eles.end());
+                for(int j = 0; j < (-1*shift); j++) {
+                    m_eles[j] = final_boundary;
+                }
+            } else {
+                std::rotate(m_eles.begin(), m_eles.begin() + shift, m_eles.end());
                 int i = m_eles.size() - 1;
                 for(int j = 0; j < shift; j++) {
                     m_eles[i] = final_boundary;
                     i--;
                 }
             }
-            else {
-                for(int j = 0; j < (-1*shift); j++) {
-                    m_eles[j] = final_boundary;
-                }
-            }
         }
         return b.ArrayConstant(m_eles, extract_type(type), false);
-
     } else {
         return nullptr;
         }
@@ -1900,14 +1894,15 @@ namespace Eoshift {
             final_boundary = boundary;
         }
         else{
+            ASR::ttype_t *boundary_type = ASRUtils::type_get_past_array_pointer_allocatable(type_array);
             if(is_integer(*type_array))
-                final_boundary = b.i_t(0, type_array);
+                final_boundary = b.i_t(0, boundary_type);
             else if(is_real(*type_array))
-                final_boundary = b.f_t(0.0, type_array);
+                final_boundary = b.f_t(0.0, boundary_type);
             else if(is_logical(*type_array))
-                final_boundary = b.bool_t(false, type_array);
+                final_boundary = b.bool_t(false, boundary_type);
             else if(is_character(*type_array)){
-                final_boundary = b.StringConstant("  ", type_array);
+                final_boundary = b.StringConstant("  ", boundary_type);
             }
         }
         Vec<ASR::expr_t*> m_args; m_args.reserve(al, 3);
