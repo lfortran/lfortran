@@ -1087,6 +1087,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
 
     void visit_FunctionCall(const ASR::FunctionCall_t& x) {
         visit_Call(x, "_function_call_");
+        ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>::visit_FunctionCall(x);
     }
 
     #define replace_expr_with_temporary_variable(member, name_hint) BEGIN_VAR_CHECK(x.m_##member) \
