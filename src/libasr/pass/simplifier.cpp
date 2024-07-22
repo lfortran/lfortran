@@ -1265,6 +1265,14 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         replace_current_expr("_set_constant_")
     }
 
+    void replace_IntegerBinOp(ASR::IntegerBinOp_t* x) {
+        replace_current_expr("_integer_binop_")
+    }
+
+    void replace_RealBinOp(ASR::RealBinOp_t* x) {
+        replace_current_expr("_real_binop_")
+    }
+
     void replace_TupleConstant(ASR::TupleConstant_t* x) {
         replace_current_expr("_tuple_constant_")
     }
