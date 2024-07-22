@@ -843,7 +843,7 @@ public:
         {"selected_real_kind", {IntrinsicSignature({"p", "r", "radix"}, 0, 3)}},
         {"nearest", {IntrinsicSignature({"x", "s"}, 2, 2)}},
         {"compiler_version", {IntrinsicSignature({}, 0, 0)}},
-        {"ishftc", {IntrinsicSignature({"i", "shift"}, 2, 2)}},
+        {"ishftc", {IntrinsicSignature({"i", "shift", "size"}, 2, 3)}},
         {"ichar", {IntrinsicSignature({"C", "kind"}, 1, 2)}},
         {"char", {IntrinsicSignature({"I", "kind"}, 1, 2)}},
         {"achar", {IntrinsicSignature({"I", "kind"}, 1, 2)}},
@@ -5353,9 +5353,9 @@ public:
     }
 
     void fill_optional_args(std::string intrinsic_name, Vec<ASR::expr_t*> &args, const Location &loc) {
+        ASR::ttype_t *int_type = ASRUtils::TYPE(
+                    ASR::make_Integer_t(al, loc, 4));
         if (intrinsic_name == "selected_real_kind") {
-            ASR::ttype_t *int_type = ASRUtils::TYPE(
-                    ASR::make_Integer_t(al, loc, compiler_options.po.default_integer_kind));
             ASR::expr_t* zero = ASRUtils::EXPR(
                 ASR::make_IntegerConstant_t(al, loc, 0,
                                                 int_type));
@@ -5374,8 +5374,6 @@ public:
         } else if (intrinsic_name == "verify" || intrinsic_name == "index" || intrinsic_name == "scan") {
             ASR::ttype_t *bool_type = ASRUtils::TYPE(
                     ASR::make_Logical_t(al, loc, 4));
-            ASR::ttype_t *int_type = ASRUtils::TYPE(
-                    ASR::make_Integer_t(al, loc, 4));
             ASR::expr_t* f = ASRUtils::EXPR(
                 ASR::make_LogicalConstant_t(al, loc, false, bool_type));
             ASR::expr_t* four = ASRUtils::EXPR(
@@ -5394,6 +5392,15 @@ public:
                         ASR::make_IntegerConstant_t(al, loc, kind, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, kind))));
                     args.p[1] = val;
                 }
+            }
+        } else if (intrinsic_name == "ishftc"){
+            if(args[2] == nullptr){
+                int value;
+                int kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[0]));
+                value = kind*8;
+                ASR::expr_t* val = ASRUtils::EXPR(
+                    ASR::make_IntegerConstant_t(al, loc, value, int_type));
+                args.p[2] = val;
             }
         }
     }
