@@ -642,6 +642,10 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             }
         }
 
+        if( vars.size() == 0 ) {
+            return ;
+        }
+
         Vec<ASR::expr_t**> fix_type_args;
         fix_type_args.reserve(al, 1);
 
