@@ -852,6 +852,8 @@ public:
     }
 
     void visit_ArrayItem(const ArrayItem_t &x) {
+        require(!ASRUtils::is_array(x.m_type),
+            "ArrayItem::m_type cannot be array.")
         handle_ArrayItemSection(x);
     }
 

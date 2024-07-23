@@ -284,6 +284,11 @@ class FixTypeVisitor: public ASR::BaseWalkVisitor<FixTypeVisitor> {
         visit_ArrayOp(x);
     }
 
+    void visit_LogicalBinOp(const ASR::LogicalBinOp_t& x) {
+        ASR::BaseWalkVisitor<FixTypeVisitor>::visit_LogicalBinOp(x);
+        visit_ArrayOp(x);
+    }
+
     void visit_StructInstanceMember(const ASR::StructInstanceMember_t& x) {
         ASR::BaseWalkVisitor<FixTypeVisitor>::visit_StructInstanceMember(x);
         if( !ASRUtils::is_array(x.m_type) ) {
