@@ -1659,6 +1659,7 @@ RUN(NAME do_concurrent_09 LABELS llvm_omp)
 RUN(NAME do_concurrent_10 LABELS llvm_omp)
 RUN(NAME do_concurrent_11 LABELS llvm_omp llvm) # every other `do_concurrent` test can work with llvm, the only reason
 RUN(NAME do_concurrent_12 LABELS llvm_omp llvm) # to not include is that we do a `omp_set_num_threads(xx)` call
+RUN(NAME do_concurrent_13 LABELS llvm_omp llvm) # to not include is that we do a `omp_set_num_threads(xx)` call
 
 
 RUN(NAME transfer_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
