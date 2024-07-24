@@ -44,89 +44,6 @@ class ArrayVarCollector: public ASR::BaseWalkVisitor<ArrayVarCollector> {
 
 };
 
-ASR::ttype_t* create_array_type_with_empty_dims(Allocator& al,
-    size_t value_n_dims, ASR::ttype_t* value_type) {
-    Vec<ASR::dimension_t> empty_dims; empty_dims.reserve(al, value_n_dims);
-    for( size_t i = 0; i < value_n_dims; i++ ) {
-        ASR::dimension_t empty_dim;
-        Location loc; loc.first = 1, loc.last = 1;
-        empty_dim.loc = loc;
-        empty_dim.m_length = nullptr;
-        empty_dim.m_start = nullptr;
-        empty_dims.push_back(al, empty_dim);
-    }
-    return ASRUtils::make_Array_t_util(al, value_type->base.loc,
-        ASRUtils::extract_type(value_type), empty_dims.p, empty_dims.size());
-}
-
-ASR::expr_t* create_temporary_variable_for_array(Allocator& al,
-    ASR::expr_t* value, SymbolTable* scope, std::string name_hint,
-    bool is_pointer_required=false) {
-    ASR::ttype_t* value_type = ASRUtils::expr_type(value);
-    LCOMPILERS_ASSERT(ASRUtils::is_array(value_type));
-
-    /* Figure out the type of the temporary array variable */
-    ASR::dimension_t* value_m_dims = nullptr;
-    size_t value_n_dims = ASRUtils::extract_dimensions_from_ttype(value_type, value_m_dims);
-    bool is_fixed_sized_array = ASRUtils::is_fixed_size_array(value_type);
-    bool is_size_only_dependent_on_arguments = ASRUtils::is_dimension_dependent_only_on_arguments(
-        value_m_dims, value_n_dims);
-    bool is_allocatable = ASRUtils::is_allocatable(value_type);
-    ASR::ttype_t* var_type = nullptr;
-    if( (is_fixed_sized_array || is_size_only_dependent_on_arguments || is_allocatable) &&
-        !is_pointer_required ) {
-        var_type = value_type;
-    } else {
-        var_type = create_array_type_with_empty_dims(al, value_n_dims, value_type);
-        if( ASR::is_a<ASR::ArraySection_t>(*value) && is_pointer_required ) {
-            if( ASRUtils::is_simd_array(value) ) {
-                var_type = ASRUtils::expr_type(value);
-            } else {
-                var_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, var_type->base.loc, var_type));
-            }
-        } else {
-            var_type = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, var_type->base.loc, var_type));
-        }
-    }
-
-    std::string var_name = scope->get_unique_name("__libasr_created_" + name_hint);
-    ASR::symbol_t* temporary_variable = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(
-        al, value->base.loc, scope, s2c(al, var_name), nullptr, 0, ASR::intentType::Local,
-        nullptr, nullptr, ASR::storage_typeType::Default, var_type, nullptr, ASR::abiType::Source,
-        ASR::accessType::Public, ASR::presenceType::Required, false));
-    scope->add_symbol(var_name, temporary_variable);
-
-    return ASRUtils::EXPR(ASR::make_Var_t(al, temporary_variable->base.loc, temporary_variable));
-}
-
-ASR::expr_t* create_temporary_variable_for_array(Allocator& al, const Location& loc,
-    SymbolTable* scope, std::string name_hint, ASR::ttype_t* value_type) {
-
-    std::string var_name = scope->get_unique_name("__libasr_created_" + name_hint);
-    ASR::symbol_t* temporary_variable = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(
-        al, loc, scope, s2c(al, var_name), nullptr, 0, ASR::intentType::Local,
-        nullptr, nullptr, ASR::storage_typeType::Default, value_type, nullptr, ASR::abiType::Source,
-        ASR::accessType::Public, ASR::presenceType::Required, false));
-    scope->add_symbol(var_name, temporary_variable);
-
-    return ASRUtils::EXPR(ASR::make_Var_t(al, temporary_variable->base.loc, temporary_variable));
-}
-
-ASR::expr_t* create_temporary_variable_for_struct(Allocator& al,
-    ASR::expr_t* value, SymbolTable* scope, std::string name_hint) {
-    ASR::ttype_t* value_type = ASRUtils::expr_type(value);
-    LCOMPILERS_ASSERT(ASRUtils::is_struct(*value_type));
-
-    std::string var_name = scope->get_unique_name("__libasr_created_" + name_hint);
-    ASR::symbol_t* temporary_variable = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(
-        al, value->base.loc, scope, s2c(al, var_name), nullptr, 0, ASR::intentType::Local,
-        nullptr, nullptr, ASR::storage_typeType::Default, value_type, nullptr, ASR::abiType::Source,
-        ASR::accessType::Public, ASR::presenceType::Required, false));
-    scope->add_symbol(var_name, temporary_variable);
-
-    return ASRUtils::EXPR(ASR::make_Var_t(al, temporary_variable->base.loc, temporary_variable));
-}
-
 ASR::expr_t* get_ImpliedDoLoop_size(Allocator& al, ASR::ImpliedDoLoop_t* implied_doloop) {
     const Location& loc = implied_doloop->base.base.loc;
     ASRUtils::ASRBuilder builder(al, loc);
@@ -296,6 +213,96 @@ ASR::expr_t* get_ArrayConstructor_size(Allocator& al, ASR::ArrayConstructor_t* x
     }
     return array_size;
 }
+
+ASR::ttype_t* create_array_type_with_empty_dims(Allocator& al,
+    size_t value_n_dims, ASR::ttype_t* value_type) {
+    Vec<ASR::dimension_t> empty_dims; empty_dims.reserve(al, value_n_dims);
+    for( size_t i = 0; i < value_n_dims; i++ ) {
+        ASR::dimension_t empty_dim;
+        Location loc; loc.first = 1, loc.last = 1;
+        empty_dim.loc = loc;
+        empty_dim.m_length = nullptr;
+        empty_dim.m_start = nullptr;
+        empty_dims.push_back(al, empty_dim);
+    }
+    return ASRUtils::make_Array_t_util(al, value_type->base.loc,
+        ASRUtils::extract_type(value_type), empty_dims.p, empty_dims.size());
+}
+
+ASR::expr_t* create_temporary_variable_for_array(Allocator& al,
+    ASR::expr_t* value, SymbolTable* scope, std::string name_hint,
+    bool is_pointer_required=false) {
+    ASR::ttype_t* value_type = ASRUtils::expr_type(value);
+    LCOMPILERS_ASSERT(ASRUtils::is_array(value_type));
+
+    /* Figure out the type of the temporary array variable */
+    ASR::dimension_t* value_m_dims = nullptr;
+    size_t value_n_dims = ASRUtils::extract_dimensions_from_ttype(value_type, value_m_dims);
+    // dimensions can be different for an ArrayConstructor e.g. [1, a], where `a` is an
+    // ArrayConstructor like [5, 2, 1]
+    if (ASR::is_a<ASR::ArrayConstructor_t>(*value)) {
+        ASR::ArrayConstructor_t* arr_constructor = ASR::down_cast<ASR::ArrayConstructor_t>(value);
+        value_m_dims->m_length = get_ArrayConstructor_size(al, arr_constructor);
+    }
+    bool is_fixed_sized_array = ASRUtils::is_fixed_size_array(value_type);
+    bool is_size_only_dependent_on_arguments = ASRUtils::is_dimension_dependent_only_on_arguments(
+        value_m_dims, value_n_dims);
+    bool is_allocatable = ASRUtils::is_allocatable(value_type);
+    ASR::ttype_t* var_type = nullptr;
+    if( (is_fixed_sized_array || is_size_only_dependent_on_arguments || is_allocatable) &&
+        !is_pointer_required ) {
+        var_type = value_type;
+    } else {
+        var_type = create_array_type_with_empty_dims(al, value_n_dims, value_type);
+        if( ASR::is_a<ASR::ArraySection_t>(*value) && is_pointer_required ) {
+            if( ASRUtils::is_simd_array(value) ) {
+                var_type = ASRUtils::expr_type(value);
+            } else {
+                var_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, var_type->base.loc, var_type));
+            }
+        } else {
+            var_type = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, var_type->base.loc, var_type));
+        }
+    }
+
+    std::string var_name = scope->get_unique_name("__libasr_created_" + name_hint);
+    ASR::symbol_t* temporary_variable = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(
+        al, value->base.loc, scope, s2c(al, var_name), nullptr, 0, ASR::intentType::Local,
+        nullptr, nullptr, ASR::storage_typeType::Default, var_type, nullptr, ASR::abiType::Source,
+        ASR::accessType::Public, ASR::presenceType::Required, false));
+    scope->add_symbol(var_name, temporary_variable);
+
+    return ASRUtils::EXPR(ASR::make_Var_t(al, temporary_variable->base.loc, temporary_variable));
+}
+
+ASR::expr_t* create_temporary_variable_for_array(Allocator& al, const Location& loc,
+    SymbolTable* scope, std::string name_hint, ASR::ttype_t* value_type) {
+
+    std::string var_name = scope->get_unique_name("__libasr_created_" + name_hint);
+    ASR::symbol_t* temporary_variable = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(
+        al, loc, scope, s2c(al, var_name), nullptr, 0, ASR::intentType::Local,
+        nullptr, nullptr, ASR::storage_typeType::Default, value_type, nullptr, ASR::abiType::Source,
+        ASR::accessType::Public, ASR::presenceType::Required, false));
+    scope->add_symbol(var_name, temporary_variable);
+
+    return ASRUtils::EXPR(ASR::make_Var_t(al, temporary_variable->base.loc, temporary_variable));
+}
+
+ASR::expr_t* create_temporary_variable_for_struct(Allocator& al,
+    ASR::expr_t* value, SymbolTable* scope, std::string name_hint) {
+    ASR::ttype_t* value_type = ASRUtils::expr_type(value);
+    LCOMPILERS_ASSERT(ASRUtils::is_struct(*value_type));
+
+    std::string var_name = scope->get_unique_name("__libasr_created_" + name_hint);
+    ASR::symbol_t* temporary_variable = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(
+        al, value->base.loc, scope, s2c(al, var_name), nullptr, 0, ASR::intentType::Local,
+        nullptr, nullptr, ASR::storage_typeType::Default, value_type, nullptr, ASR::abiType::Source,
+        ASR::accessType::Public, ASR::presenceType::Required, false));
+    scope->add_symbol(var_name, temporary_variable);
+
+    return ASRUtils::EXPR(ASR::make_Var_t(al, temporary_variable->base.loc, temporary_variable));
+}
+
 
 bool set_allocation_size(Allocator& al, ASR::expr_t* value, Vec<ASR::dimension_t>& allocate_dims) {
     LCOMPILERS_ASSERT(ASRUtils::is_array(ASRUtils::expr_type(value)));
