@@ -941,6 +941,7 @@ public:
         {"and", {"iand", {"any", "any"}}},
         {"or", {"ior", {"any", "any"}}},
         {"xor", {"ieor", {"any", "any"}}},
+        
     };
     
     ASR::asr_t *tmp;
@@ -6447,7 +6448,11 @@ public:
                 visit_expr_list(x.m_args, x.n_args, args);
                 tmp = create_Shifta(x.base.base.loc, args);
                 return;
-            }
+            } else if (var_name == "compiler_options") {
+                ASRUtils::ASRBuilder b(al, x.base.base.loc);
+                tmp = (ASR::asr_t*) b.StringConstant(compiler_options.generateOptionsString(), ASRUtils::TYPE(ASR::make_Character_t(al, x.base.base.loc, 1, -1, nullptr)));
+                return;
+            } 
             bool is_function = true;
             v = intrinsic_as_node(x, is_function);
             if( !is_function ) {
