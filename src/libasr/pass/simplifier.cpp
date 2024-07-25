@@ -303,8 +303,64 @@ ASR::expr_t* create_temporary_variable_for_struct(Allocator& al,
     return ASRUtils::EXPR(ASR::make_Var_t(al, temporary_variable->base.loc, temporary_variable));
 }
 
+template <typename T>
+ASR::expr_t* get_first_array_function_args(T* func) {
+    int64_t first_array_arg_idx = -1;
+    ASR::expr_t* first_array_arg = nullptr;
+    for (int64_t i = 0; i < (int64_t)func->n_args; i++) {
+        ASR::ttype_t* func_arg_type;
+        if constexpr (std::is_same_v<T, ASR::FunctionCall_t>) {
+            func_arg_type = ASRUtils::expr_type(func->m_args[i].m_value);
+        } else {
+            func_arg_type = ASRUtils::expr_type(func->m_args[i]);
+        }
+        if (ASRUtils::is_array(func_arg_type)) {
+            first_array_arg_idx = i;
+            break;
+        }
+    }
+    LCOMPILERS_ASSERT(first_array_arg_idx != -1)
+    if constexpr (std::is_same_v<T, ASR::FunctionCall_t>) {
+        first_array_arg = func->m_args[first_array_arg_idx].m_value;
+    } else {
+        first_array_arg = func->m_args[first_array_arg_idx];
+    }
+    return first_array_arg;
+}
 
-bool set_allocation_size(Allocator& al, ASR::expr_t* value, Vec<ASR::dimension_t>& allocate_dims) {
+/*
+    sets allocation size of an elemental function, which can be
+    either an intrinsic elemental function or a user-defined
+*/
+template <typename T>
+void set_allocation_size_elemental_function(
+    Allocator& al, const Location& loc,
+    T* elemental_function,
+    Vec<ASR::dimension_t>& allocate_dims
+) {
+    ASR::expr_t* int32_one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
+    size_t n_dims = ASRUtils::extract_n_dims_from_ttype(elemental_function->m_type);
+    allocate_dims.reserve(al, n_dims);
+    ASR::expr_t* first_array_arg = get_first_array_function_args(elemental_function);
+    for( size_t i = 0; i < n_dims; i++ ) {
+        ASR::dimension_t allocate_dim;
+        allocate_dim.loc = loc;
+        allocate_dim.m_start = int32_one;
+        ASR::expr_t* size_i_1 = ASRUtils::EXPR(ASR::make_ArraySize_t(
+            al, loc, first_array_arg,
+            ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                al, loc, i + 1, ASRUtils::expr_type(int32_one))),
+            ASRUtils::expr_type(int32_one), nullptr));
+        allocate_dim.m_length = size_i_1;
+        allocate_dims.push_back(al, allocate_dim);
+    }
+}
+
+bool set_allocation_size(
+    Allocator& al, ASR::expr_t* value,
+    Vec<ASR::dimension_t>& allocate_dims
+) {
     LCOMPILERS_ASSERT(ASRUtils::is_array(ASRUtils::expr_type(value)));
     if( ASRUtils::is_fixed_size_array(ASRUtils::expr_type(value)) ) {
         return false;
@@ -318,6 +374,10 @@ bool set_allocation_size(Allocator& al, ASR::expr_t* value, Vec<ASR::dimension_t
             ASR::ttype_t* type = function_call->m_type;
             if( ASRUtils::is_allocatable(type) ) {
                 return false;
+            }
+            if (PassUtils::is_elemental(function_call->m_name)) {
+                set_allocation_size_elemental_function(al, loc, function_call, allocate_dims);
+                break;
             }
             ASRUtils::ExprStmtDuplicator duplicator(al);
             ASR::dimension_t* dims = nullptr;
@@ -435,29 +495,8 @@ bool set_allocation_size(Allocator& al, ASR::expr_t* value, Vec<ASR::dimension_t
                 case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Exp):
                 case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Abs):
                 case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Merge): {
-                    size_t n_dims = ASRUtils::extract_n_dims_from_ttype(
-                        intrinsic_elemental_function->m_type);
-                    allocate_dims.reserve(al, n_dims);
-                    int64_t first_array_arg = -1;
-                    for(int64_t i = 0; i < (int64_t) intrinsic_elemental_function->n_args; i++) {
-                        if( ASRUtils::is_array(ASRUtils::expr_type(intrinsic_elemental_function->m_args[i])) ) {
-                            first_array_arg = i;
-                            break;
-                        }
-                    }
-                    LCOMPILERS_ASSERT(first_array_arg != -1)
-                    for( size_t i = 0; i < n_dims; i++ ) {
-                        ASR::dimension_t allocate_dim;
-                        allocate_dim.loc = loc;
-                        allocate_dim.m_start = int32_one;
-                        ASR::expr_t* size_i_1 = ASRUtils::EXPR(ASR::make_ArraySize_t(
-                            al, loc, intrinsic_elemental_function->m_args[first_array_arg],
-                            ASRUtils::EXPR(ASR::make_IntegerConstant_t(
-                                al, loc, i + 1, ASRUtils::expr_type(int32_one))),
-                            ASRUtils::expr_type(int32_one), nullptr));
-                        allocate_dim.m_length = size_i_1;
-                        allocate_dims.push_back(al, allocate_dim);
-                    }
+                    set_allocation_size_elemental_function(al, loc, intrinsic_elemental_function,
+                        allocate_dims);
                     break;
                 }
                 default: {
