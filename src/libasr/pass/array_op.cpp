@@ -259,6 +259,18 @@ class FixTypeVisitor: public ASR::BaseWalkVisitor<FixTypeVisitor> {
         }
     }
 
+    void visit_FunctionCall(const ASR::FunctionCall_t& x) {
+        ASR::BaseWalkVisitor<FixTypeVisitor>::visit_FunctionCall(x);
+        if( !PassUtils::is_elemental(x.m_name) ) {
+            return ;
+        }
+        ASR::FunctionCall_t& xx = const_cast<ASR::FunctionCall_t&>(x);
+        if( !ASRUtils::is_array(ASRUtils::expr_type(x.m_args[0].m_value)) ) {
+            xx.m_type = ASRUtils::type_get_past_array_pointer_allocatable(xx.m_type);
+            xx.m_value = nullptr;
+        }
+    }
+
     template <typename T>
     void visit_ArrayOp(const T& x) {
         T& xx = const_cast<T&>(x);

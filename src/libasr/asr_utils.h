@@ -2358,6 +2358,12 @@ static inline bool is_dimension_dependent_only_on_arguments(ASR::dimension_t* m_
     return true;
 }
 
+static inline bool is_dimension_dependent_only_on_arguments(ASR::ttype_t* type) {
+    ASR::dimension_t* m_dims;
+    size_t n_dims = ASRUtils::extract_dimensions_from_ttype(type, m_dims);
+    return is_dimension_dependent_only_on_arguments(m_dims, n_dims);
+}
+
 static inline ASR::asr_t* make_ArraySize_t_util(
     Allocator &al, const Location &a_loc, ASR::expr_t* a_v,
     ASR::expr_t* a_dim, ASR::ttype_t* a_type, ASR::expr_t* a_value,
@@ -2396,6 +2402,9 @@ static inline ASR::asr_t* make_ArraySize_t_util(
             ASR::expr_t* start = array_section_t->m_args[dim - 1].m_left;
             ASR::expr_t* end = array_section_t->m_args[dim - 1].m_right;
             ASR::expr_t* d = array_section_t->m_args[dim - 1].m_step;
+            if( start == nullptr and d == nullptr ) {
+                return const1;
+            }
             start = CastingUtil::perform_casting(start, a_type, al, a_loc);
             end = CastingUtil::perform_casting(end, a_type, al, a_loc);
             d = CastingUtil::perform_casting(d, a_type, al, a_loc);
@@ -5640,12 +5649,52 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
     }
 }
 
+static inline bool is_elemental(ASR::symbol_t* x) {
+    x = ASRUtils::symbol_get_past_external(x);
+    if( !ASR::is_a<ASR::Function_t>(*x) ) {
+        return false;
+    }
+    return ASRUtils::get_FunctionType(
+        ASR::down_cast<ASR::Function_t>(x))->m_elemental;
+}
+
 static inline ASR::asr_t* make_FunctionCall_t_util(
     Allocator &al, const Location &a_loc, ASR::symbol_t* a_name,
     ASR::symbol_t* a_original_name, ASR::call_arg_t* a_args, size_t n_args,
     ASR::ttype_t* a_type, ASR::expr_t* a_value, ASR::expr_t* a_dt, bool nopass) {
 
     Call_t_body(al, a_name, a_args, n_args, a_dt, nullptr, false, nopass);
+
+    if( ASRUtils::is_array(a_type) && ASRUtils::is_elemental(a_name) &&
+        !ASRUtils::is_fixed_size_array(a_type) &&
+        !ASRUtils::is_dimension_dependent_only_on_arguments(a_type) ) {
+        ASR::ttype_t* type_ = ASRUtils::type_get_past_array_pointer_allocatable(a_type);
+        ASR::expr_t* i32one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, a_loc, 1,
+            ASRUtils::TYPE(ASR::make_Integer_t(al, a_loc, 4))));
+        for( size_t i = 0; i < n_args; i++ ) {
+            ASR::ttype_t* type = ASRUtils::expr_type(a_args[i].m_value);
+            if (ASRUtils::is_array(type)) {
+                ASR::dimension_t* m_dims = nullptr;
+                size_t n_dims = ASRUtils::extract_dimensions_from_ttype(type, m_dims);
+                if( ASRUtils::is_dimension_empty(m_dims, n_dims) ) {
+                    Vec<ASR::dimension_t> m_dims_vec; m_dims_vec.reserve(al, n_dims);
+                    for( size_t j = 0; j < n_dims; j++ ) {
+                        ASR::dimension_t m_dim_vec;
+                        m_dim_vec.loc = m_dims[j].loc;
+                        m_dim_vec.m_start = i32one;
+                        m_dim_vec.m_length = ASRUtils::EXPR(ASR::make_ArraySize_t(al, m_dims[j].loc,
+                            a_args[i].m_value, i32one, ASRUtils::expr_type(i32one), nullptr));
+                        m_dims_vec.push_back(al, m_dim_vec);
+                    }
+                    m_dims = m_dims_vec.p;
+                    n_dims = m_dims_vec.size();
+                }
+                a_type = ASRUtils::make_Array_t_util(al, type->base.loc, type_, m_dims, n_dims,
+                    ASR::abiType::Source, false, ASR::array_physical_typeType::DescriptorArray, true);
+                break;
+            }
+        }
+    }
 
     return ASR::make_FunctionCall_t(al, a_loc, a_name, a_original_name,
             a_args, n_args, a_type, a_value, a_dt);
