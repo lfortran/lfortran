@@ -622,11 +622,9 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         var_collector.current_expr = const_cast<ASR::expr_t**>(&(xx.m_value));
         var_collector.call_replacer();
 
-        if( vars.size() == 1 &&
-            !(
-                !ASRUtils::is_array(ASRUtils::expr_type(
-                    ASRUtils::get_past_array_broadcast(xx.m_value)))
-        ) ) {
+        if (vars.size() == 1 &&
+            ASRUtils::is_array(ASRUtils::expr_type(ASRUtils::get_past_array_broadcast(xx.m_value)))
+        ) {
             return ;
         }
 
