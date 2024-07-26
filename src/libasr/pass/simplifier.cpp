@@ -1424,7 +1424,8 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         replace_current_expr("_overloaded_binop_")
     }
 
-    void replace_OverloadedUnaryMinus(ASR::OverloadedUnaryMinus_t* x) {
+    template <typename T>
+    void replace_OverloadedOperator(T* x) {
         LCOMPILERS_ASSERT(x->m_overloaded);
         std::pair<ASR::expr_t*, targetType> target_Info =
             std::make_pair(nullptr, targetType::GeneratedTarget);
@@ -1438,8 +1439,12 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_expr(*current_expr);
     }
 
+    void replace_OverloadedUnaryMinus(ASR::OverloadedUnaryMinus_t* x) {
+        replace_OverloadedOperator(x);
+    }
+
     void replace_OverloadedStringConcat(ASR::OverloadedStringConcat_t* x) {
-        replace_current_expr("_overloaded_string_concat_")
+        replace_OverloadedOperator(x);
     }
 
     void replace_ComplexRe(ASR::ComplexRe_t* x) {
