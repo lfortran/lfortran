@@ -2027,7 +2027,7 @@ namespace Logical {
     static ASR::expr_t *eval_Logical(Allocator &al, const Location &loc,
             ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         bool result = ASR::down_cast<ASR::LogicalConstant_t>(args[0])->m_value;
-        return make_ConstantWithType(make_IntegerConstant_t, result, arg_type, loc);
+        return make_ConstantWithType(make_LogicalConstant_t, result, arg_type, loc);
     }
 
     static inline ASR::expr_t* instantiate_Logical(Allocator &al, const Location &loc,
