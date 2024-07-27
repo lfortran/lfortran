@@ -636,8 +636,11 @@ namespace Aimag {
 
     static inline ASR::expr_t* instantiate_Aimag (Allocator &al,
             const Location &loc, SymbolTable* /*scope*/,
-            Vec<ASR::ttype_t*>& /*arg_types*/, ASR::ttype_t *return_type,
+            Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t> &new_args,int64_t /*overload_id*/)  {
+        if (ASRUtils::extract_kind_from_ttype_t(arg_types[0]) == 8) {
+            ASRUtils::set_kind_to_ttype_t(return_type, 8);
+        }
         return EXPR(ASR::make_ComplexIm_t(al, loc, new_args[0].m_value,
             return_type, nullptr));
     }
