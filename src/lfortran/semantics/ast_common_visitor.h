@@ -1021,6 +1021,9 @@ public:
     std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols;
     std::vector<ASR::stmt_t*> &data_structure;
 
+    // global save variable
+    bool is_global_save_enabled = false;
+
     // implied do loop nesting
     int idl_nesting_level = 0;
 
@@ -1995,6 +1998,25 @@ public:
                 common_variables_hash[hash] = common_block_struct_sym;
                 // add variable to struct
                 add_sym_to_struct(var_, struct_type);
+            }
+        }
+    }
+
+
+    template <typename T>
+    void check_if_global_save_is_enabled(T &x) {
+        for ( size_t i = 0; i < x.n_decl; i++ ) {
+            if ( AST::is_a<AST::Declaration_t>(*x.m_decl[i]) ) {
+                AST::Declaration_t* decl = AST::down_cast<AST::Declaration_t>(x.m_decl[i]);
+                if ( decl->n_attributes > 0 && decl->n_syms == 0 &&
+                    decl->m_trivia == nullptr &&
+                    AST::is_a<AST::SimpleAttribute_t>(*decl->m_attributes[0]) ) {
+                    AST::SimpleAttribute_t* attr = AST::down_cast<AST::SimpleAttribute_t>(decl->m_attributes[0]);
+                    if ( attr->m_attr == AST::simple_attributeType::AttrSave ) {
+                        is_global_save_enabled = true;
+                        break;
+                    }
+                }
             }
         }
     }
@@ -3205,11 +3227,13 @@ public:
                 }
                 if (is_Function && implicit_save && !is_save) {
                     // throw warning to that particular variable
-                    diag.semantic_warning_label(
-                        "Assuming implicit save attribute for variable declaration",
-                        {x.m_syms[i].loc},
-                        "help: add explicit save attribute or parameter attribute or initialize in a separate statement"
-                    );
+                    if ( !is_global_save_enabled ) {
+                        diag.semantic_warning_label(
+                            "Assuming implicit save attribute for variable declaration",
+                            {x.m_syms[i].loc},
+                            "help: add explicit save attribute or parameter attribute or initialize in a separate statement"
+                        );
+                    }
                 }
                 if( std::find(excluded_from_symtab.begin(), excluded_from_symtab.end(), sym) == excluded_from_symtab.end() ) {
                     if ( !is_implicitly_declared && !is_external) {
