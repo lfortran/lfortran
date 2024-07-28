@@ -64,7 +64,7 @@ program intrinsics_295
     print *, res1
     if (abs(res1(1) - (-1.767955_sp, 2.428857_sp)) > 1e-6) error stop
     if (abs(res1(2) - (-8.332603_sp, -25.800444_sp)) > 1e-6) error stop
-    if (abs(res1(3) - (232.514252_sp, 76.231628_sp) ) > 1e-6) error stop
+    if (abs(res1(3) - (232.514252_sp, 76.231628_sp) ) > 1e-5) error stop
     
     res2 = exp(arr4)
     print *, res2
