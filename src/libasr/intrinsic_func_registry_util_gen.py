@@ -256,6 +256,13 @@ intrinsic_funcs_args = {
             "return": "int32"
         },
     ],
+    "StorageSize": [
+        {
+            "args": [("any",)],
+            "return": "int32",
+            "kind_arg": True
+        },
+    ],
     "Nearest": [
         {
             "args": [("real", "real")],
@@ -807,6 +814,7 @@ skip_create_func = ["Partition"]
 compile_time_only_fn = [
     "Epsilon",
     "Radix",
+    "StorageSize",
     "Range",
     "Precision",
     "Rank",

@@ -859,6 +859,7 @@ public:
         {"cshift", {IntrinsicSignature({"array", "shift", "dim"}, 2, 3)}},
         {"eoshift", {IntrinsicSignature({"array", "shift", "boundary", "dim"}, 2, 4)}},
         {"real", {IntrinsicSignature({"a", "kind"}, 1, 2)}},
+        {"storage_size", {IntrinsicSignature({"a", "kind"}, 1, 2)}},
         {"spread", {IntrinsicSignature({"source", "dim", "ncopies"}, 3, 3)}},
     };
 
@@ -5644,7 +5645,7 @@ public:
 
                     std::vector<int> array_indices_in_args = find_array_indices_in_args(args);
                     std::vector<std::string> inquiry_functions = {"epsilon", "radix", "range", "precision", "rank", "tiny", "huge", "bit_size", "new_line", "digits",
-                        "maxexponent", "minexponent"};
+                        "maxexponent", "minexponent", "storage_size"};
                     if (are_all_args_evaluated &&
                         (std::find(inquiry_functions.begin(), inquiry_functions.end(), var_name) == inquiry_functions.end()) &&
                         !array_indices_in_args.empty())
