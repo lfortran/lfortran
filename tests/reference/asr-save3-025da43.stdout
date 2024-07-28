@@ -1,0 +1,59 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            f:
+                (Function
+                    (SymbolTable
+                        2
+                        {
+                            var:
+                                (Variable
+                                    2
+                                    var
+                                    []
+                                    Local
+                                    (RealConstant
+                                        0.000000
+                                        (Real 4)
+                                    )
+                                    (RealConstant
+                                        0.000000
+                                        (Real 4)
+                                    )
+                                    Save
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    f
+                    (FunctionType
+                        []
+                        ()
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        .false.
+                    )
+                    []
+                    []
+                    []
+                    ()
+                    Public
+                    .false.
+                    .false.
+                    ()
+                )
+        })
+    []
+)
