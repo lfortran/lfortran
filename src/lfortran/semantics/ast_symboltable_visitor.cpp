@@ -514,6 +514,8 @@ public:
             }
         }
         simd_variables.clear();
+        bool is_global_save_enabled_copy = is_global_save_enabled;
+        check_if_global_save_is_enabled( x );
         for (size_t i=0; i<x.n_use; i++) {
             visit_unit_decl1(*x.m_use[i]);
         }
@@ -559,6 +561,7 @@ public:
 
         fix_type_info(ASR::down_cast2<ASR::Program_t>(tmp));
         mark_common_blocks_as_declared();
+        is_global_save_enabled = is_global_save_enabled_copy;
     }
 
     bool subroutine_contains_entry_function(std::string subroutine_name, AST::stmt_t** body, size_t n_body) {
@@ -939,6 +942,9 @@ public:
         char *bindc_name=nullptr;
         extract_bind(x, current_procedure_abi_type, bindc_name);
 
+        // iterate over declarations and check if global save is present
+        bool is_global_save_enabled_copy = is_global_save_enabled;
+        check_if_global_save_is_enabled( x );
         for (size_t i=0; i<x.n_use; i++) {
             visit_unit_decl1(*x.m_use[i]);
         }
@@ -1124,6 +1130,7 @@ public:
         in_Subroutine = false;
         is_template = false;
         mark_common_blocks_as_declared();
+        is_global_save_enabled = is_global_save_enabled_copy;
     }
 
     AST::AttrType_t* find_return_type(AST::decl_attribute_t** attributes,
@@ -1268,6 +1275,9 @@ public:
         char *bindc_name=nullptr;
         extract_bind(x, current_procedure_abi_type, bindc_name);
 
+        // iterate over declarations and check if global save is present
+        bool is_global_save_enabled_copy = is_global_save_enabled;
+        check_if_global_save_is_enabled( x );
         for (size_t i=0; i<x.n_use; i++) {
             visit_unit_decl1(*x.m_use[i]);
         }
@@ -1549,6 +1559,7 @@ public:
         current_function_dependencies = current_function_dependencies_copy;
         in_Subroutine = false;
         mark_common_blocks_as_declared();
+        is_global_save_enabled = is_global_save_enabled_copy;
     }
 
     void visit_Declaration(const AST::Declaration_t& x) {
