@@ -110,6 +110,7 @@ inline std::string get_intrinsic_name(int64_t x) {
         INTRINSIC_NAME_CASE(SubstrIndex)
         INTRINSIC_NAME_CASE(Range)
         INTRINSIC_NAME_CASE(Radix)
+        INTRINSIC_NAME_CASE(StorageSize)
         INTRINSIC_NAME_CASE(Hypot)
         INTRINSIC_NAME_CASE(SelectedIntKind)
         INTRINSIC_NAME_CASE(SelectedRealKind)
@@ -415,6 +416,8 @@ namespace IntrinsicElementalFunctionRegistry {
             {&Sign::instantiate_Sign, &Sign::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Radix),
             {nullptr, &Radix::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::StorageSize),
+            {nullptr, &StorageSize::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Scale),
             {&Scale::instantiate_Scale, &Scale::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Dprod),
@@ -750,6 +753,8 @@ namespace IntrinsicElementalFunctionRegistry {
             "ishftc"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Radix),
             "radix"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::StorageSize),
+            "storage_size"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Scale),
             "scale"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Dprod),
@@ -971,6 +976,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"min", {&Min::create_Min, &Min::eval_Min}},
                 {"ishftc", {&Ishftc::create_Ishftc, &Ishftc::eval_Ishftc}},
                 {"radix", {&Radix::create_Radix, &Radix::eval_Radix}},
+                {"storage_size", {&StorageSize::create_StorageSize, &StorageSize::eval_StorageSize}},
                 {"scale", {&Scale::create_Scale, &Scale::eval_Scale}},
                 {"dprod", {&Dprod::create_Dprod, &Dprod::eval_Dprod}},
                 {"range", {&Range::create_Range, &Range::eval_Range}},

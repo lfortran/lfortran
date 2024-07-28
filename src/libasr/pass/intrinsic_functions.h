@@ -130,6 +130,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     Max,
     Min,
     Radix,
+    StorageSize,
     Scale,
     Dprod,
     Range,
@@ -847,6 +848,29 @@ namespace Radix {
     }
 
 }  // namespace Radix
+
+namespace StorageSize {
+
+    static ASR::expr_t *eval_StorageSize(Allocator &al, const Location &loc,
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+        int64_t kind = ASRUtils::extract_kind_from_ttype_t(expr_type(args[0]));
+        if (is_character(*expr_type(args[0]))) {
+            int64_t len = ASR::down_cast<ASR::Character_t>(ASRUtils::type_get_past_array(expr_type(args[0])))->m_len;
+            return make_ConstantWithType(make_IntegerConstant_t, 8*len, t1, loc);
+        } else if (is_complex(*expr_type(args[0]))) {
+            if (kind == 4) return make_ConstantWithType(make_IntegerConstant_t, 64, t1, loc);
+            else if (kind == 8) return make_ConstantWithType(make_IntegerConstant_t, 128, t1, loc);
+            else return make_ConstantWithType(make_IntegerConstant_t, -1, t1, loc);
+        } else {
+            if (kind == 1) return make_ConstantWithType(make_IntegerConstant_t, 8, t1, loc);
+            else if (kind == 2) return make_ConstantWithType(make_IntegerConstant_t, 16, t1, loc);
+            else if (kind == 4) return make_ConstantWithType(make_IntegerConstant_t, 32, t1, loc);
+            else if (kind == 8) return make_ConstantWithType(make_IntegerConstant_t, 64, t1, loc);
+            else return make_ConstantWithType(make_IntegerConstant_t, -1, t1, loc);
+        }
+    }
+
+}  // namespace StorageSize
 
 namespace Scale {
     static ASR::expr_t *eval_Scale(Allocator &al, const Location &loc,
