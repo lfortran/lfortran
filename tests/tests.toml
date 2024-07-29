@@ -4077,3 +4077,7 @@ asr = true
 [[test]]
 filename = "errors/intrinsics11.f90"
 asr = true
+
+[[test]]
+filename = "errors/int_01.f90"
+asr = true
