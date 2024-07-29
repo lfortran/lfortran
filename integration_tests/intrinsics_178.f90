@@ -77,6 +77,7 @@ program intrinsics_178
     print *, rrspacing(arr1)
     if (any(rrspacing(arr1) - [1.24780540e+07_sp, 1.25829120e+07_sp, 1.18200730e+07_sp] > 1e-5)) error stop
     print *, rrspacing(arr2)
-    if (any(rrspacing(arr2) - [7.83204122697400300e+15_sp, 6.75539944105574400e+15_sp, 5.94132103185039400e+15_sp] > 1e-5)) error stop
+    if (any(rrspacing(arr2) - [7.83204122697400300e+15_sp, 6.75539944105574400e+15_sp, &
+        5.94132103185039400e+15_sp] > 1e-5)) error stop
 
 end program
