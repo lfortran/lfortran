@@ -1,0 +1,13 @@
+{
+    "basename": "asr-idint_real4-b5321a5",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/idint_real4.f90",
+    "infile_hash": "16daab450ab8bb7bc737ecd03bcf13d77e34936381b850b1e620806b",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-idint_real4-b5321a5.stderr",
+    "stderr_hash": "6b3f3e4f66715ccdd36d9a0fe0818ef3629fc7905cc6931bd9461c87",
+    "returncode": 2
+}
