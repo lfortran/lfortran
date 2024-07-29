@@ -1460,7 +1460,6 @@ struct FixedFormRecursiveDescent {
         std::string line{tostr(cur, nextline-1)};
         // current line does not contain type -> we abort
         if (!(line.find(std::string(declaration_type)) != std::string::npos)) return false;
-
         std::vector<std::string> kw_found;
         std::vector<std::string> decls{keywords.begin(), keywords.end()};
         while(decls.size() != 0) {
@@ -1481,19 +1480,17 @@ struct FixedFormRecursiveDescent {
                 }
             }
         }
-
         if (kw_found.size() == 0 && !next_is(cpy, declaration_type))
             return false;
 
         // tokenize all keywords
         for(auto iter = kw_found.begin(); iter != kw_found.end(); ++iter) {
-            if (*iter == "real*8" || *iter == "complex*8" || *iter == "complex*16") {
+            if (*iter == "real*8" || *iter == "complex*8" || *iter == "complex*16" || *iter == "character*1") {
                 tokenize_until(cur+(*iter).size());
             } else {
                 push_token_advance(cur, *iter);
             }
         }
-
         cur = cpy;
         push_token_advance(cur, declaration_type);
         tokenize_line(cur);
@@ -1523,7 +1520,7 @@ struct FixedFormRecursiveDescent {
             "elemental"};
         std::vector<std::string> function_keywords{"recursive", "pure",
             "elemental",
-            "real*8", "real", "character", "complex*16", "complex*8", "complex", "integer", "logical",
+            "real*8", "real", "character*1", "character", "complex*16", "complex*8", "complex", "integer", "logical",
             "doubleprecision", "doublecomplex"};
         if (is_declaration(cur, "subroutine", subroutine_keywords)) {
             lex_subroutine(cur);
@@ -1559,8 +1556,6 @@ struct FixedFormRecursiveDescent {
         } else {
             error(cur, "ICE: Cannot recognize global scope entity");
         }
-
-
     }
 
     void lex_global_scope(unsigned char *&cur) {
