@@ -281,6 +281,11 @@ class FixTypeVisitor: public ASR::BaseWalkVisitor<FixTypeVisitor> {
         }
     }
 
+    void visit_RealBinOp(const ASR::RealBinOp_t& x) {
+        ASR::BaseWalkVisitor<FixTypeVisitor>::visit_RealBinOp(x);
+        visit_ArrayOp(x);
+    }
+
     void visit_RealCompare(const ASR::RealCompare_t& x) {
         ASR::BaseWalkVisitor<FixTypeVisitor>::visit_RealCompare(x);
         visit_ArrayOp(x);
