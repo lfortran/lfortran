@@ -8,7 +8,7 @@ program openmp_33
     integer :: i, j, n, image(Nx, Ny)
     call omp_set_num_threads(4)
     wtime = omp_get_wtime()
-    !$omp parallel shared(image) private(i, j, x, y, x_0, y_0, x_sqr, y_sqr, n)
+    !$omp parallel shared(image) private(x, y, x_0, y_0, x_sqr, y_sqr, n)
     !$omp do
     do j = 1, Ny
         y_0 = y_offset + dy_dj * j
