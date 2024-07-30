@@ -4081,3 +4081,7 @@ asr = true
 [[test]]
 filename = "errors/int_01.f90"
 asr = true
+
+[[test]]
+filename = "errors/ichar_01.f90"
+asr = true
