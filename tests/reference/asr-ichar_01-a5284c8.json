@@ -1,0 +1,13 @@
+{
+    "basename": "asr-ichar_01-a5284c8",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/ichar_01.f90",
+    "infile_hash": "96e818fc8837a0604686a6414be1828c77eef5189d2cece2e0d130d9",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-ichar_01-a5284c8.stderr",
+    "stderr_hash": "39fa0fd619eefdd58820aa626fe827781f0b7740476d6ef6a772af15",
+    "returncode": 2
+}
