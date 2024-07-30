@@ -950,7 +950,7 @@ static inline void verify_MaxMinLoc_args(const ASR::IntrinsicArrayFunction_t& x,
         "must accept at least one argument", x.base.base.loc, diagnostics);
     require_impl(x.m_args[0], "`array` argument of `"+ intrinsic_name
         + "` intrinsic cannot be nullptr", x.base.base.loc, diagnostics);
-    require_impl(x.m_args[1], "`dim` argument of `" + intrinsic_name
+    require_impl(x.n_args > 1 ? x.m_args[1] != nullptr : true, "`dim` argument of `" + intrinsic_name
         + "` intrinsic cannot be nullptr", x.base.base.loc, diagnostics);
 }
 
@@ -1089,7 +1089,15 @@ static inline ASR::expr_t *instantiate_MaxMinLoc(Allocator &al,
         // TODO: Use overload_id
         fill_func_arg("dim", arg_types[1]);
     }
-    ASR::expr_t *result = declare("result", return_type, ReturnVar);
+    ASR::expr_t* result = nullptr;
+    if( ASRUtils::extract_n_dims_from_ttype(array_type) == 1 && m_args.n > 1 ) {
+        result = declare("result",
+            ASRUtils::type_get_past_array_pointer_allocatable(return_type), ReturnVar);
+    } else {
+        result = declare("result", ASRUtils::duplicate_type_with_empty_dims(
+            al, return_type, ASR::array_physical_typeType::DescriptorArray, true), Out);
+        args.push_back(al, result);
+    }
     Vec<ASR::expr_t*> idx_vars, target_idx_vars;
     Vec<ASR::stmt_t*> doloop_body;
     if (m_args.n == 1) {
