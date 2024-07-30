@@ -1,0 +1,5 @@
+semantic error: kind argument to int(a, kind) is not a constant integer
+ --> tests/errors/int_01.f90:2:36
+  |
+2 |     real(8), parameter :: ar1(3) = int([1, 2, 3], [8, 8, 8])
+  |                                    ^^^^^^^^^^^^^^^^^^^^^^^^^ 

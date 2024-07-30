@@ -130,6 +130,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     Max,
     Min,
     Radix,
+    StorageSize,
     Scale,
     Dprod,
     Range,
@@ -635,8 +636,11 @@ namespace Aimag {
 
     static inline ASR::expr_t* instantiate_Aimag (Allocator &al,
             const Location &loc, SymbolTable* /*scope*/,
-            Vec<ASR::ttype_t*>& /*arg_types*/, ASR::ttype_t *return_type,
+            Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t> &new_args,int64_t /*overload_id*/)  {
+        if (ASRUtils::extract_kind_from_ttype_t(arg_types[0]) == 8) {
+            ASRUtils::set_kind_to_ttype_t(return_type, 8);
+        }
         return EXPR(ASR::make_ComplexIm_t(al, loc, new_args[0].m_value,
             return_type, nullptr));
     }
@@ -848,6 +852,29 @@ namespace Radix {
     }
 
 }  // namespace Radix
+
+namespace StorageSize {
+
+    static ASR::expr_t *eval_StorageSize(Allocator &al, const Location &loc,
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+        int64_t kind = ASRUtils::extract_kind_from_ttype_t(expr_type(args[0]));
+        if (is_character(*expr_type(args[0]))) {
+            int64_t len = ASR::down_cast<ASR::Character_t>(ASRUtils::type_get_past_array(expr_type(args[0])))->m_len;
+            return make_ConstantWithType(make_IntegerConstant_t, 8*len, t1, loc);
+        } else if (is_complex(*expr_type(args[0]))) {
+            if (kind == 4) return make_ConstantWithType(make_IntegerConstant_t, 64, t1, loc);
+            else if (kind == 8) return make_ConstantWithType(make_IntegerConstant_t, 128, t1, loc);
+            else return make_ConstantWithType(make_IntegerConstant_t, -1, t1, loc);
+        } else {
+            if (kind == 1) return make_ConstantWithType(make_IntegerConstant_t, 8, t1, loc);
+            else if (kind == 2) return make_ConstantWithType(make_IntegerConstant_t, 16, t1, loc);
+            else if (kind == 4) return make_ConstantWithType(make_IntegerConstant_t, 32, t1, loc);
+            else if (kind == 8) return make_ConstantWithType(make_IntegerConstant_t, 64, t1, loc);
+            else return make_ConstantWithType(make_IntegerConstant_t, -1, t1, loc);
+        }
+    }
+
+}  // namespace StorageSize
 
 namespace Scale {
     static ASR::expr_t *eval_Scale(Allocator &al, const Location &loc,
@@ -2028,7 +2055,7 @@ namespace Logical {
     static ASR::expr_t *eval_Logical(Allocator &al, const Location &loc,
             ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         bool result = ASR::down_cast<ASR::LogicalConstant_t>(args[0])->m_value;
-        return make_ConstantWithType(make_IntegerConstant_t, result, arg_type, loc);
+        return make_ConstantWithType(make_LogicalConstant_t, result, arg_type, loc);
     }
 
     static inline ASR::expr_t* instantiate_Logical(Allocator &al, const Location &loc,
@@ -3218,9 +3245,9 @@ namespace Modulo {
         end function
         */
         if (is_real(*arg_types[0])) {
-            body.push_back(al, b.Assignment(result, b.Sub(args[0], b.Mul(args[1], b.i2r_t(Floor::FLOOR(b, b.Div(args[0], args[1]), int32, scope), arg_types[1])))));
+            body.push_back(al, b.Assignment(result, b.Sub(args[0], b.Mul(b.r2r_t(args[1], arg_types[0]) , b.i2r_t(Floor::FLOOR(b, b.Div(args[0], b.r2r_t(args[1], arg_types[0])), int32, scope), arg_types[1])))));
         } else {
-            body.push_back(al, b.Assignment(result, b.Sub(args[0], b.Mul(args[1], Floor::FLOOR(b, b.Div(b.i2r_t(args[0], real32), b.i2r_t(args[1], real32)), int32, scope)))));
+            body.push_back(al, b.Assignment(result, b.Sub(args[0], b.Mul(b.i2i_t(args[1], arg_types[0]), Floor::FLOOR(b, b.Div(b.i2r_t(args[0], real32), b.i2r_t(args[1], real32)), int32, scope)))));
         }
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,

@@ -6,7 +6,26 @@ program intrinsics_133
     double precision :: v = 1e12_8
     integer(kind = 4) :: res_4
     integer(kind = 8) :: res_8
+    integer, parameter :: x1 = nint(1.0)
+    integer, parameter :: x2 = nint(1.21_8)
+    integer, parameter :: ar1(3) = nint([91.0, 21.20, 33.10])
+    integer, parameter :: ar2(3) = nint([91.0, 21.20, 33.10], 8)
+    real(4) :: arr1(3) = [91.0, 21.20, 33.10]
+    real(8) :: arr2(3) = [91.0, 21.20, 33.10]
 
+    print *, x1
+    if (x1 /= 1) error stop
+    print *, x2
+    if (x2 /= 1) error stop
+    print *, ar1
+    if (any(ar1 /= [91, 21, 33])) error stop
+    print *, ar2
+    if (any(ar2 /= [91, 21, 33])) error stop
+    print *, nint(arr1)
+    if (any(nint(arr1) /= [91, 21, 33])) error stop
+    print *, nint(arr2, 8)
+    if (any(nint(arr2, 8) /= [91, 21, 33])) error stop
+    
     res_4 = nint(w)
     print *, res_4
     if (res_4 /= -5) error stop
