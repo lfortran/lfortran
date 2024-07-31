@@ -4085,3 +4085,7 @@ asr = true
 [[test]]
 filename = "errors/ichar_01.f90"
 asr = true
+
+[[test]]
+filename = "errors/do_concurrent1.f90"
+asr = true
