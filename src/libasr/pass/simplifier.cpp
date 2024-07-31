@@ -1421,6 +1421,8 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     }
 
     void replace_OverloadedBinOp(ASR::OverloadedBinOp_t* x) {
+        LCOMPILERS_ASSERT(x->m_overloaded);
+        *current_expr = x->m_overloaded;
         replace_current_expr("_overloaded_binop_")
     }
 

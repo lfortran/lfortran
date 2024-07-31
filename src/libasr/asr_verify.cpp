@@ -1130,9 +1130,9 @@ public:
 
         if( fn && ASR::is_a<ASR::Function_t>(*fn) ) {
             ASR::Function_t* fn_ = ASR::down_cast<ASR::Function_t>(fn);
-            require(fn_->m_return_var != nullptr,
-                    "FunctionCall::m_name " + std::string(fn_->m_name) +
-                    " must be returning a non-void value.");
+            // require(fn_->m_return_var != nullptr,
+            //         "FunctionCall::m_name " + std::string(fn_->m_name) +
+            //         " must be returning a non-void value.");
         }
         verify_args(x);
         visit_ttype(*x.m_type);

@@ -136,8 +136,9 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
 
         bool is_function_call_returning_aggregate_type(ASR::expr_t* m_value) {
             bool is_function_call = ASR::is_a<ASR::FunctionCall_t>(*m_value);
-            bool is_aggregate_type = ASRUtils::is_aggregate_type(
-                ASRUtils::expr_type(m_value));
+            bool is_aggregate_type = (ASRUtils::is_aggregate_type(
+                ASRUtils::expr_type(m_value)) ||
+                PassUtils::is_aggregate_or_array_type(m_value));
             return is_function_call && is_aggregate_type;
         }
 
