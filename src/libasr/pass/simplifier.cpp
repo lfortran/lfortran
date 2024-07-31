@@ -1338,7 +1338,13 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     }
 
     void replace_ArrayConstant(ASR::ArrayConstant_t* x) {
-        replace_current_expr("_array_constant_")
+        // assign a temporary variable only when either
+        // (a). there is no target, e.g. size([1, 2, 3])
+        // (b). there is an OriginalTarget and realloc_lhs is true e.g. `x = [1, 2, 3, 4]`
+        if (exprs_with_target.find(*current_expr) == exprs_with_target.end() ||
+            (exprs_with_target[*current_expr].second == targetType::OriginalTarget && realloc_lhs)) {
+            force_replace_current_expr("_array_constant_")
+        }
     }
 
     void replace_ArraySection(ASR::ArraySection_t* x) {
