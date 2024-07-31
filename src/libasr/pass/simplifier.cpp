@@ -648,17 +648,6 @@ bool set_allocation_size(
             allocate_dims.push_back(al, allocate_dim);
             break;
         }
-        case ASR::exprType::ArrayBroadcast: {
-            allocate_dims.reserve(al, 1);
-            ASR::dimension_t allocate_dim;
-            allocate_dim.loc = loc;
-            allocate_dim.m_start = int32_one;
-            ASR::expr_t* int32_two = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
-                al, loc, 2, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
-            allocate_dim.m_length = int32_two;
-            allocate_dims.push_back(al, allocate_dim);
-            break;
-        }
         default: {
             LCOMPILERS_ASSERT_MSG(false, "ASR::exprType::" + std::to_string(value->type)
                 + " not handled yet in set_allocation_size");
@@ -974,9 +963,10 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
     }
 
     ASR::expr_t* visit_BinOp_expr(ASR::expr_t* expr, const std::string& name_hint) {
-        if( ASRUtils::is_array(ASRUtils::expr_type(expr)) &&
-            !ASR::is_a<ASR::Var_t>(
-                *ASRUtils::get_past_array_physical_cast(expr)) ) {
+        if (ASRUtils::is_array(ASRUtils::expr_type(expr)) &&
+            !ASR::is_a<ASR::ArrayBroadcast_t>(*expr) &&
+            !ASR::is_a<ASR::Var_t>(*ASRUtils::get_past_array_physical_cast(expr))
+        ) {
             visit_expr(*expr);
             call_create_and_allocate_temporary_variable(expr)
             return array_var_temporary;
