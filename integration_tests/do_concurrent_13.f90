@@ -5,7 +5,7 @@ program do_concurrent_13
         x_offset = xcenter - (Nx+1)*dx_di/2, y_offset = ycenter - (Ny+1)*dy_dj/2
     real(dp) :: x, y, x_0, y_0, x_sqr, y_sqr, wtime
     integer :: i, j, n, image(Nx, Ny)
-    do concurrent (j = 1:Ny) shared(image) local(i, j, x, y, x_0, y_0, x_sqr, y_sqr, n)
+    do concurrent (j = 1:Ny) shared(image) local(i, x, y, x_0, y_0, x_sqr, y_sqr, n)
         y_0 = y_offset + dy_dj * j
         do i = 1, Nx
             x_0 = x_offset + dx_di * i

@@ -12,7 +12,7 @@ seed = 123456789
 b = 121.124D0
 c = 29124.012D0
 
-do concurrent (j = 1:n) shared(a, b, c, l, m, n) local(i, j, k)
+do concurrent (j = 1:n) shared(a, b, c, l, m, n) local(i, k)
     do concurrent (i = 1:l)
         a(i,j) = 0.0D+00
         do concurrent (k = 1:m)
