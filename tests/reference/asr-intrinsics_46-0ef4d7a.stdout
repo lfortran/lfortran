@@ -29,6 +29,129 @@
                                     Required
                                     .false.
                                 ),
+                            ar1:
+                                (Variable
+                                    2
+                                    ar1
+                                    []
+                                    Local
+                                    (ArrayConstant
+                                        12
+                                        [97, 36, 37]
+                                        (Array
+                                            (Integer 4)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 3 (Integer 4) Decimal))]
+                                            FixedSizeArray
+                                        )
+                                        ColMajor
+                                    )
+                                    (ArrayConstant
+                                        12
+                                        [97, 36, 37]
+                                        (Array
+                                            (Integer 4)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 3 (Integer 4) Decimal))]
+                                            FixedSizeArray
+                                        )
+                                        ColMajor
+                                    )
+                                    Parameter
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 3 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            ar2:
+                                (Variable
+                                    2
+                                    ar2
+                                    []
+                                    Local
+                                    (ArrayConstant
+                                        24
+                                        [97, 36, 37]
+                                        (Array
+                                            (Integer 8)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 3 (Integer 4) Decimal))]
+                                            FixedSizeArray
+                                        )
+                                        ColMajor
+                                    )
+                                    (ArrayConstant
+                                        24
+                                        [97, 36, 37]
+                                        (Array
+                                            (Integer 8)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 3 (Integer 4) Decimal))]
+                                            FixedSizeArray
+                                        )
+                                        ColMajor
+                                    )
+                                    Parameter
+                                    (Array
+                                        (Integer 8)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 3 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            arr1:
+                                (Variable
+                                    2
+                                    arr1
+                                    []
+                                    Local
+                                    (ArrayConstant
+                                        3
+                                        ["a", "A", "@"]
+                                        (Array
+                                            (Character 1 1 ())
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 3 (Integer 4) Decimal))]
+                                            FixedSizeArray
+                                        )
+                                        ColMajor
+                                    )
+                                    (ArrayConstant
+                                        3
+                                        ["a", "A", "@"]
+                                        (Array
+                                            (Character 1 1 ())
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 3 (Integer 4) Decimal))]
+                                            FixedSizeArray
+                                        )
+                                        ColMajor
+                                    )
+                                    Save
+                                    (Array
+                                        (Character 1 1 ())
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 3 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
                             b:
                                 (Variable
                                     2
@@ -173,6 +296,56 @@
                                     Required
                                     .false.
                                 ),
+                            i1:
+                                (Variable
+                                    2
+                                    i1
+                                    []
+                                    Local
+                                    (IntrinsicElementalFunction
+                                        Ichar
+                                        [(StringConstant
+                                            "a"
+                                            (Character 1 1 ())
+                                        )]
+                                        0
+                                        (Integer 4)
+                                        (IntegerConstant 97 (Integer 4) Decimal)
+                                    )
+                                    (IntegerConstant 97 (Integer 4) Decimal)
+                                    Parameter
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            i2:
+                                (Variable
+                                    2
+                                    i2
+                                    []
+                                    Local
+                                    (IntrinsicElementalFunction
+                                        Ichar
+                                        [(StringConstant
+                                            "a"
+                                            (Character 1 1 ())
+                                        )]
+                                        0
+                                        (Integer 8)
+                                        (IntegerConstant 97 (Integer 8) Decimal)
+                                    )
+                                    (IntegerConstant 97 (Integer 8) Decimal)
+                                    Parameter
+                                    (Integer 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
                             int_res:
                                 (Variable
                                     2
@@ -298,7 +471,272 @@
                         })
                     intrinsics_46
                     []
-                    [(Assignment
+                    [(Print
+                        [(Var 2 i1)]
+                        ()
+                        ()
+                    )
+                    (If
+                        (IntegerCompare
+                            (Var 2 i1)
+                            NotEq
+                            (IntegerConstant 97 (Integer 4) Decimal)
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Print
+                        [(Var 2 i2)]
+                        ()
+                        ()
+                    )
+                    (If
+                        (IntegerCompare
+                            (Var 2 i2)
+                            NotEq
+                            (Cast
+                                (IntegerConstant 97 (Integer 4) Decimal)
+                                IntegerToInteger
+                                (Integer 8)
+                                (IntegerConstant 97 (Integer 8) Decimal)
+                            )
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Print
+                        [(Var 2 ar1)]
+                        ()
+                        ()
+                    )
+                    (If
+                        (IntrinsicArrayFunction
+                            Any
+                            [(ArrayPhysicalCast
+                                (IntegerCompare
+                                    (Var 2 ar1)
+                                    NotEq
+                                    (ArrayConstant
+                                        12
+                                        [97, 36, 37]
+                                        (Array
+                                            (Integer 4)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 3 (Integer 4) Decimal))]
+                                            FixedSizeArray
+                                        )
+                                        ColMajor
+                                    )
+                                    (Array
+                                        (Logical 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 3 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
+                                    (ArrayConstant
+                                        12
+                                        [.false., .false., .false.]
+                                        (Array
+                                            (Logical 4)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 3 (Integer 4) Decimal))]
+                                            FixedSizeArray
+                                        )
+                                        ColMajor
+                                    )
+                                )
+                                FixedSizeArray
+                                DescriptorArray
+                                (Array
+                                    (Logical 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 3 (Integer 4) Decimal))]
+                                    DescriptorArray
+                                )
+                                ()
+                            )]
+                            0
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Print
+                        [(Var 2 ar2)]
+                        ()
+                        ()
+                    )
+                    (If
+                        (IntrinsicArrayFunction
+                            Any
+                            [(ArrayPhysicalCast
+                                (IntegerCompare
+                                    (Var 2 ar2)
+                                    NotEq
+                                    (Cast
+                                        (ArrayConstant
+                                            12
+                                            [97, 36, 37]
+                                            (Array
+                                                (Integer 4)
+                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                (IntegerConstant 3 (Integer 4) Decimal))]
+                                                FixedSizeArray
+                                            )
+                                            ColMajor
+                                        )
+                                        IntegerToInteger
+                                        (Array
+                                            (Integer 8)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 3 (Integer 4) Decimal))]
+                                            FixedSizeArray
+                                        )
+                                        (ArrayConstant
+                                            24
+                                            [97, 36, 37]
+                                            (Array
+                                                (Integer 8)
+                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                (IntegerConstant 3 (Integer 4) Decimal))]
+                                                FixedSizeArray
+                                            )
+                                            ColMajor
+                                        )
+                                    )
+                                    (Array
+                                        (Logical 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 3 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
+                                    (ArrayConstant
+                                        12
+                                        [.false., .false., .false.]
+                                        (Array
+                                            (Logical 4)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 3 (Integer 4) Decimal))]
+                                            FixedSizeArray
+                                        )
+                                        ColMajor
+                                    )
+                                )
+                                FixedSizeArray
+                                DescriptorArray
+                                (Array
+                                    (Logical 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 3 (Integer 4) Decimal))]
+                                    DescriptorArray
+                                )
+                                ()
+                            )]
+                            0
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Print
+                        [(IntrinsicElementalFunction
+                            Ichar
+                            [(Var 2 arr1)]
+                            0
+                            (Array
+                                (Integer 4)
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 3 (Integer 4) Decimal))]
+                                FixedSizeArray
+                            )
+                            ()
+                        )]
+                        ()
+                        ()
+                    )
+                    (If
+                        (IntrinsicArrayFunction
+                            Any
+                            [(ArrayPhysicalCast
+                                (IntegerCompare
+                                    (IntrinsicElementalFunction
+                                        Ichar
+                                        [(Var 2 arr1)]
+                                        0
+                                        (Array
+                                            (Integer 4)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 3 (Integer 4) Decimal))]
+                                            FixedSizeArray
+                                        )
+                                        ()
+                                    )
+                                    NotEq
+                                    (ArrayConstant
+                                        12
+                                        [97, 65, 64]
+                                        (Array
+                                            (Integer 4)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 3 (Integer 4) Decimal))]
+                                            FixedSizeArray
+                                        )
+                                        ColMajor
+                                    )
+                                    (Array
+                                        (Logical 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 3 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
+                                    ()
+                                )
+                                FixedSizeArray
+                                DescriptorArray
+                                (Array
+                                    (Logical 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 3 (Integer 4) Decimal))]
+                                    DescriptorArray
+                                )
+                                ()
+                            )]
+                            0
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Assignment
                         (Var 2 i)
                         (IntrinsicElementalFunction
                             Ichar
