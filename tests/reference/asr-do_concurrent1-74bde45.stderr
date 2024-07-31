@@ -1,4 +1,4 @@
-semantic error: Loop variable `j` cannot be part of local expression
+semantic error: Do concurrent loop variable `j` cannot be part of local expression
  --> tests/errors/do_concurrent1.f90:5:26
   |
 5 | do concurrent (j = 1:Ny) local(i, j)

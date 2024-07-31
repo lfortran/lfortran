@@ -3430,7 +3430,7 @@ public:
                 for ( size_t j = 0; j < private_->n_vars; j++ ) {
                     // check if loop variable is part of local expr
                     if (current_scope->resolve_symbol(to_lower(private_->m_vars[j])) == ASR::down_cast<ASR::Var_t>(var)->m_v ) {
-                        throw SemanticError("Loop variable `" + std::string(private_->m_vars[j]) + "` cannot be part of local expression", private_->base.base.loc);
+                        throw SemanticError("Do concurrent loop variable `" + std::string(private_->m_vars[j]) + "` cannot be part of local expression", private_->base.base.loc);
                     }
                     local_expr.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, current_scope->resolve_symbol(to_lower(private_->m_vars[j])))));
                 }
