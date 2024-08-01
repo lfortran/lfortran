@@ -744,6 +744,138 @@ char** parse_fortran_format(char* format, int *count, int *item_start) {
     return format_values_2;
 }
 
+void check_format_match(char* format_value, int* current_arg_type_int){
+    //TO DO : check format_value() (user-specified) against current_arg_type_int(actual passed argumet) to raise runtime errors.
+}
+
+struct array_iteration_state{
+    //Preserve array size and current element index
+    int64_t array_size;
+    int64_t current_arr_index;
+    //Hold array pointers for each type.
+    int64_t* arr_ptr_int64;
+    int32_t* arr_ptr_int32;
+    int16_t* arr_ptr_int16;
+    int8_t* arr_ptr_int8;
+    float* arr_ptr_float;
+    double* arr_ptr_double;
+    char** arr_ptr_charPtr;
+    bool* arr_ptr_bool;
+    //Hold current element (We support array of int64, double, char*, bool)
+    int64_t current_arr_element_int64;
+    double current_arr_element_double;
+    char* current_arr_element_char_ptr;
+    bool current_arr_element_bool;
+};
+
+bool check_array_iteration(int* count, int* current_arg_type_int, va_list* args,struct array_iteration_state* state){
+    bool is_array = true;
+    switch (*current_arg_type_int){
+        case 9 : //arr[i64]
+            if(state->current_arr_index != state->array_size){
+                state->current_arr_element_int64 = state->arr_ptr_int64[state->current_arr_index++];
+            } else {
+                state->array_size = va_arg(*args,int64_t);
+                state->current_arr_index = 0; 
+                state->arr_ptr_int64 = va_arg(*args,int64_t*);
+                state->current_arr_element_int64 = state->arr_ptr_int64[state->current_arr_index++];
+                *count+= state->array_size - 2;
+            }
+            break;
+        case 10 : //arr[i32]
+            if(state->current_arr_index != state->array_size){
+                int32_t temp_val = state->arr_ptr_int32[state->current_arr_index++];
+                state->current_arr_element_int64 = (int64_t)temp_val;
+            } else {
+                state->array_size = va_arg(*args,int64_t);
+                state->current_arr_index = 0;
+                state->arr_ptr_int32 = va_arg(*args,int32_t*);
+                int32_t temp_val = state->arr_ptr_int32[state->current_arr_index++];
+                state->current_arr_element_int64 = (int64_t)temp_val;
+                *count+= state->array_size - 2;
+            }
+            break;
+        case 11 : //arr[i16]
+            if(state->current_arr_index != state->array_size){
+                int16_t temp_val = state->arr_ptr_int16[state->current_arr_index++];
+                state->current_arr_element_int64 = (int64_t)temp_val;
+            } else {
+                state->array_size = va_arg(*args,int64_t);
+                state->current_arr_index = 0; 
+                state->arr_ptr_int16 = va_arg(*args,int16_t*);
+                int16_t temp_val = state->arr_ptr_int16[state->current_arr_index++];
+                state->current_arr_element_int64 = (int64_t)temp_val;
+                *count+= state->array_size - 2;
+            }
+            break;
+        case 12 : //arr[i8]
+            if(state->current_arr_index != state->array_size){
+                int8_t temp_val = state->arr_ptr_int8[state->current_arr_index++];
+                state->current_arr_element_int64 = (int64_t)temp_val;
+            } else {
+                state->array_size = va_arg(*args,int64_t);
+                state->current_arr_index = 0; 
+                state->arr_ptr_int8 = va_arg(*args,int8_t*);
+                int8_t temp_val = state->arr_ptr_int8[state->current_arr_index++];
+                state->current_arr_element_int64 = (int64_t)temp_val;
+                *count+= state->array_size - 2;
+            }
+            break;
+        case 13: // arr[f64]
+            if(state->current_arr_index != state->array_size){
+                state->current_arr_element_double = state->arr_ptr_double[state->current_arr_index++];
+            } else {
+                state->array_size = va_arg(*args,int64_t);
+                state->current_arr_index = 0; 
+                state->arr_ptr_double = va_arg(*args,double*);
+                state->current_arr_element_double = state->arr_ptr_double[state->current_arr_index++];
+                *count+= state->array_size - 2;
+            }
+            break;
+        case 14: // arr[f32]
+            if(state->current_arr_index != state->array_size){
+                float temp_val = state->arr_ptr_float[state->current_arr_index++];
+                state->current_arr_element_double = (double)temp_val;
+            } else {
+                state->array_size = va_arg(*args,int64_t);
+                state->current_arr_index = 0; 
+                state->arr_ptr_float = va_arg(*args,float*);
+                float temp_val = state->arr_ptr_float[state->current_arr_index++];
+                state->current_arr_element_double = (double)temp_val;
+                *count+= state->array_size - 2;
+            }
+            break;
+        case 15: //arr[character]
+            if(state->current_arr_index != state->array_size){
+                state->current_arr_element_char_ptr = state->arr_ptr_charPtr[state->current_arr_index++];
+            } else {
+                state->array_size = va_arg(*args,int64_t);
+                state->current_arr_index = 0; 
+                state->arr_ptr_charPtr = va_arg(*args,char**);
+                state->current_arr_element_char_ptr = state->arr_ptr_charPtr[state->current_arr_index++];
+                *count+= state->array_size - 2;
+            }
+            break;
+        case 16: //arr[logical]
+            if(state->current_arr_index != state->array_size){
+                state->current_arr_element_bool = state->arr_ptr_bool[state->current_arr_index++];
+            } else {
+                state->array_size = va_arg(*args,int64_t);
+                state->current_arr_index = 0; 
+                state->arr_ptr_bool = va_arg(*args,bool*);
+                state->current_arr_element_bool = state->arr_ptr_bool[state->current_arr_index++];
+                *count+= state->array_size - 2;
+            }
+            break;
+        //To DO : handle --> arr[cptr], arr[enumType] 
+        default:
+            is_array = false;
+            break;
+    }
+    return is_array;
+    
+}
+
 LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* format, ...)
 {
     va_list args;
@@ -767,12 +899,17 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
     result[0] = '\0';
     int item_start = 0;
     bool array = false;
+    //initialize array_state to hold information about any passed array pointer arg.
+    struct array_iteration_state array_state;
+    array_state.array_size = -1;
+    array_state.current_arr_index = -1;
     while (1) {
         int scale = 0;
+        int32_t current_arg_type_int = -1; // holds int that represents type of argument.
+        bool is_array = false;
         for (int i = item_start; i < format_values_count; i++) {
             if(format_values[i] == NULL) continue;
             char* value = format_values[i];
-
             if (value[0] == '(' && value[strlen(value)-1] == ')') {
                 value[strlen(value)-1] = '\0';
                 int new_fmt_val_count = 0;
@@ -814,68 +951,10 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
                 value = substring(value, 1, strlen(value) - 1);
                 result = append_to_string(result, value);
                 free(value);
-            } else if (tolower(value[0]) == 'a') {
-                // Character Editing (A[n])
-                if ( count == 0 ) break;
-                count--;
-                char* arg = va_arg(args, char*);
-                if (arg == NULL) continue;
-                if (strlen(value) == 1) {
-                    result = append_to_string(result, arg);
-                } else {
-                    char* str = (char*)malloc((strlen(value)) * sizeof(char));
-                    memmove(str, value+1, strlen(value));
-                    int buffer_size = 20;
-                    char* s = (char*)malloc(buffer_size * sizeof(char));
-                    snprintf(s, buffer_size, "%%%s.%ss", str, str);
-                    char* string = (char*)malloc((atoi(str) + 1) * sizeof(char));
-                    sprintf(string,s, arg);
-                    result = append_to_string(result, string);
-                    free(str);
-                    free(s);
-                    free(string);
-                }
             } else if (tolower(value[strlen(value) - 1]) == 'x') {
                 result = append_to_string(result, " ");
-            } else if (tolower(value[0]) == 'i') {
-                // Integer Editing ( I[w[.m]] )
-                if ( count == 0 ) break;
-                count--;
-                int64_t val = va_arg(args, int64_t);
-                handle_integer(value, val, &result);
-            } else if (tolower(value[0]) == 'd') {
-                // D Editing (D[w[.d]])
-                if ( count == 0 ) break;
-                count--;
-                double val = va_arg(args, double);
-                handle_decimal(value, val, scale, &result, "D");
-            } else if (tolower(value[0]) == 'e') {
-                // Check if the next character is 'N' for EN format
-                char format_type = tolower(value[1]);
-                if (format_type == 'n') {
-                    if (count == 0) break;
-                    count--;
-                    double val = va_arg(args, double);
-                    handle_en(value, val, scale, &result, "E");
-                } else {
-                    if (count == 0) break;
-                    count--;
-                    double val = va_arg(args, double);
-                    handle_decimal(value, val, scale, &result, "E");
-                }
-            } else if (tolower(value[0]) == 'f') {
-                if ( count == 0 ) break;
-                count--;
-                double val = va_arg(args, double);
-                handle_float(value, val, &result);
-            } else if (tolower(value[0]) == 'l') {
-                if ( count == 0 ) break;
-                count--;
-                char* val_str = va_arg(args, char*);
-                bool val = (strcmp(val_str, "True") == 0);
-                handle_logical(value, val, &result);
             } else if (tolower(value[0]) == 't') {
-                if (count == 0) break;
+                if (count <= 0) break;
                 int tab_position = atoi(value + 1);
                 int current_length = strlen(result);
                 int spaces_needed = tab_position - current_length - 1;
@@ -891,11 +970,105 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
                         result[tab_position] = '\0';  // Truncate the string at the position specified by Tn
                     }
                 }
-            } else if (strlen(value) != 0) {
-                if ( count == 0 ) break;
-                count--;
-                printf("Printing support is not available for %s format.\n",value);
+            } else {
+                if((array_state.current_arr_index == array_state.array_size) && (count > 0)){ // Fetch type integer when we don't have an array.
+                    current_arg_type_int =  va_arg(args,int32_t);
+                    count--;
+                }
+                is_array = check_array_iteration(&count, &current_arg_type_int, &args,&array_state);
+                if (tolower(value[0]) == 'a') {
+                    // Character Editing (A[n])
+                    if ( count <= 0 ) break;
+                    count--;
+                    char* arg = NULL;
+                    if(is_array){
+                        arg = array_state.current_arr_element_char_ptr; 
+                    } else {
+                        arg = va_arg(args, char*);
+                    }
+                    if (arg == NULL) continue;
+                    if (strlen(value) == 1) {
+                        result = append_to_string(result, arg);
+                    } else {
+                        char* str = (char*)malloc((strlen(value)) * sizeof(char));
+                        memmove(str, value+1, strlen(value));
+                        int buffer_size = 20;
+                        char* s = (char*)malloc(buffer_size * sizeof(char));
+                        snprintf(s, buffer_size, "%%%s.%ss", str, str);
+                        char* string = (char*)malloc((atoi(str) + 1) * sizeof(char));
+                        sprintf(string,s, arg);
+                        result = append_to_string(result, string);
+                        free(str);
+                        free(s);
+                        free(string);
+                    }
+                } else if (tolower(value[0]) == 'i') {
+                    // Integer Editing ( I[w[.m]] )
+                    if ( count <= 0 ) break;
+                    count--;
+                    if(is_array){
+                        handle_integer(value, array_state.current_arr_element_int64, &result);
+                    } else {
+                        int64_t val = va_arg(args, int64_t);
+                        handle_integer(value, val, &result);
+                    }
+                } else if (tolower(value[0]) == 'd') {
+                    // D Editing (D[w[.d]])
+                    if ( count <= 0 ) break;
+                    count--;
+                    if(is_array){
+                        handle_decimal(value, array_state.current_arr_element_double, scale, &result, "D");;
+                    } else {
+                        double val = va_arg(args, double);
+                        handle_decimal(value, val, scale, &result, "D");
+                    }
+                } else if (tolower(value[0]) == 'e') {
+                    // Check if the next character is 'N' for EN format
+                    char format_type = tolower(value[1]);
+                    if ( count <= 0 ) break;
+                    count--;
+                    if (format_type == 'n') {
+                        if(is_array){
+                            handle_en(value, array_state.current_arr_element_double, scale, &result, "E");
+                        } else {
+                            double val = va_arg(args, double);
+                            handle_en(value, val, scale, &result, "E");
+                        }
+                    } else {
+                        if(is_array){
+                            handle_decimal(value, array_state.current_arr_element_double, scale, &result, "E");
+                        } else {
+                            double val = va_arg(args, double);
+                            handle_decimal(value, val, scale, &result, "E");
+                        }
+                    }
+                } else if (tolower(value[0]) == 'f') {
+                    if ( count <= 0 ) break;
+                    count--;
+                    if(is_array){
+                        handle_float(value,array_state.current_arr_element_double, &result);
+                    } else {
+                        double val = va_arg(args, double);
+                        handle_float(value, val, &result);
+                    }
+                } else if (tolower(value[0]) == 'l') {
+                    if ( count <= 0 ) break;
+                    count--;
+                    if(is_array){
+                        bool val = array_state.current_arr_element_bool;
+                        handle_logical(value, val, &result);
+                    } else {
+                        char* val_str = va_arg(args, char*);
+                        bool val = (strcmp(val_str, "True") == 0);
+                        handle_logical(value, val, &result);
+                    }
+                } else if (strlen(value) != 0) {
+                    if ( count <= 0 ) break;
+                    count--;
+                    printf("Printing support is not available for %s format.\n",value);
+                }
             }
+
 
         }
         if ( count > 0 ) {
