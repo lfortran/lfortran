@@ -1243,13 +1243,20 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
             return ; \
         }
 
-    #define force_replace_current_expr(name_hint) *current_expr = create_and_allocate_temporary_variable_for_array( \
+    #define force_replace_current_expr_for_array(name_hint) *current_expr = create_and_allocate_temporary_variable_for_array( \
                 *current_expr, name_hint, al, current_body, \
                 current_scope, exprs_with_target, is_assignment_target_array_section); \
 
+    #define force_replace_current_expr_for_struct(name_hint) *current_expr = create_and_allocate_temporary_variable_for_struct( \
+            *current_expr, name_hint, al, current_body, \
+            current_scope, exprs_with_target); \
+
+
     #define replace_current_expr(name_hint) is_current_expr_linked_to_target_then_return \
         if( ASRUtils::is_array(x->m_type) ) { \
-            force_replace_current_expr(name_hint) \
+            force_replace_current_expr_for_array(name_hint) \
+        } else if( ASRUtils::is_struct(*x->m_type) ) { \
+            force_replace_current_expr_for_struct(name_hint) \
         }
 
     void replace_ComplexConstructor(ASR::ComplexConstructor_t* x) {
@@ -1264,7 +1271,7 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         if( is_current_expr_linked_to_target && ASRUtils::is_array(x->m_type) ) {
             targetType target_Type = exprs_with_target[*current_expr].second;
             if( target_Type == targetType::OriginalTarget ) {
-                force_replace_current_expr(std::string("_function_call_") +
+                force_replace_current_expr_for_array(std::string("_function_call_") +
                                            ASRUtils::symbol_name(x->m_name))
                 return ;
             }
@@ -1289,16 +1296,16 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
             ASRUtils::get_intrinsic_name(x->m_intrinsic_id))
     }
 
-    void replace_StructTypeConstructor(ASR::StructConstructor_t* x) {
-        replace_current_expr("_struct_type_constructor_")
+    void replace_StructConstructor(ASR::StructConstructor_t* x) {
+        replace_current_expr("_struct_constructor_")
     }
 
-    void replace_EnumTypeConstructor(ASR::EnumConstructor_t* x) {
-        replace_current_expr("_enum_type_constructor_")
+    void replace_EnumConstructor(ASR::EnumConstructor_t* x) {
+        replace_current_expr("_enum_constructor_")
     }
 
-    void replace_UnionTypeConstructor(ASR::UnionTypeConstructor_t* x) {
-        replace_current_expr("_union_type_constructor_")
+    void replace_UnionConstructor(ASR::UnionTypeConstructor_t* x) {
+        replace_current_expr("_union_constructor_")
     }
 
     void replace_ImpliedDoLoop(ASR::ImpliedDoLoop_t* x) {
@@ -1343,7 +1350,7 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         // (b). there is an OriginalTarget and realloc_lhs is true e.g. `x = [1, 2, 3, 4]`
         if (exprs_with_target.find(*current_expr) == exprs_with_target.end() ||
             (exprs_with_target[*current_expr].second == targetType::OriginalTarget && realloc_lhs)) {
-            force_replace_current_expr("_array_constant_")
+            force_replace_current_expr_for_array("_array_constant_")
         }
     }
 
@@ -1679,6 +1686,16 @@ class TransformVariableInitialiser:
         }
         m_body = body.p;
         n_body = body.size();
+    }
+
+    void visit_StructType(const ASR::StructType_t& x) {
+        std::string derived_type_name = ASRUtils::symbol_name(x.m_derived_type);
+        if( x.m_derived_type == current_scope->resolve_symbol(derived_type_name) ) {
+            return ;
+        }
+
+        ASR::StructType_t& xx = const_cast<ASR::StructType_t&>(x);
+        xx.m_derived_type = current_scope->resolve_symbol(derived_type_name);
     }
 
 };
