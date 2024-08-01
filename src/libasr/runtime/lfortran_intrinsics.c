@@ -748,114 +748,123 @@ void check_format_match(char* format_value, int* current_arg_type_int){
     //TO DO : check format_value() (user-specified) against current_arg_type_int(actual passed argumet) to raise runtime errors.
 }
 
-int64_t array_size = -1 ;
-int64_t current_arr_index = -1;
-bool check_array_iteration(int* count, int* current_arg_type_int, va_list* args,
-        int64_t* arr_int64_val, double* arr_double_val, char** arr_charPtr_val, bool* arr_bool_val) {
-    static int64_t* arr_ptr_int64 = NULL;
-    static int32_t* arr_ptr_int32 = NULL;
-    static int16_t* arr_ptr_int16 = NULL;
-    static int8_t* arr_ptr_int8 = NULL;
-    static float* arr_ptr_float = NULL;
-    static double* arr_ptr_double = NULL;
-    static char** arr_ptr_charPtr = NULL;
-    static bool* arr_ptr_bool = NULL;
+struct array_iteration_state{
+    //Preserve array size and current element index
+    int64_t array_size;
+    int64_t current_arr_index;
+    //Hold array pointers for each type.
+    int64_t* arr_ptr_int64;
+    int32_t* arr_ptr_int32;
+    int16_t* arr_ptr_int16;
+    int8_t* arr_ptr_int8;
+    float* arr_ptr_float;
+    double* arr_ptr_double;
+    char** arr_ptr_charPtr;
+    bool* arr_ptr_bool;
+    //Hold current element (We support array of int64, double, char*, bool)
+    int64_t current_arr_element_int64;
+    double current_arr_element_double;
+    char* current_arr_element_char_ptr;
+    bool current_arr_element_bool;
+};
+
+bool check_array_iteration(int* count, int* current_arg_type_int, va_list* args,struct array_iteration_state* state){
     bool is_array = true;
     switch (*current_arg_type_int){
         case 9 : //arr[i64]
-            if(current_arr_index != array_size){
-                *arr_int64_val = arr_ptr_int64[current_arr_index++];
+            if(state->current_arr_index != state->array_size){
+                state->current_arr_element_int64 = state->arr_ptr_int64[state->current_arr_index++];
             } else {
-                array_size = va_arg(*args,int64_t);
-                current_arr_index = 0; 
-                arr_ptr_int64 = va_arg(*args,int64_t*);
-                *arr_int64_val = arr_ptr_int64[current_arr_index++];
-                *count+= array_size - 2;
+                state->array_size = va_arg(*args,int64_t);
+                state->current_arr_index = 0; 
+                state->arr_ptr_int64 = va_arg(*args,int64_t*);
+                state->current_arr_element_int64 = state->arr_ptr_int64[state->current_arr_index++];
+                *count+= state->array_size - 2;
             }
             break;
         case 10 : //arr[i32]
-            if(current_arr_index != array_size){
-                int32_t temp_val = arr_ptr_int32[current_arr_index++];
-                *arr_int64_val = (int64_t)temp_val;
+            if(state->current_arr_index != state->array_size){
+                int32_t temp_val = state->arr_ptr_int32[state->current_arr_index++];
+                state->current_arr_element_int64 = (int64_t)temp_val;
             } else {
-                array_size = va_arg(*args,int64_t);
-                current_arr_index = 0;
-                arr_ptr_int32 = va_arg(*args,int32_t*);
-                int32_t temp_val = arr_ptr_int32[current_arr_index++];
-                *arr_int64_val = (int64_t)temp_val;
-                *count+= array_size - 2;
+                state->array_size = va_arg(*args,int64_t);
+                state->current_arr_index = 0;
+                state->arr_ptr_int32 = va_arg(*args,int32_t*);
+                int32_t temp_val = state->arr_ptr_int32[state->current_arr_index++];
+                state->current_arr_element_int64 = (int64_t)temp_val;
+                *count+= state->array_size - 2;
             }
             break;
         case 11 : //arr[i16]
-            if(current_arr_index != array_size){
-                int16_t temp_val = arr_ptr_int16[current_arr_index++];
-                *arr_int64_val = (int64_t)temp_val;
+            if(state->current_arr_index != state->array_size){
+                int16_t temp_val = state->arr_ptr_int16[state->current_arr_index++];
+                state->current_arr_element_int64 = (int64_t)temp_val;
             } else {
-                array_size = va_arg(*args,int64_t);
-                current_arr_index = 0; 
-                arr_ptr_int16 = va_arg(*args,int16_t*);
-                int16_t temp_val = arr_ptr_int16[current_arr_index++];
-                *arr_int64_val = (int64_t)temp_val;
-                *count+= array_size - 2;
+                state->array_size = va_arg(*args,int64_t);
+                state->current_arr_index = 0; 
+                state->arr_ptr_int16 = va_arg(*args,int16_t*);
+                int16_t temp_val = state->arr_ptr_int16[state->current_arr_index++];
+                state->current_arr_element_int64 = (int64_t)temp_val;
+                *count+= state->array_size - 2;
             }
             break;
         case 12 : //arr[i8]
-            if(current_arr_index != array_size){
-                int8_t temp_val = arr_ptr_int8[current_arr_index++];
-                *arr_int64_val = (int64_t)temp_val;
+            if(state->current_arr_index != state->array_size){
+                int8_t temp_val = state->arr_ptr_int8[state->current_arr_index++];
+                state->current_arr_element_int64 = (int64_t)temp_val;
             } else {
-                array_size = va_arg(*args,int64_t);
-                current_arr_index = 0; 
-                arr_ptr_int8 = va_arg(*args,int8_t*);
-                int8_t temp_val = arr_ptr_int8[current_arr_index++];
-                *arr_int64_val = (int64_t)temp_val;
-                *count+= array_size - 2;
+                state->array_size = va_arg(*args,int64_t);
+                state->current_arr_index = 0; 
+                state->arr_ptr_int8 = va_arg(*args,int8_t*);
+                int8_t temp_val = state->arr_ptr_int8[state->current_arr_index++];
+                state->current_arr_element_int64 = (int64_t)temp_val;
+                *count+= state->array_size - 2;
             }
             break;
         case 13: // arr[f64]
-            if(current_arr_index != array_size){
-                *arr_double_val = arr_ptr_double[current_arr_index++];
+            if(state->current_arr_index != state->array_size){
+                state->current_arr_element_double = state->arr_ptr_double[state->current_arr_index++];
             } else {
-                array_size = va_arg(*args,int64_t);
-                current_arr_index = 0; 
-                arr_ptr_double = va_arg(*args,double*);
-                *arr_double_val = arr_ptr_double[current_arr_index++];
-                *count+= array_size - 2;
+                state->array_size = va_arg(*args,int64_t);
+                state->current_arr_index = 0; 
+                state->arr_ptr_double = va_arg(*args,double*);
+                state->current_arr_element_double = state->arr_ptr_double[state->current_arr_index++];
+                *count+= state->array_size - 2;
             }
             break;
         case 14: // arr[f32]
-            if(current_arr_index != array_size){
-                float temp_val = arr_ptr_float[current_arr_index++];
-                *arr_double_val = (double)temp_val;
+            if(state->current_arr_index != state->array_size){
+                float temp_val = state->arr_ptr_float[state->current_arr_index++];
+                state->current_arr_element_double = (double)temp_val;
             } else {
-                array_size = va_arg(*args,int64_t);
-                current_arr_index = 0; 
-                arr_ptr_float = va_arg(*args,float*);
-                float temp_val = arr_ptr_float[current_arr_index++];
-                *arr_double_val = (double)temp_val;
-                *count+= array_size - 2;
+                state->array_size = va_arg(*args,int64_t);
+                state->current_arr_index = 0; 
+                state->arr_ptr_float = va_arg(*args,float*);
+                float temp_val = state->arr_ptr_float[state->current_arr_index++];
+                state->current_arr_element_double = (double)temp_val;
+                *count+= state->array_size - 2;
             }
             break;
         case 15: //arr[character]
-            if(current_arr_index != array_size){
-                *arr_charPtr_val = arr_ptr_charPtr[current_arr_index++];
+            if(state->current_arr_index != state->array_size){
+                state->current_arr_element_char_ptr = state->arr_ptr_charPtr[state->current_arr_index++];
             } else {
-                array_size = va_arg(*args,int64_t);
-                current_arr_index = 0; 
-                arr_ptr_charPtr = va_arg(*args,char**);
-                *arr_charPtr_val = arr_ptr_charPtr[current_arr_index++];
-                *count+= array_size - 2;
+                state->array_size = va_arg(*args,int64_t);
+                state->current_arr_index = 0; 
+                state->arr_ptr_charPtr = va_arg(*args,char**);
+                state->current_arr_element_char_ptr = state->arr_ptr_charPtr[state->current_arr_index++];
+                *count+= state->array_size - 2;
             }
             break;
         case 16: //arr[logical]
-            if(current_arr_index != array_size){
-                *arr_bool_val = arr_ptr_bool[current_arr_index++];
+            if(state->current_arr_index != state->array_size){
+                state->current_arr_element_bool = state->arr_ptr_bool[state->current_arr_index++];
             } else {
-                array_size = va_arg(*args,int64_t);
-                current_arr_index = 0; 
-                arr_ptr_bool = va_arg(*args,bool*);
-                *arr_bool_val = arr_ptr_bool[current_arr_index++];
-                *count+= array_size - 2;
+                state->array_size = va_arg(*args,int64_t);
+                state->current_arr_index = 0; 
+                state->arr_ptr_bool = va_arg(*args,bool*);
+                state->current_arr_element_bool = state->arr_ptr_bool[state->current_arr_index++];
+                *count+= state->array_size - 2;
             }
             break;
         //To DO : handle --> arr[cptr], arr[enumType] 
@@ -890,13 +899,12 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
     result[0] = '\0';
     int item_start = 0;
     bool array = false;
+    //initialize array_state to hold information about any passed array pointer arg.
+    struct array_iteration_state array_state;
+    array_state.array_size = -1;
+    array_state.current_arr_index = -1;
     while (1) {
         int scale = 0;
-        int64_t current_arr_element_int64;
-        double current_arr_element_double;
-        char* current_arr_element_char_ptr;
-        bool current_arr_element_bool;
-
         int32_t current_arg_type_int = -1; // holds int that represents type of argument.
         bool is_array = false;
         for (int i = item_start; i < format_values_count; i++) {
@@ -963,20 +971,18 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
                     }
                 }
             } else {
-                if((current_arr_index == array_size) && (count > 0)){ // Fetch type integer when we don't have an array.
+                if((array_state.current_arr_index == array_state.array_size) && (count > 0)){ // Fetch type integer when we don't have an array.
                     current_arg_type_int =  va_arg(args,int32_t);
                     count--;
                 }
-                is_array = check_array_iteration(&count, &current_arg_type_int, &args,
-                            &current_arr_element_int64, &current_arr_element_double,
-                            &current_arr_element_char_ptr, &current_arr_element_bool);
+                is_array = check_array_iteration(&count, &current_arg_type_int, &args,&array_state);
                 if (tolower(value[0]) == 'a') {
                     // Character Editing (A[n])
                     if ( count <= 0 ) break;
                     count--;
                     char* arg = NULL;
                     if(is_array){
-                        arg = current_arr_element_char_ptr; 
+                        arg = array_state.current_arr_element_char_ptr; 
                     } else {
                         arg = va_arg(args, char*);
                     }
@@ -1001,7 +1007,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
                     if ( count <= 0 ) break;
                     count--;
                     if(is_array){
-                        handle_integer(value, current_arr_element_int64, &result);
+                        handle_integer(value, array_state.current_arr_element_int64, &result);
                     } else {
                         int64_t val = va_arg(args, int64_t);
                         handle_integer(value, val, &result);
@@ -1011,7 +1017,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
                     if ( count <= 0 ) break;
                     count--;
                     if(is_array){
-                        handle_decimal(value, current_arr_element_double, scale, &result, "D");;
+                        handle_decimal(value, array_state.current_arr_element_double, scale, &result, "D");;
                     } else {
                         double val = va_arg(args, double);
                         handle_decimal(value, val, scale, &result, "D");
@@ -1023,14 +1029,14 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
                     count--;
                     if (format_type == 'n') {
                         if(is_array){
-                            handle_en(value, current_arr_element_double, scale, &result, "E");
+                            handle_en(value, array_state.current_arr_element_double, scale, &result, "E");
                         } else {
                             double val = va_arg(args, double);
                             handle_en(value, val, scale, &result, "E");
                         }
                     } else {
                         if(is_array){
-                            handle_decimal(value, current_arr_element_double, scale, &result, "E");
+                            handle_decimal(value, array_state.current_arr_element_double, scale, &result, "E");
                         } else {
                             double val = va_arg(args, double);
                             handle_decimal(value, val, scale, &result, "E");
@@ -1040,7 +1046,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
                     if ( count <= 0 ) break;
                     count--;
                     if(is_array){
-                        handle_float(value,current_arr_element_double, &result);
+                        handle_float(value,array_state.current_arr_element_double, &result);
                     } else {
                         double val = va_arg(args, double);
                         handle_float(value, val, &result);
@@ -1049,7 +1055,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
                     if ( count <= 0 ) break;
                     count--;
                     if(is_array){
-                        bool val = current_arr_element_bool;
+                        bool val = array_state.current_arr_element_bool;
                         handle_logical(value, val, &result);
                     } else {
                         char* val_str = va_arg(args, char*);
