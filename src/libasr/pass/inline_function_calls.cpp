@@ -207,6 +207,7 @@ public:
         // Avoid inlining if function call accepts a callback argument
         for( size_t i = 0; i < x->n_args; i++ ) {
             if( x->m_args[i].m_value &&
+                ASRUtils::expr_type(x->m_args[i].m_value) &&
                 ASR::is_a<ASR::FunctionType_t>(
                     *ASRUtils::type_get_past_pointer(
                         ASRUtils::expr_type(x->m_args[i].m_value))) ) {

@@ -149,16 +149,16 @@ namespace LCompilers {
                 ai.m_step = nullptr;
                 args.push_back(al, ai);
             }
-            ASR::expr_t* arr_expr_copy = arr_expr; 
-            ASR::expr_t** original_arr_expr =&arr_expr_copy; 
+            ASR::expr_t* arr_expr_copy = arr_expr;
+            ASR::expr_t** original_arr_expr =&arr_expr_copy;
             ASR::expr_t** array_ref_container_node = nullptr; // If we have a structInstanceMember hierarch, It'd be used to emplace the resulting array_ref in the correct node.
             ASR::expr_t* array_ref = nullptr;
             ASR::StructInstanceMember_t* tmp = nullptr;
-            
+
             // if first depth of hierarchy contains array, don't set array_ref_container_node and return array_ref directly.
-            if (ASR::is_a<ASR::StructInstanceMember_t>(*arr_expr) && 
+            if (ASR::is_a<ASR::StructInstanceMember_t>(*arr_expr) &&
                 ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable(
-                    ASRUtils::symbol_type(ASR::down_cast<ASR::StructInstanceMember_t>(arr_expr)->m_m)))){ 
+                    ASRUtils::symbol_type(ASR::down_cast<ASR::StructInstanceMember_t>(arr_expr)->m_m)))){
                 original_arr_expr = &array_ref;
             }
             // This while loop is used to fetch the only single array from a structInstanceMember hierarchy.
@@ -168,12 +168,12 @@ namespace LCompilers {
                 tmp = ASR::down_cast<ASR::StructInstanceMember_t>(arr_expr);
                 if(ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(tmp->m_v)))){
                     arr_expr = tmp->m_v;
-                    array_ref_container_node = &(tmp->m_v); 
+                    array_ref_container_node = &(tmp->m_v);
                 } else if (ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable(ASRUtils::symbol_type(tmp->m_m))) && check_m_m){
                     array_ref_container_node = &arr_expr;
                 } else if(ASR::is_a<ASR::StructInstanceMember_t>(*tmp->m_v)){
                     arr_expr = tmp->m_v;
-                    check_m_m =true;    
+                    check_m_m =true;
                 } else if (ASR::is_a<ASR::ArrayItem_t>(*tmp->m_v)){
                     arr_expr = ASR::down_cast<ASR::ArrayItem_t>(tmp->m_v)->m_v;
                     check_m_m = false;
@@ -191,7 +191,7 @@ namespace LCompilers {
                                             ASRUtils::type_get_past_pointer(
                                                 ASRUtils::type_get_past_allocatable(array_ref_type))),
                                         ASR::arraystorageType::RowMajor, nullptr));
-            // Emplace the resulting array_ref in the correct node.                          
+            // Emplace the resulting array_ref in the correct node.
             if(array_ref_container_node){
                 *array_ref_container_node = array_ref;
                 array_ref = *original_arr_expr;
@@ -279,7 +279,7 @@ namespace LCompilers {
             PassUtils::get_dim_rank(sibling_type, m_dims, ndims);
             if( !ASRUtils::is_fixed_size_array(m_dims, ndims) &&
                 !ASRUtils::is_dimension_dependent_only_on_arguments(m_dims, ndims) ) {
-                return ASRUtils::TYPE(ASR::make_Allocatable_t(al, sibling_type->base.loc,
+                return ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, sibling_type->base.loc,
                     ASRUtils::type_get_past_allocatable(
                         ASRUtils::duplicate_type_with_empty_dims(al, sibling_type))));
             }
@@ -310,7 +310,7 @@ namespace LCompilers {
         if( !ASRUtils::is_fixed_size_array(m_dims, ndims) &&
             !ASRUtils::is_dimension_dependent_only_on_arguments(m_dims, ndims) &&
             !(ASR::is_a<ASR::Allocatable_t>(*var_type) || ASR::is_a<ASR::Pointer_t>(*var_type)) ) {
-            var_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, var_type->base.loc,
+            var_type = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, var_type->base.loc,
                 ASRUtils::type_get_past_allocatable(
                     ASRUtils::duplicate_type_with_empty_dims(al, var_type))));
         }

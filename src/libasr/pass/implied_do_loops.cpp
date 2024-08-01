@@ -237,7 +237,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
             is_allocatable = false;
         } else {
             if( is_allocatable ) {
-                result_type_ = ASRUtils::TYPE(ASR::make_Allocatable_t(al, x->m_type->base.loc,
+                result_type_ = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, x->m_type->base.loc,
                     ASRUtils::type_get_past_allocatable(
                         ASRUtils::duplicate_type_with_empty_dims(al, x->m_type))));
             } else {
@@ -323,7 +323,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
             is_allocatable = false;
         } else {
             if( is_allocatable ) {
-                result_type_ = ASRUtils::TYPE(ASR::make_Allocatable_t(al, x->m_type->base.loc,
+                result_type_ = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, x->m_type->base.loc,
                     ASRUtils::type_get_past_allocatable(
                         ASRUtils::duplicate_type_with_empty_dims(al, x->m_type))));
             } else {

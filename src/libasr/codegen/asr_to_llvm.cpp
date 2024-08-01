@@ -4566,7 +4566,9 @@ public:
                 bool is_value_data_only_array = (ASRUtils::is_array(value_type) && (
                       ASRUtils::extract_physical_type(value_type) == ASR::array_physical_typeType::PointerToDataArray ||
                       ASRUtils::extract_physical_type(value_type) == ASR::array_physical_typeType::FixedSizeArray));
-                if( LLVM::is_llvm_pointer(*value_type) ) {
+                if (LLVM::is_llvm_pointer(*value_type) &&
+                    !ASR::is_a<ASR::PointerNullConstant_t>(*x.m_value)
+                ) {
                     llvm_value = LLVM::CreateLoad(*builder, llvm_value);
                 }
                 if( is_value_data_only_array ) {
@@ -6414,7 +6416,7 @@ public:
         LCOMPILERS_ASSERT(ASRUtils::is_complex(*x.m_type));
         llvm::Type *type;
         int a_kind;
-        a_kind = down_cast<ASR::Complex_t>(ASRUtils::type_get_past_pointer(x.m_type))->m_kind;
+        a_kind = down_cast<ASR::Complex_t>(ASRUtils::type_get_past_array(ASRUtils::type_get_past_pointer(x.m_type)))->m_kind;
         type = llvm_utils->getComplexType(a_kind);
         if( left_val->getType()->isPointerTy() ) {
             left_val = CreateLoad(left_val);
