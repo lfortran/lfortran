@@ -639,10 +639,12 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
 
         Vec<ASR::expr_t**> vars;
         vars.reserve(al, 1);
-        vars.push_back(al, const_cast<ASR::expr_t**>(&(xx.m_target)));
-        ArrayVarAddressCollector var_collector(al, vars);
-        var_collector.current_expr = const_cast<ASR::expr_t**>(&(xx.m_value));
-        var_collector.call_replacer();
+        ArrayVarAddressCollector var_collector_target(al, vars);
+        var_collector_target.current_expr = const_cast<ASR::expr_t**>(&(xx.m_target));
+        var_collector_target.call_replacer();
+        ArrayVarAddressCollector var_collector_value(al, vars);
+        var_collector_value.current_expr = const_cast<ASR::expr_t**>(&(xx.m_value));
+        var_collector_value.call_replacer();
 
         if (vars.size() == 1 &&
             ASRUtils::is_array(ASRUtils::expr_type(ASRUtils::get_past_array_broadcast(xx.m_value)))
