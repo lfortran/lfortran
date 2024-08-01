@@ -1337,7 +1337,7 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         replace_current_expr("_array_constructor_")
     }
 
-    void replace_ArrayConstant(ASR::ArrayConstant_t* x) {
+    void replace_ArrayConstant(ASR::ArrayConstant_t* /*x*/) {
         // assign a temporary variable only when either
         // (a). there is no target, e.g. size([1, 2, 3])
         // (b). there is an OriginalTarget and realloc_lhs is true e.g. `x = [1, 2, 3, 4]`
@@ -1416,12 +1416,6 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         replace_current_expr("_overloaded_compare_")
     }
 
-    void replace_OverloadedBinOp(ASR::OverloadedBinOp_t* x) {
-        LCOMPILERS_ASSERT(x->m_overloaded);
-        *current_expr = x->m_overloaded;
-        replace_current_expr("_overloaded_binop_")
-    }
-
     template <typename T>
     void replace_OverloadedOperator(T* x) {
         LCOMPILERS_ASSERT(x->m_overloaded);
@@ -1435,6 +1429,10 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
             exprs_with_target[*current_expr] = target_Info;
         }
         ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_expr(*current_expr);
+    }
+
+    void replace_OverloadedBinOp(ASR::OverloadedBinOp_t* x) {
+        replace_OverloadedOperator(x);
     }
 
     void replace_OverloadedUnaryMinus(ASR::OverloadedUnaryMinus_t* x) {
