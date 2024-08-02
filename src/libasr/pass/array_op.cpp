@@ -538,7 +538,30 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         }
         pass_result.push_back(al, doloop);
     }
+    //Fetches the place of the only array in a structInstanceMember expression.
+    ASR::expr_t** get_array_place_in_structInstaceMember(ASR::expr_t* structInstanceMember_expr){
+            ASR::expr_t** array_ref_container_node = nullptr;
+            // If array in first depth, return nullptr.
+            if (ASRUtils::is_array(ASRUtils::symbol_type(ASR::down_cast<ASR::StructInstanceMember_t>(structInstanceMember_expr)->m_m))){ 
+                return nullptr;
+            }
 
+            // This while loop is used to fetch the only single array from a structInstanceMember hierarchy.
+            // We assume there's a single array in the hierarachy, as multiple arrays should throw semantic error while building ASR.
+            while(ASR::is_a<ASR::StructInstanceMember_t>(*structInstanceMember_expr) && !array_ref_container_node ){
+                ASR::StructInstanceMember_t* tmp = ASR::down_cast<ASR::StructInstanceMember_t>(structInstanceMember_expr);
+                if(ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(tmp->m_v)))){
+                    array_ref_container_node = &(tmp->m_v); 
+                } else if(ASR::is_a<ASR::StructInstanceMember_t>(*tmp->m_v)){
+                    structInstanceMember_expr = tmp->m_v; // Go deep.
+                } else if (ASR::is_a<ASR::ArrayItem_t>(*tmp->m_v)){
+                    structInstanceMember_expr = ASR::down_cast<ASR::ArrayItem_t>(tmp->m_v)->m_v; // Go deep
+                } else {
+                    break;
+                }
+            }
+            return array_ref_container_node;
+    }
     template <typename T>
     void replace_Constant(T* x) {
         if( !(result_var != nullptr && PassUtils::is_array(result_var) &&
@@ -552,12 +575,33 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         Vec<ASR::expr_t*> idx_vars, loop_vars;
         std::vector<int> loop_var_indices;
         Vec<ASR::stmt_t*> doloop_body;
+        ASR::expr_t* result_var_origial = result_var;
+        ASR::expr_t** array_place_in_structInstaceMember = nullptr;
+
+        // Look up for arrays in structInstanceMember expressions.
+        if(ASR::is_a<ASR::StructInstanceMember_t>(*result_var)){
+            array_place_in_structInstaceMember = get_array_place_in_structInstaceMember(result_var);
+            if(array_place_in_structInstaceMember){
+                result_var = *array_place_in_structInstaceMember; // use the array expression, instead of whole structInstaceMember.
+            }
+        }
+
         create_do_loop_for_const_val(loc, n_dims, idx_vars,
             loop_vars, loop_var_indices, doloop_body,
             [=, &idx_vars, &doloop_body] () {
             ASR::expr_t* ref = *current_expr;
             ASR::expr_t* res = PassUtils::create_array_ref(result_var, idx_vars, al, current_scope);
-            ASR::stmt_t* assign = ASRUtils::STMT(ASR::make_Assignment_t(al, loc, res, ref, nullptr));
+            ASR::expr_t* target;
+            if(array_place_in_structInstaceMember){
+                *array_place_in_structInstaceMember = res; // Replace the array with its ArrayItem expression. 
+                target = result_var_origial;
+                // Use type of array.
+                ASR::StructInstanceMember_t* tmp = ASR::down_cast<ASR::StructInstanceMember_t>(target);
+                tmp->m_type = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_allocatable(tmp->m_type))->m_type;
+            } else {
+                target = res;
+            }
+            ASR::stmt_t* assign = ASRUtils::STMT(ASR::make_Assignment_t(al, loc, target, ref, nullptr));
             doloop_body.push_back(al, assign);
         });
         result_var = nullptr;
