@@ -5325,9 +5325,9 @@ namespace Max {
             return nullptr;
         }
         ASR::ttype_t *arg_type = ASRUtils::expr_type(args[0]);
-        for(size_t i=0;i<args.size();i++){
-            if (!ASRUtils::check_equal_type(arg_type, ASRUtils::expr_type(args[i]))) {
-                append_error(diag, "All arguments to max0 must be of the same type and kind", loc);
+        for(size_t i=1;i<args.size();i++) {
+            if (arg_type->type != ASRUtils::expr_type(args[i])->type) {
+                append_error(diag, "All arguments to max0 must be of the same type", loc);
             return nullptr;
             }
         }
@@ -5472,8 +5472,8 @@ namespace Min {
         }
         ASR::ttype_t *arg_type = ASRUtils::expr_type(args[0]);
         for(size_t i=0;i<args.size();i++){
-            if (!ASRUtils::check_equal_type(arg_type, ASRUtils::expr_type(args[i]))) {
-                append_error(diag, "All arguments to min0 must be of the same type and kind", loc);
+            if (arg_type->type != ASRUtils::expr_type(args[i])->type) {
+                append_error(diag, "All arguments to min0 must be of the same type", loc);
                 return nullptr;
             }
         }
