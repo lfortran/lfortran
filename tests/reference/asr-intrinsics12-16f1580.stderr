@@ -1,0 +1,5 @@
+semantic error: All arguments to max0 must be of the same type
+ --> tests/errors/intrinsics12.f90:2:14
+  |
+2 |     print *, max(12, 13.94)
+  |              ^^^^^^^^^^^^^^ 

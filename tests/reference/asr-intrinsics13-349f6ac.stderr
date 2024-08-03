@@ -1,0 +1,5 @@
+semantic error: All arguments to min0 must be of the same type
+ --> tests/errors/intrinsics13.f90:2:14
+  |
+2 |     print *, min(12, 13.94)
+  |              ^^^^^^^^^^^^^^ 
