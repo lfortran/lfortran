@@ -3156,6 +3156,14 @@ LFORTRAN_API void _lpython_call_initial_functions(int32_t argc_1, char *argv_1[]
     _lpython_set_argv(argc_1, argv_1);
     _lfortran_init_random_clock();
 }
+
+LFORTRAN_API int32_t _lfortran_command_argument_count() {
+    int32_t result = 0;
+    for(int i=0; i<_argc; i++) {
+        result++;
+    }
+    return result;
+}
 // << Initial setup << ---------------------------------------------------------
 
 // >> Runtime Stacktrace >> ----------------------------------------------------
