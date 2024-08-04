@@ -149,38 +149,7 @@ namespace LCompilers {
                 ai.m_step = nullptr;
                 args.push_back(al, ai);
             }
-            ASR::expr_t* arr_expr_copy = arr_expr; 
-            ASR::expr_t** original_arr_expr =&arr_expr_copy; 
-            ASR::expr_t** array_ref_container_node = nullptr; // If we have a structInstanceMember hierarch, It'd be used to emplace the resulting array_ref in the correct node.
             ASR::expr_t* array_ref = nullptr;
-            ASR::StructInstanceMember_t* tmp = nullptr;
-            
-            // if first depth of hierarchy contains array, don't set array_ref_container_node and return array_ref directly.
-            if (ASR::is_a<ASR::StructInstanceMember_t>(*arr_expr) && 
-                ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable(
-                    ASRUtils::symbol_type(ASR::down_cast<ASR::StructInstanceMember_t>(arr_expr)->m_m)))){ 
-                original_arr_expr = &array_ref;
-            }
-            // This while loop is used to fetch the only single array from a structInstanceMember hierarchy.
-            // We assume there's a single array in the hierarachy, as multiple arrays should throw semantic error while building ASR.
-            bool check_m_m = true;
-            while(ASR::is_a<ASR::StructInstanceMember_t>(*arr_expr) && !array_ref_container_node ){
-                tmp = ASR::down_cast<ASR::StructInstanceMember_t>(arr_expr);
-                if(ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(tmp->m_v)))){
-                    arr_expr = tmp->m_v;
-                    array_ref_container_node = &(tmp->m_v); 
-                } else if (ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable(ASRUtils::symbol_type(tmp->m_m))) && check_m_m){
-                    array_ref_container_node = &arr_expr;
-                } else if(ASR::is_a<ASR::StructInstanceMember_t>(*tmp->m_v)){
-                    arr_expr = tmp->m_v;
-                    check_m_m =true;    
-                } else if (ASR::is_a<ASR::ArrayItem_t>(*tmp->m_v)){
-                    arr_expr = ASR::down_cast<ASR::ArrayItem_t>(tmp->m_v)->m_v;
-                    check_m_m = false;
-                } else {
-                    break;
-                }
-            }
             ASR::ttype_t* array_ref_type = ASRUtils::duplicate_type_without_dims(
                 al, ASRUtils::expr_type(arr_expr), arr_expr->base.loc);
             fix_struct_type_scope()
@@ -191,15 +160,6 @@ namespace LCompilers {
                                             ASRUtils::type_get_past_pointer(
                                                 ASRUtils::type_get_past_allocatable(array_ref_type))),
                                         ASR::arraystorageType::RowMajor, nullptr));
-            // Emplace the resulting array_ref in the correct node.                          
-            if(array_ref_container_node){
-                *array_ref_container_node = array_ref;
-                array_ref = *original_arr_expr;
-                if(ASR::is_a<ASR::StructInstanceMember_t>(*array_ref)){
-                    ASR::StructInstanceMember_t* tmp = ASR::down_cast<ASR::StructInstanceMember_t>(array_ref);
-                    tmp->m_type = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_allocatable(tmp->m_type))->m_type; // Using type of the returing array to avoid creating array ref again by array_op pass.
-                }
-            }
             if( perform_cast ) {
                 LCOMPILERS_ASSERT(casted_type != nullptr);
                 array_ref = ASRUtils::EXPR(ASR::make_Cast_t(al, array_ref->base.loc,
