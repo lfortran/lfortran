@@ -2521,7 +2521,7 @@ namespace Idint {
     static ASR::expr_t *eval_Idint(Allocator &al, const Location &loc,
             ASR::ttype_t* /*arg_type*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         int val = ASR::down_cast<ASR::RealConstant_t>(expr_value(args[0]))->m_r;
-        int kind = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::RealConstant_t>(args[0])->m_type);
+        int kind = ASRUtils::extract_kind_from_ttype_t(expr_type(args[0]));
         if(kind == 4) {
             append_error(diag, "first argument of `idint` must have kind equals to 8", loc);
             return nullptr;
