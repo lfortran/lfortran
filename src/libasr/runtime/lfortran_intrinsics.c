@@ -1257,7 +1257,7 @@ LFORTRAN_API int _lfortran_sishftc(int val, int shift_signed, int bits_size) {
     return result;
 }
 
-LFORTRAN_API int _lfortran_dishftc(int64_t val, int64_t shift_signed, int64_t bits_size) {
+LFORTRAN_API int64_t _lfortran_dishftc(int64_t val, int64_t shift_signed, int64_t bits_size) {
     uint32_t max_bits_size = 64;
     bool negative_shift = (shift_signed < 0);
     uint32_t shift = llabs(shift_signed);

@@ -178,8 +178,8 @@ program intrinsics_163
     b = 2
     size2 = 4
 
-    ! print *, ishftc(a, b, size2)
-    ! if (ishftc(a, b, size2) /= 2) error stop
+    print *, ishftc(a, b, size2)
+    if (ishftc(a, b, size2) /= 2) error stop
 
     print *, ishftc(x, y, size1)
     if (ishftc(x, y, size1) /= 20) error stop
