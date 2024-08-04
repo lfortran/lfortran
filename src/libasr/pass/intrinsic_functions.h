@@ -888,9 +888,9 @@ namespace Scale {
     static inline ASR::expr_t* instantiate_Scale(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("");
+        declare_basic_variables("_lcompilers_scale_" + type_to_str_python(arg_types[0]));
         fill_func_arg("x", arg_types[0]);
-        fill_func_arg("y", arg_types[1]);
+        fill_func_arg("i", arg_types[1]);
         auto result = declare(fn_name, return_type, ReturnVar);
         /*
         * r = scale(x, y)
@@ -898,7 +898,7 @@ namespace Scale {
         */
 
        //TODO: Radix for most of the device is 2, so we can use the b.i2r_t(2, real32) instead of args[1]. Fix (find a way to get the radix of the device and use it here)
-        body.push_back(al, b.Assignment(result, b.Mul(args[0], b.i2r_t(b.Pow(b.i_t(2, arg_types[1]), args[1]), real32))));
+        body.push_back(al, b.Assignment(result, b.Mul(args[0], b.i2r_t(b.Pow(b.i_t(2, arg_types[1]), args[1]), return_type))));
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args, body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
         return b.Call(f_sym, new_args, return_type, nullptr);

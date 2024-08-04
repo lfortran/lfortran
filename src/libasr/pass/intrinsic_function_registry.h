@@ -1037,7 +1037,7 @@ namespace IntrinsicElementalFunctionRegistry {
     }
 
     static inline create_intrinsic_function get_create_function(const std::string& name) {
-        return  std::get<0>(intrinsic_function_by_name_db.at(name));
+        return std::get<0>(intrinsic_function_by_name_db.at(name));
     }
 
     static inline verify_function get_verify_function(int64_t id) {
