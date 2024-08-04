@@ -1408,6 +1408,43 @@ LFORTRAN_API float _lfortran_sbesselyn( int n, float x ) {
     return yn(n, x);
 }
 
+uint64_t cutoff_extra_bits(uint64_t num, uint32_t bits_size, uint32_t max_bits_size) {
+    if (bits_size == max_bits_size) {
+        return num;
+    }
+    return (num & ((1lu << bits_size) - 1lu));
+}
+
+LFORTRAN_API int _lfortran_sishftc(int val, int shift_signed, int bits_size) {
+    uint32_t max_bits_size = 64;
+    bool negative_shift = (shift_signed < 0);
+    uint32_t shift = abs(shift_signed);
+
+    uint64_t val1 = cutoff_extra_bits((uint64_t)val, (uint32_t)bits_size, max_bits_size);
+    uint64_t result;
+    if (negative_shift) {
+        result = (val1 >> shift) | cutoff_extra_bits(val1 << (bits_size - shift), bits_size, max_bits_size);
+    } else {
+        result = cutoff_extra_bits(val1 << shift, bits_size, max_bits_size) | ((val1 >> (bits_size - shift)));
+    }
+    return result;
+}
+
+LFORTRAN_API int64_t _lfortran_dishftc(int64_t val, int64_t shift_signed, int64_t bits_size) {
+    uint32_t max_bits_size = 64;
+    bool negative_shift = (shift_signed < 0);
+    uint32_t shift = llabs(shift_signed);
+
+    uint64_t val1 = cutoff_extra_bits((uint64_t)val, (uint32_t)bits_size, max_bits_size);
+    uint64_t result;
+    if (negative_shift) {
+        result = (val1 >> shift) | cutoff_extra_bits(val1 << (bits_size - shift), bits_size, max_bits_size);
+    } else {
+        result = cutoff_extra_bits(val1 << shift, bits_size, max_bits_size) | ((val1 >> (bits_size - shift)));
+    }
+    return result;
+}
+
 // sin -------------------------------------------------------------------------
 
 LFORTRAN_API float _lfortran_ssin(float x)
