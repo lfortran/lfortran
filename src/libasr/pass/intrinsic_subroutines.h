@@ -21,7 +21,7 @@ the code size.
 enum class IntrinsicImpureSubroutines : int64_t {
     RandomNumber,
     RandomInit,
-    Get_Command,
+    GetCommand,
     // ...
 };
 
@@ -167,7 +167,7 @@ namespace RandomNumber {
 
 } // namespace RandomNumber
 
-namespace Get_Command {
+namespace GetCommand {
 
     static inline void verify_args(const ASR::IntrinsicImpureSubroutine_t& x, diag::Diagnostics& diagnostics) {
         if (x.n_args == 3) {
@@ -180,15 +180,15 @@ namespace Get_Command {
         }
     }
 
-    static inline ASR::asr_t* create_Get_Command(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
+    static inline ASR::asr_t* create_GetCommand(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
         Vec<ASR::expr_t*> m_args; m_args.reserve(al, 3);
         m_args.push_back(al, args[0]);
         m_args.push_back(al, args[1]);
         m_args.push_back(al, args[2]);
-        return ASR::make_IntrinsicImpureSubroutine_t(al, loc, static_cast<int64_t>(IntrinsicImpureSubroutines::Get_Command), m_args.p, m_args.n, 0);
+        return ASR::make_IntrinsicImpureSubroutine_t(al, loc, static_cast<int64_t>(IntrinsicImpureSubroutines::GetCommand), m_args.p, m_args.n, 0);
     }
 
-    static inline ASR::stmt_t* instantiate_Get_Command(Allocator &al, const Location &loc,
+    static inline ASR::stmt_t* instantiate_GetCommand(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
         
@@ -196,17 +196,11 @@ namespace Get_Command {
         std::string c_func_name_2 = "_lfortran_get_command_length";
         std::string c_func_name_3 = "_lfortran_get_command_status";
 
-
         std::string new_name = "_lcompilers_get_command_";
-
-
         declare_basic_variables(new_name);
-
-
         fill_func_arg_sub("command", arg_types[0], InOut);
         fill_func_arg_sub("length", arg_types[1], InOut);
         fill_func_arg_sub("status", arg_types[2], InOut);
-
 
         SymbolTable *fn_symtab_1 = al.make_new<SymbolTable>(fn_symtab);
         Vec<ASR::expr_t*> args_1; args_1.reserve(al, 0);
@@ -218,8 +212,6 @@ namespace Get_Command {
         ASR::symbol_t *s_1 = make_ASR_Function_t(c_func_name_1, fn_symtab_1, dep_1, args_1,
             body_1, return_var_1, ASR::abiType::BindC, ASR::deftypeType::Interface, s2c(al, c_func_name_1));
 
-
-        
         SymbolTable *fn_symtab_2 = al.make_new<SymbolTable>(fn_symtab);
         Vec<ASR::expr_t*> args_2; args_2.reserve(al, 0);
         ASR::expr_t *return_var_2 = b.Variable(fn_symtab_2, c_func_name_2,
@@ -230,7 +222,6 @@ namespace Get_Command {
         ASR::symbol_t *s_2 = make_ASR_Function_t(c_func_name_2, fn_symtab_2, dep_2, args_2,
             body_2, return_var_2, ASR::abiType::BindC, ASR::deftypeType::Interface, s2c(al, c_func_name_2));
 
-
         SymbolTable *fn_symtab_3 = al.make_new<SymbolTable>(fn_symtab);
         Vec<ASR::expr_t*> args_3; args_3.reserve(al, 0);
         ASR::expr_t *return_var_3 = b.Variable(fn_symtab_3, c_func_name_3,
@@ -240,34 +231,26 @@ namespace Get_Command {
         Vec<ASR::stmt_t*> body_3; body_3.reserve(al, 1);
         ASR::symbol_t *s_3 = make_ASR_Function_t(c_func_name_3, fn_symtab_3, dep_3, args_3,
             body_3, return_var_3, ASR::abiType::BindC, ASR::deftypeType::Interface, s2c(al, c_func_name_3));
-        
-
+    
         fn_symtab->add_symbol(c_func_name_1, s_1);
         fn_symtab->add_symbol(c_func_name_2, s_2);
         fn_symtab->add_symbol(c_func_name_3, s_3);
 
-
         dep.push_back(al, s2c(al, c_func_name_1));
         dep.push_back(al, s2c(al, c_func_name_2));
         dep.push_back(al, s2c(al, c_func_name_3));
-
-
-
 
         Vec<ASR::expr_t*> call_args; call_args.reserve(al, 0);
         body.push_back(al, b.Assignment(args[0], b.Call(s_1, call_args, arg_types[0])));
         body.push_back(al, b.Assignment(args[1], b.Call(s_2, call_args, arg_types[1])));
         body.push_back(al, b.Assignment(args[2], b.Call(s_3, call_args, arg_types[2])));
 
-
-
-
         ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, nullptr, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, new_symbol);
         return b.SubroutineCall(new_symbol, new_args);
     }
-} // namespace Get_Command
+} // namespace GetCommand
 
 } // namespace LCompilers::ASRUtils
 
