@@ -4089,3 +4089,11 @@ asr = true
 [[test]]
 filename = "errors/do_concurrent1.f90"
 asr = true
+
+[[test]]
+filename = "errors/intrinsics12.f90"
+asr = true
+
+[[test]]
+filename = "errors/intrinsics13.f90"
+asr = true

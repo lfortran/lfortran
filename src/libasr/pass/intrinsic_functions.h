@@ -5313,8 +5313,7 @@ namespace Max {
         }
     }
 
-    static inline ASR::asr_t* create_Max(
-        Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args,
+    static inline ASR::asr_t* create_Max(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args,
         diag::Diagnostics& diag) {
         bool is_compile_time = true;
         for(size_t i=0; i<100;i++){
@@ -5325,9 +5324,14 @@ namespace Max {
             return nullptr;
         }
         ASR::ttype_t *arg_type = ASRUtils::expr_type(args[0]);
-        for(size_t i=0;i<args.size();i++){
-            if (!ASRUtils::check_equal_type(arg_type, ASRUtils::expr_type(args[i]))) {
-                append_error(diag, "All arguments to max0 must be of the same type and kind", loc);
+        int kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
+        for(size_t i=1; i<args.size(); i++) {
+            if (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[i])) != kind) {
+                diag.semantic_warning_label("Different kinds of args in max0 is a non-standard extension", {loc}, 
+                "help: ensure all arguments have the same kind to make it standard");
+            }
+            if (arg_type->type != ASRUtils::expr_type(args[i])->type) {
+                append_error(diag, "All arguments to max0 must be of the same type", loc);
             return nullptr;
             }
         }
@@ -5471,9 +5475,14 @@ namespace Min {
             return nullptr;
         }
         ASR::ttype_t *arg_type = ASRUtils::expr_type(args[0]);
-        for(size_t i=0;i<args.size();i++){
-            if (!ASRUtils::check_equal_type(arg_type, ASRUtils::expr_type(args[i]))) {
-                append_error(diag, "All arguments to min0 must be of the same type and kind", loc);
+        int kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
+        for(size_t i=1; i<args.size(); i++){
+            if (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[i])) != kind) {
+                diag.semantic_warning_label("Different kinds of args in max0 is a non-standard extension", {loc}, 
+                "help: ensure all arguments have the same kind to make it standard");
+            }
+            if (arg_type->type != ASRUtils::expr_type(args[i])->type) {
+                append_error(diag, "All arguments to min0 must be of the same type", loc);
                 return nullptr;
             }
         }
