@@ -1772,8 +1772,11 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
             ASR::expr_t** current_expr_copy_9 = current_expr;
             ASR::expr_t* original_value = x.m_value;
             if( ASR::is_a<ASR::ArrayBroadcast_t>(*x.m_value) ) {
-                resultvar2value[replacer.result_var] =
-                    ASR::down_cast<ASR::ArrayBroadcast_t>(original_value)->m_array;
+                ASR::ArrayBroadcast_t* array_broadcast = ASR::down_cast<ASR::ArrayBroadcast_t>(x.m_value);
+                if ( ASR::is_a<ASR::TypeInquiry_t>(*array_broadcast->m_array) ) {
+                    array_broadcast->m_array = ASR::down_cast<ASR::TypeInquiry_t>(array_broadcast->m_array)->m_value;
+                }
+                resultvar2value[replacer.result_var] = array_broadcast->m_array;
             } else {
                 resultvar2value[replacer.result_var] = original_value;
             }
@@ -1787,7 +1790,7 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
                 replacer.result_var = result_var_copy;
                 remove_original_statement = false;
             } else if( x.m_value ) {
-                if( ASR::is_a<ASR::ArrayReshape_t>(*x.m_value) ) {
+                if( ASR::is_a<ASR::ArrayReshape_t>(*x.m_value)) {
                     remove_original_statement = false;
                     return ;
                 }
