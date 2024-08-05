@@ -89,6 +89,9 @@ class ArrayVarAddressReplacer: public ASR::BaseExprReplacer<ArrayVarAddressRepla
     void replace_ArrayItem(ASR::ArrayItem_t* /*x*/) {
     }
 
+    void replace_IntrinsicArrayFunction(ASR::IntrinsicArrayFunction_t* /*x*/) {
+    }
+
 };
 
 class ArrayVarAddressCollector: public ASR::CallReplacerOnExpressionsVisitor<ArrayVarAddressCollector> {
@@ -349,6 +352,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
     Allocator& al;
     ReplaceArrayOp replacer;
     Vec<ASR::stmt_t*> pass_result;
+    Vec<ASR::stmt_t*>* parent_body;
     bool realloc_lhs;
     bool remove_original_stmt;
 
@@ -362,7 +366,8 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
 
     ArrayOpVisitor(Allocator& al_, bool realloc_lhs_):
         al(al_), replacer(al, pass_result, remove_original_stmt),
-        realloc_lhs(realloc_lhs_), remove_original_stmt(false) {
+        parent_body(nullptr), realloc_lhs(realloc_lhs_),
+        remove_original_stmt(false) {
         pass_result.n = 0;
         pass_result.reserve(al, 0);
     }
@@ -372,13 +377,22 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
     }
 
     void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
+        bool remove_original_stmt_copy = remove_original_stmt;
         Vec<ASR::stmt_t*> body;
         body.reserve(al, n_body);
+        if( parent_body ) {
+            for (size_t j=0; j < pass_result.size(); j++) {
+                parent_body->push_back(al, pass_result[j]);
+            }
+        }
         for (size_t i = 0; i < n_body; i++) {
             pass_result.n = 0;
             pass_result.reserve(al, 1);
             remove_original_stmt = false;
+            Vec<ASR::stmt_t*>* parent_body_copy = parent_body;
+            parent_body = &body;
             visit_stmt(*m_body[i]);
+            parent_body = parent_body_copy;
             if( pass_result.size() > 0 ) {
                 for (size_t j=0; j < pass_result.size(); j++) {
                     body.push_back(al, pass_result[j]);
@@ -392,6 +406,8 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         }
         m_body = body.p;
         n_body = body.size();
+        pass_result.n = 0;
+        remove_original_stmt = remove_original_stmt_copy;
     }
 
     bool call_replace_on_expr(ASR::exprType expr_type) {
