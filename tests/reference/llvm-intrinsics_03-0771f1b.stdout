@@ -122,6 +122,7 @@ define i32 @main(i32 %0, i8** %1) {
   %call_arg_value5 = alloca double, align 8
   %call_arg_value1 = alloca double, align 8
   %call_arg_value = alloca float, align 4
+  store i32 -12, i32* @intrinsics_03.i, align 4
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   %a = alloca double, align 8
   store i32 -12, i32* @intrinsics_03.i, align 4

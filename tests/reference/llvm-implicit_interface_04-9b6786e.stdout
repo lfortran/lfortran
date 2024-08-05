@@ -1,6 +1,7 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
 
+@main.n = internal global i32 0
 @0 = private unnamed_addr constant [2 x i8] c" \00", align 1
 @1 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @2 = private unnamed_addr constant [9 x i8] c"%13.8e%s\00", align 1
@@ -20,7 +21,60 @@ source_filename = "LFortran"
 @16 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @17 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 @main.b = internal global [3 x i32] zeroinitializer
-@main.n = internal global i32 0
+
+define i32 @main(i32 %0, i8** %1) {
+.entry:
+  %array_bound = alloca i32, align 4
+  %__1_k = alloca i32, align 4
+  store i32 3, i32* @main.n, align 4
+  call void @_lpython_call_initial_functions(i32 %0, i8** %1)
+  %__1_k1 = alloca i32, align 4
+  store i32 3, i32* @main.n, align 4
+  br i1 true, label %then, label %else
+
+then:                                             ; preds = %.entry
+  store i32 1, i32* %array_bound, align 4
+  br label %ifcont
+
+else:                                             ; preds = %.entry
+  br label %ifcont
+
+ifcont:                                           ; preds = %else, %then
+  %2 = load i32, i32* %array_bound, align 4
+  store i32 %2, i32* %__1_k1, align 4
+  %3 = load i32, i32* %__1_k1, align 4
+  %4 = sub i32 %3, 1
+  %5 = mul i32 1, %4
+  %6 = add i32 0, %5
+  %7 = getelementptr [3 x i32], [3 x i32]* @main.b, i32 0, i32 %6
+  store i32 10, i32* %7, align 4
+  %8 = load i32, i32* %__1_k1, align 4
+  %9 = add i32 %8, 1
+  store i32 %9, i32* %__1_k1, align 4
+  %10 = load i32, i32* %__1_k1, align 4
+  %11 = sub i32 %10, 1
+  %12 = mul i32 1, %11
+  %13 = add i32 0, %12
+  %14 = getelementptr [3 x i32], [3 x i32]* @main.b, i32 0, i32 %13
+  store i32 20, i32* %14, align 4
+  %15 = load i32, i32* %__1_k1, align 4
+  %16 = add i32 %15, 1
+  store i32 %16, i32* %__1_k1, align 4
+  %17 = load i32, i32* %__1_k1, align 4
+  %18 = sub i32 %17, 1
+  %19 = mul i32 1, %18
+  %20 = add i32 0, %19
+  %21 = getelementptr [3 x i32], [3 x i32]* @main.b, i32 0, i32 %20
+  store i32 30, i32* %21, align 4
+  %22 = load i32, i32* %__1_k1, align 4
+  %23 = add i32 %22, 1
+  store i32 %23, i32* %__1_k1, align 4
+  call void @driver(void (i32*, i32*, i32*)* @implicit_interface_check, i32* getelementptr inbounds ([3 x i32], [3 x i32]* @main.b, i32 0, i32 0), i32* @main.n)
+  br label %return
+
+return:                                           ; preds = %ifcont
+  ret i32 0
+}
 
 define void @driver(void (i32*, i32*, i32*)* %fnc, i32* %arr, i32* %m) {
 .entry:
@@ -124,57 +178,5 @@ declare void @_lfortran_printf(i8*, ...)
 declare void @_lcompilers_print_error(i8*, ...)
 
 declare void @exit(i32)
-
-define i32 @main(i32 %0, i8** %1) {
-.entry:
-  %array_bound = alloca i32, align 4
-  call void @_lpython_call_initial_functions(i32 %0, i8** %1)
-  %__1_k = alloca i32, align 4
-  store i32 3, i32* @main.n, align 4
-  br i1 true, label %then, label %else
-
-then:                                             ; preds = %.entry
-  store i32 1, i32* %array_bound, align 4
-  br label %ifcont
-
-else:                                             ; preds = %.entry
-  br label %ifcont
-
-ifcont:                                           ; preds = %else, %then
-  %2 = load i32, i32* %array_bound, align 4
-  store i32 %2, i32* %__1_k, align 4
-  %3 = load i32, i32* %__1_k, align 4
-  %4 = sub i32 %3, 1
-  %5 = mul i32 1, %4
-  %6 = add i32 0, %5
-  %7 = getelementptr [3 x i32], [3 x i32]* @main.b, i32 0, i32 %6
-  store i32 10, i32* %7, align 4
-  %8 = load i32, i32* %__1_k, align 4
-  %9 = add i32 %8, 1
-  store i32 %9, i32* %__1_k, align 4
-  %10 = load i32, i32* %__1_k, align 4
-  %11 = sub i32 %10, 1
-  %12 = mul i32 1, %11
-  %13 = add i32 0, %12
-  %14 = getelementptr [3 x i32], [3 x i32]* @main.b, i32 0, i32 %13
-  store i32 20, i32* %14, align 4
-  %15 = load i32, i32* %__1_k, align 4
-  %16 = add i32 %15, 1
-  store i32 %16, i32* %__1_k, align 4
-  %17 = load i32, i32* %__1_k, align 4
-  %18 = sub i32 %17, 1
-  %19 = mul i32 1, %18
-  %20 = add i32 0, %19
-  %21 = getelementptr [3 x i32], [3 x i32]* @main.b, i32 0, i32 %20
-  store i32 30, i32* %21, align 4
-  %22 = load i32, i32* %__1_k, align 4
-  %23 = add i32 %22, 1
-  store i32 %23, i32* %__1_k, align 4
-  call void @driver(void (i32*, i32*, i32*)* @implicit_interface_check, i32* getelementptr inbounds ([3 x i32], [3 x i32]* @main.b, i32 0, i32 0), i32* @main.n)
-  br label %return
-
-return:                                           ; preds = %ifcont
-  ret i32 0
-}
 
 declare void @_lpython_call_initial_functions(i32, i8**)
