@@ -3991,6 +3991,10 @@ filename = "errors/sqrt_neg.f90"
 asr = true
 
 [[test]]
+filename = "errors/idint_real4.f90"
+asr = true
+
+[[test]]
 filename = "errors/ishftc_size.f90"
 asr = true
 
