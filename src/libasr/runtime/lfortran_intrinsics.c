@@ -3230,16 +3230,7 @@ LFORTRAN_API char *_lfortran_get_command_command() {
 
 
 LFORTRAN_API int32_t _lfortran_get_command_length() {
-    char* out;
-    for(int i=0; i<_argc; i++) {
-        if(i == 0) {
-            out = strdup(_argv[i]);
-        } else {
-            out = realloc(out, strlen(out) + strlen(_argv[i]) + 1);
-            strcat(out, " ");
-            strcat(out, _argv[i]);
-        }
-    }
+    char* out = _lfortran_get_command_command();
     return strlen(out);
 }
 

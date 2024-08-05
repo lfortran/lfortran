@@ -202,35 +202,9 @@ namespace GetCommand {
         fill_func_arg_sub("length", arg_types[1], InOut);
         fill_func_arg_sub("status", arg_types[2], InOut);
 
-        SymbolTable *fn_symtab_1 = al.make_new<SymbolTable>(fn_symtab);
-        Vec<ASR::expr_t*> args_1; args_1.reserve(al, 0);
-        ASR::expr_t *return_var_1 = b.Variable(fn_symtab_1, c_func_name_1,
-           ASRUtils::type_get_past_array(ASRUtils::type_get_past_allocatable(arg_types[0])),
-           ASRUtils::intent_return_var, ASR::abiType::BindC, false);
-        SetChar dep_1; dep_1.reserve(al, 1);
-        Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 1);
-        ASR::symbol_t *s_1 = make_ASR_Function_t(c_func_name_1, fn_symtab_1, dep_1, args_1,
-            body_1, return_var_1, ASR::abiType::BindC, ASR::deftypeType::Interface, s2c(al, c_func_name_1));
-
-        SymbolTable *fn_symtab_2 = al.make_new<SymbolTable>(fn_symtab);
-        Vec<ASR::expr_t*> args_2; args_2.reserve(al, 0);
-        ASR::expr_t *return_var_2 = b.Variable(fn_symtab_2, c_func_name_2,
-           ASRUtils::type_get_past_array(ASRUtils::type_get_past_allocatable(arg_types[1])),
-           ASRUtils::intent_return_var, ASR::abiType::BindC, false);
-        SetChar dep_2; dep_2.reserve(al, 1);
-        Vec<ASR::stmt_t*> body_2; body_2.reserve(al, 1);
-        ASR::symbol_t *s_2 = make_ASR_Function_t(c_func_name_2, fn_symtab_2, dep_2, args_2,
-            body_2, return_var_2, ASR::abiType::BindC, ASR::deftypeType::Interface, s2c(al, c_func_name_2));
-
-        SymbolTable *fn_symtab_3 = al.make_new<SymbolTable>(fn_symtab);
-        Vec<ASR::expr_t*> args_3; args_3.reserve(al, 0);
-        ASR::expr_t *return_var_3 = b.Variable(fn_symtab_3, c_func_name_3,
-           ASRUtils::type_get_past_array(ASRUtils::type_get_past_allocatable(arg_types[2])),
-           ASRUtils::intent_return_var, ASR::abiType::BindC, false);
-        SetChar dep_3; dep_3.reserve(al, 1);
-        Vec<ASR::stmt_t*> body_3; body_3.reserve(al, 1);
-        ASR::symbol_t *s_3 = make_ASR_Function_t(c_func_name_3, fn_symtab_3, dep_3, args_3,
-            body_3, return_var_3, ASR::abiType::BindC, ASR::deftypeType::Interface, s2c(al, c_func_name_3));
+        ASR::symbol_t *s_1 = b.create_c_func_subroutines(c_func_name_1, fn_symtab, 0, arg_types[0]);
+        ASR::symbol_t *s_2 = b.create_c_func_subroutines(c_func_name_2, fn_symtab, 0, arg_types[1]);
+        ASR::symbol_t *s_3 = b.create_c_func_subroutines(c_func_name_3, fn_symtab, 0, arg_types[2]);
     
         fn_symtab->add_symbol(c_func_name_1, s_1);
         fn_symtab->add_symbol(c_func_name_2, s_2);
