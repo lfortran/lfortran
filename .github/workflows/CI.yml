@@ -716,6 +716,10 @@ jobs:
             make -j8
             ./gsnap ../qasnap/sample/inp out
 
+            make clean
+            make -j8 FORTRAN="lfortran --fast --skip-pass=promote_allocatable_to_nonallocatable"
+            ./gsnap ../qasnap/sample/inp out
+
   test_llvm:
     name: Test LLVM ${{ matrix.llvm-version }}
     runs-on: ubuntu-latest
