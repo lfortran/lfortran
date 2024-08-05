@@ -1,6 +1,7 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
 
+@main.main_out = internal global i32 0
 @0 = private unnamed_addr constant [2 x i8] c" \00", align 1
 @1 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @2 = private unnamed_addr constant [13 x i8] c"early return\00", align 1
@@ -9,11 +10,23 @@ source_filename = "LFortran"
 @5 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @6 = private unnamed_addr constant [14 x i8] c"normal return\00", align 1
 @7 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
-@main.main_out = internal global i32 0
 @8 = private unnamed_addr constant [2 x i8] c" \00", align 1
 @9 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @10 = private unnamed_addr constant [13 x i8] c"main1 called\00", align 1
 @11 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+
+define i32 @main(i32 %0, i8** %1) {
+.entry:
+  store i32 999, i32* @main.main_out, align 4
+  call void @_lpython_call_initial_functions(i32 %0, i8** %1)
+  store i32 999, i32* @main.main_out, align 4
+  call void @main1(i32* @main.main_out)
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @11, i32 0, i32 0), i8* getelementptr inbounds ([13 x i8], [13 x i8]* @10, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @9, i32 0, i32 0))
+  br label %return
+
+return:                                           ; preds = %.entry
+  ret i32 0
+}
 
 define void @main1(i32* %out_var) {
 .entry:
@@ -46,17 +59,5 @@ return:                                           ; preds = %ifcont, %then
 }
 
 declare void @_lfortran_printf(i8*, ...)
-
-define i32 @main(i32 %0, i8** %1) {
-.entry:
-  call void @_lpython_call_initial_functions(i32 %0, i8** %1)
-  store i32 999, i32* @main.main_out, align 4
-  call void @main1(i32* @main.main_out)
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @11, i32 0, i32 0), i8* getelementptr inbounds ([13 x i8], [13 x i8]* @10, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @9, i32 0, i32 0))
-  br label %return
-
-return:                                           ; preds = %.entry
-  ret i32 0
-}
 
 declare void @_lpython_call_initial_functions(i32, i8**)

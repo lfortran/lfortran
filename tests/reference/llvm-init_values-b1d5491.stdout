@@ -17,13 +17,19 @@ source_filename = "LFortran"
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
-  call void @_lpython_call_initial_functions(i32 %0, i8** %1)
+  %a = alloca i32, align 4
+  store i32 3, i32* %a, align 4
   %i = alloca i32, align 4
   store i32 1, i32* %i, align 4
   %j = alloca i32, align 4
   store i32 2, i32* %j, align 4
-  %a = alloca i32, align 4
-  store i32 3, i32* %a, align 4
+  call void @_lpython_call_initial_functions(i32 %0, i8** %1)
+  %i1 = alloca i32, align 4
+  store i32 1, i32* %i1, align 4
+  %j2 = alloca i32, align 4
+  store i32 2, i32* %j2, align 4
+  %a3 = alloca i32, align 4
+  store i32 3, i32* %a3, align 4
   %l = alloca i1, align 1
   store i1 true, i1* %l, align 1
   %b = alloca i1, align 1
