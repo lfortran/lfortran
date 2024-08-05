@@ -870,6 +870,7 @@ RUN(NAME intrinsics_295 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # exp
 RUN(NAME intrinsics_296 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # storage_size
 RUN(NAME intrinsics_297 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # poppar
 RUN(NAME intrinsics_298 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # dot_product
+RUN(NAME intrinsics_299 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # command_argument_count
 
 RUN(NAME passing_array_01 LABELS gfortran fortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME passing_array_02 LABELS gfortran fortran llvm llvm_wasm llvm_wasm_emcc)
