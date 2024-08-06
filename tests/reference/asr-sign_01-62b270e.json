@@ -1,0 +1,13 @@
+{
+    "basename": "asr-sign_01-62b270e",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/sign_01.f90",
+    "infile_hash": "467c2bd094955c085a80d6f4eb00ad122dfb895a2327a02ae62f1836",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-sign_01-62b270e.stderr",
+    "stderr_hash": "dab94d75469b4260c70326c06698d247c7f9bbe6c0aeebd631d20ab0",
+    "returncode": 2
+}
