@@ -8,7 +8,7 @@ real, dimension(n), intent(out) :: b
 
 integer :: i
 
-do concurrent (i=1:n) shared(b) local(i)
+do concurrent (i=1:n) shared(b)
   b(i) = 12.91
 end do
 

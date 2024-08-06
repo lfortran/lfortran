@@ -64,6 +64,7 @@ inline std::string get_intrinsic_name(int64_t x) {
         INTRINSIC_NAME_CASE(Isnan)
         INTRINSIC_NAME_CASE(Nearest)
         INTRINSIC_NAME_CASE(CompilerVersion)
+        INTRINSIC_NAME_CASE(CommandArgumentCount)
         INTRINSIC_NAME_CASE(Spacing)
         INTRINSIC_NAME_CASE(Modulo)
         INTRINSIC_NAME_CASE(BesselJ0)
@@ -284,6 +285,8 @@ namespace IntrinsicElementalFunctionRegistry {
             {&Nearest::instantiate_Nearest, &Nearest::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::CompilerVersion),
             {nullptr, &CompilerVersion::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::CommandArgumentCount),
+            {nullptr, &CommandArgumentCount::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Spacing),
             {&Spacing::instantiate_Spacing, &Spacing::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Modulo),
@@ -601,6 +604,8 @@ namespace IntrinsicElementalFunctionRegistry {
             "nearest"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::CompilerVersion),
             "compiler_version"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::CommandArgumentCount),
+            "command_argument_count"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Spacing),
             "spacing"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Modulo),
@@ -1037,7 +1042,7 @@ namespace IntrinsicElementalFunctionRegistry {
     }
 
     static inline create_intrinsic_function get_create_function(const std::string& name) {
-        return  std::get<0>(intrinsic_function_by_name_db.at(name));
+        return std::get<0>(intrinsic_function_by_name_db.at(name));
     }
 
     static inline verify_function get_verify_function(int64_t id) {

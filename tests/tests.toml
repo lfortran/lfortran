@@ -3991,6 +3991,10 @@ filename = "errors/sqrt_neg.f90"
 asr = true
 
 [[test]]
+filename = "errors/idint_real4.f90"
+asr = true
+
+[[test]]
 filename = "errors/ishftc_size.f90"
 asr = true
 
@@ -4080,4 +4084,24 @@ asr = true
 
 [[test]]
 filename = "errors/int_01.f90"
+asr = true
+
+[[test]]
+filename = "errors/ichar_01.f90"
+asr = true
+
+[[test]]
+filename = "errors/do_concurrent1.f90"
+asr = true
+
+[[test]]
+filename = "errors/intrinsics12.f90"
+asr = true
+
+[[test]]
+filename = "errors/intrinsics13.f90"
+asr = true
+
+[[test]]
+filename = "errors/modulo_01.f90"
 asr = true

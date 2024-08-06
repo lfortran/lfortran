@@ -12,6 +12,23 @@ program intrinsics_46
     character(len = 1) :: d = '#'
     character(len=1) :: e(3)
     integer :: x(3)
+    integer, parameter :: i1 = ichar('a')
+    integer(8), parameter :: i2 = ichar('a', kind=8)
+    integer, parameter :: ar1(3) = ichar(['a', '$', '%'])
+    integer(8), parameter :: ar2(3) = ichar(['a', '$', '%'], 8)
+    character(1) :: arr1(3) = ['a', 'A', '@']
+
+    print *, i1
+    if (i1 /= 97) error stop
+    print *, i2
+    if (i2 /= 97) error stop
+    print *, ar1
+    if (any(ar1 /= [97, 36, 37])) error stop
+    print *, ar2
+    if (any(ar2 /= [97, 36, 37])) error stop
+
+    print *, ichar(arr1)
+    if (any(ichar(arr1) /= [97, 65, 64])) error stop
 
     i = ichar(' ')
     j = iachar(' ')
@@ -101,6 +118,5 @@ program intrinsics_46
 
     print *, ichar(e)
     if (any(ichar(e) /= x)) error stop
-
 
 end program intrinsics_46

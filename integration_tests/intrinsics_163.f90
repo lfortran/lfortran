@@ -1,4 +1,8 @@
 program intrinsics_163
+
+    integer :: x, y, size1
+    integer(8) :: a, b, size2
+
     integer(kind=1) :: res_1
     integer(kind=2) :: res_2
     integer(kind=4) :: res_4
@@ -165,5 +169,19 @@ program intrinsics_163
     res_8 = ishftc(10_8, -2_8, 59_8)
     print *, res_8
     if (res_8 /= 288230376151711746_8) error stop
+
+    x = 17
+    y = 4
+    size1 = 6
+
+    a = 8
+    b = 2
+    size2 = 4
+
+    print *, ishftc(a, b, size2)
+    if (ishftc(a, b, size2) /= 2) error stop
+
+    print *, ishftc(x, y, size1)
+    if (ishftc(x, y, size1) /= 20) error stop
 
  end program

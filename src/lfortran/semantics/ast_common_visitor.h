@@ -843,6 +843,7 @@ public:
         {"selected_real_kind", {IntrinsicSignature({"p", "r", "radix"}, 0, 3)}},
         {"nearest", {IntrinsicSignature({"x", "s"}, 2, 2)}},
         {"compiler_version", {IntrinsicSignature({}, 0, 0)}},
+        {"command_argument_count", {IntrinsicSignature({}, 0, 0)}},
         {"ishftc", {IntrinsicSignature({"i", "shift", "size"}, 2, 3)}},
         {"ichar", {IntrinsicSignature({"C", "kind"}, 1, 2)}},
         {"char", {IntrinsicSignature({"I", "kind"}, 1, 2)}},
@@ -5672,7 +5673,7 @@ public:
 
                     std::vector<int> array_indices_in_args = find_array_indices_in_args(args);
                     std::vector<std::string> inquiry_functions = {"epsilon", "radix", "range", "precision", "rank", "tiny", "huge", "bit_size", "new_line", "digits",
-                        "maxexponent", "minexponent", "storage_size"};
+                        "maxexponent", "minexponent", "storage_size", "kind"};
                     if (are_all_args_evaluated &&
                         (std::find(inquiry_functions.begin(), inquiry_functions.end(), var_name) == inquiry_functions.end()) &&
                         !array_indices_in_args.empty())

@@ -10,7 +10,7 @@ integer :: i, j
 ! Initialize y to zero
 y = 0.0
 
-do concurrent (i = 1:size(Ap)-1) shared(Ap, Aj, Ax, x, y) local(i, j)
+do concurrent (i = 1:size(Ap)-1) shared(Ap, Aj, Ax, x, y) local(j)
     do j = Ap(i), Ap(i+1)-1
         y(i) = y(i) + Ax(j)*x(Aj(j))
     end do

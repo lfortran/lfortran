@@ -7,7 +7,7 @@ double precision, intent(out) :: b(n, m)
 
 integer :: i
 
-do concurrent (i=1:n) shared(b, n) local(i)
+do concurrent (i=1:n) shared(b, n)
   b(i, :) = 12.9d0
 end do
 
@@ -23,7 +23,7 @@ integer :: i
 
 res = 0.0d0
 
-do concurrent (i=1:n) reduce(+:res) shared(b, n) local(i)
+do concurrent (i=1:n) reduce(+:res) shared(b, n)
   res = res + sum(b(i, :))
 end do
 

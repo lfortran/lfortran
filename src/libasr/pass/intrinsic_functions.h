@@ -136,6 +136,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     Range,
     Sign,
     CompilerVersion,
+    CommandArgumentCount,
     SignFromValue,
     Logical,
     Nint,
@@ -889,9 +890,9 @@ namespace Scale {
     static inline ASR::expr_t* instantiate_Scale(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("");
+        declare_basic_variables("_lcompilers_scale_" + type_to_str_python(arg_types[0]));
         fill_func_arg("x", arg_types[0]);
-        fill_func_arg("y", arg_types[1]);
+        fill_func_arg("i", arg_types[1]);
         auto result = declare(fn_name, return_type, ReturnVar);
         /*
         * r = scale(x, y)
@@ -899,7 +900,7 @@ namespace Scale {
         */
 
        //TODO: Radix for most of the device is 2, so we can use the b.i2r_t(2, real32) instead of args[1]. Fix (find a way to get the radix of the device and use it here)
-        body.push_back(al, b.Assignment(result, b.Mul(args[0], b.i2r_t(b.Pow(b.i_t(2, arg_types[1]), args[1]), real32))));
+        body.push_back(al, b.Assignment(result, b.Mul(args[0], b.i2r_t(b.Pow(b.i_t(2, arg_types[1]), args[1]), return_type))));
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args, body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
         return b.Call(f_sym, new_args, return_type, nullptr);
@@ -999,6 +1000,54 @@ namespace CompilerVersion {
                 nullptr, 0, 0, return_type, m_value);
     }
 } // namespace CompilerVersion
+
+namespace CommandArgumentCount {
+
+    static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
+        ASRUtils::require_impl(x.n_args == 0,
+            "ASR Verify: command_argument_count() takes no argument",
+            x.base.base.loc, diagnostics);
+    }
+
+    static inline ASR::asr_t* create_CommandArgumentCount(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& /*args*/, diag::Diagnostics& diag) {
+        ASR::ttype_t *return_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+        ASR::expr_t *m_value = nullptr;
+        return_type = ASRUtils::extract_type(return_type);
+        m_value = nullptr;
+        if (diag.has_error()) {
+            return nullptr;
+        }
+        return ASR::make_IntrinsicElementalFunction_t(al, loc, static_cast<int64_t>(IntrinsicElementalFunctions::CompilerVersion),
+                nullptr, 0, 0, return_type, m_value);
+    }
+
+    static inline ASR::expr_t* instantiate_CommandArgumentCount(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/){
+             std::string c_func_name;
+        c_func_name = "_lfortran_command_argument_count";
+        std::string new_name = "_lcompilers_command_argument_count_";
+
+        declare_basic_variables(new_name);
+        if (scope->get_symbol(new_name)) {
+            ASR::symbol_t *s = scope->get_symbol(new_name);
+            ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(s);
+            return b.Call(s, new_args, expr_type(f->m_return_var));
+        }
+        auto result = declare(new_name, return_type, ReturnVar);
+        {
+            ASR::symbol_t *s = b.create_c_func(c_func_name, fn_symtab, return_type, 2, arg_types);
+            fn_symtab->add_symbol(c_func_name, s);
+            dep.push_back(al, s2c(al, c_func_name));
+            body.push_back(al, b.Assignment(result, b.Call(s, args, return_type)));
+        }
+
+        ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, new_symbol);
+        return b.Call(new_symbol, new_args, return_type);
+    }
+} // namespace CommandArgumentCount
 
 namespace Sign {
 
@@ -2520,8 +2569,13 @@ namespace Ifix {
 namespace Idint {
 
     static ASR::expr_t *eval_Idint(Allocator &al, const Location &loc,
-            ASR::ttype_t* /*arg_type*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+            ASR::ttype_t* /*arg_type*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         int val = ASR::down_cast<ASR::RealConstant_t>(expr_value(args[0]))->m_r;
+        int kind = ASRUtils::extract_kind_from_ttype_t(expr_type(args[0]));
+        if(kind == 4) {
+            append_error(diag, "first argument of `idint` must have kind equals to 8", loc);
+            return nullptr;
+        }
         return make_ConstantWithType(make_IntegerConstant_t, val, int32, loc);
     }
 
@@ -2531,6 +2585,12 @@ namespace Idint {
         declare_basic_variables("_lcompilers_idint_" + type_to_str_python(arg_types[0]));
         fill_func_arg("a", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
+
+        int kind = ASRUtils::extract_kind_from_ttype_t(arg_types[0]);
+        if(kind == 4) {
+            throw LCompilersException("first argument of `idint` must have kind equals to 8");
+            return nullptr;
+        }
         body.push_back(al, b.Assignment(result, b.r2i_t(args[0], int32)));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
@@ -3218,15 +3278,20 @@ namespace Nearest {
 namespace Modulo {
 
     static ASR::expr_t *eval_Modulo(Allocator &al, const Location &loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
-
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         if (is_integer(*ASRUtils::expr_type(args[0])) && is_integer(*ASRUtils::expr_type(args[1]))) {
             int64_t a = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
             int64_t b = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
+            if (b == 0) {
+                append_error(diag, "Second argument of modulo cannot be 0", loc);
+            }
             return make_ConstantWithType(make_IntegerConstant_t, a - b * std::floor(std::real(a)/b), t1, loc);
         } else if (is_real(*ASRUtils::expr_type(args[0])) && is_real(*ASRUtils::expr_type(args[1]))) {
             double a = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
             double b = ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r;
+            if (b == 0) {
+                append_error(diag, "Second argument of modulo cannot be 0", loc);
+            }
             return make_ConstantWithType(make_RealConstant_t, a - b * std::floor(a/b), t1, loc);
         }
         return nullptr;
@@ -3672,12 +3737,38 @@ namespace Ishftc {
         return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);
     }
 
-    static inline ASR::expr_t* instantiate_Ishftc(Allocator & /*al*/, const Location & /*loc*/,
-            SymbolTable */*scope*/, Vec<ASR::ttype_t*>& /*arg_types*/, ASR::ttype_t */*return_type*/,
-            Vec<ASR::call_arg_t>& /*new_args*/, int64_t /*overload_id*/) {
-        // TO DO: Implement the runtime function for ISHFTC
-        throw LCompilersException("Runtime implementation for `ishftc` is not yet implemented.");
-        return nullptr;
+    static inline ASR::expr_t* instantiate_Ishftc(Allocator & al, const Location & loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        std::string c_func_name;
+        if(ASRUtils::extract_kind_from_ttype_t(arg_types[1]) == 4){
+            c_func_name = "_lfortran_sishftc";
+        } else {
+            c_func_name = "_lfortran_dishftc";
+        }
+        std::string new_name = "_lcompilers_ishftc_"+ type_to_str_python(arg_types[1]);
+
+        declare_basic_variables(new_name);
+        if (scope->get_symbol(new_name)) {
+            ASR::symbol_t *s = scope->get_symbol(new_name);
+            ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(s);
+            return b.Call(s, new_args, expr_type(f->m_return_var));
+        }
+        fill_func_arg("n", arg_types[0]);
+        fill_func_arg("x", arg_types[1]);
+        fill_func_arg("size", arg_types[2]);
+        auto result = declare(new_name, return_type, ReturnVar);
+        {
+            ASR::symbol_t *s = b.create_c_func(c_func_name, fn_symtab, return_type, 3, arg_types);
+            fn_symtab->add_symbol(c_func_name, s);
+            dep.push_back(al, s2c(al, c_func_name));
+            body.push_back(al, b.Assignment(result, b.Call(s, args, return_type)));
+        }
+
+        ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, new_symbol);
+        return b.Call(new_symbol, new_args, return_type);
     }
 
 } // namespace Ishftc
@@ -4129,8 +4220,13 @@ namespace Adjustr {
 namespace Ichar {
 
     static ASR::expr_t *eval_Ichar(Allocator &al, const Location &loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         char* str = ASR::down_cast<ASR::StringConstant_t>(args[0])->m_s;
+        int64_t len = std::strlen(str);
+        if (len != 1) {
+            append_error(diag, "Argument to Ichar must have length one", loc);
+            return nullptr;
+        }
         char first_char = str[0];
         int result = (int)first_char;
         return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);
@@ -5312,8 +5408,7 @@ namespace Max {
         }
     }
 
-    static inline ASR::asr_t* create_Max(
-        Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args,
+    static inline ASR::asr_t* create_Max(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args,
         diag::Diagnostics& diag) {
         bool is_compile_time = true;
         for(size_t i=0; i<100;i++){
@@ -5324,9 +5419,14 @@ namespace Max {
             return nullptr;
         }
         ASR::ttype_t *arg_type = ASRUtils::expr_type(args[0]);
-        for(size_t i=0;i<args.size();i++){
-            if (!ASRUtils::check_equal_type(arg_type, ASRUtils::expr_type(args[i]))) {
-                append_error(diag, "All arguments to max0 must be of the same type and kind", loc);
+        int kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
+        for(size_t i=1; i<args.size(); i++) {
+            if (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[i])) != kind) {
+                diag.semantic_warning_label("Different kinds of args in max0 is a non-standard extension", {loc}, 
+                "help: ensure all arguments have the same kind to make it standard");
+            }
+            if (arg_type->type != ASRUtils::expr_type(args[i])->type) {
+                append_error(diag, "All arguments to max0 must be of the same type", loc);
             return nullptr;
             }
         }
@@ -5470,9 +5570,14 @@ namespace Min {
             return nullptr;
         }
         ASR::ttype_t *arg_type = ASRUtils::expr_type(args[0]);
-        for(size_t i=0;i<args.size();i++){
-            if (!ASRUtils::check_equal_type(arg_type, ASRUtils::expr_type(args[i]))) {
-                append_error(diag, "All arguments to min0 must be of the same type and kind", loc);
+        int kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
+        for(size_t i=1; i<args.size(); i++){
+            if (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[i])) != kind) {
+                diag.semantic_warning_label("Different kinds of args in max0 is a non-standard extension", {loc}, 
+                "help: ensure all arguments have the same kind to make it standard");
+            }
+            if (arg_type->type != ASRUtils::expr_type(args[i])->type) {
+                append_error(diag, "All arguments to min0 must be of the same type", loc);
                 return nullptr;
             }
         }
