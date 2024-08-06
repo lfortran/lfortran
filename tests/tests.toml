@@ -4101,3 +4101,7 @@ asr = true
 [[test]]
 filename = "errors/intrinsics13.f90"
 asr = true
+
+[[test]]
+filename = "errors/modulo_01.f90"
+asr = true
