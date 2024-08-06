@@ -229,6 +229,22 @@ ASR::ttype_t* create_array_type_with_empty_dims(Allocator& al,
         ASRUtils::extract_type(value_type), empty_dims.p, empty_dims.size());
 }
 
+ASR::expr_t* create_temporary_variable_for_scalar(Allocator& al,
+    ASR::expr_t* value, SymbolTable* scope, std::string name_hint) {
+    ASR::ttype_t* value_type = ASRUtils::expr_type(value);
+    LCOMPILERS_ASSERT(!ASRUtils::is_array(value_type));
+
+    ASR::ttype_t* var_type = ASRUtils::duplicate_type(al, ASRUtils::extract_type(value_type));
+    std::string var_name = scope->get_unique_name("__libasr_created_" + name_hint);
+    ASR::symbol_t* temporary_variable = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(
+        al, value->base.loc, scope, s2c(al, var_name), nullptr, 0, ASR::intentType::Local,
+        nullptr, nullptr, ASR::storage_typeType::Default, var_type, nullptr, ASR::abiType::Source,
+        ASR::accessType::Public, ASR::presenceType::Required, false));
+    scope->add_symbol(var_name, temporary_variable);
+
+    return ASRUtils::EXPR(ASR::make_Var_t(al, temporary_variable->base.loc, temporary_variable));
+}
+
 ASR::expr_t* create_temporary_variable_for_array(Allocator& al,
     ASR::expr_t* value, SymbolTable* scope, std::string name_hint,
     bool is_pointer_required=false) {
@@ -719,6 +735,19 @@ void insert_allocate_stmt_for_struct(Allocator& al, ASR::expr_t* temporary_var,
     } \
     m_body = current_body_vec.p; n_body = current_body_vec.size(); \
     current_body = current_body_copy;
+
+ASR::expr_t* create_and_declare_temporary_variable_for_scalar(
+    ASR::expr_t* scalar_expr, const std::string& name_hint, Allocator& al,
+    Vec<ASR::stmt_t*>*& current_body, SymbolTable* current_scope,
+    ExprsWithTargetType& exprs_with_target) {
+    const Location& loc = scalar_expr->base.loc;
+    ASR::expr_t* scalar_var_temporary = create_temporary_variable_for_scalar(
+        al, scalar_expr, current_scope, name_hint);
+    exprs_with_target[scalar_expr] = std::make_pair(scalar_var_temporary, targetType::GeneratedTarget);
+    current_body->push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(
+        al, loc, scalar_var_temporary, scalar_expr, nullptr)));
+    return scalar_var_temporary;
+}
 
 ASR::expr_t* create_and_allocate_temporary_variable_for_array(
     ASR::expr_t* array_expr, const std::string& name_hint, Allocator& al,
@@ -1251,6 +1280,9 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
             *current_expr, name_hint, al, current_body, \
             current_scope, exprs_with_target); \
 
+    #define force_replace_current_expr_for_scalar(name_hint) *current_expr = create_and_declare_temporary_variable_for_scalar( \
+                *current_expr, name_hint, al, current_body, \
+                current_scope, exprs_with_target); \
 
     #define replace_current_expr(name_hint) is_current_expr_linked_to_target_then_return \
         if( ASRUtils::is_array(x->m_type) ) { \
@@ -1282,8 +1314,12 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     }
 
     void replace_IntrinsicArrayFunction(ASR::IntrinsicArrayFunction_t* x) {
-        replace_current_expr(std::string("_intrinsic_array_function_") +
-            ASRUtils::get_array_intrinsic_name(x->m_arr_intrinsic_id))
+        std::string name_hint = std::string("_intrinsic_array_function_") + ASRUtils::get_array_intrinsic_name(x->m_arr_intrinsic_id);
+        if (!(is_current_expr_linked_to_target || ASRUtils::is_array(x->m_type))) {
+            force_replace_current_expr_for_scalar(name_hint)
+        } else {
+            replace_current_expr(name_hint)
+        }
     }
 
     void replace_IntrinsicImpureFunction(ASR::IntrinsicImpureFunction_t* x) {
@@ -1582,6 +1618,10 @@ class ReplaceExprWithTemporaryVisitor:
     ASR::is_a<ASR::symbol_t>(*asr_owner) && \
     ASR::is_a<ASR::Enum_t>(*ASR::down_cast<ASR::symbol_t>(asr_owner))
 
+#define check_if_ASR_owner_is_struct(asr_owner) asr_owner && \
+    ASR::is_a<ASR::symbol_t>(*asr_owner) && \
+    ASR::is_a<ASR::Struct_t>(*ASR::down_cast<ASR::symbol_t>(asr_owner))
+
 class ReplaceModuleVarWithValue:
     public ASR::BaseExprReplacer<ReplaceModuleVarWithValue> {
 
@@ -1637,6 +1677,7 @@ class TransformVariableInitialiser:
     void visit_Variable(const ASR::Variable_t &x) {
         if( (check_if_ASR_owner_is_module(x.m_parent_symtab->asr_owner)) ||
             (check_if_ASR_owner_is_enum(x.m_parent_symtab->asr_owner)) ||
+            (check_if_ASR_owner_is_struct(x.m_parent_symtab->asr_owner)) ||
             x.m_storage == ASR::storage_typeType::Parameter ) {
             return ;
         }
@@ -2006,6 +2047,7 @@ class VerifySimplifierASROutput:
             ASRUtils::is_aggregate_type(x.m_type)) &&
             !(check_if_ASR_owner_is_module(x.m_parent_symtab->asr_owner)) &&
             !(check_if_ASR_owner_is_enum(x.m_parent_symtab->asr_owner)) &&
+            !(check_if_ASR_owner_is_struct(x.m_parent_symtab->asr_owner)) &&
             x.m_storage != ASR::storage_typeType::Parameter ) {
             LCOMPILERS_ASSERT(x.m_symbolic_value == nullptr);
             LCOMPILERS_ASSERT(x.m_value == nullptr);
