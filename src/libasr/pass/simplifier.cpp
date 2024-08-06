@@ -973,6 +973,10 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         // Do nothing
     }
 
+    void visit_ArrayBroadcast(const ASR::ArrayBroadcast_t& /*x*/) {
+        // Do nothing
+    }
+
     void visit_Print(const ASR::Print_t& x) {
         ASR::Print_t& xx = const_cast<ASR::Print_t&>(x);
         visit_IO(xx.m_values, xx.n_values, "print");
