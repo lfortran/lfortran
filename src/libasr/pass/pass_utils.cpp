@@ -149,7 +149,6 @@ namespace LCompilers {
                 ai.m_step = nullptr;
                 args.push_back(al, ai);
             }
-<<<<<<< HEAD
             ASR::expr_t* arr_expr_copy = arr_expr;
             ASR::expr_t** original_arr_expr =&arr_expr_copy;
             ASR::expr_t** array_ref_container_node = nullptr; // If we have a structInstanceMember hierarch, It'd be used to emplace the resulting array_ref in the correct node.
@@ -182,9 +181,6 @@ namespace LCompilers {
                     break;
                 }
             }
-=======
-            ASR::expr_t* array_ref = nullptr;
->>>>>>> main
             ASR::ttype_t* array_ref_type = ASRUtils::duplicate_type_without_dims(
                 al, ASRUtils::expr_type(arr_expr), arr_expr->base.loc);
             fix_struct_type_scope()
