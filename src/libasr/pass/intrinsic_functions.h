@@ -3274,15 +3274,20 @@ namespace Nearest {
 namespace Modulo {
 
     static ASR::expr_t *eval_Modulo(Allocator &al, const Location &loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
-
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         if (is_integer(*ASRUtils::expr_type(args[0])) && is_integer(*ASRUtils::expr_type(args[1]))) {
             int64_t a = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
             int64_t b = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
+            if (b == 0) {
+                append_error(diag, "Second argument of modulo cannot be 0", loc);
+            }
             return make_ConstantWithType(make_IntegerConstant_t, a - b * std::floor(std::real(a)/b), t1, loc);
         } else if (is_real(*ASRUtils::expr_type(args[0])) && is_real(*ASRUtils::expr_type(args[1]))) {
             double a = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
             double b = ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r;
+            if (b == 0) {
+                append_error(diag, "Second argument of modulo cannot be 0", loc);
+            }
             return make_ConstantWithType(make_RealConstant_t, a - b * std::floor(a/b), t1, loc);
         }
         return nullptr;
