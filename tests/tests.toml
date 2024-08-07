@@ -4109,3 +4109,7 @@ asr = true
 [[test]]
 filename = "errors/sign_01.f90"
 asr = true
+
+[[test]]
+filename = "errors/exit1.f90"
+run = true
