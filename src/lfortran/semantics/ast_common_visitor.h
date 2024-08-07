@@ -892,7 +892,7 @@ public:
         {"dimag", {"aimag", {"complex8"}}},
         {"imag", {"aimag", {"complex"}}},
         {"imagpart", {"aimag", {"complex"}}},
-        {"realpart", {"real", {"complex"}}},
+        {"realpart", {"real", {"complex" ,"int4"}}},
         {"isign", {"sign", {"int4", "int4"}}},
         {"dsign", {"sign", {"real8", "real8"}}},
         {"dgamma", {"gamma", {"real8"}}},

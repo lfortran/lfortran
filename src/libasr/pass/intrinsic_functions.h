@@ -2264,14 +2264,14 @@ namespace Dim {
         * }
         */
         if (is_real(*arg_types[0])) {
-            body.push_back(al, b.If(b.Gt(args[0], args[1]), {
-                b.Assignment(result, b.Sub(args[0], args[1]))
+            body.push_back(al, b.If(b.Gt(args[0], b.r2r_t(args[1], arg_types[0])), {
+                b.Assignment(result, b.Sub(args[0], b.r2r_t(args[1], arg_types[0])))
             }, {
                 b.Assignment(result, b.f_t(0.0, arg_types[0]))
             }));
         } else {
-            body.push_back(al, b.If(b.Gt(args[0], args[1]), {
-                b.Assignment(result, b.Sub(args[0], args[1]))
+            body.push_back(al, b.If(b.Gt(args[0], b.i2i_t(args[1], arg_types[0])), {
+                b.Assignment(result, b.Sub(args[0], b.i2i_t(args[1], arg_types[0])))
             }, {
                 b.Assignment(result, b.i_t(0, arg_types[0]))
             }));
