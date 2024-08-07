@@ -1,3 +1,4 @@
+
 #ifndef LIBASR_PASS_INTRINSIC_SUBROUTINES_H
 #define LIBASR_PASS_INTRINSIC_SUBROUTINES_H
 
@@ -10,7 +11,7 @@ namespace LCompilers::ASRUtils {
 /*
 To add a new subroutine implementation,
 
-1. Create a new namespace like, `Sin`, `LogGamma` in this file.
+1. Create a new namespace like, `RandomNumber`, `RandomInit` in this file.
 2. In the above created namespace add `eval_*`, `instantiate_*`, and `create_*`.
 3. Then register in the maps present in `IntrinsicImpureSubroutineRegistry`.
 
@@ -21,6 +22,7 @@ the code size.
 enum class IntrinsicImpureSubroutines : int64_t {
     RandomNumber,
     RandomInit,
+    Exit,
     // ...
 };
 
@@ -165,6 +167,31 @@ namespace RandomNumber {
     }
 
 } // namespace RandomNumber
+
+namespace Exit {
+
+    static inline void verify_args(const ASR::IntrinsicImpureSubroutine_t& x, diag::Diagnostics& diagnostics) {
+        if (x.n_args == 1)  {
+            ASR::ttype_t* arg_type = ASRUtils::expr_type(x.m_args[0]);
+            int kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
+            ASRUtils::require_impl(ASRUtils::is_integer(*arg_type) && (kind == 4), "Overload Id for random_number expected to be 0, found " + std::to_string(x.m_overload_id), x.base.base.loc, diagnostics);
+        }
+    }
+
+    static inline ASR::asr_t* create_Exit(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
+        Vec<ASR::expr_t*> m_args; m_args.reserve(al, 1);
+        ASR::expr_t* arg = args.size() >= 0 ? args[0] : nullptr;
+        return ASR::make_ErrorStop_t(al, loc, arg);
+    }
+
+    static inline ASR::stmt_t* instantiate_Exit(Allocator &/*al*/, const Location &/*loc*/,
+            SymbolTable */*scope*/, Vec<ASR::ttype_t*>& /*arg_types*/,
+            Vec<ASR::call_arg_t>& /*new_args*/, int64_t /*overload_id*/) {
+        // Do Nothing
+        return nullptr;
+    }
+
+} // namespace Exit
 
 } // namespace LCompilers::ASRUtils
 
