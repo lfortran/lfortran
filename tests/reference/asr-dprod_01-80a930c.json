@@ -1,0 +1,13 @@
+{
+    "basename": "asr-dprod_01-80a930c",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/dprod_01.f90",
+    "infile_hash": "d1ce33c89bee90c6db80924ecb910e367598d14758aafaa9303aeeb1",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-dprod_01-80a930c.stderr",
+    "stderr_hash": "a45e6b230aec1aea84144d6576b349447ec7a0edbfda5a5fc097cef0",
+    "returncode": 2
+}
