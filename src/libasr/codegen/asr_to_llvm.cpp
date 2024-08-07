@@ -9226,8 +9226,12 @@ public:
                     ASR::ttype_t* passed_arg_type = ASRUtils::expr_type(passed_arg);
                     if (ASR::is_a<ASR::ArrayItem_t>(*passed_arg)) {
                         if (!ASRUtils::types_equal(expected_arg_type, passed_arg_type, true)) {
-                            throw CodeGenError("Type mismatch in subroutine call, expected `" + ASRUtils::type_to_str_python(expected_arg_type)
-                                    + "`, passed `" + ASRUtils::type_to_str_python(passed_arg_type) + "`", x.m_args[i].m_value->base.loc);
+                            throw CodeGenError(
+                                "Type mismatch in subroutine call, expected `"
+                                    + ASRUtils::type_to_str_python(expected_arg_type)
+                                    + "`, passed `" + ASRUtils::type_to_str_python(passed_arg_type)
+                                    + "`. Hint: Use the `--legacy-array-sections` flag to compile.",
+                                x.m_args[i].m_value->base.loc);
                         }
                     }
                 }
