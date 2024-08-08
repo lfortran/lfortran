@@ -4109,3 +4109,11 @@ asr = true
 [[test]]
 filename = "errors/sign_01.f90"
 asr = true
+
+[[test]]
+filename = "errors/dprod_01.f90"
+asr = true
+
+[[test]]
+filename = "errors/ifix_01.f90"
+asr = true

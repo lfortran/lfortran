@@ -908,9 +908,14 @@ namespace Scale {
 
 namespace Dprod {
     static ASR::expr_t *eval_Dprod(Allocator &al, const Location &loc,
-            ASR::ttype_t* return_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+            ASR::ttype_t* return_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         double value_X = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
         double value_Y = ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r;
+        if (ASRUtils::extract_kind_from_ttype_t(expr_type(args[0])) != 4 ||
+            ASRUtils::extract_kind_from_ttype_t(expr_type(args[1])) != 4) {
+            append_error(diag, "Arguments to dprod must be real(4)", loc);
+            return nullptr;
+        }
         double result = value_X * value_Y;
         ASRUtils::ASRBuilder b(al, loc);
         return b.f_t(result, return_type);
@@ -919,9 +924,14 @@ namespace Dprod {
     static inline ASR::expr_t* instantiate_Dprod(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("");
+        declare_basic_variables("_lcompilers_dprod_" + type_to_str_python(arg_types[0]));
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("y", arg_types[1]);
+        if (ASRUtils::extract_kind_from_ttype_t(arg_types[0]) != 4 ||
+            ASRUtils::extract_kind_from_ttype_t(arg_types[1]) != 4) {
+            LCompilersException("Arguments to dprod must be default real");
+            return nullptr;
+        }
         auto result = declare(fn_name, return_type, ReturnVar);
         /*
         * r = dprod(x, y)
@@ -2544,8 +2554,12 @@ namespace Sngl {
 namespace Ifix {
 
     static ASR::expr_t *eval_Ifix(Allocator &al, const Location &loc,
-            ASR::ttype_t* /*arg_type*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+            ASR::ttype_t* /*arg_type*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         int val = ASR::down_cast<ASR::RealConstant_t>(expr_value(args[0]))->m_r;
+        if (ASRUtils::extract_kind_from_ttype_t(expr_type(args[0])) != 4) {
+            append_error(diag, "first argument of `ifix` must have kind equals to 4", loc);
+            return nullptr;
+        }
         return make_ConstantWithType(make_IntegerConstant_t, val, int32, loc);
     }
 
@@ -2553,6 +2567,10 @@ namespace Ifix {
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
         declare_basic_variables("_lcompilers_ifix_" + type_to_str_python(arg_types[0]));
+        if (ASRUtils::extract_kind_from_ttype_t(arg_types[0]) != 4) {
+            throw LCompilersException("first argument of `ifix` must have kind equals to 4");
+            return nullptr;
+        }
         fill_func_arg("a", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
         body.push_back(al, b.Assignment(result, b.r2i_t(args[0], int32)));
