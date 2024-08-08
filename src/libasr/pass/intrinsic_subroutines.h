@@ -180,7 +180,7 @@ namespace Exit {
 
     static inline ASR::asr_t* create_Exit(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
         Vec<ASR::expr_t*> m_args; m_args.reserve(al, 1);
-        ASR::expr_t* arg = args.size() >= 0 ? args[0] : nullptr;
+        ASR::expr_t* arg = (((int) args.size()) >= 0) ? args[0] : nullptr;
         return ASR::make_Stop_t(al, loc, arg);
     }
 
