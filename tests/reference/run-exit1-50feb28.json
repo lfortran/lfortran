@@ -1,0 +1,13 @@
+{
+    "basename": "run-exit1-50feb28",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/errors/exit1.f90",
+    "infile_hash": "8074365cb8dd77ab0721f7afd7ed1e17b404a7e131b62a75127b7cd4",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "run-exit1-50feb28.stdout",
+    "stdout_hash": "61f0d87e355fe9206f69359bd0d77b9ac928ec3fdf45d6c625f90bce",
+    "stderr": "run-exit1-50feb28.stderr",
+    "stderr_hash": "a35a6c00acf0af2dd99d968ae54683c0fd525fd273abd6dd71a368cb",
+    "returncode": 0
+}

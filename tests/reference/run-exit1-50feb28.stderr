@@ -1,0 +1,6 @@
+style suggestion: Use '==' instead of '.eq.'
+ --> tests/errors/exit1.f90:6:12
+  |
+6 |     if ( i .eq. 5 ) then
+  |            ^^^^ help: write this as '=='
+STOP
