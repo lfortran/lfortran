@@ -3105,21 +3105,7 @@ public:
             ASR::expr_t *expr = ASRUtils::EXPR(tmp);
             body.push_back(al, expr);
         }
-
-        if (fmt && ASR::is_a<ASR::Character_t>(*ASRUtils::expr_type(fmt))) {
-            ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Character_t(
-                        al, x.base.base.loc, -1, 0, nullptr));
-            ASR::expr_t* string_format = ASRUtils::EXPR(ASRUtils::make_StringFormat_t_util(al, fmt->base.loc,
-                fmt, body.p, body.size(), ASR::string_format_kindType::FormatFortran,
-                type, nullptr));
-
-            Vec<ASR::expr_t*> print_args;
-            print_args.reserve(al, 1);
-            print_args.push_back(al, string_format);
-
-            tmp = ASR::make_Print_t(al, x.base.base.loc,
-                print_args.p, print_args.size(), nullptr, nullptr);
-        } else if (fmt && ASR::is_a<ASR::IntegerConstant_t>(*fmt)) {
+        if (fmt && ASR::is_a<ASR::IntegerConstant_t>(*fmt)) {
             ASR::IntegerConstant_t *f = ASR::down_cast<ASR::IntegerConstant_t>(fmt);
             int64_t label = f->m_n;
             if (format_statements.find(label) == format_statements.end()) {
@@ -3145,8 +3131,18 @@ public:
             tmp = ASR::make_Print_t(al, x.base.base.loc,
                 print_args.p, print_args.size(), nullptr, nullptr);
         } else {
+            ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Character_t(
+                        al, x.base.base.loc, -1, 0, nullptr));
+            ASR::expr_t* string_format = ASRUtils::EXPR(ASRUtils::make_StringFormat_t_util(al, fmt?fmt->base.loc:x.base.base.loc,
+                fmt, body.p, body.size(), ASR::string_format_kindType::FormatFortran,
+                type, nullptr));
+
+            Vec<ASR::expr_t*> print_args;
+            print_args.reserve(al, 1);
+            print_args.push_back(al, string_format);
+
             tmp = ASR::make_Print_t(al, x.base.base.loc,
-                body.p, body.size(), nullptr, nullptr);
+                print_args.p, print_args.size(), nullptr, nullptr);
         }
     }
 
