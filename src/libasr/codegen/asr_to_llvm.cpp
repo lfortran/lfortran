@@ -8099,14 +8099,18 @@ public:
                                         loc);
                 }
             }
+            llvm::Value* d = tmp;
+            if(!is_array){ //cast all integers to int64.
+                d =builder->CreateSExt(tmp, llvm_utils->getIntType(8, false));
+            } 
             if (add_type_as_int) {        
                 if(!is_array){
                     type_as_int = llvm::ConstantInt::get(context, llvm::APInt(32, number_of_type)); 
                     args.push_back(type_as_int);
-                    args.push_back(tmp);
+                    args.push_back(d);
                 }
             } else {
-                args.push_back(tmp);
+                args.push_back(d);
             }
         } else if (ASRUtils::is_unsigned_integer(*t)) {
             switch( a_kind ) {
