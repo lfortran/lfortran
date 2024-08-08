@@ -52,6 +52,7 @@ namespace IntrinsicImpureSubroutineRegistry {
         create_intrinsic_subroutine>& intrinsic_subroutine_by_name_db = {
                 {"random_number", &RandomNumber::create_RandomNumber},
                 {"random_init", &RandomInit::create_RandomInit},
+                {"exit", &Exit::create_Exit},
     };
 
     static inline bool is_intrinsic_subroutine(const std::string& name) {
