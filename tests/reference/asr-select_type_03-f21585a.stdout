@@ -152,9 +152,15 @@
                                     []
                                     [(Var 9 tab)]
                                     [(Print
-                                        [(StringConstant
-                                            "inside check_table"
-                                            (Character 1 18 ())
+                                        [(StringFormat
+                                            ()
+                                            [(StringConstant
+                                                "inside check_table"
+                                                (Character 1 18 ())
+                                            )]
+                                            FormatFortran
+                                            (Character -1 0 ())
+                                            ()
                                         )]
                                         ()
                                         ()

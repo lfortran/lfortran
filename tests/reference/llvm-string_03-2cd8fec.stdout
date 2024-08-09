@@ -89,7 +89,8 @@ define i32 @main(i32 %0, i8** %1) {
   %40 = load i8*, i8** %38, align 8
   store i8* %40, i8** %combined, align 8
   %41 = load i8*, i8** %combined, align 8
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @8, i32 0, i32 0), i8* %41, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @7, i32 0, i32 0))
+  %42 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 2, i8* null, i32 7, i8* %41)
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @8, i32 0, i32 0), i8* %42, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @7, i32 0, i32 0))
   br label %return
 
 return:                                           ; preds = %.entry
@@ -105,5 +106,7 @@ declare void @_lfortran_string_init(i32, i8*)
 declare void @_lfortran_strcpy(i8**, i8*, i8)
 
 declare void @_lfortran_strcat(i8**, i8**, i8**)
+
+declare i8* @_lcompilers_string_format_fortran(i32, i8*, ...)
 
 declare void @_lfortran_printf(i8*, ...)

@@ -172,12 +172,18 @@
                         ()
                     )
                     (Print
-                        [(FunctionCall
-                            2 f
+                        [(StringFormat
                             ()
-                            [((Var 2 hlgth))]
-                            (Real 8)
-                            ()
+                            [(FunctionCall
+                                2 f
+                                ()
+                                [((Var 2 hlgth))]
+                                (Real 8)
+                                ()
+                                ()
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
                             ()
                         )]
                         ()
@@ -391,12 +397,18 @@
                         ()
                     )
                     (Print
-                        [(FunctionCall
-                            3 c
+                        [(StringFormat
                             ()
-                            [((Var 3 d))]
-                            (Real 8)
-                            ()
+                            [(FunctionCall
+                                3 c
+                                ()
+                                [((Var 3 d))]
+                                (Real 8)
+                                ()
+                                ()
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
                             ()
                         )]
                         ()
@@ -563,12 +575,18 @@
                         ()
                     )
                     (Print
-                        [(FunctionCall
-                            4 a
+                        [(StringFormat
                             ()
-                            [((Var 4 b))]
-                            (Real 8)
-                            ()
+                            [(FunctionCall
+                                4 a
+                                ()
+                                [((Var 4 b))]
+                                (Real 8)
+                                ()
+                                ()
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
                             ()
                         )]
                         ()

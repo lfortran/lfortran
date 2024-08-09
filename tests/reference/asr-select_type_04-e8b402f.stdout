@@ -152,9 +152,15 @@
                                     []
                                     [(Var 7 tab)]
                                     [(Print
-                                        [(StringConstant
-                                            "inside check_table"
-                                            (Character 1 18 ())
+                                        [(StringFormat
+                                            ()
+                                            [(StringConstant
+                                                "inside check_table"
+                                                (Character 1 18 ())
+                                            )]
+                                            FormatFortran
+                                            (Character -1 0 ())
+                                            ()
                                         )]
                                         ()
                                         ()
@@ -611,9 +617,15 @@
                     select_type4
                     []
                     [(Print
-                        [(StringConstant
-                            "running select_type4 main program"
-                            (Character 1 33 ())
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "running select_type4 main program"
+                                (Character 1 33 ())
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
                         )]
                         ()
                         ()

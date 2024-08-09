@@ -12,9 +12,15 @@
                     modules_40
                     []
                     [(Print
-                        [(StringConstant
-                            "executing modules_40"
-                            (Character 1 20 ())
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "executing modules_40"
+                                (Character 1 20 ())
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
                         )]
                         ()
                         ()

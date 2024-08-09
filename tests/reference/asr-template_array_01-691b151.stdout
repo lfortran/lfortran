@@ -742,13 +742,19 @@
                                         ()
                                     )
                                     (Print
-                                        [(ArrayItem
-                                            (Var 7 a)
-                                            [(()
-                                            (IntegerConstant 1 (Integer 4) Decimal)
-                                            ())]
-                                            (Integer 4)
-                                            ColMajor
+                                        [(StringFormat
+                                            ()
+                                            [(ArrayItem
+                                                (Var 7 a)
+                                                [(()
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                ())]
+                                                (Integer 4)
+                                                ColMajor
+                                                ()
+                                            )]
+                                            FormatFortran
+                                            (Character -1 0 ())
                                             ()
                                         )]
                                         ()
@@ -779,13 +785,19 @@
                                         ()
                                     )
                                     (Print
-                                        [(ArrayItem
-                                            (Var 7 a)
-                                            [(()
-                                            (IntegerConstant 1 (Integer 4) Decimal)
-                                            ())]
-                                            (Integer 4)
-                                            ColMajor
+                                        [(StringFormat
+                                            ()
+                                            [(ArrayItem
+                                                (Var 7 a)
+                                                [(()
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                ())]
+                                                (Integer 4)
+                                                ColMajor
+                                                ()
+                                            )]
+                                            FormatFortran
+                                            (Character -1 0 ())
                                             ()
                                         )]
                                         ()
@@ -805,13 +817,19 @@
                                         ()
                                     )
                                     (Print
-                                        [(ArrayItem
-                                            (Var 7 a)
-                                            [(()
-                                            (IntegerConstant 1 (Integer 4) Decimal)
-                                            ())]
-                                            (Integer 4)
-                                            ColMajor
+                                        [(StringFormat
+                                            ()
+                                            [(ArrayItem
+                                                (Var 7 a)
+                                                [(()
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                ())]
+                                                (Integer 4)
+                                                ColMajor
+                                                ()
+                                            )]
+                                            FormatFortran
+                                            (Character -1 0 ())
                                             ()
                                         )]
                                         ()
@@ -848,13 +866,19 @@
                                         ()
                                     )
                                     (Print
-                                        [(ArrayItem
-                                            (Var 7 a)
-                                            [(()
-                                            (IntegerConstant 1 (Integer 4) Decimal)
-                                            ())]
-                                            (Integer 4)
-                                            ColMajor
+                                        [(StringFormat
+                                            ()
+                                            [(ArrayItem
+                                                (Var 7 a)
+                                                [(()
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                ())]
+                                                (Integer 4)
+                                                ColMajor
+                                                ()
+                                            )]
+                                            FormatFortran
+                                            (Character -1 0 ())
                                             ()
                                         )]
                                         ()

@@ -40,9 +40,15 @@
                             ()
                         )
                         [(Print
-                            [(StringConstant
-                                "h"
-                                (Character 1 1 ())
+                            [(StringFormat
+                                ()
+                                [(StringConstant
+                                    "h"
+                                    (Character 1 1 ())
+                                )]
+                                FormatFortran
+                                (Character -1 0 ())
+                                ()
                             )]
                             ()
                             ()

@@ -62,7 +62,13 @@
                                                     []
                                                     []
                                                     [(Print
-                                                        [(IntegerConstant 5 (Integer 4) Decimal)]
+                                                        [(StringFormat
+                                                            ()
+                                                            [(IntegerConstant 5 (Integer 4) Decimal)]
+                                                            FormatFortran
+                                                            (Character -1 0 ())
+                                                            ()
+                                                        )]
                                                         ()
                                                         ()
                                                     )]
@@ -91,9 +97,15 @@
                                     []
                                     []
                                     [(Print
-                                        [(StringConstant
-                                            "b()"
-                                            (Character 1 3 ())
+                                        [(StringFormat
+                                            ()
+                                            [(StringConstant
+                                                "b()"
+                                                (Character 1 3 ())
+                                            )]
+                                            FormatFortran
+                                            (Character -1 0 ())
+                                            ()
                                         )]
                                         ()
                                         ()

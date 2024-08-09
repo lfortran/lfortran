@@ -335,196 +335,286 @@
                         ()
                     )
                     (Print
-                        [(IntrinsicElementalFunction
-                            SelectedIntKind
-                            [(IntegerConstant 5 (Integer 4) Decimal)]
-                            0
-                            (Integer 4)
-                            (IntegerConstant 4 (Integer 4) Decimal)
-                        )
-                        (Var 2 k1)]
+                        [(StringFormat
+                            ()
+                            [(IntrinsicElementalFunction
+                                SelectedIntKind
+                                [(IntegerConstant 5 (Integer 4) Decimal)]
+                                0
+                                (Integer 4)
+                                (IntegerConstant 4 (Integer 4) Decimal)
+                            )
+                            (Var 2 k1)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
                     (Print
-                        [(IntrinsicElementalFunction
-                            SelectedIntKind
-                            [(IntegerConstant 5 (Integer 4) Decimal)]
-                            0
-                            (Integer 4)
-                            (IntegerConstant 4 (Integer 4) Decimal)
-                        )
-                        (Var 2 k2)]
+                        [(StringFormat
+                            ()
+                            [(IntrinsicElementalFunction
+                                SelectedIntKind
+                                [(IntegerConstant 5 (Integer 4) Decimal)]
+                                0
+                                (Integer 4)
+                                (IntegerConstant 4 (Integer 4) Decimal)
+                            )
+                            (Var 2 k2)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
                     (Print
-                        [(IntrinsicElementalFunction
-                            SelectedIntKind
-                            [(IntegerConstant 5 (Integer 8) Decimal)]
-                            0
-                            (Integer 4)
-                            (IntegerConstant 4 (Integer 4) Decimal)
-                        )
-                        (Var 2 k3)]
+                        [(StringFormat
+                            ()
+                            [(IntrinsicElementalFunction
+                                SelectedIntKind
+                                [(IntegerConstant 5 (Integer 8) Decimal)]
+                                0
+                                (Integer 4)
+                                (IntegerConstant 4 (Integer 4) Decimal)
+                            )
+                            (Var 2 k3)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
                     (Print
-                        [(IntrinsicElementalFunction
-                            SelectedIntKind
-                            [(IntegerConstant 8 (Integer 4) Decimal)]
-                            0
-                            (Integer 4)
-                            (IntegerConstant 4 (Integer 4) Decimal)
-                        )
-                        (Var 2 k4)]
+                        [(StringFormat
+                            ()
+                            [(IntrinsicElementalFunction
+                                SelectedIntKind
+                                [(IntegerConstant 8 (Integer 4) Decimal)]
+                                0
+                                (Integer 4)
+                                (IntegerConstant 4 (Integer 4) Decimal)
+                            )
+                            (Var 2 k4)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
                     (Print
-                        [(IntrinsicElementalFunction
-                            SelectedIntKind
-                            [(IntegerConstant 10 (Integer 4) Decimal)]
-                            0
-                            (Integer 4)
-                            (IntegerConstant 8 (Integer 4) Decimal)
-                        )
-                        (Var 2 k5)]
+                        [(StringFormat
+                            ()
+                            [(IntrinsicElementalFunction
+                                SelectedIntKind
+                                [(IntegerConstant 10 (Integer 4) Decimal)]
+                                0
+                                (Integer 4)
+                                (IntegerConstant 8 (Integer 4) Decimal)
+                            )
+                            (Var 2 k5)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
                     (Print
-                        [(IntrinsicElementalFunction
-                            SelectedRealKind
-                            [(IntegerConstant 5 (Integer 4) Decimal)
-                            (IntegerConstant 0 (Integer 4) Decimal)
-                            (IntegerConstant 2 (Integer 4) Decimal)]
-                            0
-                            (Integer 4)
-                            (IntegerConstant 4 (Integer 4) Decimal)
-                        )
-                        (Var 2 k6)]
+                        [(StringFormat
+                            ()
+                            [(IntrinsicElementalFunction
+                                SelectedRealKind
+                                [(IntegerConstant 5 (Integer 4) Decimal)
+                                (IntegerConstant 0 (Integer 4) Decimal)
+                                (IntegerConstant 2 (Integer 4) Decimal)]
+                                0
+                                (Integer 4)
+                                (IntegerConstant 4 (Integer 4) Decimal)
+                            )
+                            (Var 2 k6)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
                     (Print
-                        [(IntrinsicElementalFunction
-                            SelectedRealKind
-                            [(IntegerConstant 5 (Integer 4) Decimal)
-                            (IntegerConstant 0 (Integer 4) Decimal)
-                            (IntegerConstant 2 (Integer 4) Decimal)]
-                            0
-                            (Integer 4)
-                            (IntegerConstant 4 (Integer 4) Decimal)
-                        )
-                        (Var 2 k7)]
+                        [(StringFormat
+                            ()
+                            [(IntrinsicElementalFunction
+                                SelectedRealKind
+                                [(IntegerConstant 5 (Integer 4) Decimal)
+                                (IntegerConstant 0 (Integer 4) Decimal)
+                                (IntegerConstant 2 (Integer 4) Decimal)]
+                                0
+                                (Integer 4)
+                                (IntegerConstant 4 (Integer 4) Decimal)
+                            )
+                            (Var 2 k7)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
                     (Print
-                        [(IntrinsicElementalFunction
-                            SelectedRealKind
-                            [(IntegerConstant 5 (Integer 8) Decimal)
-                            (IntegerConstant 0 (Integer 4) Decimal)
-                            (IntegerConstant 2 (Integer 4) Decimal)]
-                            0
-                            (Integer 4)
-                            (IntegerConstant 4 (Integer 4) Decimal)
-                        )
-                        (Var 2 k8)]
+                        [(StringFormat
+                            ()
+                            [(IntrinsicElementalFunction
+                                SelectedRealKind
+                                [(IntegerConstant 5 (Integer 8) Decimal)
+                                (IntegerConstant 0 (Integer 4) Decimal)
+                                (IntegerConstant 2 (Integer 4) Decimal)]
+                                0
+                                (Integer 4)
+                                (IntegerConstant 4 (Integer 4) Decimal)
+                            )
+                            (Var 2 k8)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
                     (Print
-                        [(IntrinsicElementalFunction
-                            SelectedRealKind
-                            [(IntegerConstant 8 (Integer 4) Decimal)
-                            (IntegerConstant 0 (Integer 4) Decimal)
-                            (IntegerConstant 2 (Integer 4) Decimal)]
-                            0
-                            (Integer 4)
-                            (IntegerConstant 8 (Integer 4) Decimal)
-                        )
-                        (Var 2 k9)]
+                        [(StringFormat
+                            ()
+                            [(IntrinsicElementalFunction
+                                SelectedRealKind
+                                [(IntegerConstant 8 (Integer 4) Decimal)
+                                (IntegerConstant 0 (Integer 4) Decimal)
+                                (IntegerConstant 2 (Integer 4) Decimal)]
+                                0
+                                (Integer 4)
+                                (IntegerConstant 8 (Integer 4) Decimal)
+                            )
+                            (Var 2 k9)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
                     (Print
-                        [(IntrinsicElementalFunction
-                            SelectedCharKind
-                            [(StringConstant
-                                "default"
-                                (Character 1 7 ())
+                        [(StringFormat
+                            ()
+                            [(IntrinsicElementalFunction
+                                SelectedCharKind
+                                [(StringConstant
+                                    "default"
+                                    (Character 1 7 ())
+                                )]
+                                0
+                                (Integer 4)
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                            )
+                            (Var 2 k10)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
+                        ()
+                        ()
+                    )
+                    (Print
+                        [(StringFormat
+                            ()
+                            [(IntrinsicElementalFunction
+                                SelectedIntKind
+                                [(Var 2 i1)]
+                                0
+                                (Integer 4)
+                                ()
                             )]
-                            0
-                            (Integer 4)
-                            (IntegerConstant 1 (Integer 4) Decimal)
-                        )
-                        (Var 2 k10)]
-                        ()
-                        ()
-                    )
-                    (Print
-                        [(IntrinsicElementalFunction
-                            SelectedIntKind
-                            [(Var 2 i1)]
-                            0
-                            (Integer 4)
+                            FormatFortran
+                            (Character -1 0 ())
                             ()
                         )]
                         ()
                         ()
                     )
                     (Print
-                        [(IntrinsicElementalFunction
-                            SelectedRealKind
-                            [(Var 2 i1)
-                            (IntegerConstant 0 (Integer 4) Decimal)
-                            (IntegerConstant 2 (Integer 4) Decimal)]
-                            0
-                            (Integer 4)
+                        [(StringFormat
+                            ()
+                            [(IntrinsicElementalFunction
+                                SelectedRealKind
+                                [(Var 2 i1)
+                                (IntegerConstant 0 (Integer 4) Decimal)
+                                (IntegerConstant 2 (Integer 4) Decimal)]
+                                0
+                                (Integer 4)
+                                ()
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
                             ()
                         )]
                         ()
                         ()
                     )
                     (Print
-                        [(IntrinsicElementalFunction
-                            SelectedCharKind
-                            [(Var 2 s1)]
-                            0
-                            (Integer 4)
+                        [(StringFormat
+                            ()
+                            [(IntrinsicElementalFunction
+                                SelectedCharKind
+                                [(Var 2 s1)]
+                                0
+                                (Integer 4)
+                                ()
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
                             ()
                         )]
                         ()
                         ()
                     )
                     (Print
-                        [(IntrinsicElementalFunction
-                            SelectedRealKind
-                            [(IntegerConstant 5 (Integer 4) Decimal)
-                            (IntegerConstant 0 (Integer 4) Decimal)
-                            (IntegerConstant 2 (Integer 4) Decimal)]
-                            0
-                            (Integer 4)
-                            (IntegerConstant 4 (Integer 4) Decimal)
-                        )
-                        (Var 2 k11)]
+                        [(StringFormat
+                            ()
+                            [(IntrinsicElementalFunction
+                                SelectedRealKind
+                                [(IntegerConstant 5 (Integer 4) Decimal)
+                                (IntegerConstant 0 (Integer 4) Decimal)
+                                (IntegerConstant 2 (Integer 4) Decimal)]
+                                0
+                                (Integer 4)
+                                (IntegerConstant 4 (Integer 4) Decimal)
+                            )
+                            (Var 2 k11)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
                     (Print
-                        [(IntrinsicElementalFunction
-                            SelectedRealKind
-                            [(IntegerConstant 10 (Integer 4) Decimal)
-                            (IntegerConstant 0 (Integer 4) Decimal)
-                            (IntegerConstant 2 (Integer 4) Decimal)]
-                            0
-                            (Integer 4)
-                            (IntegerConstant 8 (Integer 4) Decimal)
-                        )
-                        (Var 2 k12)]
+                        [(StringFormat
+                            ()
+                            [(IntrinsicElementalFunction
+                                SelectedRealKind
+                                [(IntegerConstant 10 (Integer 4) Decimal)
+                                (IntegerConstant 0 (Integer 4) Decimal)
+                                (IntegerConstant 2 (Integer 4) Decimal)]
+                                0
+                                (Integer 4)
+                                (IntegerConstant 8 (Integer 4) Decimal)
+                            )
+                            (Var 2 k12)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )]

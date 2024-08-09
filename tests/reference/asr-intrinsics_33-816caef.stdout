@@ -12,40 +12,46 @@
                     intrinsics_29
                     []
                     [(Print
-                        [(StringConcat
-                            (StringConcat
-                                (StringConstant
-                                    "This is record 1."
-                                    (Character 1 17 ())
-                                )
-                                (TypeInquiry
-                                    NewLine
-                                    (Character 1 1 ())
+                        [(StringFormat
+                            ()
+                            [(StringConcat
+                                (StringConcat
                                     (StringConstant
-                                        "A"
+                                        "This is record 1."
+                                        (Character 1 17 ())
+                                    )
+                                    (TypeInquiry
+                                        NewLine
                                         (Character 1 1 ())
+                                        (StringConstant
+                                            "A"
+                                            (Character 1 1 ())
+                                        )
+                                        (Character 1 -1 ())
+                                        (StringConstant
+                                            "\n"
+                                            (Character 1 0 ())
+                                        )
                                     )
                                     (Character 1 -1 ())
                                     (StringConstant
-                                        "\n"
-                                        (Character 1 0 ())
+                                        "This is record 1.\n"
+                                        (Character 1 18 ())
                                     )
+                                )
+                                (StringConstant
+                                    "This is record 2."
+                                    (Character 1 17 ())
                                 )
                                 (Character 1 -1 ())
                                 (StringConstant
-                                    "This is record 1.\n"
-                                    (Character 1 18 ())
+                                    "This is record 1.\nThis is record 2."
+                                    (Character 1 35 ())
                                 )
-                            )
-                            (StringConstant
-                                "This is record 2."
-                                (Character 1 17 ())
-                            )
-                            (Character 1 -1 ())
-                            (StringConstant
-                                "This is record 1.\nThis is record 2."
-                                (Character 1 35 ())
-                            )
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
                         )]
                         ()
                         ()

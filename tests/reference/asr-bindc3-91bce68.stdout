@@ -113,12 +113,18 @@
                         ()
                     )
                     (Print
-                        [(PointerToCPtr
-                            (Var 2 x)
-                            (CPtr)
+                        [(StringFormat
                             ()
-                        )
-                        (Var 2 queries)]
+                            [(PointerToCPtr
+                                (Var 2 x)
+                                (CPtr)
+                                ()
+                            )
+                            (Var 2 queries)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
@@ -127,20 +133,26 @@
                         (Var 2 y)
                     )
                     (Print
-                        [(PointerToCPtr
-                            (Var 2 x)
-                            (CPtr)
+                        [(StringFormat
                             ()
-                        )
-                        (PointerToCPtr
-                            (GetPointer
-                                (Var 2 y)
-                                (Pointer
-                                    (Integer 2)
-                                )
+                            [(PointerToCPtr
+                                (Var 2 x)
+                                (CPtr)
                                 ()
                             )
-                            (CPtr)
+                            (PointerToCPtr
+                                (GetPointer
+                                    (Var 2 y)
+                                    (Pointer
+                                        (Integer 2)
+                                    )
+                                    ()
+                                )
+                                (CPtr)
+                                ()
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
                             ()
                         )]
                         ()

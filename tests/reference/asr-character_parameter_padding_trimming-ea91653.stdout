@@ -253,59 +253,101 @@
                     character_parameter_padding_trimming
                     []
                     [(Print
-                        [(StringConcat
-                            (StringConcat
+                        [(StringFormat
+                            ()
+                            [(StringConcat
+                                (StringConcat
+                                    (StringConstant
+                                        "|"
+                                        (Character 1 1 ())
+                                    )
+                                    (Var 2 x_pad)
+                                    (Character 1 9 ())
+                                    (StringConstant
+                                        "|apple   "
+                                        (Character 1 9 ())
+                                    )
+                                )
                                 (StringConstant
                                     "|"
                                     (Character 1 1 ())
                                 )
-                                (Var 2 x_pad)
-                                (Character 1 9 ())
-                                (StringConstant
-                                    "|apple   "
-                                    (Character 1 9 ())
-                                )
-                            )
-                            (StringConstant
-                                "|"
-                                (Character 1 1 ())
-                            )
-                            (Character 1 10 ())
-                            (StringConstant
-                                "|apple   |"
                                 (Character 1 10 ())
-                            )
+                                (StringConstant
+                                    "|apple   |"
+                                    (Character 1 10 ())
+                                )
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
                         )]
                         ()
                         ()
                     )
                     (Print
-                        [(Var 2 y_pad)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 y_pad)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
                     (Print
-                        [(Var 2 p_pad)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 p_pad)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
                     (Print
-                        [(Var 2 x_trim)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 x_trim)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
                     (Print
-                        [(Var 2 y_trim)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 y_trim)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
                     (Print
-                        [(Var 2 z_trim)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 z_trim)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
                     (Print
-                        [(Var 2 p_trim)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 p_trim)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )]

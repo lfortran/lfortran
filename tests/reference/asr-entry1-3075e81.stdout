@@ -194,11 +194,17 @@
                         1
                     )
                     (Print
-                        [(StringConstant
-                            "Printed using subroutine call: "
-                            (Character 1 31 ())
-                        )
-                        (Var 5 dummy)]
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "Printed using subroutine call: "
+                                (Character 1 31 ())
+                            )
+                            (Var 5 dummy)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
@@ -216,11 +222,17 @@
                         2
                     )
                     (Print
-                        [(StringConstant
-                            "Printed using entry statement: "
-                            (Character 1 31 ())
-                        )
-                        (Var 5 dummy)]
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "Printed using entry statement: "
+                                (Character 1 31 ())
+                            )
+                            (Var 5 dummy)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )

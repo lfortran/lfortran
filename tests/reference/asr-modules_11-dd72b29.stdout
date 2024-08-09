@@ -41,11 +41,17 @@
                     access_externally
                     [modules_11_module11]
                     [(Print
-                        [(StringConstant
-                            "j = "
-                            (Character 1 4 ())
-                        )
-                        (Var 4 j)]
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "j = "
+                                (Character 1 4 ())
+                            )
+                            (Var 4 j)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
@@ -86,11 +92,17 @@
                                     []
                                     []
                                     [(Print
-                                        [(StringConstant
-                                            "i = "
-                                            (Character 1 4 ())
-                                        )
-                                        (Var 2 i)]
+                                        [(StringFormat
+                                            ()
+                                            [(StringConstant
+                                                "i = "
+                                                (Character 1 4 ())
+                                            )
+                                            (Var 2 i)]
+                                            FormatFortran
+                                            (Character -1 0 ())
+                                            ()
+                                        )]
                                         ()
                                         ()
                                     )]

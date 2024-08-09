@@ -128,9 +128,15 @@
                         []
                     )
                     (Print
-                        [(Var 2 ia0)
-                        (Var 2 ia5)
-                        (Var 2 ia9)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 ia0)
+                            (Var 2 ia5)
+                            (Var 2 ia9)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )]

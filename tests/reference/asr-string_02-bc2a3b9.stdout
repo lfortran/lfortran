@@ -107,18 +107,30 @@
                         ()
                     )
                     (Print
-                        [(StringConstant
-                            "Here is "
-                            (Character 1 8 ())
-                        )
-                        (Var 2 title)
-                        (Var 2 firstname)
-                        (Var 2 surname)]
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "Here is "
+                                (Character 1 8 ())
+                            )
+                            (Var 2 title)
+                            (Var 2 firstname)
+                            (Var 2 surname)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
                     (Print
-                        [(Var 2 greetings)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 greetings)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )]

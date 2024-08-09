@@ -284,60 +284,114 @@
                     string_12
                     []
                     [(Print
-                        [(Var 2 fullhex_digits)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 fullhex_digits)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
                     (Print
-                        [(Var 2 hex_digits)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 hex_digits)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
                     (Print
-                        [(Var 2 lowerhex_digits)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 lowerhex_digits)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
                     (Print
-                        [(Var 2 digits)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 digits)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
                     (Print
-                        [(Var 2 octal_digits)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 octal_digits)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
                     (Print
-                        [(Var 2 letters)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 letters)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
                     (Print
-                        [(Var 2 uppercase)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 uppercase)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
                     (Print
-                        [(Var 2 lowercase)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 lowercase)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
                     (Print
-                        [(StringConstant
-                            "char("
-                            (Character 1 5 ())
-                        )
-                        (StringLen
-                            (Var 2 letters)
-                            (Integer 4)
-                            (IntegerConstant 52 (Integer 4) Decimal)
-                        )
-                        (StringConstant
-                            ") = "
-                            (Character 1 4 ())
-                        )
-                        (Var 2 string)]
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "char("
+                                (Character 1 5 ())
+                            )
+                            (StringLen
+                                (Var 2 letters)
+                                (Integer 4)
+                                (IntegerConstant 52 (Integer 4) Decimal)
+                            )
+                            (StringConstant
+                                ") = "
+                                (Character 1 4 ())
+                            )
+                            (Var 2 string)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
