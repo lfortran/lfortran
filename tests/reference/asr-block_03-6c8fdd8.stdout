@@ -186,7 +186,13 @@
                         []
                     )
                     (Print
-                        [(Var 3 result)]
+                        [(StringFormat
+                            ()
+                            [(Var 3 result)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )]

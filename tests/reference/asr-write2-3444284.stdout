@@ -64,11 +64,17 @@
                         ()
                     )
                     (Print
-                        [(StringConstant
-                            "Got: "
-                            (Character 1 5 ())
-                        )
-                        (Var 2 i)]
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "Got: "
+                                (Character 1 5 ())
+                            )
+                            (Var 2 i)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )]

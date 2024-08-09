@@ -356,21 +356,27 @@
                                         ()
                                     )
                                     (Print
-                                        [(StringConstant
-                                            "Circle: r = "
-                                            (Character 1 12 ())
-                                        )
-                                        (StructInstanceMember
-                                            (Var 5 this)
-                                            5 1_circle_radius
-                                            (Real 4)
+                                        [(StringFormat
                                             ()
-                                        )
-                                        (StringConstant
-                                            " area = "
-                                            (Character 1 8 ())
-                                        )
-                                        (Var 5 area)]
+                                            [(StringConstant
+                                                "Circle: r = "
+                                                (Character 1 12 ())
+                                            )
+                                            (StructInstanceMember
+                                                (Var 5 this)
+                                                5 1_circle_radius
+                                                (Real 4)
+                                                ()
+                                            )
+                                            (StringConstant
+                                                " area = "
+                                                (Character 1 8 ())
+                                            )
+                                            (Var 5 area)]
+                                            FormatFortran
+                                            (Character -1 0 ())
+                                            ()
+                                        )]
                                         ()
                                         ()
                                     )]

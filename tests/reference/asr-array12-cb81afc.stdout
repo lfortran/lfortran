@@ -176,11 +176,17 @@
                                             ()
                                         )
                                         [(Print
-                                            [(StringConstant
-                                                "PWD: "
-                                                (Character 1 5 ())
-                                            )
-                                            (Var 12 tmp)]
+                                            [(StringFormat
+                                                ()
+                                                [(StringConstant
+                                                    "PWD: "
+                                                    (Character 1 5 ())
+                                                )
+                                                (Var 12 tmp)]
+                                                FormatFortran
+                                                (Character -1 0 ())
+                                                ()
+                                            )]
                                             ()
                                             ()
                                         )]

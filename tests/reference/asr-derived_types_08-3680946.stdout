@@ -171,56 +171,68 @@
                         (Var 6 rect)
                     )
                     (Print
-                        [(StructInstanceMember
-                            (Var 6 shp)
-                            6 1_shape_color
-                            (Integer 4)
+                        [(StringFormat
                             ()
-                        )
-                        (StructInstanceMember
-                            (Var 6 shp)
-                            6 1_shape_filled
-                            (Logical 4)
-                            ()
-                        )
-                        (StructInstanceMember
-                            (Var 6 shp)
-                            6 1_shape_x
-                            (Integer 4)
-                            ()
-                        )
-                        (StructInstanceMember
-                            (Var 6 shp)
-                            6 1_shape_y
-                            (Integer 4)
+                            [(StructInstanceMember
+                                (Var 6 shp)
+                                6 1_shape_color
+                                (Integer 4)
+                                ()
+                            )
+                            (StructInstanceMember
+                                (Var 6 shp)
+                                6 1_shape_filled
+                                (Logical 4)
+                                ()
+                            )
+                            (StructInstanceMember
+                                (Var 6 shp)
+                                6 1_shape_x
+                                (Integer 4)
+                                ()
+                            )
+                            (StructInstanceMember
+                                (Var 6 shp)
+                                6 1_shape_y
+                                (Integer 4)
+                                ()
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
                             ()
                         )]
                         ()
                         ()
                     )
                     (Print
-                        [(StructInstanceMember
-                            (Var 6 rect)
-                            6 1_shape_color
-                            (Integer 4)
+                        [(StringFormat
                             ()
-                        )
-                        (StructInstanceMember
-                            (Var 6 rect)
-                            6 1_shape_filled
-                            (Logical 4)
-                            ()
-                        )
-                        (StructInstanceMember
-                            (Var 6 rect)
-                            6 1_shape_x
-                            (Integer 4)
-                            ()
-                        )
-                        (StructInstanceMember
-                            (Var 6 rect)
-                            6 1_shape_y
-                            (Integer 4)
+                            [(StructInstanceMember
+                                (Var 6 rect)
+                                6 1_shape_color
+                                (Integer 4)
+                                ()
+                            )
+                            (StructInstanceMember
+                                (Var 6 rect)
+                                6 1_shape_filled
+                                (Logical 4)
+                                ()
+                            )
+                            (StructInstanceMember
+                                (Var 6 rect)
+                                6 1_shape_x
+                                (Integer 4)
+                                ()
+                            )
+                            (StructInstanceMember
+                                (Var 6 rect)
+                                6 1_shape_y
+                                (Integer 4)
+                                ()
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
                             ()
                         )]
                         ()
@@ -247,16 +259,22 @@
                         ()
                     )
                     (Print
-                        [(StructInstanceMember
-                            (Var 6 rect)
-                            6 1_rectangle_length
-                            (Integer 4)
+                        [(StringFormat
                             ()
-                        )
-                        (StructInstanceMember
-                            (Var 6 rect)
-                            6 1_rectangle_width
-                            (Integer 4)
+                            [(StructInstanceMember
+                                (Var 6 rect)
+                                6 1_rectangle_length
+                                (Integer 4)
+                                ()
+                            )
+                            (StructInstanceMember
+                                (Var 6 rect)
+                                6 1_rectangle_width
+                                (Integer 4)
+                                ()
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
                             ()
                         )]
                         ()

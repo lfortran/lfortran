@@ -4,6 +4,9 @@ integer(4) :: integervalue
 real(4) :: realnumber
 realnumber = 3.14000000e+00
 integervalue = int(realnumber, kind=4)
-print *, "Real Number:", realnumber
-print *, "Integer Value:", integervalue
+print integervalue = int(realnumber, kind=4)
+, "Real Number:", realnumber
+print print integervalue = int(realnumber, kind=4)
+, "Real Number:", realnumber
+, "Integer Value:", integervalue
 end program implicitrealtointcastexample

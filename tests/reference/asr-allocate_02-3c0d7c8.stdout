@@ -886,14 +886,20 @@
                         ()
                     )
                     (Print
-                        [(FunctionCall
-                            2 whole_square
+                        [(StringFormat
                             ()
-                            [((Var 2 a))
-                            ((Var 2 b))
-                            ((Var 2 c))]
-                            (Integer 4)
-                            ()
+                            [(FunctionCall
+                                2 whole_square
+                                ()
+                                [((Var 2 a))
+                                ((Var 2 b))
+                                ((Var 2 c))]
+                                (Integer 4)
+                                ()
+                                ()
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
                             ()
                         )]
                         ()

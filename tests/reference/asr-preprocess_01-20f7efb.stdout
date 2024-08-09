@@ -49,9 +49,15 @@
                         ()
                     )
                     (Print
-                        [(StringConstant
-                            "Else condition"
-                            (Character 1 14 ())
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "Else condition"
+                                (Character 1 14 ())
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
                         )]
                         ()
                         ()
@@ -62,7 +68,13 @@
                         ()
                     )
                     (Print
-                        [(Var 2 x)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 x)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )

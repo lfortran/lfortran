@@ -194,7 +194,13 @@
                         ()
                     )
                     (Print
-                        [(Var 2 ans)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 ans)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
@@ -239,8 +245,14 @@
                         ()
                     )
                     (Print
-                        [(Var 2 i4)
-                        (Var 2 i8)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 i4)
+                            (Var 2 i8)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
@@ -316,8 +328,14 @@
                         ()
                     )
                     (Print
-                        [(Var 2 i4)
-                        (Var 2 i8)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 i4)
+                            (Var 2 i8)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )

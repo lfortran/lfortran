@@ -231,36 +231,48 @@
                         ()
                     )
                     (Print
-                        [(FunctionCall
-                            2 f
+                        [(StringFormat
                             ()
-                            [((RealBinOp
-                                (Var 2 hlgth)
-                                Add
-                                (Var 2 centr)
-                                (Real 4)
+                            [(FunctionCall
+                                2 f
                                 ()
-                            ))]
-                            (Real 8)
-                            ()
+                                [((RealBinOp
+                                    (Var 2 hlgth)
+                                    Add
+                                    (Var 2 centr)
+                                    (Real 4)
+                                    ()
+                                ))]
+                                (Real 8)
+                                ()
+                                ()
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
                             ()
                         )]
                         ()
                         ()
                     )
                     (Print
-                        [(IntrinsicElementalFunction
-                            Log
-                            [(RealConstant
-                                2.000000
+                        [(StringFormat
+                            ()
+                            [(IntrinsicElementalFunction
+                                Log
+                                [(RealConstant
+                                    2.000000
+                                    (Real 8)
+                                )]
+                                0
                                 (Real 8)
+                                (RealConstant
+                                    0.693147
+                                    (Real 8)
+                                )
                             )]
-                            0
-                            (Real 8)
-                            (RealConstant
-                                0.693147
-                                (Real 8)
-                            )
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
                         )]
                         ()
                         ()

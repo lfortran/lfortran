@@ -43,12 +43,18 @@
                     max_02
                     []
                     [(Print
-                        [(IntrinsicElementalFunction
-                            Max
-                            [(Var 2 y)
-                            (Var 2 z)]
-                            0
-                            (Integer 8)
+                        [(StringFormat
+                            ()
+                            [(IntrinsicElementalFunction
+                                Max
+                                [(Var 2 y)
+                                (Var 2 z)]
+                                0
+                                (Integer 8)
+                                ()
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
                             ()
                         )]
                         ()

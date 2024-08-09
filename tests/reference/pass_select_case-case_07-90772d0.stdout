@@ -97,9 +97,15 @@
                                             ()
                                         )
                                         (Print
-                                            [(StringConstant
-                                                "one of the first ten letters"
-                                                (Character 1 28 ())
+                                            [(StringFormat
+                                                ()
+                                                [(StringConstant
+                                                    "one of the first ten letters"
+                                                    (Character 1 28 ())
+                                                )]
+                                                FormatFortran
+                                                (Character -1 0 ())
+                                                ()
                                             )]
                                             ()
                                             ()
@@ -139,9 +145,15 @@
                                                 ()
                                             )
                                             (Print
-                                                [(StringConstant
-                                                    "one of l, m, n, o, p"
-                                                    (Character 1 20 ())
+                                                [(StringFormat
+                                                    ()
+                                                    [(StringConstant
+                                                        "one of l, m, n, o, p"
+                                                        (Character 1 20 ())
+                                                    )]
+                                                    FormatFortran
+                                                    (Character -1 0 ())
+                                                    ()
                                                 )]
                                                 ()
                                                 ()
@@ -166,9 +178,15 @@
                                                     ()
                                                 )
                                                 (Print
-                                                    [(StringConstant
-                                                        "one of z"
-                                                        (Character 1 8 ())
+                                                    [(StringFormat
+                                                        ()
+                                                        [(StringConstant
+                                                            "one of z"
+                                                            (Character 1 8 ())
+                                                        )]
+                                                        FormatFortran
+                                                        (Character -1 0 ())
+                                                        ()
                                                     )]
                                                     ()
                                                     ()
@@ -182,9 +200,15 @@
                                                     ()
                                                 )
                                                 (Print
-                                                    [(StringConstant
-                                                        "other characters, which may not be letters"
-                                                        (Character 1 42 ())
+                                                    [(StringFormat
+                                                        ()
+                                                        [(StringConstant
+                                                            "other characters, which may not be letters"
+                                                            (Character 1 42 ())
+                                                        )]
+                                                        FormatFortran
+                                                        (Character -1 0 ())
+                                                        ()
                                                     )]
                                                     ()
                                                     ()

@@ -545,19 +545,25 @@
                         []
                     )
                     (Print
-                        [(StructInstanceMember
-                            (Var 2 struct_instance_sample)
-                            2 1_sample_a
-                            (Real 4)
+                        [(StringFormat
                             ()
-                        )
-                        (StructInstanceMember
-                            (Var 2 struct_instance_sample)
-                            2 1_sample_b
-                            (Real 4)
+                            [(StructInstanceMember
+                                (Var 2 struct_instance_sample)
+                                2 1_sample_a
+                                (Real 4)
+                                ()
+                            )
+                            (StructInstanceMember
+                                (Var 2 struct_instance_sample)
+                                2 1_sample_b
+                                (Real 4)
+                                ()
+                            )
+                            (Var 2 e)]
+                            FormatFortran
+                            (Character -1 0 ())
                             ()
-                        )
-                        (Var 2 e)]
+                        )]
                         ()
                         ()
                     )]

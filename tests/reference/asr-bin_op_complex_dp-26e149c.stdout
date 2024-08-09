@@ -211,10 +211,16 @@
                         ()
                     )
                     (Print
-                        [(Var 2 zero)
-                        (Var 2 v)
-                        (Var 2 x)
-                        (Var 2 u)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 zero)
+                            (Var 2 v)
+                            (Var 2 x)
+                            (Var 2 u)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )]

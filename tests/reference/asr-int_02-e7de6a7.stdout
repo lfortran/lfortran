@@ -96,8 +96,14 @@
                     intrinsics_15
                     [lfortran_intrinsic_builtin]
                     [(Print
-                        [(Var 2 y1)
-                        (Var 2 y2)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 y1)
+                            (Var 2 y2)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )]

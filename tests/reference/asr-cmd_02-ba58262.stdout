@@ -86,19 +86,25 @@
                         ()
                     )
                     (Print
-                        [(FunctionCall
-                            2 trim
+                        [(StringFormat
                             ()
-                            [((Var 2 homedir))]
-                            (Character 1 -3 (FunctionCall
-                                2 len_trim
+                            [(FunctionCall
+                                2 trim
                                 ()
                                 [((Var 2 homedir))]
-                                (Integer 4)
+                                (Character 1 -3 (FunctionCall
+                                    2 len_trim
+                                    ()
+                                    [((Var 2 homedir))]
+                                    (Integer 4)
+                                    ()
+                                    ()
+                                ))
                                 ()
                                 ()
-                            ))
-                            ()
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
                             ()
                         )]
                         ()

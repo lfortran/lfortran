@@ -327,8 +327,14 @@
                                     (Var 6 module)
                                     (Var 6 procedure)]
                                     [(Print
-                                        [(Var 6 error)
-                                        (Var 6 status)]
+                                        [(StringFormat
+                                            ()
+                                            [(Var 6 error)
+                                            (Var 6 status)]
+                                            FormatFortran
+                                            (Character -1 0 ())
+                                            ()
+                                        )]
                                         ()
                                         ()
                                     )]

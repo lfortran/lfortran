@@ -249,7 +249,13 @@
                         ()
                     )
                     (Print
-                        [(Var 2 message)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 message)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )

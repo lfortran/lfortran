@@ -212,19 +212,25 @@
                                     [f]
                                     [(Var 4 x)]
                                     [(Print
-                                        [(ArrayItem
-                                            (Var 4 x)
-                                            [(()
-                                            (IntegerConstant 1 (Integer 4) Decimal)
-                                            ())
-                                            (()
-                                            (IntegerConstant 1 (Integer 4) Decimal)
-                                            ())
-                                            (()
-                                            (IntegerConstant 1 (Integer 4) Decimal)
-                                            ())]
-                                            (Integer 4)
-                                            ColMajor
+                                        [(StringFormat
+                                            ()
+                                            [(ArrayItem
+                                                (Var 4 x)
+                                                [(()
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                ())
+                                                (()
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                ())
+                                                (()
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                ())]
+                                                (Integer 4)
+                                                ColMajor
+                                                ()
+                                            )]
+                                            FormatFortran
+                                            (Character -1 0 ())
                                             ()
                                         )]
                                         ()
@@ -267,19 +273,25 @@
                                         ()
                                     )
                                     (Print
-                                        [(ArrayItem
-                                            (Var 4 x)
-                                            [(()
-                                            (IntegerConstant 1 (Integer 4) Decimal)
-                                            ())
-                                            (()
-                                            (IntegerConstant 1 (Integer 4) Decimal)
-                                            ())
-                                            (()
-                                            (IntegerConstant 1 (Integer 4) Decimal)
-                                            ())]
-                                            (Integer 4)
-                                            ColMajor
+                                        [(StringFormat
+                                            ()
+                                            [(ArrayItem
+                                                (Var 4 x)
+                                                [(()
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                ())
+                                                (()
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                ())
+                                                (()
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                ())]
+                                                (Integer 4)
+                                                ColMajor
+                                                ()
+                                            )]
+                                            FormatFortran
+                                            (Character -1 0 ())
                                             ()
                                         )]
                                         ()
@@ -426,19 +438,25 @@
                                         ()
                                     )
                                     (Print
-                                        [(ArrayItem
-                                            (Var 5 c)
-                                            [(()
-                                            (IntegerConstant 1 (Integer 4) Decimal)
-                                            ())
-                                            (()
-                                            (IntegerConstant 1 (Integer 4) Decimal)
-                                            ())
-                                            (()
-                                            (IntegerConstant 1 (Integer 4) Decimal)
-                                            ())]
-                                            (Integer 4)
-                                            ColMajor
+                                        [(StringFormat
+                                            ()
+                                            [(ArrayItem
+                                                (Var 5 c)
+                                                [(()
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                ())
+                                                (()
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                ())
+                                                (()
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                ())]
+                                                (Integer 4)
+                                                ColMajor
+                                                ()
+                                            )]
+                                            FormatFortran
+                                            (Character -1 0 ())
                                             ()
                                         )]
                                         ()
@@ -631,19 +649,25 @@
                         []
                     )
                     (Print
-                        [(ArrayItem
-                            (Var 2 c)
-                            [(()
-                            (IntegerConstant 1 (Integer 4) Decimal)
-                            ())
-                            (()
-                            (IntegerConstant 1 (Integer 4) Decimal)
-                            ())
-                            (()
-                            (IntegerConstant 1 (Integer 4) Decimal)
-                            ())]
-                            (Integer 4)
-                            ColMajor
+                        [(StringFormat
+                            ()
+                            [(ArrayItem
+                                (Var 2 c)
+                                [(()
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                ())
+                                (()
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                ())
+                                (()
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                ())]
+                                (Integer 4)
+                                ColMajor
+                                ()
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
                             ()
                         )]
                         ()

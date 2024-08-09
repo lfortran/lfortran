@@ -12,89 +12,155 @@
                     preprocessor10
                     []
                     [(Print
-                        [(StringConstant
-                            "X is defined"
-                            (Character 1 12 ())
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "X is defined"
+                                (Character 1 12 ())
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
                         )]
                         ()
                         ()
                     )
                     (Print
-                        [(StringConstant
-                            "Y is defined"
-                            (Character 1 12 ())
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "Y is defined"
+                                (Character 1 12 ())
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
                         )]
                         ()
                         ()
                     )
                     (Print
-                        [(StringConstant
-                            "Z is not defined"
-                            (Character 1 16 ())
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "Z is not defined"
+                                (Character 1 16 ())
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
                         )]
                         ()
                         ()
                     )
                     (Print
-                        [(StringConstant
-                            "X and Y is defined"
-                            (Character 1 18 ())
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "X and Y is defined"
+                                (Character 1 18 ())
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
                         )]
                         ()
                         ()
                     )
                     (Print
-                        [(StringConstant
-                            "Z and Y is not defined"
-                            (Character 1 22 ())
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "Z and Y is not defined"
+                                (Character 1 22 ())
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
                         )]
                         ()
                         ()
                     )
                     (Print
-                        [(StringConstant
-                            "Z or Y is defined"
-                            (Character 1 17 ())
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "Z or Y is defined"
+                                (Character 1 17 ())
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
                         )]
                         ()
                         ()
                     )
                     (Print
-                        [(StringConstant
-                            "X and Y and Z is not defined"
-                            (Character 1 28 ())
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "X and Y and Z is not defined"
+                                (Character 1 28 ())
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
                         )]
                         ()
                         ()
                     )
                     (Print
-                        [(StringConstant
-                            "X and Y or Z is defined"
-                            (Character 1 23 ())
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "X and Y or Z is defined"
+                                (Character 1 23 ())
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
                         )]
                         ()
                         ()
                     )
                     (Print
-                        [(StringConstant
-                            "X and Y or Z is defined"
-                            (Character 1 23 ())
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "X and Y or Z is defined"
+                                (Character 1 23 ())
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
                         )]
                         ()
                         ()
                     )
                     (Print
-                        [(StringConstant
-                            "X and !Y or !Z is defined"
-                            (Character 1 25 ())
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "X and !Y or !Z is defined"
+                                (Character 1 25 ())
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
                         )]
                         ()
                         ()
                     )
                     (Print
-                        [(StringConstant
-                            "X and !(Y or Z) is not defined"
-                            (Character 1 30 ())
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "X and !(Y or Z) is not defined"
+                                (Character 1 30 ())
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
                         )]
                         ()
                         ()

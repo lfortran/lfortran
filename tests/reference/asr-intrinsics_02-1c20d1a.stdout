@@ -83,8 +83,14 @@
                         ()
                     )
                     (Print
-                        [(Var 2 x)
-                        (Var 2 y)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 x)
+                            (Var 2 y)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )

@@ -2844,7 +2844,13 @@
                                         ()
                                     )
                                     (Print
-                                        [(Var 20 s_i)]
+                                        [(StringFormat
+                                            ()
+                                            [(Var 20 s_i)]
+                                            FormatFortran
+                                            (Character -1 0 ())
+                                            ()
+                                        )]
                                         ()
                                         ()
                                     )]

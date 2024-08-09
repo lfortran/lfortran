@@ -58,11 +58,17 @@
                         )
                     )
                     (Print
-                        [(StringConstant
-                            "tf=0:"
-                            (Character 1 5 ())
-                        )
-                        (Var 5 tf)]
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "tf=0:"
+                                (Character 1 5 ())
+                            )
+                            (Var 5 tf)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
@@ -78,11 +84,17 @@
                         )
                     )
                     (Print
-                        [(StringConstant
-                            "tf=1:"
-                            (Character 1 5 ())
-                        )
-                        (Var 5 tf)]
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "tf=1:"
+                                (Character 1 5 ())
+                            )
+                            (Var 5 tf)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )]

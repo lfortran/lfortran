@@ -152,7 +152,13 @@
                         50
                     )
                     (Print
-                        [(IntegerConstant 50 (Integer 4) Decimal)]
+                        [(StringFormat
+                            ()
+                            [(IntegerConstant 50 (Integer 4) Decimal)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
@@ -166,7 +172,13 @@
                         70
                     )
                     (Print
-                        [(IntegerConstant 70 (Integer 4) Decimal)]
+                        [(StringFormat
+                            ()
+                            [(IntegerConstant 70 (Integer 4) Decimal)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )]

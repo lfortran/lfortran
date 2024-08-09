@@ -89,9 +89,15 @@
                     paramter_05
                     []
                     [(Print
-                        [(Var 2 x)
-                        (Var 2 y)
-                        (Var 2 z)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 x)
+                            (Var 2 y)
+                            (Var 2 z)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )]

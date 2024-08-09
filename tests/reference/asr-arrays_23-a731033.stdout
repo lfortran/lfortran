@@ -158,15 +158,10 @@
                                                     "(\"line\",1x,i0,\":\")"
                                                     (Character 1 18 ())
                                                 )
-                                                [(Cast
-                                                    (StructInstanceMember
-                                                        (Var 4 context)
-                                                        4 1_toml_context_num
-                                                        (Integer 4)
-                                                        ()
-                                                    )
-                                                    IntegerToInteger
-                                                    (Integer 8)
+                                                [(StructInstanceMember
+                                                    (Var 4 context)
+                                                    4 1_toml_context_num
+                                                    (Integer 4)
                                                     ()
                                                 )]
                                                 FormatFortran
@@ -412,9 +407,15 @@
                     main
                     [arrays_23]
                     [(Print
-                        [(StringConstant
-                            "working"
-                            (Character 1 7 ())
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "working"
+                                (Character 1 7 ())
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
                         )]
                         ()
                         ()

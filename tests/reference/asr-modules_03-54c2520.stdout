@@ -32,20 +32,32 @@
                                     []
                                     []
                                     [(Print
-                                        [(StringConstant
-                                            "priv = "
-                                            (Character 1 7 ())
-                                        )
-                                        (Var 2 priv)]
+                                        [(StringFormat
+                                            ()
+                                            [(StringConstant
+                                                "priv = "
+                                                (Character 1 7 ())
+                                            )
+                                            (Var 2 priv)]
+                                            FormatFortran
+                                            (Character -1 0 ())
+                                            ()
+                                        )]
                                         ()
                                         ()
                                     )
                                     (Print
-                                        [(StringConstant
-                                            "publ = "
-                                            (Character 1 7 ())
-                                        )
-                                        (Var 2 publ)]
+                                        [(StringFormat
+                                            ()
+                                            [(StringConstant
+                                                "publ = "
+                                                (Character 1 7 ())
+                                            )
+                                            (Var 2 publ)]
+                                            FormatFortran
+                                            (Character -1 0 ())
+                                            ()
+                                        )]
                                         ()
                                         ()
                                     )]

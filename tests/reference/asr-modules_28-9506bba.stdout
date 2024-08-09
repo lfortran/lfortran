@@ -706,9 +706,15 @@
                     modules_28
                     [fpm_manifest_dependency]
                     [(Print
-                        [(StringConstant
-                            "running modules_28 program"
-                            (Character 1 26 ())
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "running modules_28 program"
+                                (Character 1 26 ())
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
                         )]
                         ()
                         ()

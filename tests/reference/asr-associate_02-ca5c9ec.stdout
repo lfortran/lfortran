@@ -171,12 +171,24 @@
                         ()
                     )
                     (Print
-                        [(Var 2 p1)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 p1)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
                     (Print
-                        [(Var 2 t1)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 t1)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
@@ -204,12 +216,24 @@
                         ()
                     )
                     (Print
-                        [(Var 2 p1)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 p1)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
                     (Print
-                        [(Var 2 t1)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 t1)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
@@ -219,12 +243,24 @@
                         ()
                     )
                     (Print
-                        [(Var 2 p1)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 p1)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
                     (Print
-                        [(Var 2 t1)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 t1)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
@@ -251,12 +287,24 @@
                         ()
                     )
                     (Print
-                        [(Var 2 p3)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 p3)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
                     (Print
-                        [(Var 2 t3)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 t3)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )]

@@ -57,72 +57,76 @@ return:                                           ; preds = %ifcont
 define float @abs(float* %a) {
 .entry:
   %r = alloca float, align 4
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* getelementptr inbounds ([4 x i8], [4 x i8]* @2, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0))
-  %0 = load float, float* %a, align 4
-  %1 = fcmp ogt float %0, 0.000000e+00
-  br i1 %1, label %then, label %else
+  %0 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 2, i8* null, i32 7, i8* getelementptr inbounds ([4 x i8], [4 x i8]* @2, i32 0, i32 0))
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* %0, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0))
+  %1 = load float, float* %a, align 4
+  %2 = fcmp ogt float %1, 0.000000e+00
+  br i1 %2, label %then, label %else
 
 then:                                             ; preds = %.entry
-  %2 = load float, float* %a, align 4
-  store float %2, float* %r, align 4
+  %3 = load float, float* %a, align 4
+  store float %3, float* %r, align 4
   br label %ifcont
 
 else:                                             ; preds = %.entry
-  %3 = load float, float* %a, align 4
-  %4 = fneg float %3
-  store float %4, float* %r, align 4
+  %4 = load float, float* %a, align 4
+  %5 = fneg float %4
+  store float %5, float* %r, align 4
   br label %ifcont
 
 ifcont:                                           ; preds = %else, %then
   br label %return
 
 return:                                           ; preds = %ifcont
-  %5 = load float, float* %r, align 4
-  ret float %5
+  %6 = load float, float* %r, align 4
+  ret float %6
 }
 
 define float @sum_real____0(float* %a, i32* %__1a, i32* %__2a) {
 .entry:
   %i = alloca i32, align 4
   %r = alloca float, align 4
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @7, i32 0, i32 0), i8* getelementptr inbounds ([4 x i8], [4 x i8]* @6, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @5, i32 0, i32 0))
+  %0 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 2, i8* null, i32 7, i8* getelementptr inbounds ([4 x i8], [4 x i8]* @6, i32 0, i32 0))
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @7, i32 0, i32 0), i8* %0, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @5, i32 0, i32 0))
   store float 0.000000e+00, float* %r, align 4
   store i32 0, i32* %i, align 4
   br label %loop.head
 
 loop.head:                                        ; preds = %loop.body, %.entry
-  %0 = load i32, i32* %i, align 4
-  %1 = add i32 %0, 1
-  %2 = load i32, i32* %__2a, align 4
-  %3 = mul i32 1, %2
-  %4 = icmp sle i32 %1, %3
-  br i1 %4, label %loop.body, label %loop.end
+  %1 = load i32, i32* %i, align 4
+  %2 = add i32 %1, 1
+  %3 = load i32, i32* %__2a, align 4
+  %4 = mul i32 1, %3
+  %5 = icmp sle i32 %2, %4
+  br i1 %5, label %loop.body, label %loop.end
 
 loop.body:                                        ; preds = %loop.head
-  %5 = load i32, i32* %i, align 4
-  %6 = add i32 %5, 1
-  store i32 %6, i32* %i, align 4
-  %7 = load float, float* %r, align 4
-  %8 = load i32, i32* %i, align 4
-  %9 = load i32, i32* %__1a, align 4
-  %10 = load i32, i32* %__2a, align 4
-  %11 = sub i32 %8, %9
-  %12 = mul i32 1, %11
-  %13 = add i32 0, %12
-  %14 = mul i32 1, %10
-  %15 = getelementptr inbounds float, float* %a, i32 %13
-  %16 = load float, float* %15, align 4
-  %17 = fadd float %7, %16
-  store float %17, float* %r, align 4
+  %6 = load i32, i32* %i, align 4
+  %7 = add i32 %6, 1
+  store i32 %7, i32* %i, align 4
+  %8 = load float, float* %r, align 4
+  %9 = load i32, i32* %i, align 4
+  %10 = load i32, i32* %__1a, align 4
+  %11 = load i32, i32* %__2a, align 4
+  %12 = sub i32 %9, %10
+  %13 = mul i32 1, %12
+  %14 = add i32 0, %13
+  %15 = mul i32 1, %11
+  %16 = getelementptr inbounds float, float* %a, i32 %14
+  %17 = load float, float* %16, align 4
+  %18 = fadd float %8, %17
+  store float %18, float* %r, align 4
   br label %loop.head
 
 loop.end:                                         ; preds = %loop.head
   br label %return
 
 return:                                           ; preds = %loop.end
-  %18 = load float, float* %r, align 4
-  ret float %18
+  %19 = load float, float* %r, align 4
+  ret float %19
 }
+
+declare i8* @_lcompilers_string_format_fortran(i32, i8*, ...)
 
 declare void @_lfortran_printf(i8*, ...)
 

@@ -105,217 +105,265 @@
                     operator_overloading_01
                     [operator_overloading_01_overload_comp_m]
                     [(Print
-                        [(StringConstant
-                            "T>T:"
-                            (Character 1 4 ())
-                        )
-                        (OverloadedCompare
-                            (Var 6 t)
-                            Gt
-                            (Var 6 t)
-                            (Logical 4)
-                            (LogicalConstant
-                                .false.
-                                (Logical 4)
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "T>T:"
+                                (Character 1 4 ())
                             )
-                            (FunctionCall
-                                6 greater_than_inverse
-                                6 ~gt
-                                [((Var 6 t))
-                                ((Var 6 t))]
+                            (OverloadedCompare
+                                (Var 6 t)
+                                Gt
+                                (Var 6 t)
                                 (Logical 4)
-                                ()
-                                ()
-                            )
+                                (LogicalConstant
+                                    .false.
+                                    (Logical 4)
+                                )
+                                (FunctionCall
+                                    6 greater_than_inverse
+                                    6 ~gt
+                                    [((Var 6 t))
+                                    ((Var 6 t))]
+                                    (Logical 4)
+                                    ()
+                                    ()
+                                )
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
                         )]
                         ()
                         ()
                     )
                     (Print
-                        [(StringConstant
-                            "T>F:"
-                            (Character 1 4 ())
-                        )
-                        (OverloadedCompare
-                            (Var 6 t)
-                            Gt
-                            (Var 6 f)
-                            (Logical 4)
-                            (LogicalConstant
-                                .true.
-                                (Logical 4)
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "T>F:"
+                                (Character 1 4 ())
                             )
-                            (FunctionCall
-                                6 greater_than_inverse
-                                6 ~gt
-                                [((Var 6 t))
-                                ((Var 6 f))]
+                            (OverloadedCompare
+                                (Var 6 t)
+                                Gt
+                                (Var 6 f)
                                 (Logical 4)
-                                ()
-                                ()
-                            )
+                                (LogicalConstant
+                                    .true.
+                                    (Logical 4)
+                                )
+                                (FunctionCall
+                                    6 greater_than_inverse
+                                    6 ~gt
+                                    [((Var 6 t))
+                                    ((Var 6 f))]
+                                    (Logical 4)
+                                    ()
+                                    ()
+                                )
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
                         )]
                         ()
                         ()
                     )
                     (Print
-                        [(StringConstant
-                            "F>T:"
-                            (Character 1 4 ())
-                        )
-                        (OverloadedCompare
-                            (Var 6 f)
-                            Gt
-                            (Var 6 t)
-                            (Logical 4)
-                            (LogicalConstant
-                                .false.
-                                (Logical 4)
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "F>T:"
+                                (Character 1 4 ())
                             )
-                            (FunctionCall
-                                6 greater_than_inverse
-                                6 ~gt
-                                [((Var 6 f))
-                                ((Var 6 t))]
+                            (OverloadedCompare
+                                (Var 6 f)
+                                Gt
+                                (Var 6 t)
                                 (Logical 4)
-                                ()
-                                ()
-                            )
+                                (LogicalConstant
+                                    .false.
+                                    (Logical 4)
+                                )
+                                (FunctionCall
+                                    6 greater_than_inverse
+                                    6 ~gt
+                                    [((Var 6 f))
+                                    ((Var 6 t))]
+                                    (Logical 4)
+                                    ()
+                                    ()
+                                )
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
                         )]
                         ()
                         ()
                     )
                     (Print
-                        [(StringConstant
-                            "F>F:"
-                            (Character 1 4 ())
-                        )
-                        (OverloadedCompare
-                            (Var 6 f)
-                            Gt
-                            (Var 6 f)
-                            (Logical 4)
-                            (LogicalConstant
-                                .false.
-                                (Logical 4)
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "F>F:"
+                                (Character 1 4 ())
                             )
-                            (FunctionCall
-                                6 greater_than_inverse
-                                6 ~gt
-                                [((Var 6 f))
-                                ((Var 6 f))]
+                            (OverloadedCompare
+                                (Var 6 f)
+                                Gt
+                                (Var 6 f)
                                 (Logical 4)
-                                ()
-                                ()
-                            )
+                                (LogicalConstant
+                                    .false.
+                                    (Logical 4)
+                                )
+                                (FunctionCall
+                                    6 greater_than_inverse
+                                    6 ~gt
+                                    [((Var 6 f))
+                                    ((Var 6 f))]
+                                    (Logical 4)
+                                    ()
+                                    ()
+                                )
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
                         )]
                         ()
                         ()
                     )
                     (Print
-                        [(StringConstant
-                            "T<T:"
-                            (Character 1 4 ())
-                        )
-                        (OverloadedCompare
-                            (Var 6 t)
-                            Lt
-                            (Var 6 t)
-                            (Logical 4)
-                            (LogicalConstant
-                                .false.
-                                (Logical 4)
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "T<T:"
+                                (Character 1 4 ())
                             )
-                            (FunctionCall
-                                6 less_than_inverse
-                                6 ~lt
-                                [((Var 6 t))
-                                ((Var 6 t))]
+                            (OverloadedCompare
+                                (Var 6 t)
+                                Lt
+                                (Var 6 t)
                                 (Logical 4)
-                                ()
-                                ()
-                            )
+                                (LogicalConstant
+                                    .false.
+                                    (Logical 4)
+                                )
+                                (FunctionCall
+                                    6 less_than_inverse
+                                    6 ~lt
+                                    [((Var 6 t))
+                                    ((Var 6 t))]
+                                    (Logical 4)
+                                    ()
+                                    ()
+                                )
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
                         )]
                         ()
                         ()
                     )
                     (Print
-                        [(StringConstant
-                            "T<F:"
-                            (Character 1 4 ())
-                        )
-                        (OverloadedCompare
-                            (Var 6 t)
-                            Lt
-                            (Var 6 f)
-                            (Logical 4)
-                            (LogicalConstant
-                                .false.
-                                (Logical 4)
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "T<F:"
+                                (Character 1 4 ())
                             )
-                            (FunctionCall
-                                6 less_than_inverse
-                                6 ~lt
-                                [((Var 6 t))
-                                ((Var 6 f))]
+                            (OverloadedCompare
+                                (Var 6 t)
+                                Lt
+                                (Var 6 f)
                                 (Logical 4)
-                                ()
-                                ()
-                            )
+                                (LogicalConstant
+                                    .false.
+                                    (Logical 4)
+                                )
+                                (FunctionCall
+                                    6 less_than_inverse
+                                    6 ~lt
+                                    [((Var 6 t))
+                                    ((Var 6 f))]
+                                    (Logical 4)
+                                    ()
+                                    ()
+                                )
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
                         )]
                         ()
                         ()
                     )
                     (Print
-                        [(StringConstant
-                            "F<T:"
-                            (Character 1 4 ())
-                        )
-                        (OverloadedCompare
-                            (Var 6 f)
-                            Lt
-                            (Var 6 t)
-                            (Logical 4)
-                            (LogicalConstant
-                                .true.
-                                (Logical 4)
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "F<T:"
+                                (Character 1 4 ())
                             )
-                            (FunctionCall
-                                6 less_than_inverse
-                                6 ~lt
-                                [((Var 6 f))
-                                ((Var 6 t))]
+                            (OverloadedCompare
+                                (Var 6 f)
+                                Lt
+                                (Var 6 t)
                                 (Logical 4)
-                                ()
-                                ()
-                            )
+                                (LogicalConstant
+                                    .true.
+                                    (Logical 4)
+                                )
+                                (FunctionCall
+                                    6 less_than_inverse
+                                    6 ~lt
+                                    [((Var 6 f))
+                                    ((Var 6 t))]
+                                    (Logical 4)
+                                    ()
+                                    ()
+                                )
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
                         )]
                         ()
                         ()
                     )
                     (Print
-                        [(StringConstant
-                            "F<F:"
-                            (Character 1 4 ())
-                        )
-                        (OverloadedCompare
-                            (Var 6 f)
-                            Lt
-                            (Var 6 f)
-                            (Logical 4)
-                            (LogicalConstant
-                                .false.
-                                (Logical 4)
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "F<F:"
+                                (Character 1 4 ())
                             )
-                            (FunctionCall
-                                6 less_than_inverse
-                                6 ~lt
-                                [((Var 6 f))
-                                ((Var 6 f))]
+                            (OverloadedCompare
+                                (Var 6 f)
+                                Lt
+                                (Var 6 f)
                                 (Logical 4)
-                                ()
-                                ()
-                            )
+                                (LogicalConstant
+                                    .false.
+                                    (Logical 4)
+                                )
+                                (FunctionCall
+                                    6 less_than_inverse
+                                    6 ~lt
+                                    [((Var 6 f))
+                                    ((Var 6 f))]
+                                    (Logical 4)
+                                    ()
+                                    ()
+                                )
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
                         )]
                         ()
                         ()

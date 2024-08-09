@@ -342,28 +342,34 @@
                             )
                             ())
                             [(Print
-                                [(Var 2 i)
-                                (Var 2 j)
-                                (PointerToCPtr
-                                    (GetPointer
-                                        (ArrayItem
-                                            (Var 2 x)
-                                            [(()
-                                            (Var 2 i)
-                                            ())
-                                            (()
-                                            (Var 2 j)
-                                            ())]
-                                            (Integer 2)
-                                            ColMajor
+                                [(StringFormat
+                                    ()
+                                    [(Var 2 i)
+                                    (Var 2 j)
+                                    (PointerToCPtr
+                                        (GetPointer
+                                            (ArrayItem
+                                                (Var 2 x)
+                                                [(()
+                                                (Var 2 i)
+                                                ())
+                                                (()
+                                                (Var 2 j)
+                                                ())]
+                                                (Integer 2)
+                                                ColMajor
+                                                ()
+                                            )
+                                            (Pointer
+                                                (Integer 2)
+                                            )
                                             ()
                                         )
-                                        (Pointer
-                                            (Integer 2)
-                                        )
+                                        (CPtr)
                                         ()
-                                    )
-                                    (CPtr)
+                                    )]
+                                    FormatFortran
+                                    (Character -1 0 ())
                                     ()
                                 )]
                                 ()
@@ -380,12 +386,18 @@
                         ()
                     )
                     (Print
-                        [(PointerToCPtr
-                            (Var 2 x)
-                            (CPtr)
+                        [(StringFormat
                             ()
-                        )
-                        (Var 2 queries)]
+                            [(PointerToCPtr
+                                (Var 2 x)
+                                (CPtr)
+                                ()
+                            )
+                            (Var 2 queries)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
@@ -426,28 +438,34 @@
                             )
                             ())
                             [(Print
-                                [(Var 2 i)
-                                (Var 2 j)
-                                (PointerToCPtr
-                                    (GetPointer
-                                        (ArrayItem
-                                            (Var 2 x)
-                                            [(()
-                                            (Var 2 i)
-                                            ())
-                                            (()
-                                            (Var 2 j)
-                                            ())]
-                                            (Integer 2)
-                                            ColMajor
+                                [(StringFormat
+                                    ()
+                                    [(Var 2 i)
+                                    (Var 2 j)
+                                    (PointerToCPtr
+                                        (GetPointer
+                                            (ArrayItem
+                                                (Var 2 x)
+                                                [(()
+                                                (Var 2 i)
+                                                ())
+                                                (()
+                                                (Var 2 j)
+                                                ())]
+                                                (Integer 2)
+                                                ColMajor
+                                                ()
+                                            )
+                                            (Pointer
+                                                (Integer 2)
+                                            )
                                             ()
                                         )
-                                        (Pointer
-                                            (Integer 2)
-                                        )
+                                        (CPtr)
                                         ()
-                                    )
-                                    (CPtr)
+                                    )]
+                                    FormatFortran
+                                    (Character -1 0 ())
                                     ()
                                 )]
                                 ()
@@ -474,12 +492,18 @@
                         ()
                     )
                     (Print
-                        [(PointerToCPtr
-                            (Var 2 x)
-                            (CPtr)
+                        [(StringFormat
                             ()
-                        )
-                        (Var 2 queries)]
+                            [(PointerToCPtr
+                                (Var 2 x)
+                                (CPtr)
+                                ()
+                            )
+                            (Var 2 queries)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
@@ -520,28 +544,34 @@
                             )
                             ())
                             [(Print
-                                [(Var 2 i)
-                                (Var 2 j)
-                                (PointerToCPtr
-                                    (GetPointer
-                                        (ArrayItem
-                                            (Var 2 x)
-                                            [(()
-                                            (Var 2 i)
-                                            ())
-                                            (()
-                                            (Var 2 j)
-                                            ())]
-                                            (Integer 2)
-                                            ColMajor
+                                [(StringFormat
+                                    ()
+                                    [(Var 2 i)
+                                    (Var 2 j)
+                                    (PointerToCPtr
+                                        (GetPointer
+                                            (ArrayItem
+                                                (Var 2 x)
+                                                [(()
+                                                (Var 2 i)
+                                                ())
+                                                (()
+                                                (Var 2 j)
+                                                ())]
+                                                (Integer 2)
+                                                ColMajor
+                                                ()
+                                            )
+                                            (Pointer
+                                                (Integer 2)
+                                            )
                                             ()
                                         )
-                                        (Pointer
-                                            (Integer 2)
-                                        )
+                                        (CPtr)
                                         ()
-                                    )
-                                    (CPtr)
+                                    )]
+                                    FormatFortran
+                                    (Character -1 0 ())
                                     ()
                                 )]
                                 ()

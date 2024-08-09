@@ -315,7 +315,13 @@
                         ()
                     )
                     (Print
-                        [(Var 2 c1)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 c1)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
@@ -684,18 +690,24 @@
                         []
                     )
                     (Print
-                        [(ComplexConstructor
-                            (Cast
-                                (Var 2 i)
-                                IntegerToReal
-                                (Real 4)
+                        [(StringFormat
+                            ()
+                            [(ComplexConstructor
+                                (Cast
+                                    (Var 2 i)
+                                    IntegerToReal
+                                    (Real 4)
+                                    ()
+                                )
+                                (RealConstant
+                                    0.000000
+                                    (Real 4)
+                                )
+                                (Complex 4)
                                 ()
-                            )
-                            (RealConstant
-                                0.000000
-                                (Real 4)
-                            )
-                            (Complex 4)
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
                             ()
                         )]
                         ()
@@ -758,13 +770,19 @@
                         []
                     )
                     (Print
-                        [(ComplexConstructor
-                            (Var 2 x1)
-                            (RealConstant
-                                0.000000
-                                (Real 4)
-                            )
-                            (Complex 4)
+                        [(StringFormat
+                            ()
+                            [(ComplexConstructor
+                                (Var 2 x1)
+                                (RealConstant
+                                    0.000000
+                                    (Real 4)
+                                )
+                                (Complex 4)
+                                ()
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
                             ()
                         )]
                         ()
@@ -822,7 +840,13 @@
                         []
                     )
                     (Print
-                        [(Var 2 z1)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 z1)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
@@ -870,15 +894,21 @@
                         []
                     )
                     (Print
-                        [(ComplexConstructor
-                            (Var 2 x1)
-                            (Cast
-                                (Var 2 i)
-                                IntegerToReal
-                                (Real 4)
+                        [(StringFormat
+                            ()
+                            [(ComplexConstructor
+                                (Var 2 x1)
+                                (Cast
+                                    (Var 2 i)
+                                    IntegerToReal
+                                    (Real 4)
+                                    ()
+                                )
+                                (Complex 4)
                                 ()
-                            )
-                            (Complex 4)
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
                             ()
                         )]
                         ()
@@ -938,9 +968,15 @@
                         []
                     )
                     (Print
-                        [(Var 2 x)
-                        (Var 2 y)
-                        (Var 2 z)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 x)
+                            (Var 2 y)
+                            (Var 2 z)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )]

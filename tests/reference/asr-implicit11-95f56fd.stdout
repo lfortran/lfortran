@@ -90,18 +90,24 @@
                         ()
                     )
                     (Print
-                        [(IntrinsicElementalFunction
-                            Aimag
-                            [(Var 2 z)]
-                            0
-                            (Real 8)
+                        [(StringFormat
                             ()
-                        )
-                        (IntrinsicElementalFunction
-                            Aimag
-                            [(Var 2 i)]
-                            0
-                            (Real 8)
+                            [(IntrinsicElementalFunction
+                                Aimag
+                                [(Var 2 z)]
+                                0
+                                (Real 8)
+                                ()
+                            )
+                            (IntrinsicElementalFunction
+                                Aimag
+                                [(Var 2 i)]
+                                0
+                                (Real 8)
+                                ()
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
                             ()
                         )]
                         ()

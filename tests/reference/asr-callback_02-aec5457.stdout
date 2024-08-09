@@ -170,7 +170,13 @@
                                         ()
                                     )
                                     (Print
-                                        [(Var 3 res)]
+                                        [(StringFormat
+                                            ()
+                                            [(Var 3 res)]
+                                            FormatFortran
+                                            (Character -1 0 ())
+                                            ()
+                                        )]
                                         ()
                                         ()
                                     )
@@ -182,7 +188,13 @@
                                         ()
                                     )
                                     (Print
-                                        [(Var 3 res)]
+                                        [(StringFormat
+                                            ()
+                                            [(Var 3 res)]
+                                            FormatFortran
+                                            (Character -1 0 ())
+                                            ()
+                                        )]
                                         ()
                                         ()
                                     )
@@ -204,7 +216,13 @@
                                         ()
                                     )
                                     (Print
-                                        [(Var 3 res)]
+                                        [(StringFormat
+                                            ()
+                                            [(Var 3 res)]
+                                            FormatFortran
+                                            (Character -1 0 ())
+                                            ()
+                                        )]
                                         ()
                                         ()
                                     )]
