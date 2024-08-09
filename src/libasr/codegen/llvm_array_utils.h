@@ -158,6 +158,10 @@ namespace LCompilers {
                     llvm::Value* arr, int n_dims) = 0;
 
                 virtual
+                void fill_dimension_descriptor2(
+                    llvm::Type* type, llvm::Value* arr, int n_dims) = 0;
+
+                virtual
                 void reset_array_details(
                     llvm::Value* arr, llvm::Value* source_arr, int n_dims) = 0;
 
@@ -171,6 +175,13 @@ namespace LCompilers {
                 virtual
                 void fill_descriptor_for_array_section_data_only(
                     llvm::Value* value_desc, llvm::Value* target,
+                    llvm::Value** lbs, llvm::Value** ubs,
+                    llvm::Value** ds, llvm::Value** non_sliced_indices,
+                    llvm::Value** llvm_diminfo, int value_rank, int target_rank) = 0;
+
+                virtual
+                void fill_descriptor_for_array_section_data_only2(
+                    llvm::Value* value_desc, llvm::Value* target, llvm::Type* target_type,
                     llvm::Value** lbs, llvm::Value** ubs,
                     llvm::Value** ds, llvm::Value** non_sliced_indices,
                     llvm::Value** llvm_diminfo, int value_rank, int target_rank) = 0;
@@ -190,6 +201,9 @@ namespace LCompilers {
                 virtual
                 llvm::Value* get_pointer_to_data(llvm::Value* arr) = 0;
 
+                virtual
+                llvm::Value* get_pointer_to_data2(llvm::Type* type, llvm::Value* arr) = 0;
+
                 /*
                 * Returns offset in the input
                 * array descriptor according to the rules
@@ -198,6 +212,9 @@ namespace LCompilers {
                 virtual
                 llvm::Value* get_offset(llvm::Value* dim_des, bool load=true) = 0;
 
+                virtual
+                llvm::Value* get_offset2(llvm::Type* type, llvm::Value* dim_des, bool load=true) = 0;
+
                 /*
                 * Returns lower bound in the input
                 * dimension descriptor according to the rules
@@ -205,6 +222,9 @@ namespace LCompilers {
                 */
                 virtual
                 llvm::Value* get_lower_bound(llvm::Value* dim_des, bool load=true) = 0;
+
+                virtual
+                llvm::Value* get_lower_bound2(llvm::Type* type, llvm::Value* dim_des, bool load=true) = 0;
 
                 /*
                 * Returns upper bound in the input
@@ -222,6 +242,9 @@ namespace LCompilers {
                 virtual
                 llvm::Value* get_stride(llvm::Value* dim_des, bool load=true) = 0;
 
+                virtual
+                llvm::Value* get_stride2(llvm::Type* type, llvm::Value* dim_des, bool load=true) = 0;
+
                 /*
                 * Returns dimension size in the input
                 * dimension descriptor according to the rules
@@ -236,7 +259,14 @@ namespace LCompilers {
                     bool load=true) = 0;
 
                 virtual
+                llvm::Value* get_dimension_size2(llvm::Type* type, llvm::Value* dim_des,
+                    bool load=true) = 0;
+
+                virtual
                 llvm::Value* get_rank(llvm::Value* arr, bool get_pointer=false) = 0;
+
+                virtual
+                llvm::Value* get_rank2(llvm::Type* type, llvm::Value* arr, bool get_pointer=false) = 0;
 
                 virtual
                 void set_rank(llvm::Value* arr, llvm::Value* rank) = 0;
@@ -247,7 +277,7 @@ namespace LCompilers {
                 * implemented by current class.
                 */
                 virtual
-                llvm::Value* get_pointer_to_dimension_descriptor_array(llvm::Type *type, llvm::Value* arr, bool load=true) = 0;
+                llvm::Value* get_pointer_to_dimension_descriptor_array2(llvm::Type *type, llvm::Value* arr, bool load=true) = 0;
 
                 virtual
                 llvm::Value* get_pointer_to_dimension_descriptor_array(llvm::Value* arr, bool load=true) = 0;
@@ -378,6 +408,10 @@ namespace LCompilers {
                     llvm::Value* arr, int n_dims);
 
                 virtual
+                void fill_dimension_descriptor2(
+                    llvm::Type* type, llvm::Value* arr, int n_dims);
+
+                virtual
                 void reset_array_details(
                     llvm::Value* arr, llvm::Value* source_arr, int n_dims);
 
@@ -396,13 +430,26 @@ namespace LCompilers {
                     llvm::Value** llvm_diminfo, int value_rank, int target_rank);
 
                 virtual
+                void fill_descriptor_for_array_section_data_only2(
+                    llvm::Value* value_desc, llvm::Value* target, llvm::Type* target_type,
+                    llvm::Value** lbs, llvm::Value** ubs,
+                    llvm::Value** ds, llvm::Value** non_sliced_indices,
+                    llvm::Value** llvm_diminfo, int value_rank, int target_rank);
+
+                virtual
                 llvm::Type* get_dimension_descriptor_type(bool get_pointer=false);
 
                 virtual
                 llvm::Value* get_pointer_to_data(llvm::Value* arr);
 
                 virtual
+                llvm::Value* get_pointer_to_data2(llvm::Type* type, llvm::Value* arr);
+
+                virtual
                 llvm::Value* get_rank(llvm::Value* arr, bool get_pointer=false);
+
+                virtual
+                llvm::Value* get_rank2(llvm::Type* type, llvm::Value* arr, bool get_pointer=false);
 
                 virtual
                 void set_rank(llvm::Value* arr, llvm::Value* rank);
@@ -411,7 +458,13 @@ namespace LCompilers {
                 llvm::Value* get_offset(llvm::Value* dim_des, bool load=true);
 
                 virtual
+                llvm::Value* get_offset2(llvm::Type* type, llvm::Value* dim_des, bool load=true);
+
+                virtual
                 llvm::Value* get_lower_bound(llvm::Value* dim_des, bool load=true);
+
+                virtual
+                llvm::Value* get_lower_bound2(llvm::Type* type, llvm::Value* dim_des, bool load=true);
 
                 virtual
                 llvm::Value* get_upper_bound(llvm::Value* dim_des);
@@ -425,7 +478,11 @@ namespace LCompilers {
                     bool load=true);
 
                 virtual
-                llvm::Value* get_pointer_to_dimension_descriptor_array(llvm::Type* type, llvm::Value* arr, bool load=true);
+                llvm::Value* get_dimension_size2(llvm::Type* type, llvm::Value* dim_des,
+                    bool load=true);
+
+                virtual
+                llvm::Value* get_pointer_to_dimension_descriptor_array2(llvm::Type* type, llvm::Value* arr, bool load=true);
 
                 virtual
                 llvm::Value* get_pointer_to_dimension_descriptor_array(llvm::Value* arr, bool load=true);
@@ -436,6 +493,9 @@ namespace LCompilers {
 
                 virtual
                 llvm::Value* get_stride(llvm::Value* dim_des, bool load=true);
+
+                virtual
+                llvm::Value* get_stride2(llvm::Type* type, llvm::Value* dim_des, bool load=true);
 
                 virtual
                 llvm::Value* get_single_element(llvm::Type *type, llvm::Value* array,
