@@ -1842,24 +1842,22 @@ public:
     {
         std::string indent(indentation_level * indentation_spaces, ' ');
         std::string out = indent + "println(", sep;
-        if (x.m_separator) {
-            visit_expr(*x.m_separator);
-            sep = src;
-        } else {
-            sep = "\" \"";
+        sep = "\" \"";
+        //HACKISH way to handle print refactoring (always using stringformat).
+        // TODO : Implement stringformat visitor.
+        ASR::StringFormat_t* str_fmt = nullptr;
+        size_t n_values = x.n_values;
+        if(x.m_values[0] && ASR::is_a<ASR::StringFormat_t>(*x.m_values[0])){
+            str_fmt = ASR::down_cast<ASR::StringFormat_t>(x.m_values[0]);
+            n_values = str_fmt->n_args;
         }
-        for (size_t i = 0; i < x.n_values; i++) {
-            visit_expr(*x.m_values[i]);
+        for (size_t i = 0; i < n_values; i++) {
+            str_fmt? visit_expr(*str_fmt->m_args[i]) : visit_expr(*x.m_values[i]);
             out += src;
-            if (i + 1 != x.n_values) {
+            if (i + 1 != n_values) {
                 out += ", " + sep + ", ";
             }
         }
-        if (x.m_end) {
-            visit_expr(*x.m_end);
-            out += src;
-        }
-
         out += ")\n";
         src = out;
     }

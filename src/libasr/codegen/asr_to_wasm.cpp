@@ -3110,28 +3110,27 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
 
     template <typename T>
     void handle_print(const T &x) {
-        for (size_t i = 0; i < x.n_values; i++) {
-            if (i > 0) {
-                if (x.m_separator) {
-                    m_wa.emit_i32_const(1); // file type: 1 for stdout
-                    this->visit_expr(*x.m_separator); // iov location
-                    m_wa.emit_i32_const(1); // size of iov vector
-                    m_wa.emit_i32_const(0); // mem_loction to return no. of bytes written
-
-                    // call WASI fd_write
-                    m_wa.emit_call(m_import_func_idx_map[fd_write]);
-                    m_wa.emit_drop();
-                } else {
-                    emit_call_fd_write(1, " ", 1, 0);
-                }
-            }
-            ASR::expr_t *v = x.m_values[i];
+        ASR::StringFormat_t* str_fmt = nullptr;
+        size_t n_values = x.n_values;
+        // HACKISH way to handle new print refactoring (always using stringformat).
+        // TO DO : implement visit_stringformat.
+        // If string_format is present, this is default formatted printing.
+        // loop on stringformat args.
+        if(x.m_values[0] && ASR::is_a<ASR::StringFormat_t>(*x.m_values[0])){
+            str_fmt = ASR::down_cast<ASR::StringFormat_t>(x.m_values[0]);      
+            n_values = str_fmt->n_args;
+        }
+        for (size_t i = 0; i < n_values; i++) {
+            ASR::expr_t *v = str_fmt? str_fmt->m_args[i] : x.m_values[i];
             ASR::ttype_t *t = ASRUtils::expr_type(v);
             int a_kind = ASRUtils::extract_kind_from_ttype_t(t);
-
+            if(i > 0){
+                emit_call_fd_write(1, " ", 1, 0);
+            } 
+            // TODO : Support array printing in backend.
             if (ASRUtils::is_integer(*t) || ASRUtils::is_logical(*t)) {
                 INCLUDE_RUNTIME_FUNC(print_i64);
-                this->visit_expr(*x.m_values[i]);
+                str_fmt? this->visit_expr(*str_fmt->m_args[i]) : this->visit_expr(*x.m_values[i]);
                 switch (a_kind) {
                     case 4: {
                         m_wa.emit_i64_extend_i32_s();
@@ -3151,7 +3150,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             } else if (ASRUtils::is_real(*t)) {
                 INCLUDE_RUNTIME_FUNC(print_i64);
                 INCLUDE_RUNTIME_FUNC(print_f64);
-                this->visit_expr(*x.m_values[i]);
+                str_fmt? this->visit_expr(*str_fmt->m_args[i]) : this->visit_expr(*x.m_values[i]);
                 switch (a_kind) {
                     case 4: {
                         m_wa.emit_f64_promote_f32();
@@ -3170,7 +3169,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 }
             } else if (ASRUtils::is_character(*t)) {
                 m_wa.emit_i32_const(1); // file type: 1 for stdout
-                this->visit_expr(*x.m_values[i]); // iov location
+                str_fmt? this->visit_expr(*str_fmt->m_args[i]) : this->visit_expr(*x.m_values[i]);// iov location
                 m_wa.emit_i32_const(1); // size of iov vector
                 m_wa.emit_i32_const(0); // mem_loction to return no. of bytes written
 
@@ -3181,7 +3180,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 INCLUDE_RUNTIME_FUNC(print_i64);
                 INCLUDE_RUNTIME_FUNC(print_f64);
                 emit_call_fd_write(1, "(", 1, 0);
-                this->visit_expr(*x.m_values[i]);
+                str_fmt? this->visit_expr(*str_fmt->m_args[i]) : this->visit_expr(*x.m_values[i]);
                 if (a_kind == 4) {
                     m_wa.emit_f64_promote_f32();
                     m_wa.emit_global_set(m_compiler_globals[tmp_reg_f64]);
@@ -3196,20 +3195,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 emit_call_fd_write(1, ")", 1, 0);
             }
         }
-
-        // print "\n" newline character
-        if (x.m_end) {
-            m_wa.emit_i32_const(1); // file type: 1 for stdout
-            this->visit_expr(*x.m_end); // iov location
-            m_wa.emit_i32_const(1); // size of iov vector
-            m_wa.emit_i32_const(0); // mem_loction to return no. of bytes written
-
-            // call WASI fd_write
-            m_wa.emit_call(m_import_func_idx_map[fd_write]);
-            m_wa.emit_drop();
-        } else {
-            emit_call_fd_write(1, "\n", 1, 0);
-        }
+        emit_call_fd_write(1, "\n", 1, 0);
     }
 
     void visit_Print(const ASR::Print_t &x) {

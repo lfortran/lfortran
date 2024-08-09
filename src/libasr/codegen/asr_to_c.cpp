@@ -1146,15 +1146,18 @@ R"(    // Initialise Numpy
         bracket_open++;
         std::vector<std::string> v;
         std::string separator;
-        if (x.m_separator) {
-            this->visit_expr(*x.m_separator);
-            separator = src;
-        } else {
-            separator = "\" \"";
+        separator = "\" \"";
+        //HACKISH way to handle print refactoring (always using stringformat).
+        // TODO : Implement stringformat visitor.
+        ASR::StringFormat_t* str_fmt = nullptr;
+        size_t n_values = x.n_values;
+        if(x.m_values[0] && ASR::is_a<ASR::StringFormat_t>(*x.m_values[0])){
+            str_fmt = ASR::down_cast<ASR::StringFormat_t>(x.m_values[0]);
+            n_values = str_fmt->n_args;
         }
-        for (size_t i=0; i<x.n_values; i++) {
-            this->visit_expr(*x.m_values[i]);
-            ASR::ttype_t* value_type = ASRUtils::expr_type(x.m_values[i]);
+        for (size_t i=0; i<n_values; i++) {
+            str_fmt? this->visit_expr(*(str_fmt->m_args[i])) : this->visit_expr(*x.m_values[i]);
+            ASR::ttype_t* value_type = str_fmt? ASRUtils::expr_type(str_fmt->m_args[i]) : ASRUtils::expr_type(x.m_values[i]);
             if( ASRUtils::is_array(value_type) ) {
                 src += "->data";
             }
@@ -1174,25 +1177,19 @@ R"(    // Initialise Numpy
                 out += indent + p_func + "(" + src + ");\n";
                 continue;
             }
-            tmp_gen += c_ds_api->get_print_type(value_type, ASR::is_a<ASR::ArrayItem_t>(*x.m_values[i]));
+            tmp_gen +=c_ds_api->get_print_type(value_type, ASR::is_a<ASR::ArrayItem_t>(str_fmt? *(str_fmt->m_args[i]) : *x.m_values[i]));
             v.push_back(src);
             if (ASR::is_a<ASR::Complex_t>(*value_type)) {
                 v.pop_back();
                 v.push_back("creal(" + src + ")");
                 v.push_back("cimag(" + src + ")");
             }
-            if (i+1!=x.n_values) {
+            if (i+1!=n_values) {
                 tmp_gen += "\%s";
                 v.push_back(separator);
             }
         }
-        if (x.m_end) {
-            this->visit_expr(*x.m_end);
-            tmp_gen += "\%s\"";
-            v.push_back(src);
-        } else {
-            tmp_gen += "\\n\"";
-        }
+        tmp_gen += "\\n\"";
         if (!v.empty()) {
             for (auto &s: v) {
                 tmp_gen += ", " + s;
