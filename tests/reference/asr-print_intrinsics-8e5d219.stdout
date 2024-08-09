@@ -1,0 +1,130 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            print_intrinsics:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            dp:
+                                (Variable
+                                    2
+                                    dp
+                                    []
+                                    Local
+                                    (TypeInquiry
+                                        Kind
+                                        (Real 8)
+                                        (RealConstant
+                                            1.000000
+                                            (Real 8)
+                                        )
+                                        (Integer 4)
+                                        (IntegerConstant 8 (Integer 4) Decimal)
+                                    )
+                                    (IntegerConstant 8 (Integer 4) Decimal)
+                                    Parameter
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            sp:
+                                (Variable
+                                    2
+                                    sp
+                                    []
+                                    Local
+                                    (TypeInquiry
+                                        Kind
+                                        (Real 4)
+                                        (RealConstant
+                                            1.000000
+                                            (Real 4)
+                                        )
+                                        (Integer 4)
+                                        (IntegerConstant 4 (Integer 4) Decimal)
+                                    )
+                                    (IntegerConstant 4 (Integer 4) Decimal)
+                                    Parameter
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    print_intrinsics
+                    []
+                    [(Print
+                        [(StringConstant
+                            "pi=acos(-1.0_sp)  =\""
+                            (Character 1 20 ())
+                        )
+                        (IntrinsicElementalFunction
+                            Acos
+                            [(RealUnaryMinus
+                                (RealConstant
+                                    1.000000
+                                    (Real 4)
+                                )
+                                (Real 4)
+                                (RealConstant
+                                    -1.000000
+                                    (Real 4)
+                                )
+                            )]
+                            0
+                            (Real 4)
+                            (RealConstant
+                                3.141593
+                                (Real 4)
+                            )
+                        )
+                        (StringConstant
+                            "\""
+                            (Character 1 1 ())
+                        )]
+                        ()
+                        ()
+                    )
+                    (Print
+                        [(StringConstant
+                            "pi=acos(-1.0_dp)  =\""
+                            (Character 1 20 ())
+                        )
+                        (IntrinsicElementalFunction
+                            Acos
+                            [(RealUnaryMinus
+                                (RealConstant
+                                    1.000000
+                                    (Real 8)
+                                )
+                                (Real 8)
+                                (RealConstant
+                                    -1.000000
+                                    (Real 8)
+                                )
+                            )]
+                            0
+                            (Real 8)
+                            (RealConstant
+                                3.141593
+                                (Real 8)
+                            )
+                        )
+                        (StringConstant
+                            "\""
+                            (Character 1 1 ())
+                        )]
+                        ()
+                        ()
+                    )]
+                )
+        })
+    []
+)

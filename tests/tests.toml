@@ -2604,6 +2604,11 @@ asr = true
 run = true
 
 [[test]]
+filename = "print_intrinsics.f90"
+asr = true
+run = true
+
+[[test]]
 filename = "uppercase1.f90"
 asr = true
 
