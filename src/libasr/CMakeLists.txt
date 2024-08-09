@@ -20,6 +20,7 @@ set(SRC
     codegen/asr_to_julia.cpp
     codegen/asr_to_python.cpp
     codegen/asr_to_fortran.cpp
+    codegen/asr_to_mlir.cpp
     codegen/asr_to_py.cpp
     codegen/x86_assembler.cpp
     codegen/asr_to_x86.cpp

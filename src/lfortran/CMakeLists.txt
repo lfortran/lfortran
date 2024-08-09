@@ -67,6 +67,7 @@ endif()
 if (WITH_LLVM)
     target_link_libraries(lfortran_lib p::llvm)
 endif()
+target_link_libraries(lfortran_lib p::mlir)
 #install(TARGETS lfortran_lib
 #    RUNTIME DESTINATION bin
 #    ARCHIVE DESTINATION lib

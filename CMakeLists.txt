@@ -128,6 +128,47 @@ if (WITH_LCOMPILERS_FAST_ALLOC)
     add_definitions("-DLCOMPILERS_FAST_ALLOC=1")
 endif()
 
+message(STATUS "Using MLIRConfig.cmake in: ${MLIR_DIR}")
+# set(LFORTRAN_LLVM_COMPONENTS ir analysis)
+find_library(mlir_lib_path MLIRIR)
+find_package(MLIR REQUIRED CONFIG)
+# get_property(dialect_libs GLOBAL PROPERTY MLIR_DIALECT_LIBS)
+# get_property(conversion_libs GLOBAL PROPERTY MLIR_CONVERSION_LIBS)
+
+
+set(mlir_libs
+        ${dialect_libs}
+        ${conversion_libs}
+        MLIRAnalysis
+        MLIRCallInterfaces
+        MLIRCastInterfaces
+        MLIRExecutionEngine
+        MLIRDialect
+        MLIRIR
+        MLIRLLVMCommonConversion
+        MLIRLLVMToLLVMIRTranslation
+        MLIRMemRefDialect
+        MLIRLLVMDialect
+        MLIRParser
+        MLIRPass
+        MLIRSideEffectInterfaces
+        MLIRSupport
+        MLIRTargetLLVMIRExport
+        MLIRTransforms
+        MLIROptLib
+
+        MLIRSPIRVDialect
+        MLIRTranslateLib
+
+
+        )
+add_library(p::mlir INTERFACE IMPORTED)
+set_property(TARGET p::mlir PROPERTY INTERFACE_INCLUDE_DIRECTORIES
+    ${MLIR_INCLUDE_DIRS})
+
+set_property(TARGET p::mlir PROPERTY INTERFACE_LINK_LIBRARIES
+        ${mlir_libs})
+# target_link_libraries(MLIR PRIVATE ${LIBS})
 
 # LLVM
 set(WITH_LLVM no CACHE BOOL "Build with LLVM support")
