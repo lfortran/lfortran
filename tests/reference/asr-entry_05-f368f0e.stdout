@@ -733,7 +733,13 @@
                         []
                     )
                     (Print
-                        [(Var 5 r)]
+                        [(StringFormat
+                            ()
+                            [(Var 5 r)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )]

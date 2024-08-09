@@ -53,8 +53,14 @@
                         0
                     )
                     (Print
-                        [(Var 2 random_sp)
-                        (Var 2 random_dp)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 random_sp)
+                            (Var 2 random_dp)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )]

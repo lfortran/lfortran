@@ -210,7 +210,13 @@
                         ()
                     )
                     (Print
-                        [(Var 2 rxsp)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 rxsp)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
@@ -268,7 +274,13 @@
                         ()
                     )
                     (Print
-                        [(Var 2 rxsp)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 rxsp)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
@@ -322,7 +334,13 @@
                         ()
                     )
                     (Print
-                        [(Var 2 rxdp)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 rxdp)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
@@ -388,7 +406,13 @@
                         ()
                     )
                     (Print
-                        [(Var 2 rxdp)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 rxdp)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
@@ -447,7 +471,13 @@
                         ()
                     )
                     (Print
-                        [(Var 2 ixsp)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 ixsp)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
@@ -483,7 +513,13 @@
                         ()
                     )
                     (Print
-                        [(Var 2 ixdp)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 ixdp)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )

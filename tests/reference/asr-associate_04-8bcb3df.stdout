@@ -124,21 +124,27 @@
                                         (Var 2 myreal)
                                     )
                                     (Print
-                                        [(RealBinOp
-                                            (Var 2 a)
-                                            Add
-                                            (Var 3 z)
-                                            (Real 4)
+                                        [(StringFormat
                                             ()
-                                        )
-                                        (RealBinOp
-                                            (Var 2 a)
-                                            Sub
-                                            (Var 3 z)
-                                            (Real 4)
+                                            [(RealBinOp
+                                                (Var 2 a)
+                                                Add
+                                                (Var 3 z)
+                                                (Real 4)
+                                                ()
+                                            )
+                                            (RealBinOp
+                                                (Var 2 a)
+                                                Sub
+                                                (Var 3 z)
+                                                (Real 4)
+                                                ()
+                                            )
+                                            (Var 3 v)]
+                                            FormatFortran
+                                            (Character -1 0 ())
                                             ()
-                                        )
-                                        (Var 3 v)]
+                                        )]
                                         ()
                                         ()
                                     )
@@ -270,7 +276,13 @@
                         2 associate_block
                     )
                     (Print
-                        [(Var 2 myreal)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 myreal)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )

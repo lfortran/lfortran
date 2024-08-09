@@ -168,14 +168,15 @@ define i32 @main(i32 %0, i8** %1) {
   %value = alloca double, align 8
   store double 1.000000e+01, double* %value, align 8
   %2 = call i8* @__module_testdrive_derived_types_32_real_dp_to_string(double* %value)
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @7, i32 0, i32 0), i8* %2, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @6, i32 0, i32 0))
-  %3 = call i8* @__module_testdrive_derived_types_32_real_dp_to_string(double* %value)
-  %4 = alloca i8*, align 8
-  store i8* %3, i8** %4, align 8
+  %3 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 2, i8* null, i32 7, i8* %2)
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @7, i32 0, i32 0), i8* %3, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @6, i32 0, i32 0))
+  %4 = call i8* @__module_testdrive_derived_types_32_real_dp_to_string(double* %value)
   %5 = alloca i8*, align 8
-  store i8* getelementptr inbounds ([19 x i8], [19 x i8]* @8, i32 0, i32 0), i8** %5, align 8
-  %6 = call i1 @_lpython_str_compare_noteq(i8** %4, i8** %5)
-  br i1 %6, label %then, label %else
+  store i8* %4, i8** %5, align 8
+  %6 = alloca i8*, align 8
+  store i8* getelementptr inbounds ([19 x i8], [19 x i8]* @8, i32 0, i32 0), i8** %6, align 8
+  %7 = call i1 @_lpython_str_compare_noteq(i8** %5, i8** %6)
+  br i1 %7, label %then, label %else
 
 then:                                             ; preds = %.entry
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @11, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @9, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @10, i32 0, i32 0))

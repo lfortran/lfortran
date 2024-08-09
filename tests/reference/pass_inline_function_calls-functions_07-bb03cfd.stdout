@@ -242,7 +242,13 @@
                         ()
                     )
                     (Print
-                        [(Var 8 q)]
+                        [(StringFormat
+                            ()
+                            [(Var 8 q)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )]

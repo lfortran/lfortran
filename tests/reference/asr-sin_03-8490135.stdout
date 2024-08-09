@@ -56,7 +56,13 @@
                         ()
                     )
                     (Print
-                        [(Var 2 x)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 x)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )]

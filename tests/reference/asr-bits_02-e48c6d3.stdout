@@ -96,17 +96,35 @@
                     bits_02
                     [iso_fortran_env]
                     [(Print
-                        [(Var 2 block_size)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 block_size)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
                     (Print
-                        [(Var 2 all_zeros)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 all_zeros)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
                     (Print
-                        [(Var 2 all_ones)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 all_ones)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )]

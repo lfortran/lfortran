@@ -86,11 +86,17 @@
                         ()
                     )
                     (Print
-                        [(StringConstant
-                            "factor in a:"
-                            (Character 1 12 ())
-                        )
-                        (Var 3 factor)]
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "factor in a:"
+                                (Character 1 12 ())
+                            )
+                            (Var 3 factor)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
@@ -146,11 +152,17 @@
                     []
                     [(Var 4 factor)]
                     [(Print
-                        [(StringConstant
-                            "factor: "
-                            (Character 1 8 ())
-                        )
-                        (Var 4 factor)]
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "factor: "
+                                (Character 1 8 ())
+                            )
+                            (Var 4 factor)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )]

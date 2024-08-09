@@ -436,11 +436,17 @@
                         ()
                     )
                     (Print
-                        [(StringConstant
-                            "6.0 == "
-                            (Character 1 7 ())
-                        )
-                        (Var 2 z)]
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "6.0 == "
+                                (Character 1 7 ())
+                            )
+                            (Var 2 z)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
@@ -458,11 +464,17 @@
                         ()
                     )
                     (Print
-                        [(StringConstant
-                            "7.0 == "
-                            (Character 1 7 ())
-                        )
-                        (Var 2 z)]
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "7.0 == "
+                                (Character 1 7 ())
+                            )
+                            (Var 2 z)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
@@ -480,11 +492,17 @@
                         ()
                     )
                     (Print
-                        [(StringConstant
-                            "6.0 == "
-                            (Character 1 7 ())
-                        )
-                        (Var 2 z)]
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "6.0 == "
+                                (Character 1 7 ())
+                            )
+                            (Var 2 z)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
@@ -502,11 +520,17 @@
                         ()
                     )
                     (Print
-                        [(StringConstant
-                            "8.0 == "
-                            (Character 1 7 ())
-                        )
-                        (Var 2 z)]
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "8.0 == "
+                                (Character 1 7 ())
+                            )
+                            (Var 2 z)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )]

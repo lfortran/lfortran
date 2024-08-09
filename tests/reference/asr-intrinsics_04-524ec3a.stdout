@@ -82,7 +82,13 @@
                         ()
                     )
                     (Print
-                        [(Var 2 x)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 x)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
@@ -298,7 +304,13 @@
                         ()
                     )
                     (Print
-                        [(Var 2 z)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 z)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )

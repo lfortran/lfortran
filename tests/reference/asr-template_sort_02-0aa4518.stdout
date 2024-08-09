@@ -3220,17 +3220,35 @@
                                         ()
                                     )
                                     (Print
-                                        [(Var 15 xi)]
+                                        [(StringFormat
+                                            ()
+                                            [(Var 15 xi)]
+                                            FormatFortran
+                                            (Character -1 0 ())
+                                            ()
+                                        )]
                                         ()
                                         ()
                                     )
                                     (Print
-                                        [(Var 15 xr)]
+                                        [(StringFormat
+                                            ()
+                                            [(Var 15 xr)]
+                                            FormatFortran
+                                            (Character -1 0 ())
+                                            ()
+                                        )]
                                         ()
                                         ()
                                     )
                                     (Print
-                                        [(Var 15 xm)]
+                                        [(StringFormat
+                                            ()
+                                            [(Var 15 xm)]
+                                            FormatFortran
+                                            (Character -1 0 ())
+                                            ()
+                                        )]
                                         ()
                                         ()
                                     )]

@@ -279,11 +279,17 @@
                         ()
                     )
                     (Print
-                        [(StringConstant
-                            "10.0 =="
-                            (Character 1 7 ())
-                        )
-                        (Var 2 z)]
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "10.0 =="
+                                (Character 1 7 ())
+                            )
+                            (Var 2 z)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
@@ -301,11 +307,17 @@
                         ()
                     )
                     (Print
-                        [(StringConstant
-                            "49.0 =="
-                            (Character 1 7 ())
-                        )
-                        (Var 2 z)]
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "49.0 =="
+                                (Character 1 7 ())
+                            )
+                            (Var 2 z)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
@@ -323,11 +335,17 @@
                         ()
                     )
                     (Print
-                        [(StringConstant
-                            "10.0 =="
-                            (Character 1 7 ())
-                        )
-                        (Var 2 z)]
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "10.0 =="
+                                (Character 1 7 ())
+                            )
+                            (Var 2 z)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )]

@@ -216,11 +216,17 @@
                         ()
                     )
                     (Print
-                        [(Var 2 l_knd)
-                        (Var 2 sp)
-                        (Var 2 dp)
-                        (Var 2 i32)
-                        (Var 2 i64)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 l_knd)
+                            (Var 2 sp)
+                            (Var 2 dp)
+                            (Var 2 i32)
+                            (Var 2 i64)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )]

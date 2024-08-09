@@ -67,7 +67,13 @@
                         )
                     )
                     (Print
-                        [(Var 2 ivec)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 ivec)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )]

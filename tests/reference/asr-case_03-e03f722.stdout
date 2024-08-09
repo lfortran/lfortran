@@ -75,9 +75,15 @@
                             )
                             ()
                             [(Print
-                                [(StringConstant
-                                    "Pass!"
-                                    (Character 1 5 ())
+                                [(StringFormat
+                                    ()
+                                    [(StringConstant
+                                        "Pass!"
+                                        (Character 1 5 ())
+                                    )]
+                                    FormatFortran
+                                    (Character -1 0 ())
+                                    ()
                                 )]
                                 ()
                                 ()
@@ -93,18 +99,30 @@
                                 (IntegerConstant 38 (Integer 4) Decimal)
                             )
                             [(Print
-                                [(StringConstant
-                                    "Failed!"
-                                    (Character 1 7 ())
+                                [(StringFormat
+                                    ()
+                                    [(StringConstant
+                                        "Failed!"
+                                        (Character 1 7 ())
+                                    )]
+                                    FormatFortran
+                                    (Character -1 0 ())
+                                    ()
                                 )]
                                 ()
                                 ()
                             )]
                         )]
                         [(Print
-                            [(StringConstant
-                                "Invalid marks"
-                                (Character 1 13 ())
+                            [(StringFormat
+                                ()
+                                [(StringConstant
+                                    "Invalid marks"
+                                    (Character 1 13 ())
+                                )]
+                                FormatFortran
+                                (Character -1 0 ())
+                                ()
                             )]
                             ()
                             ()
@@ -112,11 +130,17 @@
                         .false.
                     )
                     (Print
-                        [(StringConstant
-                            "Your marks are "
-                            (Character 1 15 ())
-                        )
-                        (Var 2 marks)]
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "Your marks are "
+                                (Character 1 15 ())
+                            )
+                            (Var 2 marks)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
@@ -141,9 +165,15 @@
                             )
                             ()
                             [(Print
-                                [(StringConstant
-                                    "Pass!"
-                                    (Character 1 5 ())
+                                [(StringFormat
+                                    ()
+                                    [(StringConstant
+                                        "Pass!"
+                                        (Character 1 5 ())
+                                    )]
+                                    FormatFortran
+                                    (Character -1 0 ())
+                                    ()
                                 )]
                                 ()
                                 ()
@@ -159,18 +189,30 @@
                                 (IntegerConstant 38 (Integer 4) Decimal)
                             )
                             [(Print
-                                [(StringConstant
-                                    "Failed!"
-                                    (Character 1 7 ())
+                                [(StringFormat
+                                    ()
+                                    [(StringConstant
+                                        "Failed!"
+                                        (Character 1 7 ())
+                                    )]
+                                    FormatFortran
+                                    (Character -1 0 ())
+                                    ()
                                 )]
                                 ()
                                 ()
                             )]
                         )]
                         [(Print
-                            [(StringConstant
-                                "Invalid marks"
-                                (Character 1 13 ())
+                            [(StringFormat
+                                ()
+                                [(StringConstant
+                                    "Invalid marks"
+                                    (Character 1 13 ())
+                                )]
+                                FormatFortran
+                                (Character -1 0 ())
+                                ()
                             )]
                             ()
                             ()
@@ -178,11 +220,17 @@
                         .false.
                     )
                     (Print
-                        [(StringConstant
-                            "Your marks are "
-                            (Character 1 15 ())
-                        )
-                        (Var 2 marks)]
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "Your marks are "
+                                (Character 1 15 ())
+                            )
+                            (Var 2 marks)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )]

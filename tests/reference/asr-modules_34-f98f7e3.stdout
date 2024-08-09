@@ -199,7 +199,13 @@
                                                         (Var 5 i)
                                                     )
                                                     (Print
-                                                        [(Var 6 ii)]
+                                                        [(StringFormat
+                                                            ()
+                                                            [(Var 6 ii)]
+                                                            FormatFortran
+                                                            (Character -1 0 ())
+                                                            ()
+                                                        )]
                                                         ()
                                                         ()
                                                     )
@@ -554,9 +560,15 @@
                     modules_34
                     []
                     [(Print
-                        [(StringConstant
-                            "running modules_34 program"
-                            (Character 1 26 ())
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "running modules_34 program"
+                                (Character 1 26 ())
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
                         )]
                         ()
                         ()

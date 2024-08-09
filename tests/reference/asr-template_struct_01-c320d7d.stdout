@@ -897,16 +897,22 @@
                                         ()
                                     )
                                     (Print
-                                        [(StringConstant
-                                            "First element: "
-                                            (Character 1 15 ())
-                                        )
-                                        (FunctionCall
-                                            8 get_int_fst
+                                        [(StringFormat
                                             ()
-                                            [((Var 8 ti))]
-                                            (Integer 4)
-                                            ()
+                                            [(StringConstant
+                                                "First element: "
+                                                (Character 1 15 ())
+                                            )
+                                            (FunctionCall
+                                                8 get_int_fst
+                                                ()
+                                                [((Var 8 ti))]
+                                                (Integer 4)
+                                                ()
+                                                ()
+                                            )]
+                                            FormatFortran
+                                            (Character -1 0 ())
                                             ()
                                         )]
                                         ()
@@ -923,16 +929,22 @@
                                         ()
                                     )
                                     (Print
-                                        [(StringConstant
-                                            "Second element: "
-                                            (Character 1 16 ())
-                                        )
-                                        (FunctionCall
-                                            8 get_int_snd
+                                        [(StringFormat
                                             ()
-                                            [((Var 8 ti))]
-                                            (Integer 4)
-                                            ()
+                                            [(StringConstant
+                                                "Second element: "
+                                                (Character 1 16 ())
+                                            )
+                                            (FunctionCall
+                                                8 get_int_snd
+                                                ()
+                                                [((Var 8 ti))]
+                                                (Integer 4)
+                                                ()
+                                                ()
+                                            )]
+                                            FormatFortran
+                                            (Character -1 0 ())
                                             ()
                                         )]
                                         ()
@@ -952,16 +964,22 @@
                                         ()
                                     )
                                     (Print
-                                        [(StringConstant
-                                            "First element: "
-                                            (Character 1 15 ())
-                                        )
-                                        (FunctionCall
-                                            8 get_real_fst
+                                        [(StringFormat
                                             ()
-                                            [((Var 8 tr))]
-                                            (Real 4)
-                                            ()
+                                            [(StringConstant
+                                                "First element: "
+                                                (Character 1 15 ())
+                                            )
+                                            (FunctionCall
+                                                8 get_real_fst
+                                                ()
+                                                [((Var 8 tr))]
+                                                (Real 4)
+                                                ()
+                                                ()
+                                            )]
+                                            FormatFortran
+                                            (Character -1 0 ())
                                             ()
                                         )]
                                         ()
@@ -981,16 +999,22 @@
                                         ()
                                     )
                                     (Print
-                                        [(StringConstant
-                                            "Second element: "
-                                            (Character 1 16 ())
-                                        )
-                                        (FunctionCall
-                                            8 get_real_snd
+                                        [(StringFormat
                                             ()
-                                            [((Var 8 tr))]
-                                            (Real 4)
-                                            ()
+                                            [(StringConstant
+                                                "Second element: "
+                                                (Character 1 16 ())
+                                            )
+                                            (FunctionCall
+                                                8 get_real_snd
+                                                ()
+                                                [((Var 8 tr))]
+                                                (Real 4)
+                                                ()
+                                                ()
+                                            )]
+                                            FormatFortran
+                                            (Character -1 0 ())
                                             ()
                                         )]
                                         ()

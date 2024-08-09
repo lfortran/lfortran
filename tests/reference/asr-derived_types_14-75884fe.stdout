@@ -513,9 +513,15 @@
                     main
                     []
                     [(Print
-                        [(StringConstant
-                            "running derived_types_14 main program"
-                            (Character 1 37 ())
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "running derived_types_14 main program"
+                                (Character 1 37 ())
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
                         )]
                         ()
                         ()

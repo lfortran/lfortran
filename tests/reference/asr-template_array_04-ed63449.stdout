@@ -696,7 +696,13 @@
                                         ()
                                     )
                                     (Print
-                                        [(Var 7 a)]
+                                        [(StringFormat
+                                            ()
+                                            [(Var 7 a)]
+                                            FormatFortran
+                                            (Character -1 0 ())
+                                            ()
+                                        )]
                                         ()
                                         ()
                                     )

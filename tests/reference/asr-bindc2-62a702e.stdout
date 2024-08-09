@@ -409,46 +409,64 @@
                         []
                     )
                     (Print
-                        [(ArrayBound
-                            (Var 2 x)
-                            (IntegerConstant 1 (Integer 4) Decimal)
-                            (Integer 4)
-                            LBound
+                        [(StringFormat
                             ()
-                        )
-                        (ArrayBound
-                            (Var 2 x)
-                            (IntegerConstant 1 (Integer 4) Decimal)
-                            (Integer 4)
-                            UBound
-                            ()
-                        )]
-                        ()
-                        ()
-                    )
-                    (Print
-                        [(ArrayBound
-                            (Var 2 x)
-                            (IntegerConstant 2 (Integer 4) Decimal)
-                            (Integer 4)
-                            LBound
-                            ()
-                        )
-                        (ArrayBound
-                            (Var 2 x)
-                            (IntegerConstant 2 (Integer 4) Decimal)
-                            (Integer 4)
-                            UBound
+                            [(ArrayBound
+                                (Var 2 x)
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                (Integer 4)
+                                LBound
+                                ()
+                            )
+                            (ArrayBound
+                                (Var 2 x)
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                (Integer 4)
+                                UBound
+                                ()
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
                             ()
                         )]
                         ()
                         ()
                     )
                     (Print
-                        [(ArraySize
-                            (Var 2 x)
+                        [(StringFormat
                             ()
-                            (Integer 4)
+                            [(ArrayBound
+                                (Var 2 x)
+                                (IntegerConstant 2 (Integer 4) Decimal)
+                                (Integer 4)
+                                LBound
+                                ()
+                            )
+                            (ArrayBound
+                                (Var 2 x)
+                                (IntegerConstant 2 (Integer 4) Decimal)
+                                (Integer 4)
+                                UBound
+                                ()
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
+                        ()
+                        ()
+                    )
+                    (Print
+                        [(StringFormat
+                            ()
+                            [(ArraySize
+                                (Var 2 x)
+                                ()
+                                (Integer 4)
+                                ()
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
                             ()
                         )]
                         ()

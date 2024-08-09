@@ -155,7 +155,13 @@
                         ()
                     )
                     (Print
-                        [(Var 2 array)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 array)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )]

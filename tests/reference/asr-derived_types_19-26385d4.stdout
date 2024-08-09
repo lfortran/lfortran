@@ -198,9 +198,15 @@
                                     []
                                     []
                                     [(Print
-                                        [(StringConstant
-                                            "default class"
-                                            (Character 1 13 ())
+                                        [(StringFormat
+                                            ()
+                                            [(StringConstant
+                                                "default class"
+                                                (Character 1 13 ())
+                                            )]
+                                            FormatFortran
+                                            (Character -1 0 ())
+                                            ()
                                         )]
                                         ()
                                         ()
@@ -243,9 +249,15 @@
                                     []
                                     []
                                     [(Print
-                                        [(StringConstant
-                                            "not ok"
-                                            (Character 1 6 ())
+                                        [(StringFormat
+                                            ()
+                                            [(StringConstant
+                                                "not ok"
+                                                (Character 1 6 ())
+                                            )]
+                                            FormatFortran
+                                            (Character -1 0 ())
+                                            ()
                                         )]
                                         ()
                                         ()
@@ -364,9 +376,15 @@
                     main
                     []
                     [(Print
-                        [(StringConstant
-                            "running derived_types_19 main program"
-                            (Character 1 37 ())
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "running derived_types_19 main program"
+                                (Character 1 37 ())
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
                         )]
                         ()
                         ()

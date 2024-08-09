@@ -198,17 +198,35 @@
                     intrinsics_20
                     []
                     [(Print
-                        [(Var 2 pi)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 pi)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
                     (Print
-                        [(Var 2 pi_dp)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 pi_dp)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
                     (Print
-                        [(Var 2 x)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 x)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
@@ -218,212 +236,236 @@
                         ()
                     )
                     (Print
-                        [(IntrinsicElementalFunction
-                            Cos
-                            [(RealBinOp
-                                (Cast
-                                    (IntegerBinOp
-                                        (IntegerConstant 3 (Integer 4) Decimal)
-                                        Add
-                                        (IntegerConstant 4 (Integer 4) Decimal)
-                                        (Integer 4)
-                                        (IntegerConstant 7 (Integer 4) Decimal)
+                        [(StringFormat
+                            ()
+                            [(IntrinsicElementalFunction
+                                Cos
+                                [(RealBinOp
+                                    (Cast
+                                        (IntegerBinOp
+                                            (IntegerConstant 3 (Integer 4) Decimal)
+                                            Add
+                                            (IntegerConstant 4 (Integer 4) Decimal)
+                                            (Integer 4)
+                                            (IntegerConstant 7 (Integer 4) Decimal)
+                                        )
+                                        IntegerToReal
+                                        (Real 4)
+                                        (RealConstant
+                                            7.000000
+                                            (Real 4)
+                                        )
                                     )
-                                    IntegerToReal
-                                    (Real 4)
+                                    Mul
                                     (RealConstant
                                         7.000000
                                         (Real 4)
                                     )
-                                )
-                                Mul
-                                (RealConstant
-                                    7.000000
                                     (Real 4)
-                                )
-                                (Real 4)
-                                (RealConstant
-                                    49.000000
-                                    (Real 4)
-                                )
-                            )]
-                            0
-                            (Real 4)
-                            (RealConstant
-                                0.300593
-                                (Real 4)
-                            )
-                        )]
-                        ()
-                        ()
-                    )
-                    (Print
-                        [(IntrinsicElementalFunction
-                            Cos
-                            [(RealBinOp
-                                (Cast
-                                    (IntegerBinOp
-                                        (Var 2 y)
-                                        Add
-                                        (IntegerConstant 4 (Integer 4) Decimal)
-                                        (Integer 4)
-                                        ()
+                                    (RealConstant
+                                        49.000000
+                                        (Real 4)
                                     )
-                                    IntegerToReal
-                                    (Real 4)
-                                    ()
-                                )
-                                Mul
-                                (RealConstant
-                                    7.000000
-                                    (Real 4)
-                                )
+                                )]
+                                0
                                 (Real 4)
-                                ()
+                                (RealConstant
+                                    0.300593
+                                    (Real 4)
+                                )
                             )]
-                            0
-                            (Real 4)
+                            FormatFortran
+                            (Character -1 0 ())
                             ()
                         )]
                         ()
                         ()
                     )
                     (Print
-                        [(IntrinsicElementalFunction
-                            Cos
-                            [(RealBinOp
-                                (Cast
-                                    (IntegerBinOp
-                                        (Var 2 y2)
-                                        Add
-                                        (IntegerConstant 4 (Integer 4) Decimal)
-                                        (Integer 4)
-                                        (IntegerConstant 7 (Integer 4) Decimal)
+                        [(StringFormat
+                            ()
+                            [(IntrinsicElementalFunction
+                                Cos
+                                [(RealBinOp
+                                    (Cast
+                                        (IntegerBinOp
+                                            (Var 2 y)
+                                            Add
+                                            (IntegerConstant 4 (Integer 4) Decimal)
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        IntegerToReal
+                                        (Real 4)
+                                        ()
                                     )
-                                    IntegerToReal
-                                    (Real 4)
+                                    Mul
                                     (RealConstant
                                         7.000000
                                         (Real 4)
                                     )
-                                )
-                                Mul
-                                (RealConstant
-                                    7.000000
                                     (Real 4)
-                                )
+                                    ()
+                                )]
+                                0
                                 (Real 4)
-                                (RealConstant
-                                    49.000000
-                                    (Real 4)
-                                )
+                                ()
                             )]
-                            0
-                            (Real 4)
-                            (RealConstant
-                                0.300593
-                                (Real 4)
-                            )
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
                         )]
                         ()
                         ()
                     )
                     (Print
-                        [(RealBinOp
-                            (RealBinOp
-                                (IntrinsicElementalFunction
-                                    Cos
-                                    [(RealBinOp
-                                        (Var 2 x)
-                                        Add
-                                        (Cast
-                                            (IntegerConstant 1 (Integer 4) Decimal)
-                                            IntegerToReal
-                                            (Real 4)
-                                            (RealConstant
-                                                1.000000
-                                                (Real 4)
-                                            )
+                        [(StringFormat
+                            ()
+                            [(IntrinsicElementalFunction
+                                Cos
+                                [(RealBinOp
+                                    (Cast
+                                        (IntegerBinOp
+                                            (Var 2 y2)
+                                            Add
+                                            (IntegerConstant 4 (Integer 4) Decimal)
+                                            (Integer 4)
+                                            (IntegerConstant 7 (Integer 4) Decimal)
                                         )
+                                        IntegerToReal
                                         (Real 4)
                                         (RealConstant
-                                            1.300593
+                                            7.000000
                                             (Real 4)
                                         )
-                                    )]
-                                    0
+                                    )
+                                    Mul
+                                    (RealConstant
+                                        7.000000
+                                        (Real 4)
+                                    )
                                     (Real 4)
                                     (RealConstant
-                                        0.266928
+                                        49.000000
+                                        (Real 4)
+                                    )
+                                )]
+                                0
+                                (Real 4)
+                                (RealConstant
+                                    0.300593
+                                    (Real 4)
+                                )
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
+                        ()
+                        ()
+                    )
+                    (Print
+                        [(StringFormat
+                            ()
+                            [(RealBinOp
+                                (RealBinOp
+                                    (IntrinsicElementalFunction
+                                        Cos
+                                        [(RealBinOp
+                                            (Var 2 x)
+                                            Add
+                                            (Cast
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                IntegerToReal
+                                                (Real 4)
+                                                (RealConstant
+                                                    1.000000
+                                                    (Real 4)
+                                                )
+                                            )
+                                            (Real 4)
+                                            (RealConstant
+                                                1.300593
+                                                (Real 4)
+                                            )
+                                        )]
+                                        0
+                                        (Real 4)
+                                        (RealConstant
+                                            0.266928
+                                            (Real 4)
+                                        )
+                                    )
+                                    Pow
+                                    (Cast
+                                        (IntegerConstant 2 (Integer 4) Decimal)
+                                        IntegerToReal
+                                        (Real 4)
+                                        (RealConstant
+                                            2.000000
+                                            (Real 4)
+                                        )
+                                    )
+                                    (Real 4)
+                                    (RealConstant
+                                        0.071250
                                         (Real 4)
                                     )
                                 )
-                                Pow
-                                (Cast
-                                    (IntegerConstant 2 (Integer 4) Decimal)
-                                    IntegerToReal
+                                Add
+                                (RealBinOp
+                                    (IntrinsicElementalFunction
+                                        Sin
+                                        [(RealBinOp
+                                            (Var 2 x)
+                                            Add
+                                            (Cast
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                IntegerToReal
+                                                (Real 4)
+                                                (RealConstant
+                                                    1.000000
+                                                    (Real 4)
+                                                )
+                                            )
+                                            (Real 4)
+                                            (RealConstant
+                                                1.300593
+                                                (Real 4)
+                                            )
+                                        )]
+                                        0
+                                        (Real 4)
+                                        (RealConstant
+                                            0.963717
+                                            (Real 4)
+                                        )
+                                    )
+                                    Pow
+                                    (Cast
+                                        (IntegerConstant 2 (Integer 4) Decimal)
+                                        IntegerToReal
+                                        (Real 4)
+                                        (RealConstant
+                                            2.000000
+                                            (Real 4)
+                                        )
+                                    )
                                     (Real 4)
                                     (RealConstant
-                                        2.000000
+                                        0.928750
                                         (Real 4)
                                     )
                                 )
                                 (Real 4)
                                 (RealConstant
-                                    0.071250
+                                    1.000000
                                     (Real 4)
                                 )
-                            )
-                            Add
-                            (RealBinOp
-                                (IntrinsicElementalFunction
-                                    Sin
-                                    [(RealBinOp
-                                        (Var 2 x)
-                                        Add
-                                        (Cast
-                                            (IntegerConstant 1 (Integer 4) Decimal)
-                                            IntegerToReal
-                                            (Real 4)
-                                            (RealConstant
-                                                1.000000
-                                                (Real 4)
-                                            )
-                                        )
-                                        (Real 4)
-                                        (RealConstant
-                                            1.300593
-                                            (Real 4)
-                                        )
-                                    )]
-                                    0
-                                    (Real 4)
-                                    (RealConstant
-                                        0.963717
-                                        (Real 4)
-                                    )
-                                )
-                                Pow
-                                (Cast
-                                    (IntegerConstant 2 (Integer 4) Decimal)
-                                    IntegerToReal
-                                    (Real 4)
-                                    (RealConstant
-                                        2.000000
-                                        (Real 4)
-                                    )
-                                )
-                                (Real 4)
-                                (RealConstant
-                                    0.928750
-                                    (Real 4)
-                                )
-                            )
-                            (Real 4)
-                            (RealConstant
-                                1.000000
-                                (Real 4)
-                            )
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
                         )]
                         ()
                         ()

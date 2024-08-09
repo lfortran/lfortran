@@ -382,7 +382,13 @@
                         ()
                     )
                     (Print
-                        [(Var 3 y)]
+                        [(StringFormat
+                            ()
+                            [(Var 3 y)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
@@ -399,7 +405,13 @@
                         ()
                     )
                     (Print
-                        [(Var 3 q)]
+                        [(StringFormat
+                            ()
+                            [(Var 3 q)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )]

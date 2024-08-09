@@ -1349,12 +1349,24 @@
                                         ()
                                     )
                                     (Print
-                                        [(Var 16 sa)]
+                                        [(StringFormat
+                                            ()
+                                            [(Var 16 sa)]
+                                            FormatFortran
+                                            (Character -1 0 ())
+                                            ()
+                                        )]
                                         ()
                                         ()
                                     )
                                     (Print
-                                        [(Var 16 sb)]
+                                        [(StringFormat
+                                            ()
+                                            [(Var 16 sb)]
+                                            FormatFortran
+                                            (Character -1 0 ())
+                                            ()
+                                        )]
                                         ()
                                         ()
                                     )]

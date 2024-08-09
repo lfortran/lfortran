@@ -71,9 +71,15 @@
                     module_25
                     [tomlf_de_character]
                     [(Print
-                        [(StringConstant
-                            "running module_25 program"
-                            (Character 1 25 ())
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "running module_25 program"
+                                (Character 1 25 ())
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
                         )]
                         ()
                         ()

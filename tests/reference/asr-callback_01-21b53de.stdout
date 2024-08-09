@@ -338,14 +338,20 @@
                                     [(Var 5 c)
                                     (Var 5 d)]
                                     [(Print
-                                        [(FunctionCall
-                                            2 cb
+                                        [(StringFormat
                                             ()
-                                            [((Var 5 f))
-                                            ((Var 5 c))
-                                            ((Var 5 d))]
-                                            (Real 4)
-                                            ()
+                                            [(FunctionCall
+                                                2 cb
+                                                ()
+                                                [((Var 5 f))
+                                                ((Var 5 c))
+                                                ((Var 5 d))]
+                                                (Real 4)
+                                                ()
+                                                ()
+                                            )]
+                                            FormatFortran
+                                            (Character -1 0 ())
                                             ()
                                         )]
                                         ()

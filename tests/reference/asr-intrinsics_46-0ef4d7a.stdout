@@ -472,7 +472,13 @@
                     intrinsics_46
                     []
                     [(Print
-                        [(Var 2 i1)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 i1)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
@@ -493,7 +499,13 @@
                         []
                     )
                     (Print
-                        [(Var 2 i2)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 i2)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
@@ -519,7 +531,13 @@
                         []
                     )
                     (Print
-                        [(Var 2 ar1)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 ar1)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
@@ -582,7 +600,13 @@
                         []
                     )
                     (Print
-                        [(Var 2 ar2)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 ar2)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
@@ -665,16 +689,22 @@
                         []
                     )
                     (Print
-                        [(IntrinsicElementalFunction
-                            Ichar
-                            [(Var 2 arr1)]
-                            0
-                            (Array
-                                (Integer 4)
-                                [((IntegerConstant 1 (Integer 4) Decimal)
-                                (IntegerConstant 3 (Integer 4) Decimal))]
-                                FixedSizeArray
-                            )
+                        [(StringFormat
+                            ()
+                            [(IntrinsicElementalFunction
+                                Ichar
+                                [(Var 2 arr1)]
+                                0
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 3 (Integer 4) Decimal))]
+                                    FixedSizeArray
+                                )
+                                ()
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
                             ()
                         )]
                         ()
@@ -1467,11 +1497,17 @@
                         []
                     )
                     (Print
-                        [(IntrinsicElementalFunction
-                            Ichar
-                            [(Var 2 a)]
-                            0
-                            (Integer 4)
+                        [(StringFormat
+                            ()
+                            [(IntrinsicElementalFunction
+                                Ichar
+                                [(Var 2 a)]
+                                0
+                                (Integer 4)
+                                ()
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
                             ()
                         )]
                         ()
@@ -1497,11 +1533,17 @@
                         []
                     )
                     (Print
-                        [(IntrinsicElementalFunction
-                            Ichar
-                            [(Var 2 b)]
-                            0
-                            (Integer 4)
+                        [(StringFormat
+                            ()
+                            [(IntrinsicElementalFunction
+                                Ichar
+                                [(Var 2 b)]
+                                0
+                                (Integer 4)
+                                ()
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
                             ()
                         )]
                         ()
@@ -1527,11 +1569,17 @@
                         []
                     )
                     (Print
-                        [(IntrinsicElementalFunction
-                            Ichar
-                            [(Var 2 d)]
-                            0
-                            (Integer 4)
+                        [(StringFormat
+                            ()
+                            [(IntrinsicElementalFunction
+                                Ichar
+                                [(Var 2 d)]
+                                0
+                                (Integer 4)
+                                ()
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
                             ()
                         )]
                         ()
@@ -1557,15 +1605,21 @@
                         []
                     )
                     (Print
-                        [(IntrinsicElementalFunction
-                            Ichar
-                            [(StringConstant
-                                "a"
-                                (Character 1 1 ())
+                        [(StringFormat
+                            ()
+                            [(IntrinsicElementalFunction
+                                Ichar
+                                [(StringConstant
+                                    "a"
+                                    (Character 1 1 ())
+                                )]
+                                0
+                                (Integer 4)
+                                (IntegerConstant 97 (Integer 4) Decimal)
                             )]
-                            0
-                            (Integer 4)
-                            (IntegerConstant 97 (Integer 4) Decimal)
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
                         )]
                         ()
                         ()
@@ -1596,15 +1650,21 @@
                         []
                     )
                     (Print
-                        [(IntrinsicElementalFunction
-                            Ichar
-                            [(StringConstant
-                                "b"
-                                (Character 1 1 ())
+                        [(StringFormat
+                            ()
+                            [(IntrinsicElementalFunction
+                                Ichar
+                                [(StringConstant
+                                    "b"
+                                    (Character 1 1 ())
+                                )]
+                                0
+                                (Integer 4)
+                                (IntegerConstant 98 (Integer 4) Decimal)
                             )]
-                            0
-                            (Integer 4)
-                            (IntegerConstant 98 (Integer 4) Decimal)
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
                         )]
                         ()
                         ()
@@ -1635,15 +1695,21 @@
                         []
                     )
                     (Print
-                        [(IntrinsicElementalFunction
-                            Ichar
-                            [(StringConstant
-                                "C"
-                                (Character 1 1 ())
+                        [(StringFormat
+                            ()
+                            [(IntrinsicElementalFunction
+                                Ichar
+                                [(StringConstant
+                                    "C"
+                                    (Character 1 1 ())
+                                )]
+                                0
+                                (Integer 4)
+                                (IntegerConstant 67 (Integer 4) Decimal)
                             )]
-                            0
-                            (Integer 4)
-                            (IntegerConstant 67 (Integer 4) Decimal)
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
                         )]
                         ()
                         ()
@@ -1674,15 +1740,21 @@
                         []
                     )
                     (Print
-                        [(IntrinsicElementalFunction
-                            Ichar
-                            [(StringConstant
-                                "#"
-                                (Character 1 1 ())
+                        [(StringFormat
+                            ()
+                            [(IntrinsicElementalFunction
+                                Ichar
+                                [(StringConstant
+                                    "#"
+                                    (Character 1 1 ())
+                                )]
+                                0
+                                (Integer 4)
+                                (IntegerConstant 35 (Integer 4) Decimal)
                             )]
-                            0
-                            (Integer 4)
-                            (IntegerConstant 35 (Integer 4) Decimal)
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
                         )]
                         ()
                         ()
@@ -1713,18 +1785,24 @@
                         []
                     )
                     (Print
-                        [(TypeInquiry
-                            Kind
-                            (Integer 4)
-                            (IntrinsicElementalFunction
-                                Ichar
-                                [(Var 2 a)]
-                                0
+                        [(StringFormat
+                            ()
+                            [(TypeInquiry
+                                Kind
                                 (Integer 4)
-                                ()
-                            )
-                            (Integer 4)
-                            (IntegerConstant 4 (Integer 4) Decimal)
+                                (IntrinsicElementalFunction
+                                    Ichar
+                                    [(Var 2 a)]
+                                    0
+                                    (Integer 4)
+                                    ()
+                                )
+                                (Integer 4)
+                                (IntegerConstant 4 (Integer 4) Decimal)
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
                         )]
                         ()
                         ()
@@ -1758,18 +1836,24 @@
                         []
                     )
                     (Print
-                        [(TypeInquiry
-                            Kind
-                            (Integer 8)
-                            (IntrinsicElementalFunction
-                                Ichar
-                                [(Var 2 a)]
-                                0
+                        [(StringFormat
+                            ()
+                            [(TypeInquiry
+                                Kind
                                 (Integer 8)
-                                ()
-                            )
-                            (Integer 4)
-                            (IntegerConstant 8 (Integer 4) Decimal)
+                                (IntrinsicElementalFunction
+                                    Ichar
+                                    [(Var 2 a)]
+                                    0
+                                    (Integer 8)
+                                    ()
+                                )
+                                (Integer 4)
+                                (IntegerConstant 8 (Integer 4) Decimal)
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
                         )]
                         ()
                         ()
@@ -1803,21 +1887,27 @@
                         []
                     )
                     (Print
-                        [(TypeInquiry
-                            Kind
-                            (Integer 4)
-                            (IntrinsicElementalFunction
-                                Ichar
-                                [(StringConstant
-                                    "a"
-                                    (Character 1 1 ())
-                                )]
-                                0
+                        [(StringFormat
+                            ()
+                            [(TypeInquiry
+                                Kind
                                 (Integer 4)
-                                (IntegerConstant 97 (Integer 4) Decimal)
-                            )
-                            (Integer 4)
-                            (IntegerConstant 4 (Integer 4) Decimal)
+                                (IntrinsicElementalFunction
+                                    Ichar
+                                    [(StringConstant
+                                        "a"
+                                        (Character 1 1 ())
+                                    )]
+                                    0
+                                    (Integer 4)
+                                    (IntegerConstant 97 (Integer 4) Decimal)
+                                )
+                                (Integer 4)
+                                (IntegerConstant 4 (Integer 4) Decimal)
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
                         )]
                         ()
                         ()
@@ -1854,21 +1944,27 @@
                         []
                     )
                     (Print
-                        [(TypeInquiry
-                            Kind
-                            (Integer 8)
-                            (IntrinsicElementalFunction
-                                Ichar
-                                [(StringConstant
-                                    "a"
-                                    (Character 1 1 ())
-                                )]
-                                0
+                        [(StringFormat
+                            ()
+                            [(TypeInquiry
+                                Kind
                                 (Integer 8)
-                                (IntegerConstant 97 (Integer 8) Decimal)
-                            )
-                            (Integer 4)
-                            (IntegerConstant 8 (Integer 4) Decimal)
+                                (IntrinsicElementalFunction
+                                    Ichar
+                                    [(StringConstant
+                                        "a"
+                                        (Character 1 1 ())
+                                    )]
+                                    0
+                                    (Integer 8)
+                                    (IntegerConstant 97 (Integer 8) Decimal)
+                                )
+                                (Integer 4)
+                                (IntegerConstant 8 (Integer 4) Decimal)
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
                         )]
                         ()
                         ()
@@ -1905,16 +2001,22 @@
                         []
                     )
                     (Print
-                        [(IntrinsicElementalFunction
-                            Ichar
-                            [(Var 2 e)]
-                            0
-                            (Array
-                                (Integer 4)
-                                [((IntegerConstant 1 (Integer 4) Decimal)
-                                (IntegerConstant 3 (Integer 4) Decimal))]
-                                FixedSizeArray
-                            )
+                        [(StringFormat
+                            ()
+                            [(IntrinsicElementalFunction
+                                Ichar
+                                [(Var 2 e)]
+                                0
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 3 (Integer 4) Decimal))]
+                                    FixedSizeArray
+                                )
+                                ()
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
                             ()
                         )]
                         ()

@@ -88,66 +88,84 @@
                     intrinsics_34
                     []
                     [(Print
-                        [(TypeInquiry
-                            Epsilon
-                            (Real 4)
-                            (Var 2 x)
-                            (Real 4)
-                            (RealConstant
-                                0.000000
+                        [(StringFormat
+                            ()
+                            [(TypeInquiry
+                                Epsilon
                                 (Real 4)
-                            )
+                                (Var 2 x)
+                                (Real 4)
+                                (RealConstant
+                                    0.000000
+                                    (Real 4)
+                                )
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
                         )]
                         ()
                         ()
                     )
                     (Print
-                        [(TypeInquiry
-                            Epsilon
-                            (Real 8)
-                            (Var 2 y)
-                            (Real 8)
-                            (RealConstant
-                                0.000000
-                                (Real 8)
-                            )
-                        )]
-                        ()
-                        ()
-                    )
-                    (Print
-                        [(RealBinOp
-                            (TypeInquiry
+                        [(StringFormat
+                            ()
+                            [(TypeInquiry
                                 Epsilon
                                 (Real 8)
+                                (Var 2 y)
+                                (Real 8)
                                 (RealConstant
-                                    1.000000
+                                    0.000000
                                     (Real 8)
+                                )
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
+                        ()
+                        ()
+                    )
+                    (Print
+                        [(StringFormat
+                            ()
+                            [(RealBinOp
+                                (TypeInquiry
+                                    Epsilon
+                                    (Real 8)
+                                    (RealConstant
+                                        1.000000
+                                        (Real 8)
+                                    )
+                                    (Real 8)
+                                    (RealConstant
+                                        0.000000
+                                        (Real 8)
+                                    )
+                                )
+                                Pow
+                                (Cast
+                                    (RealConstant
+                                        0.500000
+                                        (Real 4)
+                                    )
+                                    RealToReal
+                                    (Real 8)
+                                    (RealConstant
+                                        0.500000
+                                        (Real 8)
+                                    )
                                 )
                                 (Real 8)
                                 (RealConstant
                                     0.000000
                                     (Real 8)
                                 )
-                            )
-                            Pow
-                            (Cast
-                                (RealConstant
-                                    0.500000
-                                    (Real 4)
-                                )
-                                RealToReal
-                                (Real 8)
-                                (RealConstant
-                                    0.500000
-                                    (Real 8)
-                                )
-                            )
-                            (Real 8)
-                            (RealConstant
-                                0.000000
-                                (Real 8)
-                            )
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
                         )]
                         ()
                         ()

@@ -96,34 +96,40 @@
                         ()
                     )
                     (Print
-                        [(StructInstanceMember
-                            (ArrayItem
-                                (StructInstanceMember
-                                    (Var 7 type_1)
-                                    7 1_t_2_type_2
-                                    (Pointer
-                                        (Array
-                                            (StructType
-                                                7 t_1
+                        [(StringFormat
+                            ()
+                            [(StructInstanceMember
+                                (ArrayItem
+                                    (StructInstanceMember
+                                        (Var 7 type_1)
+                                        7 1_t_2_type_2
+                                        (Pointer
+                                            (Array
+                                                (StructType
+                                                    7 t_1
+                                                )
+                                                [(()
+                                                ())]
+                                                DescriptorArray
                                             )
-                                            [(()
-                                            ())]
-                                            DescriptorArray
                                         )
+                                        ()
                                     )
+                                    [(()
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    ())]
+                                    (StructType
+                                        7 t_1
+                                    )
+                                    ColMajor
                                     ()
                                 )
-                                [(()
-                                (IntegerConstant 0 (Integer 4) Decimal)
-                                ())]
-                                (StructType
-                                    7 t_1
-                                )
-                                ColMajor
+                                7 1_t_1_i
+                                (Integer 4)
                                 ()
-                            )
-                            7 1_t_1_i
-                            (Integer 4)
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
                             ()
                         )]
                         ()

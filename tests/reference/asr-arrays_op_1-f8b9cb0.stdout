@@ -368,120 +368,138 @@
                         ()
                     )
                     (Print
-                        [(ArrayItem
-                            (Var 2 a)
-                            [(()
-                            (IntegerConstant 1 (Integer 4) Decimal)
-                            ())]
-                            (Integer 4)
-                            ColMajor
+                        [(StringFormat
                             ()
-                        )
-                        (ArrayItem
-                            (Var 2 a)
-                            [(()
-                            (IntegerConstant 2 (Integer 4) Decimal)
-                            ())]
-                            (Integer 4)
-                            ColMajor
-                            ()
-                        )
-                        (ArrayItem
-                            (Var 2 a)
-                            [(()
-                            (IntegerConstant 3 (Integer 4) Decimal)
-                            ())]
-                            (Integer 4)
-                            ColMajor
-                            ()
-                        )
-                        (ArrayItem
-                            (Var 2 a)
-                            [(()
-                            (IntegerConstant 4 (Integer 4) Decimal)
-                            ())]
-                            (Integer 4)
-                            ColMajor
-                            ()
-                        )]
-                        ()
-                        ()
-                    )
-                    (Print
-                        [(ArrayItem
-                            (Var 2 b)
-                            [(()
-                            (IntegerConstant 1 (Integer 4) Decimal)
-                            ())]
-                            (Integer 4)
-                            ColMajor
-                            ()
-                        )
-                        (ArrayItem
-                            (Var 2 b)
-                            [(()
-                            (IntegerConstant 2 (Integer 4) Decimal)
-                            ())]
-                            (Integer 4)
-                            ColMajor
-                            ()
-                        )
-                        (ArrayItem
-                            (Var 2 b)
-                            [(()
-                            (IntegerConstant 3 (Integer 4) Decimal)
-                            ())]
-                            (Integer 4)
-                            ColMajor
-                            ()
-                        )
-                        (ArrayItem
-                            (Var 2 b)
-                            [(()
-                            (IntegerConstant 4 (Integer 4) Decimal)
-                            ())]
-                            (Integer 4)
-                            ColMajor
+                            [(ArrayItem
+                                (Var 2 a)
+                                [(()
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                ())]
+                                (Integer 4)
+                                ColMajor
+                                ()
+                            )
+                            (ArrayItem
+                                (Var 2 a)
+                                [(()
+                                (IntegerConstant 2 (Integer 4) Decimal)
+                                ())]
+                                (Integer 4)
+                                ColMajor
+                                ()
+                            )
+                            (ArrayItem
+                                (Var 2 a)
+                                [(()
+                                (IntegerConstant 3 (Integer 4) Decimal)
+                                ())]
+                                (Integer 4)
+                                ColMajor
+                                ()
+                            )
+                            (ArrayItem
+                                (Var 2 a)
+                                [(()
+                                (IntegerConstant 4 (Integer 4) Decimal)
+                                ())]
+                                (Integer 4)
+                                ColMajor
+                                ()
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
                             ()
                         )]
                         ()
                         ()
                     )
                     (Print
-                        [(ArrayItem
-                            (Var 2 c)
-                            [(()
-                            (IntegerConstant 1 (Integer 4) Decimal)
-                            ())]
-                            (Real 4)
-                            ColMajor
+                        [(StringFormat
                             ()
-                        )
-                        (ArrayItem
-                            (Var 2 c)
-                            [(()
-                            (IntegerConstant 2 (Integer 4) Decimal)
-                            ())]
-                            (Real 4)
-                            ColMajor
+                            [(ArrayItem
+                                (Var 2 b)
+                                [(()
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                ())]
+                                (Integer 4)
+                                ColMajor
+                                ()
+                            )
+                            (ArrayItem
+                                (Var 2 b)
+                                [(()
+                                (IntegerConstant 2 (Integer 4) Decimal)
+                                ())]
+                                (Integer 4)
+                                ColMajor
+                                ()
+                            )
+                            (ArrayItem
+                                (Var 2 b)
+                                [(()
+                                (IntegerConstant 3 (Integer 4) Decimal)
+                                ())]
+                                (Integer 4)
+                                ColMajor
+                                ()
+                            )
+                            (ArrayItem
+                                (Var 2 b)
+                                [(()
+                                (IntegerConstant 4 (Integer 4) Decimal)
+                                ())]
+                                (Integer 4)
+                                ColMajor
+                                ()
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
                             ()
-                        )
-                        (ArrayItem
-                            (Var 2 c)
-                            [(()
-                            (IntegerConstant 3 (Integer 4) Decimal)
-                            ())]
-                            (Real 4)
-                            ColMajor
+                        )]
+                        ()
+                        ()
+                    )
+                    (Print
+                        [(StringFormat
                             ()
-                        )
-                        (ArrayItem
-                            (Var 2 c)
-                            [(()
-                            (IntegerConstant 4 (Integer 4) Decimal)
-                            ())]
-                            (Real 4)
-                            ColMajor
+                            [(ArrayItem
+                                (Var 2 c)
+                                [(()
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                ())]
+                                (Real 4)
+                                ColMajor
+                                ()
+                            )
+                            (ArrayItem
+                                (Var 2 c)
+                                [(()
+                                (IntegerConstant 2 (Integer 4) Decimal)
+                                ())]
+                                (Real 4)
+                                ColMajor
+                                ()
+                            )
+                            (ArrayItem
+                                (Var 2 c)
+                                [(()
+                                (IntegerConstant 3 (Integer 4) Decimal)
+                                ())]
+                                (Real 4)
+                                ColMajor
+                                ()
+                            )
+                            (ArrayItem
+                                (Var 2 c)
+                                [(()
+                                (IntegerConstant 4 (Integer 4) Decimal)
+                                ())]
+                                (Real 4)
+                                ColMajor
+                                ()
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
                             ()
                         )]
                         ()
@@ -525,40 +543,46 @@
                         ()
                     )
                     (Print
-                        [(ArrayItem
-                            (Var 2 d)
-                            [(()
-                            (IntegerConstant 1 (Integer 4) Decimal)
-                            ())]
-                            (Real 4)
-                            ColMajor
+                        [(StringFormat
                             ()
-                        )
-                        (ArrayItem
-                            (Var 2 d)
-                            [(()
-                            (IntegerConstant 2 (Integer 4) Decimal)
-                            ())]
-                            (Real 4)
-                            ColMajor
-                            ()
-                        )
-                        (ArrayItem
-                            (Var 2 d)
-                            [(()
-                            (IntegerConstant 3 (Integer 4) Decimal)
-                            ())]
-                            (Real 4)
-                            ColMajor
-                            ()
-                        )
-                        (ArrayItem
-                            (Var 2 d)
-                            [(()
-                            (IntegerConstant 4 (Integer 4) Decimal)
-                            ())]
-                            (Real 4)
-                            ColMajor
+                            [(ArrayItem
+                                (Var 2 d)
+                                [(()
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                ())]
+                                (Real 4)
+                                ColMajor
+                                ()
+                            )
+                            (ArrayItem
+                                (Var 2 d)
+                                [(()
+                                (IntegerConstant 2 (Integer 4) Decimal)
+                                ())]
+                                (Real 4)
+                                ColMajor
+                                ()
+                            )
+                            (ArrayItem
+                                (Var 2 d)
+                                [(()
+                                (IntegerConstant 3 (Integer 4) Decimal)
+                                ())]
+                                (Real 4)
+                                ColMajor
+                                ()
+                            )
+                            (ArrayItem
+                                (Var 2 d)
+                                [(()
+                                (IntegerConstant 4 (Integer 4) Decimal)
+                                ())]
+                                (Real 4)
+                                ColMajor
+                                ()
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
                             ()
                         )]
                         ()
@@ -708,40 +732,46 @@
                         ()
                     )
                     (Print
-                        [(ArrayItem
-                            (Var 2 d)
-                            [(()
-                            (IntegerConstant 1 (Integer 4) Decimal)
-                            ())]
-                            (Real 4)
-                            ColMajor
+                        [(StringFormat
                             ()
-                        )
-                        (ArrayItem
-                            (Var 2 d)
-                            [(()
-                            (IntegerConstant 2 (Integer 4) Decimal)
-                            ())]
-                            (Real 4)
-                            ColMajor
-                            ()
-                        )
-                        (ArrayItem
-                            (Var 2 d)
-                            [(()
-                            (IntegerConstant 3 (Integer 4) Decimal)
-                            ())]
-                            (Real 4)
-                            ColMajor
-                            ()
-                        )
-                        (ArrayItem
-                            (Var 2 d)
-                            [(()
-                            (IntegerConstant 4 (Integer 4) Decimal)
-                            ())]
-                            (Real 4)
-                            ColMajor
+                            [(ArrayItem
+                                (Var 2 d)
+                                [(()
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                ())]
+                                (Real 4)
+                                ColMajor
+                                ()
+                            )
+                            (ArrayItem
+                                (Var 2 d)
+                                [(()
+                                (IntegerConstant 2 (Integer 4) Decimal)
+                                ())]
+                                (Real 4)
+                                ColMajor
+                                ()
+                            )
+                            (ArrayItem
+                                (Var 2 d)
+                                [(()
+                                (IntegerConstant 3 (Integer 4) Decimal)
+                                ())]
+                                (Real 4)
+                                ColMajor
+                                ()
+                            )
+                            (ArrayItem
+                                (Var 2 d)
+                                [(()
+                                (IntegerConstant 4 (Integer 4) Decimal)
+                                ())]
+                                (Real 4)
+                                ColMajor
+                                ()
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
                             ()
                         )]
                         ()
@@ -888,40 +918,46 @@
                         ()
                     )
                     (Print
-                        [(ArrayItem
-                            (Var 2 d)
-                            [(()
-                            (IntegerConstant 1 (Integer 4) Decimal)
-                            ())]
-                            (Real 4)
-                            ColMajor
+                        [(StringFormat
                             ()
-                        )
-                        (ArrayItem
-                            (Var 2 d)
-                            [(()
-                            (IntegerConstant 2 (Integer 4) Decimal)
-                            ())]
-                            (Real 4)
-                            ColMajor
-                            ()
-                        )
-                        (ArrayItem
-                            (Var 2 d)
-                            [(()
-                            (IntegerConstant 3 (Integer 4) Decimal)
-                            ())]
-                            (Real 4)
-                            ColMajor
-                            ()
-                        )
-                        (ArrayItem
-                            (Var 2 d)
-                            [(()
-                            (IntegerConstant 4 (Integer 4) Decimal)
-                            ())]
-                            (Real 4)
-                            ColMajor
+                            [(ArrayItem
+                                (Var 2 d)
+                                [(()
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                ())]
+                                (Real 4)
+                                ColMajor
+                                ()
+                            )
+                            (ArrayItem
+                                (Var 2 d)
+                                [(()
+                                (IntegerConstant 2 (Integer 4) Decimal)
+                                ())]
+                                (Real 4)
+                                ColMajor
+                                ()
+                            )
+                            (ArrayItem
+                                (Var 2 d)
+                                [(()
+                                (IntegerConstant 3 (Integer 4) Decimal)
+                                ())]
+                                (Real 4)
+                                ColMajor
+                                ()
+                            )
+                            (ArrayItem
+                                (Var 2 d)
+                                [(()
+                                (IntegerConstant 4 (Integer 4) Decimal)
+                                ())]
+                                (Real 4)
+                                ColMajor
+                                ()
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
                             ()
                         )]
                         ()
@@ -1110,40 +1146,46 @@
                         ()
                     )
                     (Print
-                        [(ArrayItem
-                            (Var 2 d)
-                            [(()
-                            (IntegerConstant 1 (Integer 4) Decimal)
-                            ())]
-                            (Real 4)
-                            ColMajor
+                        [(StringFormat
                             ()
-                        )
-                        (ArrayItem
-                            (Var 2 d)
-                            [(()
-                            (IntegerConstant 2 (Integer 4) Decimal)
-                            ())]
-                            (Real 4)
-                            ColMajor
-                            ()
-                        )
-                        (ArrayItem
-                            (Var 2 d)
-                            [(()
-                            (IntegerConstant 3 (Integer 4) Decimal)
-                            ())]
-                            (Real 4)
-                            ColMajor
-                            ()
-                        )
-                        (ArrayItem
-                            (Var 2 d)
-                            [(()
-                            (IntegerConstant 4 (Integer 4) Decimal)
-                            ())]
-                            (Real 4)
-                            ColMajor
+                            [(ArrayItem
+                                (Var 2 d)
+                                [(()
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                ())]
+                                (Real 4)
+                                ColMajor
+                                ()
+                            )
+                            (ArrayItem
+                                (Var 2 d)
+                                [(()
+                                (IntegerConstant 2 (Integer 4) Decimal)
+                                ())]
+                                (Real 4)
+                                ColMajor
+                                ()
+                            )
+                            (ArrayItem
+                                (Var 2 d)
+                                [(()
+                                (IntegerConstant 3 (Integer 4) Decimal)
+                                ())]
+                                (Real 4)
+                                ColMajor
+                                ()
+                            )
+                            (ArrayItem
+                                (Var 2 d)
+                                [(()
+                                (IntegerConstant 4 (Integer 4) Decimal)
+                                ())]
+                                (Real 4)
+                                ColMajor
+                                ()
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
                             ()
                         )]
                         ()

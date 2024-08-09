@@ -199,14 +199,20 @@
                                                         })
                                                     ~select_type_block_
                                                     [(Print
-                                                        [(StringConstant
-                                                            "base type: component value: "
-                                                            (Character 1 28 ())
-                                                        )
-                                                        (StructInstanceMember
-                                                            (Var 5 bptr)
-                                                            6 1_base_i
-                                                            (Integer 4)
+                                                        [(StringFormat
+                                                            ()
+                                                            [(StringConstant
+                                                                "base type: component value: "
+                                                                (Character 1 28 ())
+                                                            )
+                                                            (StructInstanceMember
+                                                                (Var 5 bptr)
+                                                                6 1_base_i
+                                                                (Integer 4)
+                                                                ()
+                                                            )]
+                                                            FormatFortran
+                                                            (Character -1 0 ())
                                                             ()
                                                         )]
                                                         ()
@@ -259,20 +265,26 @@
                                                         })
                                                     ~select_type_block_1
                                                     [(Print
-                                                        [(StringConstant
-                                                            "child type: component values: "
-                                                            (Character 1 30 ())
-                                                        )
-                                                        (StructInstanceMember
-                                                            (Var 5 bptr)
-                                                            7 1_base_i
-                                                            (Integer 4)
+                                                        [(StringFormat
                                                             ()
-                                                        )
-                                                        (StructInstanceMember
-                                                            (Var 5 bptr)
-                                                            7 1_child_j
-                                                            (Integer 4)
+                                                            [(StringConstant
+                                                                "child type: component values: "
+                                                                (Character 1 30 ())
+                                                            )
+                                                            (StructInstanceMember
+                                                                (Var 5 bptr)
+                                                                7 1_base_i
+                                                                (Integer 4)
+                                                                ()
+                                                            )
+                                                            (StructInstanceMember
+                                                                (Var 5 bptr)
+                                                                7 1_child_j
+                                                                (Integer 4)
+                                                                ()
+                                                            )]
+                                                            FormatFortran
+                                                            (Character -1 0 ())
                                                             ()
                                                         )]
                                                         ()
@@ -378,26 +390,38 @@
                         ()
                     )
                     (Print
-                        [(StructInstanceMember
-                            (Var 2 base_target)
-                            2 1_base_i
-                            (Integer 4)
+                        [(StringFormat
+                            ()
+                            [(StructInstanceMember
+                                (Var 2 base_target)
+                                2 1_base_i
+                                (Integer 4)
+                                ()
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
                             ()
                         )]
                         ()
                         ()
                     )
                     (Print
-                        [(StructInstanceMember
-                            (Var 2 child_target)
-                            2 1_base_i
-                            (Integer 4)
+                        [(StringFormat
                             ()
-                        )
-                        (StructInstanceMember
-                            (Var 2 child_target)
-                            2 1_child_j
-                            (Integer 4)
+                            [(StructInstanceMember
+                                (Var 2 child_target)
+                                2 1_base_i
+                                (Integer 4)
+                                ()
+                            )
+                            (StructInstanceMember
+                                (Var 2 child_target)
+                                2 1_child_j
+                                (Integer 4)
+                                ()
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
                             ()
                         )]
                         ()

@@ -189,9 +189,15 @@
                     modules_32
                     []
                     [(Print
-                        [(StringConstant
-                            "running modules_32 program"
-                            (Character 1 26 ())
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "running modules_32 program"
+                                (Character 1 26 ())
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
                         )]
                         ()
                         ()

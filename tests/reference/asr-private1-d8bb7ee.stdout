@@ -119,7 +119,13 @@
                     test
                     [foo2]
                     [(Print
-                        [(Var 5 y)]
+                        [(StringFormat
+                            ()
+                            [(Var 5 y)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
@@ -161,7 +167,13 @@
                         ()
                     )
                     (Print
-                        [(Var 5 y)]
+                        [(StringFormat
+                            ()
+                            [(Var 5 y)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
