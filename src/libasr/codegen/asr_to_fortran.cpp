@@ -917,9 +917,9 @@ public:
         r += " ";
         if (x.n_values > 0 && is_a<ASR::StringFormat_t>(*x.m_values[0])) {
             ASR::StringFormat_t *sf = down_cast<ASR::StringFormat_t>(x.m_values[0]);
-            visit_expr(*sf->m_fmt);
-            if (is_a<ASR::StringConstant_t>(*sf->m_fmt)
-                    && (!startswith(src, "\"(") || !endswith(src, ")\""))) {
+            if ( sf->m_fmt && (is_a<ASR::StringConstant_t>(*sf->m_fmt)
+                    && (!startswith(src, "\"(") || !endswith(src, ")\"")))) {
+                visit_expr(*(sf->m_fmt));
                 src = "\"(" + src.substr(1, src.size()-2) + ")\"";
             }
             r += src;
