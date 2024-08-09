@@ -902,6 +902,9 @@ char* int_to_format_specifier(int32_t type_as_int){
         case 8:
         case 16:
             return "l";
+        default:
+            fprintf(stderr,"Unidentified number %d\n",type_as_int);
+            exit(0);
     }
 }
 LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* format, ...)
