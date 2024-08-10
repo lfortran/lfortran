@@ -4328,7 +4328,11 @@ namespace Digits {
         ASR::ttype_t *type1 = ASRUtils::expr_type(args[0]);
         int kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[0]));
         if (is_integer(*type1)) {
-            if (kind == 4) {
+            if (kind == 1) {
+                return make_ConstantWithType(make_IntegerConstant_t, 7, int32, loc);
+            } else if (kind == 2) {
+                return make_ConstantWithType(make_IntegerConstant_t, 15, int32, loc);
+            } else if (kind == 4) {
                 return make_ConstantWithType(make_IntegerConstant_t, 31, int32, loc);
             } else if (kind == 8) {
                 return make_ConstantWithType(make_IntegerConstant_t, 63, int32, loc);
