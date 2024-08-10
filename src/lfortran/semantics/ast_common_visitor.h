@@ -5595,6 +5595,9 @@ public:
             }
             // Call the intrinsic function for the current combination of arguments
             // result_array->m_args[i] = ASRUtils::expr_value(ASRUtils::EXPR(create_func(al, loc, intrinsic_args, diag)));
+            if (create_func(al, loc, intrinsic_args, diag) == nullptr) {
+                throw SemanticAbort();
+            }
             ASR::expr_t* result = ASRUtils::expr_value(ASRUtils::EXPR(create_func(al, loc, intrinsic_args, diag)));
             array_type = ASRUtils::expr_type(result);
             new_expr.push_back(al, result);
