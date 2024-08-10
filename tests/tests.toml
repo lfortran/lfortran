@@ -4128,5 +4128,5 @@ filename = "errors/intrinsics14.f90"
 asr = true
 
 [[test]]
-filename = "errors/intrinsics14.f90"
+filename = "errors/intrinsics15.f90"
 asr = true

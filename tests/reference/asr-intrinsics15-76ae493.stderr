@@ -1,0 +1,5 @@
+semantic error: Unexpected args, SetExponent expects (real, int) as arguments
+ --> tests/errors/intrinsics15.f90:2:14
+  |
+2 |     print *, set_exponent([1, 2, 3], 2)
+  |              ^^^^^^^^^^^^^^^^^^^^^^^^^^ 
