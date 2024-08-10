@@ -4122,3 +4122,11 @@ asr = true
 [[test]]
 filename = "errors/ifix_01.f90"
 asr = true
+
+[[test]]
+filename = "errors/intrinsics14.f90"
+asr = true
+
+[[test]]
+filename = "errors/intrinsics14.f90"
+asr = true
