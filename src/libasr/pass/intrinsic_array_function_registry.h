@@ -966,11 +966,18 @@ static inline ASR::expr_t *eval_MaxMinLoc(Allocator &al, const Location &loc,
             if (mask_val == false) return b.i_t(0, type);
             mask = ASR::down_cast<ASR::ArrayConstant_t>(b.ArrayConstant({b.bool_t(mask_val, logical)}, logical, false));
         } else {
-            mask = ASR::down_cast<ASR::ArrayConstant_t>(b.ArrayConstant({b.bool_t(true, logical)}, logical, false));
+            std::vector<ASR::expr_t*> mask_data;
+            for (int i = 0; i < arr_size; i++) {
+                mask_data.push_back(b.bool_t(true, logical));
+            }
+            mask = ASR::down_cast<ASR::ArrayConstant_t>(b.ArrayConstant(mask_data, logical, false));
         }
         ASR::LogicalConstant_t *back = ASR::down_cast<ASR::LogicalConstant_t>(ASRUtils::expr_value(args[4]));
         int index = 0;
         int flag = 0;
+        if (((bool*)mask->m_data)[0] != 0) {
+            flag = 1;
+        }
         if (static_cast<int64_t>(IntrinsicArrayFunctions::MaxLoc) == static_cast<int64_t>(intrinsic_func_id)) {
             if (is_character(*expr_type(args[0]))) {
                 std::string ele = ASR::down_cast<ASR::StringConstant_t>(ASRUtils::fetch_ArrayConstant_value(al, arr, index))->m_s;
@@ -1067,8 +1074,8 @@ static inline ASR::expr_t *eval_MaxMinLoc(Allocator &al, const Location &loc,
             return b.ArrayConstant({b.i32(index + 1)}, extract_type(type), false);
         } 
     } else {
-            return nullptr;
-        }
+        return nullptr;
+    }
 }
 
 static inline ASR::asr_t* create_MaxMinLoc(Allocator& al, const Location& loc,
