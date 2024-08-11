@@ -2723,6 +2723,11 @@ public:
         }
         if (!original_sym || (original_sym && is_external)) {
             if (to_lower(sub_name) == "exit") {
+                diag.semantic_warning_label(
+                    "Routine `" + sub_name + "` is a non-standard function",
+                    {x.base.base.loc},
+                    ""
+                );
                 ASR::expr_t* arg = nullptr;
                 if ( x.n_args >= 1 ) {
                     visit_expr(*x.m_args[0].m_end);
