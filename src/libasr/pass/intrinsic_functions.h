@@ -629,21 +629,26 @@ namespace Aimag {
         ASRUtils::ASRBuilder b(al, loc);
         std::complex<double> crv;
         if( ASRUtils::extract_value(args[0], crv) ) {
-            return b.f_t(crv.imag(), t);
+            ASR::ComplexConstant_t *c = ASR::down_cast<ASR::ComplexConstant_t>(ASRUtils::expr_value(args[0]));
+            return make_ConstantWithType(make_RealConstant_t, c->m_im, t, loc);
         } else {
             return nullptr;
         }
     }
 
-    static inline ASR::expr_t* instantiate_Aimag (Allocator &al,
-            const Location &loc, SymbolTable* /*scope*/,
+    static inline ASR::expr_t* instantiate_Aimag(Allocator &al,
+            const Location &loc, SymbolTable* scope,
             Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t> &new_args,int64_t /*overload_id*/)  {
-        if (ASRUtils::extract_kind_from_ttype_t(arg_types[0]) == 8) {
-            ASRUtils::set_kind_to_ttype_t(return_type, 8);
-        }
-        return EXPR(ASR::make_ComplexIm_t(al, loc, new_args[0].m_value,
-            return_type, nullptr));
+        declare_basic_variables("_lcompilers_aimag_" + type_to_str_python(arg_types[0]));
+        fill_func_arg("x", arg_types[0]);
+        auto result = declare(fn_name, return_type, ReturnVar);
+        body.push_back(al, b.Assignment(result, EXPR(ASR::make_ComplexIm_t(al, loc, 
+            args[0], return_type, nullptr))));
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, nullptr);
     }
 
 } // namespace Aimag

@@ -1002,7 +1002,7 @@ def add_create_func_return_src(func_name):
             src += indent * 2 + "ASR::ttype_t* type = ASRUtils::expr_type(args[0]);\n"
             src += indent * 2 + "if (ASR::is_a<ASR::Array_t>(*type)) {\n"
             src += indent * 3 + "ASR::Array_t* e = ASR::down_cast<ASR::Array_t>(type);\n"
-            src += indent * 3 + f"return_type = TYPE(ASR::make_Array_t(al, type->base.loc, {ret_type_val}, e->m_dims, e->n_dims, ASR::array_physical_typeType::FixedSizeArray));\n"
+            src += indent * 3 + f"return_type = TYPE(ASR::make_Array_t(al, type->base.loc,  return_type, e->m_dims, e->n_dims, ASR::array_physical_typeType::FixedSizeArray));\n"
             src += indent * 2 + "}\n"
         src += indent * 2 + "if (all_args_evaluated(m_args)) {\n"
         src += indent * 3 +     f"Vec<ASR::expr_t*> args_values; args_values.reserve(al, {no_of_args});\n"
