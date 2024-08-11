@@ -146,7 +146,7 @@ class ASRBuilder {
         ASR::expr_t* value = nullptr;
         ASR::ttype_t* type = ASRUtils::expr_type(x);
         if ( ASRUtils::is_array(type) ) {
-            ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(type);
+            ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(type)));
             ASR::dimension_t* dims = array_type->m_dims;
             ASRUtils::extract_dimensions_from_ttype(type, dims);
             int new_dim = dim - 1;
@@ -174,7 +174,7 @@ class ASRBuilder {
         ASR::expr_t* value = nullptr;
         ASR::ttype_t* type = ASRUtils::expr_type(x);
         if ( ASRUtils::is_array(type) ) {
-            ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(type);
+            ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(type)));
             ASR::dimension_t* dims = array_type->m_dims;
             ASRUtils::extract_dimensions_from_ttype(type, dims);
             int new_dim = dim - 1;
