@@ -1311,7 +1311,7 @@ RUN(NAME file_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc COPY_TO_BIN file_
 RUN(NAME file_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc COPY_TO_BIN file_06_data.dat)
 RUN(NAME file_07 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc COPY_TO_BIN file_07_data.dat)
 RUN(NAME file_08 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran COPY_TO_BIN file_08.txt)
-# RUN(NAME file_09 LABELS gfortran llvm COPY_TO_BIN file_01_data.txt)
+RUN(NAME file_09 LABELS gfortran llvm COPY_TO_BIN file_01_data.txt)
 RUN(NAME file_10 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc COPY_TO_BIN file_10_data.txt)
 RUN(NAME file_11 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc COPY_TO_BIN file_01_data.txt)
 RUN(NAME file_12 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc COPY_TO_BIN file_12_data.txt)
