@@ -244,8 +244,15 @@ void handle_logical(char* format, bool val, char** result) {
 }
 
 void handle_float(char* format, double val, char** result) {
-    if (strcmp(format,"fw.d") == 0){ //default formatting from c.
-        sprintf(*result,"%.15e",val);
+    if (strcmp(format,"f-64") == 0){ //use c formatting.
+        char* float_str = (char*)malloc(50 * sizeof(char));
+        sprintf(float_str,"%23.17e",val);
+        *result = append_to_string(*result,float_str);
+        return;
+    } else if(strcmp(format,"f-32") == 0){ //use c formatting.
+        char* float_str = (char*)malloc(40 * sizeof(char));
+        sprintf(float_str,"%13.8e",val);
+        *result = append_to_string(*result,float_str);
         return;
     }
     int width = 0, decimal_digits = 0;
@@ -892,10 +899,11 @@ char* int_to_format_specifier(int32_t type_as_int){
         case 19:
             return "i0";
         case 5:
-        case 6:
         case 13:
+            return "f-64"; //special handling in `handle_float`
+        case 6:
         case 14:
-            return "fw.d"; // We need better way to handle numbers with floating point.
+            return "f-32"; //special handling in `handle_float`
         case 7:
         case 15:
             return "a";
