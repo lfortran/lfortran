@@ -248,11 +248,13 @@ void handle_float(char* format, double val, char** result) {
         char* float_str = (char*)malloc(50 * sizeof(char));
         sprintf(float_str,"%23.17e",val);
         *result = append_to_string(*result,float_str);
+        free(float_str);
         return;
     } else if(strcmp(format,"f-32") == 0){ //use c formatting.
         char* float_str = (char*)malloc(40 * sizeof(char));
         sprintf(float_str,"%13.8e",val);
         *result = append_to_string(*result,float_str);
+        free(float_str);
         return;
     }
     int width = 0, decimal_digits = 0;
