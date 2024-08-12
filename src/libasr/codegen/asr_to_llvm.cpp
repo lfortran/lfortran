@@ -8100,7 +8100,7 @@ public:
                 }
             }
             llvm::Value* d = tmp;
-            if(!is_array){ //cast all integers to int64.
+            if(!is_array && add_type_as_int){ //cast all integers to int64.
                 d =builder->CreateSExt(tmp, llvm_utils->getIntType(8, false));
             } 
             if (add_type_as_int) {        
