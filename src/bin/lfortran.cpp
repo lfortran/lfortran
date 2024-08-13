@@ -1653,6 +1653,7 @@ int link_executable(const std::vector<std::string> &infiles,
             run_cmd = "./" + outfile;
         }
         if (verbose) {
+            compile_cmd += " -v";
             std::cout << compile_cmd << std::endl;
         }
         int err = system(compile_cmd.c_str());
