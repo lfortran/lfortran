@@ -2,7 +2,7 @@ program intrinsics_134
 
     character(4), parameter :: y = adjustl("okay")
     character(len=5) :: x
-    character(len=20) :: str = '   gfortran'
+    character(len=21) :: str = '   gfortran'
     str = adjustl(str)
     print *, str
     if (str /= 'gfortran') error stop
