@@ -864,6 +864,7 @@ public:
     void visit_ArraySize(const ArraySize_t& x) {
         require(ASRUtils::is_array(ASRUtils::expr_type(x.m_v)),
             "ArraySize::m_v must be an array");
+        BaseWalkVisitor<VerifyVisitor>::visit_ArraySize(x);
     }
 
     template <typename T>
