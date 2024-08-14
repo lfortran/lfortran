@@ -23,6 +23,18 @@ typedef std::map<ASR::expr_t*, std::pair<ASR::expr_t*, targetType>> ExprsWithTar
 const std::vector<ASR::exprType>& exprs_with_no_type = {
 };
 
+static inline ASR::asr_t* make_Assignment_t_util(
+    Allocator &al, const Location &a_loc, ASR::expr_t* a_target,
+    ASR::expr_t* a_value, ASR::stmt_t* a_overloaded,
+    ExprsWithTargetType& exprs_with_target) {
+    ASRUtils::ExprStmtDuplicator expr_duplicator(al);
+    a_target = expr_duplicator.duplicate_expr(a_target);
+    a_value = expr_duplicator.duplicate_expr(a_value);
+
+    exprs_with_target[a_value] = std::make_pair(a_target, targetType::GeneratedTarget);
+    return ASR::make_Assignment_t(al, a_loc, a_target, a_value, a_overloaded);
+}
+
 /*
 This pass collector that the BinOp only Var nodes and nothing else.
 */
@@ -615,15 +627,19 @@ bool set_allocation_size(
         case ASR::exprType::StructInstanceMember: {
             ASR::StructInstanceMember_t* struct_instance_member_t =
                 ASR::down_cast<ASR::StructInstanceMember_t>(value);
-            size_t n_dims = ASRUtils::extract_n_dims_from_ttype(
-                ASRUtils::symbol_type(struct_instance_member_t->m_m));
+            size_t n_dims = ASRUtils::extract_n_dims_from_ttype(struct_instance_member_t->m_type);
             allocate_dims.reserve(al, n_dims);
+            if( ASRUtils::is_array(ASRUtils::expr_type(struct_instance_member_t->m_v)) ) {
+                value = struct_instance_member_t->m_v;
+            }
+            ASRUtils::ExprStmtDuplicator expr_duplicator(al);
             for( size_t i = 0; i < n_dims; i++ ) {
                 ASR::dimension_t allocate_dim;
                 allocate_dim.loc = loc;
                 allocate_dim.m_start = int32_one;
                 allocate_dim.m_length = ASRUtils::EXPR(ASR::make_ArraySize_t(
-                    al, loc, value, ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                    al, loc, expr_duplicator.duplicate_expr(value),
+                        ASRUtils::EXPR(ASR::make_IntegerConstant_t(
                         al, loc, i + 1, ASRUtils::expr_type(int32_one))),
                     ASRUtils::expr_type(int32_one), nullptr));
                 allocate_dims.push_back(al, allocate_dim);
@@ -743,9 +759,8 @@ ASR::expr_t* create_and_declare_temporary_variable_for_scalar(
     const Location& loc = scalar_expr->base.loc;
     ASR::expr_t* scalar_var_temporary = create_temporary_variable_for_scalar(
         al, scalar_expr, current_scope, name_hint);
-    exprs_with_target[scalar_expr] = std::make_pair(scalar_var_temporary, targetType::GeneratedTarget);
-    current_body->push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(
-        al, loc, scalar_var_temporary, scalar_expr, nullptr)));
+    current_body->push_back(al, ASRUtils::STMT(make_Assignment_t_util(
+        al, loc, scalar_var_temporary, scalar_expr, nullptr, exprs_with_target)));
     return scalar_var_temporary;
 }
 
@@ -778,9 +793,8 @@ ASR::expr_t* create_and_allocate_temporary_variable_for_array(
             exprs_with_target[array_expr] = std::make_pair(array_expr_ptr, targetType::GeneratedTarget);
             array_expr = array_expr_ptr;
         }
-        exprs_with_target[array_expr] = std::make_pair(array_var_temporary, targetType::GeneratedTarget);
-        current_body->push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(
-            al, loc, array_var_temporary, array_expr, nullptr)));
+        current_body->push_back(al, ASRUtils::STMT(make_Assignment_t_util(
+            al, loc, array_var_temporary, array_expr, nullptr, exprs_with_target)));
     }
     return array_var_temporary;
 }
@@ -799,9 +813,8 @@ ASR::expr_t* create_and_allocate_temporary_variable_for_struct(
     } else {
         insert_allocate_stmt_for_struct(al, struct_var_temporary, struct_expr, current_body);
         struct_expr = ASRUtils::get_past_array_physical_cast(struct_expr);
-        exprs_with_target[struct_expr] = std::make_pair(struct_var_temporary, targetType::GeneratedTarget);
-        current_body->push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(
-            al, loc, struct_var_temporary, struct_expr, nullptr)));
+        current_body->push_back(al, ASRUtils::STMT(make_Assignment_t_util(
+            al, loc, struct_var_temporary, struct_expr, nullptr, exprs_with_target)));
     }
     return struct_var_temporary;
 }
@@ -973,9 +986,9 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         // Do nothing
     }
 
-    void visit_ArrayBroadcast(const ASR::ArrayBroadcast_t& /*x*/) {
-        // Do nothing
-    }
+    // void visit_ArrayBroadcast(const ASR::ArrayBroadcast_t& /*x*/) {
+    //     // Do nothing
+    // }
 
     void visit_Print(const ASR::Print_t& x) {
         ASR::Print_t& xx = const_cast<ASR::Print_t&>(x);
@@ -1705,8 +1718,8 @@ class TransformVariableInitialiser:
                 result_vec.push_back(al, ASRUtils::STMT(ASR::make_Associate_t(
                     al, loc, target, xx.m_symbolic_value)));
             } else {
-                result_vec.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(
-                    al, loc, target, xx.m_symbolic_value, nullptr)));
+                result_vec.push_back(al, ASRUtils::STMT(make_Assignment_t_util(
+                    al, loc, target, xx.m_symbolic_value, nullptr, exprs_with_target)));
             }
             xx.m_symbolic_value = nullptr;
             xx.m_value = nullptr;

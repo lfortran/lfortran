@@ -8054,7 +8054,7 @@ public:
         llvm::Value* type_as_int = nullptr;
         if ((t->type == ASR::ttypeType::CPtr && !ASRUtils::is_array(t)) ||
             (t->type == ASR::ttypeType::Pointer &&
-                (ASR::is_a<ASR::Var_t>(*v) || ASR::is_a<ASR::GetPointer_t>(*v)) 
+                (ASR::is_a<ASR::Var_t>(*v) || ASR::is_a<ASR::GetPointer_t>(*v))
                 && !ASRUtils::is_array(t))
             ) {
             fmt.push_back("%lld");
@@ -8077,17 +8077,17 @@ public:
             switch( a_kind ) {
                 case 1 : {
                     fmt.push_back("%hhi");
-                    number_of_type = is_array? 12 : 4; 
+                    number_of_type = is_array? 12 : 4;
                     break;
                 }
                 case 2 : {
                     fmt.push_back("%hi");
-                    number_of_type = is_array? 11 : 3;  
+                    number_of_type = is_array? 11 : 3;
                     break;
                 }
                 case 4 : {
                     fmt.push_back("%d");
-                    number_of_type = is_array? 10 : 2;  
+                    number_of_type = is_array? 10 : 2;
                     break;
                 }
                 case 8 : {
@@ -8101,9 +8101,9 @@ public:
                                         loc);
                 }
             }
-            if (add_type_as_int) {        
+            if (add_type_as_int) {
                 if(!is_array){
-                    type_as_int = llvm::ConstantInt::get(context, llvm::APInt(32, number_of_type)); 
+                    type_as_int = llvm::ConstantInt::get(context, llvm::APInt(32, number_of_type));
                     args.push_back(type_as_int);
                     args.push_back(tmp);
                 }
@@ -8219,14 +8219,14 @@ public:
                     fmt.push_back("(%f,%f)");
                     type = llvm::Type::getDoubleTy(context);
                     complex_type = complex_type_4;
-                    number_of_type = is_array? 14 : 6; 
+                    number_of_type = is_array? 14 : 6;
                     break;
                 }
                 case 8 : {
                     fmt.push_back("(%lf,%lf)");
                     type = llvm::Type::getDoubleTy(context);
                     complex_type = complex_type_8;
-                    number_of_type =is_array? 13 : 5; 
+                    number_of_type =is_array? 13 : 5;
                     break;
                 }
                 default: {
@@ -8289,7 +8289,7 @@ public:
 
             //Create ArrayPhysicalCast to get the array pointer.
             ASR::ttype_t* array_type = ASRUtils::TYPE(ASR::make_Array_t(al, v->base.loc,arr->m_type, arr->m_dims,
-                arr->n_dims,ASR::array_physical_typeType::FixedSizeArray)); 
+                arr->n_dims,ASR::array_physical_typeType::FixedSizeArray));
             ASR::expr_t* array_casted_to_pointer = ASRUtils::EXPR(ASR::make_ArrayPhysicalCast_t(al, v->base.loc, v,arr->m_physical_type,
                 ASR::array_physical_typeType::PointerToDataArray, array_type, nullptr));
 
@@ -8303,7 +8303,7 @@ public:
                             ASRUtils::TYPE(ASR::make_Integer_t(al, v->base.loc, 8))));
             }
             ASR::expr_t* array_size_expr = ASRUtils::EXPR(
-                    ASR::make_ArraySize_t(al, v->base.loc, v, 
+                    ASR::make_ArraySize_t(al, v->base.loc, v,
                     nullptr, ASRUtils::TYPE(ASR::make_Integer_t(al, v->base.loc, 8)),
                     compile_time_size));
 
@@ -9827,6 +9827,7 @@ public:
         }
 
         ASR::ttype_t* x_mv_type = ASRUtils::expr_type(m_v);
+        LCOMPILERS_ASSERT(ASRUtils::is_array(x_mv_type));
         ASR::array_physical_typeType physical_type = ASRUtils::extract_physical_type(x_mv_type);
         if (physical_type == ASR::array_physical_typeType::CharacterArraySinglePointer) {
             if (ASRUtils::is_fixed_size_array(x_mv_type)) {
