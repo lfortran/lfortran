@@ -247,7 +247,8 @@ intrinsic_funcs_args = {
     "Sign": [
         {
             "args": [("int", "int"), ("real", "real")],
-            "ret_type_arg_idx": 0
+            "ret_type_arg_idx": 0,
+            "same_kind_arg": 2
         },
     ],
     "Radix": [

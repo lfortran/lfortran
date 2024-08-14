@@ -2914,11 +2914,12 @@ LFORTRAN_API void _lfortran_read_array_char(char **p, int array_size, int32_t un
 
     for (int i = 0; i < array_size; i++) {
         int n = 1; // TODO: Support character length > 1
-        p[i] = (char*) malloc(n * sizeof(char));
+        p[i] = (char*) malloc((n + 1) * sizeof(char));
         if (unit_file_bin) {
             (void)!fread(p[i], sizeof(char), n, filep);
+            p[i][1] = '\0';
         } else {
-            (void)!fscanf(filep, "%s", p[i]);
+            (void)!fscanf(filep, "%c", p[i]);
         }
     }
 }

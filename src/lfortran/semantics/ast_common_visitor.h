@@ -895,7 +895,7 @@ public:
         {"dimag", {"aimag", {"complex8"}}},
         {"imag", {"aimag", {"complex"}}},
         {"imagpart", {"aimag", {"complex"}}},
-        {"realpart", {"real", {"complex"}}},
+        {"realpart", {"real", {"complex" ,"int4"}}},
         {"isign", {"sign", {"int4", "int4"}}},
         {"dsign", {"sign", {"real8", "real8"}}},
         {"dgamma", {"gamma", {"real8"}}},
@@ -5598,6 +5598,9 @@ public:
             }
             // Call the intrinsic function for the current combination of arguments
             // result_array->m_args[i] = ASRUtils::expr_value(ASRUtils::EXPR(create_func(al, loc, intrinsic_args, diag)));
+            if (create_func(al, loc, intrinsic_args, diag) == nullptr) {
+                throw SemanticAbort();
+            }
             ASR::expr_t* result = ASRUtils::expr_value(ASRUtils::EXPR(create_func(al, loc, intrinsic_args, diag)));
             array_type = ASRUtils::expr_type(result);
             new_expr.push_back(al, result);

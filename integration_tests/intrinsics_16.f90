@@ -12,6 +12,9 @@ complex(sp) :: arr1(3) = [(5._sp, 7._sp), (8.2_sp, 7.12_sp), (1.2_sp, 3.4_sp)]
 complex(dp) :: arr2(3) = [(5._dp, 7._dp), (8.2_dp, 7.12_dp), (1.2_dp, 3.4_dp)]
 c32 = (5._sp, 7._sp); c64 = (5._dp, 7._dp)
 
+print *, kind(aimag(arr2))
+if (kind(aimag(arr2)) /= 8) error stop
+
 print *, x1
 if (abs(x1 - 7.0_sp) > 1e-5) error stop
 
@@ -26,7 +29,7 @@ if (any(ar2 - [7.00000000000000000e+00_dp, 7.12000000000000011e+00_dp, 3.3999999
 
 r32 = aimag(c32)
 print *, r32
-if (abs(r32-7) > 1e-5) error stop
+if (abs(r32 - 7) > 1e-5) error stop
 
 r64 = aimag(c64)
 print *, r64

@@ -629,21 +629,26 @@ namespace Aimag {
         ASRUtils::ASRBuilder b(al, loc);
         std::complex<double> crv;
         if( ASRUtils::extract_value(args[0], crv) ) {
-            return b.f_t(crv.imag(), t);
+            ASR::ComplexConstant_t *c = ASR::down_cast<ASR::ComplexConstant_t>(ASRUtils::expr_value(args[0]));
+            return make_ConstantWithType(make_RealConstant_t, c->m_im, t, loc);
         } else {
             return nullptr;
         }
     }
 
-    static inline ASR::expr_t* instantiate_Aimag (Allocator &al,
-            const Location &loc, SymbolTable* /*scope*/,
+    static inline ASR::expr_t* instantiate_Aimag(Allocator &al,
+            const Location &loc, SymbolTable* scope,
             Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t> &new_args,int64_t /*overload_id*/)  {
-        if (ASRUtils::extract_kind_from_ttype_t(arg_types[0]) == 8) {
-            ASRUtils::set_kind_to_ttype_t(return_type, 8);
-        }
-        return EXPR(ASR::make_ComplexIm_t(al, loc, new_args[0].m_value,
-            return_type, nullptr));
+        declare_basic_variables("_lcompilers_aimag_" + type_to_str_python(arg_types[0]));
+        fill_func_arg("x", arg_types[0]);
+        auto result = declare(fn_name, return_type, ReturnVar);
+        body.push_back(al, b.Assignment(result, EXPR(ASR::make_ComplexIm_t(al, loc, 
+            args[0], return_type, nullptr))));
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, nullptr);
     }
 
 } // namespace Aimag
@@ -909,9 +914,14 @@ namespace Scale {
 
 namespace Dprod {
     static ASR::expr_t *eval_Dprod(Allocator &al, const Location &loc,
-            ASR::ttype_t* return_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+            ASR::ttype_t* return_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         double value_X = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
         double value_Y = ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r;
+        if (ASRUtils::extract_kind_from_ttype_t(expr_type(args[0])) != 4 ||
+            ASRUtils::extract_kind_from_ttype_t(expr_type(args[1])) != 4) {
+            append_error(diag, "Arguments to dprod must be real(4)", loc);
+            return nullptr;
+        }
         double result = value_X * value_Y;
         ASRUtils::ASRBuilder b(al, loc);
         return b.f_t(result, return_type);
@@ -920,9 +930,14 @@ namespace Dprod {
     static inline ASR::expr_t* instantiate_Dprod(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("");
+        declare_basic_variables("_lcompilers_dprod_" + type_to_str_python(arg_types[0]));
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("y", arg_types[1]);
+        if (ASRUtils::extract_kind_from_ttype_t(arg_types[0]) != 4 ||
+            ASRUtils::extract_kind_from_ttype_t(arg_types[1]) != 4) {
+            LCompilersException("Arguments to dprod must be default real");
+            return nullptr;
+        }
         auto result = declare(fn_name, return_type, ReturnVar);
         /*
         * r = dprod(x, y)
@@ -2265,14 +2280,14 @@ namespace Dim {
         * }
         */
         if (is_real(*arg_types[0])) {
-            body.push_back(al, b.If(b.Gt(args[0], args[1]), {
-                b.Assignment(result, b.Sub(args[0], args[1]))
+            body.push_back(al, b.If(b.Gt(args[0], b.r2r_t(args[1], arg_types[0])), {
+                b.Assignment(result, b.Sub(args[0], b.r2r_t(args[1], arg_types[0])))
             }, {
                 b.Assignment(result, b.f_t(0.0, arg_types[0]))
             }));
         } else {
-            body.push_back(al, b.If(b.Gt(args[0], args[1]), {
-                b.Assignment(result, b.Sub(args[0], args[1]))
+            body.push_back(al, b.If(b.Gt(args[0], b.i2i_t(args[1], arg_types[0])), {
+                b.Assignment(result, b.Sub(args[0], b.i2i_t(args[1], arg_types[0])))
             }, {
                 b.Assignment(result, b.i_t(0, arg_types[0]))
             }));
@@ -2545,8 +2560,12 @@ namespace Sngl {
 namespace Ifix {
 
     static ASR::expr_t *eval_Ifix(Allocator &al, const Location &loc,
-            ASR::ttype_t* /*arg_type*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+            ASR::ttype_t* /*arg_type*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         int val = ASR::down_cast<ASR::RealConstant_t>(expr_value(args[0]))->m_r;
+        if (ASRUtils::extract_kind_from_ttype_t(expr_type(args[0])) != 4) {
+            append_error(diag, "first argument of `ifix` must have kind equals to 4", loc);
+            return nullptr;
+        }
         return make_ConstantWithType(make_IntegerConstant_t, val, int32, loc);
     }
 
@@ -2554,6 +2573,10 @@ namespace Ifix {
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
         declare_basic_variables("_lcompilers_ifix_" + type_to_str_python(arg_types[0]));
+        if (ASRUtils::extract_kind_from_ttype_t(arg_types[0]) != 4) {
+            throw LCompilersException("first argument of `ifix` must have kind equals to 4");
+            return nullptr;
+        }
         fill_func_arg("a", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
         body.push_back(al, b.Assignment(result, b.r2i_t(args[0], int32)));
@@ -4314,7 +4337,11 @@ namespace Digits {
         ASR::ttype_t *type1 = ASRUtils::expr_type(args[0]);
         int kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[0]));
         if (is_integer(*type1)) {
-            if (kind == 4) {
+            if (kind == 1) {
+                return make_ConstantWithType(make_IntegerConstant_t, 7, int32, loc);
+            } else if (kind == 2) {
+                return make_ConstantWithType(make_IntegerConstant_t, 15, int32, loc);
+            } else if (kind == 4) {
                 return make_ConstantWithType(make_IntegerConstant_t, 31, int32, loc);
             } else if (kind == 8) {
                 return make_ConstantWithType(make_IntegerConstant_t, 63, int32, loc);

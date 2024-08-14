@@ -706,18 +706,18 @@ jobs:
       - name: Test SNAP
         shell: bash -e -x -l {0}
         run: |
-            git clone https://github.com/Pranavchiku/SNAP.git
+            git clone https://github.com/certik/SNAP.git
             cd SNAP
             export PATH="$(pwd)/../src/bin:$PATH"
 
-            git checkout lf5
-            git checkout 995bffd104013fad37aca8c10ee916b8b4044cb2
+            git checkout lf7
+            git checkout 4da1d34db8561e580ea87d6e84e5ecd30efc1572
             cd ./src
-            make -j8
+            make -j8 FORTRAN=lfortran FFLAGS= MPI=no OPENMP=no
             ./gsnap ../qasnap/sample/inp out
 
             make clean
-            make -j8 FORTRAN="lfortran --fast --skip-pass=promote_allocatable_to_nonallocatable"
+            make -j8 FORTRAN=lfortran FFLAGS="--fast --skip-pass=promote_allocatable_to_nonallocatable" MPI=no OPENMP=no
             ./gsnap ../qasnap/sample/inp out
 
   test_llvm:
@@ -726,7 +726,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        llvm-version: ["10", "14", "15", "16", "17"]
+        # Note: The LLVM 11 test is redundant, since it is already tested by
+        # most other tests (since LLVM 11 is our default version), but we have
+        # it here as well for consistency, and that way other tests can freely
+        # switch to other versions as needed. We test all versions here in
+        # exactly the same manner, to ensure that users can just change the
+        # `llvmdev` version in their conda environment and everything will just
+        # work.
+        llvm-version: ["10", "11", "12", "13", "14", "15", "16", "17"]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -759,6 +766,7 @@ jobs:
 
             cmake --build . -j16 --target install
 
+      # LLVM 10-16 all work in exactly the same way, so the test is identical
       - name: Test Linux LLVM 10-16
         if: contains(matrix.llvm-version, '17') == false
         shell: bash -e -l {0}
@@ -767,7 +775,8 @@ jobs:
             ./run_tests.py -b llvm llvmImplicit
             ./run_tests.py -b llvm llvmImplicit -f
 
-      # In LLVM 17 we can only compile a subset for now
+      # In LLVM 17 we can only compile a subset for now, so we have a dedicated
+      # LLVM 17 test here:
       - name: Test Linux LLVM 17
         if: contains(matrix.llvm-version, '17') == true
         shell: bash -e -l {0}

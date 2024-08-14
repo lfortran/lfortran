@@ -2604,6 +2604,11 @@ asr = true
 run = true
 
 [[test]]
+filename = "print_intrinsics.f90"
+asr = true
+run = true
+
+[[test]]
 filename = "uppercase1.f90"
 asr = true
 
@@ -4105,3 +4110,31 @@ asr = true
 [[test]]
 filename = "errors/modulo_01.f90"
 asr = true
+
+[[test]]
+filename = "errors/sign_01.f90"
+asr = true
+
+[[test]]
+filename = "errors/dprod_01.f90"
+asr = true
+
+[[test]]
+filename = "errors/ifix_01.f90"
+asr = true
+
+[[test]]
+filename = "errors/intrinsics14.f90"
+asr = true
+
+[[test]]
+filename = "errors/intrinsics15.f90"
+asr = true
+
+[[test]]
+filename = "exit1.f90"
+run = true
+
+[[test]]
+filename = "exit2.f90"
+run = true

@@ -5,6 +5,7 @@ program file_09
     character :: arr(2, 2)
     character, allocatable :: alloc_arr(:, :)
 
+    print *, "1"
     open(u, file="file_01_data.txt", form="unformatted", access="stream", status="old")
     read(u) arr
     close(u)

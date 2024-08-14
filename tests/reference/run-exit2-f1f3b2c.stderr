@@ -1,0 +1,12 @@
+style suggestion: Use '==' instead of '.eq.'
+ --> tests/exit2.f90:6:12
+  |
+6 |     if ( i .eq. 5 ) then
+  |            ^^^^ help: write this as '=='
+
+warning: Routine `exit` is a non-standard function
+ --> tests/exit2.f90:7:9
+  |
+7 |         call exit(2)
+  |         ^^^^^^^^^^^^ 
+STOP 2
