@@ -2524,17 +2524,35 @@
                                         ()
                                     )
                                     (Print
-                                        [(Var 14 xi)]
+                                        [(StringFormat
+                                            ()
+                                            [(Var 14 xi)]
+                                            FormatFortran
+                                            (Character -1 0 ())
+                                            ()
+                                        )]
                                         ()
                                         ()
                                     )
                                     (Print
-                                        [(Var 14 xr)]
+                                        [(StringFormat
+                                            ()
+                                            [(Var 14 xr)]
+                                            FormatFortran
+                                            (Character -1 0 ())
+                                            ()
+                                        )]
                                         ()
                                         ()
                                     )
                                     (Print
-                                        [(Var 14 xm)]
+                                        [(StringFormat
+                                            ()
+                                            [(Var 14 xm)]
+                                            FormatFortran
+                                            (Character -1 0 ())
+                                            ()
+                                        )]
                                         ()
                                         ()
                                     )]

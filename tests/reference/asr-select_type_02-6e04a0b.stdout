@@ -310,20 +310,26 @@
                                         (Var 4 p_or_cp)
                                     )
                                     (Print
-                                        [(StringConstant
-                                            "point: "
-                                            (Character 1 7 ())
-                                        )
-                                        (StructInstanceMember
-                                            (Var 7 an)
-                                            7 1_point_x
-                                            (Real 4)
+                                        [(StringFormat
                                             ()
-                                        )
-                                        (StructInstanceMember
-                                            (Var 7 an)
-                                            7 1_point_y
-                                            (Real 4)
+                                            [(StringConstant
+                                                "point: "
+                                                (Character 1 7 ())
+                                            )
+                                            (StructInstanceMember
+                                                (Var 7 an)
+                                                7 1_point_x
+                                                (Real 4)
+                                                ()
+                                            )
+                                            (StructInstanceMember
+                                                (Var 7 an)
+                                                7 1_point_y
+                                                (Real 4)
+                                                ()
+                                            )]
+                                            FormatFortran
+                                            (Character -1 0 ())
                                             ()
                                         )]
                                         ()
@@ -392,26 +398,32 @@
                                         (Var 4 p_or_cp)
                                     )
                                     (Print
-                                        [(StringConstant
-                                            "color_point: "
-                                            (Character 1 13 ())
-                                        )
-                                        (StructInstanceMember
-                                            (Var 8 an)
-                                            8 1_point_x
-                                            (Real 4)
+                                        [(StringFormat
                                             ()
-                                        )
-                                        (StructInstanceMember
-                                            (Var 8 an)
-                                            8 1_point_y
-                                            (Real 4)
-                                            ()
-                                        )
-                                        (StructInstanceMember
-                                            (Var 8 an)
-                                            8 1_color_point_color
-                                            (Integer 4)
+                                            [(StringConstant
+                                                "color_point: "
+                                                (Character 1 13 ())
+                                            )
+                                            (StructInstanceMember
+                                                (Var 8 an)
+                                                8 1_point_x
+                                                (Real 4)
+                                                ()
+                                            )
+                                            (StructInstanceMember
+                                                (Var 8 an)
+                                                8 1_point_y
+                                                (Real 4)
+                                                ()
+                                            )
+                                            (StructInstanceMember
+                                                (Var 8 an)
+                                                8 1_color_point_color
+                                                (Integer 4)
+                                                ()
+                                            )]
+                                            FormatFortran
+                                            (Character -1 0 ())
                                             ()
                                         )]
                                         ()

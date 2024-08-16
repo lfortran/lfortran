@@ -901,80 +901,92 @@
                     template_02
                     [template_02_m]
                     [(Print
-                        [(FunctionCall
-                            8 change_positions_int
+                        [(StringFormat
                             ()
-                            [((ArrayPhysicalCast
-                                (ArrayConstant
-                                    28
-                                    [3, 3, 6, ...., 2, 2, 1]
+                            [(FunctionCall
+                                8 change_positions_int
+                                ()
+                                [((ArrayPhysicalCast
+                                    (ArrayConstant
+                                        28
+                                        [3, 3, 6, ...., 2, 2, 1]
+                                        (Array
+                                            (Integer 4)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 7 (Integer 4) Decimal))]
+                                            FixedSizeArray
+                                        )
+                                        ColMajor
+                                    )
+                                    FixedSizeArray
+                                    DescriptorArray
                                     (Array
                                         (Integer 4)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 7 (Integer 4) Decimal))]
-                                        FixedSizeArray
+                                        DescriptorArray
                                     )
-                                    ColMajor
-                                )
-                                FixedSizeArray
-                                DescriptorArray
-                                (Array
-                                    (Integer 4)
-                                    [((IntegerConstant 1 (Integer 4) Decimal)
-                                    (IntegerConstant 7 (Integer 4) Decimal))]
-                                    DescriptorArray
+                                    ()
+                                ))]
+                                (Allocatable
+                                    (Array
+                                        (Integer 4)
+                                        [(()
+                                        ())]
+                                        DescriptorArray
+                                    )
                                 )
                                 ()
-                            ))]
-                            (Allocatable
-                                (Array
-                                    (Integer 4)
-                                    [(()
-                                    ())]
-                                    DescriptorArray
-                                )
-                            )
-                            ()
+                                ()
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
                             ()
                         )]
                         ()
                         ()
                     )
                     (Print
-                        [(FunctionCall
-                            8 change_positions_chr
+                        [(StringFormat
                             ()
-                            [((ArrayPhysicalCast
-                                (ArrayConstant
-                                    7
-                                    ["a", "a", "b", ...., "p", "p", "o"]
+                            [(FunctionCall
+                                8 change_positions_chr
+                                ()
+                                [((ArrayPhysicalCast
+                                    (ArrayConstant
+                                        7
+                                        ["a", "a", "b", ...., "p", "p", "o"]
+                                        (Array
+                                            (Character 1 1 ())
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 7 (Integer 4) Decimal))]
+                                            FixedSizeArray
+                                        )
+                                        ColMajor
+                                    )
+                                    FixedSizeArray
+                                    DescriptorArray
                                     (Array
                                         (Character 1 1 ())
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 7 (Integer 4) Decimal))]
-                                        FixedSizeArray
+                                        DescriptorArray
                                     )
-                                    ColMajor
-                                )
-                                FixedSizeArray
-                                DescriptorArray
-                                (Array
-                                    (Character 1 1 ())
-                                    [((IntegerConstant 1 (Integer 4) Decimal)
-                                    (IntegerConstant 7 (Integer 4) Decimal))]
-                                    DescriptorArray
+                                    ()
+                                ))]
+                                (Allocatable
+                                    (Array
+                                        (Integer 4)
+                                        [(()
+                                        ())]
+                                        DescriptorArray
+                                    )
                                 )
                                 ()
-                            ))]
-                            (Allocatable
-                                (Array
-                                    (Integer 4)
-                                    [(()
-                                    ())]
-                                    DescriptorArray
-                                )
-                            )
-                            ()
+                                ()
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
                             ()
                         )]
                         ()

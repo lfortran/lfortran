@@ -728,16 +728,22 @@
                         (Var 6 c)
                     )
                     (Print
-                        [(StructInstanceMember
-                            (Var 6 a)
-                            6 1_complextype_r
-                            (Real 4)
+                        [(StringFormat
                             ()
-                        )
-                        (StructInstanceMember
-                            (Var 6 a)
-                            6 1_complextype_i
-                            (Real 4)
+                            [(StructInstanceMember
+                                (Var 6 a)
+                                6 1_complextype_r
+                                (Real 4)
+                                ()
+                            )
+                            (StructInstanceMember
+                                (Var 6 a)
+                                6 1_complextype_i
+                                (Real 4)
+                                ()
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
                             ()
                         )]
                         ()
@@ -794,16 +800,22 @@
                         (Var 6 c)
                     )
                     (Print
-                        [(StructInstanceMember
-                            (Var 6 a)
-                            6 1_complextype_r
-                            (Real 4)
+                        [(StringFormat
                             ()
-                        )
-                        (StructInstanceMember
-                            (Var 6 a)
-                            6 1_complextype_i
-                            (Real 4)
+                            [(StructInstanceMember
+                                (Var 6 a)
+                                6 1_complextype_r
+                                (Real 4)
+                                ()
+                            )
+                            (StructInstanceMember
+                                (Var 6 a)
+                                6 1_complextype_i
+                                (Real 4)
+                                ()
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
                             ()
                         )]
                         ()

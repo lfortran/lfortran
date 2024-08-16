@@ -8027,7 +8027,7 @@ public:
     // (9)array[i64], (10)array[i32], (11)array[i16], (12)array[i8],
     // (13)array[f64], (14)array[f32]
     // (15)array[character], (16)array[logical], (17)array[cptr], (18)array[enumType],
-    // (19)cptr , (20)enumType
+    // (19)cptr + pointer , (20)enumType
 
     void compute_fmt_specifier_and_arg(std::vector<std::string> &fmt,
         std::vector<llvm::Value *> &args, ASR::expr_t *v, const Location &loc, bool add_type_as_int = false) {
@@ -8099,14 +8099,18 @@ public:
                                         loc);
                 }
             }
+            llvm::Value* d = tmp;
+            if(!is_array && add_type_as_int){ //cast all integers to int64.
+                d =builder->CreateSExt(tmp, llvm_utils->getIntType(8, false));
+            } 
             if (add_type_as_int) {        
                 if(!is_array){
                     type_as_int = llvm::ConstantInt::get(context, llvm::APInt(32, number_of_type)); 
                     args.push_back(type_as_int);
-                    args.push_back(tmp);
+                    args.push_back(d);
                 }
             } else {
-                args.push_back(tmp);
+                args.push_back(d);
             }
         } else if (ASRUtils::is_unsigned_integer(*t)) {
             switch( a_kind ) {
@@ -10092,8 +10096,15 @@ public:
         // if (fmt_value) ...
         if (x.m_kind == ASR::string_format_kindType::FormatFortran) {
             std::vector<llvm::Value *> args;
-            visit_expr(*x.m_fmt);
-            args.push_back(tmp);
+            if(x.m_fmt == nullptr){ // default formatting
+                llvm::Type* int8Type = builder->getInt8Ty();
+                llvm::PointerType* charPtrType = int8Type->getPointerTo();
+                llvm::Constant* nullCharPtr = llvm::ConstantPointerNull::get(charPtrType);
+                args.push_back(nullCharPtr);
+            } else {
+                visit_expr(*x.m_fmt);
+                args.push_back(tmp);
+            }
 
             for (size_t i=0; i<x.n_args; i++) {
                 std::vector<std::string> fmt;

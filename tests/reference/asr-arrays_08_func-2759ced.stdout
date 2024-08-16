@@ -477,7 +477,13 @@
                         ()
                     )
                     (Print
-                        [(Var 2 r)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 r)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )

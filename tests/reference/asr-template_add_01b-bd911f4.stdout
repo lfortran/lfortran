@@ -949,20 +949,32 @@
                                         ()
                                     )
                                     (Print
-                                        [(StringConstant
-                                            "The result is"
-                                            (Character 1 13 ())
-                                        )
-                                        (Var 10 n1)]
+                                        [(StringFormat
+                                            ()
+                                            [(StringConstant
+                                                "The result is"
+                                                (Character 1 13 ())
+                                            )
+                                            (Var 10 n1)]
+                                            FormatFortran
+                                            (Character -1 0 ())
+                                            ()
+                                        )]
                                         ()
                                         ()
                                     )
                                     (Print
-                                        [(StringConstant
-                                            "The result is"
-                                            (Character 1 13 ())
-                                        )
-                                        (Var 10 n2)]
+                                        [(StringFormat
+                                            ()
+                                            [(StringConstant
+                                                "The result is"
+                                                (Character 1 13 ())
+                                            )
+                                            (Var 10 n2)]
+                                            FormatFortran
+                                            (Character -1 0 ())
+                                            ()
+                                        )]
                                         ()
                                         ()
                                     )]

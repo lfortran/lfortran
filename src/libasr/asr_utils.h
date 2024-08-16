@@ -5655,9 +5655,6 @@ static inline void promote_ints_to_kind_8(ASR::expr_t** m_args, size_t n_args,
 static inline ASR::asr_t* make_StringFormat_t_util(Allocator &al, const Location &a_loc,
         ASR::expr_t* a_fmt, ASR::expr_t** a_args, size_t n_args, ASR::string_format_kindType a_kind,
         ASR::ttype_t* a_type, ASR::expr_t* a_value) {
-
-    promote_ints_to_kind_8(a_args, n_args, al, a_loc);
-
     return ASR::make_StringFormat_t(al, a_loc, a_fmt, a_args, n_args, a_kind, a_type, a_value);
 }
 

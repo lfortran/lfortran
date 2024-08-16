@@ -477,7 +477,13 @@
                         ()
                     )
                     (Print
-                        [(Var 2 y)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 y)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
@@ -494,7 +500,13 @@
                         ()
                     )
                     (Print
-                        [(Var 2 q)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 q)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
@@ -535,7 +547,13 @@
                         ()
                     )
                     (Print
-                        [(Var 2 c)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 c)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )]

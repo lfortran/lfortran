@@ -285,7 +285,13 @@
                         ()
                     )
                     (Print
-                        [(Var 2 p_pad)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 p_pad)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
@@ -305,7 +311,13 @@
                         ()
                     )
                     (Print
-                        [(Var 2 p_trim)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 p_trim)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )]

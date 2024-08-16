@@ -67,10 +67,11 @@ loop.end:                                         ; preds = %loop.head
   %18 = load i1, i1* %r, align 1
   %19 = icmp eq i1 %18, false
   %20 = select i1 %19, i8* getelementptr inbounds ([6 x i8], [6 x i8]* @2, i32 0, i32 0), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0)
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @4, i32 0, i32 0), i8* %20, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0))
-  %21 = load i1, i1* %r, align 1
-  %22 = xor i1 %21, true
-  br i1 %22, label %then, label %else
+  %21 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 2, i8* null, i32 8, i8* %20)
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @4, i32 0, i32 0), i8* %21, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0))
+  %22 = load i1, i1* %r, align 1
+  %23 = xor i1 %22, true
+  br i1 %23, label %then, label %else
 
 then:                                             ; preds = %loop.end
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @7, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @5, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @6, i32 0, i32 0))
@@ -186,6 +187,8 @@ return:                                           ; preds = %loop.end
 }
 
 declare void @_lpython_call_initial_functions(i32, i8**)
+
+declare i8* @_lcompilers_string_format_fortran(i32, i8*, ...)
 
 declare void @_lfortran_printf(i8*, ...)
 

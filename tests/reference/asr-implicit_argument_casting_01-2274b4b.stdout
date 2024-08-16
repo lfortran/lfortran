@@ -335,13 +335,19 @@
                                         ()
                                     )
                                     (Print
-                                        [(ArrayItem
-                                            (Var 4 w)
-                                            [(()
-                                            (Var 4 isi)
-                                            ())]
-                                            (Complex 8)
-                                            ColMajor
+                                        [(StringFormat
+                                            ()
+                                            [(ArrayItem
+                                                (Var 4 w)
+                                                [(()
+                                                (Var 4 isi)
+                                                ())]
+                                                (Complex 8)
+                                                ColMajor
+                                                ()
+                                            )]
+                                            FormatFortran
+                                            (Character -1 0 ())
                                             ()
                                         )]
                                         ()

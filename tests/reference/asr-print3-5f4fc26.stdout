@@ -43,11 +43,17 @@
                         )
                     )
                     (Print
-                        [(StringConstant
-                            "x is "
-                            (Character 1 5 ())
-                        )
-                        (Var 2 x)]
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "x is "
+                                (Character 1 5 ())
+                            )
+                            (Var 2 x)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )

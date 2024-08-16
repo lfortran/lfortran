@@ -362,36 +362,60 @@
                         []
                     )
                     (Print
-                        [(Var 2 x_ceil)
-                        (IntrinsicElementalFunction
-                            Ceiling
-                            [(Var 2 x_ceil)]
-                            0
-                            (Integer 4)
+                        [(StringFormat
+                            ()
+                            [(Var 2 x_ceil)
+                            (IntrinsicElementalFunction
+                                Ceiling
+                                [(Var 2 x_ceil)]
+                                0
+                                (Integer 4)
+                                ()
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
                             ()
                         )]
                         ()
                         ()
                     )
                     (Print
-                        [(Var 2 y_ceil)
-                        (IntrinsicElementalFunction
-                            Ceiling
-                            [(Var 2 y_ceil)]
-                            0
-                            (Integer 4)
+                        [(StringFormat
+                            ()
+                            [(Var 2 y_ceil)
+                            (IntrinsicElementalFunction
+                                Ceiling
+                                [(Var 2 y_ceil)]
+                                0
+                                (Integer 4)
+                                ()
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
                             ()
                         )]
                         ()
                         ()
                     )
                     (Print
-                        [(Var 2 z_ceil)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 z_ceil)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
                     (Print
-                        [(Var 2 w_ceil)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 w_ceil)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )]

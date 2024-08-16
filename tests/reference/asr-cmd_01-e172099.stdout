@@ -117,11 +117,17 @@
                         ()
                     )
                     (Print
-                        [(StringConstant
-                            "count: "
-                            (Character 1 7 ())
-                        )
-                        (Var 2 count)]
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "count: "
+                                (Character 1 7 ())
+                            )
+                            (Var 2 count)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
