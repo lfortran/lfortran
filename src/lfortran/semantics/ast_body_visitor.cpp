@@ -3130,6 +3130,10 @@ public:
 
             tmp = ASR::make_Print_t(al, x.base.base.loc,
                 print_args.p, print_args.size(), nullptr, nullptr);
+        } else if (!fmt && body.size() == 1
+                        && ASR::is_a<ASR::Character_t>(*ASRUtils::expr_type(body[0]))) {
+            tmp = ASR::make_Print_t(al, x.base.base.loc,
+                body.p, body.size(), nullptr, nullptr);
         } else {
             ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Character_t(
                         al, x.base.base.loc, -1, 0, nullptr));
