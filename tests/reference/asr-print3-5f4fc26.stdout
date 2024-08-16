@@ -101,15 +101,9 @@
                         )
                     )
                     (Print
-                        [(StringFormat
-                            ()
-                            [(StringConstant
-                                "ok"
-                                (Character 1 2 ())
-                            )]
-                            FormatFortran
-                            (Character -1 0 ())
-                            ()
+                        [(StringConstant
+                            "ok"
+                            (Character 1 2 ())
                         )]
                         ()
                         ()

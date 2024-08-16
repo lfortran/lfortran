@@ -84,15 +84,9 @@
                                     []
                                     [(Var 4 a)]
                                     [(Print
-                                        [(StringFormat
-                                            ()
-                                            [(StringConstant
-                                                "abs"
-                                                (Character 1 3 ())
-                                            )]
-                                            FormatFortran
-                                            (Character -1 0 ())
-                                            ()
+                                        [(StringConstant
+                                            "abs"
+                                            (Character 1 3 ())
                                         )]
                                         ()
                                         ()
@@ -232,15 +226,9 @@
                                     []
                                     [(Var 3 a)]
                                     [(Print
-                                        [(StringFormat
-                                            ()
-                                            [(StringConstant
-                                                "sum"
-                                                (Character 1 3 ())
-                                            )]
-                                            FormatFortran
-                                            (Character -1 0 ())
-                                            ()
+                                        [(StringConstant
+                                            "sum"
+                                            (Character 1 3 ())
                                         )]
                                         ()
                                         ()

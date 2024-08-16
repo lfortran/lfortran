@@ -517,15 +517,9 @@
                         0
                     )
                     (Print
-                        [(StringFormat
-                            ()
-                            [(StringConstant
-                                "Fortran intrinsic matmul:"
-                                (Character 1 25 ())
-                            )]
-                            FormatFortran
-                            (Character -1 0 ())
-                            ()
+                        [(StringConstant
+                            "Fortran intrinsic matmul:"
+                            (Character 1 25 ())
                         )]
                         ()
                         ()
@@ -692,15 +686,9 @@
                         ()
                     )
                     (Print
-                        [(StringFormat
-                            ()
-                            [(StringConstant
-                                "Clock cycles per element:"
-                                (Character 1 25 ())
-                            )]
-                            FormatFortran
-                            (Character -1 0 ())
-                            ()
+                        [(StringConstant
+                            "Clock cycles per element:"
+                            (Character 1 25 ())
                         )]
                         ()
                         ()
@@ -774,15 +762,9 @@
                         ()
                     )
                     (Print
-                        [(StringFormat
-                            ()
-                            [(StringConstant
-                                "matmul2:"
-                                (Character 1 8 ())
-                            )]
-                            FormatFortran
-                            (Character -1 0 ())
-                            ()
+                        [(StringConstant
+                            "matmul2:"
+                            (Character 1 8 ())
                         )]
                         ()
                         ()
@@ -988,15 +970,9 @@
                         ()
                     )
                     (Print
-                        [(StringFormat
-                            ()
-                            [(StringConstant
-                                "Clock cycles per element:"
-                                (Character 1 25 ())
-                            )]
-                            FormatFortran
-                            (Character -1 0 ())
-                            ()
+                        [(StringConstant
+                            "Clock cycles per element:"
+                            (Character 1 25 ())
                         )]
                         ()
                         ()
@@ -1086,15 +1062,9 @@
                         ()
                     )
                     (Print
-                        [(StringFormat
-                            ()
-                            [(StringConstant
-                                "matmul1:"
-                                (Character 1 8 ())
-                            )]
-                            FormatFortran
-                            (Character -1 0 ())
-                            ()
+                        [(StringConstant
+                            "matmul1:"
+                            (Character 1 8 ())
                         )]
                         ()
                         ()
@@ -1300,15 +1270,9 @@
                         ()
                     )
                     (Print
-                        [(StringFormat
-                            ()
-                            [(StringConstant
-                                "Clock cycles per element:"
-                                (Character 1 25 ())
-                            )]
-                            FormatFortran
-                            (Character -1 0 ())
-                            ()
+                        [(StringConstant
+                            "Clock cycles per element:"
+                            (Character 1 25 ())
                         )]
                         ()
                         ()

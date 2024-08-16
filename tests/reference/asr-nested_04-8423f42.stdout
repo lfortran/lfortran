@@ -254,15 +254,9 @@
                                         ()
                                     )
                                     (Print
-                                        [(StringFormat
-                                            ()
-                                            [(StringConstant
-                                                "b()"
-                                                (Character 1 3 ())
-                                            )]
-                                            FormatFortran
-                                            (Character -1 0 ())
-                                            ()
+                                        [(StringConstant
+                                            "b()"
+                                            (Character 1 3 ())
                                         )]
                                         ()
                                         ()

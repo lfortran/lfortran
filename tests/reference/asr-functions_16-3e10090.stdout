@@ -12,15 +12,9 @@
                     functions_16
                     []
                     [(Print
-                        [(StringFormat
-                            ()
-                            [(StringConstant
-                                "running functions_16 program"
-                                (Character 1 28 ())
-                            )]
-                            FormatFortran
-                            (Character -1 0 ())
-                            ()
+                        [(StringConstant
+                            "running functions_16 program"
+                            (Character 1 28 ())
                         )]
                         ()
                         ()

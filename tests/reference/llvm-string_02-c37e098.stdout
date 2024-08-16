@@ -46,8 +46,7 @@ define i32 @main(i32 %0, i8** %1) {
   %13 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 8, i8* null, i32 7, i8* getelementptr inbounds ([9 x i8], [9 x i8]* @6, i32 0, i32 0), i32 7, i8* %10, i32 7, i8* %11, i32 7, i8* %12)
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @7, i32 0, i32 0), i8* %13, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @5, i32 0, i32 0))
   %14 = load i8*, i8** %greetings, align 8
-  %15 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 2, i8* null, i32 7, i8* %14)
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @10, i32 0, i32 0), i8* %15, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @9, i32 0, i32 0))
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @10, i32 0, i32 0), i8* %14, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @9, i32 0, i32 0))
   br label %return
 
 return:                                           ; preds = %.entry

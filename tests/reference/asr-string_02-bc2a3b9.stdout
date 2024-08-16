@@ -124,13 +124,7 @@
                         ()
                     )
                     (Print
-                        [(StringFormat
-                            ()
-                            [(Var 2 greetings)]
-                            FormatFortran
-                            (Character -1 0 ())
-                            ()
-                        )]
+                        [(Var 2 greetings)]
                         ()
                         ()
                     )]

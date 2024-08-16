@@ -219,15 +219,9 @@
                         10
                     )
                     (Print
-                        [(StringFormat
-                            ()
-                            [(StringConstant
-                                "err rewind"
-                                (Character 1 10 ())
-                            )]
-                            FormatFortran
-                            (Character -1 0 ())
-                            ()
+                        [(StringConstant
+                            "err rewind"
+                            (Character 1 10 ())
                         )]
                         ()
                         ()
@@ -237,15 +231,9 @@
                         20
                     )
                     (Print
-                        [(StringFormat
-                            ()
-                            [(StringConstant
-                                "err inquire"
-                                (Character 1 11 ())
-                            )]
-                            FormatFortran
-                            (Character -1 0 ())
-                            ()
+                        [(StringConstant
+                            "err inquire"
+                            (Character 1 11 ())
                         )]
                         ()
                         ()

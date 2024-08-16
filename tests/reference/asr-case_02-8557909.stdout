@@ -58,15 +58,9 @@
                                 ()
                             )
                             (Print
-                                [(StringFormat
-                                    ()
-                                    [(StringConstant
-                                        "Excellent!"
-                                        (Character 1 10 ())
-                                    )]
-                                    FormatFortran
-                                    (Character -1 0 ())
-                                    ()
+                                [(StringConstant
+                                    "Excellent!"
+                                    (Character 1 10 ())
                                 )]
                                 ()
                                 ()
@@ -81,15 +75,9 @@
                                 ()
                             )
                             (Print
-                                [(StringFormat
-                                    ()
-                                    [(StringConstant
-                                        "Very good!"
-                                        (Character 1 10 ())
-                                    )]
-                                    FormatFortran
-                                    (Character -1 0 ())
-                                    ()
+                                [(StringConstant
+                                    "Very good!"
+                                    (Character 1 10 ())
                                 )]
                                 ()
                                 ()
@@ -104,15 +92,9 @@
                                 ()
                             )
                             (Print
-                                [(StringFormat
-                                    ()
-                                    [(StringConstant
-                                        "Well done!"
-                                        (Character 1 10 ())
-                                    )]
-                                    FormatFortran
-                                    (Character -1 0 ())
-                                    ()
+                                [(StringConstant
+                                    "Well done!"
+                                    (Character 1 10 ())
                                 )]
                                 ()
                                 ()
@@ -127,15 +109,9 @@
                                 ()
                             )
                             (Print
-                                [(StringFormat
-                                    ()
-                                    [(StringConstant
-                                        "Not bad!"
-                                        (Character 1 8 ())
-                                    )]
-                                    FormatFortran
-                                    (Character -1 0 ())
-                                    ()
+                                [(StringConstant
+                                    "Not bad!"
+                                    (Character 1 8 ())
                                 )]
                                 ()
                                 ()
@@ -150,15 +126,9 @@
                                 ()
                             )
                             (Print
-                                [(StringFormat
-                                    ()
-                                    [(StringConstant
-                                        "You passed!"
-                                        (Character 1 11 ())
-                                    )]
-                                    FormatFortran
-                                    (Character -1 0 ())
-                                    ()
+                                [(StringConstant
+                                    "You passed!"
+                                    (Character 1 11 ())
                                 )]
                                 ()
                                 ()
@@ -173,15 +143,9 @@
                                 ()
                             )
                             (Print
-                                [(StringFormat
-                                    ()
-                                    [(StringConstant
-                                        "Better try again!"
-                                        (Character 1 17 ())
-                                    )]
-                                    FormatFortran
-                                    (Character -1 0 ())
-                                    ()
+                                [(StringConstant
+                                    "Better try again!"
+                                    (Character 1 17 ())
                                 )]
                                 ()
                                 ()
@@ -193,15 +157,9 @@
                             ()
                         )
                         (Print
-                            [(StringFormat
-                                ()
-                                [(StringConstant
-                                    "Invalid marks"
-                                    (Character 1 13 ())
-                                )]
-                                FormatFortran
-                                (Character -1 0 ())
-                                ()
+                            [(StringConstant
+                                "Invalid marks"
+                                (Character 1 13 ())
                             )]
                             ()
                             ()
@@ -242,15 +200,9 @@
                             (IntegerConstant 91 (Integer 4) Decimal)
                             (IntegerConstant 100 (Integer 4) Decimal)
                             [(Print
-                                [(StringFormat
-                                    ()
-                                    [(StringConstant
-                                        "Excellent!"
-                                        (Character 1 10 ())
-                                    )]
-                                    FormatFortran
-                                    (Character -1 0 ())
-                                    ()
+                                [(StringConstant
+                                    "Excellent!"
+                                    (Character 1 10 ())
                                 )]
                                 ()
                                 ()
@@ -260,15 +212,9 @@
                             (IntegerConstant 81 (Integer 4) Decimal)
                             (IntegerConstant 90 (Integer 4) Decimal)
                             [(Print
-                                [(StringFormat
-                                    ()
-                                    [(StringConstant
-                                        "Very good!"
-                                        (Character 1 10 ())
-                                    )]
-                                    FormatFortran
-                                    (Character -1 0 ())
-                                    ()
+                                [(StringConstant
+                                    "Very good!"
+                                    (Character 1 10 ())
                                 )]
                                 ()
                                 ()
@@ -278,15 +224,9 @@
                             (IntegerConstant 71 (Integer 4) Decimal)
                             (IntegerConstant 80 (Integer 4) Decimal)
                             [(Print
-                                [(StringFormat
-                                    ()
-                                    [(StringConstant
-                                        "Well done!"
-                                        (Character 1 10 ())
-                                    )]
-                                    FormatFortran
-                                    (Character -1 0 ())
-                                    ()
+                                [(StringConstant
+                                    "Well done!"
+                                    (Character 1 10 ())
                                 )]
                                 ()
                                 ()
@@ -296,15 +236,9 @@
                             (IntegerConstant 61 (Integer 4) Decimal)
                             (IntegerConstant 70 (Integer 4) Decimal)
                             [(Print
-                                [(StringFormat
-                                    ()
-                                    [(StringConstant
-                                        "Not bad!"
-                                        (Character 1 8 ())
-                                    )]
-                                    FormatFortran
-                                    (Character -1 0 ())
-                                    ()
+                                [(StringConstant
+                                    "Not bad!"
+                                    (Character 1 8 ())
                                 )]
                                 ()
                                 ()
@@ -314,15 +248,9 @@
                             (IntegerConstant 41 (Integer 4) Decimal)
                             (IntegerConstant 60 (Integer 4) Decimal)
                             [(Print
-                                [(StringFormat
-                                    ()
-                                    [(StringConstant
-                                        "You passed!"
-                                        (Character 1 11 ())
-                                    )]
-                                    FormatFortran
-                                    (Character -1 0 ())
-                                    ()
+                                [(StringConstant
+                                    "You passed!"
+                                    (Character 1 11 ())
                                 )]
                                 ()
                                 ()
@@ -332,30 +260,18 @@
                             ()
                             (IntegerConstant 40 (Integer 4) Decimal)
                             [(Print
-                                [(StringFormat
-                                    ()
-                                    [(StringConstant
-                                        "Better try again!"
-                                        (Character 1 17 ())
-                                    )]
-                                    FormatFortran
-                                    (Character -1 0 ())
-                                    ()
+                                [(StringConstant
+                                    "Better try again!"
+                                    (Character 1 17 ())
                                 )]
                                 ()
                                 ()
                             )]
                         )]
                         [(Print
-                            [(StringFormat
-                                ()
-                                [(StringConstant
-                                    "Invalid marks"
-                                    (Character 1 13 ())
-                                )]
-                                FormatFortran
-                                (Character -1 0 ())
-                                ()
+                            [(StringConstant
+                                "Invalid marks"
+                                (Character 1 13 ())
                             )]
                             ()
                             ()
@@ -383,15 +299,9 @@
                             (IntegerConstant 91 (Integer 4) Decimal)
                             (IntegerConstant 100 (Integer 4) Decimal)
                             [(Print
-                                [(StringFormat
-                                    ()
-                                    [(StringConstant
-                                        "Excellent!"
-                                        (Character 1 10 ())
-                                    )]
-                                    FormatFortran
-                                    (Character -1 0 ())
-                                    ()
+                                [(StringConstant
+                                    "Excellent!"
+                                    (Character 1 10 ())
                                 )]
                                 ()
                                 ()
@@ -401,15 +311,9 @@
                             (IntegerConstant 81 (Integer 4) Decimal)
                             (IntegerConstant 90 (Integer 4) Decimal)
                             [(Print
-                                [(StringFormat
-                                    ()
-                                    [(StringConstant
-                                        "Very good!"
-                                        (Character 1 10 ())
-                                    )]
-                                    FormatFortran
-                                    (Character -1 0 ())
-                                    ()
+                                [(StringConstant
+                                    "Very good!"
+                                    (Character 1 10 ())
                                 )]
                                 ()
                                 ()
@@ -419,15 +323,9 @@
                             (IntegerConstant 71 (Integer 4) Decimal)
                             (IntegerConstant 80 (Integer 4) Decimal)
                             [(Print
-                                [(StringFormat
-                                    ()
-                                    [(StringConstant
-                                        "Well done!"
-                                        (Character 1 10 ())
-                                    )]
-                                    FormatFortran
-                                    (Character -1 0 ())
-                                    ()
+                                [(StringConstant
+                                    "Well done!"
+                                    (Character 1 10 ())
                                 )]
                                 ()
                                 ()
@@ -437,15 +335,9 @@
                             (IntegerConstant 61 (Integer 4) Decimal)
                             (IntegerConstant 70 (Integer 4) Decimal)
                             [(Print
-                                [(StringFormat
-                                    ()
-                                    [(StringConstant
-                                        "Not bad!"
-                                        (Character 1 8 ())
-                                    )]
-                                    FormatFortran
-                                    (Character -1 0 ())
-                                    ()
+                                [(StringConstant
+                                    "Not bad!"
+                                    (Character 1 8 ())
                                 )]
                                 ()
                                 ()
@@ -455,15 +347,9 @@
                             (IntegerConstant 41 (Integer 4) Decimal)
                             (IntegerConstant 60 (Integer 4) Decimal)
                             [(Print
-                                [(StringFormat
-                                    ()
-                                    [(StringConstant
-                                        "You passed!"
-                                        (Character 1 11 ())
-                                    )]
-                                    FormatFortran
-                                    (Character -1 0 ())
-                                    ()
+                                [(StringConstant
+                                    "You passed!"
+                                    (Character 1 11 ())
                                 )]
                                 ()
                                 ()
@@ -473,30 +359,18 @@
                             ()
                             (IntegerConstant 40 (Integer 4) Decimal)
                             [(Print
-                                [(StringFormat
-                                    ()
-                                    [(StringConstant
-                                        "Better try again!"
-                                        (Character 1 17 ())
-                                    )]
-                                    FormatFortran
-                                    (Character -1 0 ())
-                                    ()
+                                [(StringConstant
+                                    "Better try again!"
+                                    (Character 1 17 ())
                                 )]
                                 ()
                                 ()
                             )]
                         )]
                         [(Print
-                            [(StringFormat
-                                ()
-                                [(StringConstant
-                                    "Invalid marks"
-                                    (Character 1 13 ())
-                                )]
-                                FormatFortran
-                                (Character -1 0 ())
-                                ()
+                            [(StringConstant
+                                "Invalid marks"
+                                (Character 1 13 ())
                             )]
                             ()
                             ()

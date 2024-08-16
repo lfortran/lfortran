@@ -40,15 +40,9 @@
                                 (Character 1 1 ())
                             )]
                             [(Print
-                                [(StringFormat
-                                    ()
-                                    [(StringConstant
-                                        "Excellent!"
-                                        (Character 1 10 ())
-                                    )]
-                                    FormatFortran
-                                    (Character -1 0 ())
-                                    ()
+                                [(StringConstant
+                                    "Excellent!"
+                                    (Character 1 10 ())
                                 )]
                                 ()
                                 ()
@@ -69,15 +63,9 @@
                                 (Character 1 1 ())
                             )]
                             [(Print
-                                [(StringFormat
-                                    ()
-                                    [(StringConstant
-                                        "Well done"
-                                        (Character 1 9 ())
-                                    )]
-                                    FormatFortran
-                                    (Character -1 0 ())
-                                    ()
+                                [(StringConstant
+                                    "Well done"
+                                    (Character 1 9 ())
                                 )]
                                 ()
                                 ()
@@ -90,15 +78,9 @@
                                 (Character 1 1 ())
                             )]
                             [(Print
-                                [(StringFormat
-                                    ()
-                                    [(StringConstant
-                                        "You passed"
-                                        (Character 1 10 ())
-                                    )]
-                                    FormatFortran
-                                    (Character -1 0 ())
-                                    ()
+                                [(StringConstant
+                                    "You passed"
+                                    (Character 1 10 ())
                                 )]
                                 ()
                                 ()
@@ -111,15 +93,9 @@
                                 (Character 1 1 ())
                             )]
                             [(Print
-                                [(StringFormat
-                                    ()
-                                    [(StringConstant
-                                        "Better try again"
-                                        (Character 1 16 ())
-                                    )]
-                                    FormatFortran
-                                    (Character -1 0 ())
-                                    ()
+                                [(StringConstant
+                                    "Better try again"
+                                    (Character 1 16 ())
                                 )]
                                 ()
                                 ()
@@ -127,15 +103,9 @@
                             .false.
                         )]
                         [(Print
-                            [(StringFormat
-                                ()
-                                [(StringConstant
-                                    "Invalid grade"
-                                    (Character 1 13 ())
-                                )]
-                                FormatFortran
-                                (Character -1 0 ())
-                                ()
+                            [(StringConstant
+                                "Invalid grade"
+                                (Character 1 13 ())
                             )]
                             ()
                             ()

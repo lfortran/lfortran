@@ -225,57 +225,33 @@
                             ()
                         )
                         [(Print
-                            [(StringFormat
-                                ()
-                                [(StringConstant
-                                    "a == b"
-                                    (Character 1 6 ())
-                                )]
-                                FormatFortran
-                                (Character -1 0 ())
-                                ()
+                            [(StringConstant
+                                "a == b"
+                                (Character 1 6 ())
                             )]
                             ()
                             ()
                         )
                         (Print
-                            [(StringFormat
-                                ()
-                                [(StringConstant
-                                    "ap /= bp"
-                                    (Character 1 8 ())
-                                )]
-                                FormatFortran
-                                (Character -1 0 ())
-                                ()
+                            [(StringConstant
+                                "ap /= bp"
+                                (Character 1 8 ())
                             )]
                             ()
                             ()
                         )]
                         [(Print
-                            [(StringFormat
-                                ()
-                                [(StringConstant
-                                    "ap == cp"
-                                    (Character 1 8 ())
-                                )]
-                                FormatFortran
-                                (Character -1 0 ())
-                                ()
+                            [(StringConstant
+                                "ap == cp"
+                                (Character 1 8 ())
                             )]
                             ()
                             ()
                         )
                         (Print
-                            [(StringFormat
-                                ()
-                                [(StringConstant
-                                    "cp /= dp"
-                                    (Character 1 8 ())
-                                )]
-                                FormatFortran
-                                (Character -1 0 ())
-                                ()
+                            [(StringConstant
+                                "cp /= dp"
+                                (Character 1 8 ())
                             )]
                             ()
                             ()
@@ -313,15 +289,9 @@
                             )
                             ()
                             [(Print
-                                [(StringFormat
-                                    ()
-                                    [(StringConstant
-                                        "Pass!"
-                                        (Character 1 5 ())
-                                    )]
-                                    FormatFortran
-                                    (Character -1 0 ())
-                                    ()
+                                [(StringConstant
+                                    "Pass!"
+                                    (Character 1 5 ())
                                 )]
                                 ()
                                 ()
@@ -337,30 +307,18 @@
                                 (IntegerConstant 38 (Integer 4) Decimal)
                             )
                             [(Print
-                                [(StringFormat
-                                    ()
-                                    [(StringConstant
-                                        "Failed!"
-                                        (Character 1 7 ())
-                                    )]
-                                    FormatFortran
-                                    (Character -1 0 ())
-                                    ()
+                                [(StringConstant
+                                    "Failed!"
+                                    (Character 1 7 ())
                                 )]
                                 ()
                                 ()
                             )]
                         )]
                         [(Print
-                            [(StringFormat
-                                ()
-                                [(StringConstant
-                                    "Invalid marks"
-                                    (Character 1 13 ())
-                                )]
-                                FormatFortran
-                                (Character -1 0 ())
-                                ()
+                            [(StringConstant
+                                "Invalid marks"
+                                (Character 1 13 ())
                             )]
                             ()
                             ()
@@ -383,15 +341,9 @@
                         ()
                     )
                     (Print
-                        [(StringFormat
-                            ()
-                            [(StringConstant
-                                "Pass!"
-                                (Character 1 5 ())
-                            )]
-                            FormatFortran
-                            (Character -1 0 ())
-                            ()
+                        [(StringConstant
+                            "Pass!"
+                            (Character 1 5 ())
                         )]
                         ()
                         ()

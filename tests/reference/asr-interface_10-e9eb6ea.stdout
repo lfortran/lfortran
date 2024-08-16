@@ -88,13 +88,7 @@
                         ()
                     )
                     (Print
-                        [(StringFormat
-                            ()
-                            [(Var 4 x)]
-                            FormatFortran
-                            (Character -1 0 ())
-                            ()
-                        )]
+                        [(Var 4 x)]
                         ()
                         ()
                     )]

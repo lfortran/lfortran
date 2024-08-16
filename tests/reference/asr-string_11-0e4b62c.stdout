@@ -79,15 +79,9 @@
                             ()
                         )
                         [(Print
-                            [(StringFormat
-                                ()
-                                [(StringConstant
-                                    "test is not found"
-                                    (Character 1 17 ())
-                                )]
-                                FormatFortran
-                                (Character -1 0 ())
-                                ()
+                            [(StringConstant
+                                "test is not found"
+                                (Character 1 17 ())
                             )]
                             ()
                             ()

@@ -49,15 +49,9 @@
                         ()
                     )
                     (Print
-                        [(StringFormat
-                            ()
-                            [(StringConstant
-                                "Else condition"
-                                (Character 1 14 ())
-                            )]
-                            FormatFortran
-                            (Character -1 0 ())
-                            ()
+                        [(StringConstant
+                            "Else condition"
+                            (Character 1 14 ())
                         )]
                         ()
                         ()

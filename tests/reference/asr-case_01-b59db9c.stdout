@@ -57,15 +57,9 @@
                                 ()
                             )
                             (Print
-                                [(StringFormat
-                                    ()
-                                    [(StringConstant
-                                        "1"
-                                        (Character 1 1 ())
-                                    )]
-                                    FormatFortran
-                                    (Character -1 0 ())
-                                    ()
+                                [(StringConstant
+                                    "1"
+                                    (Character 1 1 ())
                                 )]
                                 ()
                                 ()
@@ -80,15 +74,9 @@
                                 ()
                             )
                             (Print
-                                [(StringFormat
-                                    ()
-                                    [(StringConstant
-                                        "2"
-                                        (Character 1 1 ())
-                                    )]
-                                    FormatFortran
-                                    (Character -1 0 ())
-                                    ()
+                                [(StringConstant
+                                    "2"
+                                    (Character 1 1 ())
                                 )]
                                 ()
                                 ()
@@ -103,15 +91,9 @@
                                 ()
                             )
                             (Print
-                                [(StringFormat
-                                    ()
-                                    [(StringConstant
-                                        "3"
-                                        (Character 1 1 ())
-                                    )]
-                                    FormatFortran
-                                    (Character -1 0 ())
-                                    ()
+                                [(StringConstant
+                                    "3"
+                                    (Character 1 1 ())
                                 )]
                                 ()
                                 ()
@@ -126,15 +108,9 @@
                                 ()
                             )
                             (Print
-                                [(StringFormat
-                                    ()
-                                    [(StringConstant
-                                        "4"
-                                        (Character 1 1 ())
-                                    )]
-                                    FormatFortran
-                                    (Character -1 0 ())
-                                    ()
+                                [(StringConstant
+                                    "4"
+                                    (Character 1 1 ())
                                 )]
                                 ()
                                 ()
@@ -167,15 +143,9 @@
                                 ()
                             )
                             (Print
-                                [(StringFormat
-                                    ()
-                                    [(StringConstant
-                                        "1"
-                                        (Character 1 1 ())
-                                    )]
-                                    FormatFortran
-                                    (Character -1 0 ())
-                                    ()
+                                [(StringConstant
+                                    "1"
+                                    (Character 1 1 ())
                                 )]
                                 ()
                                 ()
@@ -192,15 +162,9 @@
                                 ()
                             )
                             (Print
-                                [(StringFormat
-                                    ()
-                                    [(StringConstant
-                                        "2,3,4"
-                                        (Character 1 5 ())
-                                    )]
-                                    FormatFortran
-                                    (Character -1 0 ())
-                                    ()
+                                [(StringConstant
+                                    "2,3,4"
+                                    (Character 1 5 ())
                                 )]
                                 ()
                                 ()

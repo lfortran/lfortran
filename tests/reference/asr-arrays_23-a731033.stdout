@@ -407,15 +407,9 @@
                     main
                     [arrays_23]
                     [(Print
-                        [(StringFormat
-                            ()
-                            [(StringConstant
-                                "working"
-                                (Character 1 7 ())
-                            )]
-                            FormatFortran
-                            (Character -1 0 ())
-                            ()
+                        [(StringConstant
+                            "working"
+                            (Character 1 7 ())
                         )]
                         ()
                         ()

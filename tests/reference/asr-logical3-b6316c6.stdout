@@ -67,15 +67,9 @@
                             ()
                         )
                         [(Print
-                            [(StringFormat
-                                ()
-                                [(StringConstant
-                                    "Line 1 - Condition is true"
-                                    (Character 1 26 ())
-                                )]
-                                FormatFortran
-                                (Character -1 0 ())
-                                ()
+                            [(StringConstant
+                                "Line 1 - Condition is true"
+                                (Character 1 26 ())
                             )]
                             ()
                             ()
@@ -84,15 +78,9 @@
                             ()
                         )]
                         [(Print
-                            [(StringFormat
-                                ()
-                                [(StringConstant
-                                    "Line 1 - Condition is false"
-                                    (Character 1 27 ())
-                                )]
-                                FormatFortran
-                                (Character -1 0 ())
-                                ()
+                            [(StringConstant
+                                "Line 1 - Condition is false"
+                                (Character 1 27 ())
                             )]
                             ()
                             ()
@@ -107,29 +95,17 @@
                             ()
                         )
                         [(Print
-                            [(StringFormat
-                                ()
-                                [(StringConstant
-                                    "Line 2 - Condition is true"
-                                    (Character 1 26 ())
-                                )]
-                                FormatFortran
-                                (Character -1 0 ())
-                                ()
+                            [(StringConstant
+                                "Line 2 - Condition is true"
+                                (Character 1 26 ())
                             )]
                             ()
                             ()
                         )]
                         [(Print
-                            [(StringFormat
-                                ()
-                                [(StringConstant
-                                    "Line 2 - Condition is false"
-                                    (Character 1 27 ())
-                                )]
-                                FormatFortran
-                                (Character -1 0 ())
-                                ()
+                            [(StringConstant
+                                "Line 2 - Condition is false"
+                                (Character 1 27 ())
                             )]
                             ()
                             ()
@@ -147,29 +123,17 @@
                             ()
                         )
                         [(Print
-                            [(StringFormat
-                                ()
-                                [(StringConstant
-                                    "Line xor - Condition is true"
-                                    (Character 1 28 ())
-                                )]
-                                FormatFortran
-                                (Character -1 0 ())
-                                ()
+                            [(StringConstant
+                                "Line xor - Condition is true"
+                                (Character 1 28 ())
                             )]
                             ()
                             ()
                         )]
                         [(Print
-                            [(StringFormat
-                                ()
-                                [(StringConstant
-                                    "Line xor - Condition is false"
-                                    (Character 1 29 ())
-                                )]
-                                FormatFortran
-                                (Character -1 0 ())
-                                ()
+                            [(StringConstant
+                                "Line xor - Condition is false"
+                                (Character 1 29 ())
                             )]
                             ()
                             ()
@@ -207,29 +171,17 @@
                             ()
                         )
                         [(Print
-                            [(StringFormat
-                                ()
-                                [(StringConstant
-                                    "Line 3 - Condition is true"
-                                    (Character 1 26 ())
-                                )]
-                                FormatFortran
-                                (Character -1 0 ())
-                                ()
+                            [(StringConstant
+                                "Line 3 - Condition is true"
+                                (Character 1 26 ())
                             )]
                             ()
                             ()
                         )]
                         [(Print
-                            [(StringFormat
-                                ()
-                                [(StringConstant
-                                    "Line 3 - Condition is false"
-                                    (Character 1 27 ())
-                                )]
-                                FormatFortran
-                                (Character -1 0 ())
-                                ()
+                            [(StringConstant
+                                "Line 3 - Condition is false"
+                                (Character 1 27 ())
                             )]
                             ()
                             ()
@@ -247,29 +199,17 @@
                             ()
                         )
                         [(Print
-                            [(StringFormat
-                                ()
-                                [(StringConstant
-                                    "Line 4 - Condition is true"
-                                    (Character 1 26 ())
-                                )]
-                                FormatFortran
-                                (Character -1 0 ())
-                                ()
+                            [(StringConstant
+                                "Line 4 - Condition is true"
+                                (Character 1 26 ())
                             )]
                             ()
                             ()
                         )]
                         [(Print
-                            [(StringFormat
-                                ()
-                                [(StringConstant
-                                    "Line 4 - Condition is false"
-                                    (Character 1 27 ())
-                                )]
-                                FormatFortran
-                                (Character -1 0 ())
-                                ()
+                            [(StringConstant
+                                "Line 4 - Condition is false"
+                                (Character 1 27 ())
                             )]
                             ()
                             ()
@@ -287,15 +227,9 @@
                             ()
                         )
                         [(Print
-                            [(StringFormat
-                                ()
-                                [(StringConstant
-                                    "Line 5 - Condition is true"
-                                    (Character 1 26 ())
-                                )]
-                                FormatFortran
-                                (Character -1 0 ())
-                                ()
+                            [(StringConstant
+                                "Line 5 - Condition is true"
+                                (Character 1 26 ())
                             )]
                             ()
                             ()
@@ -304,15 +238,9 @@
                             ()
                         )]
                         [(Print
-                            [(StringFormat
-                                ()
-                                [(StringConstant
-                                    "Line 5 - Condition is false"
-                                    (Character 1 27 ())
-                                )]
-                                FormatFortran
-                                (Character -1 0 ())
-                                ()
+                            [(StringConstant
+                                "Line 5 - Condition is false"
+                                (Character 1 27 ())
                             )]
                             ()
                             ()
@@ -343,29 +271,17 @@
                             ()
                         )
                         [(Print
-                            [(StringFormat
-                                ()
-                                [(StringConstant
-                                    "Line 6 - Condition is true"
-                                    (Character 1 26 ())
-                                )]
-                                FormatFortran
-                                (Character -1 0 ())
-                                ()
+                            [(StringConstant
+                                "Line 6 - Condition is true"
+                                (Character 1 26 ())
                             )]
                             ()
                             ()
                         )]
                         [(Print
-                            [(StringFormat
-                                ()
-                                [(StringConstant
-                                    "Line 6 - Condition is false"
-                                    (Character 1 27 ())
-                                )]
-                                FormatFortran
-                                (Character -1 0 ())
-                                ()
+                            [(StringConstant
+                                "Line 6 - Condition is false"
+                                (Character 1 27 ())
                             )]
                             ()
                             ()
@@ -383,29 +299,17 @@
                             ()
                         )
                         [(Print
-                            [(StringFormat
-                                ()
-                                [(StringConstant
-                                    "Line 7 - Condition is true"
-                                    (Character 1 26 ())
-                                )]
-                                FormatFortran
-                                (Character -1 0 ())
-                                ()
+                            [(StringConstant
+                                "Line 7 - Condition is true"
+                                (Character 1 26 ())
                             )]
                             ()
                             ()
                         )]
                         [(Print
-                            [(StringFormat
-                                ()
-                                [(StringConstant
-                                    "Line 7 - Condition is false"
-                                    (Character 1 27 ())
-                                )]
-                                FormatFortran
-                                (Character -1 0 ())
-                                ()
+                            [(StringConstant
+                                "Line 7 - Condition is false"
+                                (Character 1 27 ())
                             )]
                             ()
                             ()
@@ -423,15 +327,9 @@
                             ()
                         )
                         [(Print
-                            [(StringFormat
-                                ()
-                                [(StringConstant
-                                    "Line 8 xor - Condition is true"
-                                    (Character 1 30 ())
-                                )]
-                                FormatFortran
-                                (Character -1 0 ())
-                                ()
+                            [(StringConstant
+                                "Line 8 xor - Condition is true"
+                                (Character 1 30 ())
                             )]
                             ()
                             ()
@@ -440,15 +338,9 @@
                             ()
                         )]
                         [(Print
-                            [(StringFormat
-                                ()
-                                [(StringConstant
-                                    "Line 8 xor - Condition is false"
-                                    (Character 1 31 ())
-                                )]
-                                FormatFortran
-                                (Character -1 0 ())
-                                ()
+                            [(StringConstant
+                                "Line 8 xor - Condition is false"
+                                (Character 1 31 ())
                             )]
                             ()
                             ()

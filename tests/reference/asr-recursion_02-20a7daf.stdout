@@ -467,15 +467,9 @@
                                         ()
                                     )
                                     (Print
-                                        [(StringFormat
-                                            ()
-                                            [(StringConstant
-                                                "in sub1"
-                                                (Character 1 7 ())
-                                            )]
-                                            FormatFortran
-                                            (Character -1 0 ())
-                                            ()
+                                        [(StringConstant
+                                            "in sub1"
+                                            (Character 1 7 ())
                                         )]
                                         ()
                                         ()

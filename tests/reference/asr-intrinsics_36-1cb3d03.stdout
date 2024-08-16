@@ -228,13 +228,7 @@
                     intrinsics_36
                     []
                     [(Print
-                        [(StringFormat
-                            ()
-                            [(Var 2 empty)]
-                            FormatFortran
-                            (Character -1 0 ())
-                            ()
-                        )]
+                        [(Var 2 empty)]
                         ()
                         ()
                     )
@@ -255,13 +249,7 @@
                         []
                     )
                     (Print
-                        [(StringFormat
-                            ()
-                            [(Var 2 all_spaces)]
-                            FormatFortran
-                            (Character -1 0 ())
-                            ()
-                        )]
+                        [(Var 2 all_spaces)]
                         ()
                         ()
                     )
@@ -282,13 +270,7 @@
                         []
                     )
                     (Print
-                        [(StringFormat
-                            ()
-                            [(Var 2 simple)]
-                            FormatFortran
-                            (Character -1 0 ())
-                            ()
-                        )]
+                        [(Var 2 simple)]
                         ()
                         ()
                     )
@@ -309,13 +291,7 @@
                         []
                     )
                     (Print
-                        [(StringFormat
-                            ()
-                            [(Var 2 space_at_start)]
-                            FormatFortran
-                            (Character -1 0 ())
-                            ()
-                        )]
+                        [(Var 2 space_at_start)]
                         ()
                         ()
                     )
@@ -336,13 +312,7 @@
                         []
                     )
                     (Print
-                        [(StringFormat
-                            ()
-                            [(Var 2 space_at_end)]
-                            FormatFortran
-                            (Character -1 0 ())
-                            ()
-                        )]
+                        [(Var 2 space_at_end)]
                         ()
                         ()
                     )
@@ -363,13 +333,7 @@
                         []
                     )
                     (Print
-                        [(StringFormat
-                            ()
-                            [(Var 2 space_in_between)]
-                            FormatFortran
-                            (Character -1 0 ())
-                            ()
-                        )]
+                        [(Var 2 space_in_between)]
                         ()
                         ()
                     )
@@ -390,13 +354,7 @@
                         []
                     )
                     (Print
-                        [(StringFormat
-                            ()
-                            [(Var 2 spaces_with_symbols)]
-                            FormatFortran
-                            (Character -1 0 ())
-                            ()
-                        )]
+                        [(Var 2 spaces_with_symbols)]
                         ()
                         ()
                     )

@@ -110,15 +110,9 @@
                                     []
                                     [(Var 4 x)]
                                     [(Print
-                                        [(StringFormat
-                                            ()
-                                            [(StringConstant
-                                                "Hello World"
-                                                (Character 1 11 ())
-                                            )]
-                                            FormatFortran
-                                            (Character -1 0 ())
-                                            ()
+                                        [(StringConstant
+                                            "Hello World"
+                                            (Character 1 11 ())
                                         )]
                                         ()
                                         ()

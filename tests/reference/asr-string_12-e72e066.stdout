@@ -284,90 +284,42 @@
                     string_12
                     []
                     [(Print
-                        [(StringFormat
-                            ()
-                            [(Var 2 fullhex_digits)]
-                            FormatFortran
-                            (Character -1 0 ())
-                            ()
-                        )]
+                        [(Var 2 fullhex_digits)]
                         ()
                         ()
                     )
                     (Print
-                        [(StringFormat
-                            ()
-                            [(Var 2 hex_digits)]
-                            FormatFortran
-                            (Character -1 0 ())
-                            ()
-                        )]
+                        [(Var 2 hex_digits)]
                         ()
                         ()
                     )
                     (Print
-                        [(StringFormat
-                            ()
-                            [(Var 2 lowerhex_digits)]
-                            FormatFortran
-                            (Character -1 0 ())
-                            ()
-                        )]
+                        [(Var 2 lowerhex_digits)]
                         ()
                         ()
                     )
                     (Print
-                        [(StringFormat
-                            ()
-                            [(Var 2 digits)]
-                            FormatFortran
-                            (Character -1 0 ())
-                            ()
-                        )]
+                        [(Var 2 digits)]
                         ()
                         ()
                     )
                     (Print
-                        [(StringFormat
-                            ()
-                            [(Var 2 octal_digits)]
-                            FormatFortran
-                            (Character -1 0 ())
-                            ()
-                        )]
+                        [(Var 2 octal_digits)]
                         ()
                         ()
                     )
                     (Print
-                        [(StringFormat
-                            ()
-                            [(Var 2 letters)]
-                            FormatFortran
-                            (Character -1 0 ())
-                            ()
-                        )]
+                        [(Var 2 letters)]
                         ()
                         ()
                     )
                     (Print
-                        [(StringFormat
-                            ()
-                            [(Var 2 uppercase)]
-                            FormatFortran
-                            (Character -1 0 ())
-                            ()
-                        )]
+                        [(Var 2 uppercase)]
                         ()
                         ()
                     )
                     (Print
-                        [(StringFormat
-                            ()
-                            [(Var 2 lowercase)]
-                            FormatFortran
-                            (Character -1 0 ())
-                            ()
-                        )]
+                        [(Var 2 lowercase)]
                         ()
                         ()
                     )

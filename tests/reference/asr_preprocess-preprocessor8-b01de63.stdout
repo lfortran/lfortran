@@ -23,71 +23,41 @@
                         ()
                     )
                     (Print
-                        [(StringFormat
-                            ()
-                            [(StringConstant
-                                "__VERSION__ present"
-                                (Character 1 19 ())
-                            )]
-                            FormatFortran
-                            (Character -1 0 ())
-                            ()
+                        [(StringConstant
+                            "__VERSION__ present"
+                            (Character 1 19 ())
                         )]
                         ()
                         ()
                     )
                     (Print
-                        [(StringFormat
-                            ()
-                            [(StringConstant
-                                "__LFORTRAN_MAJOR__ present"
-                                (Character 1 26 ())
-                            )]
-                            FormatFortran
-                            (Character -1 0 ())
-                            ()
+                        [(StringConstant
+                            "__LFORTRAN_MAJOR__ present"
+                            (Character 1 26 ())
                         )]
                         ()
                         ()
                     )
                     (Print
-                        [(StringFormat
-                            ()
-                            [(StringConstant
-                                "__LFORTRAN_MINOR__ present"
-                                (Character 1 26 ())
-                            )]
-                            FormatFortran
-                            (Character -1 0 ())
-                            ()
+                        [(StringConstant
+                            "__LFORTRAN_MINOR__ present"
+                            (Character 1 26 ())
                         )]
                         ()
                         ()
                     )
                     (Print
-                        [(StringFormat
-                            ()
-                            [(StringConstant
-                                "__LFORTRAN_PATCHLEVEL__ present"
-                                (Character 1 31 ())
-                            )]
-                            FormatFortran
-                            (Character -1 0 ())
-                            ()
+                        [(StringConstant
+                            "__LFORTRAN_PATCHLEVEL__ present"
+                            (Character 1 31 ())
                         )]
                         ()
                         ()
                     )
                     (Print
-                        [(StringFormat
-                            ()
-                            [(StringConstant
-                                "tests/preprocessor8.f90"
-                                (Character 1 23 ())
-                            )]
-                            FormatFortran
-                            (Character -1 0 ())
-                            ()
+                        [(StringConstant
+                            "tests/preprocessor8.f90"
+                            (Character 1 23 ())
                         )]
                         ()
                         ()

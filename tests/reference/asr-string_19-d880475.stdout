@@ -631,25 +631,19 @@
                                     []
                                     [(Var 9 string)]
                                     [(Print
-                                        [(StringFormat
-                                            ()
-                                            [(FunctionCall
-                                                9 char@char_string
-                                                6 char
+                                        [(FunctionCall
+                                            9 char@char_string
+                                            6 char
+                                            [((Var 9 string))]
+                                            (Character 1 -3 (FunctionCall
+                                                9 len_string
+                                                6 len
                                                 [((Var 9 string))]
-                                                (Character 1 -3 (FunctionCall
-                                                    9 len_string
-                                                    6 len
-                                                    [((Var 9 string))]
-                                                    (Integer 4)
-                                                    ()
-                                                    ()
-                                                ))
+                                                (Integer 4)
                                                 ()
                                                 ()
-                                            )]
-                                            FormatFortran
-                                            (Character -1 0 ())
+                                            ))
+                                            ()
                                             ()
                                         )]
                                         ()

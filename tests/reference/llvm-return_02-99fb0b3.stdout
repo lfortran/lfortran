@@ -22,15 +22,14 @@ define i32 @__module_many_returns_b(i32* %a) {
 .entry:
   %b = alloca i32, align 4
   %e = alloca i32, align 4
-  %0 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 2, i8* null, i32 7, i8* getelementptr inbounds ([10 x i8], [10 x i8]* @2, i32 0, i32 0))
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* %0, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0))
-  %1 = call i32 @__module_many_returns_d(i32* %a)
-  store i32 %1, i32* %b, align 4
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* getelementptr inbounds ([10 x i8], [10 x i8]* @2, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0))
+  %0 = call i32 @__module_many_returns_d(i32* %a)
+  store i32 %0, i32* %b, align 4
   br label %return
 
 return:                                           ; preds = %.entry
-  %2 = load i32, i32* %b, align 4
-  ret i32 %2
+  %1 = load i32, i32* %b, align 4
+  ret i32 %1
 }
 
 define i32 @__module_many_returns_d(i32* %i) {
@@ -89,8 +88,6 @@ return:                                           ; preds = %ifcont8, %then5, %t
   ret i32 %6
 }
 
-declare i8* @_lcompilers_string_format_fortran(i32, i8*, ...)
-
 declare void @_lfortran_printf(i8*, ...)
 
 define i32 @main(i32 %0, i8** %1) {
@@ -137,3 +134,5 @@ return:                                           ; preds = %.entry
 }
 
 declare void @_lpython_call_initial_functions(i32, i8**)
+
+declare i8* @_lcompilers_string_format_fortran(i32, i8*, ...)

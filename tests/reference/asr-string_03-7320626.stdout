@@ -166,13 +166,7 @@
                         ()
                     )
                     (Print
-                        [(StringFormat
-                            ()
-                            [(Var 3 combined)]
-                            FormatFortran
-                            (Character -1 0 ())
-                            ()
-                        )]
+                        [(Var 3 combined)]
                         ()
                         ()
                     )]

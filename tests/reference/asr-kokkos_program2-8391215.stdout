@@ -459,15 +459,9 @@
                         ()
                     )
                     (Print
-                        [(StringFormat
-                            ()
-                            [(StringConstant
-                                "End Stream Triad"
-                                (Character 1 16 ())
-                            )]
-                            FormatFortran
-                            (Character -1 0 ())
-                            ()
+                        [(StringConstant
+                            "End Stream Triad"
+                            (Character 1 16 ())
                         )]
                         ()
                         ()

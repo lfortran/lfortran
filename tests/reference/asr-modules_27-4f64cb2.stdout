@@ -12,15 +12,9 @@
                     modules_27
                     []
                     [(Print
-                        [(StringFormat
-                            ()
-                            [(StringConstant
-                                "running modules_27 program"
-                                (Character 1 26 ())
-                            )]
-                            FormatFortran
-                            (Character -1 0 ())
-                            ()
+                        [(StringConstant
+                            "running modules_27 program"
+                            (Character 1 26 ())
                         )]
                         ()
                         ()

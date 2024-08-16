@@ -249,15 +249,9 @@
                     implied_do_loop3
                     []
                     [(Print
-                        [(StringFormat
-                            ()
-                            [(StringConstant
-                                "Loop 1"
-                                (Character 1 6 ())
-                            )]
-                            FormatFortran
-                            (Character -1 0 ())
-                            ()
+                        [(StringConstant
+                            "Loop 1"
+                            (Character 1 6 ())
                         )]
                         ()
                         ()
@@ -307,15 +301,9 @@
                         ()
                     )
                     (Print
-                        [(StringFormat
-                            ()
-                            [(StringConstant
-                                "Loop 2"
-                                (Character 1 6 ())
-                            )]
-                            FormatFortran
-                            (Character -1 0 ())
-                            ()
+                        [(StringConstant
+                            "Loop 2"
+                            (Character 1 6 ())
                         )]
                         ()
                         ()
@@ -380,15 +368,9 @@
                         ()
                     )
                     (Print
-                        [(StringFormat
-                            ()
-                            [(StringConstant
-                                "Loop 3"
-                                (Character 1 6 ())
-                            )]
-                            FormatFortran
-                            (Character -1 0 ())
-                            ()
+                        [(StringConstant
+                            "Loop 3"
+                            (Character 1 6 ())
                         )]
                         ()
                         ()
@@ -453,15 +435,9 @@
                         ()
                     )
                     (Print
-                        [(StringFormat
-                            ()
-                            [(StringConstant
-                                "Loop4"
-                                (Character 1 5 ())
-                            )]
-                            FormatFortran
-                            (Character -1 0 ())
-                            ()
+                        [(StringConstant
+                            "Loop4"
+                            (Character 1 5 ())
                         )]
                         ()
                         ()
@@ -532,15 +508,9 @@
                         ()
                     )
                     (Print
-                        [(StringFormat
-                            ()
-                            [(StringConstant
-                                "Loop5"
-                                (Character 1 5 ())
-                            )]
-                            FormatFortran
-                            (Character -1 0 ())
-                            ()
+                        [(StringConstant
+                            "Loop5"
+                            (Character 1 5 ())
                         )]
                         ()
                         ()

@@ -86,15 +86,9 @@
                         15
                     )
                     (Print
-                        [(StringFormat
-                            ()
-                            [(StringConstant
-                                "run"
-                                (Character 1 3 ())
-                            )]
-                            FormatFortran
-                            (Character -1 0 ())
-                            ()
+                        [(StringConstant
+                            "run"
+                            (Character 1 3 ())
                         )]
                         ()
                         ()

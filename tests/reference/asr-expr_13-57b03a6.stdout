@@ -369,29 +369,17 @@
                             )
                         )
                         [(Print
-                            [(StringFormat
-                                ()
-                                [(StringConstant
-                                    "ap == bp"
-                                    (Character 1 8 ())
-                                )]
-                                FormatFortran
-                                (Character -1 0 ())
-                                ()
+                            [(StringConstant
+                                "ap == bp"
+                                (Character 1 8 ())
                             )]
                             ()
                             ()
                         )]
                         [(Print
-                            [(StringFormat
-                                ()
-                                [(StringConstant
-                                    "ap /= bp"
-                                    (Character 1 8 ())
-                                )]
-                                FormatFortran
-                                (Character -1 0 ())
-                                ()
+                            [(StringConstant
+                                "ap /= bp"
+                                (Character 1 8 ())
                             )]
                             ()
                             ()
@@ -409,29 +397,17 @@
                             )
                         )
                         [(Print
-                            [(StringFormat
-                                ()
-                                [(StringConstant
-                                    "cp == dp"
-                                    (Character 1 8 ())
-                                )]
-                                FormatFortran
-                                (Character -1 0 ())
-                                ()
+                            [(StringConstant
+                                "cp == dp"
+                                (Character 1 8 ())
                             )]
                             ()
                             ()
                         )]
                         [(Print
-                            [(StringFormat
-                                ()
-                                [(StringConstant
-                                    "cp /= dp"
-                                    (Character 1 8 ())
-                                )]
-                                FormatFortran
-                                (Character -1 0 ())
-                                ()
+                            [(StringConstant
+                                "cp /= dp"
+                                (Character 1 8 ())
                             )]
                             ()
                             ()
@@ -446,15 +422,9 @@
                             ()
                         )
                         [(Print
-                            [(StringFormat
-                                ()
-                                [(StringConstant
-                                    "a == b"
-                                    (Character 1 6 ())
-                                )]
-                                FormatFortran
-                                (Character -1 0 ())
-                                ()
+                            [(StringConstant
+                                "a == b"
+                                (Character 1 6 ())
                             )]
                             ()
                             ()
@@ -471,29 +441,17 @@
                                 )
                             )
                             [(Print
-                                [(StringFormat
-                                    ()
-                                    [(StringConstant
-                                        "ap == bp"
-                                        (Character 1 8 ())
-                                    )]
-                                    FormatFortran
-                                    (Character -1 0 ())
-                                    ()
+                                [(StringConstant
+                                    "ap == bp"
+                                    (Character 1 8 ())
                                 )]
                                 ()
                                 ()
                             )]
                             [(Print
-                                [(StringFormat
-                                    ()
-                                    [(StringConstant
-                                        "ap /= bp"
-                                        (Character 1 8 ())
-                                    )]
-                                    FormatFortran
-                                    (Character -1 0 ())
-                                    ()
+                                [(StringConstant
+                                    "ap /= bp"
+                                    (Character 1 8 ())
                                 )]
                                 ()
                                 ()
@@ -519,15 +477,9 @@
                                 )
                             )
                             [(Print
-                                [(StringFormat
-                                    ()
-                                    [(StringConstant
-                                        "ap == cp"
-                                        (Character 1 8 ())
-                                    )]
-                                    FormatFortran
-                                    (Character -1 0 ())
-                                    ()
+                                [(StringConstant
+                                    "ap == cp"
+                                    (Character 1 8 ())
                                 )]
                                 ()
                                 ()
@@ -544,29 +496,17 @@
                                     )
                                 )
                                 [(Print
-                                    [(StringFormat
-                                        ()
-                                        [(StringConstant
-                                            "cp == dp"
-                                            (Character 1 8 ())
-                                        )]
-                                        FormatFortran
-                                        (Character -1 0 ())
-                                        ()
+                                    [(StringConstant
+                                        "cp == dp"
+                                        (Character 1 8 ())
                                     )]
                                     ()
                                     ()
                                 )]
                                 [(Print
-                                    [(StringFormat
-                                        ()
-                                        [(StringConstant
-                                            "cp /= dp"
-                                            (Character 1 8 ())
-                                        )]
-                                        FormatFortran
-                                        (Character -1 0 ())
-                                        ()
+                                    [(StringConstant
+                                        "cp /= dp"
+                                        (Character 1 8 ())
                                     )]
                                     ()
                                     ()
@@ -581,15 +521,9 @@
                                     ()
                                 )
                                 [(Print
-                                    [(StringFormat
-                                        ()
-                                        [(StringConstant
-                                            "c == d"
-                                            (Character 1 6 ())
-                                        )]
-                                        FormatFortran
-                                        (Character -1 0 ())
-                                        ()
+                                    [(StringConstant
+                                        "c == d"
+                                        (Character 1 6 ())
                                     )]
                                     ()
                                     ()

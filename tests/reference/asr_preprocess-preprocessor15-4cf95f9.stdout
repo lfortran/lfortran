@@ -12,169 +12,97 @@
                     preprocessor15
                     []
                     [(Print
-                        [(StringFormat
-                            ()
-                            [(StringConstant
-                                "X == 4"
-                                (Character 1 6 ())
-                            )]
-                            FormatFortran
-                            (Character -1 0 ())
-                            ()
+                        [(StringConstant
+                            "X == 4"
+                            (Character 1 6 ())
                         )]
                         ()
                         ()
                     )
                     (Print
-                        [(StringFormat
-                            ()
-                            [(StringConstant
-                                "X == 4"
-                                (Character 1 6 ())
-                            )]
-                            FormatFortran
-                            (Character -1 0 ())
-                            ()
+                        [(StringConstant
+                            "X == 4"
+                            (Character 1 6 ())
                         )]
                         ()
                         ()
                     )
                     (Print
-                        [(StringFormat
-                            ()
-                            [(StringConstant
-                                "X == 4"
-                                (Character 1 6 ())
-                            )]
-                            FormatFortran
-                            (Character -1 0 ())
-                            ()
+                        [(StringConstant
+                            "X == 4"
+                            (Character 1 6 ())
                         )]
                         ()
                         ()
                     )
                     (Print
-                        [(StringFormat
-                            ()
-                            [(StringConstant
-                                "X == 2"
-                                (Character 1 6 ())
-                            )]
-                            FormatFortran
-                            (Character -1 0 ())
-                            ()
+                        [(StringConstant
+                            "X == 2"
+                            (Character 1 6 ())
                         )]
                         ()
                         ()
                     )
                     (Print
-                        [(StringFormat
-                            ()
-                            [(StringConstant
-                                "X == 2"
-                                (Character 1 6 ())
-                            )]
-                            FormatFortran
-                            (Character -1 0 ())
-                            ()
+                        [(StringConstant
+                            "X == 2"
+                            (Character 1 6 ())
                         )]
                         ()
                         ()
                     )
                     (Print
-                        [(StringFormat
-                            ()
-                            [(StringConstant
-                                "X == 2"
-                                (Character 1 6 ())
-                            )]
-                            FormatFortran
-                            (Character -1 0 ())
-                            ()
+                        [(StringConstant
+                            "X == 2"
+                            (Character 1 6 ())
                         )]
                         ()
                         ()
                     )
                     (Print
-                        [(StringFormat
-                            ()
-                            [(StringConstant
-                                "X == 1"
-                                (Character 1 6 ())
-                            )]
-                            FormatFortran
-                            (Character -1 0 ())
-                            ()
+                        [(StringConstant
+                            "X == 1"
+                            (Character 1 6 ())
                         )]
                         ()
                         ()
                     )
                     (Print
-                        [(StringFormat
-                            ()
-                            [(StringConstant
-                                "X == 1"
-                                (Character 1 6 ())
-                            )]
-                            FormatFortran
-                            (Character -1 0 ())
-                            ()
+                        [(StringConstant
+                            "X == 1"
+                            (Character 1 6 ())
                         )]
                         ()
                         ()
                     )
                     (Print
-                        [(StringFormat
-                            ()
-                            [(StringConstant
-                                "X == 1"
-                                (Character 1 6 ())
-                            )]
-                            FormatFortran
-                            (Character -1 0 ())
-                            ()
+                        [(StringConstant
+                            "X == 1"
+                            (Character 1 6 ())
                         )]
                         ()
                         ()
                     )
                     (Print
-                        [(StringFormat
-                            ()
-                            [(StringConstant
-                                "X == 2"
-                                (Character 1 6 ())
-                            )]
-                            FormatFortran
-                            (Character -1 0 ())
-                            ()
+                        [(StringConstant
+                            "X == 2"
+                            (Character 1 6 ())
                         )]
                         ()
                         ()
                     )
                     (Print
-                        [(StringFormat
-                            ()
-                            [(StringConstant
-                                "X == 2"
-                                (Character 1 6 ())
-                            )]
-                            FormatFortran
-                            (Character -1 0 ())
-                            ()
+                        [(StringConstant
+                            "X == 2"
+                            (Character 1 6 ())
                         )]
                         ()
                         ()
                     )
                     (Print
-                        [(StringFormat
-                            ()
-                            [(StringConstant
-                                "X == 2"
-                                (Character 1 6 ())
-                            )]
-                            FormatFortran
-                            (Character -1 0 ())
-                            ()
+                        [(StringConstant
+                            "X == 2"
+                            (Character 1 6 ())
                         )]
                         ()
                         ()

@@ -508,15 +508,9 @@
                     modules_30
                     []
                     [(Print
-                        [(StringFormat
-                            ()
-                            [(StringConstant
-                                "running modules_30 program"
-                                (Character 1 26 ())
-                            )]
-                            FormatFortran
-                            (Character -1 0 ())
-                            ()
+                        [(StringConstant
+                            "running modules_30 program"
+                            (Character 1 26 ())
                         )]
                         ()
                         ()

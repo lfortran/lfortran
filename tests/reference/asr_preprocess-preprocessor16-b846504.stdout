@@ -12,43 +12,25 @@
                     test_cpp_hex
                     []
                     [(Print
-                        [(StringFormat
-                            ()
-                            [(StringConstant
-                                "yes hex and int equal"
-                                (Character 1 21 ())
-                            )]
-                            FormatFortran
-                            (Character -1 0 ())
-                            ()
+                        [(StringConstant
+                            "yes hex and int equal"
+                            (Character 1 21 ())
                         )]
                         ()
                         ()
                     )
                     (Print
-                        [(StringFormat
-                            ()
-                            [(StringConstant
-                                "yes hex and bin equal"
-                                (Character 1 21 ())
-                            )]
-                            FormatFortran
-                            (Character -1 0 ())
-                            ()
+                        [(StringConstant
+                            "yes hex and bin equal"
+                            (Character 1 21 ())
                         )]
                         ()
                         ()
                     )
                     (Print
-                        [(StringFormat
-                            ()
-                            [(StringConstant
-                                "yes bin and int equal"
-                                (Character 1 21 ())
-                            )]
-                            FormatFortran
-                            (Character -1 0 ())
-                            ()
+                        [(StringConstant
+                            "yes bin and int equal"
+                            (Character 1 21 ())
                         )]
                         ()
                         ()

@@ -12,15 +12,9 @@
                     testfortran
                     []
                     [(Print
-                        [(StringFormat
-                            ()
-                            [(StringConstant
-                                "Hello"
-                                (Character 1 5 ())
-                            )]
-                            FormatFortran
-                            (Character -1 0 ())
-                            ()
+                        [(StringConstant
+                            "Hello"
+                            (Character 1 5 ())
                         )]
                         ()
                         ()

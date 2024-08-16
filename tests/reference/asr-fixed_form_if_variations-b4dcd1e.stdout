@@ -79,15 +79,9 @@
                             )
                         )
                         [(Print
-                            [(StringFormat
-                                ()
-                                [(StringConstant
-                                    "first branch"
-                                    (Character 1 12 ())
-                                )]
-                                FormatFortran
-                                (Character -1 0 ())
-                                ()
+                            [(StringConstant
+                                "first branch"
+                                (Character 1 12 ())
                             )]
                             ()
                             ()
@@ -97,15 +91,9 @@
                             10
                         )]
                         [(Print
-                            [(StringFormat
-                                ()
-                                [(StringConstant
-                                    "second branch"
-                                    (Character 1 13 ())
-                                )]
-                                FormatFortran
-                                (Character -1 0 ())
-                                ()
+                            [(StringConstant
+                                "second branch"
+                                (Character 1 13 ())
                             )]
                             ()
                             ()

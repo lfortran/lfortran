@@ -63,22 +63,16 @@
                     functions_06
                     [functions_06_m]
                     [(Print
-                        [(StringFormat
+                        [(FunctionCall
+                            6 trim_wrapper
                             ()
-                            [(FunctionCall
-                                6 trim_wrapper
+                            [((Var 6 string))]
+                            (Character 1 -3 (StringLen
+                                (Var 6 string)
+                                (Integer 4)
                                 ()
-                                [((Var 6 string))]
-                                (Character 1 -3 (StringLen
-                                    (Var 6 string)
-                                    (Integer 4)
-                                    ()
-                                ))
-                                ()
-                                ()
-                            )]
-                            FormatFortran
-                            (Character -1 0 ())
+                            ))
+                            ()
                             ()
                         )]
                         ()

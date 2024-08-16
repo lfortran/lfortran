@@ -68,15 +68,9 @@
                         100
                     )
                     (Print
-                        [(StringFormat
-                            ()
-                            [(StringConstant
-                                "hello"
-                                (Character 1 5 ())
-                            )]
-                            FormatFortran
-                            (Character -1 0 ())
-                            ()
+                        [(StringConstant
+                            "hello"
+                            (Character 1 5 ())
                         )]
                         ()
                         ()

@@ -68,34 +68,22 @@
                                             ()
                                         )
                                         [(Print
-                                            [(StringFormat
-                                                ()
-                                                [(StringConcat
-                                                    (StringConstant
-                                                        "Hello "
-                                                        (Character 1 6 ())
-                                                    )
-                                                    (Var 3 name)
-                                                    (Character 1 16 ())
-                                                    ()
-                                                )]
-                                                FormatFortran
-                                                (Character -1 0 ())
+                                            [(StringConcat
+                                                (StringConstant
+                                                    "Hello "
+                                                    (Character 1 6 ())
+                                                )
+                                                (Var 3 name)
+                                                (Character 1 16 ())
                                                 ()
                                             )]
                                             ()
                                             ()
                                         )]
                                         [(Print
-                                            [(StringFormat
-                                                ()
-                                                [(StringConstant
-                                                    "Hello world!"
-                                                    (Character 1 12 ())
-                                                )]
-                                                FormatFortran
-                                                (Character -1 0 ())
-                                                ()
+                                            [(StringConstant
+                                                "Hello world!"
+                                                (Character 1 12 ())
                                             )]
                                             ()
                                             ()
