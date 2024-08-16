@@ -2519,6 +2519,19 @@ static inline ASR::asr_t* make_StructType_t_util(Allocator& al, Location loc, AS
             members.push_back(al, var->m_type);
         }
     }
+    ASR::symbol_t* derived_type_external_symbol = ASR::down_cast<ASR::symbol_t>(
+                                                    ASR::make_ExternalSymbol_t(al,
+                                                                            loc,
+                                                                            st->m_symtab->parent,
+                                                                            st->m_name,
+                                                                            ASRUtils::symbol_get_past_external(der),
+                                                                            ASRUtils::symbol_name(
+                                                                                ASRUtils::symbol_get_past_external(
+                                                                                    ASRUtils::get_asr_owner(der))),
+                                                                            nullptr,
+                                                                            0,
+                                                                            ASRUtils::symbol_name(der),
+                                                                            ASR::accessType::Public));
     return ASR::make_StructType_t(al,
                                   loc,
                                   members.p,
@@ -2526,7 +2539,7 @@ static inline ASR::asr_t* make_StructType_t_util(Allocator& al, Location loc, AS
                                   nullptr,  // Correct this when mem fn added to Struct_t
                                   0,        // Correct this when mem fn added to Struct_t
                                   true,     // Correct this when mem fn added to Struct_t
-                                  der);
+                                  derived_type_external_symbol);
 }
 
 static inline ASR::dimension_t* duplicate_dimensions(Allocator& al, ASR::dimension_t* m_dims, size_t n_dims);
@@ -2587,14 +2600,8 @@ static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
         }
         case ASR::ttypeType::StructType: {
             ASR::StructType_t* tnew = ASR::down_cast<ASR::StructType_t>(t);
-            t_ = ASRUtils::TYPE(ASR::make_StructType_t(al,
-                                                       t->base.loc,
-                                                       tnew->m_data_member_types,
-                                                       tnew->n_data_member_types,
-                                                       tnew->m_member_function_types,
-                                                       tnew->n_member_function_types,
-                                                       tnew->m_is_cstruct,
-                                                       tnew->m_derived_type));
+            t_ = ASRUtils::TYPE(
+                ASRUtils::make_StructType_t_util(al, t->base.loc, tnew->m_derived_type));
             break;
         }
         case ASR::ttypeType::ClassType: {
@@ -2744,14 +2751,8 @@ static inline ASR::ttype_t* duplicate_type_without_dims(Allocator& al, const ASR
         }
         case ASR::ttypeType::StructType: {
             ASR::StructType_t* tstruct = ASR::down_cast<ASR::StructType_t>(t);
-            return ASRUtils::TYPE(ASR::make_StructType_t(al,
-                                                         t->base.loc,
-                                                         tstruct->m_data_member_types,
-                                                         tstruct->n_data_member_types,
-                                                         tstruct->m_member_function_types,
-                                                         tstruct->n_member_function_types,
-                                                         tstruct->m_is_cstruct,
-                                                         tstruct->m_derived_type));
+            return ASRUtils::TYPE(
+                ASRUtils::make_StructType_t_util(al, t->base.loc, tstruct->m_derived_type));
         }
         case ASR::ttypeType::Pointer: {
             ASR::Pointer_t* ptr = ASR::down_cast<ASR::Pointer_t>(t);
