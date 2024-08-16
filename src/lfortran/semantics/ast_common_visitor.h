@@ -5392,6 +5392,18 @@ public:
         }
     }
 
+    void scalar_kind_arg(std::string &name, Vec<ASR::expr_t*> &args) {
+        std::vector<std::string> optional_kind_arg = {"logical", "storage_size", "anint", "nint", "aint", "floor", 
+            "ceiling", "aimag", "maskl", "maskr", "ichar", "char", "achar", "real"};
+        if (std::find(optional_kind_arg.begin(), optional_kind_arg.end(), name) != optional_kind_arg.end()) {
+            if (args[1]) {
+                if (ASRUtils::is_array(ASRUtils::expr_type(args[1]))) {
+                    throw SemanticError("Expected scalar argument for " + name + " intrinsic", args[1]->base.loc);
+                }
+            }
+        }
+    }
+
     void fill_optional_args(std::string intrinsic_name, Vec<ASR::expr_t*> &args, const Location &loc) {
         ASR::ttype_t *int_type = ASRUtils::TYPE(
                     ASR::make_Integer_t(al, loc, 4));
@@ -5684,7 +5696,7 @@ public:
                 if( ASRUtils::IntrinsicElementalFunctionRegistry::is_intrinsic_function(var_name) ) {
                     const bool are_all_args_evaluated { ASRUtils::all_args_evaluated(args, true) };
                     fill_optional_kind_arg(var_name, args);
-
+                    scalar_kind_arg(var_name, args);
                     ASRUtils::create_intrinsic_function create_func =
                         ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function(var_name);
 
