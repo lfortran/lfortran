@@ -1129,7 +1129,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
                     count--;
                     printf("Printing support is not available for %s format.\n",value);
                 }
-                if(default_formatting){ //append spacing after each element.
+                if( default_formatting && (count > 0) ){ //append spacing after each element.
                     result = append_to_string(result,default_spacing);
                 }
             }
