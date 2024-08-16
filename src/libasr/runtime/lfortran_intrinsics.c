@@ -2474,7 +2474,6 @@ LFORTRAN_API double _lfortran_dp_rand_num() {
     return rand() / (double) RAND_MAX;
 }
 
-
 LFORTRAN_API bool _lfortran_random_init(bool repeatable, bool image_distinct) {
     if (repeatable) {
             srand(0);
@@ -3212,6 +3211,32 @@ LFORTRAN_API int32_t _lfortran_get_argc() {
 
 LFORTRAN_API char *_lpython_get_argv(int32_t index) {
     return _argv[index];
+}
+
+
+LFORTRAN_API char *_lfortran_get_command_command() {
+    char* out;
+    for(int i=0; i<_argc; i++) {
+        if(i == 0) {
+            out = strdup(_argv[i]);
+        } else {
+            out = realloc(out, strlen(out) + strlen(_argv[i]) + 1);
+            strcat(out, " ");
+            strcat(out, _argv[i]);
+        }
+    }
+    return out;
+}
+
+
+LFORTRAN_API int32_t _lfortran_get_command_length() {
+    char* out = _lfortran_get_command_command();
+    return strlen(out);
+}
+
+
+LFORTRAN_API int32_t _lfortran_get_command_status() {
+    return 1;
 }
 
 // << Command line arguments << ------------------------------------------------
