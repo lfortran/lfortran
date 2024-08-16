@@ -2444,20 +2444,20 @@ public:
                     }
                 } else if (AST::is_a<AST::AttrEquivalence_t>(*x.m_attributes[i])) {
                     AST::AttrEquivalence_t *eq = AST::down_cast<AST::AttrEquivalence_t>(x.m_attributes[i]);
-                    if (eq->n_args == 1) {
-                        if (eq->m_args[0].n_set_list == 2) {
-                            AST::expr_t *eq1 = eq->m_args[0].m_set_list[0];
-                            AST::expr_t *eq2 = eq->m_args[0].m_set_list[1];
+                    int eq_n_args = eq->n_args;
+                    for (int i = 0; i < eq_n_args; i++) {
+                        if (eq->m_args[i].n_set_list == 2) {
+                            AST::expr_t *eq1 = eq->m_args[i].m_set_list[0];
+                            AST::expr_t *eq2 = eq->m_args[i].m_set_list[1];
+                            this->visit_expr(*eq1);
+                            ASR::expr_t* asr_eq1 = ASRUtils::EXPR(tmp);
+                            this->visit_expr(*eq2);
+                            ASR::expr_t* asr_eq2 = ASRUtils::EXPR(tmp);
+
                             if (AST::is_a<AST::FuncCallOrArray_t>(*eq1) && AST::is_a<AST::FuncCallOrArray_t>(*eq2)) {
-
-                                this->visit_expr(*eq1);
-                                ASR::expr_t* asr_eq1 = ASRUtils::EXPR(tmp);
-                                this->visit_expr(*eq2);
-                                ASR::expr_t* asr_eq2 = ASRUtils::EXPR(tmp);
-
-                                ASR::ttype_t* arg_type = ASRUtils::type_get_past_allocatable(
+                                ASR::ttype_t* arg_type1 = ASRUtils::type_get_past_allocatable(
                                             ASRUtils::type_get_past_pointer(ASRUtils::expr_type(asr_eq1)));
-                                ASR::ttype_t* pointer_type_ = ASRUtils::TYPE(ASR::make_Pointer_t(al, asr_eq1->base.loc, ASRUtils::type_get_past_array(arg_type)));
+                                ASR::ttype_t* pointer_type_ = ASRUtils::TYPE(ASR::make_Pointer_t(al, asr_eq1->base.loc, ASRUtils::type_get_past_array(arg_type1)));
                                 ASR::asr_t* get_pointer = ASR::make_GetPointer_t(al, asr_eq1->base.loc, asr_eq1, pointer_type_, nullptr);
                                 ASR::ttype_t *cptr = ASRUtils::TYPE(ASR::make_CPtr_t(al, asr_eq1->base.loc));
                                 ASR::asr_t* pointer_to_cptr = ASR::make_PointerToCPtr_t(al, asr_eq1->base.loc, ASRUtils::EXPR(get_pointer), cptr, nullptr);
@@ -2491,7 +2491,20 @@ public:
                                 ASR::expr_t* len = dim_1.m_length;
                                 ASR::IntegerConstant_t* ic = ASR::down_cast<ASR::IntegerConstant_t>(len);
                                 ASR::expr_t* size = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, asr_eq1->base.loc, ic->m_n, int_type));
-                                ASR::ttype_t* type = ASRUtils::TYPE(ASR::make_Integer_t(al, asr_eq2->base.loc, compiler_options.po.default_integer_kind));
+                                ASR::ttype_t* type = nullptr;
+                                ASR::ttype_t* arg_type2 = ASRUtils::type_get_past_allocatable(
+                                            ASRUtils::type_get_past_pointer(ASRUtils::expr_type(asr_eq2)));
+                                if (ASR::is_a<ASR::Integer_t>(*arg_type2)) {
+                                    type = ASRUtils::TYPE(ASR::make_Integer_t(al, asr_eq2->base.loc, compiler_options.po.default_integer_kind));
+                                } else if (ASR::is_a<ASR::Real_t>(*arg_type2)) {
+                                    type = ASRUtils::TYPE(ASR::make_Real_t(al, asr_eq2->base.loc, 4));
+                                } else {
+                                    diag.semantic_warning_label(
+                                        "This equivalence statement is not implemented yet, for now we will ignore it",
+                                        {x.base.base.loc},
+                                        "ignored for now"
+                                    );
+                                }
                                 type = ASRUtils::make_Array_t_util(al, asr_eq2->base.loc, type, dim2.p, dim2.size(), ASR::abiType::Source, false, ASR::array_physical_typeType::DescriptorArray, false, false);
                                 ASR::ttype_t* ptr = ASRUtils::TYPE(ASR::make_Pointer_t(al, asr_eq2->base.loc, type));
                                 var__->m_type = ptr;
@@ -2506,13 +2519,72 @@ public:
 
                                 ASR::stmt_t *stmt = ASRUtils::STMT(c_f_pointer);
                                 data_structure.push_back(stmt);
-
                             } else {
-                                diag.semantic_warning_label(
-                                    "This equivalence statement is not implemented yet, for now we will ignore it",
-                                    {x.base.base.loc},
-                                    "ignored for now"
-                                );
+                                if (AST::is_a<AST::FuncCallOrArray_t>(*eq1)) {
+                                    ASR::ttype_t* arg_type1 = ASRUtils::type_get_past_allocatable(
+                                    ASRUtils::type_get_past_pointer(ASRUtils::expr_type(asr_eq1)));
+                                    ASR::ttype_t* pointer_type_ = ASRUtils::TYPE(ASR::make_Pointer_t(al, asr_eq1->base.loc, ASRUtils::type_get_past_array(arg_type1)));
+                                    ASR::asr_t* get_pointer = ASR::make_GetPointer_t(al, asr_eq1->base.loc, asr_eq1, pointer_type_, nullptr);
+                                    ASR::ttype_t *cptr = ASRUtils::TYPE(ASR::make_CPtr_t(al, asr_eq1->base.loc));
+                                    ASR::asr_t* pointer_to_cptr = ASR::make_PointerToCPtr_t(al, asr_eq1->base.loc, ASRUtils::EXPR(get_pointer), cptr, nullptr);
+
+                                    ASR::ttype_t* arg_type2 = ASRUtils::expr_type(asr_eq2);
+                                    ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(asr_eq2);
+                                    ASR::Variable_t *var__ = ASR::down_cast<ASR::Variable_t>(var->m_v);
+                                    ASR::ttype_t* type = nullptr;
+                                    if (ASR::is_a<ASR::Real_t>(*arg_type2)) {
+                                        type = ASRUtils::TYPE(ASR::make_Real_t(al, asr_eq2->base.loc, 4));
+                                    } else if (ASR::is_a<ASR::Integer_t>(*arg_type2)) {
+                                        type = ASRUtils::TYPE(ASR::make_Integer_t(al, asr_eq2->base.loc, compiler_options.po.default_integer_kind));
+                                    } else {
+                                        diag.semantic_warning_label(
+                                            "This equivalence statement is not implemented yet, for now we will ignore it",
+                                            {x.base.base.loc},
+                                            "ignored for now"
+                                        );
+                                    }
+                                    ASR::ttype_t* ptr = ASRUtils::TYPE(ASR::make_Pointer_t(al, asr_eq2->base.loc, type));
+                                    var__->m_type = ptr;
+
+                                    ASR::asr_t* c_f_pointer = ASR::make_CPtrToPointer_t(al, asr_eq1->base.loc, ASRUtils::EXPR(pointer_to_cptr),asr_eq2, nullptr, nullptr);
+                                    ASR::stmt_t *stmt = ASRUtils::STMT(c_f_pointer);
+                                    data_structure.push_back(stmt);
+                                } else if (AST::is_a<AST::FuncCallOrArray_t>(*eq2)) {
+                                    ASR::ttype_t* arg_type2 = ASRUtils::type_get_past_allocatable(
+                                    ASRUtils::type_get_past_pointer(ASRUtils::expr_type(asr_eq2)));
+                                    ASR::ttype_t* pointer_type_ = ASRUtils::TYPE(ASR::make_Pointer_t(al, asr_eq2->base.loc, ASRUtils::type_get_past_array(arg_type2)));
+                                    ASR::asr_t* get_pointer = ASR::make_GetPointer_t(al, asr_eq2->base.loc, asr_eq2, pointer_type_, nullptr);
+                                    ASR::ttype_t *cptr = ASRUtils::TYPE(ASR::make_CPtr_t(al, asr_eq2->base.loc));
+                                    ASR::asr_t* pointer_to_cptr = ASR::make_PointerToCPtr_t(al, asr_eq2->base.loc, ASRUtils::EXPR(get_pointer), cptr, nullptr);
+                                    
+                                    ASR::ttype_t* arg_type1 = ASRUtils::expr_type(asr_eq1);
+                                    ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(asr_eq1);
+                                    ASR::Variable_t *var__ = ASR::down_cast<ASR::Variable_t>(var->m_v);
+                                    ASR::ttype_t* type = nullptr;
+                                    if (ASR::is_a<ASR::Real_t>(*arg_type1)) {
+                                        type = ASRUtils::TYPE(ASR::make_Real_t(al, asr_eq1->base.loc, 4));
+                                    } else if (ASR::is_a<ASR::Integer_t>(*arg_type1)) {
+                                        type = ASRUtils::TYPE(ASR::make_Integer_t(al, asr_eq1->base.loc, compiler_options.po.default_integer_kind));
+                                    } else {
+                                        diag.semantic_warning_label(
+                                            "This equivalence statement is not implemented yet, for now we will ignore it",
+                                            {x.base.base.loc},
+                                            "ignored for now"
+                                        );
+                                    }
+                                    ASR::ttype_t* ptr = ASRUtils::TYPE(ASR::make_Pointer_t(al, asr_eq1->base.loc, type));
+                                    var__->m_type = ptr;
+
+                                    ASR::asr_t* c_f_pointer = ASR::make_CPtrToPointer_t(al, asr_eq2->base.loc, ASRUtils::EXPR(pointer_to_cptr),asr_eq1, nullptr, nullptr);
+                                    ASR::stmt_t *stmt = ASRUtils::STMT(c_f_pointer);
+                                    data_structure.push_back(stmt);
+                                } else {
+                                    diag.semantic_warning_label(
+                                        "This equivalence statement is not implemented yet, for now we will ignore it",
+                                        {x.base.base.loc},
+                                        "ignored for now"
+                                    );
+                                }
                             }
                         } else {
                             diag.semantic_warning_label(
@@ -2521,61 +2593,6 @@ public:
                                 "ignored for now"
                             );
                         }
-                    } else if (eq->n_args == 2) {
-                        AST::expr_t *eq01 = eq->m_args[0].m_set_list[0];
-                        AST::expr_t *eq02 = eq->m_args[0].m_set_list[1];
-                        AST::expr_t *eq11 = eq->m_args[1].m_set_list[0];
-                        AST::expr_t *eq12 = eq->m_args[1].m_set_list[1];
-
-                        this->visit_expr(*eq01);
-                        ASR::expr_t* asr_eq01 = ASRUtils::EXPR(tmp);
-                        this->visit_expr(*eq02);
-                        ASR::expr_t* asr_eq02 = ASRUtils::EXPR(tmp);
-                        this->visit_expr(*eq11);
-                        ASR::expr_t* asr_eq11 = ASRUtils::EXPR(tmp);
-                        this->visit_expr(*eq12);
-                        ASR::expr_t* asr_eq12 = ASRUtils::EXPR(tmp);
-
-                        ASR::ttype_t* arg_type = ASRUtils::type_get_past_allocatable(
-                                    ASRUtils::type_get_past_pointer(ASRUtils::expr_type(asr_eq01)));
-                        ASR::ttype_t* pointer_type_ = ASRUtils::TYPE(ASR::make_Pointer_t(al, asr_eq01->base.loc, ASRUtils::type_get_past_array(arg_type)));
-                        ASR::asr_t* get_pointer = ASR::make_GetPointer_t(al, asr_eq01->base.loc, asr_eq01, pointer_type_, nullptr);
-                        ASR::ttype_t *cptr = ASRUtils::TYPE(ASR::make_CPtr_t(al, asr_eq01->base.loc));
-                        ASR::asr_t* pointer_to_cptr = ASR::make_PointerToCPtr_t(al, asr_eq01->base.loc, ASRUtils::EXPR(get_pointer), cptr, nullptr);
-
-                        arg_type = ASRUtils::type_get_past_allocatable(
-                        ASRUtils::type_get_past_pointer(ASRUtils::expr_type(asr_eq12)));
-                        pointer_type_ = ASRUtils::TYPE(ASR::make_Pointer_t(al, asr_eq12->base.loc, ASRUtils::type_get_past_array(arg_type)));
-                        get_pointer = ASR::make_GetPointer_t(al, asr_eq12->base.loc, asr_eq12, pointer_type_, nullptr);
-                        cptr = ASRUtils::TYPE(ASR::make_CPtr_t(al, asr_eq12->base.loc));
-                        ASR::asr_t* pointer_to_cptr2 = ASR::make_PointerToCPtr_t(al, asr_eq12->base.loc, ASRUtils::EXPR(get_pointer), cptr, nullptr);
-
-                        ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(asr_eq02);
-                        ASR::Variable_t *var__ = ASR::down_cast<ASR::Variable_t>(var->m_v);
-                        ASR::ttype_t* type = ASRUtils::TYPE(ASR::make_Integer_t(al, asr_eq02->base.loc, compiler_options.po.default_integer_kind));
-                        ASR::ttype_t* ptr = ASRUtils::TYPE(ASR::make_Pointer_t(al, asr_eq02->base.loc, type));
-                        var__->m_type = ptr;
-
-                        var = ASR::down_cast<ASR::Var_t>(asr_eq11);
-                        var__ = ASR::down_cast<ASR::Variable_t>(var->m_v);
-                        type = ASRUtils::TYPE(ASR::make_Real_t(al, asr_eq11->base.loc, 4));
-                        ptr = ASRUtils::TYPE(ASR::make_Pointer_t(al, asr_eq11->base.loc, type));
-                        var__->m_type = ptr;
-
-                        ASR::asr_t* c_f_pointer = ASR::make_CPtrToPointer_t(al, asr_eq01->base.loc, ASRUtils::EXPR(pointer_to_cptr),asr_eq02, nullptr, nullptr);
-                        ASR::stmt_t *stmt = ASRUtils::STMT(c_f_pointer);
-                        data_structure.push_back(stmt);
-
-                        c_f_pointer = ASR::make_CPtrToPointer_t(al, asr_eq12->base.loc, ASRUtils::EXPR(pointer_to_cptr2),asr_eq11, nullptr, nullptr);
-                        stmt = ASRUtils::STMT(c_f_pointer);
-                        data_structure.push_back(stmt);
-
-                    } else {
-                        diag.semantic_warning_label(
-                            "This equivalence statement is not implemented yet, for now we will ignore it",
-                            {x.base.base.loc},
-                            "ignored for now"
-                        );
                     }
                 } else {
                     throw SemanticError("Attribute declaration not supported",
