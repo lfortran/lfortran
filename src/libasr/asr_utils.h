@@ -2507,39 +2507,7 @@ static inline bool is_aggregate_type(ASR::ttype_t* asr_type) {
 }
 
 static inline ASR::asr_t* make_StructType_t_util(Allocator& al, Location loc, ASR::symbol_t* der) {
-    ASR::Struct_t* st = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(der));
-    Vec<ASR::ttype_t*> members;
-    members.reserve(al, st->n_members);
-    SymbolTable* current_scope = st->m_symtab;
-    for (size_t i = 0; i < st->n_members; i++) {
-        ASR::symbol_t* temp = current_scope->get_symbol(st->m_members[i]);
-        if (ASR::is_a<ASR::Variable_t>(*temp)) {
-            ASR::Variable_t* var
-                = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(temp));
-            members.push_back(al, var->m_type);
-        }
-    }
-    ASR::symbol_t* derived_type_external_symbol = ASR::down_cast<ASR::symbol_t>(
-                                                    ASR::make_ExternalSymbol_t(al,
-                                                                            loc,
-                                                                            st->m_symtab->parent,
-                                                                            st->m_name,
-                                                                            ASRUtils::symbol_get_past_external(der),
-                                                                            ASRUtils::symbol_name(
-                                                                                ASRUtils::symbol_get_past_external(
-                                                                                    ASRUtils::get_asr_owner(der))),
-                                                                            nullptr,
-                                                                            0,
-                                                                            ASRUtils::symbol_name(der),
-                                                                            ASR::accessType::Public));
-    return ASR::make_StructType_t(al,
-                                  loc,
-                                  members.p,
-                                  members.n,
-                                  nullptr,  // Correct this when mem fn added to Struct_t
-                                  0,        // Correct this when mem fn added to Struct_t
-                                  true,     // Correct this when mem fn added to Struct_t
-                                  derived_type_external_symbol);
+    return ASR::make_StructType_t(al, loc, der);
 }
 
 static inline ASR::dimension_t* duplicate_dimensions(Allocator& al, ASR::dimension_t* m_dims, size_t n_dims);
