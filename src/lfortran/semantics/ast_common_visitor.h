@@ -1604,48 +1604,56 @@ public:
         }
     }
 
-    void handle_implied_do_loop_data_stmt(const AST::DataStmt_t &x, AST::DataStmtSet_t *a, ASR::expr_t* object, size_t &j) {
-        ASR::ImpliedDoLoop_t *idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(object);
+    void handle_implied_do_loop_data_stmt(const AST::DataStmt_t &data_stmt,
+                                          AST::DataStmtSet_t *data_stmt_set,
+                                          ASR::expr_t* implied_do_loop_expr,
+                                          size_t &value_index) {
+        ASR::ImpliedDoLoop_t *implied_do_loop = ASR::down_cast<ASR::ImpliedDoLoop_t>(implied_do_loop_expr);
 
-        ASR::expr_t* idl_start = idl->m_start;
-        ASR::expr_t* idl_end = idl->m_end;
-        ASR::expr_t* idl_increment = idl->m_increment;
+        ASR::expr_t* loop_start_expr = implied_do_loop->m_start;
+        ASR::expr_t* loop_end_expr = implied_do_loop->m_end;
+        ASR::expr_t* loop_increment_expr = implied_do_loop->m_increment;
 
-        ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
+        ASR::ttype_t *integer_type = ASRUtils::TYPE(
+                                        ASR::make_Integer_t(al, data_stmt.base.base.loc,
+                                        compiler_options.po.default_integer_kind)
+                                    );
 
-        if (!idl_increment) {
-            idl_increment = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int_type));
+        if (!loop_increment_expr) {
+            loop_increment_expr = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, data_stmt.base.base.loc, 1, integer_type));
         }
 
-        ASR::IntegerConstant_t* idl_start_int = ASR::down_cast<ASR::IntegerConstant_t>(idl_start);
-        ASR::IntegerConstant_t* idl_end_int = ASR::down_cast<ASR::IntegerConstant_t>(idl_end);
-        ASR::IntegerConstant_t* idl_increment_int = ASR::down_cast<ASR::IntegerConstant_t>(idl_increment);
+        int64_t loop_start = ASR::down_cast<ASR::IntegerConstant_t>(loop_start_expr)->m_n;
+        int64_t loop_end = ASR::down_cast<ASR::IntegerConstant_t>(loop_end_expr)->m_n;
+        int64_t loop_increment = ASR::down_cast<ASR::IntegerConstant_t>(loop_increment_expr)->m_n;
 
-        int64_t start = idl_start_int->m_n;
-        int64_t end = idl_end_int->m_n;
-        int64_t increment = idl_increment_int->m_n;
-
-        // Ideally idl->n_values should be 1, as it will be an implied do loop
-        LCOMPILERS_ASSERT(idl->n_values == 1)
-        ASRUtils::ExprStmtDuplicator expr_duplicator(al);
-        for (int64_t i = start; i <= end; i += increment) {
-            ASR::expr_t* array_item_expr = expr_duplicator.duplicate_expr(idl->m_values[0]);
-            ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(array_item_expr);
-            for (size_t j = 0; j < array_item->n_args; j++) {
-                ASR::array_index_t arg = array_item->m_args[j];
-                ASR::expr_t* arg_right = arg.m_right;
-                if (ASR::is_a<ASR::Var_t>(*arg_right)) {
-                    array_item->m_args[j].m_right = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, idl->base.base.loc, i, int_type));
+        ASRUtils::ExprStmtDuplicator exprDuplicator(al);
+        for (int64_t loop_var = loop_start; loop_var <= loop_end; loop_var += loop_increment) {
+            for (size_t value_index_in_loop = 0; value_index_in_loop < implied_do_loop->n_values; value_index_in_loop++) {
+                ASR::expr_t* duplicatedExpr = exprDuplicator.duplicate_expr(
+                                                implied_do_loop->m_values[value_index_in_loop]);
+                ASR::ArrayItem_t* array_item_expr = ASR::down_cast<ASR::ArrayItem_t>(duplicatedExpr);
+                for (size_t arg_index = 0; arg_index < array_item_expr->n_args; arg_index++) {
+                    ASR::array_index_t array_index = array_item_expr->m_args[arg_index];
+                    ASR::expr_t* index_expr = array_index.m_right;
+                    if (ASR::is_a<ASR::Var_t>(*index_expr)) {
+                        array_item_expr->m_args[arg_index].m_right = ASRUtils::EXPR(
+                                                                    ASR::make_IntegerConstant_t(al,
+                                                                        implied_do_loop->base.base.loc,
+                                                                        loop_var, integer_type)
+                                                                    );
+                    }
                 }
+                ASR::expr_t* target = ASRUtils::EXPR((ASR::asr_t*) array_item_expr);
+                this->visit_expr(*data_stmt_set->m_value[value_index++]);
+                ASR::expr_t* value = ASRUtils::EXPR(tmp);
+                ASRUtils::make_ArrayBroadcast_t_util(al, data_stmt.base.base.loc, target, value);
+                ASR::stmt_t* assignStatement = ASRUtils::STMT(ASR::make_Assignment_t(al, data_stmt.base.base.loc,
+                                                                                    target, value, nullptr)
+                                                             );
+                LCOMPILERS_ASSERT(current_body != nullptr)
+                current_body->push_back(al, assignStatement);
             }
-            ASR::expr_t* target = ASRUtils::EXPR((ASR::asr_t*) array_item);
-            this->visit_expr(*a->m_value[j++]);
-            ASR::expr_t* value = ASRUtils::EXPR(tmp);
-            ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, target, value);
-            ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al,
-                    x.base.base.loc, target, value, nullptr));
-            LCOMPILERS_ASSERT(current_body != nullptr)
-            current_body->push_back(al, assign_stmt);
         }
     }
 

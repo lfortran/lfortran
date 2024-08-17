@@ -894,13 +894,15 @@ public:
         handle_line_truncation(r, 2);
         r += "\n";
         visit_body(x, r);
-        for (size_t i = 0; i < x.n_orelse; i++) {
+        if (x.n_orelse > 0) {
             r += indent;
             r += "else";
             r += "\n";
             inc_indent();
-            visit_stmt(*x.m_orelse[i]);
-            r += src;
+            for (size_t i = 0; i < x.n_orelse; i++) {
+                visit_stmt(*x.m_orelse[i]);
+                r += src;
+            }
             dec_indent();
         }
         r += indent;
