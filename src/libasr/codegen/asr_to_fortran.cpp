@@ -899,17 +899,10 @@ public:
             r += "else";
             r += "\n";
             inc_indent();
-        }
-        for (size_t i = 0; i < x.n_orelse; i++) {
-            // r += indent;
-            // r += "else";
-            // r += "\n";
-            // inc_indent();
-            visit_stmt(*x.m_orelse[i]);
-            r += src;
-            // dec_indent();
-        }
-        if (x.n_orelse > 0) {
+            for (size_t i = 0; i < x.n_orelse; i++) {
+                visit_stmt(*x.m_orelse[i]);
+                r += src;
+            }
             dec_indent();
         }
         r += indent;
