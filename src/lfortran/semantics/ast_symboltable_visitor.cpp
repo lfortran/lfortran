@@ -2189,6 +2189,20 @@ public:
                 ASR::Variable_t *mvar = ASR::down_cast<ASR::Variable_t>(item.second);
                 // check if m_access of mvar is public
                 if ( mvar->m_access == ASR::accessType::Public || to_submodule ) {
+                    if (ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_array_pointer_allocatable(mvar->m_type))) {
+                        ASR::StructType_t* var_struct = ASR::down_cast<ASR::StructType_t>(ASRUtils::type_get_past_array_pointer_allocatable(mvar->m_type));
+                        ASR::asr_t* struct_external_symbol = ASR::make_ExternalSymbol_t(
+                                                            al, mvar->base.base.loc,
+                                                            /* a_symtab */ current_scope,
+                                                            /* a_name */ ASRUtils::symbol_name(var_struct->m_derived_type),
+                                                            var_struct->m_derived_type,
+                                                            m->m_name, nullptr, 0, ASRUtils::symbol_name(var_struct->m_derived_type),
+                                                            dflt_access
+                                                            );
+                        current_scope->add_symbol(
+                            ASRUtils::symbol_name(var_struct->m_derived_type),
+                            ASR::down_cast<ASR::symbol_t>(struct_external_symbol));
+                    }
                     ASR::asr_t *var = ASR::make_ExternalSymbol_t(
                         al, mvar->base.base.loc,
                         /* a_symtab */ current_scope,
@@ -2490,6 +2504,20 @@ public:
             char *cname = name.c_str(al);
             if (mv->m_access == ASR::accessType::Private) {
                 throw SemanticError("Private variable `" + local_sym + "` cannot be imported", loc);
+            }
+            if (ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_array_pointer_allocatable(mv->m_type))) {
+                ASR::StructType_t* var_struct = ASR::down_cast<ASR::StructType_t>(ASRUtils::type_get_past_array_pointer_allocatable(mv->m_type));
+                ASR::asr_t* struct_external_symbol = ASR::make_ExternalSymbol_t(
+                                                    al, mv->base.base.loc,
+                                                    /* a_symtab */ current_scope,
+                                                    /* a_name */ ASRUtils::symbol_name(var_struct->m_derived_type),
+                                                    var_struct->m_derived_type,
+                                                    m->m_name, nullptr, 0, ASRUtils::symbol_name(var_struct->m_derived_type),
+                                                    dflt_access
+                                                    );
+                current_scope->add_symbol(
+                    ASRUtils::symbol_name(var_struct->m_derived_type),
+                    ASR::down_cast<ASR::symbol_t>(struct_external_symbol));
             }
             ASR::asr_t *v = ASR::make_ExternalSymbol_t(
                 al, mv->base.base.loc,
