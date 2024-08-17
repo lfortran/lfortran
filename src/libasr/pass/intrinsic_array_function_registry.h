@@ -597,7 +597,7 @@ static inline ASR::asr_t* create_ArrIntrinsic(
                 dim = args[2];
             }
         } else{
-            append_error(diag, "`dim` argument to `" + intrinsic_func_name + " intrinsic at (1) must be INTEGER",
+            append_error(diag, "`dim` argument to `" + intrinsic_func_name + "` intrinsic at (1) must be INTEGER",
                 args[1]->base.loc);
             return nullptr;
 
