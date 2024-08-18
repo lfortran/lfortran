@@ -83,7 +83,7 @@ namespace IntrinsicImpureSubroutineRegistry {
         return std::get<0>(intrinsic_subroutine_by_id_db.at(id));
     }
 
-    static inline std::string get_intrinsic_subroutine_name(int64_t id) {
+    inline std::string get_intrinsic_subroutine_name(int64_t id) {
         if( intrinsic_subroutine_id_to_name.find(id) == intrinsic_subroutine_id_to_name.end() ) {
             throw LCompilersException("IntrinsicSubroutine with ID " + std::to_string(id) +
                                       " has no name registered for it");

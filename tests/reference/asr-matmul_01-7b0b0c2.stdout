@@ -507,12 +507,12 @@
                         ()
                     )
                     (IntrinsicImpureSubroutine
-                        ObjectType
+                        RandomNumber
                         [(Var 6 a)]
                         0
                     )
                     (IntrinsicImpureSubroutine
-                        ObjectType
+                        RandomNumber
                         [(Var 6 b)]
                         0
                     )

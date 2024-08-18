@@ -2,6 +2,7 @@
 #include <libasr/location.h>
 #include <libasr/asr_utils.h>
 #include <libasr/pass/intrinsic_function_registry.h>
+#include <libasr/pass/intrinsic_subroutine_registry.h>
 #include <libasr/pass/intrinsic_array_function_registry.h>
 
 namespace LCompilers {
@@ -136,6 +137,20 @@ public:
             s.append(color(fg::green));
         }
         s.append(ASRUtils::get_intrinsic_name(x));
+        if (use_colors) {
+            s.append(color(fg::reset));
+            s.append(color(style::reset));
+        }
+        return s;
+    }
+
+    std::string convert_sub_intrinsic_id(int x) {
+        std::string s;
+        if (use_colors) {
+            s.append(color(style::bold));
+            s.append(color(fg::green));
+        }
+        s.append(ASRUtils::get_intrinsic_subroutine_name(x));
         if (use_colors) {
             s.append(color(fg::reset));
             s.append(color(style::reset));
