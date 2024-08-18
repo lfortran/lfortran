@@ -1,0 +1,26 @@
+name: Test Integration Tests with GFortran
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  gfortran:
+    name: Test integration_tests with GFortran
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Test integration_tests with GFortran
+        shell: bash -e -l {0}
+        run: |
+            cd integration_tests
+            ./run_tests.py -b gfortran
