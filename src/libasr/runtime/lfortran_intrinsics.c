@@ -2467,11 +2467,27 @@ LFORTRAN_API double _lfortran_time()
 }
 
 LFORTRAN_API float _lfortran_sp_rand_num() {
-    return rand() / (float) RAND_MAX;
+    static int seed_initialized = 0;
+
+    // Initialize the seed only once
+    if (!seed_initialized) {
+        srand48(time(NULL));
+        seed_initialized = 1;
+    }
+
+    return (float)drand48();
 }
 
 LFORTRAN_API double _lfortran_dp_rand_num() {
-    return rand() / (double) RAND_MAX;
+    static int seed_initialized = 0;
+
+    // Initialize the seed only once
+    if (!seed_initialized) {
+        srand48(time(NULL));
+        seed_initialized = 1;
+    }
+
+    return (double)drand48();
 }
 
 LFORTRAN_API bool _lfortran_random_init(bool repeatable, bool image_distinct) {
