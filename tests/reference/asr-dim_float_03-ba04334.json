@@ -1,0 +1,13 @@
+{
+    "basename": "asr-dim_float_03-ba04334",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/dim_float_03.f90",
+    "infile_hash": "1adbfeac07bc679d3a9c636101c2e887a9511acb22c0d4f17e5fe622",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-dim_float_03-ba04334.stderr",
+    "stderr_hash": "56580f731699b2e29a7adea2eeb9551edf9727e25939e0cce1d4c545",
+    "returncode": 2
+}

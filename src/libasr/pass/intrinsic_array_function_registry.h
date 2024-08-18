@@ -588,27 +588,26 @@ static inline ASR::asr_t* create_ArrIntrinsic(
     if (args[1]) {
         if (is_integer(*ASRUtils::expr_type(args[1]))) {
             dim = args[1];
-            if (args[2]) {
+            if (args[2] && is_logical(*ASRUtils::expr_type(args[2]))) {
                 mask = args[2];
-            }
+            } else if (args[2]) {
+                append_error(diag, "`mask` argument to `" + intrinsic_func_name + "` must be a scalar or array of logical type",
+                    args[2]->base.loc);
+                return nullptr;
+            } 
         } else if (is_logical(*ASRUtils::expr_type(args[1]))) {
             mask = args[1];
-            if (args[2]) {
+            if (args[2] && is_integer(*ASRUtils::expr_type(args[2]))) {
                 dim = args[2];
-            }
-        } else{
-            append_error(diag, "`dim` argument to `" + intrinsic_func_name + "` intrinsic at (1) must be INTEGER",
+            } else if (args[2]) {
+                append_error(diag, "`dim` argument to `" + intrinsic_func_name + "` must be a scalar and of integer type",
+                    args[2]->base.loc);
+                return nullptr;
+            } 
+        } else {
+            append_error(diag, "Invalid argument type for `dim` or `mask`",
                 args[1]->base.loc);
             return nullptr;
-
-        }
-    } else if (args[2]) {
-        if (is_integer(*ASRUtils::expr_type(args[2]))) {
-            dim = args[2];
-            mask = args[1];
-        } else if (is_logical(*ASRUtils::expr_type(args[2]))) {
-            mask = args[2];
-            dim = args[1];
         }
     }
     if (dim) {
