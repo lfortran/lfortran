@@ -845,8 +845,8 @@ public:
                 // strings but StringItem. For now we ignore it, but we should
                 // fix it
             } else {
-                require(n_dims > 0,
-                    "The variable in ArrayItem must be an array, not a scalar");
+                // require(n_dims > 0,
+                //     "The variable in ArrayItem must be an array, not a scalar");
             }
         }
     }

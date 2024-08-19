@@ -1199,7 +1199,7 @@ static inline ASR::asr_t* create_MaxMinLoc(Allocator& al, const Location& loc,
     m_value = eval_MaxMinLoc(al, loc, return_type, m_args,
         intrinsic_func_id);
     return make_IntrinsicArrayFunction_t_util(al, loc,
-        static_cast<int64_t>(intrinsic_func_id), m_args.p, m_args.n, overload_id, return_type, m_value);
+        static_cast<int64_t>(intrinsic_func_id), m_args.p, m_args.size(), overload_id, return_type, m_value);
 }
 
 static inline ASR::expr_t *instantiate_MaxMinLoc(Allocator &al,
@@ -1224,25 +1224,16 @@ static inline ASR::expr_t *instantiate_MaxMinLoc(Allocator &al,
      */
     ASR::ttype_t* array_type = ASRUtils::duplicate_type_with_empty_dims(al, arg_types[0]);
     fill_func_arg("array", array_type);
-    int n_dims = extract_n_dims_from_ttype(arg_types[0]);
-    ASR::ttype_t *type = extract_type(return_type);
-    if (m_args.n > 1) {
-        // TODO: Use overload_id
-        fill_func_arg("dim", arg_types[1]);
-    }
-    ASR::expr_t* result = nullptr;
-    if( ASRUtils::extract_n_dims_from_ttype(array_type) == 1 && m_args.n > 1 ) {
-        result = declare("result",
-            ASRUtils::type_get_past_array_pointer_allocatable(return_type), ReturnVar);
-    } else {
-        result = declare("result", ASRUtils::duplicate_type_with_empty_dims(
-            al, return_type, ASR::array_physical_typeType::DescriptorArray, true), Out);
-        args.push_back(al, result);
-    }
     fill_func_arg("dim", arg_types[1]);
     fill_func_arg("mask", arg_types[2]);
     fill_func_arg("kind", arg_types[3]);
     fill_func_arg("back", arg_types[4]);
+    int n_dims = extract_n_dims_from_ttype(arg_types[0]);
+    ASR::ttype_t *type = extract_type(return_type);
+    ASR::expr_t* result = nullptr;
+    result = declare("result", ASRUtils::duplicate_type_with_empty_dims(
+        al, return_type, ASR::array_physical_typeType::DescriptorArray, true), Out);
+    args.push_back(al, result);
     Vec<ASR::expr_t*> idx_vars, target_idx_vars;
     Vec<ASR::stmt_t*> doloop_body;
     if (overload_id < 2) {

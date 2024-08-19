@@ -390,12 +390,23 @@ bool set_allocation_size(
     Vec<ASR::dimension_t>& allocate_dims
 ) {
     LCOMPILERS_ASSERT(ASRUtils::is_array(ASRUtils::expr_type(value)));
-    if( ASRUtils::is_fixed_size_array(ASRUtils::expr_type(value)) ) {
-        return false;
-    }
     const Location& loc = value->base.loc;
     ASR::expr_t* int32_one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
                 al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
+    if( ASRUtils::is_fixed_size_array(ASRUtils::expr_type(value)) ) {
+        ASR::dimension_t* m_dims = nullptr;
+        size_t n_dims = ASRUtils::extract_dimensions_from_ttype(
+            ASRUtils::expr_type(value), m_dims);
+        allocate_dims.reserve(al, n_dims);
+        for( size_t i = 0; i < n_dims; i++ ) {
+            ASR::dimension_t allocate_dim;
+            allocate_dim.loc = value->base.loc;
+            allocate_dim.m_start = int32_one;
+            allocate_dim.m_length = m_dims[i].m_length;
+            allocate_dims.push_back(al, allocate_dim);
+        }
+        return true;
+    }
     switch( value->type ) {
         case ASR::exprType::FunctionCall: {
             ASR::FunctionCall_t* function_call = ASR::down_cast<ASR::FunctionCall_t>(value);
