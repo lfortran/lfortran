@@ -17,7 +17,7 @@ COPY . .
 RUN /root/miniforge3/bin/mamba env create -f environment_linux.yml -y
 SHELL ["/root/miniforge3/bin/mamba", "run", "-n", "lf", "/bin/bash", "-c"]
 
-RUN ./build1.sh
+RUN ./build_release.sh
 
 RUN ctest
 RUN python integration_tests/run_tests.py
