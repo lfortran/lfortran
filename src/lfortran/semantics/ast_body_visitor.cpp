@@ -1515,6 +1515,7 @@ public:
             v->n_dependencies = module_dependencies.size();
         }
 
+        create_and_replace_structType();
         current_scope = old_scope;
         current_module = nullptr;
         tmp = nullptr;
@@ -1581,6 +1582,7 @@ public:
             visit_program_unit(*x.m_contains[i]);
         }
 
+        create_and_replace_structType();
         ASRUtils::update_call_args(al, current_scope, compiler_options.implicit_interface, changed_external_function_symbol);
 
         starting_m_body = nullptr;
@@ -1983,6 +1985,7 @@ public:
             visit_program_unit(*x.m_contains[i]);
         }
 
+        create_and_replace_structType();
         ASRUtils::update_call_args(al, current_scope, compiler_options.implicit_interface, changed_external_function_symbol);
 
         starting_m_body = nullptr;
@@ -2064,6 +2067,7 @@ public:
             is_Function = false;
         }
 
+        create_and_replace_structType();
         ASRUtils::update_call_args(al, current_scope, compiler_options.implicit_interface, changed_external_function_symbol);
 
         starting_m_body = nullptr;
