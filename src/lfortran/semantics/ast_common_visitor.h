@@ -3644,12 +3644,76 @@ public:
                     sem = -1;
                 }
 
+                void visit_Module(const ASR::Module_t &x) {
+                    for (auto &a : x.m_symtab->get_scope()) {
+                        if ( ASR::is_a<ASR::Function_t>(*a.second) ) {
+                            ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(a.second);
+                            SymbolTable* local_current_scope_copy = local_current_scope;
+                            local_current_scope = f->m_symtab;
+                            this->visit_Function(*f);
+                            local_current_scope = local_current_scope_copy;
+                        } else {
+                            this->visit_symbol(*a.second);
+                        }
+                    }
+                }
+
+                void visit_Program(const ASR::Program_t &x) {
+                    for (auto &a : x.m_symtab->get_scope()) {
+                        if ( ASR::is_a<ASR::Function_t>(*a.second) ) {
+                            ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(a.second);
+                            SymbolTable* local_current_scope_copy = local_current_scope;
+                            local_current_scope = f->m_symtab;
+                            this->visit_Function(*f);
+                            local_current_scope = local_current_scope_copy;
+                        } else {
+                            this->visit_symbol(*a.second);
+                        }
+                    }
+                    for (size_t i=0; i<x.n_body; i++) {
+                        this->visit_stmt(*x.m_body[i]);
+                    }
+                }
+
+                void visit_Struct( const ASR::Struct_t& x ) {
+                    SymbolTable* local_current_scope_copy = local_current_scope;
+                    local_current_scope = x.m_symtab;
+                    for (auto &a : x.m_symtab->get_scope()) {
+                        this->visit_symbol(*a.second);
+                    }
+                    for (size_t i=0; i<x.n_initializers; i++) {
+                        this->visit_call_arg(x.m_initializers[i]);
+                    }
+                    if (x.m_alignment) {
+                        this->visit_expr(*x.m_alignment);
+                    }
+                    local_current_scope = local_current_scope_copy;
+                }
+
+                void visit_Array( const ASR::Array_t& x ) {
+                    if ( ASR::is_a<ASR::StructType_t>(*x.m_type) ) {
+                        sem += 1;
+                        visit_StructType(*ASR::down_cast<ASR::StructType_t>(x.m_type));
+                        sem -= 1;
+                    }
+
+                }
+
+                void visit_FunctionType( const ASR::FunctionType_t& x ) {
+                    for (size_t i=0; i<x.n_arg_types; i++) {
+                        this->visit_ttype(*x.m_arg_types[i]);
+                    }
+                    if (x.m_return_var_type)
+                        this->visit_ttype(*x.m_return_var_type);
+                }
+
                 void visit_ArrayItem(const ASR::ArrayItem_t& x) {
                     if ( ASR::is_a<ASR::StructType_t>(*x.m_type) ) {
                         sem += 1;
                         visit_StructType(*ASR::down_cast<ASR::StructType_t>(x.m_type));
                         sem -= 1;
                     }
+                    this->visit_expr(*x.m_v);
                 }
 
                 void visit_StructType( const ASR::StructType_t& x ) {
@@ -3676,6 +3740,9 @@ public:
             } else if ( ASR::is_a<ASR::Program_t>(*sym) ) {
                 ASR::Program_t* p = ASR::down_cast<ASR::Program_t>(sym);
                 v.visit_Program(*p);
+            } else if ( ASR::is_a<ASR::Module_t>(*sym) ) {
+                ASR::Module_t* m = ASR::down_cast<ASR::Module_t>(sym);
+                v.visit_Module(*m);
             }
         }
     }

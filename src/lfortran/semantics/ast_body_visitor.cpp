@@ -1515,6 +1515,7 @@ public:
             v->n_dependencies = module_dependencies.size();
         }
 
+        create_and_replace_structType();
         current_scope = old_scope;
         current_module = nullptr;
         tmp = nullptr;
