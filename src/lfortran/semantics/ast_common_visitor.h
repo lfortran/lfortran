@@ -3630,6 +3630,56 @@ public:
         return 1; // default
     }
 
+    void create_and_replace_structType() {
+
+        class StructTypeVisitor : public ASR::BaseWalkVisitor<StructTypeVisitor> {
+            private:
+                Allocator &al;
+
+            public:
+                int sem = -1;
+                SymbolTable* local_current_scope;
+                StructTypeVisitor (Allocator &_al, SymbolTable* current_scope) : al(_al) {
+                    local_current_scope = current_scope;
+                    sem = -1;
+                }
+
+                void visit_ArrayItem(const ASR::ArrayItem_t& x) {
+                    if ( ASR::is_a<ASR::StructType_t>(*x.m_type) ) {
+                        sem += 1;
+                        visit_StructType(*ASR::down_cast<ASR::StructType_t>(x.m_type));
+                        sem -= 1;
+                    }
+                }
+
+                void visit_StructType( const ASR::StructType_t& x ) {
+                    if ( sem >= 0 ) {
+                        ASR::StructType_t& xx = const_cast<ASR::StructType_t&>(x);
+                        if ( ASRUtils::symbol_parent_symtab(xx.m_derived_type)->counter != local_current_scope->counter) {
+                            if ((local_current_scope->resolve_symbol(ASRUtils::symbol_name(xx.m_derived_type)) == nullptr)) {
+                                ASRUtils::SymbolDuplicator sd(al);
+                                sd.duplicate_symbol(xx.m_derived_type, local_current_scope);
+                            }
+                            xx.m_derived_type = local_current_scope->resolve_symbol(ASRUtils::symbol_name(xx.m_derived_type));
+                        }
+                    }
+                }
+        };
+
+        StructTypeVisitor v(al, current_scope);
+        ASR::asr_t* asr_owner = current_scope->asr_owner;
+        if ( ASR::is_a<ASR::symbol_t>(*asr_owner) ) {
+            ASR::symbol_t* sym = ASR::down_cast<ASR::symbol_t>(asr_owner);
+            if ( ASR::is_a<ASR::Function_t>(*sym) ) {
+                ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(sym);
+                v.visit_Function(*f);
+            } else if ( ASR::is_a<ASR::Program_t>(*sym) ) {
+                ASR::Program_t* p = ASR::down_cast<ASR::Program_t>(sym);
+                v.visit_Program(*p);
+            }
+        }
+    }
+
     ASR::asr_t* create_ArrayRef(const Location &loc, AST::fnarg_t* m_args,
         size_t n_args, AST::fnarg_t* m_subargs, size_t n_subargs,
         ASR::expr_t* v_expr, ASR::symbol_t *v, ASR::symbol_t *f2) {
@@ -4688,7 +4738,7 @@ public:
                 indices.size(), array_section_type, nullptr);
         } else {
             array_item_node = ASRUtils::make_ArrayItem_t_util(al, loc, expr, indices.p,
-                indices.size(), ASRUtils::extract_type(ASRUtils::expr_type(expr)),
+                indices.size(), ASRUtils::duplicate_type(al, ASRUtils::extract_type(ASRUtils::expr_type(expr))),
                 ASR::arraystorageType::ColMajor, nullptr);
         }
         array_item_node = (ASR::asr_t*) replace_with_common_block_variables(
@@ -4705,7 +4755,7 @@ public:
             throw SemanticError("Variable '" + dt_name + "' not declared", loc);
         }
         ASR::Variable_t* v_variable = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(v));
-        ASR::ttype_t* v_variable_m_type = ASRUtils::extract_type(v_variable->m_type);
+        ASR::ttype_t* v_variable_m_type = ASRUtils::duplicate_type(al, ASRUtils::extract_type(v_variable->m_type));
         if (ASR::is_a<ASR::StructType_t>(*v_variable_m_type) ||
                 ASR::is_a<ASR::ClassType_t>(*v_variable_m_type)) {
             ASR::ttype_t* v_type = v_variable_m_type;
