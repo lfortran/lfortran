@@ -952,9 +952,9 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
     struct array_iteration_state array_state;
     array_state.array_size = -1;
     array_state.current_arr_index = -1;
+    int32_t current_arg_type_int = -1; // holds int that represents type of argument.
     while (1) {
         int scale = 0;
-        int32_t current_arg_type_int = -1; // holds int that represents type of argument.
         bool is_array = false;
         bool array_looping = false;
         for (int i = item_start; i < format_values_count; i++) {
