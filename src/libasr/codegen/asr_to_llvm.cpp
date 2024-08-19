@@ -8292,8 +8292,13 @@ public:
             //Create ArrayPhysicalCast to get the array pointer.
             ASR::ttype_t* array_type = ASRUtils::TYPE(ASR::make_Array_t(al, v->base.loc,arr->m_type, arr->m_dims,
                 arr->n_dims,ASR::array_physical_typeType::FixedSizeArray)); 
-            ASR::expr_t* array_casted_to_pointer = ASRUtils::EXPR(ASR::make_ArrayPhysicalCast_t(al, v->base.loc, v,arr->m_physical_type,
+            ASR::expr_t* array_casted_to_pointer;
+            if(arr->m_physical_type == ASR::array_physical_typeType::PointerToDataArray){
+                array_casted_to_pointer = v; //Don't cast, It's already casted.
+            } else {
+            array_casted_to_pointer = ASRUtils::EXPR(ASR::make_ArrayPhysicalCast_t(al, v->base.loc, v,arr->m_physical_type,
                 ASR::array_physical_typeType::PointerToDataArray, array_type, nullptr));
+            }
 
             // Create size argument.
             int array_size;
