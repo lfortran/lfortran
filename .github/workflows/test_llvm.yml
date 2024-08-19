@@ -1,0 +1,99 @@
+name: Test LLVM
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test_llvm:
+    name: Test LLVM ${{ matrix.llvm-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Note: The LLVM 11 test is redundant, since it is already tested by
+        # most other tests (since LLVM 11 is our default version), but we have
+        # it here as well for consistency, and that way other tests can freely
+        # switch to other versions as needed. We test all versions here in
+        # exactly the same manner, to ensure that users can just change the
+        # `llvmdev` version in their conda environment and everything will just
+        # work.
+        llvm-version: ["10", "11", "12", "13", "14", "15", "16", "17"]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: mamba-org/setup-micromamba@v1.8.0
+        with:
+          environment-file: ci/environment_linux_llvm.yml
+          create-args: >-
+            llvmdev=${{ matrix.llvm-version }}
+
+      - uses: hendrikmuhs/ccache-action@main
+        with:
+          variant: sccache
+          key: ${{ github.job }}-${{ matrix.llvm-version }}
+
+      - name: Build Linux
+        shell: bash -e -l {0}
+        run: |
+            ./build0.sh
+            cmake . -GNinja \
+              -DCMAKE_BUILD_TYPE=Debug \
+              -DWITH_LLVM=yes \
+              -DLFORTRAN_BUILD_ALL=yes \
+              -DWITH_STACKTRACE=no \
+              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
+              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
+              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+
+            cmake --build . -j16 --target install
+
+      # LLVM 10-16 all work in exactly the same way, so the test is identical
+      - name: Test Linux LLVM 10-16
+        if: contains(matrix.llvm-version, '17') == false
+        shell: bash -e -l {0}
+        run: |
+            cd integration_tests
+            ./run_tests.py -b llvm llvmImplicit
+            ./run_tests.py -b llvm llvmImplicit -f
+
+      # In LLVM 17 we can only compile a subset for now, so we have a dedicated
+      # LLVM 17 test here:
+      - name: Test Linux LLVM 17
+        if: contains(matrix.llvm-version, '17') == true
+        shell: bash -e -l {0}
+        run: |
+            src/bin/lfortran --show-llvm examples/expr2.f90
+            src/bin/lfortran examples/expr2.f90
+            ./expr2.out
+            src/bin/lfortran --show-llvm integration_tests/print_03.f90
+            src/bin/lfortran integration_tests/print_03.f90
+            ./print_03.out
+            src/bin/lfortran --show-llvm tests/subroutine3.f90
+            src/bin/lfortran --show-llvm integration_tests/module_function_without_nopass.f90
+            src/bin/lfortran integration_tests/module_function_without_nopass.f90
+            ./module_function_without_nopass.out
+            src/bin/lfortran --show-llvm integration_tests/module_function_with_nopass.f90
+            src/bin/lfortran integration_tests/module_function_with_nopass.f90
+            ./module_function_with_nopass.out
+            src/bin/lfortran --show-llvm integration_tests/elemental_01.f90
+            src/bin/lfortran integration_tests/elemental_01.f90
+            ./elemental_01.out
+            src/bin/lfortran --show-llvm integration_tests/elemental_04.f90
+            src/bin/lfortran integration_tests/elemental_04.f90
+            ./elemental_04.out
+            src/bin/lfortran --show-llvm integration_tests/types_23.f90
+            src/bin/lfortran integration_tests/types_23.f90
+            ./types_23.out
+            src/bin/lfortran --show-llvm integration_tests/character_01.f90
+            src/bin/lfortran integration_tests/character_01.f90
+            ./character_01.out

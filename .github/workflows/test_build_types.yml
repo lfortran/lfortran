@@ -1,0 +1,182 @@
+name: Test Build Types
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  debug_outOfSource:
+    name: Check Out-of-Source Debug build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          path: src
+
+      - uses: mamba-org/setup-micromamba@v1.8.0
+        with:
+          environment-file: src/ci/environment_linux.yml
+          create-args: >-
+            python=3.10
+
+      - uses: hendrikmuhs/ccache-action@main
+        with:
+          variant: sccache
+          key: ${{ github.job }}-${{ matrix.os }}
+
+      - name: Build Linux
+        shell: bash -e -l {0}
+        run: |
+            ( cd src && ./build0.sh )
+            export CXXFLAGS="-Werror"
+            cmake -S src -B builddir -GNinja \
+              -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+              -DWITH_LLVM=yes \
+              -DWITH_KOKKOS=yes \
+              -DLFORTRAN_BUILD_ALL=yes \
+              -DWITH_STACKTRACE=no \
+              -DWITH_RUNTIME_STACKTRACE=yes \
+              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
+              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
+              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+
+            cmake --build builddir  -j16 --target install
+
+      - name: Test Linux
+        shell: bash -e -l {0}
+        run: ctest --output-on-failure
+        working-directory: builddir
+
+      - name: Test Moved Installation
+        shell: bash -e -l {0}
+        run: |
+          mv inst inst.moved
+          cp src/examples/expr2.f90 expr2.F90
+          rm -rf src
+          inst.moved/bin/lfortran expr2.F90 -o expr2
+          ./expr2
+          inst.moved/bin/lfortran --backend=c expr2.F90 -o expr2b
+          ./expr2b
+          inst.moved/bin/lfortran --openmp --backend=cpp expr2.F90 -o expr2c
+          ./expr2c
+
+  debug:
+    name: Check Debug build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: mamba-org/setup-micromamba@v1.8.0
+        with:
+          environment-file: ci/environment_linux.yml
+          create-args: >-
+            python=3.10
+
+      - uses: hendrikmuhs/ccache-action@main
+        with:
+          variant: sccache
+          key: ${{ github.job }}-${{ matrix.os }}
+
+      - name: Build Linux
+        shell: bash -e -l {0}
+        run: |
+            ./build0.sh
+            export CXXFLAGS="-Werror"
+            export CFLAGS="-Werror"
+            cmake . -GNinja \
+              -DCMAKE_BUILD_TYPE=Debug \
+              -DWITH_LLVM=yes \
+              -DCMAKE_VERBOSE_MAKEFILE= yes \
+              -DLFORTRAN_BUILD_ALL=yes \
+              -DWITH_STACKTRACE=no \
+              -DWITH_RUNTIME_STACKTRACE=yes \
+              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
+              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
+              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+
+            cmake --build . -j16 --target install
+
+      - name: Test Linux
+        shell: bash -e -l {0}
+        run: |
+            ctest
+            ./run_tests.py
+            ./run_tests.py -vh
+            cd integration_tests
+            ./run_tests.py -m
+            ./run_tests.py -b llvm
+            ./run_tests.py -b llvm -f
+
+  release:
+    name: Check Release build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: mamba-org/setup-micromamba@v1.8.0
+        with:
+          environment-file: ci/environment_linux.yml
+          create-args: >-
+            python=3.10
+
+      - uses: hendrikmuhs/ccache-action@main
+        with:
+          variant: sccache
+          key: ${{ github.job }}-${{ matrix.os }}
+
+      - name: Build Linux
+        shell: bash -e -l {0}
+        run: |
+            ./build0.sh
+            export CXXFLAGS="-Werror"
+            export CFLAGS="-Werror"
+            cmake . -GNinja \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DWITH_LLVM=yes \
+              -DCMAKE_VERBOSE_MAKEFILE= yes \
+              -DLFORTRAN_BUILD_ALL=yes \
+              -DWITH_STACKTRACE=no \
+              -DWITH_RUNTIME_STACKTRACE=yes \
+              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
+              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
+              -DCMAKE_INSTALL_BINDIR=bin/tastic \
+              -DCMAKE_INSTALL_LIBDIR=oh/my/sweet/lib \
+              -DCMAKE_INSTALL_INCLUDEDIR=incl/O/Matic \
+              -DCMAKE_INSTALL_MANDIR=man/O/man \
+              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+
+            cmake --build . -j16 --target install
+
+      - name: Test Linux
+        shell: bash -e -l {0}
+        run: |
+            ctest
+            ./run_tests.py
+            ./run_tests.py -vh
+            cd integration_tests
+            ./run_tests.py -m
+            ./run_tests.py -b llvm
+            ./run_tests.py -b llvm -f
+
+      - name: Test Installation
+        shell: bash -e -l {0}
+        run: |
+            test -x inst/bin/tastic/lfortran
+            test -f inst/oh/my/sweet/lib/liblfortran_runtime_static.a
+            test -f inst/oh/my/sweet/lib/liblfortran_runtime.so
+            test -f inst/incl/O/Matic/lfortran/impure/lfortran_intrinsics.h
+            test -f inst/man/O/man/man1/lfortran.1
