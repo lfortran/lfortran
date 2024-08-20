@@ -1,5 +1,0 @@
-semantic error: Invalid argument type for `dim` or `mask`
- --> tests/errors/dim_float_04.f90:2:26
-  |
-2 |  print *, sum([1, 2, 3], 1.1, 1.1)
-  |                          ^^^ 

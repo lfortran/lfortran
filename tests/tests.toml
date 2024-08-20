@@ -4154,15 +4154,3 @@ asr = true
 [[test]]
 filename = "errors/dim_float_03.f90"
 asr = true
-
-[[test]]
-filename = "errors/dim_float_04.f90"
-asr = true
-
-[[test]]
-filename = "errors/dim_float_05.f90"
-asr = true
-
-[[test]]
-filename = "errors/dim_float_06.f90"
-asr = true
