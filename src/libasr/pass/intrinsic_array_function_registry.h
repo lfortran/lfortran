@@ -609,6 +609,8 @@ static inline ASR::asr_t* create_ArrIntrinsic(
                 args[1]->base.loc);
             return nullptr;
         }
+    } else if (args[2] && is_logical(*ASRUtils::expr_type(args[2]))) {
+                mask = args[2];
     }
     if (dim) {
         size_t dim_rank = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(dim));
