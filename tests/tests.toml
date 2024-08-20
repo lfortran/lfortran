@@ -4162,3 +4162,7 @@ asr = true
 [[test]]
 filename = "errors/dim_float_05.f90"
 asr = true
+
+[[test]]
+filename = "errors/dim_float_06.f90"
+asr = true
