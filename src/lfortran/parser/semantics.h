@@ -2216,14 +2216,6 @@ return make_Module_t(al, a_loc,
         /*contains*/ CONTAINS(contains), \
         /*n_contains*/ contains.size())
 
-// #define MODULE(name, trivia, use, implicit, decl, contains, name_opt, l) make_Module_t(p.m_a, l, \
-//         name2char_with_check(name, name_opt, l, "module"), \
-//         trivia_cast(trivia), \
-//         /*unit_decl1_t** a_use*/ USES(use), /*size_t n_use*/ use.size(), \
-//         /*m_implicit*/ VEC_CAST(implicit, implicit_statement), \
-//         /*n_implicit*/ implicit.size(), \
-//         /*unit_decl2_t** a_decl*/ DECLS(decl), /*size_t n_decl*/ decl.size(), \
-//         /*program_unit_t** a_contains*/ CONTAINS(contains), /*size_t n_contains*/ contains.size())
 #define SUBMODULE(id ,name, trivia, use, implicit, decl, contains, name_opt, l) make_Submodule_t(p.m_a, l, \
         name2char(id), \
         nullptr, \
