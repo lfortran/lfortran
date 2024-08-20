@@ -5634,7 +5634,7 @@ static inline ASR::asr_t* make_SubroutineCall_t_util(
         *ASRUtils::symbol_get_past_external(a_name)) &&
         ASR::is_a<ASR::FunctionType_t>(*ASRUtils::symbol_type(a_name)) ) {
         a_dt = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, a_loc,
-            a_dt, a_name, ASRUtils::symbol_type(a_name), nullptr));
+            a_dt, a_name, ASRUtils::duplicate_type(al, ASRUtils::symbol_type(a_name)), nullptr));
     }
 
     return ASR::make_SubroutineCall_t(al, a_loc, a_name, a_original_name, a_args, n_args, a_dt);

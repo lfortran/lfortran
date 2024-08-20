@@ -28,6 +28,7 @@ enum class IntrinsicArrayFunctions : int64_t {
     MaxVal,
     MinLoc,
     MinVal,
+    FindLoc,
     Product,
     Shape,
     Sum,
@@ -61,6 +62,7 @@ inline std::string get_array_intrinsic_name(int64_t x) {
         ARRAY_INTRINSIC_NAME_CASE(MaxVal)
         ARRAY_INTRINSIC_NAME_CASE(MinLoc)
         ARRAY_INTRINSIC_NAME_CASE(MinVal)
+        ARRAY_INTRINSIC_NAME_CASE(FindLoc)
         ARRAY_INTRINSIC_NAME_CASE(Product)
         ARRAY_INTRINSIC_NAME_CASE(Shape)
         ARRAY_INTRINSIC_NAME_CASE(Sum)
@@ -3115,6 +3117,262 @@ namespace MinLoc {
 
 } // namespace MinLoc
 
+namespace FindLoc {
+
+    static inline void verify_args(const ASR::IntrinsicArrayFunction_t& x,
+            diag::Diagnostics& diagnostics) {
+        require_impl(x.n_args >= 2 && x.n_args <= 6, "`findloc` intrinsic "
+            "takes at least two arguments", x.base.base.loc, diagnostics);
+        require_impl(x.m_args[0] != nullptr, "`array` argument of `findloc` " 
+            "intrinsic cannot be nullptr", x.base.base.loc, diagnostics);
+        require_impl(x.m_args[1] != nullptr, "`value` argument of `findloc` " 
+            "intrinsic cannot be nullptr", x.base.base.loc, diagnostics);
+    }
+
+    static inline ASR::expr_t *eval_FindLoc(Allocator &al, const Location &loc,
+        ASR::ttype_t *type, Vec<ASR::expr_t*> &args) {
+        ASRBuilder b(al, loc);
+        ASR::expr_t* array = args[0];
+        ASR::expr_t* value = args[1];
+        if (!array) return nullptr;
+        if (!value) return nullptr;
+        if (extract_n_dims_from_ttype(expr_type(args[0])) == 1) {
+            int arr_size = 0;
+            ASR::ArrayConstant_t *arr = nullptr;
+            if (ASR::is_a<ASR::ArrayConstant_t>(*array)) {
+                arr = ASR::down_cast<ASR::ArrayConstant_t>(array);
+                arr_size = ASRUtils::get_fixed_size_of_array(arr->m_type);
+            } else {
+                return nullptr;
+            }
+            ASR::ArrayConstant_t *mask = nullptr;
+            if (args[3] && ASR::is_a<ASR::ArrayConstant_t>(*args[3])) {
+                mask = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(args[3]));
+            } else if(args[3] && ASR::is_a<ASR::LogicalConstant_t>(*args[3])) {
+                bool mask_val = ASR::down_cast<ASR::LogicalConstant_t>(ASRUtils::expr_value(args[3])) -> m_value;
+                if (mask_val == false) return b.i_t(0, type);
+                mask = ASR::down_cast<ASR::ArrayConstant_t>(b.ArrayConstant({b.bool_t(mask_val, logical)}, logical, false));
+            } else {
+                std::vector<ASR::expr_t*> mask_data;
+                for (int i = 0; i < arr_size; i++) {
+                    mask_data.push_back(b.bool_t(true, logical));
+                }
+                mask = ASR::down_cast<ASR::ArrayConstant_t>(b.ArrayConstant(mask_data, logical, false));
+            }
+            ASR::LogicalConstant_t *back = ASR::down_cast<ASR::LogicalConstant_t>(ASRUtils::expr_value(args[5]));
+            int element_idx = 0;
+            bool element_found = 0;
+            if (is_character(*expr_type(args[0]))) {
+                std::string ele = ASR::down_cast<ASR::StringConstant_t>(args[1])->m_s;
+                for (int i = element_idx; i < arr_size; i++) {
+                    if (((bool*)mask->m_data)[i] != 0) {
+                        std::string ele2 = ASR::down_cast<ASR::StringConstant_t>(ASRUtils::fetch_ArrayConstant_value(al, arr, i))->m_s;
+                        if (ele.compare(ele2) == 0) {
+                            element_found = 1;
+                            element_idx = i;
+                            if (!(back && back->m_value)) break;
+                        }
+                    }
+                }
+            } else {
+                double ele = 0;
+                if (is_integer(*ASRUtils::expr_type(args[1]))) {
+                    ele = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
+                } else if (is_real(*ASRUtils::expr_type(args[1]))) {
+                    ele = ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r;
+                } else if (is_logical(*ASRUtils::expr_type(args[1]))) {
+                    ele = ASR::down_cast<ASR::LogicalConstant_t>(args[1])->m_value;
+                }
+                for (int i = element_idx; i < arr_size; i++) {
+                    if (((bool*)mask->m_data)[i] != 0) {
+                        double ele2 = 0;
+                        if (extract_value(ASRUtils::fetch_ArrayConstant_value(al, arr, i), ele2)) {
+                            if (ele == ele2) {
+                                element_found = 1;
+                                element_idx = i;
+                                if (!(back && back->m_value)) break;
+                            }
+                        }
+                    }
+                } 
+            }
+            if (element_found == 0) element_idx = -1;
+            return b.ArrayConstant({b.i32(element_idx + 1)}, extract_type(type), false);
+        } else {
+            return nullptr;
+        }
+    }
+
+    static inline ASR::asr_t* create_FindLoc(Allocator& al, const Location& loc,
+            Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
+        int64_t array_value_id = 0, array_value_mask = 1, array_value_dim = 2, array_value_dim_mask = 3;
+        int64_t overload_id = array_value_id;
+        ASRUtils::ASRBuilder b(al, loc);
+        ASR::expr_t* array = args[0];
+        ASR::expr_t* value = args[1];
+        ASR::ttype_t *array_type = expr_type(array);
+        ASR::ttype_t *value_type = expr_type(value);
+        if (!is_array(array_type) && !is_integer(*array_type) && !is_real(*array_type) && !is_character(*array_type) && !is_logical(*array_type)) {
+            append_error(diag, "`array` argument of `findloc` must be an array of integer, "
+                "real, logical or character type", loc);
+            return nullptr;
+        }
+        if (is_array(value_type) || ( !is_integer(*value_type) && !is_real(*value_type) && !is_character(*value_type) && !is_logical(*value_type) )) {
+            append_error(diag, "`value` argument of `findloc` must be a scalar of integer, "
+                "real, logical or character type", loc);
+            return nullptr;
+        }
+        ASR::ttype_t *return_type = nullptr;
+        Vec<ASR::expr_t *> m_args; m_args.reserve(al, 6);
+        m_args.push_back(al, array);
+        m_args.push_back(al, value);
+        Vec<ASR::dimension_t> result_dims; result_dims.reserve(al, 1);
+        ASR::dimension_t *m_dims;
+        int n_dims = extract_dimensions_from_ttype(array_type, m_dims);
+        int dim = 0, kind = 4; // default kind
+        ASR::expr_t *dim_expr = nullptr;
+        ASR::expr_t *mask_expr = nullptr;
+        if (args[2]) {
+            dim_expr = args[2];
+            if ( !ASR::is_a<ASR::Integer_t>(*expr_type(args[2])) ) {
+                append_error(diag, "`dim` should be a scalar integer type", loc);
+                return nullptr;
+            } else if (!extract_value(expr_value(args[2]), dim)) {
+                append_error(diag, "Runtime values for `dim` argument is not supported yet", loc);
+                return nullptr;
+            }
+            if ( dim < 1 || dim > n_dims ) {
+                append_error(diag, "`dim` argument of `findloc` is out of "
+                    "array index range", loc);
+                return nullptr;
+            }
+            for ( int i = 1; i <= n_dims; i++ ) {
+                ASR::dimension_t tmp_dim;
+                tmp_dim.loc = args[0]->base.loc;
+                tmp_dim.m_start = m_dims[i - 1].m_start;
+                tmp_dim.m_length = m_dims[i - 1].m_length;
+                result_dims.push_back(al, tmp_dim);
+            }
+            m_args.push_back(al, args[2]);
+        } else {
+            ASR::dimension_t tmp_dim;
+            tmp_dim.loc = args[0]->base.loc;
+            tmp_dim.m_start = b.i32(1);
+            tmp_dim.m_length = b.i32(n_dims);
+            result_dims.push_back(al, tmp_dim);
+            m_args.push_back(al, b.i32(-1));
+        }
+        if (args[3]) {
+            mask_expr = args[3];
+            if (!is_logical(*expr_type(args[3]))) {
+                append_error(diag, "`mask` argument of `findloc` must be logical", loc);
+                return nullptr;
+            }
+            m_args.push_back(al, args[3]);
+        } else {
+            m_args.push_back(al, b.ArrayConstant({b.bool_t(1, logical)}, logical, true));
+        }
+        if (args[4]) {
+            if (!extract_value(expr_value(args[4]), kind)) {
+                append_error(diag, "Runtime value for `kind` argument is not supported yet", loc);
+                return nullptr;
+            }
+            int kind = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(args[4]))->m_n;
+            ASRUtils::set_kind_to_ttype_t(return_type, kind);
+            m_args.push_back(al, args[4]);
+        } else {
+            m_args.push_back(al, b.i32(4));
+        }
+        if (args[5]) {
+            if (!ASR::is_a<ASR::Logical_t>(*expr_type(args[5]))) {
+                append_error(diag, "`back` argument of `findloc` must be a logical scalar", loc);
+                return nullptr;
+            }
+            m_args.push_back(al, args[5]);
+        } else {
+            m_args.push_back(al, b.bool_t(false, logical));
+        }
+
+        if (dim_expr) {
+            overload_id = array_value_dim;
+        }
+        if (mask_expr) {
+            overload_id = array_value_mask;
+        }
+        if (dim_expr && mask_expr) {
+            overload_id = array_value_dim_mask;
+        }
+        if ( !return_type ) {
+            return_type = duplicate_type(al, TYPE(
+                ASR::make_Integer_t(al, loc, kind)), &result_dims);
+        }
+        ASR::expr_t *m_value = nullptr;
+        m_value = eval_FindLoc(al, loc, return_type, m_args);
+        return make_IntrinsicArrayFunction_t_util(al, loc,
+            static_cast<int64_t>(IntrinsicArrayFunctions::FindLoc),
+            m_args.p, m_args.n, overload_id, return_type, m_value);
+    }
+
+    static inline ASR::expr_t *instantiate_FindLoc(Allocator &al,
+            const Location &loc, SymbolTable *scope,
+            Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& m_args, int64_t overload_id) {
+    declare_basic_variables("_lcompilers_findloc")
+    /*
+     *findloc(array, value, dim, mask, kind, back)
+     * index = 0;
+     * do i = 1, size(arr))
+     *    if (arr[i] == value) then
+     *      index = i;
+     *    end if
+     * end do
+     */
+    ASR::ttype_t* array_type = ASRUtils::duplicate_type_with_empty_dims(al, arg_types[0]);
+    ASR::ttype_t* mask_type = ASRUtils::duplicate_type_with_empty_dims(al, arg_types[3]);
+    fill_func_arg("array", array_type);
+    fill_func_arg("value", arg_types[1]);
+    fill_func_arg("dim", arg_types[2]);
+    fill_func_arg("mask", mask_type);
+    fill_func_arg("kind", arg_types[4]);
+    fill_func_arg("back", arg_types[5]);
+    ASR::expr_t *result = declare("result", return_type, ReturnVar);
+    ASR::ttype_t *type = ASRUtils::type_get_past_array_pointer_allocatable(return_type);
+    ASR::expr_t *i = declare("i", type, Local);
+    ASR::expr_t *array = args[0];
+    ASR::expr_t *value = args[1];
+    ASR::expr_t *mask = args[3];
+    ASR::expr_t *back = args[5];
+    if (overload_id == 1) {
+        body.push_back(al, b.Assignment(result, b.i_t(0, return_type)));
+        body.push_back(al, b.DoLoop(i, b.i_t(1, type), UBound(array, 1), {
+            b.If(b.And(b.Eq(ArrayItem_02(array, i), value), b.Eq(ArrayItem_02(mask, i), b.bool_t(1, logical))), {
+                b.Assignment(result, i),
+                b.If(b.NotEq(back, b.bool_t(1, logical)), {
+                    b.Return()
+                }, {})
+            }, {})
+        }));
+    } else {
+        body.push_back(al, b.Assignment(result, b.i_t(0, return_type)));
+        body.push_back(al, b.DoLoop(i, b.i_t(1, type), UBound(array, 1), {
+            b.If(b.Eq(ArrayItem_02(array, i), value), {
+                b.Assignment(result, i),
+                b.If(b.NotEq(back, b.bool_t(1, logical)), {
+                    b.Return()
+                }, {})
+            }, {})
+        }));
+    }
+
+    body.push_back(al, b.Return());
+    ASR::symbol_t *fn_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+    scope->add_symbol(fn_name, fn_sym);
+    return b.Call(fn_sym, m_args, return_type, nullptr);
+}
+
+} // namespace Findloc
+
 namespace MinVal {
 
     static inline void verify_args(const ASR::IntrinsicArrayFunction_t& x,
@@ -3152,7 +3410,7 @@ namespace MatMul {
 
     static inline void verify_args(const ASR::IntrinsicArrayFunction_t &x,
             diag::Diagnostics& diagnostics) {
-        require_impl(x.n_args == 2, "`matmul` intrinsic accepts exactly"
+        require_impl(x.n_args == 2, "`matmul` intrinsic accepts exactly "
             "two arguments", x.base.base.loc, diagnostics);
         require_impl(x.m_args[0], "`matrix_a` argument of `matmul` intrinsic "
             "cannot be nullptr", x.base.base.loc, diagnostics);
@@ -5131,6 +5389,8 @@ namespace IntrinsicArrayFunctionRegistry {
             {&MaxVal::instantiate_MaxVal, &MaxVal::verify_args}},
         {static_cast<int64_t>(IntrinsicArrayFunctions::MinLoc),
             {&MinLoc::instantiate_MinLoc, &MinLoc::verify_args}},
+        {static_cast<int64_t>(IntrinsicArrayFunctions::FindLoc),
+            {&FindLoc::instantiate_FindLoc, &FindLoc::verify_args}},
         {static_cast<int64_t>(IntrinsicArrayFunctions::MinVal),
             {&MinVal::instantiate_MinVal, &MinVal::verify_args}},
         {static_cast<int64_t>(IntrinsicArrayFunctions::Product),
@@ -5172,6 +5432,7 @@ namespace IntrinsicArrayFunctionRegistry {
         {"maxloc", {&MaxLoc::create_MaxLoc, nullptr}},
         {"maxval", {&MaxVal::create_MaxVal, &MaxVal::eval_MaxVal}},
         {"minloc", {&MinLoc::create_MinLoc, nullptr}},
+        {"findloc", {&FindLoc::create_FindLoc, nullptr}},
         {"minval", {&MinVal::create_MinVal, &MinVal::eval_MinVal}},
         {"product", {&Product::create_Product, &Product::eval_Product}},
         {"shape", {&Shape::create_Shape, &Shape::eval_Shape}},
@@ -5245,7 +5506,8 @@ namespace IntrinsicArrayFunctionRegistry {
         // Dim argument is already handled for the following
         if( id == IntrinsicArrayFunctions::Shape  ||
             id == IntrinsicArrayFunctions::MaxLoc ||
-            id == IntrinsicArrayFunctions::MinLoc ) {
+            id == IntrinsicArrayFunctions::MinLoc ||
+            id == IntrinsicArrayFunctions::FindLoc ) {
             return false;
         } else {
             return true;

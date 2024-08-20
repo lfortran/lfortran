@@ -297,7 +297,7 @@ RUN(NAME expr_19 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm c)
 RUN(NAME expr_20 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm c)
 
 RUN(NAME data_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c fortran)
-RUN(NAME data_02 LABELS gfortran)
+RUN(NAME data_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c fortran)
 RUN(NAME data_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c fortran)
 RUN(NAME data_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c)
 RUN(NAME data_05 LABELS gfortran) # llvmImplicit removed
@@ -364,6 +364,7 @@ RUN(NAME subroutines_09 LABELS gfortran llvm)
 RUN(NAME subroutines_10 LABELS gfortran)
 RUN(NAME subroutines_11 LABELS gfortran llvm)
 RUN(NAME subroutines_12 LABELS gfortran llvm)
+RUN(NAME subroutines_13 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME functions_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc cpp x86 wasm)
 RUN(NAME functions_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
@@ -553,6 +554,9 @@ RUN(NAME format_11 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME format_12 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME format_13 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME format_14 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME format_15 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME format_16 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME format_17 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME submodule_01 LABELS gfortran)
 RUN(NAME submodule_02 LABELS gfortran)
@@ -872,6 +876,7 @@ RUN(NAME intrinsics_297 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # poppar
 RUN(NAME intrinsics_298 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # dot_product
 RUN(NAME intrinsics_299 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # command_argument_count
 RUN(NAME intrinsics_300 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # kind
+RUN(NAME intrinsics_301 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # findloc
 RUN(NAME intrinsics_304 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # sign
 RUN(NAME intrinsics_305 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # realpart
 RUN(NAME intrinsics_306 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # imagpart
@@ -1762,3 +1767,5 @@ RUN(NAME compiler_version_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME exit_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME exit_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+
+RUN(NAME struct_type_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)

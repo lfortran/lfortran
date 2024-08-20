@@ -9,6 +9,7 @@
 #include <libasr/modfile.h>
 #include <libasr/pass/pass_utils.h>
 #include <libasr/pass/intrinsic_function_registry.h>
+#include <libasr/pass/intrinsic_subroutine_registry.h>
 #include <libasr/pass/intrinsic_array_function_registry.h>
 
 namespace LCompilers {

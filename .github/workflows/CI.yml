@@ -710,8 +710,8 @@ jobs:
             cd SNAP
             export PATH="$(pwd)/../src/bin:$PATH"
 
-            git checkout lf7
-            git checkout 4da1d34db8561e580ea87d6e84e5ecd30efc1572
+            git checkout lf9
+            git checkout 3f1f2b7e265552a443f145e5626c6ae7ec872406
             cd ./src
             make -j8 FORTRAN=lfortran FFLAGS= MPI=no OPENMP=no
             ./gsnap ../qasnap/sample/inp out

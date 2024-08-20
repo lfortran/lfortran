@@ -43,12 +43,12 @@
                     intrinsics_29
                     []
                     [(IntrinsicImpureSubroutine
-                        ObjectType
+                        RandomNumber
                         [(Var 2 random_sp)]
                         0
                     )
                     (IntrinsicImpureSubroutine
-                        ObjectType
+                        RandomNumber
                         [(Var 2 random_dp)]
                         0
                     )

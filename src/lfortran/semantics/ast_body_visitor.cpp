@@ -707,16 +707,22 @@ public:
             a_fmt_constant = ASRUtils::EXPR(ASR::make_StringConstant_t(
                 al, a_fmt->base.loc, s2c(al, format_statements[label]), a_fmt_type));
         }
-        if (a_fmt_constant) {
+        // Don't use stringFormat with single character argument
+        if (!a_fmt 
+            && _type == AST::stmtType::Write 
+            && a_values_vec.size() == 1  
+            && ASR::is_a<ASR::Character_t>(*ASRUtils::expr_type(a_values_vec[0]))){ 
+            tmp = ASR::make_FileWrite_t(al, loc, m_label, a_unit,
+            a_iomsg, a_iostat, a_id, a_values_vec.p,
+            a_values_vec.size(), a_separator, a_end, overloaded_stmt);
+        } else if ( _type == AST::stmtType::Write ) { // If not the previous case, Wrap everything in stringFormat.
             ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Character_t(
                         al, loc, -1, 0, nullptr));
-            ASR::expr_t* string_format = ASRUtils::EXPR(ASRUtils::make_StringFormat_t_util(al, a_fmt->base.loc,
+            ASR::expr_t* string_format = ASRUtils::EXPR(ASRUtils::make_StringFormat_t_util(al, a_fmt? a_fmt->base.loc : read_write_stmt.base.loc,
                 a_fmt_constant, a_values_vec.p, a_values_vec.size(), ASR::string_format_kindType::FormatFortran,
                 type, nullptr));
             a_values_vec.reserve(al, 1);
             a_values_vec.push_back(al, string_format);
-        }
-        if( _type == AST::stmtType::Write ) {
             tmp = ASR::make_FileWrite_t(al, loc, m_label, a_unit,
                 a_iomsg, a_iostat, a_id, a_values_vec.p,
                 a_values_vec.size(), a_separator, a_end, overloaded_stmt);
@@ -1515,6 +1521,7 @@ public:
             v->n_dependencies = module_dependencies.size();
         }
 
+        create_and_replace_structType();
         current_scope = old_scope;
         current_module = nullptr;
         tmp = nullptr;
@@ -1581,6 +1588,7 @@ public:
             visit_program_unit(*x.m_contains[i]);
         }
 
+        create_and_replace_structType();
         ASRUtils::update_call_args(al, current_scope, compiler_options.implicit_interface, changed_external_function_symbol);
 
         starting_m_body = nullptr;
@@ -1983,6 +1991,7 @@ public:
             visit_program_unit(*x.m_contains[i]);
         }
 
+        create_and_replace_structType();
         ASRUtils::update_call_args(al, current_scope, compiler_options.implicit_interface, changed_external_function_symbol);
 
         starting_m_body = nullptr;
@@ -2064,6 +2073,7 @@ public:
             is_Function = false;
         }
 
+        create_and_replace_structType();
         ASRUtils::update_call_args(al, current_scope, compiler_options.implicit_interface, changed_external_function_symbol);
 
         starting_m_body = nullptr;

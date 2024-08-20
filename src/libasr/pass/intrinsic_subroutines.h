@@ -21,6 +21,7 @@ the code size.
 enum class IntrinsicImpureSubroutines : int64_t {
     RandomNumber,
     RandomInit,
+    GetCommand,
     // ...
 };
 
@@ -165,6 +166,65 @@ namespace RandomNumber {
     }
 
 } // namespace RandomNumber
+
+namespace GetCommand {
+
+    static inline void verify_args(const ASR::IntrinsicImpureSubroutine_t& x, diag::Diagnostics& diagnostics) {
+        if (x.n_args == 3) {
+            ASRUtils::require_impl(x.m_overload_id == 0, "Overload Id for get_command expected to be 0, found " + std::to_string(x.m_overload_id), x.base.base.loc, diagnostics);
+            ASRUtils::require_impl(ASRUtils::is_character(*ASRUtils::expr_type(x.m_args[0])), "First argument must be of character type", x.base.base.loc, diagnostics);
+            ASRUtils::require_impl(ASRUtils::is_integer(*ASRUtils::expr_type(x.m_args[1])), "Second argument must be of integer type", x.base.base.loc, diagnostics);
+            ASRUtils::require_impl(ASRUtils::is_integer(*ASRUtils::expr_type(x.m_args[2])), "Third argument must be of integer type", x.base.base.loc, diagnostics);
+        } else {
+            ASRUtils::require_impl(false, "Unexpected number of args, get_command takes 3 arguments, found " + std::to_string(x.n_args), x.base.base.loc, diagnostics);
+        }
+    }
+
+    static inline ASR::asr_t* create_GetCommand(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
+        Vec<ASR::expr_t*> m_args; m_args.reserve(al, 3);
+        m_args.push_back(al, args[0]);
+        m_args.push_back(al, args[1]);
+        m_args.push_back(al, args[2]);
+        return ASR::make_IntrinsicImpureSubroutine_t(al, loc, static_cast<int64_t>(IntrinsicImpureSubroutines::GetCommand), m_args.p, m_args.n, 0);
+    }
+
+    static inline ASR::stmt_t* instantiate_GetCommand(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        
+        std::string c_func_name_1 = "_lfortran_get_command_command";
+        std::string c_func_name_2 = "_lfortran_get_command_length";
+        std::string c_func_name_3 = "_lfortran_get_command_status";
+
+        std::string new_name = "_lcompilers_get_command_";
+        declare_basic_variables(new_name);
+        fill_func_arg_sub("command", arg_types[0], InOut);
+        fill_func_arg_sub("length", arg_types[1], InOut);
+        fill_func_arg_sub("status", arg_types[2], InOut);
+
+        ASR::symbol_t *s_1 = b.create_c_func_subroutines(c_func_name_1, fn_symtab, 0, arg_types[0]);
+        ASR::symbol_t *s_2 = b.create_c_func_subroutines(c_func_name_2, fn_symtab, 0, arg_types[1]);
+        ASR::symbol_t *s_3 = b.create_c_func_subroutines(c_func_name_3, fn_symtab, 0, arg_types[2]);
+    
+        fn_symtab->add_symbol(c_func_name_1, s_1);
+        fn_symtab->add_symbol(c_func_name_2, s_2);
+        fn_symtab->add_symbol(c_func_name_3, s_3);
+
+        dep.push_back(al, s2c(al, c_func_name_1));
+        dep.push_back(al, s2c(al, c_func_name_2));
+        dep.push_back(al, s2c(al, c_func_name_3));
+
+        Vec<ASR::expr_t*> call_args; call_args.reserve(al, 0);
+        body.push_back(al, b.Assignment(args[0], b.Call(s_1, call_args, arg_types[0])));
+        body.push_back(al, b.Assignment(args[1], b.Call(s_2, call_args, arg_types[1])));
+        body.push_back(al, b.Assignment(args[2], b.Call(s_3, call_args, arg_types[2])));
+
+        ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, nullptr, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, new_symbol);
+        return b.SubroutineCall(new_symbol, new_args);
+    }
+} // namespace GetCommand
 
 } // namespace LCompilers::ASRUtils
 
