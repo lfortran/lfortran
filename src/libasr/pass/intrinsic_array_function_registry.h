@@ -3134,6 +3134,7 @@ namespace FindLoc {
         ASRBuilder b(al, loc);
         ASR::expr_t* array = args[0];
         ASR::expr_t* value = args[1];
+        ASR::expr_t* dim = args[2];
         if (!array) return nullptr;
         if (!value) return nullptr;
         if (extract_n_dims_from_ttype(expr_type(args[0])) == 1) {
@@ -3197,6 +3198,9 @@ namespace FindLoc {
                 } 
             }
             if (element_found == 0) element_idx = -1;
+            if (ASR::down_cast<ASR::IntegerConstant_t>(dim) -> m_n != -1) {
+                return b.i_t(element_idx + 1, type);
+            }
             return b.ArrayConstant({b.i32(element_idx + 1)}, extract_type(type), false);
         } else {
             return nullptr;
@@ -3246,12 +3250,19 @@ namespace FindLoc {
                     "array index range", loc);
                 return nullptr;
             }
-            for ( int i = 1; i <= n_dims; i++ ) {
-                ASR::dimension_t tmp_dim;
-                tmp_dim.loc = args[0]->base.loc;
-                tmp_dim.m_start = m_dims[i - 1].m_start;
-                tmp_dim.m_length = m_dims[i - 1].m_length;
-                result_dims.push_back(al, tmp_dim);
+            if ( n_dims == 1 ) {
+                return_type = TYPE(ASR::make_Integer_t(al, loc, kind)); // 1D
+            } else {
+                for ( int i = 1; i <= n_dims; i++ ) {
+                    if ( i == dim ) {
+                        continue;
+                    }
+                    ASR::dimension_t tmp_dim;
+                    tmp_dim.loc = args[0]->base.loc;
+                    tmp_dim.m_start = m_dims[i - 1].m_start;
+                    tmp_dim.m_length = m_dims[i - 1].m_length;
+                    result_dims.push_back(al, tmp_dim);
+                }
             }
             m_args.push_back(al, args[2]);
         } else {
