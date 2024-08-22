@@ -1,9 +1,9 @@
-module m
+module data_12_module
     implicit none
     integer :: x
     data x /1/
-end module m
+end module data_12_module
 
-program main
+program data_12_program
     implicit none
-end program main
+end program data_12_program

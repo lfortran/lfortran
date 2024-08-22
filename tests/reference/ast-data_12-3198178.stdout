@@ -1,6 +1,6 @@
 (TranslationUnit
     [(Module
-        m
+        data_12_module
         (TriviaNode
             []
             [(EndOfLine)
@@ -40,7 +40,7 @@
         []
     )
     (Program
-        main
+        data_12_program
         ()
         []
         [(ImplicitNone
