@@ -39,7 +39,7 @@ class ASRBuilder {
             ASR::ttype_t *type, ASR::intentType intent,
             ASR::abiType abi=ASR::abiType::Source, bool a_value_attr=false) {
         ASR::symbol_t* sym = ASR::down_cast<ASR::symbol_t>(
-            ASR::make_Variable_t(al, loc, symtab, s2c(al, var_name), nullptr, 0,
+            ASRUtils::make_Variable_t_util(al, loc, symtab, s2c(al, var_name), nullptr, 0,
             intent, nullptr, nullptr, ASR::storage_typeType::Default, type, nullptr, abi,
             ASR::Public, ASR::presenceType::Required, a_value_attr));
         symtab->add_symbol(s2c(al, var_name), sym);
@@ -50,7 +50,7 @@ class ASRBuilder {
             ASR::ttype_t *type, ASR::intentType intent,
             ASR::abiType abi=ASR::abiType::Source, bool a_value_attr=false) {
         ASR::symbol_t* sym = ASR::down_cast<ASR::symbol_t>(
-            ASR::make_Variable_t(al, loc, symtab, s2c(al, var_name), nullptr, 0,
+            ASRUtils::make_Variable_t_util(al, loc, symtab, s2c(al, var_name), nullptr, 0,
             intent, nullptr, nullptr, ASR::storage_typeType::Default, type, nullptr, abi,
             ASR::Public, ASR::presenceType::Required, a_value_attr));
         symtab->add_symbol(s2c(al, var_name), sym);
@@ -61,7 +61,7 @@ class ASRBuilder {
             ASR::ttype_t *type, ASR::intentType intent,
             ASR::abiType abi=ASR::abiType::Source, bool a_value_attr=false) {
         ASR::symbol_t* sym = ASR::down_cast<ASR::symbol_t>(
-            ASR::make_Variable_t(al, loc, symtab, s2c(al, var_name), nullptr, 0,
+            ASRUtils::make_Variable_t_util(al, loc, symtab, s2c(al, var_name), nullptr, 0,
             intent, nullptr, nullptr, ASR::storage_typeType::Default, type, nullptr, abi,
             ASR::Public, ASR::presenceType::Required, a_value_attr));
         symtab->add_or_overwrite_symbol(s2c(al, var_name), sym);

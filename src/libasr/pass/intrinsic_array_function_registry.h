@@ -957,9 +957,9 @@ static inline void verify_MaxMinLoc_args(const ASR::IntrinsicArrayFunction_t& x,
 static inline ASR::expr_t *eval_MaxMinLoc(Allocator &al, const Location &loc,
         ASR::ttype_t *type, Vec<ASR::expr_t*> &args, ASRUtils::IntrinsicArrayFunctions intrinsic_func_id) {
     ASRBuilder b(al, loc);
-    ASR::expr_t* array = args[0];
+    ASR::expr_t* array = ASRUtils::expr_value(args[0]);
     if (!array) return nullptr;
-    if (extract_n_dims_from_ttype(expr_type(args[0])) == 1) {
+    if (extract_n_dims_from_ttype(expr_type(array)) == 1) {
         int arr_size = 0;
         ASR::ArrayConstant_t *arr = nullptr;
         if (ASR::is_a<ASR::ArrayConstant_t>(*array)) {
@@ -1225,15 +1225,20 @@ static inline ASR::expr_t *instantiate_MaxMinLoc(Allocator &al,
     ASR::ttype_t* array_type = ASRUtils::duplicate_type_with_empty_dims(al, arg_types[0]);
     fill_func_arg("array", array_type);
     fill_func_arg("dim", arg_types[1]);
-    fill_func_arg("mask", arg_types[2]);
+    fill_func_arg("mask", ASRUtils::duplicate_type_with_empty_dims(
+        al, arg_types[2], ASR::array_physical_typeType::DescriptorArray, true));
     fill_func_arg("kind", arg_types[3]);
     fill_func_arg("back", arg_types[4]);
     int n_dims = extract_n_dims_from_ttype(arg_types[0]);
     ASR::ttype_t *type = extract_type(return_type);
     ASR::expr_t* result = nullptr;
-    result = declare("result", ASRUtils::duplicate_type_with_empty_dims(
-        al, return_type, ASR::array_physical_typeType::DescriptorArray, true), Out);
-    args.push_back(al, result);
+    if( overload_id >= 2 ) {
+        result = declare("result", return_type, ReturnVar);
+    } else {
+        result = declare("result", ASRUtils::duplicate_type_with_empty_dims(
+            al, return_type, ASR::array_physical_typeType::DescriptorArray, true), Out);
+        args.push_back(al, result);
+    }
     Vec<ASR::expr_t*> idx_vars, target_idx_vars;
     Vec<ASR::stmt_t*> doloop_body;
     if (overload_id < 2) {
@@ -1297,7 +1302,7 @@ static inline ASR::expr_t *instantiate_MaxMinLoc(Allocator &al,
                 body.push_back(al, b.Assignment(result, b.i_t(1, type)));
             }, [=, &al, &b, &idx_vars, &target_idx_vars, &doloop_body] () {
                 ASR::expr_t *result_ref, *array_ref_02;
-                if (is_array(return_type)) {
+                if (is_array(return_type) && n_dims > 1) {
                     result_ref = ArrayItem_02(result, target_idx_vars);
                     Vec<ASR::expr_t*> tmp_idx_vars;
                     tmp_idx_vars.from_pointer_n_copy(al, idx_vars.p, idx_vars.n);

@@ -68,7 +68,7 @@ public:
             return current_scope->get_symbol(new_sym_name);
         }
 
-        ASR::symbol_t* new_v = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(
+        ASR::symbol_t* new_v = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
             al, x->base.base.loc,
             current_scope, s2c(al, new_sym_name), x->m_dependencies,
             x->n_dependencies, x->m_intent, x->m_symbolic_value,
@@ -140,7 +140,7 @@ public:
             t = ASRUtils::duplicate_type(al, type_subs[tp->m_param]);
         }
 
-        ASR::symbol_t* new_v = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(
+        ASR::symbol_t* new_v = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
             al, x->base.base.loc, current_scope, x->m_name, x->m_dependencies,
             x->n_dependencies, x->m_intent, x->m_symbolic_value,
             x->m_value, x->m_storage, t, x->m_type_declaration,
@@ -390,7 +390,7 @@ public:
         variable_dependencies_vec.reserve(al, 1);
         ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, new_type);
 
-        ASR::symbol_t* s = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(al,
+        ASR::symbol_t* s = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(al,
             x->base.base.loc, current_scope, s2c(al, x->m_name), variable_dependencies_vec.p,
             variable_dependencies_vec.size(), x->m_intent, nullptr, nullptr, x->m_storage,
             new_type, nullptr, x->m_abi, x->m_access, x->m_presence, x->m_value_attr));
@@ -962,7 +962,7 @@ public:
             return current_scope->get_symbol(new_sym_name);
         }
 
-        ASR::symbol_t* new_v = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(
+        ASR::symbol_t* new_v = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
             al, x->base.base.loc,
             current_scope, s2c(al, new_sym_name), x->m_dependencies,
             x->n_dependencies, x->m_intent, x->m_symbolic_value,
@@ -1029,7 +1029,7 @@ public:
         ASR::symbol_t *v = current_scope->get_symbol(x->m_name);
         if (!v) {
             ASR::ttype_t *t = substitute_type(x->m_type);
-            v = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(
+            v = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
                 al, x->base.base.loc, current_scope, x->m_name, x->m_dependencies,
                 x->n_dependencies, x->m_intent, x->m_symbolic_value,
                 x->m_value, x->m_storage, t, x->m_type_declaration,
@@ -1204,7 +1204,7 @@ public:
         variable_dependencies_vec.reserve(al, 1);
         ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, new_type);
 
-        ASR::symbol_t* s = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(al,
+        ASR::symbol_t* s = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(al,
             x->base.base.loc, target_scope, s2c(al, x->m_name), variable_dependencies_vec.p,
             variable_dependencies_vec.size(), x->m_intent, nullptr, nullptr, x->m_storage,
             new_type, nullptr, x->m_abi, x->m_access, x->m_presence, x->m_value_attr));
