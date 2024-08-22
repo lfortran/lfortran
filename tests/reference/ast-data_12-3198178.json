@@ -2,11 +2,11 @@
     "basename": "ast-data_12-3198178",
     "cmd": "lfortran --show-ast --no-color {infile} -o {outfile}",
     "infile": "tests/../integration_tests/data_12.f90",
-    "infile_hash": "f5150aa9cfdb3d7660853cd2955256886957960d69c033fcff2f3055",
+    "infile_hash": "80710a15ea7a648779263ef05c92564bd17392b333fcaeeef1880a91",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "ast-data_12-3198178.stdout",
-    "stdout_hash": "1cca17c4b1742f82adde37af7c3c3653d1cf159aa73bc7c65eadad1b",
+    "stdout_hash": "0c461794e6998f5ea8c2ada897af16902dcf4a3c5c7558be05af24b8",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0
