@@ -2216,28 +2216,71 @@ return make_Module_t(al, a_loc,
         /*contains*/ CONTAINS(contains), \
         /*n_contains*/ contains.size())
 
-#define SUBMODULE(id ,name, trivia, use, implicit, decl, contains, name_opt, l) make_Submodule_t(p.m_a, l, \
+ast_t* SUBMODULE2(Allocator &al, const Location &a_loc, char* a_id,
+        char* a_parent_name, char* a_name, trivia_t* a_trivia,
+        unit_decl1_t** a_use, size_t n_use,
+        implicit_statement_t** a_implicit, size_t n_implicit,
+        Vec<ast_t*> decl_stmts, program_unit_t** a_contains,
+        size_t n_contains) {
+
+Vec<ast_t*> decl;
+Vec<ast_t*> stmt;
+decl.reserve(al, decl_stmts.size());
+stmt.reserve(al, decl_stmts.size());
+for (size_t i=0; i<decl_stmts.size(); i++) {
+    if (is_a<unit_decl2_t>(*decl_stmts[i])) {
+        decl.push_back(al, decl_stmts[i]);
+    } else {
+        LCOMPILERS_ASSERT(is_a<stmt_t>(*decl_stmts[i]))
+        stmt.push_back(al, decl_stmts[i]);
+    }
+}
+
+return make_Submodule_t(al, a_loc,
+        /*id*/ a_id,
+        /*a_parent_name*/ a_parent_name,
+        /*name*/ a_name,
+        a_trivia,
+        /*use*/ a_use,
+        /*n_use*/ n_use,
+        /*m_implicit*/ a_implicit,
+        /*n_implicit*/ n_implicit,
+        /*decl*/ DECLS(decl),
+        /*n_decl*/ decl.size(),
+        /*body*/ STMTS(stmt),
+        /*n_body*/ stmt.size(),
+        /*contains*/ a_contains,
+        /*n_contains*/ n_contains);
+}
+
+
+#define SUBMODULE(id, name, trivia, use, implicit, decl_stmts, contains, name_opt, l) \
+    SUBMODULE2(p.m_a, l, \
         name2char(id), \
         nullptr, \
-        name2char_with_check(name, name_opt, l, "submodule"), \
+        /*name*/ name2char_with_check(name, name_opt, l, "submodule"), \
         trivia_cast(trivia), \
-        /*unit_decl1_t** a_use*/ USES(use), /*size_t n_use*/ use.size(), \
+        /*use*/ USES(use), \
+        /*n_use*/ use.size(), \
         /*m_implicit*/ VEC_CAST(implicit, implicit_statement), \
         /*n_implicit*/ implicit.size(), \
-        /*unit_decl2_t** a_decl*/ DECLS(decl), /*size_t n_decl*/ decl.size(), \
-        /*program_unit_t** a_contains*/ CONTAINS(contains), /*size_t n_contains*/ contains.size())
+        decl_stmts, \
+        /*contains*/ CONTAINS(contains), \
+        /*n_contains*/ contains.size())
 
-#define SUBMODULE1(id, parent_name, name, trivia, use, implicit, decl, contains, name_opt, l) \
-        make_Submodule_t(p.m_a, l, \
+#define SUBMODULE1(id, parent_name, name, trivia, use, implicit, decl_stmts, contains, name_opt, l) \
+    SUBMODULE2(p.m_a, l, \
         name2char(id), \
         name2char(parent_name), \
-        name2char_with_check(name, name_opt, l, "submodule"), \
+        /*name*/ name2char_with_check(name, name_opt, l, "submodule"), \
         trivia_cast(trivia), \
-        /*unit_decl1_t** a_use*/ USES(use), /*size_t n_use*/ use.size(), \
+        /*use*/ USES(use), \
+        /*n_use*/ use.size(), \
         /*m_implicit*/ VEC_CAST(implicit, implicit_statement), \
         /*n_implicit*/ implicit.size(), \
-        /*unit_decl2_t** a_decl*/ DECLS(decl), /*size_t n_decl*/ decl.size(), \
-        /*program_unit_t** a_contains*/ CONTAINS(contains), /*size_t n_contains*/ contains.size())
+        decl_stmts, \
+        /*contains*/ CONTAINS(contains), \
+        /*n_contains*/ contains.size())
 
 #define BLOCKDATA(trivia, use, implicit, decl, stmt, l) make_BlockData_t(p.m_a, l, \
         nullptr, trivia_cast(trivia), \
