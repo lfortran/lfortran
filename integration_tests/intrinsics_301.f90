@@ -13,7 +13,8 @@ program intrinsics_301
     integer(4), parameter :: i10(1) = findloc([3, 2, 1, 3], 3, back = .true.)
     integer(4), parameter :: i11(1) = findloc([3.0, 2.0, 1.0, 3.0], 2.0, back = .true., dim=1)
     integer(4), parameter :: i12(1) = findloc(["aa", "db", "ca"], "aa", mask = [.false., .false., .false.], kind = 4)
-    
+    integer(4), parameter :: i13 = findloc([1, 3, 2, 3], 3, 1, mask = [.true., .true., .false., .true.], back = .true., kind = 4)
+
     integer :: x1(5) = [1, 3, 2, 4, 2], y1 = 2
     real :: x2(5) = [1.0, 3.0, 2.0, 4.0, 2.0], y2 = 2.0
     character(len=2) :: x3(3) = ["aa", "db", "ca"], y3 = "aa"
@@ -67,6 +68,8 @@ program intrinsics_301
     if (i11(1) /= 2) error stop
     print *, i12
     if (i12(1) /= 0) error stop
+    print *, i13
+    if (i13 /= 4) error stop
     
     print *, kind(findloc(["aa", "db", "ca"], "aa", 1, mask = [.false., .false., .false.], kind = 8))
     if (kind(findloc(["aa", "db", "ca"], "db", 1, mask = [.false., .false., .false.], kind = 8)) /= 8) error stop
