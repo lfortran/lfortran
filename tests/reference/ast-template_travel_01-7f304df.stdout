@@ -45,6 +45,7 @@
                 (EndOfLine)]
             )
         )]
+        []
         [(Function
             add_real
             [(x)
@@ -910,6 +911,7 @@
             )]
         )]
         []
+        []
     )
     (Module
         template_travel_01_m
@@ -941,6 +943,7 @@
                 (EndOfLine)]
             )
         )]
+        []
         []
         [(Subroutine
             test_template

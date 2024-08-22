@@ -823,6 +823,11 @@ filename = "../integration_tests/data_02.f90"
 ast = true
 
 [[test]]
+filename = "../integration_tests/data_12.f90"
+ast = true
+asr = true
+
+[[test]]
 filename = "scopes1.f90"
 asr = true
 
