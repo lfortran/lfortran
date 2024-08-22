@@ -1232,7 +1232,7 @@ static inline ASR::expr_t *instantiate_MaxMinLoc(Allocator &al,
     int n_dims = extract_n_dims_from_ttype(arg_types[0]);
     ASR::ttype_t *type = extract_type(return_type);
     ASR::expr_t* result = nullptr;
-    if( overload_id >= 2 ) {
+    if( !ASRUtils::is_array(return_type) ) {
         result = declare("result", return_type, ReturnVar);
     } else {
         result = declare("result", ASRUtils::duplicate_type_with_empty_dims(
