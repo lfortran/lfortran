@@ -892,7 +892,7 @@ int compile_to_object_file(const std::string &infile,
         CompilerOptions &compiler_options,
         LCompilers::PassManager& lpm)
 {
-    std::string input = read_file("a.ll");
+    std::string input = read_file(infile);
     LCompilers::LLVMEvaluator e(compiler_options.target);
     std::unique_ptr<LCompilers::LLVMModule> m = std::move(e.parse_module2(input));
     e.save_object_file(*(m->m_m), outfile);
@@ -2356,13 +2356,13 @@ int main_app(int argc, char *argv[]) {
         }
     }
 
+    int err;
+    std::string tmp_o = outfile + ".tmp.o";
     if (endswith(arg_file, ".f90") || endswith(arg_file, ".f") || endswith(arg_file, ".F90") || endswith(arg_file, ".F")) {
         if (backend == Backend::x86) {
             return compile_to_binary_x86(arg_file, outfile,
                     time_report, compiler_options);
         }
-        std::string tmp_o = outfile + ".tmp.o";
-        int err;
         if (backend == Backend::llvm) {
 #ifdef HAVE_LFORTRAN_LLVM
             err = compile_to_object_file(arg_file, tmp_o, false,
@@ -2387,6 +2387,13 @@ int main_app(int argc, char *argv[]) {
         }
         if (err) return err;
         return link_executable({tmp_o}, outfile, runtime_library_dir,
+                backend, static_link, shared_link, link_with_gcc, true, arg_v, arg_L,
+		arg_l, linker_flags, compiler_options);
+    } else if (endswith(arg_file, ".ll")) {
+        err = compile_to_object_file(arg_file, tmp_o, false,
+                compiler_options, lfortran_pass_manager);
+        if (err) return err;
+        link_executable({tmp_o}, outfile, runtime_library_dir,
                 backend, static_link, shared_link, link_with_gcc, true, arg_v, arg_L,
 		arg_l, linker_flags, compiler_options);
     } else {
