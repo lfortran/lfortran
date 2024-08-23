@@ -4159,3 +4159,7 @@ asr = true
 [[test]]
 filename = "errors/dim_float_03.f90"
 asr = true
+
+[[test]]
+filename = "implied_do_loop1.f90"
+run = true
