@@ -973,7 +973,7 @@ int compile_to_object_file(const std::string &infile,
             e.save_object_file(*(m->m_m), outfile);
         }
     } else {
-        std::unique_ptr<LCompilers::LLVMModule> m = std::move(e.parse_module2(input));
+        std::unique_ptr<LCompilers::LLVMModule> m = e.parse_module2(input);
         e.save_object_file(*(m->m_m), outfile);
     }
 
