@@ -2479,8 +2479,13 @@ int main_app(int argc, char *argv[]) {
                 backend, static_link, shared_link, link_with_gcc, true, arg_v, arg_L,
 		arg_l, linker_flags, compiler_options);
     } else if (endswith(arg_file, ".ll")) {
+#ifdef HAVE_LFORTRAN_LLVM
         err = compile_llvm_to_object_file(arg_file, tmp_o, compiler_options);
         if (err) return err;
+#else
+        std::cerr << "Compiling LLVM IR to object files requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
+        return 1;
+#endif
         link_executable({tmp_o}, outfile, runtime_library_dir,
                 backend, static_link, shared_link, link_with_gcc, true, arg_v, arg_L,
 		arg_l, linker_flags, compiler_options);
