@@ -1065,7 +1065,8 @@ public:
                             //create memory on heap
                             std::vector<llvm::Value*> idx_vec = {
                             llvm::ConstantInt::get(context, llvm::APInt(32, 1))};
-                            llvm::Value* size_of_array_struct = CreateGEP(llvm::ConstantPointerNull::get(type->getPointerTo()), idx_vec);
+                            llvm::Value* null_array_ptr = llvm::ConstantPointerNull::get(type->getPointerTo());
+                            llvm::Value* size_of_array_struct = CreateGEP(null_array_ptr, idx_vec);
                             llvm::Value* size_of_array_struct_casted = builder->CreatePtrToInt(size_of_array_struct, llvm::Type::getInt32Ty(context)); //cast to int32
                             llvm::Value* struct_ptr = LLVMArrUtils::lfortran_malloc(
                                 context, *module, *builder, size_of_array_struct_casted);
