@@ -1060,8 +1060,22 @@ public:
                         llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(
                             ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(
                                 ASRUtils::expr_type(tmp_expr))), module.get());
-                        llvm::Value* ptr_ = builder->CreateAlloca(type, nullptr);
-                        arr_descr->fill_dimension_descriptor(ptr_, n_dims);
+                        llvm::Value* ptr_;
+                        if(ASR::is_a<ASR::Pointer_t>(*ASRUtils::expr_type(tmp_expr))){
+                            //create memory on heap
+                            std::vector<llvm::Value*> idx_vec = {
+                            llvm::ConstantInt::get(context, llvm::APInt(32, 1))};
+                            llvm::Value* null_array_ptr = llvm::ConstantPointerNull::get(type->getPointerTo());
+                            llvm::Value* size_of_array_struct = CreateGEP(null_array_ptr, idx_vec);
+                            llvm::Value* size_of_array_struct_casted = builder->CreatePtrToInt(size_of_array_struct, llvm::Type::getInt32Ty(context)); //cast to int32
+                            llvm::Value* struct_ptr = LLVMArrUtils::lfortran_malloc(
+                                context, *module, *builder, size_of_array_struct_casted);
+                            ptr_ = builder->CreateBitCast(struct_ptr, type->getPointerTo());
+                            arr_descr->fill_dimension_descriptor(ptr_, n_dims, module.get(), ASRUtils::expr_type(tmp_expr));
+                        } else {
+                            ptr_ = builder->CreateAlloca(type, nullptr);
+                            arr_descr->fill_dimension_descriptor(ptr_, n_dims,nullptr,nullptr);
+                        }
                         LLVM::CreateStore(*builder, ptr_, x_arr);
                     },
                     []() {});
@@ -3291,7 +3305,7 @@ public:
         llvm::Value* ptr_ = nullptr;
         if( is_malloc_array_type && !is_list && !is_data_only ) {
             ptr_ = builder->CreateAlloca(type_, nullptr, "arr_desc");
-            arr_descr->fill_dimension_descriptor(ptr_, n_dims);
+            arr_descr->fill_dimension_descriptor(ptr_, n_dims, nullptr, nullptr);
         }
         if( is_array_type && !is_malloc_array_type &&
             !is_list ) {
