@@ -382,12 +382,24 @@ namespace LCompilers {
         }
 
         void SimpleCMODescriptor::fill_dimension_descriptor(
-            llvm::Value* arr, int n_dims) {
+            llvm::Value* arr, int n_dims,llvm::Module* module ,ASR::ttype_t* type ) {
             llvm::Value* dim_des_val = llvm_utils->create_gep(arr, 2);
             llvm::Value* llvm_ndims = builder->CreateAlloca(llvm::Type::getInt32Ty(context), nullptr);
             builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, n_dims)), llvm_ndims);
-            llvm::Value* dim_des_first = builder->CreateAlloca(dim_des,
-                                                               LLVM::CreateLoad(*builder, llvm_ndims));
+            llvm::Value* dim_des_first;
+            if(type && ASR::is_a<ASR::Pointer_t>(*type)){
+                std::vector<llvm::Value*> idx_vec = {
+                    llvm::ConstantInt::get(context, llvm::APInt(32, 1))};
+                    llvm::Value* size_of_dim_des_struct = builder->CreateGEP(llvm::ConstantPointerNull::get(dim_des->getPointerTo()), idx_vec);
+                    llvm::Value* size_of_dim_des_struct_casted = builder->CreatePtrToInt(size_of_dim_des_struct, llvm::Type::getInt32Ty(context)); //cast to int32
+                    llvm::Value* size_mul_ndim = builder->CreateMul(size_of_dim_des_struct_casted, llvm::ConstantInt::get(context, llvm::APInt(32, n_dims)));
+                    llvm::Value* struct_ptr = LLVMArrUtils::lfortran_malloc(
+                        context, *module, *builder, size_mul_ndim);
+                    dim_des_first = builder->CreateBitCast(struct_ptr, dim_des->getPointerTo());
+            } else {
+                dim_des_first = builder->CreateAlloca(dim_des,
+                                        LLVM::CreateLoad(*builder, llvm_ndims));
+            }
             builder->CreateStore(dim_des_first, dim_des_val);
             builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, n_dims)), get_rank(arr, true));
         }
