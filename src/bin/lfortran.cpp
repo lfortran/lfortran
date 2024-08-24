@@ -886,7 +886,7 @@ int emit_asm(const std::string &infile, CompilerOptions &compiler_options)
     }
 }
 
-int compile_to_object_file(const std::string &infile,
+int compile_src_to_object_file(const std::string &infile,
         const std::string &outfile,
         bool assembly,
         CompilerOptions &compiler_options,
@@ -894,88 +894,96 @@ int compile_to_object_file(const std::string &infile,
 {
     std::string input = read_file(infile);
     LCompilers::LLVMEvaluator e(compiler_options.target);
-    if (!endswith(infile, ".ll")) {
 
-        LCompilers::FortranEvaluator fe(compiler_options);
-        LCompilers::ASR::TranslationUnit_t* asr;
-
-
-        // Src -> AST -> ASR
-        LCompilers::LocationManager lm;
-
-        {
-            LCompilers::LocationManager::FileLocations fl;
-            fl.in_filename = infile;
-            lm.files.push_back(fl);
-            lm.file_ends.push_back(input.size());
-        }
-        LCompilers::diag::Diagnostics diagnostics;
-        LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
-            result = fe.get_asr2(input, lm, diagnostics);
-        std::cerr << diagnostics.render(lm, compiler_options);
-        if (result.ok) {
-            asr = result.result;
-        } else {
-            LCOMPILERS_ASSERT(diagnostics.has_error())
-            return 1;
-        }
-
-        // Save .mod files
-        {
-            int err = save_mod_files(*asr, compiler_options);
-            if (err) return err;
-        }
-
-        // ASR -> LLVM
+    LCompilers::FortranEvaluator fe(compiler_options);
+    LCompilers::ASR::TranslationUnit_t* asr;
 
 
-        if (!compiler_options.generate_object_code
-                && !LCompilers::ASRUtils::main_program_present(*asr)) {
-            // Create an empty object file (things will be actually
-            // compiled and linked when the main program is present):
-            e.create_empty_object_file(outfile);
-            return 0;
-        }
+    // Src -> AST -> ASR
+    LCompilers::LocationManager lm;
 
-        std::unique_ptr<LCompilers::LLVMModule> m;
-        diagnostics.diagnostics.clear();
-        if (compiler_options.emit_debug_info) {
-    #ifndef HAVE_RUNTIME_STACKTRACE
-            diagnostics.add(LCompilers::diag::Diagnostic(
-                "The `runtime stacktrace` is not enabled. To get the stack traces "
-                "or debugging information, please re-build LFortran with "
-                "`-DWITH_RUNTIME_STACKTRACE=yes`",
-                LCompilers::diag::Level::Error,
-                LCompilers::diag::Stage::Semantic, {})
-            );
-            std::cerr << diagnostics.render(lm, compiler_options);
-            return 1;
-    #endif
-        }
-        LCompilers::Result<std::unique_ptr<LCompilers::LLVMModule>>
-            res = fe.get_llvm3(*asr, lpm, diagnostics, infile);
-        std::cerr << diagnostics.render(lm, compiler_options);
-        if (res.ok) {
-            m = std::move(res.result);
-        } else {
-            LCOMPILERS_ASSERT(diagnostics.has_error())
-            return 5;
-        }
-
-        if (compiler_options.po.fast) {
-            e.opt(*m->m_m);
-        }
-
-        // LLVM -> Machine code (saves to an object file)
-        if (assembly) {
-            e.save_asm_file(*(m->m_m), outfile);
-        } else {
-            e.save_object_file(*(m->m_m), outfile);
-        }
+    {
+        LCompilers::LocationManager::FileLocations fl;
+        fl.in_filename = infile;
+        lm.files.push_back(fl);
+        lm.file_ends.push_back(input.size());
+    }
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
+        result = fe.get_asr2(input, lm, diagnostics);
+    std::cerr << diagnostics.render(lm, compiler_options);
+    if (result.ok) {
+        asr = result.result;
     } else {
-        std::unique_ptr<LCompilers::LLVMModule> m = e.parse_module2(input);
+        LCOMPILERS_ASSERT(diagnostics.has_error())
+        return 1;
+    }
+
+    // Save .mod files
+    {
+        int err = save_mod_files(*asr, compiler_options);
+        if (err) return err;
+    }
+
+    // ASR -> LLVM
+
+
+    if (!compiler_options.generate_object_code
+            && !LCompilers::ASRUtils::main_program_present(*asr)) {
+        // Create an empty object file (things will be actually
+        // compiled and linked when the main program is present):
+        e.create_empty_object_file(outfile);
+        return 0;
+    }
+
+    std::unique_ptr<LCompilers::LLVMModule> m;
+    diagnostics.diagnostics.clear();
+    if (compiler_options.emit_debug_info) {
+#ifndef HAVE_RUNTIME_STACKTRACE
+        diagnostics.add(LCompilers::diag::Diagnostic(
+            "The `runtime stacktrace` is not enabled. To get the stack traces "
+            "or debugging information, please re-build LFortran with "
+            "`-DWITH_RUNTIME_STACKTRACE=yes`",
+            LCompilers::diag::Level::Error,
+            LCompilers::diag::Stage::Semantic, {})
+        );
+        std::cerr << diagnostics.render(lm, compiler_options);
+        return 1;
+#endif
+    }
+    LCompilers::Result<std::unique_ptr<LCompilers::LLVMModule>>
+        res = fe.get_llvm3(*asr, lpm, diagnostics, infile);
+    std::cerr << diagnostics.render(lm, compiler_options);
+    if (res.ok) {
+        m = std::move(res.result);
+    } else {
+        LCOMPILERS_ASSERT(diagnostics.has_error())
+        return 5;
+    }
+
+    if (compiler_options.po.fast) {
+        e.opt(*m->m_m);
+    }
+
+    // LLVM -> Machine code (saves to an object file)
+    if (assembly) {
+        e.save_asm_file(*(m->m_m), outfile);
+    } else {
         e.save_object_file(*(m->m_m), outfile);
     }
+    
+    return 0;
+}
+
+int compile_llvm_to_object_file(const std::string& infile,
+                                const std::string& outfile,
+                                CompilerOptions& compiler_options)
+{
+    std::string input = read_file(infile);
+    LCompilers::LLVMEvaluator e(compiler_options.target);
+
+    std::unique_ptr<LCompilers::LLVMModule> m = e.parse_module2(input);
+    e.save_object_file(*(m->m_m), outfile);
 
     return 0;
 }
@@ -984,7 +992,7 @@ int compile_to_assembly_file(const std::string &infile,
     const std::string &outfile, CompilerOptions &compiler_options,
     LCompilers::PassManager& lpm)
 {
-    return compile_to_object_file(infile, outfile, true, compiler_options, lpm);
+    return compile_src_to_object_file(infile, outfile, true, compiler_options, lpm);
 }
 #endif // HAVE_LFORTRAN_LLVM
 
@@ -2414,7 +2422,7 @@ int main_app(int argc, char *argv[]) {
     if (arg_c) {
         if (backend == Backend::llvm) {
 #ifdef HAVE_LFORTRAN_LLVM
-            return compile_to_object_file(arg_file, outfile, false,
+            return compile_src_to_object_file(arg_file, outfile, false,
                 compiler_options, lfortran_pass_manager);
 #else
             std::cerr << "The -c option requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
@@ -2446,7 +2454,7 @@ int main_app(int argc, char *argv[]) {
         }
         if (backend == Backend::llvm) {
 #ifdef HAVE_LFORTRAN_LLVM
-            err = compile_to_object_file(arg_file, tmp_o, false,
+            err = compile_src_to_object_file(arg_file, tmp_o, false,
                 compiler_options, lfortran_pass_manager);
 #else
             std::cerr << "Compiling Fortran files to object files requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
@@ -2471,8 +2479,7 @@ int main_app(int argc, char *argv[]) {
                 backend, static_link, shared_link, link_with_gcc, true, arg_v, arg_L,
 		arg_l, linker_flags, compiler_options);
     } else if (endswith(arg_file, ".ll")) {
-        err = compile_to_object_file(arg_file, tmp_o, false,
-                compiler_options, lfortran_pass_manager);
+        err = compile_llvm_to_object_file(arg_file, tmp_o, compiler_options);
         if (err) return err;
         link_executable({tmp_o}, outfile, runtime_library_dir,
                 backend, static_link, shared_link, link_with_gcc, true, arg_v, arg_L,
