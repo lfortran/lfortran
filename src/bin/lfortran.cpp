@@ -893,7 +893,6 @@ int compile_src_to_object_file(const std::string &infile,
         LCompilers::PassManager& lpm)
 {
     std::string input = read_file(infile);
-    LCompilers::LLVMEvaluator e(compiler_options.target);
 
     LCompilers::FortranEvaluator fe(compiler_options);
     LCompilers::ASR::TranslationUnit_t* asr;
@@ -926,7 +925,7 @@ int compile_src_to_object_file(const std::string &infile,
     }
 
     // ASR -> LLVM
-
+    LCompilers::LLVMEvaluator e(compiler_options.target);
 
     if (!compiler_options.generate_object_code
             && !LCompilers::ASRUtils::main_program_present(*asr)) {
