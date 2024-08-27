@@ -324,7 +324,7 @@ attr_intent = In | Out | InOut
 
 decl_type
     = TypeClass
-    | TypeCharacter
+    | TypeString
     | TypeComplex
     | TypeDoublePrecision
     | TypeDoubleComplex

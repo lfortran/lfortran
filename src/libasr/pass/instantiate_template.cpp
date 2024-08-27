@@ -660,9 +660,9 @@ public:
                         t = ASRUtils::TYPE(ASR::make_Real_t(al, t->base.loc, tnew->m_kind));
                         break;
                     }
-                    case ASR::ttypeType::Character: {
-                        ASR::Character_t* tnew = ASR::down_cast<ASR::Character_t>(t);
-                        t = ASRUtils::TYPE(ASR::make_Character_t(al, t->base.loc,
+                    case ASR::ttypeType::String: {
+                        ASR::String_t* tnew = ASR::down_cast<ASR::String_t>(t);
+                        t = ASRUtils::TYPE(ASR::make_String_t(al, t->base.loc,
                                     tnew->m_kind, tnew->m_len, tnew->m_len_expr, ASR::string_physical_typeType::PointerString));
                         break;
                     }

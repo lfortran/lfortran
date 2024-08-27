@@ -401,7 +401,7 @@ public:
                 m_a.asm_add_r32_imm8(X86Reg::esp, 4);
             } else if (t->type == ASR::ttypeType::Real) {
                 throw LCompilersException("Type not implemented");
-            } else if (t->type == ASR::ttypeType::Character) {
+            } else if (t->type == ASR::ttypeType::String) {
                 throw LCompilersException("Type not implemented");
             } else {
                 throw LCompilersException("Type not implemented");

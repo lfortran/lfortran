@@ -105,7 +105,7 @@ class ASRBuilder {
     #define complex32    TYPE(ASR::make_Complex_t(al, loc, 4))
     #define complex64    TYPE(ASR::make_Complex_t(al, loc, 8))
     #define logical      TYPE(ASR::make_Logical_t(al, loc, 4))
-    #define character(x) TYPE(ASR::make_Character_t(al, loc, 1, x, nullptr, ASR::string_physical_typeType::PointerString))
+    #define character(x) TYPE(ASR::make_String_t(al, loc, 1, x, nullptr, ASR::string_physical_typeType::PointerString))
     #define List(x)      TYPE(ASR::make_List_t(al, loc, x))
 
     ASR::ttype_t *Tuple(std::vector<ASR::ttype_t*> tuple_type) {
@@ -418,7 +418,7 @@ class ASRBuilder {
                 return EXPR(ASR::make_RealBinOp_t(al, loc, left,
                     ASR::binopType::Add, right, type, nullptr));
             }
-            case ASR::ttypeType::Character : {
+            case ASR::ttypeType::String : {
                 return EXPR(ASR::make_StringConcat_t(al, loc, left,
                     right, type, nullptr));
             }
@@ -585,7 +585,7 @@ class ASRBuilder {
             case ASR::ttypeType::Real: {
                 return EXPR(ASR::make_RealCompare_t(al, loc, left, ASR::cmpopType::Gt, right, logical, nullptr));
             }
-            case ASR::ttypeType::Character: {
+            case ASR::ttypeType::String: {
                 return EXPR(ASR::make_StringCompare_t(al, loc, left, ASR::cmpopType::Gt, right, logical, nullptr));
             }
             case ASR::ttypeType::Logical: {
@@ -609,7 +609,7 @@ class ASRBuilder {
             case ASR::ttypeType::Real: {
                 return EXPR(ASR::make_RealCompare_t(al, loc, left, ASR::cmpopType::Lt, right, logical, nullptr));
             }
-            case ASR::ttypeType::Character: {
+            case ASR::ttypeType::String: {
                 return EXPR(ASR::make_StringCompare_t(al, loc, left, ASR::cmpopType::Lt, right, logical, nullptr));
             }
             case ASR::ttypeType::Logical: {
@@ -633,7 +633,7 @@ class ASRBuilder {
             case ASR::ttypeType::Real: {
                 return EXPR(ASR::make_RealCompare_t(al, loc, left, ASR::cmpopType::GtE, right, logical, nullptr));
             }
-            case ASR::ttypeType::Character: {
+            case ASR::ttypeType::String: {
                 return EXPR(ASR::make_StringCompare_t(al, loc, left, ASR::cmpopType::GtE, right, logical, nullptr));
             }
             case ASR::ttypeType::Logical: {
@@ -657,7 +657,7 @@ class ASRBuilder {
             case ASR::ttypeType::Real: {
                 return EXPR(ASR::make_RealCompare_t(al, loc, left, ASR::cmpopType::LtE, right, logical, nullptr));
             }
-            case ASR::ttypeType::Character: {
+            case ASR::ttypeType::String: {
                 return EXPR(ASR::make_StringCompare_t(al, loc, left, ASR::cmpopType::LtE, right, logical, nullptr));
             }
             case ASR::ttypeType::Logical: {
@@ -681,7 +681,7 @@ class ASRBuilder {
             case ASR::ttypeType::Real: {
                 return EXPR(ASR::make_RealCompare_t(al, loc, left, ASR::cmpopType::Eq, right, logical, nullptr));
             }
-            case ASR::ttypeType::Character: {
+            case ASR::ttypeType::String: {
                 return EXPR(ASR::make_StringCompare_t(al, loc, left, ASR::cmpopType::Eq, right, logical, nullptr));
             }
             case ASR::ttypeType::Logical: {
@@ -705,7 +705,7 @@ class ASRBuilder {
             case ASR::ttypeType::Real: {
                 return EXPR(ASR::make_RealCompare_t(al, loc, left, ASR::cmpopType::NotEq, right, logical, nullptr));
             }
-            case ASR::ttypeType::Character: {
+            case ASR::ttypeType::String: {
                 return EXPR(ASR::make_StringCompare_t(al, loc, left, ASR::cmpopType::NotEq, right, logical, nullptr));
             }
             case ASR::ttypeType::Logical: {

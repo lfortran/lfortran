@@ -58,7 +58,11 @@ public:
         Vec<ASR::expr_t*> idx_vars;
         PassUtils::create_idx_vars(idx_vars, n_dims, loc, al, current_scope);
         ASR::stmt_t* doloop = nullptr;
-        ASR::ttype_t *str_type_len_2 = ASRUtils::TYPE(ASR::make_Character_t(
+        ASR::stmt_t* empty_print_endl = ASRUtils::STMT(ASR::make_Print_t(al, loc,
+            nullptr, 0, nullptr, nullptr));
+        ASR::ttype_t *str_type_len_1 = ASRUtils::TYPE(ASR::make_String_t(
+            al, loc, 1, 1, nullptr, ASR::string_physical_typeType::PointerString));
+        ASR::ttype_t *str_type_len_2 = ASRUtils::TYPE(ASR::make_String_t(
             al, loc, 1, 0, nullptr, ASR::string_physical_typeType::PointerString));
         ASR::expr_t *empty_space = ASRUtils::EXPR(ASR::make_StringConstant_t(
             al, loc, s2c(al, ""), str_type_len_2));
@@ -87,7 +91,7 @@ public:
                     format_args.push_back(al, string_format);
                     print_stmt = ASRUtils::STMT(ASRUtils::make_print_t_util(al, loc,
                         format_args.p, format_args.size()));
-                } else if (ASR::is_a<ASR::Character_t>(*ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_array(ASRUtils::expr_type(print_args[0]))))) {
+                } else if (ASR::is_a<ASR::String_t>(*ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_array(ASRUtils::expr_type(print_args[0]))))) {
                     print_stmt = ASRUtils::STMT(ASRUtils::make_print_t_util(al, loc,
                         print_args.p, print_args.size()));
                 } else {
@@ -183,8 +187,76 @@ public:
                 pass_result.push_back(al, print_stmt);
             }
             return;
-        } else {
+        }  else {
             remove_original_stmt = false;
+        }
+        ASR::ttype_t *str_type_len_1 = ASRUtils::TYPE(ASR::make_String_t(
+            al, x.base.base.loc, 1, 1, nullptr, ASR::string_physical_typeType::PointerString));
+        ASR::expr_t *space = ASRUtils::EXPR(ASR::make_StringConstant_t(
+        al, x.base.base.loc, s2c(al, " "), str_type_len_1));
+        ASR::expr_t *backspace = ASRUtils::EXPR(ASR::make_StringConstant_t(
+        al, x.base.base.loc, s2c(al, "\b"), str_type_len_1));
+        ASR::stmt_t* back = ASRUtils::STMT(ASR::make_Print_t(al, x.base.base.loc,
+            nullptr, 0, nullptr, backspace));
+        for (size_t i=0; i<x.n_values; i++) {
+            // DIVERGENCE between LFortran and LPython
+            // If a pointer array variable is provided
+            // then it will be printed as a normal array.
+            if (PassUtils::is_array(x.m_values[i])) {
+                if (print_body.size() > 0) {
+                    Vec<ASR::expr_t*> body;
+                    body.reserve(al, print_body.size());
+                    for (size_t j=0; j<print_body.size(); j++) {
+                        body.push_back(al, print_body[j]);
+                    }
+                    if (x.m_separator) {
+                        print_stmt = ASRUtils::STMT(ASR::make_Print_t(
+                            al, x.base.base.loc, body.p, body.size(),
+                            x.m_separator, x.m_separator));
+                    } else {
+                        print_stmt = ASRUtils::STMT(ASR::make_Print_t(
+                            al, x.base.base.loc, body.p, body.size(),
+                            nullptr, space));
+                    }
+                    pass_result.push_back(al, print_stmt);
+                    print_body.clear();
+                }
+                print_stmt = print_array_using_doloop(x.m_values[i], nullptr, x.base.base.loc);
+                pass_result.push_back(al, print_stmt);
+                pass_result.push_back(al, back);
+                if (x.m_separator) {
+                    if (i == x.n_values - 1) {
+                        empty_print_endl = ASRUtils::STMT(ASR::make_Print_t(al, x.base.base.loc,
+                            nullptr, 0, nullptr, x.m_end));
+                    } else {
+                        empty_print_endl = ASRUtils::STMT(ASR::make_Print_t(al, x.base.base.loc,
+                            nullptr, 0, nullptr, x.m_separator));
+                    }
+                } else {
+                    if (i == x.n_values - 1) {
+                        empty_print_endl = ASRUtils::STMT(ASR::make_Print_t(al, x.base.base.loc,
+                            nullptr, 0, nullptr, x.m_end));
+                    } else {
+                        empty_print_endl = ASRUtils::STMT(ASR::make_Print_t(al, x.base.base.loc,
+                            nullptr, 0, nullptr, nullptr));
+                    }
+                }
+                pass_result.push_back(al, empty_print_endl);
+            } else {
+                print_body.push_back(x.m_values[i]);
+            }
+        }
+        if (print_body.size() > 0) {
+            Vec<ASR::expr_t*> body;
+            body.reserve(al, print_body.size());
+            for (size_t j=0; j<print_body.size(); j++) {
+                body.push_back(al, print_body[j]);
+            }
+            print_stmt = ASRUtils::STMT(ASR::make_Print_t(
+                al, x.base.base.loc, body.p, body.size(),
+                x.m_separator, x.m_end));
+            pass_result.push_back(al, print_stmt);
+            print_body.clear();
         }
     }
 
@@ -193,7 +265,7 @@ public:
         Vec<ASR::expr_t*> idx_vars;
         PassUtils::create_idx_vars(idx_vars, n_dims, loc, al, current_scope);
         ASR::stmt_t* doloop = nullptr;
-        ASR::ttype_t *str_type_len = ASRUtils::TYPE(ASR::make_Character_t(
+        ASR::ttype_t *str_type_len = ASRUtils::TYPE(ASR::make_String_t(
             al, loc, 1, 0, nullptr, ASR::string_physical_typeType::PointerString));
         ASR::expr_t *empty_space = ASRUtils::EXPR(ASR::make_StringConstant_t(
             al, loc, s2c(al, ""), str_type_len));

@@ -83,9 +83,11 @@ class PrintListTupleVisitor
                 ASR::make_Integer_t(al, loc, 4));
         ASR::ttype_t *bool_type = ASRUtils::TYPE(
             ASR::make_Logical_t(al, loc, 4));
-        ASR::ttype_t *str_type_len_1 = ASRUtils::TYPE(ASR::make_Character_t(
+        ASR::ttype_t *str_type_len_0 = ASRUtils::TYPE(ASR::make_String_t(
+            al, loc, 1, 0, nullptr, ASR::string_physical_typeType::PointerString));
+        ASR::ttype_t *str_type_len_1 = ASRUtils::TYPE(ASR::make_String_t(
             al, loc, 1, 1, nullptr, ASR::string_physical_typeType::PointerString));
-        ASR::ttype_t *str_type_len_2 = ASRUtils::TYPE(ASR::make_Character_t(
+        ASR::ttype_t *str_type_len_2 = ASRUtils::TYPE(ASR::make_String_t(
             al, loc, 1, 2, nullptr, ASR::string_physical_typeType::PointerString));
         ASR::expr_t *comma_space =
             ASRUtils::EXPR(ASR::make_StringConstant_t(
@@ -133,7 +135,7 @@ class PrintListTupleVisitor
         v3.push_back(al, close_bracket);
         v4.push_back(al, comma_space);
 
-        if (ASR::is_a<ASR::Character_t>(*listC->m_type)) {
+        if (ASR::is_a<ASR::String_t>(*listC->m_type)) {
             v2.reserve(al, 3);
             v2.push_back(al, single_quote);
             v2.push_back(al, list_item);
@@ -201,9 +203,11 @@ class PrintListTupleVisitor
                 ASR::down_cast<ASR::Tuple_t>(ASRUtils::expr_type(tup_expr));
         ASR::ttype_t *int_type = ASRUtils::TYPE(
                 ASR::make_Integer_t(al, loc, 4));
-        ASR::ttype_t *str_type_len_1 = ASRUtils::TYPE(ASR::make_Character_t(
+        ASR::ttype_t *str_type_len_0 = ASRUtils::TYPE(ASR::make_String_t(
+            al, loc, 1, 0, nullptr, ASR::string_physical_typeType::PointerString));
+        ASR::ttype_t *str_type_len_1 = ASRUtils::TYPE(ASR::make_String_t(
             al, loc, 1, 1, nullptr, ASR::string_physical_typeType::PointerString));
-        ASR::ttype_t *str_type_len_2 = ASRUtils::TYPE(ASR::make_Character_t(
+        ASR::ttype_t *str_type_len_2 = ASRUtils::TYPE(ASR::make_String_t(
             al, loc, 1, 2, nullptr, ASR::string_physical_typeType::PointerString));
         ASR::expr_t *comma_space =
             ASRUtils::EXPR(ASR::make_StringConstant_t(
@@ -259,7 +263,7 @@ class PrintListTupleVisitor
                 print_pass_result_tmp.n = 0;
             } else {
                 Vec<ASR::expr_t *> v2;
-                if (ASR::is_a<ASR::Character_t>(*tup->m_type[i])) {
+                if (ASR::is_a<ASR::String_t>(*tup->m_type[i])) {
                     v2.reserve(al, 3);
                     v2.push_back(al, single_quote);
                     v2.push_back(al, tup_item);
@@ -289,9 +293,13 @@ class PrintListTupleVisitor
     }
     void visit_StringFormat(const ASR::StringFormat_t &x) {
         std::vector<ASR::expr_t*> print_tmp;
+        ASR::ttype_t *str_type_len_1 = ASRUtils::TYPE(ASR::make_String_t(
+        al, x.base.base.loc, 1, 1, nullptr, ASR::string_physical_typeType::PointerString));
+        ASR::expr_t *space = ASRUtils::EXPR(ASR::make_StringConstant_t(
+        al, x.base.base.loc, s2c(al, " "), str_type_len_1));
         for (size_t i=0; i<x.n_args; i++) {
-            if (ASR::is_a<ASR::List_t>(*ASRUtils::expr_type(x.m_args[i])) ||
-                ASR::is_a<ASR::Tuple_t>(*ASRUtils::expr_type(x.m_args[i]))) {
+            if (ASR::is_a<ASR::List_t>(*ASRUtils::expr_type(x.n_args[i])) ||
+                ASR::is_a<ASR::Tuple_t>(*ASRUtils::expr_type(x.n_args[i]))) {
                 if (!print_tmp.empty()) {
                     Vec<ASR::expr_t*> tmp_vec;
                     ASR::stmt_t *print_stmt;
