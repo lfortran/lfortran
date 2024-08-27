@@ -1130,7 +1130,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
                 }
                 is_array = check_array_iteration(&count, &current_arg_type_int, &args,&array_state);
                 if (tolower(value[0]) == 'a') {
-                    // Character Editing (A[n])
+                    // String Editing (A[n])
                     count--;
                     char* arg = NULL;
                     if(is_array){

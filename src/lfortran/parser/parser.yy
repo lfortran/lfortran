@@ -1174,14 +1174,14 @@ implicit_statement
         "(" letter_spec_list ")" sep {
             $$ = IMPLICIT1(ATTR_TYPE(Integer, @$), $4, $7, TRIVIA_AFTER($9, @$), @$); }
     | KW_IMPLICIT KW_CHARACTER "(" letter_spec_list ")" sep {
-            $$ = IMPLICIT(ATTR_TYPE(Character, @$), $4, TRIVIA_AFTER($6, @$), @$); }
+            $$ = IMPLICIT(ATTR_TYPE(String, @$), $4, TRIVIA_AFTER($6, @$), @$); }
     | KW_IMPLICIT KW_CHARACTER "*" TK_INTEGER "(" letter_spec_list ")" sep {
-            $$ = IMPLICIT(ATTR_TYPE_INT(Character, $4, @$), $6, TRIVIA_AFTER($8, @$), @$); }
+            $$ = IMPLICIT(ATTR_TYPE_INT(String, $4, @$), $6, TRIVIA_AFTER($8, @$), @$); }
     | KW_IMPLICIT KW_CHARACTER "(" TK_INTEGER ")" "(" letter_spec_list ")" sep {
-        $$ = IMPLICIT(ATTR_TYPE_INT(Character, $4, @$), $7, TRIVIA_AFTER($9, @$), @$); }
+        $$ = IMPLICIT(ATTR_TYPE_INT(String, $4, @$), $7, TRIVIA_AFTER($9, @$), @$); }
     | KW_IMPLICIT KW_CHARACTER "(" letter_spec_list ")"
         "(" letter_spec_list ")" sep {
-            $$ = IMPLICIT1(ATTR_TYPE(Character, @$), $4, $7, TRIVIA_AFTER($9, @$), @$); }
+            $$ = IMPLICIT1(ATTR_TYPE(String, @$), $4, $7, TRIVIA_AFTER($9, @$), @$); }
     | KW_IMPLICIT KW_REAL "(" letter_spec_list ")" sep {
             $$ = IMPLICIT(ATTR_TYPE(Real, @$), $4, TRIVIA_AFTER($6, @$), @$); }
     | KW_IMPLICIT KW_REAL "*" TK_INTEGER "(" letter_spec_list ")" sep {
@@ -1491,11 +1491,11 @@ var_type
     : KW_INTEGER { $$ = ATTR_TYPE(Integer, @$); }
     | KW_INTEGER "(" kind_arg_list ")" { $$ = ATTR_TYPE_KIND(Integer, $3, @$); }
     | KW_INTEGER "*" TK_INTEGER { $$ = ATTR_TYPE_INT(Integer, $3, @$); WARN_INTEGERSTAR($3, @$); }
-    | KW_CHARACTER { $$ = ATTR_TYPE(Character, @$); }
-    | KW_CHARACTER "(" kind_arg_list ")" { $$ = ATTR_TYPE_KIND(Character, $3, @$); }
-    | KW_CHARACTER "*" TK_INTEGER { $$ = ATTR_TYPE_INT(Character, $3, @$); WARN_CHARACTERSTAR($3, @$);}
+    | KW_CHARACTER { $$ = ATTR_TYPE(String, @$); }
+    | KW_CHARACTER "(" kind_arg_list ")" { $$ = ATTR_TYPE_KIND(String, $3, @$); }
+    | KW_CHARACTER "*" TK_INTEGER { $$ = ATTR_TYPE_INT(String, $3, @$); WARN_CHARACTERSTAR($3, @$);}
     | KW_CHARACTER "*" "(" "*" ")" {
-            $$ = ATTR_TYPE_STAR(Character, DoubleAsterisk, @$); }
+            $$ = ATTR_TYPE_STAR(String, DoubleAsterisk, @$); }
     | KW_REAL { $$ = ATTR_TYPE(Real, @$); }
     | KW_REAL "(" kind_arg_list ")" { $$ = ATTR_TYPE_KIND(Real, $3, @$); }
     | KW_REAL "*" TK_INTEGER { $$ = ATTR_TYPE_INT(Real, $3, @$); WARN_REALSTAR($3, @$); }
@@ -1519,7 +1519,7 @@ var_type
     | KW_TYPE "(" KW_LOGICAL "(" kind_arg_list ")" ")" { $$ = ATTR_TYPE_ATTR(
         Type, ATTR_TYPE_KIND(Logical, $5, @$), @$); }
     | KW_TYPE "(" KW_CHARACTER "(" kind_arg_list ")" ")" { $$ = ATTR_TYPE_ATTR(
-        Type, ATTR_TYPE_KIND(Character, $5, @$), @$); }
+        Type, ATTR_TYPE_KIND(String, $5, @$), @$); }
     | KW_TYPE "(" "*" ")" { $$ = ATTR_TYPE_STAR(Type, Asterisk, @$); }
     | KW_PROCEDURE "(" id ")" { $$ = ATTR_TYPE_NAME(Procedure, $3, @$); }
     | KW_CLASS "(" id ")" { $$ = ATTR_TYPE_NAME(Class, $3, @$); }

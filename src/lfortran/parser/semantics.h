@@ -2048,7 +2048,7 @@ ast_t* SUBSTRING_(Allocator &al, const LCompilers::Str &str,
     for (auto &item : args) {
         if(item.keyword) {
             throw LCompilers::LFortran::parser_local::ParserError(
-                "Keyword Assignment is not allowed in Character Substring", l);
+                "Keyword Assignment is not allowed in String Substring", l);
         }
         v.push_back(al, item.arg);
     }

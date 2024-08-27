@@ -691,7 +691,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 }
                 break;
             }
-            case ASR::ttypeType::Character: {
+            case ASR::ttypeType::String: {
                 std::string init_val = "";
                 if (v->m_value) {
                     init_val = ASR::down_cast<ASR::StringConstant_t>(v->m_value)->m_s;
@@ -701,7 +701,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                     case 1:
                         global_var_idx = m_wa.declare_global_var(i32, m_string_to_iov_loc_map[init_val]);
                         break;
-                    default: throw CodeGenError("Declare Global: Unsupported Character kind");
+                    default: throw CodeGenError("Declare Global: Unsupported String kind");
                 }
                 break;
             }
@@ -927,21 +927,21 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                     }
                 }
             } else if (ASRUtils::is_character(*ttype)) {
-                ASR::Character_t *v_int =
-                    ASR::down_cast<ASR::Character_t>(
+                ASR::String_t *v_int =
+                    ASR::down_cast<ASR::String_t>(
                         ASRUtils::type_get_past_array(ttype));
 
                 if (is_array) {
                     type_vec.push_back(i32);
                 } else {
                     if (v_int->m_kind == 1) {
-                        /*  Character is stored as string in memory.
+                        /*  String is stored as string in memory.
                             The variable points to this location in memory
                         */
                         type_vec.push_back(i32);
                     } else {
                         throw CodeGenError(
-                            "Characters of kind 1 only supported");
+                            "Strings of kind 1 only supported");
                     }
                 }
             } else if (ASRUtils::is_complex(*ttype)) {
@@ -1247,7 +1247,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 }
                 break;
             }
-            case ASR::ttypeType::Character: {
+            case ASR::ttypeType::String: {
                 switch (kind) {
                     case 4:
                         m_wa.emit_i32_store(wasm::mem_align::b8, 0);
@@ -1257,7 +1257,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                         break;
                     default:
                         throw CodeGenError(
-                            "MemoryStore: Unsupported Character kind");
+                            "MemoryStore: Unsupported String kind");
                 }
                 break;
             }
@@ -1348,7 +1348,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 }
                 break;
             }
-            case ASR::ttypeType::Character: {
+            case ASR::ttypeType::String: {
                 switch (kind) {
                     case 4:
                         m_wa.emit_i32_store(wasm::mem_align::b8, 0);
@@ -1358,7 +1358,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                         break;
                     default:
                         throw CodeGenError(
-                            "MemoryStore: Unsupported Character kind");
+                            "MemoryStore: Unsupported String kind");
                 }
                 break;
             }
@@ -1448,7 +1448,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 }
                 break;
             }
-            case ASR::ttypeType::Character: {
+            case ASR::ttypeType::String: {
                 switch (kind) {
                     case 4:
                         m_wa.emit_i32_load(wasm::mem_align::b8, 0);
@@ -1458,7 +1458,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                         break;
                     default:
                         throw CodeGenError(
-                            "MemoryLoad: Unsupported Character kind");
+                            "MemoryLoad: Unsupported String kind");
                 }
                 break;
             }
@@ -2256,14 +2256,14 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             case ASR::ttypeType::Integer:
             case ASR::ttypeType::Logical:
             case ASR::ttypeType::Real:
-            case ASR::ttypeType::Character:
+            case ASR::ttypeType::String:
             case ASR::ttypeType::Complex: {
                 emit_var_get(v);
                 break;
             }
             default:
                 throw CodeGenError(
-                    "Only Integer, Float, Bool, Character, Complex "
+                    "Only Integer, Float, Bool, String, Complex "
                     "variable types supported currently");
         }
     }
@@ -2556,8 +2556,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 }
                 break;
             }
-            case ASR::ttypeType::Character: {
-                ASR::Character_t* char_type = ASR::down_cast<ASR::Character_t>(type);
+            case ASR::ttypeType::String: {
+                ASR::String_t* char_type = ASR::down_cast<ASR::String_t>(type);
                 int len = char_type->m_len;
                 char* data_char = (char*)data + i*len;
                 // take first len characters
@@ -2655,12 +2655,12 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 }
                 break;
             }
-            case ASR::ttypeType::Character: {
+            case ASR::ttypeType::String: {
                 switch (kind) {
                     case 4: global_var = tmp_reg_i32; break;
                     case 8: global_var = tmp_reg_i64; break;
                     default: throw CodeGenError(
-                        "temp_value_set: Unsupported Character kind");
+                        "temp_value_set: Unsupported String kind");
                 }
                 break;
             }
@@ -2704,12 +2704,12 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 }
                 break;
             }
-            case ASR::ttypeType::Character: {
+            case ASR::ttypeType::String: {
                 switch (kind) {
                     case 4: global_var = tmp_reg_i32; break;
                     case 8: global_var = tmp_reg_i64; break;
                     default: throw CodeGenError(
-                        "temp_value_get: Unsupported Character kind");
+                        "temp_value_get: Unsupported String kind");
                 }
                 break;
             }
@@ -2941,7 +2941,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 }
                 break;
             }
-            case (ASR::cast_kindType::CharacterToLogical): {
+            case (ASR::cast_kindType::StringToLogical): {
                 throw CodeGenError(R"""(STrings are not supported yet)""",
                                    x.base.base.loc);
                 break;
