@@ -638,7 +638,7 @@ public:
         }
         if (_type == AST::stmtType::Write && a_fmt == nullptr
                 && compiler_options.print_leading_space) {
-            ASR::asr_t* file_write_asr_t = construct_leading_space(false, loc);
+            ASR::asr_t* file_write_asr_t = construct_leading_space(loc);
             ASR::FileWrite_t* file_write = ASR::down_cast<ASR::FileWrite_t>(ASRUtils::STMT(file_write_asr_t));
             file_write->m_id = a_id;
             file_write->m_iomsg = a_iomsg;
@@ -3136,7 +3136,7 @@ public:
         throw LCompilersException("Argument not found");
     }
 
-    ASR::asr_t* construct_leading_space(bool print, const Location &loc) {
+    ASR::asr_t* construct_leading_space(const Location &loc) {
         ASR::ttype_t *str_type_len_0 = ASRUtils::TYPE(ASR::make_Character_t(
             al, loc, 1, 0, nullptr, ASR::string_physical_typeType::PointerString));
         ASR::expr_t *empty_string = ASRUtils::EXPR(ASR::make_StringConstant_t(
@@ -3148,18 +3148,13 @@ public:
         Vec<ASR::expr_t*> args;
         args.reserve(al, 1);
         args.push_back(al, space);
-
-        if (print) {
-            return ASRUtils::make_print_t_util(al, loc,
-                args.p, args.size());
-        } else {
-            return ASR::make_FileWrite_t(al, loc, 0, nullptr, nullptr,
-                nullptr, nullptr, args.p, args.size(), nullptr, empty_string, nullptr);
-        }
+        return ASR::make_FileWrite_t(al, loc, 0, nullptr, nullptr,
+            nullptr, nullptr, args.p, args.size(), nullptr, empty_string, nullptr);
     }
 
     void visit_Print(const AST::Print_t &x) {
         Vec<ASR::expr_t*> body;
+        body.reserve(al, x.n_values);
         body.reserve(al, x.n_values);
 
         ASR::expr_t *fmt=nullptr;
@@ -3168,7 +3163,7 @@ public:
             fmt = ASRUtils::EXPR(tmp);
         } else {
             if (compiler_options.print_leading_space) {
-                current_body->push_back(al, ASRUtils::STMT(construct_leading_space(true, x.base.base.loc)));
+                current_body->push_back(al, ASRUtils::STMT(construct_leading_space(x.base.base.loc)));
             }
         }
 
