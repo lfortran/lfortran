@@ -521,18 +521,13 @@ void get_symbol_info_llvm(StacktraceItem &item, llvm::symbolize::LLVMSymbolizer 
   }
 
   llvm::object::SectionedAddress sa = {item.local_pc, section_index};
-  std::cout << item.binary_filename << std::endl;
-  std::cout << item.local_pc << std::endl;
-  std::cout << section_index << std::endl;
-  auto result = symbolizer.symbolizeCode(*obj_file, sa);
+  auto result = symbolizer.symbolizeCode(item.binary_filename, sa);
   
   if (result) {
-    item.source_filename = result->FileName;
-    std::cout << result->FileName << std::endl;
+    // If there is no filename, at least we can show the binary file
+    item.source_filename = (result->FileName == "<invalid>") ? "" : result->FileName;
     item.function_name = result->FunctionName;
-    std::cout << result->FunctionName << std::endl;
     item.line_number = result->Line;
-    std::cout << result->Line << std::endl;
   } else {
     std::cout << "Cannot open the symbol table of '" + item.binary_filename + "'\n";
     abort();
@@ -592,7 +587,11 @@ std::string get_stacktrace(int skip)
 {
   std::vector<StacktraceItem> d = get_stacktrace_addresses();
   get_local_addresses(d);
-  get_llvm_info(d);
+#ifdef HAVE_LFORTRAN_LLVM
+    get_llvm_info(d);
+#else
+    get_local_info(d);
+#endif
   return stacktrace2str(d, skip);
 }
 
@@ -706,7 +705,11 @@ std::string error_stacktrace(const std::vector<StacktraceItem> &stacktrace)
 {
     std::vector<StacktraceItem> d = stacktrace;
     get_local_addresses(d);
+#ifdef HAVE_LFORTRAN_LLVM
     get_llvm_info(d);
+#else
+    get_local_info(d);
+#endif
     return stacktrace2str(d, stacktrace_depth-1);
 }
 

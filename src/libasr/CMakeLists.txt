@@ -80,6 +80,7 @@ set(SRC
     modfile.cpp
     pickle.cpp
     serialization.cpp
+    stacktrace.cpp
     utils2.cpp
 )
 if (WITH_LLVM)
@@ -88,7 +89,6 @@ if (WITH_LLVM)
         codegen/asr_to_llvm.cpp
         codegen/llvm_array_utils.cpp
         codegen/llvm_utils.cpp
-        stacktrace.cpp
     )
     # We use deprecated API in LLVM, so we disable the warning until we upgrade
     if (NOT MSVC)

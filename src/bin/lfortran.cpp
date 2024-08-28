@@ -2508,7 +2508,11 @@ int main(int argc, char *argv[])
         std::cerr << "Internal Compiler Error: Unhandled exception" << std::endl;
         std::vector<LCompilers::StacktraceItem> d = e.stacktrace_addresses();
         get_local_addresses(d);
+#ifdef HAVE_LFORTRAN_LLVM
         get_llvm_info(d);
+#else
+        get_local_info(d);
+#endif
         std::cerr << stacktrace2str(d, LCompilers::stacktrace_depth);
         std::cerr << e.name() + ": " << e.msg() << std::endl;
         return 1;
