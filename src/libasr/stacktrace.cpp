@@ -3,17 +3,19 @@
 #include <libasr/colors.h>
 #include <libasr/exception.h>
 
-#include <llvm/DebugInfo/Symbolize/Symbolize.h>
-#include <llvm/Support/CommandLine.h>
-#include <llvm/Support/raw_ostream.h>
-#include <llvm/Support/TargetSelect.h>
-#include <llvm/Object/ELFObjectFile.h>
-
 #include <fstream>
 #include <iostream>
 #include <sstream>
 #include <string>
 #include <vector>
+
+#ifdef HAVE_LFORTRAN_LLVM
+#include <llvm/DebugInfo/Symbolize/Symbolize.h>
+#include <llvm/Support/CommandLine.h>
+#include <llvm/Support/raw_ostream.h>
+#include <llvm/Support/TargetSelect.h>
+#include <llvm/Object/ELFObjectFile.h>
+#endif
 
 // free() and abort() functions
 #include <cstdlib>
@@ -495,6 +497,7 @@ std::string addr2str(const StacktraceItem &i)
   return s.str();
 }
 
+#ifdef HAVE_LFORTRAN_LLVM
 void get_symbol_info_llvm(StacktraceItem &item, llvm::symbolize::LLVMSymbolizer &symbolizer) {
   auto binary_file = llvm::object::ObjectFile::createObjectFile(item.binary_filename);
 
@@ -545,6 +548,7 @@ void get_llvm_info(std::vector<StacktraceItem> &d)
   }
 }
 
+#endif
 
 /*
   Returns a std::string with the stacktrace corresponding to the
