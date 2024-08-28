@@ -612,7 +612,7 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
             n_values = str_fmt->n_args;
         } else if(ASR::is_a<ASR::Character_t>(*ASRUtils::expr_type(x.m_text))){
             this->visit_expr(*x.m_text);
-            out = "std::cout<< " + src + "<<std::endl\n"; 
+            src = "std::cout<< " + src + "<<std::endl;\n";
             return;
         } else {
             throw CodeGenError("print statment supported for stringformat and single character argument",
