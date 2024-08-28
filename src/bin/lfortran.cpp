@@ -307,7 +307,7 @@ int prompt(bool verbose, CompilerOptions &cu)
             std::cerr << "Internal Compiler Error: Unhandled exception" << std::endl;
             std::vector<LCompilers::StacktraceItem> d = e.stacktrace_addresses();
             get_local_addresses(d);
-            get_local_info(d);
+            get_llvm_info(d);
             std::cerr << stacktrace2str(d, LCompilers::stacktrace_depth);
             std::cerr << e.name() + ": " << e.msg() << std::endl;
             continue;
@@ -2508,7 +2508,7 @@ int main(int argc, char *argv[])
         std::cerr << "Internal Compiler Error: Unhandled exception" << std::endl;
         std::vector<LCompilers::StacktraceItem> d = e.stacktrace_addresses();
         get_local_addresses(d);
-        get_local_info(d);
+        get_llvm_info(d);
         std::cerr << stacktrace2str(d, LCompilers::stacktrace_depth);
         std::cerr << e.name() + ": " << e.msg() << std::endl;
         return 1;

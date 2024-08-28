@@ -3,6 +3,12 @@
 #include <libasr/colors.h>
 #include <libasr/exception.h>
 
+#include <llvm/DebugInfo/Symbolize/Symbolize.h>
+#include <llvm/Support/CommandLine.h>
+#include <llvm/Support/raw_ostream.h>
+#include <llvm/Support/TargetSelect.h>
+#include <llvm/Object/ELFObjectFile.h>
+
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -489,6 +495,61 @@ std::string addr2str(const StacktraceItem &i)
   return s.str();
 }
 
+void get_symbol_info_llvm(StacktraceItem &item, llvm::symbolize::LLVMSymbolizer &symbolizer) {
+  auto binary_file = llvm::object::ObjectFile::createObjectFile(item.binary_filename);
+
+  if (!binary_file) {
+    std::cout << "Cannot open the binary file '" + item.binary_filename + "'\n";
+    abort();
+  }
+
+  llvm::object::ObjectFile *obj_file = binary_file.get().getBinary();
+
+  uint64_t section_index;
+  bool found = false;
+  for (const auto& section : obj_file->sections()) {
+    if (section.getAddress() <= item.local_pc && item.local_pc < section.getAddress() + section.getSize()) {
+      section_index = section.getIndex();
+      found = true;
+      break;
+    }
+  }
+
+  if (!found) {
+    std::cout << "Cannot find the section for the address " << item.local_pc << " in the binary file '" + item.binary_filename + "'\n";
+    abort();
+  }
+
+  llvm::object::SectionedAddress sa = {item.local_pc, section_index};
+  std::cout << item.binary_filename << std::endl;
+  std::cout << item.local_pc << std::endl;
+  std::cout << section_index << std::endl;
+  auto result = symbolizer.symbolizeCode(*obj_file, sa);
+  
+  if (result) {
+    item.source_filename = result->FileName;
+    std::cout << result->FileName << std::endl;
+    item.function_name = result->FunctionName;
+    std::cout << result->FunctionName << std::endl;
+    item.line_number = result->Line;
+    std::cout << result->Line << std::endl;
+  } else {
+    std::cout << "Cannot open the symbol table of '" + item.binary_filename + "'\n";
+    abort();
+  }
+}
+
+void get_llvm_info(std::vector<StacktraceItem> &d)
+{
+  llvm::symbolize::LLVMSymbolizer::Options opts;
+  opts.Demangle = true;
+  llvm::symbolize::LLVMSymbolizer symbolizer(opts);
+
+  for (auto &item : d) {
+    get_symbol_info_llvm(item, symbolizer);
+  }
+}
+
 
 /*
   Returns a std::string with the stacktrace corresponding to the
@@ -531,7 +592,7 @@ std::string get_stacktrace(int skip)
 {
   std::vector<StacktraceItem> d = get_stacktrace_addresses();
   get_local_addresses(d);
-  get_local_info(d);
+  get_llvm_info(d);
   return stacktrace2str(d, skip);
 }
 
@@ -623,6 +684,7 @@ void get_local_info_dwarfdump(std::vector<StacktraceItem> &d)
   }
 }
 
+
 void get_local_info(std::vector<StacktraceItem> &d)
 {
 #ifdef HAVE_LFORTRAN_DWARFDUMP
@@ -644,7 +706,7 @@ std::string error_stacktrace(const std::vector<StacktraceItem> &stacktrace)
 {
     std::vector<StacktraceItem> d = stacktrace;
     get_local_addresses(d);
-    get_local_info(d);
+    get_llvm_info(d);
     return stacktrace2str(d, stacktrace_depth-1);
 }
 

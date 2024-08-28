@@ -75,7 +75,6 @@ set(SRC
     asr_utils.cpp
     casting_utils.cpp
     diagnostics.cpp
-    stacktrace.cpp
     string_utils.cpp
     asr_scopes.cpp
     modfile.cpp
@@ -89,6 +88,7 @@ if (WITH_LLVM)
         codegen/asr_to_llvm.cpp
         codegen/llvm_array_utils.cpp
         codegen/llvm_utils.cpp
+        stacktrace.cpp
     )
     # We use deprecated API in LLVM, so we disable the warning until we upgrade
     if (NOT MSVC)
@@ -99,6 +99,8 @@ if (WITH_LLVM)
         set_source_files_properties(codegen/llvm_array_utils.cpp PROPERTIES
             COMPILE_FLAGS -Wno-deprecated-declarations)
         set_source_files_properties(codegen/llvm_utils.cpp PROPERTIES
+            COMPILE_FLAGS -Wno-deprecated-declarations)
+        set_source_files_properties(stacktrace.cpp PROPERTIES
             COMPILE_FLAGS -Wno-deprecated-declarations)
     endif()
 endif()

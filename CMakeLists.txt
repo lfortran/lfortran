@@ -140,7 +140,7 @@ if (WITH_LLVM)
         find_package(StaticZSTD REQUIRED)
     endif()
 
-    set(LFORTRAN_LLVM_COMPONENTS core support mcjit orcjit native asmparser asmprinter)
+    set(LFORTRAN_LLVM_COMPONENTS core support mcjit orcjit native asmparser asmprinter symbolize object)
     find_package(LLVM REQUIRED)
     message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
     message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
