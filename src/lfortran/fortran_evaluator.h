@@ -106,6 +106,8 @@ public:
         int64_t default_lower_bound);
     Result<std::string> get_julia(const std::string &code,
         LocationManager &lm, diag::Diagnostics &diagnostics);
+    Result<std::string> get_mlir(const std::string &code,
+        LocationManager &lm, diag::Diagnostics &diagnostics);
     Result<std::string> get_fortran(const std::string &code,
         LocationManager &lm, diag::Diagnostics &diagnostics);
     Result<std::string> get_fmt(const std::string &code, LocationManager &lm,

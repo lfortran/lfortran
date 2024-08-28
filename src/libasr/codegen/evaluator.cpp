@@ -67,6 +67,8 @@
 #include <libasr/asr.h>
 #include <libasr/string_utils.h>
 
+#include <mlir/IR/BuiltinOps.h>
+#include <mlir/Target/LLVMIR/Export.h>
 
 namespace LCompilers {
 
@@ -134,6 +136,24 @@ std::string LLVMModule::get_return_type(const std::string &fn_name)
         throw LCompilersException("LLVMModule::get_return_type(): Return type not supported");
     }
 }
+MLIRModule::MLIRModule(std::unique_ptr<mlir::ModuleOp> m,
+        std::unique_ptr<mlir::MLIRContext> ctx) {
+    mlir_m = std::move(m);
+    mlir_ctx = std::move(ctx);
+}
+
+MLIRModule::~MLIRModule() {
+    llvm_m.reset();
+    llvm_ctx.reset();
+};
+
+std::string MLIRModule::str() {
+    std::string mlir_str;
+    llvm::raw_string_ostream raw_os(mlir_str);
+    mlir_m->print(raw_os);
+    return mlir_str;
+}
+
 
 extern "C" {
 

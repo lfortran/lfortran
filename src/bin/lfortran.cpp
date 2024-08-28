@@ -831,6 +831,30 @@ int save_mod_files(const LCompilers::ASR::TranslationUnit_t &u,
     }
     return 0;
 }
+int emit_mlir(const std::string &infile, CompilerOptions &compiler_options)
+{
+    std::string input = read_file(infile);
+
+    LCompilers::FortranEvaluator fe(compiler_options);
+    LCompilers::LocationManager lm;
+    LCompilers::diag::Diagnostics diagnostics;
+    {
+        LCompilers::LocationManager::FileLocations fl;
+        fl.in_filename = infile;
+        lm.files.push_back(fl);
+        lm.file_ends.push_back(input.size());
+    }
+    LCompilers::Result<std::string> mlir = fe.get_mlir(input, lm, diagnostics);
+    std::cerr << diagnostics.render(lm, compiler_options);
+    if (mlir.ok) {
+        std::cout << mlir.result;
+        return 0;
+    } else {
+        LCOMPILERS_ASSERT(diagnostics.has_error())
+        return 1;
+    }
+}
+
 
 #ifdef HAVE_LFORTRAN_LLVM
 
@@ -1994,6 +2018,7 @@ int main_app(int argc, char *argv[]) {
     bool arg_no_indent = false;
     bool arg_no_prescan = false;
     bool show_llvm = false;
+    bool show_mlir = false;
     bool show_cpp = false;
     bool show_c = false;
     bool show_asm = false;
@@ -2080,6 +2105,7 @@ int main_app(int argc, char *argv[]) {
     app.add_option("--pass", arg_pass, "Apply the ASR pass and show ASR (implies --show-asr)");
     app.add_option("--skip-pass", skip_pass, "Skip an ASR pass in default pipeline");
     app.add_flag("--show-llvm", show_llvm, "Show LLVM IR for the given file and exit");
+    app.add_flag("--show-mlir", show_mlir, "Show MLIR for the given file and exit");
     app.add_flag("--show-cpp", show_cpp, "Show C++ translation source for the given file and exit");
     app.add_flag("--show-c", show_c, "Show C translation source for the given file and exit");
     app.add_flag("--show-asm", show_asm, "Show assembly for the given file and exit");
@@ -2379,6 +2405,9 @@ int main_app(int argc, char *argv[]) {
         std::cerr << "The --show-llvm option requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
         return 1;
 #endif
+    }
+    if (show_mlir) {
+        return emit_mlir(arg_file, compiler_options);
     }
     if (show_asm) {
 #ifdef HAVE_LFORTRAN_LLVM

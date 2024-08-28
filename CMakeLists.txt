@@ -134,6 +134,7 @@ set(WITH_LLVM no CACHE BOOL "Build with LLVM support")
 set(WITH_TARGET_AARCH64 no CACHE BOOL "Enable target AARCH64")
 set(WITH_TARGET_X86 no CACHE BOOL "Enable target X86")
 set(WITH_TARGET_WASM no CACHE BOOL "Enable target WebAssembly")
+set(WITH_MLIR no CACHE BOOL "Build with MLIR support")
 if (WITH_LLVM)
     set(WITH_ZSTD yes CACHE BOOL "Detect (and require) static libzstd for llvm")
     if(WITH_ZSTD)
@@ -193,6 +194,17 @@ if (WITH_LLVM)
         set(llvm_libs "LLVM")
     endif()
     unset(LFORTRAN_LLVM_COMPONENTS)
+
+    if (WITH_MLIR)
+        add_library(p::mlir INTERFACE IMPORTED)
+        find_package(MLIR REQUIRED CONFIG)
+        set(mlir_libs
+                MLIRIR
+                MLIRLLVMToLLVMIRTranslation
+                MLIRLLVMDialect
+            )
+        set_property(TARGET p::mlir PROPERTY INTERFACE_LINK_LIBRARIES ${mlir_libs})
+    endif()
 
     add_library(p::llvm INTERFACE IMPORTED)
     set_property(TARGET p::llvm PROPERTY INTERFACE_INCLUDE_DIRECTORIES

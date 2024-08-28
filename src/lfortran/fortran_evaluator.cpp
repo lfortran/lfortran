@@ -22,6 +22,7 @@
 #ifdef HAVE_LFORTRAN_LLVM
 #include <libasr/codegen/evaluator.h>
 #include <libasr/codegen/asr_to_llvm.h>
+#include <libasr/codegen/asr_to_mlir.h>
 #else
 namespace LCompilers {
     class LLVMEvaluator {};
@@ -513,6 +514,25 @@ Result<std::string> FortranEvaluator::get_julia(const std::string &code,
         return asr.error;
     }
 }
+
+Result<std::string> FortranEvaluator::get_mlir(const std::string &code,
+    LocationManager &lm, diag::Diagnostics &diagnostics)
+{
+    // Src -> AST -> ASR -> MLIR
+    SymbolTable *old_symbol_table = symbol_table;
+    symbol_table = nullptr;
+    Result<ASR::TranslationUnit_t*> asr = get_asr2(code, lm, diagnostics);
+    symbol_table = old_symbol_table;
+    if (asr.ok) {
+        Result<std::unique_ptr<MLIRModule>> res = asr_to_mlir(al, *asr.result,
+            diagnostics);
+        return res.result->str();
+    } else {
+        LCOMPILERS_ASSERT(diagnostics.has_error())
+        return asr.error;
+    }
+}
+
 
 Result<std::string> FortranEvaluator::get_fortran(const std::string &code,
     LocationManager &lm, diag::Diagnostics &diagnostics)
