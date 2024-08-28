@@ -7913,7 +7913,7 @@ public:
     }
 
     void visit_Print(const ASR::Print_t &x) {
-        handle_print(x);
+        handle_print(x.m_text, nullptr);
     }
 
     void visit_FileWrite(const ASR::FileWrite_t &x) {
@@ -7923,7 +7923,19 @@ public:
         }
 
         if (x.m_unit == nullptr) {
-            handle_print(x);
+            llvm::Value* end = nullptr;
+            if (x.m_end) {
+                this->visit_expr_wrapper(x.m_end, true);
+                end = tmp;
+            }
+            if(x.n_values  == 0){ // TODO : We should remove any function that creates a `FileWrite` with no args
+                llvm::Value *fmt_ptr = builder->CreateGlobalStringPtr("%s");
+                printf(context, *module, *builder, {fmt_ptr, end});
+            } else if (x.n_values == 1){
+                handle_print(x.m_values[0], end);
+            } else {
+                throw CodeGenError("File write should have single argument of type character)", x.base.base.loc);
+            }
             return;
         }
         std::vector<llvm::Value *> args;
@@ -8314,50 +8326,14 @@ public:
         }
     }
 
-    template <typename T>
-    void handle_print(const T &x) {
+    void handle_print(ASR::expr_t* arg, llvm::Value* end) {
         std::vector<llvm::Value *> args;
         args.push_back(nullptr); // reserve space for fmt_str
         std::vector<std::string> fmt;
-        llvm::Value *sep = nullptr;
-        llvm::Value *sep_no_space = nullptr;
-        llvm::Value *end = nullptr;
-        bool global_sep_space = true;
-        end = builder->CreateGlobalStringPtr("\n");
-        sep = builder->CreateGlobalStringPtr(" ");
-        if constexpr (x.class_type == ASR::stmtType::FileWrite){ // Remove after write node refactor.
-            if (x.m_separator) {
-                global_sep_space = false;
-                this->visit_expr_wrapper(x.m_separator, true);
-                sep = tmp;
-            }
-            if (x.m_end) {
-                this->visit_expr_wrapper(x.m_end, true);
-                end = tmp;
-            }
-            for (size_t i=0; i<x.n_values; i++) {
-                if (i != 0) {
-                    fmt.push_back("%s");
-                    if (global_sep_space &&
-                        !(ASRUtils::is_character(*ASRUtils::expr_type(x.m_values[i]))
-                            && ASRUtils::is_character(*ASRUtils::expr_type(x.m_values[i - 1])))) {
-                        args.push_back(sep);
-                    } else {
-                        sep_no_space = sep_no_space != nullptr ? sep_no_space : builder->CreateGlobalStringPtr("");
-                        args.push_back(sep_no_space);
-                    }
-                }
-                compute_fmt_specifier_and_arg(fmt, args, x.m_values[i], x.base.base.loc);
-            }
-        } else if constexpr(x.class_type == ASR::stmtType::Print){
-            // TODO : These predicates should be appended togehter after refactor write (generic function issues).
-            if(ASR::is_a<ASR::Character_t>(*ASRUtils::expr_type(x.m_text))) {
-                compute_fmt_specifier_and_arg(fmt, args, x.m_text, x.base.base.loc);
-            }
-        } else {
-            throw CodeGenError("Print isn't supported for this expression",
-                x.base.base.loc);
+        if(end == nullptr){
+            end = builder->CreateGlobalStringPtr("\n");
         }
+        compute_fmt_specifier_and_arg(fmt, args, arg, arg->base.loc);
         fmt.push_back("%s");
         args.push_back(end);
         std::string fmt_str;

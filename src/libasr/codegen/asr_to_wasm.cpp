@@ -3108,51 +3108,12 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         m_wa.emit_drop();
     }
 
-    template <typename T>
-    void handle_print(const T &x) {
-        LCOMPILERS_ASSERT(x.class_type == ASR::stmtType::FileWrite ||
-            x.class_type == ASR::stmtType::Print);
-        // HACKISH way to handle new print refactoring (always using stringformat).
-        // TODO : implement visit_stringformat 
-        // TODO: after refactoring write_t and print_t, we can move this implmentation to stringformat visitor.
-        ASR::StringFormat_t* str_fmt = nullptr;
-        size_t n_values;
-        if constexpr (x.class_type == ASR::stmtType::FileWrite){
-            if( x.m_values[0] 
-            && ASR::is_a<ASR::StringFormat_t>(*x.m_values[0])){ // loop on stringformat args only.
-                str_fmt = ASR::down_cast<ASR::StringFormat_t>(x.m_values[0]);      
-                n_values = str_fmt->n_args;
-            } else { // loop write_t args (TODO : remove after write_t refactor)
-                n_values = x.n_values;
-            }
-        } else if constexpr (x.class_type == ASR::stmtType::Print){
-            if( ASR::is_a<ASR::StringFormat_t>(*x.m_text)){ // loop on stringformat args only.
-                str_fmt = ASR::down_cast<ASR::StringFormat_t>(x.m_text);      
-                n_values = str_fmt->n_args;
-            } else if (ASR::is_a<ASR::Character_t>(*ASRUtils::expr_type(x.m_text))) { //handle the stringconstant and return.
-                m_wa.emit_i32_const(1); // file type: 1 for stdout
-                this->visit_expr(*x.m_text);// iov location
-                m_wa.emit_i32_const(1); // size of iov vector
-                m_wa.emit_i32_const(0); // mem_loction to return no. of bytes written
-                // call WASI fd_write
-                m_wa.emit_call(m_import_func_idx_map[fd_write]);
-                m_wa.emit_drop();
-                emit_call_fd_write(1, "\n", 1, 0);
-                return;
-            } else {
-                throw CodeGenError("print statment supported for stringformat and single character argument",
-                    x.base.base.loc);
-            }
+    void visit_StringFormat(const ASR::StringFormat_t &x) {
+        if(x.m_fmt){
+           //TODO :: respect fmt.
         }
-        for (size_t i = 0; i < n_values; i++) {
-            ASR::expr_t *v;
-            if(str_fmt){ // possible for print and write
-                v =  str_fmt->m_args[i];
-            } else if constexpr (x.class_type == ASR::stmtType::FileWrite ){
-                v = x.m_values[i];
-            } else {
-                LCOMPILERS_ASSERT(false);
-            }
+        for (size_t i = 0; i < x.n_args; i++) {
+            ASR::expr_t *v = x.m_args[i];
             ASR::ttype_t *t = ASRUtils::expr_type(v);
             int a_kind = ASRUtils::extract_kind_from_ttype_t(t);
             if(i > 0){
@@ -3230,14 +3191,19 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     }
 
     void visit_Print(const ASR::Print_t &x) {
-        handle_print(x);
-    }
-
-    void visit_StringFormat(const ASR::StringFormat_t &x) {
-        diag.codegen_warning_label(
-            "StringFormat not implemented yet, ignored for now",
-            {x.m_fmt->base.loc}, "ignored");
-        this->visit_expr(*x.m_fmt);
+        if( ASR::is_a<ASR::StringFormat_t>(*x.m_text)){ // loop on stringformat args only.
+            this->visit_expr(*x.m_text);
+        } else if (ASR::is_a<ASR::Character_t>(*ASRUtils::expr_type(x.m_text))) { //handle the stringconstant and return.
+            m_wa.emit_i32_const(1); // file type: 1 for stdout
+            this->visit_expr(*x.m_text);// iov location
+            m_wa.emit_i32_const(1); // size of iov vector
+            m_wa.emit_i32_const(0); // mem_loction to return no. of bytes written
+            // call WASI fd_write
+            m_wa.emit_call(m_import_func_idx_map[fd_write]);
+            m_wa.emit_drop();
+            emit_call_fd_write(1, "\n", 1, 0);
+            return;
+        }
     }
 
     void visit_FileWrite(const ASR::FileWrite_t &x) {
@@ -3246,7 +3212,22 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                                      {x.m_unit->base.loc}, "not implemented");
             throw CodeGenAbort();
         }
-        handle_print(x);
+        if( x.n_values == 1 && ASR::is_a<ASR::StringFormat_t>(*x.m_values[0])){ // loop on stringformat args only.
+            this->visit_expr(*x.m_values[0]);
+        } else if (x.n_values == 1 && ASR::is_a<ASR::Character_t>(*ASRUtils::expr_type(x.m_values[0]))) { //handle the stringconstant and return.
+            m_wa.emit_i32_const(1); // file type: 1 for stdout
+            this->visit_expr(*x.m_values[0]);// iov location
+            m_wa.emit_i32_const(1); // size of iov vector
+            m_wa.emit_i32_const(0); // mem_loction to return no. of bytes written
+            // call WASI fd_write
+            m_wa.emit_call(m_import_func_idx_map[fd_write]);
+            m_wa.emit_drop();
+            emit_call_fd_write(1, "\n", 1, 0);
+            return;
+        } else {
+            throw CodeGenError("FileWrite: Only stringformat or single character argument are supported",
+                x.base.base.loc);
+        }
     }
 
     void visit_FileRead(const ASR::FileRead_t &x) {
