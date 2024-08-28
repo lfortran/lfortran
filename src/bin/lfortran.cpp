@@ -886,7 +886,7 @@ int emit_asm(const std::string &infile, CompilerOptions &compiler_options)
     }
 }
 
-int compile_to_object_file(const std::string &infile,
+int compile_src_to_object_file(const std::string &infile,
         const std::string &outfile,
         bool assembly,
         CompilerOptions &compiler_options,
@@ -970,6 +970,19 @@ int compile_to_object_file(const std::string &infile,
     } else {
         e.save_object_file(*(m->m_m), outfile);
     }
+    
+    return 0;
+}
+
+int compile_llvm_to_object_file(const std::string& infile,
+                                const std::string& outfile,
+                                CompilerOptions& compiler_options)
+{
+    std::string input = read_file(infile);
+    LCompilers::LLVMEvaluator e(compiler_options.target);
+
+    std::unique_ptr<LCompilers::LLVMModule> m = e.parse_module2(input);
+    e.save_object_file(*(m->m_m), outfile);
 
     return 0;
 }
@@ -978,7 +991,7 @@ int compile_to_assembly_file(const std::string &infile,
     const std::string &outfile, CompilerOptions &compiler_options,
     LCompilers::PassManager& lpm)
 {
-    return compile_to_object_file(infile, outfile, true, compiler_options, lpm);
+    return compile_src_to_object_file(infile, outfile, true, compiler_options, lpm);
 }
 #endif // HAVE_LFORTRAN_LLVM
 
@@ -2408,7 +2421,7 @@ int main_app(int argc, char *argv[]) {
     if (arg_c) {
         if (backend == Backend::llvm) {
 #ifdef HAVE_LFORTRAN_LLVM
-            return compile_to_object_file(arg_file, outfile, false,
+            return compile_src_to_object_file(arg_file, outfile, false,
                 compiler_options, lfortran_pass_manager);
 #else
             std::cerr << "The -c option requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
@@ -2431,16 +2444,16 @@ int main_app(int argc, char *argv[]) {
         }
     }
 
+    int err;
+    std::string tmp_o = outfile + ".tmp.o";
     if (endswith(arg_file, ".f90") || endswith(arg_file, ".f") || endswith(arg_file, ".F90") || endswith(arg_file, ".F")) {
         if (backend == Backend::x86) {
             return compile_to_binary_x86(arg_file, outfile,
                     time_report, compiler_options);
         }
-        std::string tmp_o = outfile + ".tmp.o";
-        int err;
         if (backend == Backend::llvm) {
 #ifdef HAVE_LFORTRAN_LLVM
-            err = compile_to_object_file(arg_file, tmp_o, false,
+            err = compile_src_to_object_file(arg_file, tmp_o, false,
                 compiler_options, lfortran_pass_manager);
 #else
             std::cerr << "Compiling Fortran files to object files requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
@@ -2462,6 +2475,17 @@ int main_app(int argc, char *argv[]) {
         }
         if (err) return err;
         return link_executable({tmp_o}, outfile, runtime_library_dir,
+                backend, static_link, shared_link, link_with_gcc, true, arg_v, arg_L,
+		arg_l, linker_flags, compiler_options);
+    } else if (endswith(arg_file, ".ll")) {
+#ifdef HAVE_LFORTRAN_LLVM
+        err = compile_llvm_to_object_file(arg_file, tmp_o, compiler_options);
+        if (err) return err;
+#else
+        std::cerr << "Compiling LLVM IR to object files requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
+        return 1;
+#endif
+        link_executable({tmp_o}, outfile, runtime_library_dir,
                 backend, static_link, shared_link, link_with_gcc, true, arg_v, arg_L,
 		arg_l, linker_flags, compiler_options);
     } else {
