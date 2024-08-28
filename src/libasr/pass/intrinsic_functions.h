@@ -643,7 +643,7 @@ namespace Aimag {
         declare_basic_variables("_lcompilers_aimag_" + type_to_str_python(arg_types[0]));
         fill_func_arg("x", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
-        body.push_back(al, b.Assignment(result, EXPR(ASR::make_ComplexIm_t(al, loc, 
+        body.push_back(al, b.Assignment(result, EXPR(ASR::make_ComplexIm_t(al, loc,
             args[0], return_type, nullptr))));
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -5449,7 +5449,7 @@ namespace Max {
         int kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
         for(size_t i=1; i<args.size(); i++) {
             if (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[i])) != kind) {
-                diag.semantic_warning_label("Different kinds of args in max0 is a non-standard extension", {loc}, 
+                diag.semantic_warning_label("Different kinds of args in max0 is a non-standard extension", {loc},
                 "help: ensure all arguments have the same kind to make it standard");
             }
             if (arg_type->type != ASRUtils::expr_type(args[i])->type) {
@@ -5600,7 +5600,7 @@ namespace Min {
         int kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
         for(size_t i=1; i<args.size(); i++){
             if (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[i])) != kind) {
-                diag.semantic_warning_label("Different kinds of args in max0 is a non-standard extension", {loc}, 
+                diag.semantic_warning_label("Different kinds of args in max0 is a non-standard extension", {loc},
                 "help: ensure all arguments have the same kind to make it standard");
             }
             if (arg_type->type != ASRUtils::expr_type(args[i])->type) {

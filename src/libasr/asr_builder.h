@@ -259,8 +259,8 @@ class ASRBuilder {
 
     // Cast --------------------------------------------------------------------
 
-    #define avoid_cast(x, t) if( ASRUtils::extract_kind_from_ttype_t(t) <= \
-        ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(x)) ) { \
+    #define avoid_cast(x, t, force) if( ASRUtils::extract_kind_from_ttype_t(t) <= \
+        ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(x)) && !force ) { \
         return x; \
     } \
 
@@ -272,13 +272,13 @@ class ASRBuilder {
         return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::IntegerToReal, t, nullptr));
     }
 
-    inline ASR::expr_t* i2i_t(ASR::expr_t* x, ASR::ttype_t* t) {
-        avoid_cast(x, t)
+    inline ASR::expr_t* i2i_t(ASR::expr_t* x, ASR::ttype_t* t, bool force=true) {
+        avoid_cast(x, t, force)
         return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::IntegerToInteger, t, nullptr));
     }
 
-    inline ASR::expr_t* r2r_t(ASR::expr_t* x, ASR::ttype_t* t) {
-        avoid_cast(x, t)
+    inline ASR::expr_t* r2r_t(ASR::expr_t* x, ASR::ttype_t* t, bool force=true) {
+        avoid_cast(x, t, force)
         return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::RealToReal, t, nullptr));
     }
 
