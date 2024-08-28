@@ -259,6 +259,11 @@ class ASRBuilder {
 
     // Cast --------------------------------------------------------------------
 
+    #define avoid_cast(x, t) if( ASRUtils::extract_kind_from_ttype_t(t) <= \
+        ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(x)) ) { \
+        return x; \
+    } \
+
     inline ASR::expr_t* r2i_t(ASR::expr_t* x, ASR::ttype_t* t) {
         return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::RealToInteger, t, nullptr));
     }
@@ -268,10 +273,12 @@ class ASRBuilder {
     }
 
     inline ASR::expr_t* i2i_t(ASR::expr_t* x, ASR::ttype_t* t) {
+        avoid_cast(x, t)
         return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::IntegerToInteger, t, nullptr));
     }
 
     inline ASR::expr_t* r2r_t(ASR::expr_t* x, ASR::ttype_t* t) {
+        avoid_cast(x, t)
         return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::RealToReal, t, nullptr));
     }
 
