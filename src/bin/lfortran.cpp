@@ -831,6 +831,8 @@ int save_mod_files(const LCompilers::ASR::TranslationUnit_t &u,
     }
     return 0;
 }
+
+#ifdef HAVE_LFORTRAN_MLIR
 int emit_mlir(const std::string &infile, CompilerOptions &compiler_options)
 {
     std::string input = read_file(infile);
@@ -855,6 +857,7 @@ int emit_mlir(const std::string &infile, CompilerOptions &compiler_options)
     }
 }
 
+#endif // HAVE_LFORTRAN_MLIR
 
 #ifdef HAVE_LFORTRAN_LLVM
 
@@ -2407,7 +2410,13 @@ int main_app(int argc, char *argv[]) {
 #endif
     }
     if (show_mlir) {
+#ifdef HAVE_LFORTRAN_MLIR
         return emit_mlir(arg_file, compiler_options);
+#else
+        std::cerr << "The `--show-mlir` option requires the MLIR backend to be "
+            "enabled. Recompile with `WITH_MLIR=yes`." << std::endl;
+        return 1;
+#endif
     }
     if (show_asm) {
 #ifdef HAVE_LFORTRAN_LLVM

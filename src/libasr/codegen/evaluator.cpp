@@ -67,8 +67,10 @@
 #include <libasr/asr.h>
 #include <libasr/string_utils.h>
 
+#ifdef HAVE_LFORTRAN_MLIR
 #include <mlir/IR/BuiltinOps.h>
 #include <mlir/Target/LLVMIR/Export.h>
+#endif
 
 namespace LCompilers {
 
@@ -136,6 +138,8 @@ std::string LLVMModule::get_return_type(const std::string &fn_name)
         throw LCompilersException("LLVMModule::get_return_type(): Return type not supported");
     }
 }
+
+#ifdef HAVE_LFORTRAN_MLIR
 MLIRModule::MLIRModule(std::unique_ptr<mlir::ModuleOp> m,
         std::unique_ptr<mlir::MLIRContext> ctx) {
     mlir_m = std::move(m);
@@ -154,6 +158,7 @@ std::string MLIRModule::str() {
     return mlir_str;
 }
 
+#endif
 
 extern "C" {
 

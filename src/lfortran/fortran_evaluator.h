@@ -18,6 +18,7 @@
 namespace LCompilers {
 
 class LLVMModule;
+class MLIRModule;
 class LLVMEvaluator;
 
 /*

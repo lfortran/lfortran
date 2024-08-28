@@ -22,7 +22,9 @@
 #ifdef HAVE_LFORTRAN_LLVM
 #include <libasr/codegen/evaluator.h>
 #include <libasr/codegen/asr_to_llvm.h>
+#ifdef HAVE_LFORTRAN_MLIR
 #include <libasr/codegen/asr_to_mlir.h>
+#endif
 #else
 namespace LCompilers {
     class LLVMEvaluator {};
@@ -524,9 +526,13 @@ Result<std::string> FortranEvaluator::get_mlir(const std::string &code,
     Result<ASR::TranslationUnit_t*> asr = get_asr2(code, lm, diagnostics);
     symbol_table = old_symbol_table;
     if (asr.ok) {
+#ifdef HAVE_LFORTRAN_MLIR
         Result<std::unique_ptr<MLIRModule>> res = asr_to_mlir(al, *asr.result,
             diagnostics);
         return res.result->str();
+#else
+        throw LCompilersException("MLIR is not enabled");
+#endif
     } else {
         LCOMPILERS_ASSERT(diagnostics.has_error())
         return asr.error;
