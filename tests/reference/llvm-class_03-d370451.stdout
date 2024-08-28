@@ -13,12 +13,10 @@ source_filename = "LFortran"
 @6 = private unnamed_addr constant [6 x i8] c"sales\00", align 1
 @7 = private unnamed_addr constant [2 x i8] c" \00", align 1
 @8 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@9 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@10 = private unnamed_addr constant [17 x i8] c"%s%s%s%s%d%s%s%s\00", align 1
-@11 = private unnamed_addr constant [2 x i8] c" \00", align 1
-@12 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@13 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@14 = private unnamed_addr constant [25 x i8] c"%s%s%s%s%d%s%s%s%s%s%d%s\00", align 1
+@9 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@10 = private unnamed_addr constant [2 x i8] c" \00", align 1
+@11 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@12 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
@@ -66,26 +64,31 @@ define i32 @main(i32 %0, i8** %1) {
   %30 = load i8*, i8** %29, align 8
   %31 = getelementptr %person, %person* %jack, i32 0, i32 2
   %32 = load i32, i32* %31, align 4
-  %33 = getelementptr %person, %person* %jack, i32 0, i32 3
-  %34 = load i8*, i8** %33, align 8
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([17 x i8], [17 x i8]* @10, i32 0, i32 0), i8* %28, i8* getelementptr inbounds ([1 x i8], [1 x i8]* @9, i32 0, i32 0), i8* %30, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @7, i32 0, i32 0), i32 %32, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @7, i32 0, i32 0), i8* %34, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @8, i32 0, i32 0))
-  %35 = getelementptr %employee, %employee* %jill, i32 0, i32 0
-  %36 = getelementptr %person, %person* %35, i32 0, i32 0
-  %37 = load i8*, i8** %36, align 8
-  %38 = getelementptr %employee, %employee* %jill, i32 0, i32 0
-  %39 = getelementptr %person, %person* %38, i32 0, i32 1
-  %40 = load i8*, i8** %39, align 8
-  %41 = getelementptr %employee, %employee* %jill, i32 0, i32 0
-  %42 = getelementptr %person, %person* %41, i32 0, i32 2
-  %43 = load i32, i32* %42, align 4
-  %44 = getelementptr %employee, %employee* %jill, i32 0, i32 0
-  %45 = getelementptr %person, %person* %44, i32 0, i32 3
-  %46 = load i8*, i8** %45, align 8
-  %47 = getelementptr %employee, %employee* %jill, i32 0, i32 2
-  %48 = load i8*, i8** %47, align 8
-  %49 = getelementptr %employee, %employee* %jill, i32 0, i32 1
-  %50 = load i32, i32* %49, align 4
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([25 x i8], [25 x i8]* @14, i32 0, i32 0), i8* %37, i8* getelementptr inbounds ([1 x i8], [1 x i8]* @13, i32 0, i32 0), i8* %40, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @11, i32 0, i32 0), i32 %43, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @11, i32 0, i32 0), i8* %46, i8* getelementptr inbounds ([1 x i8], [1 x i8]* @13, i32 0, i32 0), i8* %48, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @11, i32 0, i32 0), i32 %50, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @12, i32 0, i32 0))
+  %33 = sext i32 %32 to i64
+  %34 = getelementptr %person, %person* %jack, i32 0, i32 3
+  %35 = load i8*, i8** %34, align 8
+  %36 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 8, i8* null, i32 7, i8* %28, i32 7, i8* %30, i32 2, i64 %33, i32 7, i8* %35)
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @9, i32 0, i32 0), i8* %36, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @8, i32 0, i32 0))
+  %37 = getelementptr %employee, %employee* %jill, i32 0, i32 0
+  %38 = getelementptr %person, %person* %37, i32 0, i32 0
+  %39 = load i8*, i8** %38, align 8
+  %40 = getelementptr %employee, %employee* %jill, i32 0, i32 0
+  %41 = getelementptr %person, %person* %40, i32 0, i32 1
+  %42 = load i8*, i8** %41, align 8
+  %43 = getelementptr %employee, %employee* %jill, i32 0, i32 0
+  %44 = getelementptr %person, %person* %43, i32 0, i32 2
+  %45 = load i32, i32* %44, align 4
+  %46 = sext i32 %45 to i64
+  %47 = getelementptr %employee, %employee* %jill, i32 0, i32 0
+  %48 = getelementptr %person, %person* %47, i32 0, i32 3
+  %49 = load i8*, i8** %48, align 8
+  %50 = getelementptr %employee, %employee* %jill, i32 0, i32 2
+  %51 = load i8*, i8** %50, align 8
+  %52 = getelementptr %employee, %employee* %jill, i32 0, i32 1
+  %53 = load i32, i32* %52, align 4
+  %54 = sext i32 %53 to i64
+  %55 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 12, i8* null, i32 7, i8* %39, i32 7, i8* %42, i32 2, i64 %46, i32 7, i8* %49, i32 7, i8* %51, i32 2, i64 %54)
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @12, i32 0, i32 0), i8* %55, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @11, i32 0, i32 0))
   br label %return
 
 return:                                           ; preds = %.entry
@@ -93,5 +96,7 @@ return:                                           ; preds = %.entry
 }
 
 declare void @_lpython_call_initial_functions(i32, i8**)
+
+declare i8* @_lcompilers_string_format_fortran(i32, i8*, ...)
 
 declare void @_lfortran_printf(i8*, ...)

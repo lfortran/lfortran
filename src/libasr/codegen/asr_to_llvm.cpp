@@ -1060,8 +1060,22 @@ public:
                         llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(
                             ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(
                                 ASRUtils::expr_type(tmp_expr))), module.get());
-                        llvm::Value* ptr_ = builder->CreateAlloca(type, nullptr);
-                        arr_descr->fill_dimension_descriptor(ptr_, n_dims);
+                        llvm::Value* ptr_;
+                        if(ASR::is_a<ASR::Pointer_t>(*ASRUtils::expr_type(tmp_expr))){
+                            //create memory on heap
+                            std::vector<llvm::Value*> idx_vec = {
+                            llvm::ConstantInt::get(context, llvm::APInt(32, 1))};
+                            llvm::Value* null_array_ptr = llvm::ConstantPointerNull::get(type->getPointerTo());
+                            llvm::Value* size_of_array_struct = CreateGEP(null_array_ptr, idx_vec);
+                            llvm::Value* size_of_array_struct_casted = builder->CreatePtrToInt(size_of_array_struct, llvm::Type::getInt32Ty(context)); //cast to int32
+                            llvm::Value* struct_ptr = LLVMArrUtils::lfortran_malloc(
+                                context, *module, *builder, size_of_array_struct_casted);
+                            ptr_ = builder->CreateBitCast(struct_ptr, type->getPointerTo());
+                            arr_descr->fill_dimension_descriptor(ptr_, n_dims, module.get(), ASRUtils::expr_type(tmp_expr));
+                        } else {
+                            ptr_ = builder->CreateAlloca(type, nullptr);
+                            arr_descr->fill_dimension_descriptor(ptr_, n_dims,nullptr,nullptr);
+                        }
                         LLVM::CreateStore(*builder, ptr_, x_arr);
                     },
                     []() {});
@@ -3291,7 +3305,7 @@ public:
         llvm::Value* ptr_ = nullptr;
         if( is_malloc_array_type && !is_list && !is_data_only ) {
             ptr_ = builder->CreateAlloca(type_, nullptr, "arr_desc");
-            arr_descr->fill_dimension_descriptor(ptr_, n_dims);
+            arr_descr->fill_dimension_descriptor(ptr_, n_dims, nullptr, nullptr);
         }
         if( is_array_type && !is_malloc_array_type &&
             !is_list ) {
@@ -8029,7 +8043,7 @@ public:
     // (9)array[i64], (10)array[i32], (11)array[i16], (12)array[i8],
     // (13)array[f64], (14)array[f32]
     // (15)array[character], (16)array[logical], (17)array[cptr], (18)array[enumType],
-    // (19)cptr , (20)enumType
+    // (19)cptr + pointer , (20)enumType
 
     void compute_fmt_specifier_and_arg(std::vector<std::string> &fmt,
         std::vector<llvm::Value *> &args, ASR::expr_t *v, const Location &loc, bool add_type_as_int = false) {
@@ -8101,14 +8115,18 @@ public:
                                         loc);
                 }
             }
-            if (add_type_as_int) {
+            llvm::Value* d = tmp;
+            if(!is_array && add_type_as_int){ //cast all integers to int64.
+                d =builder->CreateSExt(tmp, llvm_utils->getIntType(8, false));
+            }
+            if (add_type_as_int) {        
                 if(!is_array){
                     type_as_int = llvm::ConstantInt::get(context, llvm::APInt(32, number_of_type));
                     args.push_back(type_as_int);
-                    args.push_back(tmp);
+                    args.push_back(d);
                 }
             } else {
-                args.push_back(tmp);
+                args.push_back(d);
             }
         } else if (ASRUtils::is_unsigned_integer(*t)) {
             switch( a_kind ) {
@@ -8289,9 +8307,14 @@ public:
 
             //Create ArrayPhysicalCast to get the array pointer.
             ASR::ttype_t* array_type = ASRUtils::TYPE(ASR::make_Array_t(al, v->base.loc,arr->m_type, arr->m_dims,
-                arr->n_dims,ASR::array_physical_typeType::FixedSizeArray));
-            ASR::expr_t* array_casted_to_pointer = ASRUtils::EXPR(ASR::make_ArrayPhysicalCast_t(al, v->base.loc, v,arr->m_physical_type,
+                arr->n_dims,ASR::array_physical_typeType::FixedSizeArray)); 
+            ASR::expr_t* array_casted_to_pointer;
+            if(arr->m_physical_type == ASR::array_physical_typeType::PointerToDataArray){
+                array_casted_to_pointer = v; //Don't cast, It's already casted.
+            } else {
+            array_casted_to_pointer = ASRUtils::EXPR(ASR::make_ArrayPhysicalCast_t(al, v->base.loc, v,arr->m_physical_type,
                 ASR::array_physical_typeType::PointerToDataArray, array_type, nullptr));
+            }
 
             // Create size argument.
             int array_size;
@@ -10095,8 +10118,15 @@ public:
         // if (fmt_value) ...
         if (x.m_kind == ASR::string_format_kindType::FormatFortran) {
             std::vector<llvm::Value *> args;
-            visit_expr(*x.m_fmt);
-            args.push_back(tmp);
+            if(x.m_fmt == nullptr){ // default formatting
+                llvm::Type* int8Type = builder->getInt8Ty();
+                llvm::PointerType* charPtrType = int8Type->getPointerTo();
+                llvm::Constant* nullCharPtr = llvm::ConstantPointerNull::get(charPtrType);
+                args.push_back(nullCharPtr);
+            } else {
+                visit_expr(*x.m_fmt);
+                args.push_back(tmp);
+            }
 
             for (size_t i=0; i<x.n_args; i++) {
                 std::vector<std::string> fmt;

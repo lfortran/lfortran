@@ -316,64 +316,67 @@ public:
         write_body.clear();
     }
 
-    void visit_FileWrite(const ASR::FileWrite_t& x) {
-        if (x.m_unit && ASRUtils::is_character(*ASRUtils::expr_type(x.m_unit))) {
-            // Skip for character write
-            return;
-        }
-        std::vector<ASR::expr_t*> write_body;
-        ASR::stmt_t* write_stmt;
-        ASR::stmt_t* empty_file_write_endl = ASRUtils::STMT(ASR::make_FileWrite_t(al, x.base.base.loc,
-            x.m_label, x.m_unit, nullptr, nullptr, nullptr, nullptr, 0, nullptr, nullptr, nullptr));
-        if(x.m_values && x.m_values[0] != nullptr && ASR::is_a<ASR::StringFormat_t>(*x.m_values[0])){
-            ASR::StringFormat_t* format = ASR::down_cast<ASR::StringFormat_t>(x.m_values[0]);
-            for (size_t i=0; i<format->n_args; i++) {
-                if (PassUtils::is_array(format->m_args[i])) {
-                    if (ASRUtils::is_fixed_size_array(ASRUtils::expr_type(format->m_args[i]))) {
-                        print_fixed_sized_array(format->m_args[i], write_body, x.base.base.loc);
-                    } else {
-                        if (write_body.size() > 0) {
-                            write_stmt = create_formatstmt(write_body, format,
-                                x.base.base.loc, ASR::stmtType::FileWrite, x.m_unit, x.m_separator,
-                                x.m_end, x.m_overloaded);
-                            pass_result.push_back(al, write_stmt);
-                        }
-                        write_stmt = write_array_using_doloop(format->m_args[i], format, x.m_unit, x.base.base.loc);
-                        pass_result.push_back(al, write_stmt);
-                        pass_result.push_back(al, empty_file_write_endl);
-                    }
-                } else {
-                    write_body.push_back(format->m_args[i]);
-                }
-            }
-            if (write_body.size() > 0) {
-                write_stmt = create_formatstmt(write_body, format, x.base.base.loc,
-                    ASR::stmtType::FileWrite, x.m_unit, x.m_separator,
-                    x.m_end, x.m_overloaded);
-                pass_result.push_back(al, write_stmt);
-            }
-            return;
-        }
-        for (size_t i=0; i<x.n_values; i++) {
-            // DIVERGENCE between LFortran and LPython
-            // If a pointer array variable is provided
-            // then it will be printed as a normal array.
-            if (PassUtils::is_array(x.m_values[i])) {
-                if (write_body.size() > 0) {
-                    print_args_apart_from_arrays(write_body, x);
-                    pass_result.push_back(al, empty_file_write_endl);
-                }
-                write_stmt = write_array_using_doloop(x.m_values[i], nullptr, x.m_unit, x.base.base.loc);
-                pass_result.push_back(al, write_stmt);
-                pass_result.push_back(al, empty_file_write_endl);
-            } else {
-                write_body.push_back(x.m_values[i]);
-            }
-        }
-        if (write_body.size() > 0) {
-            print_args_apart_from_arrays(write_body, x);
-        }
-    }
+    // TODO :: CREATE write visitor to loop on arrays of type `structType` only,
+    // otherwise arrays are handled by backend.
+
+    // void visit_FileWrite(const ASR::FileWrite_t& x) {
+    //     if (x.m_unit && ASRUtils::is_character(*ASRUtils::expr_type(x.m_unit))) {
+    //         // Skip for character write
+    //         return;
+    //     }
+    //     std::vector<ASR::expr_t*> write_body;
+    //     ASR::stmt_t* write_stmt;
+    //     ASR::stmt_t* empty_file_write_endl = ASRUtils::STMT(ASR::make_FileWrite_t(al, x.base.base.loc,
+    //         x.m_label, x.m_unit, nullptr, nullptr, nullptr, nullptr, 0, nullptr, nullptr, nullptr));
+    //     if(x.m_values && x.m_values[0] != nullptr && ASR::is_a<ASR::StringFormat_t>(*x.m_values[0])){
+    //         ASR::StringFormat_t* format = ASR::down_cast<ASR::StringFormat_t>(x.m_values[0]);
+    //         for (size_t i=0; i<format->n_args; i++) {
+    //             if (PassUtils::is_array(format->m_args[i])) {
+    //                 if (ASRUtils::is_fixed_size_array(ASRUtils::expr_type(format->m_args[i]))) {
+    //                     print_fixed_sized_array(format->m_args[i], write_body, x.base.base.loc);
+    //                 } else {
+    //                     if (write_body.size() > 0) {
+    //                         write_stmt = create_formatstmt(write_body, format,
+    //                             x.base.base.loc, ASR::stmtType::FileWrite, x.m_unit, x.m_separator,
+    //                             x.m_end, x.m_overloaded);
+    //                         pass_result.push_back(al, write_stmt);
+    //                     }
+    //                     write_stmt = write_array_using_doloop(format->m_args[i], format, x.m_unit, x.base.base.loc);
+    //                     pass_result.push_back(al, write_stmt);
+    //                     pass_result.push_back(al, empty_file_write_endl);
+    //                 }
+    //             } else {
+    //                 write_body.push_back(format->m_args[i]);
+    //             }
+    //         }
+    //         if (write_body.size() > 0) {
+    //             write_stmt = create_formatstmt(write_body, format, x.base.base.loc,
+    //                 ASR::stmtType::FileWrite, x.m_unit, x.m_separator,
+    //                 x.m_end, x.m_overloaded);
+    //             pass_result.push_back(al, write_stmt);
+    //         }
+    //         return;
+    //     }
+    //     for (size_t i=0; i<x.n_values; i++) {
+    //         // DIVERGENCE between LFortran and LPython
+    //         // If a pointer array variable is provided
+    //         // then it will be printed as a normal array.
+    //         if (PassUtils::is_array(x.m_values[i])) {
+    //             if (write_body.size() > 0) {
+    //                 print_args_apart_from_arrays(write_body, x);
+    //                 pass_result.push_back(al, empty_file_write_endl);
+    //             }
+    //             write_stmt = write_array_using_doloop(x.m_values[i], nullptr, x.m_unit, x.base.base.loc);
+    //             pass_result.push_back(al, write_stmt);
+    //             pass_result.push_back(al, empty_file_write_endl);
+    //         } else {
+    //             write_body.push_back(x.m_values[i]);
+    //         }
+    //     }
+    //     if (write_body.size() > 0) {
+    //         print_args_apart_from_arrays(write_body, x);
+    //     }
+    // }
 
 };
 

@@ -62,12 +62,24 @@
                                                     []
                                                     []
                                                     [(Print
-                                                        [(IntegerConstant 5 (Integer 4) Decimal)]
+                                                        [(StringFormat
+                                                            ()
+                                                            [(IntegerConstant 5 (Integer 4) Decimal)]
+                                                            FormatFortran
+                                                            (Character -1 0 ())
+                                                            ()
+                                                        )]
                                                         ()
                                                         ()
                                                     )
                                                     (Print
-                                                        [(Var 3 x)]
+                                                        [(StringFormat
+                                                            ()
+                                                            [(Var 3 x)]
+                                                            FormatFortran
+                                                            (Character -1 0 ())
+                                                            ()
+                                                        )]
                                                         ()
                                                         ()
                                                     )]

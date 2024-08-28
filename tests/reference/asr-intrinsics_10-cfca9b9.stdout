@@ -27,15 +27,21 @@
                     intrinsics_10
                     []
                     [(Print
-                        [(IntrinsicElementalFunction
-                            Real
-                            [(Var 2 x)]
-                            0
-                            (Real 4)
-                            (RealConstant
-                                3.000000
+                        [(StringFormat
+                            ()
+                            [(IntrinsicElementalFunction
+                                Real
+                                [(Var 2 x)]
+                                0
                                 (Real 4)
-                            )
+                                (RealConstant
+                                    3.000000
+                                    (Real 4)
+                                )
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
                         )]
                         ()
                         ()

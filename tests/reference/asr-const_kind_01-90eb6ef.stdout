@@ -127,11 +127,17 @@
                         ()
                     )
                     (Print
-                        [(Var 2 sp)
-                        (Var 2 dp)
-                        (Var 2 r1)
-                        (Var 2 r2)
-                        (Var 2 r3)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 sp)
+                            (Var 2 dp)
+                            (Var 2 r1)
+                            (Var 2 r2)
+                            (Var 2 r3)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )]

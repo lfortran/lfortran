@@ -33,11 +33,17 @@
                     print_01
                     []
                     [(Print
-                        [(StringConstant
-                            "My name is "
-                            (Character 1 11 ())
-                        )
-                        (Var 2 my_name)]
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "My name is "
+                                (Character 1 11 ())
+                            )
+                            (Var 2 my_name)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )]

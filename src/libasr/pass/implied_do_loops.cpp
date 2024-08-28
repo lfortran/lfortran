@@ -412,6 +412,8 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
 
         Allocator& al;
         bool remove_original_statement, allocate_target = false;
+        bool print = false, file_write = false;
+        ASR::expr_t* m_unit = nullptr;
         ReplaceArrayConstant replacer;
         Vec<ASR::stmt_t*> pass_result;
         Vec<ASR::stmt_t*>* parent_body;
@@ -426,6 +428,8 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
         parent_body(nullptr) {
             pass_result.n = 0;
             pass_result.reserve(al, 0);
+            print = false, file_write = false;
+            m_unit = nullptr;
         }
 
         void visit_Variable(const ASR::Variable_t& /*x*/) {
@@ -526,7 +530,39 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
             return array_constant;
         }
 
+        ASR::stmt_t* create_do_loop_form_idl(ASR::ImpliedDoLoop_t* x) {
+            ASR::stmt_t* do_loop = nullptr;
+
+            ASR::do_loop_head_t do_loop_head;
+            do_loop_head.loc = x->base.base.loc; do_loop_head.m_v = x->m_var;
+            do_loop_head.m_start = x->m_start; do_loop_head.m_end = x->m_end;
+            do_loop_head.m_increment = x->m_increment;
+
+            Vec<ASR::stmt_t*> do_loop_body; do_loop_body.reserve(al, x->n_values);
+            for (size_t i = 0; i < x->n_values; i++ ) {
+                if ( ASR::is_a<ASR::ImpliedDoLoop_t>(*x->m_values[i]) ) {
+                    do_loop_body.push_back(al, create_do_loop_form_idl(
+                        ASR::down_cast<ASR::ImpliedDoLoop_t>(x->m_values[i])));
+                } else {
+                    Vec<ASR::expr_t*> print_values; print_values.reserve(al, 1);
+                    print_values.push_back(al, x->m_values[i]);
+                    ASR::stmt_t* stmt = nullptr;
+                    if ( print ) {
+                        stmt = ASRUtils::STMT(ASR::make_Print_t(al, x->m_values[i]->base.loc, print_values.p, print_values.size(), nullptr, nullptr));
+                    } else {
+                        // this will be file_write
+                        LCOMPILERS_ASSERT(file_write);
+                        stmt = ASRUtils::STMT(ASR::make_FileWrite_t(al, x->m_values[i]->base.loc, 0, m_unit, nullptr, nullptr, nullptr, print_values.p, print_values.size(), nullptr, nullptr, nullptr));
+                    }
+                    do_loop_body.push_back(al, stmt);
+                }
+            }
+            do_loop = ASRUtils::STMT(ASR::make_DoLoop_t(al, x->base.base.loc, nullptr, do_loop_head, do_loop_body.p, do_loop_body.size(), nullptr, 0));
+            return do_loop;
+        }
+
         void visit_Print(const ASR::Print_t &x) {
+            print = true;
             /*
                 integer :: i
                 print *, (i, i=1, 10)
@@ -562,6 +598,7 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                     }
                 }
             }
+            print = false;
         }
 
         void visit_StringFormat(const ASR::StringFormat_t &x) {
@@ -578,6 +615,12 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
             for(size_t i = 0; i < x.n_args; i++) {
                 ASR::expr_t* value = x.m_args[i];
                 if (ASR::is_a<ASR::ImpliedDoLoop_t>(*value)) {
+                    ASR::ImpliedDoLoop_t* implied_do_loop = ASR::down_cast<ASR::ImpliedDoLoop_t>(value);
+                    if ( ASR::is_a<ASR::Tuple_t>(*implied_do_loop->m_type) ) {
+                        remove_original_statement = true;
+                        pass_result.push_back(al, create_do_loop_form_idl(implied_do_loop));
+                        continue;
+                    }
                     ASR::asr_t* array_constant = create_array_constant(x, value);
                     string_format_stmt->m_args[i] = ASRUtils::EXPR(array_constant);
 
@@ -611,9 +654,12 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
         }
 
         void visit_FileWrite(const ASR::FileWrite_t &x) {
+            file_write = true;
+            m_unit = x.m_unit;
             if (x.m_overloaded) {
                 this->visit_stmt(*x.m_overloaded);
                 remove_original_statement = false;
+                file_write = false;
                 return;
             }
 
@@ -653,6 +699,7 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                     }
                 }
             }
+            file_write = false;
         }
 
         void visit_CPtrToPointer(const ASR::CPtrToPointer_t& x) {

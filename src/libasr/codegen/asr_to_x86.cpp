@@ -380,6 +380,11 @@ public:
     void visit_Print(const ASR::Print_t &x) {
         LCOMPILERS_ASSERT(x.n_values == 1);
         ASR::expr_t *e = x.m_values[0];
+        //HACKISH way to handle print refactoring (always using stringformat).
+        // TODO : Implement stringformat visitor.
+        if(e && ASR::is_a<ASR::StringFormat_t>(*e)){
+            e = ASR::down_cast<ASR::StringFormat_t>(e)->m_args[0];
+        }
         if (e->type == ASR::exprType::StringConstant) {
             ASR::StringConstant_t *s = down_cast<ASR::StringConstant_t>(e);
             std::string msg = s->m_s;

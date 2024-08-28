@@ -1077,6 +1077,7 @@ decl
     | template_decl
     | requirement_decl
     | enum_decl
+    | data_statement sep { $$ = $1; TRIVIA_($$, TRIVIA_AFTER($2, @$)); }
     ;
 
 contains_block_opt

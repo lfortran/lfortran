@@ -1,0 +1,5 @@
+semantic error: `mask` argument to `Sum` must be a scalar or array of logical type
+ --> tests/errors/dim_float_02.f90:2:29
+  |
+2 |  print *, sum([1, 2, 3], 1, 1.1)
+  |                             ^^^ 

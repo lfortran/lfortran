@@ -51,7 +51,7 @@ class ReplaceIntrinsicSubroutines : public ASR::CallReplacerOnExpressionsVisitor
                 new_args.push_back(al, arg0);
             }
             ASRUtils::impl_subroutine instantiate_subroutine =
-                ASRUtils::IntrinsicImpureSubroutineRegistry::get_instantiate_subroutine(x.m_intrinsic_id);
+                ASRUtils::IntrinsicImpureSubroutineRegistry::get_instantiate_subroutine(x.m_sub_intrinsic_id);
             if( instantiate_subroutine == nullptr ) {
                 return ;
             }
