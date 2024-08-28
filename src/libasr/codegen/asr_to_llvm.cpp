@@ -8322,33 +8322,41 @@ public:
         llvm::Value *sep = nullptr;
         llvm::Value *sep_no_space = nullptr;
         llvm::Value *end = nullptr;
-        bool global_sep_space = false;
-        if (x.m_separator) {
-            this->visit_expr_wrapper(x.m_separator, true);
-            sep = tmp;
-        } else {
-            global_sep_space = true;
-            sep = builder->CreateGlobalStringPtr(" ");
-        }
-        if (x.m_end) {
-            this->visit_expr_wrapper(x.m_end, true);
-            end = tmp;
-        } else {
-            end = builder->CreateGlobalStringPtr("\n");
-        }
-        for (size_t i=0; i<x.n_values; i++) {
-            if (i != 0) {
-                fmt.push_back("%s");
-                if (global_sep_space &&
-                    !(ASRUtils::is_character(*ASRUtils::expr_type(x.m_values[i]))
-                        && ASRUtils::is_character(*ASRUtils::expr_type(x.m_values[i - 1])))) {
-                    args.push_back(sep);
-                } else {
-                    sep_no_space = sep_no_space != nullptr ? sep_no_space : builder->CreateGlobalStringPtr("");
-                    args.push_back(sep_no_space);
-                }
+        bool global_sep_space = true;
+        end = builder->CreateGlobalStringPtr("\n");
+        sep = builder->CreateGlobalStringPtr(" ");
+        if constexpr (x.class_type == ASR::stmtType::FileWrite){ // Remove after write node refactor.
+            if (x.m_separator) {
+                global_sep_space = false;
+                this->visit_expr_wrapper(x.m_separator, true);
+                sep = tmp;
             }
-            compute_fmt_specifier_and_arg(fmt, args, x.m_values[i], x.base.base.loc);
+            if (x.m_end) {
+                this->visit_expr_wrapper(x.m_end, true);
+                end = tmp;
+            }
+            for (size_t i=0; i<x.n_values; i++) {
+                if (i != 0) {
+                    fmt.push_back("%s");
+                    if (global_sep_space &&
+                        !(ASRUtils::is_character(*ASRUtils::expr_type(x.m_values[i]))
+                            && ASRUtils::is_character(*ASRUtils::expr_type(x.m_values[i - 1])))) {
+                        args.push_back(sep);
+                    } else {
+                        sep_no_space = sep_no_space != nullptr ? sep_no_space : builder->CreateGlobalStringPtr("");
+                        args.push_back(sep_no_space);
+                    }
+                }
+                compute_fmt_specifier_and_arg(fmt, args, x.m_values[i], x.base.base.loc);
+            }
+        } else if constexpr(x.class_type == ASR::stmtType::Print){
+            // TODO : These predicates should be appended togehter after refactor write (generic function issues).
+            if(ASR::is_a<ASR::Character_t>(*ASRUtils::expr_type(x.m_text))) {
+                compute_fmt_specifier_and_arg(fmt, args, x.m_text, x.base.base.loc);
+            }
+        } else {
+            throw CodeGenError("Print isn't supported for this expression",
+                x.base.base.loc);
         }
         fmt.push_back("%s");
         args.push_back(end);
