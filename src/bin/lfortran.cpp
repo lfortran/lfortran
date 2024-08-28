@@ -64,7 +64,7 @@ using LCompilers::endswith;
 using LCompilers::CompilerOptions;
 
 enum Backend {
-    llvm, c, cpp, x86, wasm, fortran
+    llvm, c, cpp, x86, wasm, fortran, mlir
 };
 
 std::string get_unique_ID() {
@@ -857,6 +857,54 @@ int emit_mlir(const std::string &infile, CompilerOptions &compiler_options)
     }
 }
 
+int compile_to_object_file_mlir(const std::string &infile,
+        const std::string &outfile,
+        CompilerOptions &compiler_options) {
+    std::string input = read_file(infile);
+
+    LCompilers::FortranEvaluator fe(compiler_options);
+    LCompilers::ASR::TranslationUnit_t* asr;
+
+
+    // Src -> AST -> ASR
+    LCompilers::LocationManager lm;
+
+    {
+        LCompilers::LocationManager::FileLocations fl;
+        fl.in_filename = infile;
+        lm.files.push_back(fl);
+        lm.file_ends.push_back(input.size());
+    }
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
+        result = fe.get_asr2(input, lm, diagnostics);
+    std::cerr << diagnostics.render(lm, compiler_options);
+    if (result.ok) {
+        asr = result.result;
+    } else {
+        LCOMPILERS_ASSERT(diagnostics.has_error())
+        return 1;
+    }
+
+    // ASR -> MLIR -> LLVM
+    LCompilers::LLVMEvaluator e(compiler_options.target);
+    std::unique_ptr<LCompilers::MLIRModule> m;
+    diagnostics.diagnostics.clear();
+    LCompilers::Result<std::unique_ptr<LCompilers::MLIRModule>>
+        res = fe.get_mlir2(*asr, diagnostics);
+    std::cerr << diagnostics.render(lm, compiler_options);
+    if (res.ok) {
+        m = std::move(res.result);
+    } else {
+        LCOMPILERS_ASSERT(diagnostics.has_error())
+        return 5;
+    }
+
+    // LLVM -> Machine code (saves to an object file)
+    e.save_object_file(*(m->llvm_m), outfile);
+
+    return 0;
+}
 #endif // HAVE_LFORTRAN_MLIR
 
 #ifdef HAVE_LFORTRAN_LLVM
@@ -1597,7 +1645,7 @@ int link_executable(const std::vector<std::string> &infiles,
         std::cout << "Cannot use static_executable and shared_executable together" << std::endl;
         return 10;
     }
-    if (backend == Backend::llvm) {
+    if (backend == Backend::llvm || backend == Backend::mlir) {
         std::string run_cmd = "", compile_cmd = "";
         if (t == "x86_64-pc-windows-msvc") {
             compile_cmd = "link /NOLOGO /OUT:" + outfile + " ";
@@ -2125,7 +2173,7 @@ int main_app(int argc, char *argv[]) {
     app.add_flag("--no-style-warnings", compiler_options.disable_style, "Turn off style suggestions");
     app.add_flag("--no-error-banner", compiler_options.no_error_banner, "Turn off error banner");
     app.add_option("--error-format", compiler_options.error_format, "Control how errors are produced (human, short)")->capture_default_str();
-    app.add_option("--backend", arg_backend, "Select a backend (llvm, c, cpp, x86, wasm, fortran)")->capture_default_str();
+    app.add_option("--backend", arg_backend, "Select a backend (llvm, c, cpp, x86, wasm, fortran, mlir)")->capture_default_str();
     app.add_flag("--openmp", compiler_options.openmp, "Enable openmp");
     app.add_flag("--openmp-lib-dir", compiler_options.openmp_lib_dir, "Pass path to openmp library")->capture_default_str();
     app.add_flag("--generate-object-code", compiler_options.generate_object_code, "Generate object code into .o files");
@@ -2308,8 +2356,10 @@ int main_app(int argc, char *argv[]) {
         backend = Backend::wasm;
     } else if (arg_backend == "fortran") {
         backend = Backend::fortran;
+    } else if (arg_backend == "mlir") {
+        backend = Backend::mlir;
     } else {
-        std::cerr << "The backend must be one of: llvm, cpp, x86, wasm, fortran." << std::endl;
+        std::cerr << "The backend must be one of: llvm, cpp, x86, wasm, fortran, mlir." << std::endl;
         return 1;
     }
 
@@ -2477,6 +2527,15 @@ int main_app(int argc, char *argv[]) {
             return compile_to_binary_wasm(arg_file, outfile, time_report, compiler_options);
         } else if (backend == Backend::fortran) {
             return compile_to_binary_fortran(arg_file, outfile, compiler_options);
+        } else if (backend == Backend::mlir) {
+#ifdef HAVE_LFORTRAN_MLIR
+            return compile_to_object_file_mlir(arg_file, outfile, compiler_options);
+#else
+            std::cerr << "The -c option with `--backend=mlir` requires the "
+                "MLIR backend to be enabled. Recompile with `WITH_MLIR=yes`."
+                << std::endl;
+            return 1;
+#endif
         } else {
             throw LCompilers::LCompilersException("Unsupported backend.");
         }
@@ -2508,6 +2567,15 @@ int main_app(int argc, char *argv[]) {
         } else if (backend == Backend::wasm) {
             err = compile_to_binary_wasm(arg_file, outfile,
                     time_report, compiler_options);
+        } else if (backend == Backend::mlir) {
+#ifdef HAVE_LFORTRAN_MLIR
+            err = compile_to_object_file_mlir(arg_file, tmp_o, compiler_options);
+#else
+            std::cerr << "Compiling Fortran files to object files using "
+                "`--backend=mlir` requires the MLIR backend to be enabled. "
+                "Recompile with `WITH_MLIR=yes`." << std::endl;
+            return 1;
+#endif
         } else {
             throw LCompilers::LCompilersException("Backend not supported");
         }

@@ -158,6 +158,16 @@ std::string MLIRModule::str() {
     return mlir_str;
 }
 
+void MLIRModule::mlir_to_llvm() {
+    llvm_ctx = std::make_unique<llvm::LLVMContext>();
+    std::unique_ptr<llvm::Module> llvmModule = mlir::translateModuleToLLVMIR(
+        *mlir_m, *llvm_ctx);
+    if (llvmModule) {
+        llvm_m = std::move(llvmModule);
+    } else {
+        throw std::runtime_error("Failed to generate LLVM IR");
+    }
+}
 #endif
 
 extern "C" {

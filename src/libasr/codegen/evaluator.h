@@ -52,6 +52,7 @@ public:
         std::unique_ptr<mlir::MLIRContext> ctx);
     ~MLIRModule();
     std::string str();
+    void mlir_to_llvm();
 };
 
 class LLVMEvaluator

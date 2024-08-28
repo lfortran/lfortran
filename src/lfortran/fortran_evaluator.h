@@ -109,6 +109,8 @@ public:
         LocationManager &lm, diag::Diagnostics &diagnostics);
     Result<std::string> get_mlir(const std::string &code,
         LocationManager &lm, diag::Diagnostics &diagnostics);
+    Result<std::unique_ptr<MLIRModule>> get_mlir2(
+        ASR::TranslationUnit_t &asr, diag::Diagnostics &diagnostics);
     Result<std::string> get_fortran(const std::string &code,
         LocationManager &lm, diag::Diagnostics &diagnostics);
     Result<std::string> get_fmt(const std::string &code, LocationManager &lm,

@@ -539,6 +539,31 @@ Result<std::string> FortranEvaluator::get_mlir(const std::string &code,
     }
 }
 
+Result<std::unique_ptr<MLIRModule>> FortranEvaluator::get_mlir2(
+#ifdef HAVE_LFORTRAN_MLIR
+        ASR::TranslationUnit_t &asr, diag::Diagnostics &diagnostics
+#else
+        ASR::TranslationUnit_t &/*asr*/, diag::Diagnostics &/*diagnostics*/
+#endif
+) {
+#ifdef HAVE_LFORTRAN_MLIR
+    // ASR -> MLIR
+    std::unique_ptr<LCompilers::MLIRModule> m;
+    Result<std::unique_ptr<MLIRModule>> res = asr_to_mlir(al, asr, diagnostics);
+    if (res.ok) {
+        m = std::move(res.result);
+    } else {
+        LCOMPILERS_ASSERT(diagnostics.has_error())
+        return res.error;
+    }
+
+    // MLIR -> LLVM
+    m->mlir_to_llvm();
+    return m;
+#else
+    throw LCompilersException("MLIR is not enabled");
+#endif
+}
 
 Result<std::string> FortranEvaluator::get_fortran(const std::string &code,
     LocationManager &lm, diag::Diagnostics &diagnostics)
