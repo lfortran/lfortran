@@ -43,18 +43,24 @@
                     intrinsics_29
                     []
                     [(IntrinsicImpureSubroutine
-                        ObjectType
+                        RandomNumber
                         [(Var 2 random_sp)]
                         0
                     )
                     (IntrinsicImpureSubroutine
-                        ObjectType
+                        RandomNumber
                         [(Var 2 random_dp)]
                         0
                     )
                     (Print
-                        [(Var 2 random_sp)
-                        (Var 2 random_dp)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 random_sp)
+                            (Var 2 random_dp)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )]

@@ -244,6 +244,19 @@ void handle_logical(char* format, bool val, char** result) {
 }
 
 void handle_float(char* format, double val, char** result) {
+    if (strcmp(format,"f-64") == 0){ //use c formatting.
+        char* float_str = (char*)malloc(50 * sizeof(char));
+        sprintf(float_str,"%23.17e",val);
+        *result = append_to_string(*result,float_str);
+        free(float_str);
+        return;
+    } else if(strcmp(format,"f-32") == 0){ //use c formatting.
+        char* float_str = (char*)malloc(40 * sizeof(char));
+        sprintf(float_str,"%13.8e",val);
+        *result = append_to_string(*result,float_str);
+        free(float_str);
+        return;
+    }
     int width = 0, decimal_digits = 0;
     long integer_part = (long)fabs(val);
     double decimal_part = fabs(val) - integer_part;
@@ -592,7 +605,7 @@ char* remove_spaces_except_quotes(const char* format) {
  * e.g. "(I5, F5.2, T10)" is split separately into "I5", "F5.2", "T10" as
  * format specifiers
 */
-char** parse_fortran_format(char* format, int *count, int *item_start) {
+char** parse_fortran_format(char* format, int64_t *count, int64_t *item_start) {
     char** format_values_2 = (char**)malloc((*count + 1) * sizeof(char*));
     int format_values_count = *count;
     int index = 0 , start = 0;
@@ -875,26 +888,62 @@ bool check_array_iteration(int* count, int* current_arg_type_int, va_list* args,
     return is_array;
     
 }
-
+char* int_to_format_specifier(int32_t type_as_int){
+    switch(type_as_int){
+        case 1:
+        case 2:
+        case 3:
+        case 4:
+        case 9:
+        case 10:
+        case 11:
+        case 12:
+        case 19:
+            return "i0";
+        case 5:
+        case 13:
+            return "f-64"; //special handling in `handle_float`
+        case 6:
+        case 14:
+            return "f-32"; //special handling in `handle_float`
+        case 7:
+        case 15:
+            return "a";
+        case 8:
+        case 16:
+            return "l";
+        default:
+            fprintf(stderr,"Unidentified number %d\n",type_as_int);
+            exit(0);
+    }
+}
 LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* format, ...)
 {
     va_list args;
     va_start(args, format);
-    char* cleaned_format = remove_spaces_except_quotes(format);
-    if (!cleaned_format) {
-        va_end(args);
-        return NULL;
+    bool default_formatting = (format == NULL);
+    char* default_spacing = "    ";
+    int64_t format_values_count = 0,item_start_idx=0;
+    char** format_values;
+    char* modified_input_string;
+    if (default_formatting){
+        format_values_count = INT64_MAX; // Termination would depend on count of args, so set to maximum looping.
+    } else {
+        char* cleaned_format = remove_spaces_except_quotes(format);
+        if (!cleaned_format) {
+            va_end(args);
+            return NULL;
+        }
+        int len = strlen(cleaned_format);
+        modified_input_string = (char*)malloc((len+1) * sizeof(char));
+        strncpy(modified_input_string, cleaned_format, len);
+        modified_input_string[len] = '\0';
+        if (cleaned_format[0] == '(' && cleaned_format[len-1] == ')') {
+            memmove(modified_input_string, modified_input_string + 1, strlen(modified_input_string));
+            modified_input_string[len-2] = '\0';
+        }
+        format_values = parse_fortran_format(modified_input_string,&format_values_count,&item_start_idx);
     }
-    int len = strlen(cleaned_format);
-    char* modified_input_string = (char*)malloc((len+1) * sizeof(char));
-    strncpy(modified_input_string, cleaned_format, len);
-    modified_input_string[len] = '\0';
-    if (cleaned_format[0] == '(' && cleaned_format[len-1] == ')') {
-        memmove(modified_input_string, modified_input_string + 1, strlen(modified_input_string));
-        modified_input_string[len-2] = '\0';
-    }
-    int format_values_count = 0,item_start_idx=0;
-    char** format_values = parse_fortran_format(modified_input_string,&format_values_count,&item_start_idx);
     char* result = (char*)malloc(sizeof(char));
     result[0] = '\0';
     int item_start = 0;
@@ -903,16 +952,29 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
     struct array_iteration_state array_state;
     array_state.array_size = -1;
     array_state.current_arr_index = -1;
+    int32_t current_arg_type_int = -1; // holds int that represents type of argument.
     while (1) {
         int scale = 0;
-        int32_t current_arg_type_int = -1; // holds int that represents type of argument.
         bool is_array = false;
+        bool array_looping = false;
         for (int i = item_start; i < format_values_count; i++) {
-            if(format_values[i] == NULL) continue;
-            char* value = format_values[i];
+            char* value;
+            array_looping = (array_state.current_arr_index != array_state.array_size);
+            if(default_formatting && !array_looping){
+                if(count <=0) break;
+                current_arg_type_int =  va_arg(args,int32_t);
+                count--;
+                value = int_to_format_specifier(current_arg_type_int);
+            } else if (!default_formatting) {
+                if(format_values[i] == NULL) continue;
+                value = format_values[i];
+            } else {
+                // Array is being looped on.
+            }
+
             if (value[0] == '(' && value[strlen(value)-1] == ')') {
                 value[strlen(value)-1] = '\0';
-                int new_fmt_val_count = 0;
+                int64_t new_fmt_val_count = 0;
                 char** new_fmt_val = parse_fortran_format(++value,&new_fmt_val_count,&item_start_idx);
 
                 char** ptr = (char**)realloc(format_values, (format_values_count + new_fmt_val_count + 1) * sizeof(char*));
@@ -971,7 +1033,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
                     }
                 }
             } else {
-                if((array_state.current_arr_index == array_state.array_size) && (count > 0)){ // Fetch type integer when we don't have an array.
+                if(!array_looping && (count > 0) && !default_formatting){ // Fetch type integer when we don't have an array.
                     current_arg_type_int =  va_arg(args,int32_t);
                     count--;
                 }
@@ -1067,9 +1129,10 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
                     count--;
                     printf("Printing support is not available for %s format.\n",value);
                 }
+                if( default_formatting && (count > 0) ){ //append spacing after each element.
+                    result = append_to_string(result,default_spacing);
+                }
             }
-
-
         }
         if ( count > 0 ) {
             if (!array) {
@@ -1080,12 +1143,13 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
             break;
         }
     }
-
-    free(modified_input_string);
-    for (int i = 0;i<format_values_count;i++) {
-            free(format_values[i]);
+    if(!default_formatting){
+        free(modified_input_string);
+        for (int i = 0;(i<format_values_count);i++) {
+                free(format_values[i]);
+        }
+        free(format_values);
     }
-    free(format_values);
     va_end(args);
     return result;
 }
@@ -2410,7 +2474,6 @@ LFORTRAN_API double _lfortran_dp_rand_num() {
     return rand() / (double) RAND_MAX;
 }
 
-
 LFORTRAN_API bool _lfortran_random_init(bool repeatable, bool image_distinct) {
     if (repeatable) {
             srand(0);
@@ -3148,6 +3211,32 @@ LFORTRAN_API int32_t _lfortran_get_argc() {
 
 LFORTRAN_API char *_lpython_get_argv(int32_t index) {
     return _argv[index];
+}
+
+
+LFORTRAN_API char *_lfortran_get_command_command() {
+    char* out;
+    for(int i=0; i<_argc; i++) {
+        if(i == 0) {
+            out = strdup(_argv[i]);
+        } else {
+            out = realloc(out, strlen(out) + strlen(_argv[i]) + 1);
+            strcat(out, " ");
+            strcat(out, _argv[i]);
+        }
+    }
+    return out;
+}
+
+
+LFORTRAN_API int32_t _lfortran_get_command_length() {
+    char* out = _lfortran_get_command_command();
+    return strlen(out);
+}
+
+
+LFORTRAN_API int32_t _lfortran_get_command_status() {
+    return 1;
 }
 
 // << Command line arguments << ------------------------------------------------

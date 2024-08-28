@@ -37,6 +37,7 @@
                 (EndOfLine)]
             )
         )]
+        []
         [(Function
             b
             []
@@ -111,6 +112,7 @@
                 (EndOfLine)]
             )
         )]
+        []
         [(Function
             a
             []

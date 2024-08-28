@@ -306,16 +306,54 @@
                                                 "fields": {
                                                     "values": [
                                                         {
-                                                            "node": "Var",
+                                                            "node": "StringFormat",
                                                             "fields": {
-                                                                "v": "my_global (SymbolTable2)"
+                                                                "fmt": [],
+                                                                "args": [
+                                                                    {
+                                                                        "node": "Var",
+                                                                        "fields": {
+                                                                            "v": "my_global (SymbolTable2)"
+                                                                        },
+                                                                        "loc": {
+                                                                            "first": 107,
+                                                                            "last": 115,
+                                                                            "first_filename": "tests/modules_10.f90",
+                                                                            "first_line": 5,
+                                                                            "first_column": 18,
+                                                                            "last_filename": "tests/modules_10.f90",
+                                                                            "last_line": 5,
+                                                                            "last_column": 26
+                                                                        }
+                                                                    }
+                                                                ],
+                                                                "kind": "FormatFortran",
+                                                                "type": {
+                                                                    "node": "Character",
+                                                                    "fields": {
+                                                                        "kind": -1,
+                                                                        "len": 0,
+                                                                        "len_expr": []
+                                                                    },
+                                                                    "loc": {
+                                                                        "first": 98,
+                                                                        "last": 115,
+                                                                        "first_filename": "tests/modules_10.f90",
+                                                                        "first_line": 5,
+                                                                        "first_column": 9,
+                                                                        "last_filename": "tests/modules_10.f90",
+                                                                        "last_line": 5,
+                                                                        "last_column": 26
+                                                                    }
+                                                                },
+                                                                "value": []
                                                             },
                                                             "loc": {
-                                                                "first": 107,
+                                                                "first": 98,
                                                                 "last": 115,
                                                                 "first_filename": "tests/modules_10.f90",
                                                                 "first_line": 5,
-                                                                "first_column": 18,
+                                                                "first_column": 9,
                                                                 "last_filename": "tests/modules_10.f90",
                                                                 "last_line": 5,
                                                                 "last_column": 26

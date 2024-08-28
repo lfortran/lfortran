@@ -1811,12 +1811,24 @@
                                         ()
                                     )
                                     (Print
-                                        [(Var 13 s_i)]
+                                        [(StringFormat
+                                            ()
+                                            [(Var 13 s_i)]
+                                            FormatFortran
+                                            (Character -1 0 ())
+                                            ()
+                                        )]
                                         ()
                                         ()
                                     )
                                     (Print
-                                        [(Var 13 s_r)]
+                                        [(StringFormat
+                                            ()
+                                            [(Var 13 s_r)]
+                                            FormatFortran
+                                            (Character -1 0 ())
+                                            ()
+                                        )]
                                         ()
                                         ()
                                     )]

@@ -469,11 +469,17 @@
                                         ()
                                     )
                                     (Print
-                                        [(StringConstant
-                                            "s="
-                                            (Character 1 2 ())
-                                        )
-                                        (Var 24 s)]
+                                        [(StringFormat
+                                            ()
+                                            [(StringConstant
+                                                "s="
+                                                (Character 1 2 ())
+                                            )
+                                            (Var 24 s)]
+                                            FormatFortran
+                                            (Character -1 0 ())
+                                            ()
+                                        )]
                                         ()
                                         ()
                                     )]

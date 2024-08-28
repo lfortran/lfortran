@@ -59,12 +59,18 @@
                         ()
                     )
                     (Print
-                        [(IntrinsicElementalFunction
-                            Min
-                            [(Var 2 y)
-                            (Var 2 z)]
-                            0
-                            (Real 8)
+                        [(StringFormat
+                            ()
+                            [(IntrinsicElementalFunction
+                                Min
+                                [(Var 2 y)
+                                (Var 2 z)]
+                                0
+                                (Real 8)
+                                ()
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
                             ()
                         )]
                         ()

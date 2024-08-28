@@ -290,28 +290,40 @@
                                     []
                                     []
                                     [(Print
-                                        [(FunctionCall
-                                            6 subtract
+                                        [(StringFormat
                                             ()
-                                            []
-                                            (StructType
-                                                7 1_t_1
-                                            )
-                                            ()
+                                            [(FunctionCall
+                                                6 subtract
+                                                ()
+                                                []
+                                                (StructType
+                                                    7 1_t_1
+                                                )
+                                                ()
+                                                ()
+                                            )]
+                                            FormatFortran
+                                            (Character -1 0 ())
                                             ()
                                         )]
                                         ()
                                         ()
                                     )
                                     (Print
-                                        [(FunctionCall
-                                            6 add
+                                        [(StringFormat
                                             ()
-                                            []
-                                            (StructType
-                                                7 1_t_1
-                                            )
-                                            ()
+                                            [(FunctionCall
+                                                6 add
+                                                ()
+                                                []
+                                                (StructType
+                                                    7 1_t_1
+                                                )
+                                                ()
+                                                ()
+                                            )]
+                                            FormatFortran
+                                            (Character -1 0 ())
                                             ()
                                         )]
                                         ()

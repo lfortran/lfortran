@@ -823,6 +823,11 @@ filename = "../integration_tests/data_02.f90"
 ast = true
 
 [[test]]
+filename = "../integration_tests/data_12.f90"
+ast = true
+asr = true
+
+[[test]]
 filename = "scopes1.f90"
 asr = true
 
@@ -4137,4 +4142,24 @@ run = true
 
 [[test]]
 filename = "exit2.f90"
+run = true
+
+[[test]]
+filename = "errors/kind_01.f90"
+asr = true
+
+[[test]]
+filename = "errors/dim_float_01.f90"
+asr = true
+
+[[test]]
+filename = "errors/dim_float_02.f90"
+asr = true
+
+[[test]]
+filename = "errors/dim_float_03.f90"
+asr = true
+
+[[test]]
+filename = "implied_do_loop1.f90"
 run = true

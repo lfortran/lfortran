@@ -288,7 +288,13 @@
                                         []
                                     )
                                     (Print
-                                        [(Var 3 reldiff)]
+                                        [(StringFormat
+                                            ()
+                                            [(Var 3 reldiff)]
+                                            FormatFortran
+                                            (Character -1 0 ())
+                                            ()
+                                        )]
                                         ()
                                         ()
                                     )]

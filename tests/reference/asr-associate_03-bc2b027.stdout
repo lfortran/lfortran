@@ -77,8 +77,14 @@
                     associate_03
                     []
                     [(Print
-                        [(Var 2 t1)
-                        (Var 2 t2)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 t1)
+                            (Var 2 t2)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
@@ -100,7 +106,13 @@
                         )]
                     )
                     (Print
-                        [(Var 2 p1)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 p1)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )

@@ -646,11 +646,17 @@
                                         ()
                                     )
                                     (Print
-                                        [(StringConstant
-                                            "The result is"
-                                            (Character 1 13 ())
-                                        )
-                                        (Var 8 n)]
+                                        [(StringFormat
+                                            ()
+                                            [(StringConstant
+                                                "The result is"
+                                                (Character 1 13 ())
+                                            )
+                                            (Var 8 n)]
+                                            FormatFortran
+                                            (Character -1 0 ())
+                                            ()
+                                        )]
                                         ()
                                         ()
                                     )]

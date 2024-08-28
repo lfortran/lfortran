@@ -361,96 +361,108 @@
                         ()
                     )
                     (Print
-                        [(StructInstanceMember
-                            (Var 5 jack)
-                            5 1_person_first
-                            (Character 1 20 ())
+                        [(StringFormat
                             ()
-                        )
-                        (StructInstanceMember
-                            (Var 5 jack)
-                            5 1_person_last
-                            (Character 1 20 ())
-                            ()
-                        )
-                        (StructInstanceMember
-                            (Var 5 jack)
-                            5 1_person_birthyear
-                            (Integer 4)
-                            ()
-                        )
-                        (StructInstanceMember
-                            (Var 5 jack)
-                            5 1_person_sgender
-                            (Character 1 1 ())
+                            [(StructInstanceMember
+                                (Var 5 jack)
+                                5 1_person_first
+                                (Character 1 20 ())
+                                ()
+                            )
+                            (StructInstanceMember
+                                (Var 5 jack)
+                                5 1_person_last
+                                (Character 1 20 ())
+                                ()
+                            )
+                            (StructInstanceMember
+                                (Var 5 jack)
+                                5 1_person_birthyear
+                                (Integer 4)
+                                ()
+                            )
+                            (StructInstanceMember
+                                (Var 5 jack)
+                                5 1_person_sgender
+                                (Character 1 1 ())
+                                ()
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
                             ()
                         )]
                         ()
                         ()
                     )
                     (Print
-                        [(StructInstanceMember
-                            (StructInstanceMember
-                                (Var 5 jill)
-                                5 1_employee_person
-                                (StructType
-                                    5 person
+                        [(StringFormat
+                            ()
+                            [(StructInstanceMember
+                                (StructInstanceMember
+                                    (Var 5 jill)
+                                    5 1_employee_person
+                                    (StructType
+                                        5 person
+                                    )
+                                    ()
                                 )
+                                5 1_person_first
+                                (Character 1 20 ())
                                 ()
                             )
-                            5 1_person_first
-                            (Character 1 20 ())
-                            ()
-                        )
-                        (StructInstanceMember
                             (StructInstanceMember
-                                (Var 5 jill)
-                                5 1_employee_person
-                                (StructType
-                                    5 person
+                                (StructInstanceMember
+                                    (Var 5 jill)
+                                    5 1_employee_person
+                                    (StructType
+                                        5 person
+                                    )
+                                    ()
                                 )
+                                5 1_person_last
+                                (Character 1 20 ())
                                 ()
                             )
-                            5 1_person_last
-                            (Character 1 20 ())
-                            ()
-                        )
-                        (StructInstanceMember
                             (StructInstanceMember
-                                (Var 5 jill)
-                                5 1_employee_person
-                                (StructType
-                                    5 person
+                                (StructInstanceMember
+                                    (Var 5 jill)
+                                    5 1_employee_person
+                                    (StructType
+                                        5 person
+                                    )
+                                    ()
                                 )
+                                5 1_person_birthyear
+                                (Integer 4)
                                 ()
                             )
-                            5 1_person_birthyear
-                            (Integer 4)
-                            ()
-                        )
-                        (StructInstanceMember
                             (StructInstanceMember
-                                (Var 5 jill)
-                                5 1_employee_person
-                                (StructType
-                                    5 person
+                                (StructInstanceMember
+                                    (Var 5 jill)
+                                    5 1_employee_person
+                                    (StructType
+                                        5 person
+                                    )
+                                    ()
                                 )
+                                5 1_person_sgender
+                                (Character 1 1 ())
                                 ()
                             )
-                            5 1_person_sgender
-                            (Character 1 1 ())
-                            ()
-                        )
-                        (StructInstanceMember
-                            (Var 5 jill)
-                            5 1_employee_department
-                            (Character 1 20 ())
-                            ()
-                        )
-                        (StructInstanceMember
-                            (Var 5 jill)
-                            5 1_employee_hire_date
-                            (Integer 4)
+                            (StructInstanceMember
+                                (Var 5 jill)
+                                5 1_employee_department
+                                (Character 1 20 ())
+                                ()
+                            )
+                            (StructInstanceMember
+                                (Var 5 jill)
+                                5 1_employee_hire_date
+                                (Integer 4)
+                                ()
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
                             ()
                         )]
                         ()

@@ -37,13 +37,19 @@
                     intrinsics_26
                     [stdlib_bitsets_64]
                     [(Print
-                        [(FunctionCall
-                            4 all_set
+                        [(StringFormat
                             ()
-                            [((Var 4 i))
-                            ((IntegerConstant 5 (Integer 4) Decimal))]
-                            (Logical 4)
-                            ()
+                            [(FunctionCall
+                                4 all_set
+                                ()
+                                [((Var 4 i))
+                                ((IntegerConstant 5 (Integer 4) Decimal))]
+                                (Logical 4)
+                                ()
+                                ()
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
                             ()
                         )]
                         ()

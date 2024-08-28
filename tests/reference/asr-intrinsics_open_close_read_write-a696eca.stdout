@@ -414,22 +414,28 @@
                             ()
                             ()
                             ()
-                            [(ArrayItem
-                                (Var 2 p)
-                                [(()
-                                (Var 2 i)
-                                ())]
-                                (Real 4)
-                                ColMajor
+                            [(StringFormat
                                 ()
-                            )
-                            (ArrayItem
-                                (Var 2 q)
-                                [(()
-                                (Var 2 i)
-                                ())]
-                                (Real 4)
-                                ColMajor
+                                [(ArrayItem
+                                    (Var 2 p)
+                                    [(()
+                                    (Var 2 i)
+                                    ())]
+                                    (Real 4)
+                                    ColMajor
+                                    ()
+                                )
+                                (ArrayItem
+                                    (Var 2 q)
+                                    [(()
+                                    (Var 2 i)
+                                    ())]
+                                    (Real 4)
+                                    ColMajor
+                                    ()
+                                )]
+                                FormatFortran
+                                (Character -1 0 ())
                                 ()
                             )]
                             ()

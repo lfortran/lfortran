@@ -96,19 +96,25 @@
                         ()
                     )
                     (Print
-                        [(Var 2 z1)
-                        (ComplexConstructor
-                            (Cast
-                                (Var 2 x)
-                                RealToReal
-                                (Real 8)
+                        [(StringFormat
+                            ()
+                            [(Var 2 z1)
+                            (ComplexConstructor
+                                (Cast
+                                    (Var 2 x)
+                                    RealToReal
+                                    (Real 8)
+                                    ()
+                                )
+                                (RealConstant
+                                    0.000000
+                                    (Real 8)
+                                )
+                                (Complex 8)
                                 ()
-                            )
-                            (RealConstant
-                                0.000000
-                                (Real 8)
-                            )
-                            (Complex 8)
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
                             ()
                         )]
                         ()

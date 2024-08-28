@@ -369,7 +369,13 @@
                                         ()
                                     )
                                     (Print
-                                        [(Var 6 a)]
+                                        [(StringFormat
+                                            ()
+                                            [(Var 6 a)]
+                                            FormatFortran
+                                            (Character -1 0 ())
+                                            ()
+                                        )]
                                         ()
                                         ()
                                     )
@@ -397,7 +403,13 @@
                                         ()
                                     )
                                     (Print
-                                        [(Var 6 a)]
+                                        [(StringFormat
+                                            ()
+                                            [(Var 6 a)]
+                                            FormatFortran
+                                            (Character -1 0 ())
+                                            ()
+                                        )]
                                         ()
                                         ()
                                     )]

@@ -1697,6 +1697,8 @@ class PickleVisitorVisitor(ASDLVisitor):
                         self.emit('s.append(self().convert_intrinsic_id(x.m_%s));' % field.name, 2)
                     elif field.name == "impure_intrinsic_id":
                         self.emit('s.append(self().convert_impure_intrinsic_id(x.m_%s));' % field.name, 2)
+                    elif field.name == "sub_intrinsic_id":
+                        self.emit('s.append(self().convert_sub_intrinsic_id(x.m_%s));' % field.name, 2)
                     elif field.name == "arr_intrinsic_id":
                         self.emit('s.append(self().convert_array_intrinsic_id(x.m_%s));' % field.name, 2)
                     else:
