@@ -1139,7 +1139,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
 
     void visit_IntrinsicImpureSubroutine(const ASR::IntrinsicImpureSubroutine_t& x) {
         visit_IntrinsicCall(x, "_intrinsic_impure_subroutine_" +
-            ASRUtils::get_impure_intrinsic_name(x.m_intrinsic_id));
+            ASRUtils::get_impure_intrinsic_name(x.m_sub_intrinsic_id));
     }
 
     void visit_IntrinsicElementalFunction(const ASR::IntrinsicElementalFunction_t& x) {
