@@ -591,11 +591,7 @@ std::string get_stacktrace(int skip)
 {
   std::vector<StacktraceItem> d = get_stacktrace_addresses();
   get_local_addresses(d);
-#ifdef HAVE_LFORTRAN_LLVM
-    get_llvm_info(d);
-#else
-    get_local_info(d);
-#endif
+  get_local_info(d);
   return stacktrace2str(d, skip);
 }
 
@@ -693,6 +689,9 @@ void get_local_info(std::vector<StacktraceItem> &d)
 #ifdef HAVE_LFORTRAN_DWARFDUMP
   get_local_info_dwarfdump(d);
 #else
+#ifdef HAVE_LFORTRAN_LLVM
+    get_llvm_info(d);
+#else
 #  ifdef HAVE_LFORTRAN_BFD
   bfd_init();
 #  endif
@@ -702,6 +701,7 @@ void get_local_info(std::vector<StacktraceItem> &d)
       d[i].source_filename, d[i].function_name, d[i].line_number);
 #  endif
   }
+#endif // HAVE_LFORTRAN_LLVMJ
 #endif
 }
 
@@ -709,11 +709,7 @@ std::string error_stacktrace(const std::vector<StacktraceItem> &stacktrace)
 {
     std::vector<StacktraceItem> d = stacktrace;
     get_local_addresses(d);
-#ifdef HAVE_LFORTRAN_LLVM
-    get_llvm_info(d);
-#else
     get_local_info(d);
-#endif
     return stacktrace2str(d, stacktrace_depth-1);
 }
 
