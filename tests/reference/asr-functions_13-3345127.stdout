@@ -393,12 +393,18 @@
                         ()
                     )
                     (Print
-                        [(FunctionCall
-                            4 test_verify_intrinsic
+                        [(StringFormat
                             ()
-                            []
-                            (Logical 4)
-                            ()
+                            [(FunctionCall
+                                4 test_verify_intrinsic
+                                ()
+                                []
+                                (Logical 4)
+                                ()
+                                ()
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
                             ()
                         )]
                         ()

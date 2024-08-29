@@ -646,20 +646,32 @@
                                         ()
                                     )
                                     (Print
-                                        [(StringConstant
-                                            "s1="
-                                            (Character 1 3 ())
-                                        )
-                                        (Var 19 s1)]
+                                        [(StringFormat
+                                            ()
+                                            [(StringConstant
+                                                "s1="
+                                                (Character 1 3 ())
+                                            )
+                                            (Var 19 s1)]
+                                            FormatFortran
+                                            (Character -1 0 ())
+                                            ()
+                                        )]
                                         ()
                                         ()
                                     )
                                     (Print
-                                        [(StringConstant
-                                            "s2="
-                                            (Character 1 3 ())
-                                        )
-                                        (Var 19 s2)]
+                                        [(StringFormat
+                                            ()
+                                            [(StringConstant
+                                                "s2="
+                                                (Character 1 3 ())
+                                            )
+                                            (Var 19 s2)]
+                                            FormatFortran
+                                            (Character -1 0 ())
+                                            ()
+                                        )]
                                         ()
                                         ()
                                     )]

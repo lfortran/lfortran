@@ -112,11 +112,17 @@
                         .false.
                     )
                     (Print
-                        [(StringConstant
-                            "Your marks are "
-                            (Character 1 15 ())
-                        )
-                        (Var 2 marks)]
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "Your marks are "
+                                (Character 1 15 ())
+                            )
+                            (Var 2 marks)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
@@ -178,11 +184,17 @@
                         .false.
                     )
                     (Print
-                        [(StringConstant
-                            "Your marks are "
-                            (Character 1 15 ())
-                        )
-                        (Var 2 marks)]
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "Your marks are "
+                                (Character 1 15 ())
+                            )
+                            (Var 2 marks)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )]

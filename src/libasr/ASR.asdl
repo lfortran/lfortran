@@ -57,7 +57,7 @@ stmt
     | Stop(expr? code)
     | Assert(expr test, expr? msg)
     | SubroutineCall(symbol name, symbol? original_name, call_arg* args, expr? dt)  -- temporary needed (for all its array arguments create an assignment), contains array
-    | IntrinsicImpureSubroutine(int intrinsic_id, expr* args, int overload_id)  -- temporary needed (for all its array arguments create an assignment), contains array
+    | IntrinsicImpureSubroutine(int sub_intrinsic_id, expr* args, int overload_id)  -- temporary needed (for all its array arguments create an assignment), contains array
     | Where(expr test, stmt* body, stmt* orelse)  -- to be handled very carefully
     | WhileLoop(identifier? name, expr test, stmt* body, stmt* orelse)
     | Nullify(symbol* vars)
@@ -131,7 +131,7 @@ expr
     | StringCompare(expr left, cmpop op, expr right, ttype type, expr? value)
     | StringOrd(expr arg, ttype type, expr? value)
     | StringChr(expr arg, ttype type, expr? value)
-    | StringFormat(expr fmt, expr* args, string_format_kind kind, ttype type, expr? value)
+    | StringFormat(expr? fmt, expr* args, string_format_kind kind, ttype type, expr? value)
     | CPtrCompare(expr left, cmpop op, expr right, ttype type, expr? value)
     | SymbolicCompare(expr left, cmpop op, expr right, ttype type, expr? value)
     | DictConstant(expr* keys, expr* values, ttype type) -- temporary needed

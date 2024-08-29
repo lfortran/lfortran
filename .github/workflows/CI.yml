@@ -710,8 +710,8 @@ jobs:
             cd SNAP
             export PATH="$(pwd)/../src/bin:$PATH"
 
-            git checkout lf7
-            git checkout 4da1d34db8561e580ea87d6e84e5ecd30efc1572
+            git checkout lf11
+            git checkout 169a9216f2c922e94065a519efbb0a6c8b55149e
             cd ./src
             make -j8 FORTRAN=lfortran FFLAGS= MPI=no OPENMP=no
             ./gsnap ../qasnap/sample/inp out
@@ -1077,6 +1077,51 @@ jobs:
             cd integration_tests
             ./run_tests.py -b fortran -j1
             ./run_tests.py -b fortran -f -j1
+
+  test_mlir:
+    name: Test MLIR backend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: mamba-org/setup-micromamba@v1.8.0
+        with:
+          environment-file: ci/environment_linux_llvm.yml
+          create-args: >-
+            python=3.10
+            mlir=15.0.7
+            llvm=15.0.7
+
+      - uses: hendrikmuhs/ccache-action@main
+        with:
+          variant: sccache
+          key: ${{ github.job }}-${{ matrix.os }}
+
+      - name: Build Linux
+        shell: bash -e -l {0}
+        run: |
+            ./build0.sh
+            cmake . -GNinja \
+              -DCMAKE_BUILD_TYPE=Debug \
+              -DWITH_LLVM=yes \
+              -DWITH_MLIR=yes \
+              -DLFORTRAN_BUILD_ALL=yes \
+              -DWITH_STACKTRACE=no \
+              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
+              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
+              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+
+            cmake --build . -j16 --target install
+
+      - name: Test Linux
+        shell: bash -e -l {0}
+        run: |
+            cd integration_tests
+            ./run_tests.py -b mlir -j1
+
 
   test_c_cpp:
     name: Test C/C++ backend

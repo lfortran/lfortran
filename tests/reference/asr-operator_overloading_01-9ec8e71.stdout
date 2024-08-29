@@ -95,193 +95,241 @@
                     operator_overloading_01
                     [operator_overloading_01_overload_asterisk_m]
                     [(Print
-                        [(StringConstant
-                            "T*T:"
-                            (Character 1 4 ())
-                        )
-                        (OverloadedBinOp
-                            (Var 5 t)
-                            Mul
-                            (Var 5 t)
-                            (Logical 4)
+                        [(StringFormat
                             ()
-                            (FunctionCall
-                                5 logical_and
-                                5 ~mul
-                                [((Var 5 t))
-                                ((Var 5 t))]
+                            [(StringConstant
+                                "T*T:"
+                                (Character 1 4 ())
+                            )
+                            (OverloadedBinOp
+                                (Var 5 t)
+                                Mul
+                                (Var 5 t)
                                 (Logical 4)
                                 ()
-                                ()
-                            )
+                                (FunctionCall
+                                    5 logical_and
+                                    5 ~mul
+                                    [((Var 5 t))
+                                    ((Var 5 t))]
+                                    (Logical 4)
+                                    ()
+                                    ()
+                                )
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
                         )]
                         ()
                         ()
                     )
                     (Print
-                        [(StringConstant
-                            "T*F:"
-                            (Character 1 4 ())
-                        )
-                        (OverloadedBinOp
-                            (Var 5 t)
-                            Mul
-                            (Var 5 f)
-                            (Logical 4)
+                        [(StringFormat
                             ()
-                            (FunctionCall
-                                5 logical_and
-                                5 ~mul
-                                [((Var 5 t))
-                                ((Var 5 f))]
+                            [(StringConstant
+                                "T*F:"
+                                (Character 1 4 ())
+                            )
+                            (OverloadedBinOp
+                                (Var 5 t)
+                                Mul
+                                (Var 5 f)
                                 (Logical 4)
                                 ()
-                                ()
-                            )
+                                (FunctionCall
+                                    5 logical_and
+                                    5 ~mul
+                                    [((Var 5 t))
+                                    ((Var 5 f))]
+                                    (Logical 4)
+                                    ()
+                                    ()
+                                )
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
                         )]
                         ()
                         ()
                     )
                     (Print
-                        [(StringConstant
-                            "F*T:"
-                            (Character 1 4 ())
-                        )
-                        (OverloadedBinOp
-                            (Var 5 f)
-                            Mul
-                            (Var 5 t)
-                            (Logical 4)
+                        [(StringFormat
                             ()
-                            (FunctionCall
-                                5 logical_and
-                                5 ~mul
-                                [((Var 5 f))
-                                ((Var 5 t))]
+                            [(StringConstant
+                                "F*T:"
+                                (Character 1 4 ())
+                            )
+                            (OverloadedBinOp
+                                (Var 5 f)
+                                Mul
+                                (Var 5 t)
                                 (Logical 4)
                                 ()
-                                ()
-                            )
+                                (FunctionCall
+                                    5 logical_and
+                                    5 ~mul
+                                    [((Var 5 f))
+                                    ((Var 5 t))]
+                                    (Logical 4)
+                                    ()
+                                    ()
+                                )
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
                         )]
                         ()
                         ()
                     )
                     (Print
-                        [(StringConstant
-                            "F*F:"
-                            (Character 1 4 ())
-                        )
-                        (OverloadedBinOp
-                            (Var 5 f)
-                            Mul
-                            (Var 5 f)
-                            (Logical 4)
+                        [(StringFormat
                             ()
-                            (FunctionCall
-                                5 logical_and
-                                5 ~mul
-                                [((Var 5 f))
-                                ((Var 5 f))]
+                            [(StringConstant
+                                "F*F:"
+                                (Character 1 4 ())
+                            )
+                            (OverloadedBinOp
+                                (Var 5 f)
+                                Mul
+                                (Var 5 f)
                                 (Logical 4)
                                 ()
-                                ()
-                            )
+                                (FunctionCall
+                                    5 logical_and
+                                    5 ~mul
+                                    [((Var 5 f))
+                                    ((Var 5 f))]
+                                    (Logical 4)
+                                    ()
+                                    ()
+                                )
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
                         )]
                         ()
                         ()
                     )
                     (Print
-                        [(StringConstant
-                            "T+T:"
-                            (Character 1 4 ())
-                        )
-                        (OverloadedBinOp
-                            (Var 5 t)
-                            Add
-                            (Var 5 t)
-                            (Logical 4)
+                        [(StringFormat
                             ()
-                            (FunctionCall
-                                5 bin_add
-                                5 ~add
-                                [((Var 5 t))
-                                ((Var 5 t))]
-                                (Integer 4)
-                                ()
-                                ()
+                            [(StringConstant
+                                "T+T:"
+                                (Character 1 4 ())
                             )
+                            (OverloadedBinOp
+                                (Var 5 t)
+                                Add
+                                (Var 5 t)
+                                (Logical 4)
+                                ()
+                                (FunctionCall
+                                    5 bin_add
+                                    5 ~add
+                                    [((Var 5 t))
+                                    ((Var 5 t))]
+                                    (Integer 4)
+                                    ()
+                                    ()
+                                )
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
                         )]
                         ()
                         ()
                     )
                     (Print
-                        [(StringConstant
-                            "T+F:"
-                            (Character 1 4 ())
-                        )
-                        (OverloadedBinOp
-                            (Var 5 t)
-                            Add
-                            (Var 5 f)
-                            (Logical 4)
+                        [(StringFormat
                             ()
-                            (FunctionCall
-                                5 bin_add
-                                5 ~add
-                                [((Var 5 t))
-                                ((Var 5 f))]
-                                (Integer 4)
-                                ()
-                                ()
+                            [(StringConstant
+                                "T+F:"
+                                (Character 1 4 ())
                             )
+                            (OverloadedBinOp
+                                (Var 5 t)
+                                Add
+                                (Var 5 f)
+                                (Logical 4)
+                                ()
+                                (FunctionCall
+                                    5 bin_add
+                                    5 ~add
+                                    [((Var 5 t))
+                                    ((Var 5 f))]
+                                    (Integer 4)
+                                    ()
+                                    ()
+                                )
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
                         )]
                         ()
                         ()
                     )
                     (Print
-                        [(StringConstant
-                            "F+T:"
-                            (Character 1 4 ())
-                        )
-                        (OverloadedBinOp
-                            (Var 5 f)
-                            Add
-                            (Var 5 t)
-                            (Logical 4)
+                        [(StringFormat
                             ()
-                            (FunctionCall
-                                5 bin_add
-                                5 ~add
-                                [((Var 5 f))
-                                ((Var 5 t))]
-                                (Integer 4)
-                                ()
-                                ()
+                            [(StringConstant
+                                "F+T:"
+                                (Character 1 4 ())
                             )
+                            (OverloadedBinOp
+                                (Var 5 f)
+                                Add
+                                (Var 5 t)
+                                (Logical 4)
+                                ()
+                                (FunctionCall
+                                    5 bin_add
+                                    5 ~add
+                                    [((Var 5 f))
+                                    ((Var 5 t))]
+                                    (Integer 4)
+                                    ()
+                                    ()
+                                )
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
                         )]
                         ()
                         ()
                     )
                     (Print
-                        [(StringConstant
-                            "F+F:"
-                            (Character 1 4 ())
-                        )
-                        (OverloadedBinOp
-                            (Var 5 f)
-                            Add
-                            (Var 5 f)
-                            (Logical 4)
+                        [(StringFormat
                             ()
-                            (FunctionCall
-                                5 bin_add
-                                5 ~add
-                                [((Var 5 f))
-                                ((Var 5 f))]
-                                (Integer 4)
-                                ()
-                                ()
+                            [(StringConstant
+                                "F+F:"
+                                (Character 1 4 ())
                             )
+                            (OverloadedBinOp
+                                (Var 5 f)
+                                Add
+                                (Var 5 f)
+                                (Logical 4)
+                                ()
+                                (FunctionCall
+                                    5 bin_add
+                                    5 ~add
+                                    [((Var 5 f))
+                                    ((Var 5 f))]
+                                    (Integer 4)
+                                    ()
+                                    ()
+                                )
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
                         )]
                         ()
                         ()

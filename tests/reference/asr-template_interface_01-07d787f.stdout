@@ -2376,56 +2376,80 @@
                                         ()
                                     )
                                     (Print
-                                        [(Var 17 ri)]
-                                        ()
-                                        ()
-                                    )
-                                    (Print
-                                        [(Var 17 rr)]
-                                        ()
-                                        ()
-                                    )
-                                    (Print
-                                        [(FunctionCall
-                                            17 __instantiated_simple_generic_sum
+                                        [(StringFormat
                                             ()
-                                            [((ArrayPhysicalCast
-                                                (Var 17 ai)
-                                                FixedSizeArray
-                                                DescriptorArray
-                                                (Array
-                                                    (Integer 4)
-                                                    [((IntegerConstant 1 (Integer 4) Decimal)
-                                                    (IntegerConstant 10 (Integer 4) Decimal))]
-                                                    DescriptorArray
-                                                )
-                                                ()
-                                            ))]
-                                            (Integer 4)
-                                            ()
+                                            [(Var 17 ri)]
+                                            FormatFortran
+                                            (Character -1 0 ())
                                             ()
                                         )]
                                         ()
                                         ()
                                     )
                                     (Print
-                                        [(FunctionCall
-                                            17 __instantiated_simple_generic_sum1
+                                        [(StringFormat
                                             ()
-                                            [((ArrayPhysicalCast
-                                                (Var 17 ar)
-                                                FixedSizeArray
-                                                DescriptorArray
-                                                (Array
-                                                    (Real 4)
-                                                    [((IntegerConstant 1 (Integer 4) Decimal)
-                                                    (IntegerConstant 10 (Integer 4) Decimal))]
-                                                    DescriptorArray
-                                                )
+                                            [(Var 17 rr)]
+                                            FormatFortran
+                                            (Character -1 0 ())
+                                            ()
+                                        )]
+                                        ()
+                                        ()
+                                    )
+                                    (Print
+                                        [(StringFormat
+                                            ()
+                                            [(FunctionCall
+                                                17 __instantiated_simple_generic_sum
                                                 ()
-                                            ))]
-                                            (Real 4)
+                                                [((ArrayPhysicalCast
+                                                    (Var 17 ai)
+                                                    FixedSizeArray
+                                                    DescriptorArray
+                                                    (Array
+                                                        (Integer 4)
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 10 (Integer 4) Decimal))]
+                                                        DescriptorArray
+                                                    )
+                                                    ()
+                                                ))]
+                                                (Integer 4)
+                                                ()
+                                                ()
+                                            )]
+                                            FormatFortran
+                                            (Character -1 0 ())
                                             ()
+                                        )]
+                                        ()
+                                        ()
+                                    )
+                                    (Print
+                                        [(StringFormat
+                                            ()
+                                            [(FunctionCall
+                                                17 __instantiated_simple_generic_sum1
+                                                ()
+                                                [((ArrayPhysicalCast
+                                                    (Var 17 ar)
+                                                    FixedSizeArray
+                                                    DescriptorArray
+                                                    (Array
+                                                        (Real 4)
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 10 (Integer 4) Decimal))]
+                                                        DescriptorArray
+                                                    )
+                                                    ()
+                                                ))]
+                                                (Real 4)
+                                                ()
+                                                ()
+                                            )]
+                                            FormatFortran
+                                            (Character -1 0 ())
                                             ()
                                         )]
                                         ()

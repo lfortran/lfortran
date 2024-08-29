@@ -27,14 +27,20 @@
                     array_03_transfer
                     []
                     [(Print
-                        [(BitCast
-                            (Var 2 x)
-                            (RealConstant
-                                1.000000
-                                (Real 4)
-                            )
+                        [(StringFormat
                             ()
-                            (Real 4)
+                            [(BitCast
+                                (Var 2 x)
+                                (RealConstant
+                                    1.000000
+                                    (Real 4)
+                                )
+                                ()
+                                (Real 4)
+                                ()
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
                             ()
                         )]
                         ()

@@ -91,6 +91,9 @@ if (WITH_LLVM)
         codegen/llvm_array_utils.cpp
         codegen/llvm_utils.cpp
     )
+    if (WITH_MLIR)
+        set(SRC ${SRC} codegen/asr_to_mlir.cpp)
+    endif()
     # We use deprecated API in LLVM, so we disable the warning until we upgrade
     if (NOT MSVC)
         set_source_files_properties(codegen/evaluator.cpp PROPERTIES

@@ -384,34 +384,58 @@
                         ()
                     )
                     (Print
-                        [(StringConstant
-                            "Size (n x n): n ="
-                            (Character 1 17 ())
-                        )
-                        (Var 6 n)]
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "Size (n x n): n ="
+                                (Character 1 17 ())
+                            )
+                            (Var 6 n)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
                     (Print
-                        [(StringConstant
-                            "Iter ="
-                            (Character 1 6 ())
-                        )
-                        (Var 6 iter)]
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "Iter ="
+                                (Character 1 6 ())
+                            )
+                            (Var 6 iter)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
                     (Print
-                        [(StringConstant
-                            "Size MB:"
-                            (Character 1 8 ())
-                        )
-                        (RealBinOp
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "Size MB:"
+                                (Character 1 8 ())
+                            )
                             (RealBinOp
                                 (RealBinOp
-                                    (RealConstant
-                                        4.000000
+                                    (RealBinOp
+                                        (RealConstant
+                                            4.000000
+                                            (Real 8)
+                                        )
+                                        Mul
+                                        (Cast
+                                            (Var 6 n)
+                                            IntegerToReal
+                                            (Real 8)
+                                            ()
+                                        )
                                         (Real 8)
+                                        ()
                                     )
                                     Mul
                                     (Cast
@@ -423,33 +447,27 @@
                                     (Real 8)
                                     ()
                                 )
-                                Mul
+                                Div
                                 (Cast
-                                    (Var 6 n)
+                                    (IntegerBinOp
+                                        (IntegerConstant 1024 (Integer 4) Decimal)
+                                        Pow
+                                        (IntegerConstant 2 (Integer 4) Decimal)
+                                        (Integer 4)
+                                        (IntegerConstant 1048576 (Integer 4) Decimal)
+                                    )
                                     IntegerToReal
                                     (Real 8)
-                                    ()
+                                    (RealConstant
+                                        1048576.000000
+                                        (Real 8)
+                                    )
                                 )
                                 (Real 8)
                                 ()
-                            )
-                            Div
-                            (Cast
-                                (IntegerBinOp
-                                    (IntegerConstant 1024 (Integer 4) Decimal)
-                                    Pow
-                                    (IntegerConstant 2 (Integer 4) Decimal)
-                                    (Integer 4)
-                                    (IntegerConstant 1048576 (Integer 4) Decimal)
-                                )
-                                IntegerToReal
-                                (Real 8)
-                                (RealConstant
-                                    1048576.000000
-                                    (Real 8)
-                                )
-                            )
-                            (Real 8)
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
                             ()
                         )]
                         ()
@@ -489,12 +507,12 @@
                         ()
                     )
                     (IntrinsicImpureSubroutine
-                        ObjectType
+                        RandomNumber
                         [(Var 6 a)]
                         0
                     )
                     (IntrinsicImpureSubroutine
-                        ObjectType
+                        RandomNumber
                         [(Var 6 b)]
                         0
                     )
@@ -653,11 +671,17 @@
                         ()
                     )
                     (Print
-                        [(StringConstant
-                            "Time: "
-                            (Character 1 6 ())
-                        )
-                        (Var 6 t)]
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "Time: "
+                                (Character 1 6 ())
+                            )
+                            (Var 6 t)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
@@ -670,46 +694,70 @@
                         ()
                     )
                     (Print
-                        [(StringConstant
-                            "Theoretical performance peak:"
-                            (Character 1 29 ())
-                        )
-                        (Var 6 fma_clock)
-                        (StringConstant
-                            "cycles"
-                            (Character 1 6 ())
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "Theoretical performance peak:"
+                                (Character 1 29 ())
+                            )
+                            (Var 6 fma_clock)
+                            (StringConstant
+                                "cycles"
+                                (Character 1 6 ())
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
                         )]
                         ()
                         ()
                     )
                     (Print
-                        [(StringConstant
-                            "Measured:                    "
-                            (Character 1 29 ())
-                        )
-                        (Var 6 measured)
-                        (StringConstant
-                            "cycles"
-                            (Character 1 6 ())
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "Measured:                    "
+                                (Character 1 29 ())
+                            )
+                            (Var 6 measured)
+                            (StringConstant
+                                "cycles"
+                                (Character 1 6 ())
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
                         )]
                         ()
                         ()
                     )
                     (Print
-                        [(StringConstant
-                            "Percent peak:                "
-                            (Character 1 29 ())
-                        )
-                        (Var 6 percent_peak)
-                        (StringConstant
-                            "%"
-                            (Character 1 1 ())
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "Percent peak:                "
+                                (Character 1 29 ())
+                            )
+                            (Var 6 percent_peak)
+                            (StringConstant
+                                "%"
+                                (Character 1 1 ())
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
                         )]
                         ()
                         ()
                     )
                     (Print
-                        []
+                        [(StringFormat
+                            ()
+                            []
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
@@ -787,11 +835,17 @@
                         ()
                     )
                     (Print
-                        [(StringConstant
-                            "Error:"
-                            (Character 1 6 ())
-                        )
-                        (Var 6 err)]
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "Error:"
+                                (Character 1 6 ())
+                            )
+                            (Var 6 err)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
@@ -901,11 +955,17 @@
                         ()
                     )
                     (Print
-                        [(StringConstant
-                            "Time: "
-                            (Character 1 6 ())
-                        )
-                        (Var 6 t)]
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "Time: "
+                                (Character 1 6 ())
+                            )
+                            (Var 6 t)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
@@ -918,40 +978,58 @@
                         ()
                     )
                     (Print
-                        [(StringConstant
-                            "Theoretical performance peak:"
-                            (Character 1 29 ())
-                        )
-                        (Var 6 fma_clock)
-                        (StringConstant
-                            "cycles"
-                            (Character 1 6 ())
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "Theoretical performance peak:"
+                                (Character 1 29 ())
+                            )
+                            (Var 6 fma_clock)
+                            (StringConstant
+                                "cycles"
+                                (Character 1 6 ())
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
                         )]
                         ()
                         ()
                     )
                     (Print
-                        [(StringConstant
-                            "Measured:                    "
-                            (Character 1 29 ())
-                        )
-                        (Var 6 measured)
-                        (StringConstant
-                            "cycles"
-                            (Character 1 6 ())
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "Measured:                    "
+                                (Character 1 29 ())
+                            )
+                            (Var 6 measured)
+                            (StringConstant
+                                "cycles"
+                                (Character 1 6 ())
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
                         )]
                         ()
                         ()
                     )
                     (Print
-                        [(StringConstant
-                            "Percent peak:                "
-                            (Character 1 29 ())
-                        )
-                        (Var 6 percent_peak)
-                        (StringConstant
-                            "%"
-                            (Character 1 1 ())
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "Percent peak:                "
+                                (Character 1 29 ())
+                            )
+                            (Var 6 percent_peak)
+                            (StringConstant
+                                "%"
+                                (Character 1 1 ())
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
                         )]
                         ()
                         ()
@@ -973,7 +1051,13 @@
                         []
                     )
                     (Print
-                        []
+                        [(StringFormat
+                            ()
+                            []
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
@@ -1051,11 +1135,17 @@
                         ()
                     )
                     (Print
-                        [(StringConstant
-                            "Error:"
-                            (Character 1 6 ())
-                        )
-                        (Var 6 err)]
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "Error:"
+                                (Character 1 6 ())
+                            )
+                            (Var 6 err)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
@@ -1165,11 +1255,17 @@
                         ()
                     )
                     (Print
-                        [(StringConstant
-                            "Time: "
-                            (Character 1 6 ())
-                        )
-                        (Var 6 t)]
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "Time: "
+                                (Character 1 6 ())
+                            )
+                            (Var 6 t)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
@@ -1182,40 +1278,58 @@
                         ()
                     )
                     (Print
-                        [(StringConstant
-                            "Theoretical performance peak:"
-                            (Character 1 29 ())
-                        )
-                        (Var 6 fma_clock)
-                        (StringConstant
-                            "cycles"
-                            (Character 1 6 ())
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "Theoretical performance peak:"
+                                (Character 1 29 ())
+                            )
+                            (Var 6 fma_clock)
+                            (StringConstant
+                                "cycles"
+                                (Character 1 6 ())
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
                         )]
                         ()
                         ()
                     )
                     (Print
-                        [(StringConstant
-                            "Measured:                    "
-                            (Character 1 29 ())
-                        )
-                        (Var 6 measured)
-                        (StringConstant
-                            "cycles"
-                            (Character 1 6 ())
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "Measured:                    "
+                                (Character 1 29 ())
+                            )
+                            (Var 6 measured)
+                            (StringConstant
+                                "cycles"
+                                (Character 1 6 ())
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
                         )]
                         ()
                         ()
                     )
                     (Print
-                        [(StringConstant
-                            "Percent peak:                "
-                            (Character 1 29 ())
-                        )
-                        (Var 6 percent_peak)
-                        (StringConstant
-                            "%"
-                            (Character 1 1 ())
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "Percent peak:                "
+                                (Character 1 29 ())
+                            )
+                            (Var 6 percent_peak)
+                            (StringConstant
+                                "%"
+                                (Character 1 1 ())
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
                         )]
                         ()
                         ()

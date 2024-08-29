@@ -22,6 +22,9 @@
 #ifdef HAVE_LFORTRAN_LLVM
 #include <libasr/codegen/evaluator.h>
 #include <libasr/codegen/asr_to_llvm.h>
+#ifdef HAVE_LFORTRAN_MLIR
+#include <libasr/codegen/asr_to_mlir.h>
+#endif
 #else
 namespace LCompilers {
     class LLVMEvaluator {};
@@ -512,6 +515,54 @@ Result<std::string> FortranEvaluator::get_julia(const std::string &code,
         LCOMPILERS_ASSERT(diagnostics.has_error())
         return asr.error;
     }
+}
+
+Result<std::string> FortranEvaluator::get_mlir(const std::string &code,
+    LocationManager &lm, diag::Diagnostics &diagnostics)
+{
+    // Src -> AST -> ASR -> MLIR
+    SymbolTable *old_symbol_table = symbol_table;
+    symbol_table = nullptr;
+    Result<ASR::TranslationUnit_t*> asr = get_asr2(code, lm, diagnostics);
+    symbol_table = old_symbol_table;
+    if (asr.ok) {
+#ifdef HAVE_LFORTRAN_MLIR
+        Result<std::unique_ptr<MLIRModule>> res = asr_to_mlir(al, *asr.result,
+            diagnostics);
+        return res.result->str();
+#else
+        throw LCompilersException("MLIR is not enabled");
+#endif
+    } else {
+        LCOMPILERS_ASSERT(diagnostics.has_error())
+        return asr.error;
+    }
+}
+
+Result<std::unique_ptr<MLIRModule>> FortranEvaluator::get_mlir2(
+#ifdef HAVE_LFORTRAN_MLIR
+        ASR::TranslationUnit_t &asr, diag::Diagnostics &diagnostics
+#else
+        ASR::TranslationUnit_t &/*asr*/, diag::Diagnostics &/*diagnostics*/
+#endif
+) {
+#ifdef HAVE_LFORTRAN_MLIR
+    // ASR -> MLIR
+    std::unique_ptr<LCompilers::MLIRModule> m;
+    Result<std::unique_ptr<MLIRModule>> res = asr_to_mlir(al, asr, diagnostics);
+    if (res.ok) {
+        m = std::move(res.result);
+    } else {
+        LCOMPILERS_ASSERT(diagnostics.has_error())
+        return res.error;
+    }
+
+    // MLIR -> LLVM
+    m->mlir_to_llvm();
+    return m;
+#else
+    throw LCompilersException("MLIR is not enabled");
+#endif
 }
 
 Result<std::string> FortranEvaluator::get_fortran(const std::string &code,

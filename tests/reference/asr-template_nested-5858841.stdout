@@ -898,17 +898,23 @@
                                         ()
                                     )
                                     (Print
-                                        [(StringConstant
-                                            "The result is "
-                                            (Character 1 14 ())
-                                        )
-                                        (FunctionCall
-                                            10 add_real
+                                        [(StringFormat
                                             ()
-                                            [((Var 10 x))
-                                            ((Var 10 y))]
-                                            (Real 4)
-                                            ()
+                                            [(StringConstant
+                                                "The result is "
+                                                (Character 1 14 ())
+                                            )
+                                            (FunctionCall
+                                                10 add_real
+                                                ()
+                                                [((Var 10 x))
+                                                ((Var 10 y))]
+                                                (Real 4)
+                                                ()
+                                                ()
+                                            )]
+                                            FormatFortran
+                                            (Character -1 0 ())
                                             ()
                                         )]
                                         ()

@@ -9,7 +9,7 @@ source_filename = "LFortran"
 @complex_dp_param.zero = internal global %complex_8 zeroinitializer
 @0 = private unnamed_addr constant [2 x i8] c" \00", align 1
 @1 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@2 = private unnamed_addr constant [32 x i8] c"(%f,%f)%s(%lf,%lf)%s(%lf,%lf)%s\00", align 1
+@2 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
@@ -72,7 +72,8 @@ define i32 @main(i32 %0, i8** %1) {
   store %complex_8 %30, %complex_8* %34, align 8
   %35 = getelementptr %complex_8, %complex_8* %34, i32 0, i32 1
   %36 = load double, double* %35, align 8
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([32 x i8], [32 x i8]* @2, i32 0, i32 0), double %18, double %22, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), double %26, double %29, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), double %33, double %36, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0))
+  %37 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 12, i8* null, i32 6, double %18, i32 6, double %22, i32 5, double %26, i32 5, double %29, i32 5, double %33, i32 5, double %36)
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @2, i32 0, i32 0), i8* %37, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0))
   br label %return
 
 return:                                           ; preds = %.entry
@@ -80,5 +81,7 @@ return:                                           ; preds = %.entry
 }
 
 declare void @_lpython_call_initial_functions(i32, i8**)
+
+declare i8* @_lcompilers_string_format_fortran(i32, i8*, ...)
 
 declare void @_lfortran_printf(i8*, ...)

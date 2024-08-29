@@ -296,15 +296,21 @@
                     init_values
                     []
                     [(Print
-                        [(Var 2 i)
-                        (Var 2 j)
-                        (Var 2 r)
-                        (Var 2 c)
-                        (Var 2 a)
-                        (Var 2 l)
-                        (Var 2 b)
-                        (Var 2 r_minus)
-                        (Var 2 s)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 i)
+                            (Var 2 j)
+                            (Var 2 r)
+                            (Var 2 c)
+                            (Var 2 a)
+                            (Var 2 l)
+                            (Var 2 b)
+                            (Var 2 r_minus)
+                            (Var 2 s)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )]

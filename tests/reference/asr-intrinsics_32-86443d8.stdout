@@ -285,7 +285,13 @@
                         ()
                     )
                     (Print
-                        [(Var 2 result)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 result)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )]

@@ -113,11 +113,17 @@
                         .false.
                     )
                     (Print
-                        [(StringConstant
-                            "Your grade is "
-                            (Character 1 14 ())
-                        )
-                        (Var 2 grade)]
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "Your grade is "
+                                (Character 1 14 ())
+                            )
+                            (Var 2 grade)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )]

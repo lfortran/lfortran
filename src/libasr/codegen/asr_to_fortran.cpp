@@ -894,13 +894,15 @@ public:
         handle_line_truncation(r, 2);
         r += "\n";
         visit_body(x, r);
-        for (size_t i = 0; i < x.n_orelse; i++) {
+        if (x.n_orelse > 0) {
             r += indent;
             r += "else";
             r += "\n";
             inc_indent();
-            visit_stmt(*x.m_orelse[i]);
-            r += src;
+            for (size_t i = 0; i < x.n_orelse; i++) {
+                visit_stmt(*x.m_orelse[i]);
+                r += src;
+            }
             dec_indent();
         }
         r += indent;
@@ -917,12 +919,16 @@ public:
         r += " ";
         if (x.n_values > 0 && is_a<ASR::StringFormat_t>(*x.m_values[0])) {
             ASR::StringFormat_t *sf = down_cast<ASR::StringFormat_t>(x.m_values[0]);
-            visit_expr(*sf->m_fmt);
-            if (is_a<ASR::StringConstant_t>(*sf->m_fmt)
-                    && (!startswith(src, "\"(") || !endswith(src, ")\""))) {
-                src = "\"(" + src.substr(1, src.size()-2) + ")\"";
+            if(sf->m_fmt){
+                visit_expr(*(sf->m_fmt));
+                if (is_a<ASR::StringConstant_t>(*sf->m_fmt)
+                        && (!startswith(src, "\"(") || !endswith(src, ")\""))) {
+                    src = "\"(" + src.substr(1, src.size()-2) + ")\"";
+                }
+                r += src;
+            } else {
+                r += "*";
             }
-            r += src;
         } else {
             r += "*";
         }
@@ -1051,12 +1057,16 @@ public:
         }
         if (x.n_values > 0 && is_a<ASR::StringFormat_t>(*x.m_values[0])) {
             ASR::StringFormat_t *sf = down_cast<ASR::StringFormat_t>(x.m_values[0]);
-            visit_expr(*sf->m_fmt);
-            if (is_a<ASR::StringConstant_t>(*sf->m_fmt)
-                    && (!startswith(src, "\"(") || !endswith(src, ")\""))) {
-                src = "\"(" + src.substr(1, src.size()-2) + ")\"";
+            if(sf->m_fmt){
+                visit_expr(*sf->m_fmt);
+                if (is_a<ASR::StringConstant_t>(*sf->m_fmt)
+                        && (!startswith(src, "\"(") || !endswith(src, ")\""))) {
+                    src = "\"(" + src.substr(1, src.size()-2) + ")\"";
+                }
+                r += src;
+            } else {
+                r += "*";
             }
-            r += src;
         } else {
             r += "*";
         }
@@ -1246,12 +1256,12 @@ public:
     void visit_IntrinsicImpureSubroutine( const ASR::IntrinsicImpureSubroutine_t &x ) {
         std::string out;
         out = "call ";
-        switch ( x.m_intrinsic_id ) {
+        switch ( x.m_sub_intrinsic_id ) {
             SET_INTRINSIC_SUBROUTINE_NAME(RandomNumber, "random_number");
             SET_INTRINSIC_SUBROUTINE_NAME(RandomInit, "random_init");
             default : {
                 throw LCompilersException("IntrinsicImpureSubroutine: `"
-                    + ASRUtils::get_intrinsic_name(x.m_intrinsic_id)
+                    + ASRUtils::get_intrinsic_name(x.m_sub_intrinsic_id)
                     + "` is not implemented");
             }
         }

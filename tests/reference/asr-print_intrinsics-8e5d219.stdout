@@ -61,65 +61,77 @@
                     print_intrinsics
                     []
                     [(Print
-                        [(StringConstant
-                            "pi=acos(-1.0_sp)  =\""
-                            (Character 1 20 ())
-                        )
-                        (IntrinsicElementalFunction
-                            Acos
-                            [(RealUnaryMinus
-                                (RealConstant
-                                    1.000000
-                                    (Real 4)
-                                )
-                                (Real 4)
-                                (RealConstant
-                                    -1.000000
-                                    (Real 4)
-                                )
-                            )]
-                            0
-                            (Real 4)
-                            (RealConstant
-                                3.141593
-                                (Real 4)
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "pi=acos(-1.0_sp)  =\""
+                                (Character 1 20 ())
                             )
-                        )
-                        (StringConstant
-                            "\""
-                            (Character 1 1 ())
+                            (IntrinsicElementalFunction
+                                Acos
+                                [(RealUnaryMinus
+                                    (RealConstant
+                                        1.000000
+                                        (Real 4)
+                                    )
+                                    (Real 4)
+                                    (RealConstant
+                                        -1.000000
+                                        (Real 4)
+                                    )
+                                )]
+                                0
+                                (Real 4)
+                                (RealConstant
+                                    3.141593
+                                    (Real 4)
+                                )
+                            )
+                            (StringConstant
+                                "\""
+                                (Character 1 1 ())
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
                         )]
                         ()
                         ()
                     )
                     (Print
-                        [(StringConstant
-                            "pi=acos(-1.0_dp)  =\""
-                            (Character 1 20 ())
-                        )
-                        (IntrinsicElementalFunction
-                            Acos
-                            [(RealUnaryMinus
-                                (RealConstant
-                                    1.000000
-                                    (Real 8)
-                                )
-                                (Real 8)
-                                (RealConstant
-                                    -1.000000
-                                    (Real 8)
-                                )
-                            )]
-                            0
-                            (Real 8)
-                            (RealConstant
-                                3.141593
-                                (Real 8)
+                        [(StringFormat
+                            ()
+                            [(StringConstant
+                                "pi=acos(-1.0_dp)  =\""
+                                (Character 1 20 ())
                             )
-                        )
-                        (StringConstant
-                            "\""
-                            (Character 1 1 ())
+                            (IntrinsicElementalFunction
+                                Acos
+                                [(RealUnaryMinus
+                                    (RealConstant
+                                        1.000000
+                                        (Real 8)
+                                    )
+                                    (Real 8)
+                                    (RealConstant
+                                        -1.000000
+                                        (Real 8)
+                                    )
+                                )]
+                                0
+                                (Real 8)
+                                (RealConstant
+                                    3.141593
+                                    (Real 8)
+                                )
+                            )
+                            (StringConstant
+                                "\""
+                                (Character 1 1 ())
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
                         )]
                         ()
                         ()
