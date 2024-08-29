@@ -1156,7 +1156,7 @@ R"(    // Initialise Numpy
             n_values = str_fmt->n_args;
         } else if (ASR::is_a<ASR::Character_t>(*ASRUtils::expr_type(x.m_text))) {
             this->visit_expr(*x.m_text);
-            src = indent + "printf(\"%s\n\"," + src + ");\n";
+            src = indent + "printf(\"%s\\n\"," + src + ");\n";
             return;
         } else {
             throw CodeGenError("print statment supported for stringformat and single character argument",
