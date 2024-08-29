@@ -114,13 +114,11 @@ class ArrayVarAddressCollector: public ASR::CallReplacerOnExpressionsVisitor<Arr
 };
 
 class FixTypeVisitor: public ASR::CallReplacerOnExpressionsVisitor<FixTypeVisitor> {
-    private:
-
-    Allocator& al;
-
     public:
 
-    FixTypeVisitor(Allocator& al_): al(al_) {}
+    FixTypeVisitor(Allocator& al_) {
+        (void)al_;      // Explicitly mark the parameter as unused
+    }
 
     void visit_StructType(const ASR::StructType_t& x) {
         std::string derived_type_name = ASRUtils::symbol_name(x.m_derived_type);
