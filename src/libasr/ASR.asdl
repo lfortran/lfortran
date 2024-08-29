@@ -56,9 +56,9 @@ stmt
     | Select(expr test, case_stmt* body, stmt* default, bool enable_fall_through)
     | Stop(expr? code)
     | Assert(expr test, expr? msg)
-    | SubroutineCall(symbol name, symbol? original_name, call_arg* args, expr? dt)  -- temporary needed (for all its array arguments create an assignment), contains array
-    | IntrinsicImpureSubroutine(int intrinsic_id, expr* args, int overload_id)  -- temporary needed (for all its array arguments create an assignment), contains array
-    | Where(expr test, stmt* body, stmt* orelse)  -- to be handled very carefully
+    | SubroutineCall(symbol name, symbol? original_name, call_arg* args, expr? dt)
+    | IntrinsicImpureSubroutine(int sub_intrinsic_id, expr* args, int overload_id)
+    | Where(expr test, stmt* body, stmt* orelse)
     | WhileLoop(identifier? name, expr test, stmt* body, stmt* orelse)
     | Nullify(symbol* vars)
     | Flush(int label, expr unit, expr? err, expr? iomsg, expr? iostat)

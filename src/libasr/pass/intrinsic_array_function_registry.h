@@ -616,7 +616,7 @@ static inline ASR::asr_t* create_ArrIntrinsic(
                 append_error(diag, "`mask` argument to `" + intrinsic_func_name + "` must be a scalar or array of logical type",
                     args[2]->base.loc);
                 return nullptr;
-            } 
+            }
         } else if (is_logical(*ASRUtils::expr_type(args[1]))) {
             mask = args[1];
             if (args[2] && is_integer(*ASRUtils::expr_type(args[2]))) {
@@ -625,7 +625,7 @@ static inline ASR::asr_t* create_ArrIntrinsic(
                 append_error(diag, "`dim` argument to `" + intrinsic_func_name + "` must be a scalar and of integer type",
                     args[2]->base.loc);
                 return nullptr;
-            } 
+            }
         } else {
             append_error(diag, "Invalid argument type for `dim` or `mask`",
                 args[1]->base.loc);
@@ -3143,9 +3143,9 @@ namespace FindLoc {
             diag::Diagnostics& diagnostics) {
         require_impl(x.n_args >= 2 && x.n_args <= 6, "`findloc` intrinsic "
             "takes at least two arguments", x.base.base.loc, diagnostics);
-        require_impl(x.m_args[0] != nullptr, "`array` argument of `findloc` " 
+        require_impl(x.m_args[0] != nullptr, "`array` argument of `findloc` "
             "intrinsic cannot be nullptr", x.base.base.loc, diagnostics);
-        require_impl(x.m_args[1] != nullptr, "`value` argument of `findloc` " 
+        require_impl(x.m_args[1] != nullptr, "`value` argument of `findloc` "
             "intrinsic cannot be nullptr", x.base.base.loc, diagnostics);
     }
 
@@ -3215,7 +3215,7 @@ namespace FindLoc {
                             }
                         }
                     }
-                } 
+                }
             }
             if (element_found == 0) element_idx = -1;
             if (ASR::down_cast<ASR::IntegerConstant_t>(dim) -> m_n != -1) {
@@ -3366,15 +3366,23 @@ namespace FindLoc {
     fill_func_arg("mask", mask_type);
     fill_func_arg("kind", arg_types[4]);
     fill_func_arg("back", arg_types[5]);
-    ASR::expr_t *result = declare("result", return_type, ReturnVar);
+    ASR::expr_t *result = nullptr;
+    if( ASRUtils::is_array(return_type) ) {
+        result = declare("result", return_type, Out);
+        args.push_back(al, result);
+    } else {
+        result = declare("result", return_type, ReturnVar);
+    }
+
     ASR::ttype_t *type = ASRUtils::type_get_past_array_pointer_allocatable(return_type);
     ASR::expr_t *i = declare("i", type, Local);
     ASR::expr_t *array = args[0];
     ASR::expr_t *value = args[1];
     ASR::expr_t *mask = args[3];
     ASR::expr_t *back = args[5];
+    body.push_back(al, b.Assignment(result, b.i_t(0,
+            ASRUtils::type_get_past_array_pointer_allocatable(return_type))));
     if (overload_id == 1) {
-        body.push_back(al, b.Assignment(result, b.i_t(0, return_type)));
         body.push_back(al, b.DoLoop(i, b.i_t(1, type), UBound(array, 1), {
             b.If(b.And(b.Eq(ArrayItem_02(array, i), value), b.Eq(ArrayItem_02(mask, i), b.bool_t(1, logical))), {
                 b.Assignment(result, i),
@@ -3384,7 +3392,6 @@ namespace FindLoc {
             }, {})
         }));
     } else {
-        body.push_back(al, b.Assignment(result, b.i_t(0, return_type)));
         body.push_back(al, b.DoLoop(i, b.i_t(1, type), UBound(array, 1), {
             b.If(b.Eq(ArrayItem_02(array, i), value), {
                 b.Assignment(result, i),
@@ -3396,8 +3403,14 @@ namespace FindLoc {
     }
 
     body.push_back(al, b.Return());
-    ASR::symbol_t *fn_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
-            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+    ASR::symbol_t *fn_sym = nullptr;
+    if( ASRUtils::is_array(return_type) ) {
+        fn_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+                body, nullptr, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+    } else {
+        fn_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+                body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+    }
     scope->add_symbol(fn_name, fn_sym);
     return b.Call(fn_sym, m_args, return_type, nullptr);
 }
