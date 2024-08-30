@@ -502,6 +502,11 @@ void get_symbol_info_llvm(StacktraceItem &item, llvm::symbolize::LLVMSymbolizer 
   auto binary_file = llvm::object::ObjectFile::createObjectFile(item.binary_filename);
 
   if (!binary_file) {
+#ifdef __APPLE__
+    // This can happen for dynamic libraries in macOS,
+    // like /usr/lib/system/libsystem_c.dylib
+    return;
+#endif
     std::cout << "Cannot open the binary file '" + item.binary_filename + "'\n";
     abort();
   }
