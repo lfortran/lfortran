@@ -686,23 +686,21 @@ void get_local_info_dwarfdump(std::vector<StacktraceItem> &d)
 
 void get_local_info(std::vector<StacktraceItem> &d)
 {
-#ifdef HAVE_LFORTRAN_DWARFDUMP
-  get_local_info_dwarfdump(d);
-#else
 #ifdef HAVE_LFORTRAN_LLVM
     get_llvm_info(d);
 #else
-#  ifdef HAVE_LFORTRAN_BFD
+#ifdef HAVE_LFORTRAN_DWARFDUMP
+  get_local_info_dwarfdump(d);
+#else
+#ifdef HAVE_LFORTRAN_BFD
   bfd_init();
-#  endif
   for (size_t i=0; i < d.size(); i++) {
-#  ifdef HAVE_LFORTRAN_BFD
     get_symbol_info_bfd(d[i].binary_filename, d[i].local_pc,
       d[i].source_filename, d[i].function_name, d[i].line_number);
-#  endif
   }
-#endif // HAVE_LFORTRAN_LLVMJ
-#endif
+#endif // HAVE_LFORTRAN_BFD
+#endif // HAVE_LFOTRAN_DWARFDUMP
+#endif // HAVE_LFORTRAN_LLVM
 }
 
 std::string error_stacktrace(const std::vector<StacktraceItem> &stacktrace)
