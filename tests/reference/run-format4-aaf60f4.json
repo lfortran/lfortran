@@ -1,0 +1,13 @@
+{
+    "basename": "run-format4-aaf60f4",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/format4.f90",
+    "infile_hash": "3c91cadf1851b5203fa5f2904ef5d6b588f591c535efa7325f1f2e13",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "run-format4-aaf60f4.stderr",
+    "stderr_hash": "506839b7e7d67ea701e91a6d8f28a6673565246c3b13e5cd91d049fe",
+    "returncode": 1
+}
