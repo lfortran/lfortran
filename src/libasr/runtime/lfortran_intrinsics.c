@@ -757,9 +757,6 @@ char** parse_fortran_format(char* format, int64_t *count, int64_t *item_start) {
     return format_values_2;
 }
 
-void check_format_match(char* format_value, int* current_arg_type_int){
-    //TO DO : check format_value() (user-specified) against current_arg_type_int(actual passed argumet) to raise runtime errors.
-}
 
 struct array_iteration_state{
     //Preserve array size and current element index
@@ -917,6 +914,33 @@ char* int_to_format_specifier(int32_t type_as_int){
             exit(0);
     }
 }
+
+void check_format_match(char format_value, int32_t current_arg_type_int){
+    char* current_arg_correct_format = int_to_format_specifier(current_arg_type_int);
+    if(tolower(format_value) == 'd' || tolower(format_value) == 'e'){
+        format_value = 'f'; // set formats 'f', 'd' ,'e' (passed by user) to --> 'f'.
+    }
+    if(tolower(format_value) != current_arg_correct_format[0]){
+        char* type;
+        switch (current_arg_correct_format[0])
+        {
+        case 'i':
+            type = "INTEGER";
+            break;
+        case 'f':
+            type = "REAL";
+            break;
+        case 'l':
+            type = "LOGICAL";
+            break;
+        case 'a':
+            type = "CHARACTER";
+            break;
+        }
+        fprintf(stderr,"Runtime Error : Got argument of type (%s), while the format specifier is (%c)\n",type ,format_value);
+        exit(1);
+    }
+}
 LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* format, ...)
 {
     va_list args;
@@ -1036,6 +1060,9 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
                 if(!array_looping && (count > 0) && !default_formatting){ // Fetch type integer when we don't have an array.
                     current_arg_type_int =  va_arg(args,int32_t);
                     count--;
+                }
+                if(!default_formatting){
+                    check_format_match(value[0], current_arg_type_int);
                 }
                 is_array = check_array_iteration(&count, &current_arg_type_int, &args,&array_state);
                 if (tolower(value[0]) == 'a') {
