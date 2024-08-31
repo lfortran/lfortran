@@ -917,6 +917,7 @@ char* int_to_format_specifier(int32_t type_as_int){
 
 void check_format_match(char format_value, int32_t current_arg_type_int){
     char* current_arg_correct_format = int_to_format_specifier(current_arg_type_int);
+    char original_format_value  = format_value;
     if(tolower(format_value) == 'd' || tolower(format_value) == 'e'){
         format_value = 'f'; // set formats 'f', 'd' ,'e' (passed by user) to --> 'f'.
     }
@@ -937,7 +938,7 @@ void check_format_match(char format_value, int32_t current_arg_type_int){
             type = "CHARACTER";
             break;
         }
-        fprintf(stderr,"Runtime Error : Got argument of type (%s), while the format specifier is (%c)\n",type ,format_value);
+        fprintf(stderr,"Runtime Error : Got argument of type (%s), while the format specifier is (%c)\n",type ,original_format_value);
         exit(1);
     }
 }
@@ -1057,7 +1058,8 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
                     }
                 }
             } else {
-                if(!array_looping && (count > 0) && !default_formatting){ // Fetch type integer when we don't have an array.
+                if(count <= 0) break;
+                if(!array_looping && !default_formatting){ // Fetch type integer when we don't have an array.
                     current_arg_type_int =  va_arg(args,int32_t);
                     count--;
                 }
@@ -1067,7 +1069,6 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
                 is_array = check_array_iteration(&count, &current_arg_type_int, &args,&array_state);
                 if (tolower(value[0]) == 'a') {
                     // Character Editing (A[n])
-                    if ( count <= 0 ) break;
                     count--;
                     char* arg = NULL;
                     if(is_array){
@@ -1093,7 +1094,6 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
                     }
                 } else if (tolower(value[0]) == 'i') {
                     // Integer Editing ( I[w[.m]] )
-                    if ( count <= 0 ) break;
                     count--;
                     if(is_array){
                         handle_integer(value, array_state.current_arr_element_int64, &result);
@@ -1103,7 +1103,6 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
                     }
                 } else if (tolower(value[0]) == 'd') {
                     // D Editing (D[w[.d]])
-                    if ( count <= 0 ) break;
                     count--;
                     if(is_array){
                         handle_decimal(value, array_state.current_arr_element_double, scale, &result, "D");;
@@ -1114,7 +1113,6 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
                 } else if (tolower(value[0]) == 'e') {
                     // Check if the next character is 'N' for EN format
                     char format_type = tolower(value[1]);
-                    if ( count <= 0 ) break;
                     count--;
                     if (format_type == 'n') {
                         if(is_array){
@@ -1132,7 +1130,6 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
                         }
                     }
                 } else if (tolower(value[0]) == 'f') {
-                    if ( count <= 0 ) break;
                     count--;
                     if(is_array){
                         handle_float(value,array_state.current_arr_element_double, &result);
@@ -1141,7 +1138,6 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
                         handle_float(value, val, &result);
                     }
                 } else if (tolower(value[0]) == 'l') {
-                    if ( count <= 0 ) break;
                     count--;
                     if(is_array){
                         bool val = array_state.current_arr_element_bool;
@@ -1152,7 +1148,6 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
                         handle_logical(value, val, &result);
                     }
                 } else if (strlen(value) != 0) {
-                    if ( count <= 0 ) break;
                     count--;
                     printf("Printing support is not available for %s format.\n",value);
                 }
