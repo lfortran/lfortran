@@ -565,6 +565,9 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <vec_equi> equivalence_set_list
 %type <ast> sep_one
 %type <vec_ast> sep
+%type <ast> type_set_decl
+%type <ast> type_set_stmt
+%type <vec_ast> type_list
 
 // Precedence
 
@@ -703,6 +706,26 @@ interface_item
         $$ = INTERFACE_PROC($1, @$); }
     | function {
         $$ = INTERFACE_PROC($1, @$); }
+    ;
+
+type_set_decl
+    : type_set_stmt sep type_list sep end_type_set sep {
+            $$ = INTERFACE($1, TRIVIA($2, $6, @$), $3, @$); 
+            }
+    ;
+
+type_set_stmt
+    : KW_ABSTRACT KW_INTERFACE "::" id { $$ = ABSTRACT_INTERFACE_HEADER_NAME($4, @$); }
+    ;
+
+type_list
+    : var_type { LIST_NEW($$); LIST_ADD($$, $1); }
+    | type_list TK_VBAR var_type { $$ = $1; LIST_ADD($$, $3); }
+    ;
+
+end_type_set
+    : endinterface0
+    | endinterface0 id
     ;
 
 enum_decl
@@ -1058,6 +1081,7 @@ temp_decl_star
 
 temp_decl
     : var_decl
+    | type_set_decl
     | interface_decl
     | derived_type_decl
     | template_decl
@@ -1072,7 +1096,8 @@ decl_star
 
 decl
     : var_decl
-    | interface_decl
+    | type_set_decl
+    | interface_decl 
     | derived_type_decl
     | template_decl
     | requirement_decl
@@ -1594,6 +1619,7 @@ decl_statements
 
 decl_statement
     : var_decl
+    | type_set_decl
     | interface_decl
     | derived_type_decl
     | enum_decl
