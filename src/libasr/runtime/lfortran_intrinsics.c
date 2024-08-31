@@ -2483,6 +2483,13 @@ LFORTRAN_API bool _lfortran_random_init(bool repeatable, bool image_distinct) {
     return false;
 }
 
+LFORTRAN_API int64_t _lfortran_random_seed(unsigned seed)
+{
+    srand(seed);
+    return 8;
+
+}
+
 LFORTRAN_API int64_t _lpython_open(char *path, char *flags)
 {
     FILE *fd;
