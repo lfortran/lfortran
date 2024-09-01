@@ -3573,6 +3573,22 @@ LFORTRAN_API char *_lfortran_get_env_variable(char *name) {
     return getenv(name);
 }
 
+LFORTRAN_API char *_lfortran_get_environment_variable_value(char *name) {
+    return "parth m";
+}
+
+LFORTRAN_API int32_t _lfortran_get_environment_variable_length(char *name) {
+    return 55;
+}
+
+LFORTRAN_API int32_t _lfortran_get_environment_variable_status(char *name) {
+    return 65;
+}
+
+LFORTRAN_API bool _lfortran_get_environment_variable_trimname(char *name) {
+    return true;
+}
+
 LFORTRAN_API int _lfortran_exec_command(char *cmd) {
     return system(cmd);
 }

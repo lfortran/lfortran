@@ -841,6 +841,7 @@ public:
         {"nearest", {IntrinsicSignature({"x", "s"}, 2, 2)}},
         {"compiler_version", {IntrinsicSignature({}, 0, 0)}},
         {"command_argument_count", {IntrinsicSignature({}, 0, 0)}},
+        {"get_environment_variable", {IntrinsicSignature({"n", "v", "l", "s", "t"}, 1, 5)}},
         {"ishftc", {IntrinsicSignature({"i", "shift", "size"}, 2, 3)}},
         {"ichar", {IntrinsicSignature({"C", "kind"}, 1, 2)}},
         {"char", {IntrinsicSignature({"I", "kind"}, 1, 2)}},

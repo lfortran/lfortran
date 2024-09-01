@@ -23,6 +23,7 @@ inline std::string get_intrinsic_subroutine_name(int x) {
         INTRINSIC_SUBROUTINE_NAME_CASE(RandomInit)
         INTRINSIC_SUBROUTINE_NAME_CASE(RandomSeed)
         INTRINSIC_SUBROUTINE_NAME_CASE(GetCommand)
+        INTRINSIC_SUBROUTINE_NAME_CASE(GetEnvironmentVariable)
         default : {
             throw LCompilersException("pickle: intrinsic_id not implemented");
         }
@@ -44,6 +45,8 @@ namespace IntrinsicImpureSubroutineRegistry {
             {&RandomSeed::instantiate_RandomSeed, &RandomSeed::verify_args}},
         {static_cast<int64_t>(IntrinsicImpureSubroutines::GetCommand),
             {&GetCommand::instantiate_GetCommand, &GetCommand::verify_args}},
+        {static_cast<int64_t>(IntrinsicImpureSubroutines::GetEnvironmentVariable),
+            {&GetEnvironmentVariable::instantiate_GetEnvironmentVariable, &GetEnvironmentVariable::verify_args}},
     };
 
     static const std::map<int64_t, std::string>& intrinsic_subroutine_id_to_name = {
@@ -55,6 +58,8 @@ namespace IntrinsicImpureSubroutineRegistry {
             "random_seed"},
         {static_cast<int64_t>(IntrinsicImpureSubroutines::GetCommand),
             "get_command"},
+        {static_cast<int64_t>(IntrinsicImpureSubroutines::GetEnvironmentVariable),
+            "get_environment_variable"},
     };
 
 
@@ -64,6 +69,7 @@ namespace IntrinsicImpureSubroutineRegistry {
                 {"random_init", &RandomInit::create_RandomInit},
                 {"random_seed", &RandomSeed::create_RandomSeed},
                 {"get_command", &GetCommand::create_GetCommand},
+                {"get_environment_variable", &GetEnvironmentVariable::create_GetEnvironmentVariable},
     };
 
     static inline bool is_intrinsic_subroutine(const std::string& name) {
