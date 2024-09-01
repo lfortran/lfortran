@@ -4649,12 +4649,13 @@ public:
                         array_arg_index[i] = f_type->m_arg_types[i];
                     }
                 }
-                for (size_t i = 0; i < x.n_args; i++) {
-                    ASR::expr_t* arg_expr = x.m_args[i].m_value;
+                // iterate only over args of type array.
+                for( auto it: array_arg_index ) {
+                    ASR::expr_t* arg_expr = x.m_args[it.first].m_value;
                     if ( arg_expr != nullptr ) {
                         *current_expr = arg_expr;
                         call_replacer_(array_arg_index);
-                        x.m_args[i].m_value = *current_expr;
+                        x.m_args[it.first].m_value = *current_expr;
                     }
                 }
             }
