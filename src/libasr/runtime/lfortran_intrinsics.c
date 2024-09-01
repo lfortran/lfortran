@@ -3582,7 +3582,7 @@ LFORTRAN_API int32_t _lfortran_get_environment_variable_length(char *name) {
 }
 
 LFORTRAN_API int32_t _lfortran_get_environment_variable_status(char *name) {
-    return 65;
+    return 1;
 }
 
 LFORTRAN_API bool _lfortran_get_environment_variable_trimname(char *name) {
