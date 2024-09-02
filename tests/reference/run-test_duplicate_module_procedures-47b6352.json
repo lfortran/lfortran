@@ -1,0 +1,13 @@
+{
+    "basename": "run-test_duplicate_module_procedures-47b6352",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/errors/test_duplicate_module_procedures.f90",
+    "infile_hash": "95b15c81a47a53f51da90f5e1140985bc1dbd7860ade678585268160",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "run-test_duplicate_module_procedures-47b6352.stdout",
+    "stdout_hash": "b265f33f6fe99bd366dae49c45d2c3d288fdd852024103e85c07002d",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
