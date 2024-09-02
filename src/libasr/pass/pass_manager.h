@@ -241,8 +241,10 @@ namespace LCompilers {
             };
 
             _with_optimization_passes = {
-                "nested_vars",
                 "global_stmts",
+                "function_call_in_declaration",
+                "simplifier",
+                "nested_vars",
                 "transform_optional_argument_functions",
                 // "init_expr",
                 "openmp",
@@ -250,14 +252,12 @@ namespace LCompilers {
                 "class_constructor",
                 "pass_list_expr",
                 "where",
-                "function_call_in_declaration",
                 "subroutine_from_function",
                 "array_op",
                 "symbolic",
                 "flip_sign",
                 "intrinsic_function",
                 "intrinsic_subroutine",
-                "subroutine_from_function",
                 "array_op",
                 "pass_array_by_data",
                 "print_struct_type",
