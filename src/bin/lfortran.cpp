@@ -2601,9 +2601,10 @@ int main_app(int argc, char *argv[]) {
             std::cerr << "Compiling LLVM IR to object files requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
             return 1;
     #endif
-        } else {
-            // assume it's an object file
+        } else if (endswith(arg_file, ".o")) {
             tmp_o = arg_file;
+        } else {
+            std::cerr << "File with incompatible extension provided" << std::endl;
         }
         if (err) return err;
         object_files.push_back(tmp_o);
