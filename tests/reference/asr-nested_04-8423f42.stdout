@@ -131,17 +131,35 @@
                                                     []
                                                     [(Var 4 z)]
                                                     [(Print
-                                                        [(Var 4 z)]
+                                                        [(StringFormat
+                                                            ()
+                                                            [(Var 4 z)]
+                                                            FormatFortran
+                                                            (Character -1 0 ())
+                                                            ()
+                                                        )]
                                                         ()
                                                         ()
                                                     )
                                                     (Print
-                                                        [(Var 3 y)]
+                                                        [(StringFormat
+                                                            ()
+                                                            [(Var 3 y)]
+                                                            FormatFortran
+                                                            (Character -1 0 ())
+                                                            ()
+                                                        )]
                                                         ()
                                                         ()
                                                     )
                                                     (Print
-                                                        [(Var 3 yy)]
+                                                        [(StringFormat
+                                                            ()
+                                                            [(Var 3 yy)]
+                                                            FormatFortran
+                                                            (Character -1 0 ())
+                                                            ()
+                                                        )]
                                                         ()
                                                         ()
                                                     )

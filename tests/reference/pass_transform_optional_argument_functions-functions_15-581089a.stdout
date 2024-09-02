@@ -351,8 +351,14 @@
                         ()
                     )
                     (Print
-                        [(Var 4 a)
-                        (Var 4 b)]
+                        [(StringFormat
+                            ()
+                            [(Var 4 a)
+                            (Var 4 b)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
@@ -386,28 +392,34 @@
                         []
                     )
                     (Print
-                        [(FunctionCall
-                            4 f
+                        [(StringFormat
                             ()
-                            [((Var 4 __libasr_created_variable_))
-                            ((LogicalConstant
-                                .false.
+                            [(FunctionCall
+                                4 f
+                                ()
+                                [((Var 4 __libasr_created_variable_))
+                                ((LogicalConstant
+                                    .false.
+                                    (Logical 4)
+                                ))]
                                 (Logical 4)
-                            ))]
-                            (Logical 4)
-                            ()
-                            ()
-                        )
-                        (FunctionCall
-                            4 f
-                            ()
-                            [((IntegerConstant 42 (Integer 4) Decimal))
-                            ((LogicalConstant
-                                .true.
+                                ()
+                                ()
+                            )
+                            (FunctionCall
+                                4 f
+                                ()
+                                [((IntegerConstant 42 (Integer 4) Decimal))
+                                ((LogicalConstant
+                                    .true.
+                                    (Logical 4)
+                                ))]
                                 (Logical 4)
-                            ))]
-                            (Logical 4)
-                            ()
+                                ()
+                                ()
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
                             ()
                         )]
                         ()

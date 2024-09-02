@@ -1098,6 +1098,23 @@ TEST_CASE("FortranEvaluator Array 1") {
     CHECK(r.result.type == FortranEvaluator::EvalResult::statement);
 }
 
+TEST_CASE("FortranEvaluator Array 2") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    LCompilers::Result<FortranEvaluator::EvalResult>
+    r = e.evaluate2("integer :: x(3)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::none);
+    r = e.evaluate2("x = 5");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::statement);
+    r = e.evaluate2("print *, x");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::statement);
+}
+
 TEST_CASE("FortranEvaluator re-declaration 1") {
     CompilerOptions cu;
     cu.interactive = true;

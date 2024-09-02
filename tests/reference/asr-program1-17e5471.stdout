@@ -32,16 +32,28 @@
                         ()
                     )
                     (Print
-                        [(Var 2 i)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 i)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
                     (Print
-                        [(IntegerBinOp
-                            (Var 2 i)
-                            Add
-                            (IntegerConstant 1 (Integer 4) Decimal)
-                            (Integer 4)
+                        [(StringFormat
+                            ()
+                            [(IntegerBinOp
+                                (Var 2 i)
+                                Add
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                (Integer 4)
+                                ()
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
                             ()
                         )]
                         ()

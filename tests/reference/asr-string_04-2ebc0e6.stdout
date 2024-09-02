@@ -223,42 +223,54 @@
                         ()
                     )
                     (Print
-                        [(StringConstant
-                            "Here is "
-                            (Character 1 8 ())
-                        )
-                        (ArrayItem
-                            (Var 2 user_data)
-                            [(()
-                            (IntegerConstant 1 (Integer 4) Decimal)
-                            ())]
-                            (Character 1 40 ())
-                            ColMajor
+                        [(StringFormat
                             ()
-                        )
-                        (ArrayItem
-                            (Var 2 user_data)
-                            [(()
-                            (IntegerConstant 2 (Integer 4) Decimal)
-                            ())]
-                            (Character 1 40 ())
-                            ColMajor
-                            ()
-                        )
-                        (ArrayItem
-                            (Var 2 user_data)
-                            [(()
-                            (IntegerConstant 3 (Integer 4) Decimal)
-                            ())]
-                            (Character 1 40 ())
-                            ColMajor
+                            [(StringConstant
+                                "Here is "
+                                (Character 1 8 ())
+                            )
+                            (ArrayItem
+                                (Var 2 user_data)
+                                [(()
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                ())]
+                                (Character 1 40 ())
+                                ColMajor
+                                ()
+                            )
+                            (ArrayItem
+                                (Var 2 user_data)
+                                [(()
+                                (IntegerConstant 2 (Integer 4) Decimal)
+                                ())]
+                                (Character 1 40 ())
+                                ColMajor
+                                ()
+                            )
+                            (ArrayItem
+                                (Var 2 user_data)
+                                [(()
+                                (IntegerConstant 3 (Integer 4) Decimal)
+                                ())]
+                                (Character 1 40 ())
+                                ColMajor
+                                ()
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
                             ()
                         )]
                         ()
                         ()
                     )
                     (Print
-                        [(Var 2 greetings)]
+                        [(StringFormat
+                            ()
+                            [(Var 2 greetings)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )

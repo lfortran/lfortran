@@ -2065,16 +2065,22 @@
                                         ()
                                     )
                                     (Print
-                                        [(StringConstant
-                                            "tal = "
-                                            (Character 1 6 ())
-                                        )
-                                        (Var 25 tal)
-                                        (StringConstant
-                                            " tar = "
-                                            (Character 1 7 ())
-                                        )
-                                        (Var 25 tar)]
+                                        [(StringFormat
+                                            ()
+                                            [(StringConstant
+                                                "tal = "
+                                                (Character 1 6 ())
+                                            )
+                                            (Var 25 tal)
+                                            (StringConstant
+                                                " tar = "
+                                                (Character 1 7 ())
+                                            )
+                                            (Var 25 tar)]
+                                            FormatFortran
+                                            (Character -1 0 ())
+                                            ()
+                                        )]
                                         ()
                                         ()
                                     )]
@@ -2334,16 +2340,22 @@
                                         ()
                                     )
                                     (Print
-                                        [(StringConstant
-                                            "tmaxl ="
-                                            (Character 1 7 ())
-                                        )
-                                        (Var 31 tmaxl)
-                                        (StringConstant
-                                            " tmaxr ="
-                                            (Character 1 8 ())
-                                        )
-                                        (Var 31 tmaxr)]
+                                        [(StringFormat
+                                            ()
+                                            [(StringConstant
+                                                "tmaxl ="
+                                                (Character 1 7 ())
+                                            )
+                                            (Var 31 tmaxl)
+                                            (StringConstant
+                                                " tmaxr ="
+                                                (Character 1 8 ())
+                                            )
+                                            (Var 31 tmaxr)]
+                                            FormatFortran
+                                            (Character -1 0 ())
+                                            ()
+                                        )]
                                         ()
                                         ()
                                     )]
@@ -2603,16 +2615,22 @@
                                         ()
                                     )
                                     (Print
-                                        [(StringConstant
-                                            "tml = "
-                                            (Character 1 6 ())
-                                        )
-                                        (Var 28 tml)
-                                        (StringConstant
-                                            " tmr = "
-                                            (Character 1 7 ())
-                                        )
-                                        (Var 28 tmr)]
+                                        [(StringFormat
+                                            ()
+                                            [(StringConstant
+                                                "tml = "
+                                                (Character 1 6 ())
+                                            )
+                                            (Var 28 tml)
+                                            (StringConstant
+                                                " tmr = "
+                                                (Character 1 7 ())
+                                            )
+                                            (Var 28 tmr)]
+                                            FormatFortran
+                                            (Character -1 0 ())
+                                            ()
+                                        )]
                                         ()
                                         ()
                                     )]

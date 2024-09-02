@@ -257,6 +257,12 @@ intrinsic_funcs_args = {
             "return": "int32"
         },
     ],
+    "IsContiguous": [
+        {
+            "args": [("any",)],
+            "return": "logical"
+        },
+    ],
     "StorageSize": [
         {
             "args": [("any",)],
@@ -815,6 +821,7 @@ skip_create_func = ["Partition"]
 compile_time_only_fn = [
     "Epsilon",
     "Radix",
+    "IsContiguous",
     "StorageSize",
     "Range",
     "Precision",

@@ -348,51 +348,69 @@
                         ()
                     )
                     (Print
-                        [(StructInstanceMember
-                            (StructInstanceMember
-                                (Var 2 foo)
-                                2 1_foo_a_m_bar_a
-                                (StructType
-                                    2 bar_a
+                        [(StringFormat
+                            ()
+                            [(StructInstanceMember
+                                (StructInstanceMember
+                                    (Var 2 foo)
+                                    2 1_foo_a_m_bar_a
+                                    (StructType
+                                        2 bar_a
+                                    )
+                                    ()
                                 )
+                                2 1_bar_a_a
+                                (Integer 4)
                                 ()
-                            )
-                            2 1_bar_a_a
-                            (Integer 4)
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
                             ()
                         )]
                         ()
                         ()
                     )
                     (Print
-                        [(StructInstanceMember
-                            (StructInstanceMember
-                                (Var 2 foo)
-                                2 1_foo_b_m_bar_b
-                                (StructType
-                                    2 bar_b
+                        [(StringFormat
+                            ()
+                            [(StructInstanceMember
+                                (StructInstanceMember
+                                    (Var 2 foo)
+                                    2 1_foo_b_m_bar_b
+                                    (StructType
+                                        2 bar_b
+                                    )
+                                    ()
                                 )
+                                2 1_bar_b_b
+                                (Integer 4)
                                 ()
-                            )
-                            2 1_bar_b_b
-                            (Integer 4)
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
                             ()
                         )]
                         ()
                         ()
                     )
                     (Print
-                        [(StructInstanceMember
-                            (StructInstanceMember
-                                (Var 2 foo)
-                                2 1_foo_c_m_bar_c
-                                (StructType
-                                    2 bar_c
+                        [(StringFormat
+                            ()
+                            [(StructInstanceMember
+                                (StructInstanceMember
+                                    (Var 2 foo)
+                                    2 1_foo_c_m_bar_c
+                                    (StructType
+                                        2 bar_c
+                                    )
+                                    ()
                                 )
+                                2 1_bar_c_c
+                                (Integer 4)
                                 ()
-                            )
-                            2 1_bar_c_c
-                            (Integer 4)
+                            )]
+                            FormatFortran
+                            (Character -1 0 ())
                             ()
                         )]
                         ()

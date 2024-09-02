@@ -135,7 +135,13 @@
                                                         ()
                                                     )
                                                     (Print
-                                                        [(Var 4 f)]
+                                                        [(StringFormat
+                                                            ()
+                                                            [(Var 4 f)]
+                                                            FormatFortran
+                                                            (Character -1 0 ())
+                                                            ()
+                                                        )]
                                                         ()
                                                         ()
                                                     )]

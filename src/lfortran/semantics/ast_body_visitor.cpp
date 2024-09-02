@@ -707,16 +707,22 @@ public:
             a_fmt_constant = ASRUtils::EXPR(ASR::make_StringConstant_t(
                 al, a_fmt->base.loc, s2c(al, format_statements[label]), a_fmt_type));
         }
-        if (a_fmt_constant) {
+        // Don't use stringFormat with single character argument
+        if (!a_fmt 
+            && _type == AST::stmtType::Write 
+            && a_values_vec.size() == 1  
+            && ASR::is_a<ASR::Character_t>(*ASRUtils::expr_type(a_values_vec[0]))){ 
+            tmp = ASR::make_FileWrite_t(al, loc, m_label, a_unit,
+            a_iomsg, a_iostat, a_id, a_values_vec.p,
+            a_values_vec.size(), a_separator, a_end, overloaded_stmt);
+        } else if ( _type == AST::stmtType::Write ) { // If not the previous case, Wrap everything in stringFormat.
             ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Character_t(
                         al, loc, -1, 0, nullptr));
-            ASR::expr_t* string_format = ASRUtils::EXPR(ASRUtils::make_StringFormat_t_util(al, a_fmt->base.loc,
+            ASR::expr_t* string_format = ASRUtils::EXPR(ASRUtils::make_StringFormat_t_util(al, a_fmt? a_fmt->base.loc : read_write_stmt.base.loc,
                 a_fmt_constant, a_values_vec.p, a_values_vec.size(), ASR::string_format_kindType::FormatFortran,
                 type, nullptr));
             a_values_vec.reserve(al, 1);
             a_values_vec.push_back(al, string_format);
-        }
-        if( _type == AST::stmtType::Write ) {
             tmp = ASR::make_FileWrite_t(al, loc, m_label, a_unit,
                 a_iomsg, a_iostat, a_id, a_values_vec.p,
                 a_values_vec.size(), a_separator, a_end, overloaded_stmt);
@@ -1498,6 +1504,16 @@ public:
             }
         }
 
+        Vec<ASR::stmt_t*> body;
+        body.reserve(al, x.n_body);
+        if (data_structure.size()>0) {
+            for(auto it: data_structure) {
+                body.push_back(al, it);
+            }
+        }
+        data_structure.clear();
+
+        transform_stmts(body, x.n_body, x.m_body);
         // We have to visit unit_decl_2 because in the example, the Template is directly inside the module and
         // Template is a unit_decl_2
 
@@ -1515,6 +1531,7 @@ public:
             v->n_dependencies = module_dependencies.size();
         }
 
+        create_and_replace_structType();
         current_scope = old_scope;
         current_module = nullptr;
         tmp = nullptr;
@@ -1581,6 +1598,7 @@ public:
             visit_program_unit(*x.m_contains[i]);
         }
 
+        create_and_replace_structType();
         ASRUtils::update_call_args(al, current_scope, compiler_options.implicit_interface, changed_external_function_symbol);
 
         starting_m_body = nullptr;
@@ -1983,6 +2001,7 @@ public:
             visit_program_unit(*x.m_contains[i]);
         }
 
+        create_and_replace_structType();
         ASRUtils::update_call_args(al, current_scope, compiler_options.implicit_interface, changed_external_function_symbol);
 
         starting_m_body = nullptr;
@@ -2064,6 +2083,7 @@ public:
             is_Function = false;
         }
 
+        create_and_replace_structType();
         ASRUtils::update_call_args(al, current_scope, compiler_options.implicit_interface, changed_external_function_symbol);
 
         starting_m_body = nullptr;
@@ -3105,21 +3125,7 @@ public:
             ASR::expr_t *expr = ASRUtils::EXPR(tmp);
             body.push_back(al, expr);
         }
-
-        if (fmt && ASR::is_a<ASR::Character_t>(*ASRUtils::expr_type(fmt))) {
-            ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Character_t(
-                        al, x.base.base.loc, -1, 0, nullptr));
-            ASR::expr_t* string_format = ASRUtils::EXPR(ASRUtils::make_StringFormat_t_util(al, fmt->base.loc,
-                fmt, body.p, body.size(), ASR::string_format_kindType::FormatFortran,
-                type, nullptr));
-
-            Vec<ASR::expr_t*> print_args;
-            print_args.reserve(al, 1);
-            print_args.push_back(al, string_format);
-
-            tmp = ASR::make_Print_t(al, x.base.base.loc,
-                print_args.p, print_args.size(), nullptr, nullptr);
-        } else if (fmt && ASR::is_a<ASR::IntegerConstant_t>(*fmt)) {
+        if (fmt && ASR::is_a<ASR::IntegerConstant_t>(*fmt)) {
             ASR::IntegerConstant_t *f = ASR::down_cast<ASR::IntegerConstant_t>(fmt);
             int64_t label = f->m_n;
             if (format_statements.find(label) == format_statements.end()) {
@@ -3144,9 +3150,23 @@ public:
 
             tmp = ASR::make_Print_t(al, x.base.base.loc,
                 print_args.p, print_args.size(), nullptr, nullptr);
-        } else {
+        } else if (!fmt && body.size() == 1
+                        && ASR::is_a<ASR::Character_t>(*ASRUtils::expr_type(body[0]))) {
             tmp = ASR::make_Print_t(al, x.base.base.loc,
                 body.p, body.size(), nullptr, nullptr);
+        } else {
+            ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Character_t(
+                        al, x.base.base.loc, -1, 0, nullptr));
+            ASR::expr_t* string_format = ASRUtils::EXPR(ASRUtils::make_StringFormat_t_util(al, fmt?fmt->base.loc:x.base.base.loc,
+                fmt, body.p, body.size(), ASR::string_format_kindType::FormatFortran,
+                type, nullptr));
+
+            Vec<ASR::expr_t*> print_args;
+            print_args.reserve(al, 1);
+            print_args.push_back(al, string_format);
+
+            tmp = ASR::make_Print_t(al, x.base.base.loc,
+                print_args.p, print_args.size(), nullptr, nullptr);
         }
     }
 
