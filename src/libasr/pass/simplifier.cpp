@@ -4,6 +4,7 @@
 #include <libasr/pass/simplifier.h>
 #include <libasr/pass/pass_utils.h>
 #include <libasr/pass/intrinsic_function_registry.h>
+#include <libasr/pass/intrinsic_subroutine_registry.h>
 #include <libasr/pass/intrinsic_array_function_registry.h>
 #include <libasr/pickle.h>
 
@@ -1139,7 +1140,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
 
     void visit_IntrinsicImpureSubroutine(const ASR::IntrinsicImpureSubroutine_t& x) {
         visit_IntrinsicCall(x, "_intrinsic_impure_subroutine_" +
-            ASRUtils::get_impure_intrinsic_name(x.m_sub_intrinsic_id));
+            ASRUtils::get_intrinsic_subroutine_name(x.m_sub_intrinsic_id));
     }
 
     void visit_IntrinsicElementalFunction(const ASR::IntrinsicElementalFunction_t& x) {
