@@ -1020,10 +1020,10 @@ namespace OutOfRange
     static ASR::expr_t* eval_OutOfRange(Allocator& al, const Location& loc,
         ASR::ttype_t* return_type, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/){
         ASRUtils::ASRBuilder b(al, loc);
-        long long max_val_int;
-        long long min_val_int;
-        double max_val_float;
-        double min_val_float;
+        long long max_val_int = 0;
+        long long min_val_int = 0;
+        double max_val_float = 0.0;
+        double min_val_float = 0.0;
 
         ASR::ttype_t* arg_type_1 = expr_type(args[0]);
         ASR::ttype_t* arg_type_2 = expr_type(args[1]);
