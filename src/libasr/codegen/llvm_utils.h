@@ -19,10 +19,6 @@
 
 namespace LCompilers {
 
-    #define get_builder0() llvm::BasicBlock &entry_block = builder->GetInsertBlock()->getParent()->getEntryBlock(); \
-        llvm::IRBuilder<> builder0(context); \
-        builder0.SetInsertPoint(&entry_block, entry_block.getFirstInsertionPt()); \
-
     // Platform dependent fast unique hash:
     static inline uint64_t get_hash(ASR::asr_t *node)
     {
@@ -260,6 +256,12 @@ namespace LCompilers {
             llvm::Value* create_ptr_gep(llvm::Value* ptr, llvm::Value* idx);
 
             llvm::Value* create_ptr_gep2(llvm::Type* type, llvm::Value* ptr, llvm::Value* idx);
+
+            llvm::AllocaInst* CreateAlloca(llvm::Type* type,
+                llvm::Value* size=nullptr, std::string Name="");
+
+            llvm::AllocaInst* CreateAlloca(llvm::IRBuilder<> &builder,
+                llvm::Type* type, llvm::Value* size=nullptr, std::string Name="");
 
             llvm::Type* getIntType(int a_kind, bool get_pointer=false);
 
