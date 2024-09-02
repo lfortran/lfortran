@@ -864,6 +864,7 @@ public:
         {"real", {IntrinsicSignature({"a", "kind"}, 1, 2)}},
         {"storage_size", {IntrinsicSignature({"a", "kind"}, 1, 2)}},
         {"spread", {IntrinsicSignature({"source", "dim", "ncopies"}, 3, 3)}},
+        {"out_of_range", {IntrinsicSignature({"value", "mold", "round"}, 2, 3)}},
     };
 
     std::map<std::string, std::pair<std::string, std::vector<std::string>>> intrinsic_mapping = {
@@ -5534,6 +5535,8 @@ public:
     void fill_optional_args(std::string intrinsic_name, Vec<ASR::expr_t*> &args, const Location &loc) {
         ASR::ttype_t *int_type = ASRUtils::TYPE(
                     ASR::make_Integer_t(al, loc, 4));
+        ASR::ttype_t *bool_type = ASRUtils::TYPE(
+                    ASR::make_Logical_t(al, loc, 4));
         if (intrinsic_name == "selected_real_kind") {
             ASR::expr_t* zero = ASRUtils::EXPR(
                 ASR::make_IntegerConstant_t(al, loc, 0,
@@ -5579,6 +5582,13 @@ public:
                 value = kind*8;
                 ASR::expr_t* val = ASRUtils::EXPR(
                     ASR::make_IntegerConstant_t(al, loc, value, int_type));
+                args.p[2] = val;
+            }
+        } else if (intrinsic_name == "out_of_range"){
+            if(args[2] == nullptr){
+                bool value = false;
+                ASR::expr_t* val = ASRUtils::EXPR(
+                    ASR::make_LogicalConstant_t(al, loc, value, bool_type));
                 args.p[2] = val;
             }
         }

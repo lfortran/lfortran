@@ -79,6 +79,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     Dshiftl,
     Dshiftr,
     Ishft,
+    OutOfRange,
     Bgt,
     Blt,
     Bge,
@@ -1012,6 +1013,144 @@ namespace Range {
     }
 
 }  // namespace Range
+
+namespace OutOfRange
+{
+
+    static ASR::expr_t* eval_OutOfRange(Allocator& al, const Location& loc,
+        ASR::ttype_t* return_type, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/){
+        ASRUtils::ASRBuilder b(al, loc);
+        long long max_val_int = 0;
+        long long min_val_int = 0;
+        double max_val_float = 0.0;
+        double min_val_float = 0.0;
+
+        ASR::ttype_t* arg_type_1 = expr_type(args[0]);
+        ASR::ttype_t* arg_type_2 = expr_type(args[1]);
+        int32_t kind_2 = extract_kind_from_ttype_t(arg_type_2);
+        switch (kind_2) {
+            case 1:
+                max_val_int = 127;
+                min_val_int = -128;
+                break;
+            case 2:
+                max_val_int = 32767;
+                min_val_int = -32768;
+                break;
+            case 4:
+                max_val_int = 2147483647;
+                min_val_int = -2147483648;
+                max_val_float = 3.4028234663852886e+38;
+                min_val_float = -3.4028234663852886e+38;
+                break;
+            case 8:
+                max_val_int = 9223372036854775807;
+                min_val_int = -9223372036854775807;
+                max_val_float = 1.7976931348623157e+308;
+                min_val_float = -1.7976931348623157e+308;
+                break;
+        }
+        if (is_integer(*arg_type_1)) {
+            int64_t value = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
+            if (is_integer(*arg_type_2)) {
+                if (value > max_val_int || value < min_val_int) {
+                    return b.bool_t(1, return_type);
+                }
+            } else if (is_real(*arg_type_2)) {
+                if ((double) value > max_val_float || (double) value < min_val_float) {
+                    return b.bool_t(1, return_type);
+                }
+            }
+        } else if (is_real(*arg_type_1)) {
+            double value = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
+            if (is_integer(*arg_type_2)) {
+                if (value > (double) max_val_int || value < (double) min_val_int) {
+                    return b.bool_t(1, return_type);
+                }
+            } else if (is_real(*arg_type_2)) {
+                if (value > max_val_float || value < min_val_float) {
+                    return b.bool_t(1, return_type);
+                }
+            }
+        }
+
+        return b.bool_t(0, return_type);
+    }
+
+    static inline ASR::expr_t* instantiate_OutOfRange(Allocator& al, const Location& loc,
+            SymbolTable* scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t* return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+
+        declare_basic_variables("_lcompilers_out_of_range_" + type_to_str_python(arg_types[0]));
+
+        fill_func_arg("value", arg_types[0]);
+        fill_func_arg("mold", arg_types[1]);
+        fill_func_arg("round", arg_types[2]);
+
+        auto result = declare(fn_name, return_type, ReturnVar);
+
+        ASR::expr_t* max_val = nullptr;
+        ASR::expr_t* min_val = nullptr;
+        int kind1 = extract_kind_from_ttype_t(arg_types[0]);
+        int kind2 = extract_kind_from_ttype_t(arg_types[1]);
+
+        if (is_integer(*arg_types[1])) {
+        if (kind2 == 4) {
+            if (kind1 == 4) {
+                max_val = b.i32(2147483647);
+                min_val = b.i32(-2147483648);
+                body.push_back(al,
+                    b.If(b.Or(b.Gt(args[0], max_val), b.Lt(args[0], min_val)),
+                        { b.Assignment(result, b.bool_t(true, return_type)) },
+                        { b.Assignment(result, b.bool_t(false, return_type)) }));
+            } else {
+                max_val = b.i64(2147483647);
+                min_val = b.i64(-2147483648);
+                body.push_back(al,
+                    b.If(b.Or(b.Gt(args[0], max_val), b.Lt(args[0], min_val)),
+                        { b.Assignment(result, b.bool_t(true, return_type)) },
+                        { b.Assignment(result, b.bool_t(false, return_type)) }));
+            }
+        } else if (kind2 == 8) {
+            max_val = b.i64(9223372036854775807);
+            min_val = b.i64(-9223372036854775807);
+            body.push_back(al,
+                b.If(b.Or(b.Gt(b.i2i_t(args[0], arg_types[1]), max_val), b.Lt(b.i2i_t(args[0], arg_types[1]), min_val)),
+                    { b.Assignment(result, b.bool_t(true, return_type)) },
+                    { b.Assignment(result, b.bool_t(false, return_type)) }));
+        }
+        } else if (is_real(*arg_types[1])) {
+            if (kind2 == 4) {
+                if (kind1 == 4) {
+                    max_val = b.f32(3.4028235e+38f);
+                    min_val = b.f32(-3.4028235e+38f);
+                    body.push_back(al, b.If(b.Or(b.Gt(args[0], max_val), b.Lt(args[0], min_val)), 
+                     { b.Assignment(result, b.bool_t(true, return_type)) }, 
+                     { b.Assignment(result, b.bool_t(false, return_type)) }));
+                } else if (kind1 == 8) {
+                    max_val = b.f64(3.4028235e+38f);
+                    min_val = b.f64(-3.4028235e+38f);
+                    body.push_back(al, b.If(b.Or(b.Gt(args[0], max_val), b.Lt(args[0], min_val)), 
+                    { b.Assignment(result, b.bool_t(true, return_type))}, 
+                    { b.Assignment(result, b.bool_t(false, return_type))}));
+                }
+            } else if (kind2 == 8) {
+                max_val = b.f64(1.7976931348623157e+308);
+                min_val = b.f64(-1.7976931348623157e+308);
+                body.push_back(al, b.If( b.Or(b.Gt(b.i2i_t(args[0], arg_types[1]), max_val), b.Lt(b.i2i_t(args[0], arg_types[1]), min_val)), 
+                { b.Assignment(result, b.bool_t(true, return_type)) }, 
+            { b.Assignment(result, b.bool_t(false, return_type)) }));
+            }
+        }
+
+        ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, new_symbol);
+        return b.Call(new_symbol, new_args, return_type);
+    }
+
+
+}  // namespace OutOfRange
 
 namespace CompilerVersion {
 
