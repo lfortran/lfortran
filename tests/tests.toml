@@ -4138,3 +4138,7 @@ run = true
 [[test]]
 filename = "exit2.f90"
 run = true
+
+[[test]]
+name = "test_duplicate_module_procedures"
+path = "errors/test_duplicate_module_procedures.f90"
