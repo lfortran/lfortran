@@ -2604,7 +2604,7 @@ int main_app(int argc, char *argv[]) {
         } else if (endswith(arg_file, ".o")) {
             tmp_o = arg_file;
         } else {
-            std::cerr << "File with incompatible extension provided" << std::endl;
+            std::cerr << "File with incompatible extension provided: " + arg_file << std::endl;
         }
         if (err) return err;
         object_files.push_back(tmp_o);
