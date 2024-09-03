@@ -17,20 +17,10 @@
                                 (ExternalSymbol
                                     2
                                     execute_command_line
-                                    4 execute_command_line
+                                    11 execute_command_line
                                     lfortran_intrinsic_builtin
                                     []
                                     execute_command_line
-                                    Private
-                                ),
-                            get_environment_variable:
-                                (ExternalSymbol
-                                    2
-                                    get_environment_variable
-                                    4 get_environment_variable
-                                    lfortran_intrinsic_builtin
-                                    []
-                                    get_environment_variable
                                     Private
                                 ),
                             homedir:
@@ -53,7 +43,7 @@
                                 (ExternalSymbol
                                     2
                                     len_trim
-                                    16 len_trim
+                                    4 len_trim
                                     lfortran_intrinsic_string
                                     []
                                     len_trim
@@ -63,7 +53,7 @@
                                 (ExternalSymbol
                                     2
                                     trim
-                                    16 trim
+                                    4 trim
                                     lfortran_intrinsic_string
                                     []
                                     trim
@@ -72,18 +62,14 @@
                         })
                     test_exec
                     []
-                    [(SubroutineCall
-                        2 get_environment_variable
-                        ()
-                        [((StringConstant
+                    [(IntrinsicImpureSubroutine
+                        GetEnvironmentVariable
+                        [(StringConstant
                             "HOME"
                             (Character 1 4 ())
-                        ))
-                        ((Var 2 homedir))
-                        (())
-                        (())
-                        (())]
-                        ()
+                        )
+                        (Var 2 homedir)]
+                        0
                     )
                     (Print
                         [(FunctionCall
