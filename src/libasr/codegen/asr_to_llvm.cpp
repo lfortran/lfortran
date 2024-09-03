@@ -251,26 +251,6 @@ public:
         strings_to_be_deallocated.reserve(al, 1);
     }
 
-    llvm::Value* CreateGEP(llvm::Value *x, std::vector<llvm::Value *> &idx) {
-        return LLVM::CreateGEP(*builder, x, idx);
-    }
-
-    llvm::Value* CreateGEP2(ASR::ttype_t *type, llvm::Value *x, std::vector<llvm::Value *> &idx) {
-        llvm::Type* llvm_type = llvm_utils->get_type_from_ttype_t_util(
-            ASRUtils::extract_type(type), module.get()
-        );
-        return LLVM::CreateGEP2(*builder, llvm_type, x, idx);
-    }
-
-
-    llvm::Value* CreateGEP2(ASR::ttype_t *type, llvm::Value *x, int idx) {
-        std::vector<llvm::Value*> idx_vec = {
-        llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
-        llvm::ConstantInt::get(context, llvm::APInt(32, idx))};
-        llvm::Type* llvm_type = llvm_utils->get_type_from_ttype_t_util(type, module.get());
-        return LLVM::CreateGEP2(*builder, llvm_type, x, idx_vec);
-    }
-
     #define load_non_array_non_character_pointers(expr, type, llvm_value) if( ASR::is_a<ASR::StructInstanceMember_t>(*expr) && \
         !ASRUtils::is_array(type) && \
         LLVM::is_llvm_pointer(*type) && \
@@ -813,7 +793,7 @@ public:
         std::vector<llvm::Value *> idx = {
             llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
             llvm::ConstantInt::get(context, llvm::APInt(32, 0))};
-        llvm::Value *pim = LLVM::CreateGEP2(*builder, complex_type, pc, idx);
+        llvm::Value *pim = llvm_utils->CreateGEP2(complex_type, pc, idx);
         if (complex_type == complex_type_4) {
             return llvm_utils->CreateLoad2(llvm::Type::getFloatTy(context), pim);
         } else {
@@ -830,7 +810,7 @@ public:
         std::vector<llvm::Value *> idx = {
             llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
             llvm::ConstantInt::get(context, llvm::APInt(32, 1))};
-        llvm::Value *pim = LLVM::CreateGEP2(*builder, complex_type, pc, idx);
+        llvm::Value *pim = llvm_utils->CreateGEP2(complex_type, pc, idx);
         if (complex_type == complex_type_4) {
             return llvm_utils->CreateLoad2(llvm::Type::getFloatTy(context), pim);
         } else {
@@ -850,8 +830,8 @@ public:
         std::vector<llvm::Value *> idx2 = {
             llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
             llvm::ConstantInt::get(context, llvm::APInt(32, 1))};
-        llvm::Value *pre = LLVM::CreateGEP2(*builder, complex_type, pres, idx1);
-        llvm::Value *pim = LLVM::CreateGEP2(*builder, complex_type, pres, idx2);
+        llvm::Value *pre = llvm_utils->CreateGEP2(complex_type, pres, idx1);
+        llvm::Value *pim = llvm_utils->CreateGEP2(complex_type, pres, idx2);
         builder->CreateStore(re, pre);
         builder->CreateStore(im, pim);
         return llvm_utils->CreateLoad2(complex_type, pres);
@@ -860,7 +840,7 @@ public:
     llvm::Value *nested_struct_rd(std::vector<llvm::Value*> vals,
             llvm::StructType* rd) {
         llvm::AllocaInst *pres = llvm_utils->CreateAlloca(*builder, rd);
-        llvm::Value *pim = CreateGEP(pres, vals);
+        llvm::Value *pim = llvm_utils->CreateGEP(pres, vals);
         return llvm_utils->CreateLoad(pim);
     }
 
@@ -1039,7 +1019,7 @@ public:
                             std::vector<llvm::Value*> idx_vec = {
                             llvm::ConstantInt::get(context, llvm::APInt(32, 1))};
                             llvm::Value* null_array_ptr = llvm::ConstantPointerNull::get(type->getPointerTo());
-                            llvm::Value* size_of_array_struct = CreateGEP(null_array_ptr, idx_vec);
+                            llvm::Value* size_of_array_struct = llvm_utils->CreateGEP(null_array_ptr, idx_vec);
                             llvm::Value* size_of_array_struct_casted = builder->CreatePtrToInt(size_of_array_struct, llvm::Type::getInt32Ty(context)); //cast to int32
                             llvm::Value* struct_ptr = LLVMArrUtils::lfortran_malloc(
                                 context, *module, *builder, size_of_array_struct_casted);
@@ -2300,7 +2280,7 @@ public:
             if( is_assignment_target ) {
                 idx = builder->CreateSub(idx, llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
                 std::vector<llvm::Value*> idx_vec = {idx};
-                p = CreateGEP(str, idx_vec);
+                p = llvm_utils->CreateGEP(str, idx_vec);
             } else {
                 p = lfortran_str_item(str, idx);
                 strings_to_be_deallocated.push_back(al, p);
@@ -5222,7 +5202,7 @@ public:
                 !ASR::is_a<ASR::ArrayConstant_t>(*ASRUtils::expr_value(m_arg))) ||
                 ASRUtils::expr_value(m_arg) == nullptr ) &&
                 !ASR::is_a<ASR::ArrayConstructor_t>(*m_arg) ) {
-                tmp = CreateGEP2(ASRUtils::expr_type(m_arg), tmp, 0);
+                tmp = llvm_utils->CreateGEP2(ASRUtils::expr_type(m_arg), tmp, 0);
             }
         } else if(
             m_new == ASR::array_physical_typeType::UnboundedPointerToDataArray &&
@@ -6152,7 +6132,7 @@ public:
             idx = builder->CreateSub(builder->CreateSExtOrTrunc(idx, llvm::Type::getInt32Ty(context)),
                 llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
             std::vector<llvm::Value*> idx_vec = {idx};
-            tmp = CreateGEP(str, idx_vec);
+            tmp = llvm_utils->CreateGEP(str, idx_vec);
         } else {
             tmp = lfortran_str_item(str, idx);
             strings_to_be_deallocated.push_back(al, tmp);

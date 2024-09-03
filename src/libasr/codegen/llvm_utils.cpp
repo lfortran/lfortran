@@ -12,18 +12,6 @@ namespace LCompilers {
             return builder.CreateStore(x, y);
         }
 
-        llvm::Value* CreateGEP(llvm::IRBuilder<> &builder, llvm::Value *x, std::vector<llvm::Value *> &idx) {
-            llvm::Type *t = x->getType();
-            LCOMPILERS_ASSERT(t->isPointerTy());
-            LCOMPILERS_ASSERT(t->getNumContainedTypes() > 0);
-            llvm::Type *t2 = t->getContainedType(0);
-            return builder.CreateGEP(t2, x, idx);
-        }
-
-        llvm::Value* CreateGEP2(llvm::IRBuilder<> &builder, llvm::Type *t, llvm::Value *x, std::vector<llvm::Value *> &idx) {
-            return builder.CreateGEP(t, x, idx);
-        }
-
         llvm::Value* CreateInBoundsGEP(llvm::IRBuilder<> &builder, llvm::Value *x, std::vector<llvm::Value *> &idx) {
             llvm::Type *t = x->getType();
             LCOMPILERS_ASSERT(t->isPointerTy());
@@ -1547,28 +1535,28 @@ namespace LCompilers {
         std::vector<llvm::Value*> idx_vec = {
         llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
         llvm::ConstantInt::get(context, llvm::APInt(32, idx))};
-        return LLVM::CreateGEP(*builder, ds, idx_vec);
+        return LLVMUtils::CreateGEP(ds, idx_vec);
     }
 
     llvm::Value* LLVMUtils::create_gep2(llvm::Type *t, llvm::Value* ds, int idx) {
         std::vector<llvm::Value*> idx_vec = {
         llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
         llvm::ConstantInt::get(context, llvm::APInt(32, idx))};
-        return LLVM::CreateGEP2(*builder, t, ds, idx_vec);
+        return LLVMUtils::CreateGEP2(t, ds, idx_vec);
     }
 
     llvm::Value* LLVMUtils::create_gep(llvm::Value* ds, llvm::Value* idx) {
         std::vector<llvm::Value*> idx_vec = {
         llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
         idx};
-        return LLVM::CreateGEP(*builder, ds, idx_vec);
+        return LLVMUtils::CreateGEP(ds, idx_vec);
     }
 
     llvm::Value* LLVMUtils::create_gep2(llvm::Type *t, llvm::Value* ds, llvm::Value* idx) {
         std::vector<llvm::Value*> idx_vec = {
         llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
         idx};
-        return LLVM::CreateGEP2(*builder, t, ds, idx_vec);
+        return LLVMUtils::CreateGEP2(t, ds, idx_vec);
     }
 
     llvm::Value* LLVMUtils::create_ptr_gep(llvm::Value* ptr, int idx) {
@@ -1633,6 +1621,30 @@ namespace LCompilers {
     llvm::Value* LLVMUtils::CreateLoad2(ASR::ttype_t *type, llvm::Value *x) {
         llvm::Type* el_type = LLVMUtils::get_type_from_ttype_t_util(type, module);
         return builder->CreateLoad(el_type, x);
+    }
+
+    llvm::Value* LLVMUtils::CreateGEP(llvm::Value *x,
+            std::vector<llvm::Value *> &idx) {
+        llvm::Type *t = x->getType();
+        LCOMPILERS_ASSERT(t->isPointerTy());
+        LCOMPILERS_ASSERT(t->getNumContainedTypes() > 0);
+        llvm::Type *t2 = t->getContainedType(0);
+        return builder->CreateGEP(t2, x, idx);
+    }
+
+    llvm::Value* LLVMUtils::CreateGEP2(llvm::Type *t, llvm::Value *x,
+            std::vector<llvm::Value *> &idx) {
+        return builder->CreateGEP(t, x, idx);
+    }
+
+    llvm::Value* LLVMUtils::CreateGEP2(ASR::ttype_t *type,
+            llvm::Value *x, int idx) {
+        std::vector<llvm::Value*> idx_vec = {
+        llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
+        llvm::ConstantInt::get(context, llvm::APInt(32, idx))};
+        llvm::Type* llvm_type = LLVMUtils::get_type_from_ttype_t_util(type,
+            module);
+        return LLVMUtils::CreateGEP2(llvm_type, x, idx_vec);
     }
 
     llvm::Type* LLVMUtils::getIntType(int a_kind, bool get_pointer) {
