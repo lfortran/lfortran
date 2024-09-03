@@ -2559,7 +2559,7 @@ static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
         case ASR::ttypeType::Character: {
             ASR::Character_t* tnew = ASR::down_cast<ASR::Character_t>(t);
             t_ = ASRUtils::TYPE(ASR::make_Character_t(al, t->base.loc,
-                    tnew->m_kind, tnew->m_len, tnew->m_len_expr));
+                    tnew->m_kind, tnew->m_len, tnew->m_len_expr, ASR::string_physical_typeType::PointerString));
             break;
         }
         case ASR::ttypeType::StructType: {
@@ -2710,7 +2710,7 @@ static inline ASR::ttype_t* duplicate_type_without_dims(Allocator& al, const ASR
         case ASR::ttypeType::Character: {
             ASR::Character_t* tnew = ASR::down_cast<ASR::Character_t>(t);
             return ASRUtils::TYPE(ASR::make_Character_t(al, loc,
-                        tnew->m_kind, tnew->m_len, tnew->m_len_expr));
+                        tnew->m_kind, tnew->m_len, tnew->m_len_expr, ASR::string_physical_typeType::PointerString));
         }
         case ASR::ttypeType::StructType: {
             ASR::StructType_t* tstruct = ASR::down_cast<ASR::StructType_t>(t);
@@ -4959,7 +4959,7 @@ static inline void import_struct_t(Allocator& al,
     } else if( ASR::is_a<ASR::Character_t>(*var_type_unwrapped) ) {
         ASR::Character_t* char_t = ASR::down_cast<ASR::Character_t>(var_type_unwrapped);
         if( char_t->m_len == -1 && intent == ASR::intentType::Local ) {
-            var_type = ASRUtils::TYPE(ASR::make_Character_t(al, loc, char_t->m_kind, 1, nullptr));
+            var_type = ASRUtils::TYPE(ASR::make_Character_t(al, loc, char_t->m_kind, 1, nullptr, ASR::string_physical_typeType::PointerString));
             if( is_array ) {
                 var_type = ASRUtils::make_Array_t_util(al, loc, var_type, m_dims, n_dims,
                     ASR::abiType::Source, false, ptype, true);

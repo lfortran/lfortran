@@ -8346,11 +8346,11 @@ public:
         std::vector<llvm::Value*> args;
         args.push_back(nullptr); // reserve space for fmt_str
         ASR::ttype_t *str_type_len_msg = ASRUtils::TYPE(ASR::make_Character_t(
-                    al, loc, 1, stop_msg.size(), nullptr));
+                    al, loc, 1, stop_msg.size(), nullptr, ASR::string_physical_typeType::PointerString));
         ASR::expr_t* STOP_MSG = ASRUtils::EXPR(ASR::make_StringConstant_t(al, loc,
             s2c(al, stop_msg), str_type_len_msg));
         ASR::ttype_t *str_type_len_1 = ASRUtils::TYPE(ASR::make_Character_t(
-                al, loc, 1, 1, nullptr));
+                al, loc, 1, 1, nullptr, ASR::string_physical_typeType::PointerString));
         ASR::expr_t* NEWLINE = ASRUtils::EXPR(ASR::make_StringConstant_t(al, loc,
             s2c(al, "\n"), str_type_len_1));
         compute_fmt_specifier_and_arg(fmt, args, STOP_MSG, loc);
