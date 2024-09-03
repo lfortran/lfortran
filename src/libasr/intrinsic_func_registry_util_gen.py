@@ -307,6 +307,12 @@ intrinsic_funcs_args = {
             "return": "logical",
         }
     ],
+    "SameTypeAs": [
+        {
+            "args": [("any", "any")],
+            "return": "logical"
+        }
+    ],
     "Nint": [
         {
             "args": [("real",)],
