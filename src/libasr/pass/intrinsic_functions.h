@@ -1195,7 +1195,7 @@ namespace CommandArgumentCount {
         if (diag.has_error()) {
             return nullptr;
         }
-        return ASR::make_IntrinsicElementalFunction_t(al, loc, static_cast<int64_t>(IntrinsicElementalFunctions::CompilerVersion),
+        return ASR::make_IntrinsicElementalFunction_t(al, loc, static_cast<int64_t>(IntrinsicElementalFunctions::CommandArgumentCount),
                 nullptr, 0, 0, return_type, m_value);
     }
 

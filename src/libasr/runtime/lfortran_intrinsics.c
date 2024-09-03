@@ -3569,6 +3569,11 @@ LFORTRAN_API void print_stacktrace_addresses(char *filename, bool use_colors) {
 
 // << Runtime Stacktrace << ----------------------------------------------------
 
+LFORTRAN_API char *_lfortran_get_environment_variable(char *name) {
+    // temporary solution, the below function _lfortran_get_env_variable should be used
+    return getenv("HOME");
+}
+
 LFORTRAN_API char *_lfortran_get_env_variable(char *name) {
     return getenv(name);
 }
