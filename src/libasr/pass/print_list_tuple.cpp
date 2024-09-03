@@ -85,11 +85,11 @@ class PrintListTupleVisitor
         ASR::ttype_t *bool_type = ASRUtils::TYPE(
             ASR::make_Logical_t(al, loc, 4));
         ASR::ttype_t *str_type_len_0 = ASRUtils::TYPE(ASR::make_Character_t(
-            al, loc, 1, 0, nullptr));
+            al, loc, 1, 0, nullptr, ASR::string_physical_typeType::PointerString));
         ASR::ttype_t *str_type_len_1 = ASRUtils::TYPE(ASR::make_Character_t(
-            al, loc, 1, 1, nullptr));
+            al, loc, 1, 1, nullptr, ASR::string_physical_typeType::PointerString));
         ASR::ttype_t *str_type_len_2 = ASRUtils::TYPE(ASR::make_Character_t(
-            al, loc, 1, 2, nullptr));
+            al, loc, 1, 2, nullptr, ASR::string_physical_typeType::PointerString));
         ASR::expr_t *comma_space =
             ASRUtils::EXPR(ASR::make_StringConstant_t(
                 al, loc, s2c(al, ", "), str_type_len_2));
@@ -212,11 +212,11 @@ class PrintListTupleVisitor
         ASR::ttype_t *int_type = ASRUtils::TYPE(
                 ASR::make_Integer_t(al, loc, 4));
         ASR::ttype_t *str_type_len_0 = ASRUtils::TYPE(ASR::make_Character_t(
-            al, loc, 1, 0, nullptr));
+            al, loc, 1, 0, nullptr, ASR::string_physical_typeType::PointerString));
         ASR::ttype_t *str_type_len_1 = ASRUtils::TYPE(ASR::make_Character_t(
-            al, loc, 1, 1, nullptr));
+            al, loc, 1, 1, nullptr, ASR::string_physical_typeType::PointerString));
         ASR::ttype_t *str_type_len_2 = ASRUtils::TYPE(ASR::make_Character_t(
-            al, loc, 1, 2, nullptr));
+            al, loc, 1, 2, nullptr, ASR::string_physical_typeType::PointerString));
         ASR::expr_t *comma_space =
             ASRUtils::EXPR(ASR::make_StringConstant_t(
                 al, loc, s2c(al, ", "), str_type_len_2));
@@ -301,7 +301,7 @@ class PrintListTupleVisitor
     void visit_Print(const ASR::Print_t &x) {
         std::vector<ASR::expr_t*> print_tmp;
         ASR::ttype_t *str_type_len_1 = ASRUtils::TYPE(ASR::make_Character_t(
-        al, x.base.base.loc, 1, 1, nullptr));
+        al, x.base.base.loc, 1, 1, nullptr, ASR::string_physical_typeType::PointerString));
         ASR::expr_t *space = ASRUtils::EXPR(ASR::make_StringConstant_t(
         al, x.base.base.loc, s2c(al, " "), str_type_len_1));
         for (size_t i=0; i<x.n_values; i++) {
