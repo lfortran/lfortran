@@ -198,9 +198,9 @@ public:
     ASR::expr_t* basic_str(const Location& loc, ASR::expr_t *x) {
         ASR::symbol_t* basic_str_sym = create_bindc_function(loc,
             "basic_str", {ASRUtils::TYPE(ASR::make_CPtr_t(al, loc))},
-            ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -2, nullptr)));
+            ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -2, nullptr, ASR::string_physical_typeType::PointerString)));
         return FunctionCall(loc, basic_str_sym, {x},
-            ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -2, nullptr)));
+            ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -2, nullptr, ASR::string_physical_typeType::PointerString)));
     }
 
     ASR::expr_t* basic_get_type(const Location& loc, ASR::expr_t* value) {
@@ -231,7 +231,7 @@ public:
     ASR::stmt_t *symbol_set(const Location &loc, ASR::expr_t *target, ASR::expr_t *value) {
         ASR::symbol_t* symbol_set_sym = create_bindc_function(loc, "symbol_set",
             {ASRUtils::TYPE(ASR::make_CPtr_t(al, loc)), ASRUtils::TYPE(
-            ASR::make_Character_t(al, loc, 1, -2, nullptr))});
+            ASR::make_Character_t(al, loc, 1, -2, nullptr, ASR::string_physical_typeType::PointerString))});
         return SubroutineCall(loc, symbol_set_sym, {target, value});
     }
 
@@ -479,7 +479,7 @@ public:
                         x->m_args[1], ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr));
                 std::string error_str = "tuple index out of range";
                 ASR::ttype_t *str_type = ASRUtils::TYPE(ASR::make_Character_t(al, loc,
-                        1, error_str.size(), nullptr));
+                        1, error_str.size(), nullptr, ASR::string_physical_typeType::PointerString));
                 ASR::expr_t* error = ASRUtils::EXPR(ASR::make_StringConstant_t(al, loc, s2c(al, error_str), str_type));
                 ASR::stmt_t *stmt3 = ASRUtils::STMT(ASR::make_Assert_t(al, loc, test, error));
                 pass_result.push_back(al, stmt3);
