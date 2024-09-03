@@ -162,8 +162,6 @@ namespace LCompilers {
     namespace LLVM {
 
         llvm::Value* CreateStore(llvm::IRBuilder<> &builder, llvm::Value *x, llvm::Value *y);
-        llvm::Value* CreateInBoundsGEP(llvm::IRBuilder<> &builder, llvm::Value *x, std::vector<llvm::Value *> &idx);
-        llvm::Value* CreateInBoundsGEP2(llvm::IRBuilder<> &builder, llvm::Type *t, llvm::Value *x, std::vector<llvm::Value *> &idx);
         llvm::Value* lfortran_malloc(llvm::LLVMContext &context, llvm::Module &module,
                 llvm::IRBuilder<> &builder, llvm::Value* arg_size);
         llvm::Value* lfortran_realloc(llvm::LLVMContext &context, llvm::Module &module,
@@ -260,6 +258,9 @@ namespace LCompilers {
             llvm::Value* CreateGEP2(llvm::Type *t, llvm::Value *x,
                 std::vector<llvm::Value *> &idx);
             llvm::Value* CreateGEP2(ASR::ttype_t *type, llvm::Value *x, int idx);
+            llvm::Value* CreateInBoundsGEP(llvm::Value *x, std::vector<llvm::Value *> &idx);
+            llvm::Value* CreateInBoundsGEP2(llvm::Type *t, llvm::Value *x,
+                std::vector<llvm::Value *> &idx);
 
             llvm::AllocaInst* CreateAlloca(llvm::Type* type,
                 llvm::Value* size=nullptr, std::string Name="");

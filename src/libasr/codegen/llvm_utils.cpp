@@ -12,18 +12,6 @@ namespace LCompilers {
             return builder.CreateStore(x, y);
         }
 
-        llvm::Value* CreateInBoundsGEP(llvm::IRBuilder<> &builder, llvm::Value *x, std::vector<llvm::Value *> &idx) {
-            llvm::Type *t = x->getType();
-            LCOMPILERS_ASSERT(t->isPointerTy());
-            LCOMPILERS_ASSERT(t->getNumContainedTypes() > 0);
-            llvm::Type *t2 = t->getContainedType(0);
-            return builder.CreateInBoundsGEP(t2, x, idx);
-        }
-
-        llvm::Value* CreateInBoundsGEP2(llvm::IRBuilder<> &builder, llvm::Type *t, llvm::Value *x, std::vector<llvm::Value *> &idx) {
-            return builder.CreateInBoundsGEP(t, x, idx);
-        }
-
         llvm::Value* lfortran_malloc(llvm::LLVMContext &context, llvm::Module &module,
                 llvm::IRBuilder<> &builder, llvm::Value* arg_size) {
             std::string func_name = "_lfortran_malloc";
@@ -1562,23 +1550,23 @@ namespace LCompilers {
     llvm::Value* LLVMUtils::create_ptr_gep(llvm::Value* ptr, int idx) {
         std::vector<llvm::Value*> idx_vec = {
         llvm::ConstantInt::get(context, llvm::APInt(32, idx))};
-        return LLVM::CreateInBoundsGEP(*builder, ptr, idx_vec);
+        return LLVMUtils::CreateInBoundsGEP(ptr, idx_vec);
     }
 
     llvm::Value* LLVMUtils::create_ptr_gep2(llvm::Type* type, llvm::Value* ptr, int idx) {
         std::vector<llvm::Value*> idx_vec = {
         llvm::ConstantInt::get(context, llvm::APInt(32, idx))};
-        return LLVM::CreateInBoundsGEP2(*builder, type, ptr, idx_vec);
+        return LLVMUtils::CreateInBoundsGEP2(type, ptr, idx_vec);
     }
 
     llvm::Value* LLVMUtils::create_ptr_gep(llvm::Value* ptr, llvm::Value* idx) {
         std::vector<llvm::Value*> idx_vec = {idx};
-        return LLVM::CreateInBoundsGEP(*builder, ptr, idx_vec);
+        return LLVMUtils::CreateInBoundsGEP(ptr, idx_vec);
     }
 
     llvm::Value* LLVMUtils::create_ptr_gep2(llvm::Type* type, llvm::Value* ptr, llvm::Value* idx) {
         std::vector<llvm::Value*> idx_vec = {idx};
-        return LLVM::CreateInBoundsGEP2(*builder, type, ptr, idx_vec);
+        return LLVMUtils::CreateInBoundsGEP2(type, ptr, idx_vec);
     }
 
     llvm::AllocaInst* LLVMUtils::CreateAlloca(llvm::Type* type,
@@ -1645,6 +1633,20 @@ namespace LCompilers {
         llvm::Type* llvm_type = LLVMUtils::get_type_from_ttype_t_util(type,
             module);
         return LLVMUtils::CreateGEP2(llvm_type, x, idx_vec);
+    }
+
+    llvm::Value* LLVMUtils::CreateInBoundsGEP(llvm::Value *x,
+            std::vector<llvm::Value *> &idx) {
+        llvm::Type *t = x->getType();
+        LCOMPILERS_ASSERT(t->isPointerTy());
+        LCOMPILERS_ASSERT(t->getNumContainedTypes() > 0);
+        llvm::Type *t2 = t->getContainedType(0);
+        return builder->CreateInBoundsGEP(t2, x, idx);
+    }
+
+    llvm::Value* LLVMUtils::CreateInBoundsGEP2(llvm::Type *t,
+            llvm::Value *x, std::vector<llvm::Value *> &idx) {
+        return builder->CreateInBoundsGEP(t, x, idx);
     }
 
     llvm::Type* LLVMUtils::getIntType(int a_kind, bool get_pointer) {
