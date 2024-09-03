@@ -161,8 +161,6 @@ namespace LCompilers {
 
     namespace LLVM {
 
-        llvm::Value* CreateLoad(llvm::IRBuilder<> &builder, llvm::Value *x);
-        llvm::Value* CreateLoad2(llvm::IRBuilder<> &builder, llvm::Type *t, llvm::Value *x);
         llvm::Value* CreateStore(llvm::IRBuilder<> &builder, llvm::Value *x, llvm::Value *y);
         llvm::Value* CreateGEP(llvm::IRBuilder<> &builder, llvm::Value *x, std::vector<llvm::Value *> &idx);
         llvm::Value* CreateGEP2(llvm::IRBuilder<> &builder, llvm::Type *t, llvm::Value *x, std::vector<llvm::Value *> &idx);
@@ -257,9 +255,11 @@ namespace LCompilers {
 
             llvm::Value* create_ptr_gep2(llvm::Type* type, llvm::Value* ptr, llvm::Value* idx);
 
+            llvm::Value* CreateLoad(llvm::Value *x);
+            llvm::Value* CreateLoad2(llvm::Type *t, llvm::Value *x);
+            llvm::Value* CreateLoad2(ASR::ttype_t *type, llvm::Value *x);
             llvm::AllocaInst* CreateAlloca(llvm::Type* type,
                 llvm::Value* size=nullptr, std::string Name="");
-
             llvm::AllocaInst* CreateAlloca(llvm::IRBuilder<> &builder,
                 llvm::Type* type, llvm::Value* size=nullptr, std::string Name="");
 
