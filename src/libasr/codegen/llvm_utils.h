@@ -496,7 +496,7 @@ namespace LCompilers {
 
             llvm::LLVMContext& context;
             LLVMUtils* llvm_utils;
-            llvm::IRBuilder<>* builder;
+            // llvm::IRBuilder<>* builder;
 
             std::map<std::string, std::pair<llvm::Type*, size_t>> typecode2tupletype;
 

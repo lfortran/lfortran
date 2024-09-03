@@ -5245,8 +5245,8 @@ namespace LCompilers {
 
     LLVMTuple::LLVMTuple(llvm::LLVMContext& context_,
                          LLVMUtils* llvm_utils_,
-                         llvm::IRBuilder<>* builder_) :
-    context(context_), llvm_utils(llvm_utils_), builder(builder_) {}
+                         llvm::IRBuilder<>* /*builder_*/) :
+    context(context_), llvm_utils(llvm_utils_) {}
 
     llvm::Type* LLVMTuple::get_tuple_type(std::string& type_code,
                                           std::vector<llvm::Type*>& el_types) {
