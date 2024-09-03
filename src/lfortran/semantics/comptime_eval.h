@@ -78,7 +78,6 @@ struct IntrinsicProcedures {
             {"get_command_argument", {m_builtin, &not_implemented, false}},
             {"command_argument_count", {m_builtin, &not_implemented, false}},
             {"execute_command_line", {m_builtin, &not_implemented, false}},
-            {"get_environment_variable", {m_builtin, &not_implemented, false}},
             {"newunit", {m_custom, &not_implemented, false}},
 
             // These will fail if used in symbol table visitor, but will be
