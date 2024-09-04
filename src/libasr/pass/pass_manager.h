@@ -221,9 +221,8 @@ namespace LCompilers {
                 "symbolic",
                 "intrinsic_function", // To be re-written without creating allocotables and auxiliary variables
                 "intrinsic_subroutine", // To be re-written without creating allocotables and auxiliary variables
+                "subroutine_from_function",
                 "array_op",
-                // "subroutine_from_function", There should be no need to apply this twice
-                // "array_op", There should be no need to apply this twice
                 "pass_array_by_data",
                 "print_struct_type",
                 "print_arr",

@@ -3374,7 +3374,7 @@ namespace FindLoc {
     ASR::expr_t *mask = args[3];
     ASR::expr_t *back = args[5];
     if (overload_id == 1) {
-        body.push_back(al, b.Assignment(result, b.i_t(0, return_type)));
+        body.push_back(al, b.Assignment(result, b.i_t(0, ASRUtils::type_get_past_array(return_type))));
         body.push_back(al, b.DoLoop(i, b.i_t(1, type), UBound(array, 1), {
             b.If(b.And(b.Eq(ArrayItem_02(array, i), value), b.Eq(ArrayItem_02(mask, i), b.bool_t(1, logical))), {
                 b.Assignment(result, i),
@@ -3384,7 +3384,7 @@ namespace FindLoc {
             }, {})
         }));
     } else {
-        body.push_back(al, b.Assignment(result, b.i_t(0, return_type)));
+        body.push_back(al, b.Assignment(result, b.i_t(0, ASRUtils::type_get_past_array(return_type))));
         body.push_back(al, b.DoLoop(i, b.i_t(1, type), UBound(array, 1), {
             b.If(b.Eq(ArrayItem_02(array, i), value), {
                 b.Assignment(result, i),
@@ -5505,10 +5505,7 @@ namespace IntrinsicArrayFunctionRegistry {
 
     static inline bool handle_dim(IntrinsicArrayFunctions id) {
         // Dim argument is already handled for the following
-        if( id == IntrinsicArrayFunctions::Shape  ||
-            id == IntrinsicArrayFunctions::MaxLoc ||
-            id == IntrinsicArrayFunctions::MinLoc ||
-            id == IntrinsicArrayFunctions::FindLoc ) {
+        if( id == IntrinsicArrayFunctions::FindLoc) {
             return false;
         } else {
             return true;

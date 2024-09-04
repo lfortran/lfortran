@@ -164,7 +164,8 @@ class ReplaceFunctionCallReturningArray: public ASR::BaseExprReplacer<ReplaceFun
 
     void replace_FunctionCall(ASR::FunctionCall_t* x) {
         ASR::symbol_t* x_m_name = ASRUtils::symbol_get_past_external(x->m_name);
-        if( func2intrinsicid.find(x_m_name) == func2intrinsicid.end() ) {
+        if( func2intrinsicid.find(x_m_name) == func2intrinsicid.end() ||
+            !ASRUtils::IntrinsicArrayFunctionRegistry::handle_dim(func2intrinsicid[x_m_name])) {
             return ;
         }
 
