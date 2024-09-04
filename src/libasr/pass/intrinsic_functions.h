@@ -5612,7 +5612,7 @@ namespace Max {
                 diag.semantic_warning_label("Different kinds of args in max0 is a non-standard extension", {loc}, 
                 "help: ensure all arguments have the same kind to make it standard");
             }
-            if (arg_type->type != ASRUtils::expr_type(args[i])->type) {
+            if (ASRUtils::type_get_past_array(arg_type)->type != ASRUtils::type_get_past_array(ASRUtils::expr_type(args[i]))->type) {
                 append_error(diag, "All arguments to max0 must be of the same type", loc);
             return nullptr;
             }
@@ -5763,7 +5763,7 @@ namespace Min {
                 diag.semantic_warning_label("Different kinds of args in max0 is a non-standard extension", {loc}, 
                 "help: ensure all arguments have the same kind to make it standard");
             }
-            if (arg_type->type != ASRUtils::expr_type(args[i])->type) {
+            if (ASRUtils::type_get_past_array(arg_type)->type != ASRUtils::type_get_past_array(ASRUtils::expr_type(args[i]))->type) {
                 append_error(diag, "All arguments to min0 must be of the same type", loc);
                 return nullptr;
             }
