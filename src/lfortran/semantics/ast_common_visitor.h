@@ -5244,10 +5244,12 @@ public:
                                     ASRUtils::type_get_past_pointer(ASRUtils::expr_type(array))),
                                     &dims, array_physical_type, true);
         } else {
-            ASR::Array_t* arr_type = ASR::down_cast<ASR::Array_t>(ASRUtils::expr_type(newshape));
-            size_t n_dims = ASR::down_cast<ASR::IntegerConstant_t>(arr_type->m_dims[0].m_length)->m_n;
-            empty_type = ASRUtils::create_array_type_with_empty_dims(al, n_dims,
-                ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(ASRUtils::expr_type(array))));
+            ASR::Array_t* newshape_array_type = ASR::down_cast<ASR::Array_t>(ASRUtils::expr_type(newshape));
+            size_t newshape_dims = ASR::down_cast<ASR::IntegerConstant_t>(newshape_array_type->m_dims[0].m_length)->m_n;
+            ASR::ttype_t* arr_element_type = ASRUtils::type_get_past_array_pointer_allocatable(ASRUtils::expr_type(array));
+            ASR::ttype_t* reshape_ttype = ASRUtils::TYPE(ASR::make_Array_t(al, arr_element_type->base.loc, arr_element_type,
+                                                        nullptr, newshape_dims, ASR::array_physical_typeType::FixedSizeArray));
+            empty_type = ASRUtils::duplicate_type_with_empty_dims(al, reshape_ttype);
         }
         newshape = ASRUtils::cast_to_descriptor(al, newshape);
         return ASR::make_ArrayReshape_t(al, x.base.base.loc, array, newshape, empty_type, nullptr);
