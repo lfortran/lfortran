@@ -3366,7 +3366,9 @@ namespace FindLoc {
     fill_func_arg("mask", mask_type);
     fill_func_arg("kind", arg_types[4]);
     fill_func_arg("back", arg_types[5]);
-    ASR::expr_t *result = declare("result", return_type, ReturnVar);
+    ASR::expr_t *result = declare("result", ASRUtils::duplicate_type_with_empty_dims(
+        al, return_type, ASR::array_physical_typeType::DescriptorArray, true), Out);
+    args.push_back(al, result);
     ASR::ttype_t *type = ASRUtils::type_get_past_array_pointer_allocatable(return_type);
     ASR::expr_t *i = declare("i", type, Local);
     ASR::expr_t *array = args[0];
@@ -3397,7 +3399,7 @@ namespace FindLoc {
 
     body.push_back(al, b.Return());
     ASR::symbol_t *fn_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
-            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+            body, nullptr, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
     scope->add_symbol(fn_name, fn_sym);
     return b.Call(fn_sym, m_args, return_type, nullptr);
 }
