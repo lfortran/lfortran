@@ -5507,7 +5507,10 @@ namespace IntrinsicArrayFunctionRegistry {
 
     static inline bool handle_dim(IntrinsicArrayFunctions id) {
         // Dim argument is already handled for the following
-        if( id == IntrinsicArrayFunctions::FindLoc) {
+        if( id == IntrinsicArrayFunctions::Shape  ||
+            id == IntrinsicArrayFunctions::MaxLoc ||
+            id == IntrinsicArrayFunctions::MinLoc ||
+            id == IntrinsicArrayFunctions::FindLoc ) {
             return false;
         } else {
             return true;
