@@ -1,3 +1,3 @@
 program same_type_as
-    print *, same_type_as(1.0, 1.0)
+    print *, SAME_TYPE_AS(1.0, 1.0)
 end program 

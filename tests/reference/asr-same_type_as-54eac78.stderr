@@ -1,0 +1,5 @@
+semantic error: Symbol 'same_type_as' is not a function or an array
+ --> tests/errors/same_type_as.f90:2:14
+  |
+2 |     print *, SAME_TYPE_AS(1.0, 1.0)
+  |              ^^^^^^^^^^^^^^^^^^^^^^ 
