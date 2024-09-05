@@ -981,7 +981,7 @@ namespace SameTypeAs {
 
     static ASR::expr_t *eval_SameTypeAs(Allocator &/*al*/, const Location &loc,
             ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& diag) {
-        append_error(diag, "Arguments to dprod must be real(4)", loc);
+        append_error(diag, "same_type_as is not implemented yet", loc);
         return nullptr;
     }
 

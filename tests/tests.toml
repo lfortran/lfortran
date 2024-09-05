@@ -4009,6 +4009,10 @@ filename = "errors/sqrt_neg.f90"
 asr = true
 
 [[test]]
+filename = "errors/same_type_as.f90"
+asr = true
+
+[[test]]
 filename = "errors/idint_real4.f90"
 asr = true
 
