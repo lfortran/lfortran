@@ -5505,6 +5505,15 @@ namespace IntrinsicArrayFunctionRegistry {
         return -1;
     }
 
+    static inline bool handle_dim(IntrinsicArrayFunctions id) {
+        // Dim argument is already handled for the following
+        if( id == IntrinsicArrayFunctions::FindLoc) {
+            return false;
+        } else {
+            return true;
+        }
+    }
+
     static inline bool is_elemental(int64_t id) {
         // IntrinsicArrayFunctions id_ = static_cast<IntrinsicArrayFunctions>(id);
         // return (id_ == IntrinsicArrayFunctions::Merge);
