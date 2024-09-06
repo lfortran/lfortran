@@ -1596,11 +1596,7 @@ public:
                 ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(object);
                 v2 = ASR::down_cast<ASR::Variable_t>(v->m_v);
             }
-            if( v2->m_storage == ASR::storage_typeType::Parameter ) {
-                v2->m_value = ASRUtils::EXPR(tmp);
-            } else {
-                v2->m_value = nullptr;
-            }
+            v2->m_value = ASRUtils::EXPR(tmp);
             v2->m_symbolic_value = ASRUtils::EXPR(tmp);
             SetChar var_deps_vec;
             var_deps_vec.reserve(al, 1);
@@ -1683,11 +1679,7 @@ public:
         if (ASR::is_a<ASR::StructInstanceMember_t>(*object)) {
             ASR::StructInstanceMember_t *mem = ASR::down_cast<ASR::StructInstanceMember_t>(object);
             ASR::Variable_t* v2 = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(mem->m_m));
-            if( v2->m_storage == ASR::storage_typeType::Parameter ) {
-                v2->m_value = expression_value;
-            } else {
-                v2->m_value = nullptr;
-            }
+            v2->m_value = expression_value;
             v2->m_symbolic_value = expression_value;
             SetChar var_deps_vec;
             var_deps_vec.reserve(al, 1);
@@ -1705,11 +1697,7 @@ public:
             // y / 2 /
             ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(object);
             ASR::Variable_t *v2 = ASR::down_cast<ASR::Variable_t>(v->m_v);
-            if( v2->m_storage == ASR::storage_typeType::Parameter ) {
-                v2->m_value = expression_value;
-            } else {
-                v2->m_value = nullptr;
-            }
+            v2->m_value = expression_value;
             v2->m_symbolic_value = expression_value;
             SetChar var_deps_vec;
             var_deps_vec.reserve(al, 1);
@@ -3279,9 +3267,6 @@ public:
                 }
                 if( std::find(excluded_from_symtab.begin(), excluded_from_symtab.end(), sym) == excluded_from_symtab.end() ) {
                     if ( !is_implicitly_declared && !is_external) {
-                        if( storage_type != ASR::storage_typeType::Parameter ) {
-                            value = nullptr;
-                        }
                         SetChar variable_dependencies_vec;
                         variable_dependencies_vec.reserve(al, 1);
                         ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, type, init_expr, value);
