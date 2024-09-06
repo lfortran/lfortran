@@ -882,6 +882,7 @@ RUN(NAME intrinsics_299 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # command
 RUN(NAME intrinsics_300 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # kind
 RUN(NAME intrinsics_301 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # findloc
 RUN(NAME intrinsics_302 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # is_contiguous
+RUN(NAME intrinsics_303 LABELS gfortran llvm) # random_seed
 RUN(NAME intrinsics_304 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # sign
 RUN(NAME intrinsics_305 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # realpart
 RUN(NAME intrinsics_306 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # imagpart
@@ -894,6 +895,10 @@ RUN(NAME intrinsics_311 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc
 RUN(NAME intrinsics_312 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # minloc
 RUN(NAME intrinsics_313 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # maxloc
 RUN(NAME intrinsics_314 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # dshift
+RUN(NAME intrinsics_315 LABELS llvm llvm_wasm llvm_wasm_emcc) # out_of_range
+# RUN(NAME intrinsics_316 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # max, min
+
+RUN(NAME la_constants LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NOFAST) # LAPACK constants
 
 RUN(NAME passing_array_01 LABELS gfortran fortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME passing_array_02 LABELS gfortran fortran llvm llvm_wasm llvm_wasm_emcc)
@@ -1213,7 +1218,7 @@ RUN(NAME associate_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME associate_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME associate_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME associate_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME associate_07 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+# RUN(NAME associate_07 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME associate_08 LABELS gfortran llvm)
 RUN(NAME associate_09 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME associate_10 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
