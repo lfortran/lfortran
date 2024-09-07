@@ -9240,10 +9240,7 @@ public:
         int n_dims = ASRUtils::extract_n_dims_from_ttype(asr_type);
         if( n_dims > 0 ) {
             llvm::Type* llvm_data_type = llvm_utils->get_type_from_ttype_t_util(
-            ASRUtils::type_get_past_allocatable(
-                ASRUtils::type_get_past_pointer(
-                    ASRUtils::type_get_past_array(asr_type))),
-            module.get(), ASRUtils::expr_abi(arg));
+                ASRUtils::extract_type(asr_type), module.get(), ASRUtils::expr_abi(arg));
             tmp = arr_descr->get_is_allocated_flag(tmp, llvm_data_type);
         } else {
             tmp = builder->CreateICmpNE(
