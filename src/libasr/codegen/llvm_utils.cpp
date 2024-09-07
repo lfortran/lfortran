@@ -1571,39 +1571,66 @@ namespace LCompilers {
     }
 
     llvm::AllocaInst* LLVMUtils::CreateAlloca(llvm::Type* type,
-            llvm::Value* size, std::string Name, bool is_llvm_ptr) {
+            llvm::Value* size, std::string Name, bool
+#if LLVM_VERSION_MAJOR > 16
+            is_llvm_ptr
+#else
+            /*is_llvm_ptr*/
+#endif
+        ) {
         llvm::BasicBlock &entry_block = builder->GetInsertBlock()->getParent()->getEntryBlock();
         llvm::IRBuilder<> builder0(context);
         builder0.SetInsertPoint(&entry_block, entry_block.getFirstInsertionPt());
         llvm::AllocaInst *alloca;
+#if LLVM_VERSION_MAJOR > 16
         llvm::Type *type_ = is_llvm_ptr ? type->getPointerTo() : type;
+#else
+        llvm::Type *type_ = type;
+#endif
         if (Name != "") {
             alloca = builder0.CreateAlloca(type_, size, Name);
         } else {
             alloca = builder0.CreateAlloca(type_, size);
         }
+#if LLVM_VERSION_MAJOR > 16
         ptr_type[alloca] = type;
+#endif
         return alloca;
     }
 
     llvm::AllocaInst* LLVMUtils::CreateAlloca(llvm::IRBuilder<> &builder,
-            llvm::Type* type, llvm::Value* size, std::string Name, bool is_llvm_ptr) {
+            llvm::Type* type, llvm::Value* size, std::string Name, bool
+#if LLVM_VERSION_MAJOR > 16
+            is_llvm_ptr
+#else
+            /*is_llvm_ptr*/
+#endif
+        ) {
         llvm::AllocaInst *alloca;
+#if LLVM_VERSION_MAJOR > 16
         llvm::Type *type_ = is_llvm_ptr ? type->getPointerTo() : type;
+#else
+        llvm::Type *type_ = type;
+#endif
         if (Name != "") {
             alloca = builder.CreateAlloca(type_, size, Name);
         } else {
             alloca = builder.CreateAlloca(type_, size);
         }
+#if LLVM_VERSION_MAJOR > 16
         ptr_type[alloca] = type;
+#endif
         return alloca;
     }
 
     llvm::Value *LLVMUtils::CreateLoad(llvm::Value *x) {
-        // llvm::Type *t = x->getType();
-        // LCOMPILERS_ASSERT(t->isPointerTy());
-        // LCOMPILERS_ASSERT(t->getNumContainedTypes() > 0);
-        // llvm::Type *t2 = t->getContainedType(0);
+#if LLVM_VERSION_MAJOR <= 16
+        llvm::Type *t = x->getType();
+        LCOMPILERS_ASSERT(t->isPointerTy());
+        LCOMPILERS_ASSERT(t->getNumContainedTypes() > 0);
+        llvm::Type *t2 = t->getContainedType(0);
+        return builder->CreateLoad(t2, x);
+#else
         llvm::Type *type = nullptr, *type_copy = nullptr;
         if (ptr_type.find(x) != ptr_type.end()) {
             type_copy = type = ptr_type[x];
@@ -1617,6 +1644,7 @@ namespace LCompilers {
         LCOMPILERS_ASSERT(type_copy);
         ptr_type[load] = type_copy;
         return load;
+#endif
     }
 
     llvm::Value *LLVMUtils::CreateLoad2(llvm::Type *t, llvm::Value *x) {
@@ -1630,16 +1658,20 @@ namespace LCompilers {
 
     llvm::Value* LLVMUtils::CreateGEP(llvm::Value *x,
             std::vector<llvm::Value *> &idx) {
-        // llvm::Type *t = x->getType();
-        // LCOMPILERS_ASSERT(t->isPointerTy());
-        // LCOMPILERS_ASSERT(t->getNumContainedTypes() > 0);
-        // llvm::Type *t2 = t->getContainedType(0);
+#if LLVM_VERSION_MAJOR <= 16
+        llvm::Type *t = x->getType();
+        LCOMPILERS_ASSERT(t->isPointerTy());
+        LCOMPILERS_ASSERT(t->getNumContainedTypes() > 0);
+        llvm::Type *t2 = t->getContainedType(0);
+        return builder->CreateGEP(t2, x, idx);
+#else
         llvm::Type *type = nullptr;
         if (ptr_type.find(x) != ptr_type.end()) {
             type = ptr_type[x];
         }
         LCOMPILERS_ASSERT(type);
         return builder->CreateGEP(type, x, idx);
+#endif
     }
 
     llvm::Value* LLVMUtils::CreateGEP2(llvm::Type *t, llvm::Value *x,
@@ -1659,16 +1691,20 @@ namespace LCompilers {
 
     llvm::Value* LLVMUtils::CreateInBoundsGEP(llvm::Value *x,
             std::vector<llvm::Value *> &idx) {
-        // llvm::Type *t = x->getType();
-        // LCOMPILERS_ASSERT(t->isPointerTy());
-        // LCOMPILERS_ASSERT(t->getNumContainedTypes() > 0);
-        // llvm::Type *t2 = t->getContainedType(0);
+#if LLVM_VERSION_MAJOR <= 16
+        llvm::Type *t = x->getType();
+        LCOMPILERS_ASSERT(t->isPointerTy());
+        LCOMPILERS_ASSERT(t->getNumContainedTypes() > 0);
+        llvm::Type *t2 = t->getContainedType(0);
+        return builder->CreateInBoundsGEP(t2, x, idx);
+#else
         llvm::Type *type = nullptr;
         if (ptr_type.find(x) != ptr_type.end()) {
             type = ptr_type[x];
         }
         LCOMPILERS_ASSERT(type);
         return builder->CreateInBoundsGEP(type, x, idx);
+#endif
     }
 
     llvm::Value* LLVMUtils::CreateInBoundsGEP2(llvm::Type *t,

@@ -3577,6 +3577,7 @@ public:
                     llvm::Constant *init_value = llvm::Constant::getNullValue(type);
                     gptr->setInitializer(init_value);
                 } else {
+#if LLVM_VERSION_MAJOR > 16
                     bool is_llvm_ptr = false;
                     if ( !ASR::is_a<ASR::Character_t>(*ASRUtils::extract_type(v->m_type))
                             && LLVM::is_llvm_pointer(*v->m_type) ) {
@@ -3584,6 +3585,9 @@ public:
                     }
                     ptr = llvm_utils->CreateAlloca(*builder, type_, array_size,
                         v->m_name, is_llvm_ptr);
+#else
+                    ptr = llvm_utils->CreateAlloca(*builder, type, array_size, v->m_name);
+#endif
                 }
             }
             set_pointer_variable_to_null(llvm::ConstantPointerNull::get(
