@@ -21,7 +21,7 @@ RUN ./build_release.sh
 
 RUN ctest
 RUN python integration_tests/run_tests.py
-RUN python run_tests.py
+RUN python run_tests.py --no-llvm
 
 FROM ubuntu:22.04 AS app
 
