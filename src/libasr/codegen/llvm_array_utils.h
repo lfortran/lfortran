@@ -162,7 +162,7 @@ namespace LCompilers {
                     llvm::Value* arr, llvm::Value* source_arr, int n_dims) = 0;
 
                 virtual
-                void fill_descriptor_for_array_section(
+                void fill_descriptor_for_array_section(llvm::Type *el_type,
                     llvm::Value* value_desc, llvm::Value* target,
                     llvm::Value** lbs, llvm::Value** ubs,
                     llvm::Value** ds, llvm::Value** non_sliced_indices,
@@ -316,7 +316,7 @@ namespace LCompilers {
                 CompilerOptions& co;
                 std::vector<llvm::Value*>& heap_arrays;
 
-                llvm::Value* cmo_convertor_single_element(
+                llvm::Value* cmo_convertor_single_element(llvm::Type *el_type,
                     llvm::Value* arr, std::vector<llvm::Value*>& m_args,
                     int n_args, bool check_for_bounds);
 
@@ -382,7 +382,7 @@ namespace LCompilers {
                     llvm::Value* arr, llvm::Value* source_arr, int n_dims);
 
                 virtual
-                void fill_descriptor_for_array_section(
+                void fill_descriptor_for_array_section(llvm::Type *el_type,
                     llvm::Value* value_desc, llvm::Value* target,
                     llvm::Value** lbs, llvm::Value** ubs,
                     llvm::Value** ds, llvm::Value** non_sliced_indices,

@@ -218,16 +218,16 @@ namespace LCompilers {
             if( !load ) {
                 return dim_des_arr_ptr;
             }
-            return llvm_utils->CreateLoad(dim_des_arr_ptr);
+            return llvm_utils->CreateLoad2(dim_des->getPointerTo(), dim_des_arr_ptr);
         }
 
         llvm::Value* SimpleCMODescriptor::
         get_pointer_to_dimension_descriptor_array(llvm::Type* type, llvm::Value* arr, bool load) {
-            llvm::Value* dim_des_arr_ptr = llvm_utils->create_gep2(type, arr, 2);
+            llvm::Value* dim_des_arr_ptr = llvm_utils->create_gep(arr, 2);
             if( !load ) {
                 return dim_des_arr_ptr;
             }
-            return llvm_utils->CreateLoad(dim_des_arr_ptr);
+            return llvm_utils->CreateLoad2(type, dim_des_arr_ptr);
         }
 
         llvm::Value* SimpleCMODescriptor::
@@ -236,7 +236,8 @@ namespace LCompilers {
             if( get_pointer ) {
                 return rank_ptr;
             }
-            return llvm_utils->CreateLoad(rank_ptr);
+            llvm::Type *i32 = llvm::Type::getInt32Ty(context);
+            return llvm_utils->CreateLoad2(i32, rank_ptr);
         }
 
         void SimpleCMODescriptor::
@@ -247,11 +248,12 @@ namespace LCompilers {
 
         llvm::Value* SimpleCMODescriptor::
         get_dimension_size(llvm::Value* dim_des_arr, llvm::Value* dim, bool load) {
-            llvm::Value* dim_size = llvm_utils->create_gep(llvm_utils->create_ptr_gep(dim_des_arr, dim), 2);
+            llvm::Value* dim_size = llvm_utils->create_gep2(dim_des, llvm_utils->create_ptr_gep2(dim_des, dim_des_arr, dim), 2);
             if( !load ) {
                 return dim_size;
             }
-            return llvm_utils->CreateLoad(dim_size);
+            llvm::Type *i32 = llvm::Type::getInt32Ty(context);
+            return llvm_utils->CreateLoad2(i32, dim_size);
         }
 
         llvm::Value* SimpleCMODescriptor::
@@ -346,15 +348,16 @@ namespace LCompilers {
             llvm::Value* offset_val = llvm_utils->create_gep(arr, 1);
             builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
                                     offset_val);
-            llvm::Value* dim_des_val = llvm_utils->CreateLoad(llvm_utils->create_gep(arr, 2));
+            llvm::Value* dim_des_val = llvm_utils->CreateLoad2(dim_des->getPointerTo(), llvm_utils->create_gep(arr, 2));
             llvm::Value* prod = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
             for( int r = 0; r < n_dims; r++ ) {
-                llvm::Value* dim_val = llvm_utils->create_ptr_gep(dim_des_val, r);
-                llvm::Value* s_val = llvm_utils->create_gep(dim_val, 0);
-                llvm::Value* l_val = llvm_utils->create_gep(dim_val, 1);
-                llvm::Value* dim_size_ptr = llvm_utils->create_gep(dim_val, 2);
-                llvm::Value* first = builder->CreateSExtOrTrunc(llvm_dims[r].first, llvm::Type::getInt32Ty(context));
-                llvm::Value* dim_size = builder->CreateSExtOrTrunc(llvm_dims[r].second, llvm::Type::getInt32Ty(context));
+                llvm::Type *i32 = llvm::Type::getInt32Ty(context);
+                llvm::Value* dim_val = llvm_utils->create_ptr_gep2(dim_des, dim_des_val, r);
+                llvm::Value* s_val = llvm_utils->create_gep2(dim_des, dim_val, 0);
+                llvm::Value* l_val = llvm_utils->create_gep2(dim_des, dim_val, 1);
+                llvm::Value* dim_size_ptr = llvm_utils->create_gep2(dim_des, dim_val, 2);
+                llvm::Value* first = builder->CreateSExtOrTrunc(llvm_dims[r].first, i32);
+                llvm::Value* dim_size = builder->CreateSExtOrTrunc(llvm_dims[r].second, i32);
                 builder->CreateStore(prod, s_val);
                 builder->CreateStore(first, l_val);
                 builder->CreateStore(dim_size, dim_size_ptr);
@@ -434,7 +437,7 @@ namespace LCompilers {
             }
         }
 
-        void SimpleCMODescriptor::fill_descriptor_for_array_section(
+        void SimpleCMODescriptor::fill_descriptor_for_array_section(llvm::Type *el_type,
             llvm::Value* value_desc, llvm::Value* target,
             llvm::Value** lbs, llvm::Value** ubs,
             llvm::Value** ds, llvm::Value** non_sliced_indices,
@@ -450,7 +453,7 @@ namespace LCompilers {
                     section_first_indices.push_back(non_sliced_indices[i]);
                 }
             }
-            llvm::Value* target_offset = cmo_convertor_single_element(
+            llvm::Value* target_offset = cmo_convertor_single_element(el_type,
                 value_desc, section_first_indices, value_rank, false);
             value_desc_data = llvm_utils->create_ptr_gep(value_desc_data, target_offset);
             llvm::Value* target_data = get_pointer_to_data(target);
@@ -552,7 +555,7 @@ namespace LCompilers {
 
         llvm::Value* SimpleCMODescriptor::get_pointer_to_dimension_descriptor(llvm::Value* dim_des_arr,
             llvm::Value* dim) {
-            return llvm_utils->create_ptr_gep(dim_des_arr, dim);
+            return llvm_utils->create_ptr_gep2(dim_des, dim_des_arr, dim);
         }
 
         llvm::Value* SimpleCMODescriptor::get_pointer_to_data(llvm::Value* arr) {
@@ -567,23 +570,25 @@ namespace LCompilers {
             return llvm_utils->CreateLoad(offset);
         }
 
-        llvm::Value* SimpleCMODescriptor::get_lower_bound(llvm::Value* dim_des, bool load) {
-            llvm::Value* lb = llvm_utils->create_gep(dim_des, 1);
+        llvm::Value* SimpleCMODescriptor::get_lower_bound(llvm::Value* dims, bool load) {
+            llvm::Value* lb = llvm_utils->create_gep2(dim_des, dims, 1);
             if( !load ) {
                 return lb;
             }
-            return llvm_utils->CreateLoad(lb);
+            llvm::Type *i32 = llvm::Type::getInt32Ty(context);
+            return llvm_utils->CreateLoad2(i32, lb);
         }
 
-        llvm::Value* SimpleCMODescriptor::get_upper_bound(llvm::Value* dim_des) {
-            llvm::Value* lb = llvm_utils->CreateLoad(llvm_utils->create_gep(dim_des, 1));
-            llvm::Value* dim_size = llvm_utils->CreateLoad(llvm_utils->create_gep(dim_des, 2));
+        llvm::Value* SimpleCMODescriptor::get_upper_bound(llvm::Value* dims) {
+            llvm::Type *i32 = llvm::Type::getInt32Ty(context);
+            llvm::Value* lb = llvm_utils->CreateLoad2(i32, llvm_utils->create_gep2(dim_des, dims, 1));
+            llvm::Value* dim_size = llvm_utils->CreateLoad2(i32, llvm_utils->create_gep2(dim_des, dims, 2));
             return builder->CreateSub(builder->CreateAdd(dim_size, lb),
                                       llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
         }
 
-        llvm::Value* SimpleCMODescriptor::get_stride(llvm::Value* dim_des, bool load) {
-            llvm::Value* stride = llvm_utils->create_gep(dim_des, 0);
+        llvm::Value* SimpleCMODescriptor::get_stride(llvm::Value* dims, bool load) {
+            llvm::Value* stride = llvm_utils->create_gep2(dim_des, dims, 0);
             if( !load ) {
                 return stride;
             }
@@ -594,25 +599,26 @@ namespace LCompilers {
         // void check_single_element(llvm::Value* curr_idx, llvm::Value* arr) {
         // }
 
-        llvm::Value* SimpleCMODescriptor::cmo_convertor_single_element(
+        llvm::Value* SimpleCMODescriptor::cmo_convertor_single_element(llvm::Type *el_type,
             llvm::Value* arr, std::vector<llvm::Value*>& m_args,
             int n_args, bool check_for_bounds) {
-            llvm::Value* dim_des_arr_ptr = llvm_utils->CreateLoad(llvm_utils->create_gep(arr, 2));
+            llvm::Value* dim_des_arr_ptr = llvm_utils->CreateLoad2(dim_des->getPointerTo(), llvm_utils->create_gep(arr, 2));
             llvm::Value* idx = llvm::ConstantInt::get(context, llvm::APInt(32, 0));
+            llvm::Type *i32 = llvm::Type::getInt32Ty(context);
             for( int r = 0; r < n_args; r++ ) {
                 llvm::Value* curr_llvm_idx = m_args[r];
-                llvm::Value* dim_des_ptr = llvm_utils->create_ptr_gep(dim_des_arr_ptr, r);
-                llvm::Value* lval = llvm_utils->CreateLoad(llvm_utils->create_gep(dim_des_ptr, 1));
+                llvm::Value* dim_des_ptr = llvm_utils->create_ptr_gep2(dim_des, dim_des_arr_ptr, r);
+                llvm::Value* lval = llvm_utils->CreateLoad2(i32, llvm_utils->create_gep2(dim_des, dim_des_ptr, 1));
                 // first cast curr_llvm_idx to 32 bit
                 curr_llvm_idx = builder->CreateSExtOrTrunc(curr_llvm_idx, llvm::Type::getInt32Ty(context));
                 curr_llvm_idx = builder->CreateSub(curr_llvm_idx, lval);
                 if( check_for_bounds ) {
                     // check_single_element(curr_llvm_idx, arr); TODO: To be implemented
                 }
-                llvm::Value* stride = llvm_utils->CreateLoad(llvm_utils->create_gep(dim_des_ptr, 0));
+                llvm::Value* stride = llvm_utils->CreateLoad2(el_type, llvm_utils->create_gep2(dim_des, dim_des_ptr, 0));
                 idx = builder->CreateAdd(idx, builder->CreateMul(stride, curr_llvm_idx));
             }
-            llvm::Value* offset_val = llvm_utils->CreateLoad(llvm_utils->create_gep(arr, 1));
+            llvm::Value* offset_val = llvm_utils->CreateLoad2(i32, llvm_utils->create_gep(arr, 1));
             return builder->CreateAdd(idx, offset_val);
         }
 
@@ -660,14 +666,14 @@ namespace LCompilers {
                     tmp = llvm_utils->create_ptr_gep2(type, array, idx);
                 }
             } else {
-                idx = cmo_convertor_single_element(array, m_args, n_args, check_for_bounds);
+                idx = cmo_convertor_single_element(type, array, m_args, n_args, check_for_bounds);
                 llvm::Value* full_array = get_pointer_to_data(array);
                 if( polymorphic ) {
                     full_array = llvm_utils->create_gep(llvm_utils->CreateLoad(full_array), 1);
                     full_array = builder->CreateBitCast(llvm_utils->CreateLoad(full_array), polymorphic_type);
                     tmp = llvm_utils->create_ptr_gep(full_array, idx);
                 } else {
-                    tmp = llvm_utils->create_ptr_gep(llvm_utils->CreateLoad(full_array), idx);
+                    tmp = llvm_utils->create_ptr_gep2(type, llvm_utils->CreateLoad2(type->getPointerTo(), full_array), idx);
                 }
             }
             return tmp;
@@ -676,7 +682,7 @@ namespace LCompilers {
         llvm::Value* SimpleCMODescriptor::get_is_allocated_flag(llvm::Value* array,
             llvm::Type* llvm_data_type) {
             return builder->CreateICmpNE(
-                builder->CreatePtrToInt(llvm_utils->CreateLoad(get_pointer_to_data(array)),
+                builder->CreatePtrToInt(llvm_utils->CreateLoad2(llvm_data_type->getPointerTo(), get_pointer_to_data(array)),
                     llvm::Type::getInt64Ty(context)),
                 builder->CreatePtrToInt(llvm::ConstantPointerNull::get(llvm_data_type->getPointerTo()),
                     llvm::Type::getInt64Ty(context))
