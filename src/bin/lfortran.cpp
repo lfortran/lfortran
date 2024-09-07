@@ -1550,6 +1550,22 @@ int compile_to_binary_fortran(const std::string &infile,
     return 0;
 }
 
+void check_compiler_installation(std::string &compiler) {
+    static int counter = 0;
+    if (counter == 2) {
+        std::cerr << "No supported compiler found." << std::endl;
+        return;
+    }
+    
+    counter++;
+    int err = system((compiler + " --version").c_str());
+    if (err) {
+        // Support linking through more compilers
+        compiler = compiler == "clang" ? "gcc" : "clang";
+        check_compiler_installation(compiler);
+    }
+}
+
 // infile is an object file
 // outfile will become the executable
 int link_executable(const std::vector<std::string> &infiles,
@@ -1697,8 +1713,10 @@ int link_executable(const std::vector<std::string> &infiles,
 
             if (link_with_gcc) {
                 CC = "gcc";
+                check_compiler_installation(CC);
             } else {
                 CC = "clang";
+                check_compiler_installation(CC);
             }
 
             char *env_CC = std::getenv("LFORTRAN_CC");
