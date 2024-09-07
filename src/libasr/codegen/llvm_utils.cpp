@@ -93,12 +93,13 @@ namespace LCompilers {
         std::map<std::string, std::map<std::string, int>>& name2memidx_,
         CompilerOptions &compiler_options_,
         std::unordered_map<std::uint32_t, std::unordered_map<std::string, llvm::Type*>>& arr_arg_type_cache_,
-        std::map<std::string, std::pair<llvm::Type*, llvm::Type*>>& fname2arg_type_):
+        std::map<std::string, std::pair<llvm::Type*, llvm::Type*>>& fname2arg_type_,
+        std::map<llvm::Value *, llvm::Type *> &ptr_type_):
         context(context), builder(std::move(_builder)), str_cmp_itr(nullptr), der_type_name(der_type_name_),
         name2dertype(name2dertype_), name2dercontext(name2dercontext_),
         struct_type_stack(struct_type_stack_), dertype2parent(dertype2parent_),
         name2memidx(name2memidx_), arr_arg_type_cache(arr_arg_type_cache_), fname2arg_type(fname2arg_type_),
-        dict_api_lp(nullptr), dict_api_sc(nullptr),
+        ptr_type(ptr_type_), dict_api_lp(nullptr), dict_api_sc(nullptr),
         set_api_lp(nullptr), set_api_sc(nullptr), compiler_options(compiler_options_) {
             std::vector<llvm::Type*> els_4 = {
             llvm::Type::getFloatTy(context),
@@ -1570,39 +1571,55 @@ namespace LCompilers {
     }
 
     llvm::AllocaInst* LLVMUtils::CreateAlloca(llvm::Type* type,
-            llvm::Value* size, std::string Name) {
+            llvm::Value* size, std::string Name, bool is_llvm_ptr) {
         llvm::BasicBlock &entry_block = builder->GetInsertBlock()->getParent()->getEntryBlock();
         llvm::IRBuilder<> builder0(context);
         builder0.SetInsertPoint(&entry_block, entry_block.getFirstInsertionPt());
         llvm::AllocaInst *alloca;
+        llvm::Type *type_ = is_llvm_ptr ? type->getPointerTo() : type;
         if (Name != "") {
-            alloca = builder0.CreateAlloca(type, size, Name);
+            alloca = builder0.CreateAlloca(type_, size, Name);
         } else {
-            alloca = builder0.CreateAlloca(type, size);
+            alloca = builder0.CreateAlloca(type_, size);
         }
+        ptr_type[alloca] = type;
         return alloca;
     }
 
     llvm::AllocaInst* LLVMUtils::CreateAlloca(llvm::IRBuilder<> &builder,
-            llvm::Type* type, llvm::Value* size, std::string Name) {
+            llvm::Type* type, llvm::Value* size, std::string Name, bool is_llvm_ptr) {
         llvm::AllocaInst *alloca;
+        llvm::Type *type_ = is_llvm_ptr ? type->getPointerTo() : type;
         if (Name != "") {
-            alloca = builder.CreateAlloca(type, size, Name);
+            alloca = builder.CreateAlloca(type_, size, Name);
         } else {
-            alloca = builder.CreateAlloca(type, size);
+            alloca = builder.CreateAlloca(type_, size);
         }
+        ptr_type[alloca] = type;
         return alloca;
     }
 
-    llvm::Value* LLVMUtils::CreateLoad(llvm::Value *x) {
-        llvm::Type *t = x->getType();
-        LCOMPILERS_ASSERT(t->isPointerTy());
-        LCOMPILERS_ASSERT(t->getNumContainedTypes() > 0);
-        llvm::Type *t2 = t->getContainedType(0);
-        return builder->CreateLoad(t2, x);
+    llvm::Value *LLVMUtils::CreateLoad(llvm::Value *x) {
+        // llvm::Type *t = x->getType();
+        // LCOMPILERS_ASSERT(t->isPointerTy());
+        // LCOMPILERS_ASSERT(t->getNumContainedTypes() > 0);
+        // llvm::Type *t2 = t->getContainedType(0);
+        llvm::Type *type = nullptr, *type_copy = nullptr;
+        if (ptr_type.find(x) != ptr_type.end()) {
+            type_copy = type = ptr_type[x];
+        }
+        LCOMPILERS_ASSERT(type);
+        if (type != character_type && (llvm::isa<llvm::AllocaInst>(x) &&
+                llvm::dyn_cast<llvm::AllocaInst>(x)->getAllocatedType()->isPointerTy())) {
+            type = type->getPointerTo();
+        }
+        llvm::Value *load = builder->CreateLoad(type, x);
+        LCOMPILERS_ASSERT(type_copy);
+        ptr_type[load] = type_copy;
+        return load;
     }
 
-    llvm::Value* LLVMUtils::CreateLoad2(llvm::Type *t, llvm::Value *x) {
+    llvm::Value *LLVMUtils::CreateLoad2(llvm::Type *t, llvm::Value *x) {
         return builder->CreateLoad(t, x);
     }
 
@@ -1613,11 +1630,16 @@ namespace LCompilers {
 
     llvm::Value* LLVMUtils::CreateGEP(llvm::Value *x,
             std::vector<llvm::Value *> &idx) {
-        llvm::Type *t = x->getType();
-        LCOMPILERS_ASSERT(t->isPointerTy());
-        LCOMPILERS_ASSERT(t->getNumContainedTypes() > 0);
-        llvm::Type *t2 = t->getContainedType(0);
-        return builder->CreateGEP(t2, x, idx);
+        // llvm::Type *t = x->getType();
+        // LCOMPILERS_ASSERT(t->isPointerTy());
+        // LCOMPILERS_ASSERT(t->getNumContainedTypes() > 0);
+        // llvm::Type *t2 = t->getContainedType(0);
+        llvm::Type *type = nullptr;
+        if (ptr_type.find(x) != ptr_type.end()) {
+            type = ptr_type[x];
+        }
+        LCOMPILERS_ASSERT(type);
+        return builder->CreateGEP(type, x, idx);
     }
 
     llvm::Value* LLVMUtils::CreateGEP2(llvm::Type *t, llvm::Value *x,
@@ -1637,11 +1659,16 @@ namespace LCompilers {
 
     llvm::Value* LLVMUtils::CreateInBoundsGEP(llvm::Value *x,
             std::vector<llvm::Value *> &idx) {
-        llvm::Type *t = x->getType();
-        LCOMPILERS_ASSERT(t->isPointerTy());
-        LCOMPILERS_ASSERT(t->getNumContainedTypes() > 0);
-        llvm::Type *t2 = t->getContainedType(0);
-        return builder->CreateInBoundsGEP(t2, x, idx);
+        // llvm::Type *t = x->getType();
+        // LCOMPILERS_ASSERT(t->isPointerTy());
+        // LCOMPILERS_ASSERT(t->getNumContainedTypes() > 0);
+        // llvm::Type *t2 = t->getContainedType(0);
+        llvm::Type *type = nullptr;
+        if (ptr_type.find(x) != ptr_type.end()) {
+            type = ptr_type[x];
+        }
+        LCOMPILERS_ASSERT(type);
+        return builder->CreateInBoundsGEP(type, x, idx);
     }
 
     llvm::Value* LLVMUtils::CreateInBoundsGEP2(llvm::Type *t,

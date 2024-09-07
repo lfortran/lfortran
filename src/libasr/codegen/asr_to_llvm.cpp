@@ -189,6 +189,8 @@ public:
     std::map<ASR::symbol_t*, llvm::Type*> type2vtabtype;
     std::map<ASR::symbol_t*, int> type2vtabid;
     std::map<ASR::symbol_t*, std::map<std::string, int64_t>> vtabtype2procidx;
+    // Stores the map of pointer and associated type, map<ptr, i32>, Used by Load or GEP
+    std::map<llvm::Value *, llvm::Type *> ptr_type;
     llvm::Type* current_select_type_block_type;
     std::string current_select_type_block_der_type;
 
@@ -228,7 +230,7 @@ public:
     llvm_utils(std::make_unique<LLVMUtils>(context, builder.get(),
         current_der_type_name, name2dertype, name2dercontext, struct_type_stack,
         dertype2parent, name2memidx, compiler_options, arr_arg_type_cache,
-        fname2arg_type)),
+        fname2arg_type, ptr_type)),
     list_api(std::make_unique<LLVMList>(context, llvm_utils.get(), builder.get())),
     tuple_api(std::make_unique<LLVMTuple>(context, llvm_utils.get(), builder.get())),
     dict_api_lp(std::make_unique<LLVMDictOptimizedLinearProbing>(context, llvm_utils.get(), builder.get())),
@@ -3575,7 +3577,13 @@ public:
                     llvm::Constant *init_value = llvm::Constant::getNullValue(type);
                     gptr->setInitializer(init_value);
                 } else {
-                    ptr = llvm_utils->CreateAlloca(*builder, type, array_size, v->m_name);
+                    bool is_llvm_ptr = false;
+                    if ( !ASR::is_a<ASR::Character_t>(*ASRUtils::extract_type(v->m_type))
+                            && LLVM::is_llvm_pointer(*v->m_type) ) {
+                        is_llvm_ptr = true;
+                    }
+                    ptr = llvm_utils->CreateAlloca(*builder, type_, array_size,
+                        v->m_name, is_llvm_ptr);
                 }
             }
             set_pointer_variable_to_null(llvm::ConstantPointerNull::get(
