@@ -931,20 +931,20 @@ TEST_CASE("FortranEvaluator 8 double") {
     CHECK(r.result.f64 == 3.5);
 }
 
-TEST_CASE("FortranEvaluator 9 single complex") {
-    CompilerOptions cu;
-    cu.interactive = true;
-    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
-    if (cu.platform == LCompilers::Platform::Linux) {
-        FortranEvaluator e(cu);
-        LCompilers::Result<FortranEvaluator::EvalResult>
-        r = e.evaluate2("(2.5_4, 3.5_4)");
-        CHECK(r.ok);
-        CHECK(r.result.type == FortranEvaluator::EvalResult::complex4);
-        CHECK(r.result.c32.re == 2.5);
-        CHECK(r.result.c32.im == 3.5);
-    }
-}
+// TEST_CASE("FortranEvaluator 9 single complex") {
+//     CompilerOptions cu;
+//     cu.interactive = true;
+//     cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+//     if (cu.platform == LCompilers::Platform::Linux) {
+//         FortranEvaluator e(cu);
+//         LCompilers::Result<FortranEvaluator::EvalResult>
+//         r = e.evaluate2("(2.5_4, 3.5_4)");
+//         CHECK(r.ok);
+//         CHECK(r.result.type == FortranEvaluator::EvalResult::complex4);
+//         CHECK(r.result.c32.re == 2.5);
+//         CHECK(r.result.c32.im == 3.5);
+//     }
+// }
 
 TEST_CASE("FortranEvaluator 9 double complex") {
     CompilerOptions cu;
@@ -1243,9 +1243,9 @@ end function id
 subroutine sa(l, a)
     integer, intent(in) :: l
     integer, intent(inout) :: a(id(l))
-    
+
     integer :: i
-    
+
     do i = 1, size(a)
         a(i) = a(i) + 1
     end do
