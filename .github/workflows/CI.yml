@@ -9,6 +9,7 @@ on:
   pull_request:
     branches:
       - main
+      - opaque_ptr_01
 
 env:
   MACOSX_DEPLOYMENT_TARGET: 14.0
