@@ -781,31 +781,9 @@ jobs:
         if: contains(matrix.llvm-version, '17') == true
         shell: bash -e -l {0}
         run: |
-            src/bin/lfortran --show-llvm examples/expr2.f90
-            src/bin/lfortran examples/expr2.f90
-            ./expr2.out
-            src/bin/lfortran --show-llvm integration_tests/print_03.f90
-            src/bin/lfortran integration_tests/print_03.f90
-            ./print_03.out
-            src/bin/lfortran --show-llvm tests/subroutine3.f90
-            src/bin/lfortran --show-llvm integration_tests/module_function_without_nopass.f90
-            src/bin/lfortran integration_tests/module_function_without_nopass.f90
-            ./module_function_without_nopass.out
-            src/bin/lfortran --show-llvm integration_tests/module_function_with_nopass.f90
-            src/bin/lfortran integration_tests/module_function_with_nopass.f90
-            ./module_function_with_nopass.out
-            src/bin/lfortran --show-llvm integration_tests/elemental_01.f90
-            src/bin/lfortran integration_tests/elemental_01.f90
-            ./elemental_01.out
-            src/bin/lfortran --show-llvm integration_tests/elemental_04.f90
-            src/bin/lfortran integration_tests/elemental_04.f90
-            ./elemental_04.out
-            src/bin/lfortran --show-llvm integration_tests/types_23.f90
-            src/bin/lfortran integration_tests/types_23.f90
-            ./types_23.out
-            src/bin/lfortran --show-llvm integration_tests/character_01.f90
-            src/bin/lfortran integration_tests/character_01.f90
-            ./character_01.out
+            cd integration_tests
+            ./run_tests.py -b llvm17
+            ./run_tests.py -b llvm17 -f
 
   test_llvm_wasm:
     name: Test LLVM->WASM ${{ matrix.llvm-version }}
