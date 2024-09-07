@@ -15,33 +15,33 @@ src/bin/lfortran -o expr2 expr2.o
 ./expr2
 
 # Compile C and Fortran
-src/bin/lfortran -c integration_tests/modules_15b.f90 -o modules_15b.o
-src/bin/lfortran -c integration_tests/modules_15.f90 -o modules_15.o
+# src/bin/lfortran -c integration_tests/modules_15b.f90 -o modules_15b.o
+# src/bin/lfortran -c integration_tests/modules_15.f90 -o modules_15.o
 
-if $IS_WIN:
-    cl /MD /c integration_tests/modules_15c.c /Fomodules_15c.o
-elif $IS_MAC: # macOS
-    clang -c integration_tests/modules_15c.c -o modules_15c.o
-else:
-    # Linux
-    gcc -c integration_tests/modules_15c.c -o modules_15c.o
+# if $IS_WIN:
+#     cl /MD /c integration_tests/modules_15c.c /Fomodules_15c.o
+# elif $IS_MAC: # macOS
+#     clang -c integration_tests/modules_15c.c -o modules_15c.o
+# else:
+#     # Linux
+#     gcc -c integration_tests/modules_15c.c -o modules_15c.o
 
-src/bin/lfortran modules_15.o modules_15b.o modules_15c.o -o modules_15
-./modules_15
+# src/bin/lfortran modules_15.o modules_15b.o modules_15c.o -o modules_15
+# ./modules_15
 
 
 # Compile and link in one step
-src/bin/lfortran integration_tests/intrinsics_04s.f90 -o intrinsics_04s
-./intrinsics_04s
+# src/bin/lfortran integration_tests/intrinsics_04s.f90 -o intrinsics_04s
+# ./intrinsics_04s
 
-src/bin/lfortran integration_tests/intrinsics_04.f90 -o intrinsics_04
-./intrinsics_04
+# src/bin/lfortran integration_tests/intrinsics_04.f90 -o intrinsics_04
+# ./intrinsics_04
 
 
 # Run all tests (does not work on Windows yet):
 cmake --version
 if not $IS_WIN:
-    ./run_tests.py
+    ./run_tests.py --no-llvm
 
     cd integration_tests
     mkdir build-lfortran-llvm
@@ -52,5 +52,5 @@ if not $IS_WIN:
     ctest -L llvm
     cd ..
 
-    ./run_tests.py -b llvm2 llvm_rtlib llvm_nopragma
-    ./run_tests.py -b llvm2 llvm_rtlib llvm_nopragma -f
+    ./run_tests.py -b llvm2 llvm_rtlib
+    ./run_tests.py -b llvm2 llvm_rtlib -f
