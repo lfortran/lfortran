@@ -1558,9 +1558,15 @@ void check_compiler_installation(std::string &compiler) {
     }
     
     counter++;
-    int err = system((compiler + " --version").c_str());
+
+#ifdef _WIN32
+    int err = system((compiler + " --version > NUL 2>&1").c_str());
+#else
+    int err = system((compiler + " --version > /dev/null 2>&1").c_str());
+#endif
+
     if (err) {
-        // Support linking through more compilers
+        // TODO: Support linking through more compilers
         compiler = compiler == "clang" ? "gcc" : "clang";
         check_compiler_installation(compiler);
     }
