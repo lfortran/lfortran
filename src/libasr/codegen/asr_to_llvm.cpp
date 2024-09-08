@@ -2599,7 +2599,8 @@ public:
         }
         int member_idx = name2memidx[current_der_type_name][member_name];
 
-        tmp = llvm_utils->create_gep(tmp, member_idx);
+        llvm::Type *xtype =llvm_utils->get_type_from_ttype_t_util(x_m_v_type, module.get()); 
+        tmp = llvm_utils->create_gep2(xtype, tmp, member_idx);
         ASR::ttype_t* member_type = ASRUtils::type_get_past_pointer(
             ASRUtils::type_get_past_allocatable(member->m_type));
         if( ASR::is_a<ASR::StructType_t>(*member_type) ) {

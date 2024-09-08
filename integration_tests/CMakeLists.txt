@@ -303,7 +303,7 @@ RUN(NAME data_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c fortran llvm17)
 RUN(NAME data_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c fortran llvm17)
 RUN(NAME data_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c llvm17)
 RUN(NAME data_05 LABELS gfortran) # llvmImplicit removed
-RUN(NAME data_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c)
+RUN(NAME data_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c llvm17)
 RUN(NAME data_07 LABELS gfortran) # TODO: Fix this test
 RUN(NAME data_08 LABELS gfortran llvmImplicit)
 RUN(NAME data_09 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c llvm17)
