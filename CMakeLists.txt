@@ -67,6 +67,7 @@ if (NOT CMAKE_CXX_STANDARD)
 endif ()
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+add_definitions("-DCOMPILER_LFORTRAN=1")
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     # In Debug mode we enable assertions
