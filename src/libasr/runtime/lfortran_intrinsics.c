@@ -2216,14 +2216,19 @@ LFORTRAN_API char* _lfortran_str_copy(char* s, int32_t idx1, int32_t idx2) {
 }
 
 LFORTRAN_API char* _lfortran_str_slice(char* s, int32_t idx1, int32_t idx2, int32_t step,
-                        bool idx1_present, bool idx2_present) {
+                        bool idx1_present, bool idx2_present, bool neg_idx_support) {
     int s_len = strlen(s);
     if (step == 0) {
         printf("slice step cannot be zero\n");
         exit(1);
     }
-    idx1 = idx1 < 0 ? idx1 + s_len : idx1;
-    idx2 = idx2 < 0 ? idx2 + s_len : idx2;
+    if (neg_idx_support) {
+        idx1 = idx1 < 0 ? idx1 + s_len : idx1;
+        idx2 = idx2 < 0 ? idx2 + s_len : idx2;
+    } else {
+        idx1 = idx1 < 0 ? 0 : idx1;
+        idx2 = idx2 < 0 ? idx1 : idx2;
+    }
     if (!idx1_present) {
         if (step > 0) {
             idx1 = 0;
@@ -2263,7 +2268,7 @@ LFORTRAN_API char* _lfortran_str_slice(char* s, int32_t idx1, int32_t idx2, int3
 }
 
 LFORTRAN_API char* _lfortran_str_slice_assign(char* s, char *r, int32_t idx1, int32_t idx2, int32_t step,
-                        bool idx1_present, bool idx2_present) {
+                        bool idx1_present, bool idx2_present, bool neg_idx_support) {
     int s_len = strlen(s);
     int r_len = strlen(r);
     if (step == 0) {
@@ -2271,8 +2276,13 @@ LFORTRAN_API char* _lfortran_str_slice_assign(char* s, char *r, int32_t idx1, in
         exit(1);
     }
     s_len = (s_len < r_len) ? r_len : s_len;
-    idx1 = idx1 < 0 ? idx1 + s_len : idx1;
-    idx2 = idx2 < 0 ? idx2 + s_len : idx2;
+    if (neg_idx_support) {
+        idx1 = idx1 < 0 ? idx1 + s_len : idx1;
+        idx2 = idx2 < 0 ? idx2 + s_len : idx2;
+    } else {
+        idx1 = idx1 < 0 ? 0 : idx1;
+        idx2 = idx2 < 0 ? idx1 : idx2;
+    }
     if (!idx1_present) {
         if (step > 0) {
             idx1 = 0;

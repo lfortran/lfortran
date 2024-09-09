@@ -463,7 +463,7 @@ static inline ASR::expr_t* create_boolean_result_array(Allocator &al, Location l
 
     arr_data = array;
     ASR::expr_t* result_arr_const = ASRUtils::EXPR(
-                                        ASR::make_ArrayConstant_t( 
+                                        ASR::make_ArrayConstant_t(
                                                 al, loc,
                                                 left->m_n_data,arr_data,
                                                 left->m_type,
@@ -951,7 +951,7 @@ public:
         {"or", {"ior", {"any", "any"}}},
         {"xor", {"ieor", {"any", "any"}}},
     };
-    
+
     ASR::asr_t *tmp;
     std::vector<ASR::asr_t *> tmp_vec;
     Allocator &al;
@@ -1280,8 +1280,8 @@ public:
         ASR::expr_t* left = end_bin_op->m_left;
         ASR::expr_t* right = end_bin_op->m_right;
         if (ASR::is_a<ASR::Var_t>(*left) && !ASR::is_a<ASR::Var_t>(*right)) {
-            /* 
-            Handle expressions like `nx + a` where `a` can either be 
+            /*
+            Handle expressions like `nx + a` where `a` can either be
             an integer or an `IntegerBinOp_t`.
 
             Examples - nx + 1 and nx + ny * nz
@@ -1298,8 +1298,8 @@ public:
                 right = convert_integer_binop_to_function_call(right, is_argument);
             }
         } else if (!ASR::is_a<ASR::Var_t>(*left) && ASR::is_a<ASR::Var_t>(*right)) {
-            /* 
-            Handle expressions like `a + nx` where `a` can either be 
+            /*
+            Handle expressions like `a + nx` where `a` can either be
             an integer or an `IntegerBinOp_t`.
 
             Examples - 1 + nx and ny * nz + nx
@@ -1316,7 +1316,7 @@ public:
                 left = convert_integer_binop_to_function_call(left, is_argument);
             }
         } else if (ASR::is_a<ASR::Var_t>(*left) && ASR::is_a<ASR::Var_t>(*right)) {
-            // Handle expressions like `nx + ny` where both `nx` and `ny` are 
+            // Handle expressions like `nx + ny` where both `nx` and `ny` are
             // external variables.
             ASR::symbol_t* first_end_sym = ASR::down_cast<ASR::Var_t>(left)->m_v;
             ASR::symbol_t* second_end_sym = ASR::down_cast<ASR::Var_t>(right)->m_v;
@@ -1333,8 +1333,8 @@ public:
                 right = get_transformed_function_call(second_end_sym);
             }
         } else {
-            /* 
-            Handle expressions like `a + b` where both `a` and `b` can either be 
+            /*
+            Handle expressions like `a + b` where both `a` and `b` can either be
             an integer or an `IntegerBinOp_t`.
 
             Examples - 1 + 2 and 1 + nx + ny
@@ -2571,7 +2571,7 @@ public:
                                     ASR::asr_t* get_pointer = ASR::make_GetPointer_t(al, asr_eq2->base.loc, asr_eq2, pointer_type_, nullptr);
                                     ASR::ttype_t *cptr = ASRUtils::TYPE(ASR::make_CPtr_t(al, asr_eq2->base.loc));
                                     ASR::asr_t* pointer_to_cptr = ASR::make_PointerToCPtr_t(al, asr_eq2->base.loc, ASRUtils::EXPR(get_pointer), cptr, nullptr);
-                                    
+
                                     ASR::ttype_t* arg_type1 = ASRUtils::expr_type(asr_eq1);
                                     ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(asr_eq1);
                                     ASR::Variable_t *var__ = ASR::down_cast<ASR::Variable_t>(var->m_v);
@@ -3177,7 +3177,7 @@ public:
                                                 throw SemanticError("Type mismatch in array initialization.\n Enable logical casting by setting `--logical-casting = true`",
                                                     x.base.base.loc);
                                             }
-                                        } 
+                                        }
                                         if (is_convertible) {
                                                 ASR::expr_t* array_const = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, a->base.base.loc, body.p, body.size(), cast_type, a->m_storage_format));
                                                 cast->m_value = ASRUtils::expr_value(array_const);
@@ -3194,7 +3194,7 @@ public:
                                 ( ASR::is_a<ASR::Cast_t>(*init_expr) &&
                                 ASR::is_a<ASR::ArrayConstructor_t>(*ASR::down_cast<ASR::Cast_t>(init_expr)->m_arg) )
                                 || ASR::is_a<ASR::IntrinsicElementalFunction_t>(*init_expr) ||
-                                ASR::is_a<ASR::IntrinsicArrayFunction_t>(*init_expr) || 
+                                ASR::is_a<ASR::IntrinsicArrayFunction_t>(*init_expr) ||
                                 ASR::is_a<ASR::TypeInquiry_t>(*init_expr) ||
                                 ASR::is_a<ASR::StringLen_t>(*init_expr) ) {
                                 value = init_expr;
@@ -3997,7 +3997,7 @@ public:
                 step = ASRUtils::EXPR(tmp);
                 step = CastingUtil::perform_casting(step, int_type, al, loc);
                 return ASR::make_StringSection_t(al, loc, array_item, l,
-                        r, ASRUtils::EXPR(tmp), char_type, arr_ref_val);
+                        r, ASRUtils::EXPR(tmp), false, char_type, arr_ref_val);
             } else {
                 return (ASR::asr_t*) replace_with_common_block_variables(ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al, loc,
                     v_Var, args.p, args.size(), ASRUtils::type_get_past_pointer(
@@ -4055,7 +4055,7 @@ public:
                     }
 
                     return ASR::make_StringSection_t(al, loc, v_Var, l,
-                            r, casted_step, char_type, arr_ref_val);
+                            r, casted_step, false, char_type, arr_ref_val);
                 }
             }
 
@@ -4077,7 +4077,7 @@ public:
             type = ASRUtils::duplicate_type(al, ASRUtils::type_get_past_allocatable(type),
                     &array_section_dims);
             return ASR::make_ArraySection_t(al, loc,
-                v_Var, args.p, args.size(), type, arr_ref_val);
+                v_Var, args.p, args.size(), false, type, arr_ref_val);
         }
     }
 
@@ -4592,7 +4592,7 @@ public:
                 }
                 ASR::ttype_t* new_type = ASRUtils::duplicate_type_with_empty_dims(al, ASRUtils::expr_type(x->m_v));
                 *current_expr = ASRUtils::EXPR(ASR::make_ArraySection_t(al, x->base.base.loc, x->m_v,
-                    array_indices.p, array_indices.n, new_type, nullptr));
+                    array_indices.p, array_indices.n, false, new_type, nullptr));
             }
 
     };
@@ -4747,7 +4747,7 @@ public:
 
                         ASR::expr_t* array_section = ASRUtils::EXPR(ASR::make_ArraySection_t(al, array_item->base.base.loc,
                                                     array_expr, array_indices.p, array_indices.size(),
-                                                    ASRUtils::TYPE(descriptor_array), nullptr));
+                                                    false, ASRUtils::TYPE(descriptor_array), nullptr));
 
                         ASR::asr_t* array_cast = ASRUtils::make_ArrayPhysicalCast_t_util(al, array_item->base.base.loc, array_section,
                                                 ASRUtils::extract_physical_type(ASRUtils::TYPE(descriptor_array)), ASRUtils::extract_physical_type(expected_arg_type), ASRUtils::TYPE(expected_array), nullptr);
@@ -4953,7 +4953,7 @@ public:
                 ASRUtils::duplicate_type(al, ASRUtils::extract_type(ASRUtils::expr_type(expr)),
                         &array_section_dims);
             array_item_node = ASR::make_ArraySection_t(al, loc, expr, indices.p,
-                indices.size(), array_section_type, nullptr);
+                indices.size(), false, array_section_type, nullptr);
         } else {
             array_item_node = ASRUtils::make_ArrayItem_t_util(al, loc, expr, indices.p,
                 indices.size(), ASRUtils::duplicate_type(al, ASRUtils::extract_type(ASRUtils::expr_type(expr))),
@@ -5698,7 +5698,7 @@ public:
     }
 
     void scalar_kind_arg(std::string &name, Vec<ASR::expr_t*> &args) {
-        std::vector<std::string> optional_kind_arg = {"logical", "storage_size", "anint", "nint", "aint", "floor", 
+        std::vector<std::string> optional_kind_arg = {"logical", "storage_size", "anint", "nint", "aint", "floor",
             "ceiling", "aimag", "maskl", "maskr", "ichar", "char", "achar", "real"};
         if (std::find(optional_kind_arg.begin(), optional_kind_arg.end(), name) != optional_kind_arg.end()) {
             if (args[1]) {
@@ -5750,7 +5750,7 @@ public:
                     ASR::expr_t* val = ASRUtils::EXPR(
                         ASR::make_IntegerConstant_t(al, loc, kind, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, kind))));
                     args.p[1] = val;
-                }   
+                }
             }
         } else if (intrinsic_name == "ishftc"){
             if(args[2] == nullptr){
@@ -5798,7 +5798,7 @@ public:
         }
 
         size_t arg_size = args.size();
-        if(intrinsic_name == "dint" || intrinsic_name == "dnint") { 
+        if(intrinsic_name == "dint" || intrinsic_name == "dnint") {
             arg_size = 1;
             if (args[1]) {
                 throw SemanticError("Too many arguments to call `" + intrinsic_name + "`", loc);
@@ -5814,7 +5814,7 @@ public:
                     argument_type = intrinsic_mapping[intrinsic_name].second[i];
                 } else {
                     throw SemanticError("Too many arguments to call `" + intrinsic_name + "`", loc);
-                }        
+                }
             }
             if (argument_type == "int4") {
                 if (args[i] != nullptr) {
@@ -8470,15 +8470,15 @@ public:
             tmp = ASR::make_StructInstanceMember_t(al, loc, ASRUtils::EXPR(tmp), tmp2_m_m_ext,
                 ASRUtils::fix_scoped_type(al, tmp2_mem_type, current_scope), nullptr);
         }
-        // Find array in the returning tmp expression. If found set tmp type to that array type.  
+        // Find array in the returning tmp expression. If found set tmp type to that array type.
         bool array_found = false;
         ASR::ttype_t* array_type = nullptr; // will be set if only one single array is found. It'd be used to change the type of tmp.
         ASR::asr_t* tmp_copy = tmp;
-        while(ASR::is_a<ASR::StructInstanceMember_t>(*ASRUtils::EXPR(tmp_copy)) || 
+        while(ASR::is_a<ASR::StructInstanceMember_t>(*ASRUtils::EXPR(tmp_copy)) ||
             (ASR::is_a<ASR::ArrayItem_t>(*ASRUtils::EXPR(tmp_copy)) &&
              ASR::is_a<ASR::StructInstanceMember_t>(*(ASR::down_cast<ASR::ArrayItem_t>(ASRUtils::EXPR(tmp_copy)))->m_v))){
             ASR::StructInstanceMember_t* tmp2 = nullptr;
-            bool check_m_m = true; 
+            bool check_m_m = true;
             if(ASR::is_a<ASR::ArrayItem_t>(*ASRUtils::EXPR(tmp_copy))){
                 tmp2 = ASR::down_cast<ASR::StructInstanceMember_t>(ASR::down_cast<ASR::ArrayItem_t>(ASRUtils::EXPR(tmp_copy))->m_v);
                 check_m_m = false;
@@ -8488,13 +8488,13 @@ public:
 
             if(check_m_m){
                 ASR::ExternalSymbol_t* tmp2_m_m_ext = ASR::down_cast<ASR::ExternalSymbol_t>(tmp2->m_m);
-                if(ASR::is_a<ASR::Variable_t>(*(tmp2_m_m_ext->m_external)) && 
+                if(ASR::is_a<ASR::Variable_t>(*(tmp2_m_m_ext->m_external)) &&
                     ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable(ASRUtils::symbol_type(tmp2_m_m_ext->m_external)))){
                     if(array_found){
                         throw SemanticError("Two or more part references with non-zero rank must not be specified.", loc);
                     }
                     array_found = true;
-                    array_type = ASRUtils::duplicate_type(al,ASRUtils::symbol_type(tmp2->m_m));                        
+                    array_type = ASRUtils::duplicate_type(al,ASRUtils::symbol_type(tmp2->m_m));
                 }
             }
             if(tmp2->m_v->type == ASR::exprType::Var){
@@ -8511,7 +8511,7 @@ public:
         }
         if(array_type){
             if(ASR::is_a<ASR::StructInstanceMember_t>(*ASRUtils::EXPR(tmp))){
-                ASR::StructInstanceMember_t* tmp2 = ASR::down_cast<ASR::StructInstanceMember_t>(ASRUtils::EXPR(tmp)); 
+                ASR::StructInstanceMember_t* tmp2 = ASR::down_cast<ASR::StructInstanceMember_t>(ASRUtils::EXPR(tmp));
                 if(ASR::is_a<ASR::Array_t>(*array_type)){
                     (ASR::down_cast<ASR::Array_t>(array_type))->m_type = ASRUtils::type_get_past_array(tmp2->m_type);
                     tmp2->m_type = array_type;
@@ -8520,7 +8520,7 @@ public:
                     ASR::down_cast<ASR::Array_t>((ASR::down_cast<ASR::Allocatable_t>(array_type))->m_type)->m_type = ASRUtils::type_get_past_array(ASRUtils::type_get_past_allocatable(tmp2->m_type));
                     tmp2->m_type = array_type;
                 }
-                
+
             } else if (ASR::is_a<ASR::ArrayItem_t>(*ASRUtils::EXPR(tmp))) {
                 ASR::ArrayItem_t* tmp2 = ASR::down_cast<ASR::ArrayItem_t>(ASRUtils::EXPR(tmp));
                 if(ASR::is_a<ASR::Array_t>(*array_type)){

@@ -266,8 +266,8 @@ class ASRBuilder {
         return STMT(ASR::make_ListAppend_t(al, loc, x, val));
     }
 
-    inline ASR::expr_t* StringSection(ASR::expr_t* s, ASR::expr_t* start, ASR::expr_t* end) {
-        return EXPR(ASR::make_StringSection_t(al, loc, s, start, end, i32(1), character(-2), nullptr));
+    inline ASR::expr_t* StringSection(ASR::expr_t* s, ASR::expr_t* start, ASR::expr_t* end, bool neg_idx_supported = false) {
+        return EXPR(ASR::make_StringSection_t(al, loc, s, start, end, i32(1), neg_idx_supported, character(-2), nullptr));
     }
 
     inline ASR::expr_t* StringItem(ASR::expr_t* x, ASR::expr_t* idx) {
@@ -574,7 +574,7 @@ class ASRBuilder {
         return intrinsic_func(al, loc, scope, arg_types, return_type, new_args, overload_id);
     }
 
-    // Compare -----------------------------------------------------------------   
+    // Compare -----------------------------------------------------------------
     ASR::expr_t *Gt(ASR::expr_t *left, ASR::expr_t *right) {
         LCOMPILERS_ASSERT(check_equal_type(expr_type(left), expr_type(right)));
         ASR::ttype_t *type = expr_type(left);
