@@ -212,6 +212,7 @@ namespace LCompilers {
             std::map<std::string, std::map<std::string, int>>& name2memidx;
             std::unordered_map<std::uint32_t, std::unordered_map<std::string, llvm::Type*>>& arr_arg_type_cache;
             std::map<std::string, std::pair<llvm::Type*, llvm::Type*>>& fname2arg_type;
+            std::map<llvm::Value *, llvm::Type *> &ptr_type;
 
             LLVMDictInterface* dict_api_lp;
             LLVMDictInterface* dict_api_sc;
@@ -233,7 +234,8 @@ namespace LCompilers {
                 std::map<std::string, std::map<std::string, int>>& name2memidx_,
                 CompilerOptions &compiler_options_,
                 std::unordered_map<std::uint32_t, std::unordered_map<std::string, llvm::Type*>>& arr_arg_type_cache_,
-                std::map<std::string, std::pair<llvm::Type*, llvm::Type*>>& fname2arg_type_);
+                std::map<std::string, std::pair<llvm::Type*, llvm::Type*>>& fname2arg_type_,
+                std::map<llvm::Value *, llvm::Type *> &ptr_type_);
 
             llvm::Value* create_gep(llvm::Value* ds, int idx);
 
@@ -263,9 +265,11 @@ namespace LCompilers {
                 std::vector<llvm::Value *> &idx);
 
             llvm::AllocaInst* CreateAlloca(llvm::Type* type,
-                llvm::Value* size=nullptr, std::string Name="");
+                llvm::Value* size=nullptr, std::string Name="",
+                bool is_llvm_ptr=false);
             llvm::AllocaInst* CreateAlloca(llvm::IRBuilder<> &builder,
-                llvm::Type* type, llvm::Value* size=nullptr, std::string Name="");
+                llvm::Type* type, llvm::Value* size=nullptr, std::string Name="",
+                bool is_llvm_ptr=false);
 
             llvm::Type* getIntType(int a_kind, bool get_pointer=false);
 
