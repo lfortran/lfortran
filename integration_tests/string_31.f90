@@ -8,7 +8,7 @@ program string_31
    print*, "Whole string:", s(1:len(s))
    if ( s(1:len(s)) /= "lfortran" ) error stop
 
-   print*, "Slice of string (2:5):", s(1:-1)
+   print*, "Slice of string (1:-1):", s(1:-1)
    if ( s(1:-1) /= "" ) error stop
 
    print*, "Slice of string (2:5):", s(2:5)
