@@ -2929,7 +2929,9 @@ public:
                     }
                     init_expr = ASRUtils::EXPR(tmp);
                     value = ASRUtils::expr_value(init_expr);
-
+                    if(value->type==63 && type->type==0){
+                        throw SemanticError("Initialisation using ArrayConstant is supported only for single dimensional arrays", x.base.base.loc);
+                     }
                     // we do checks and correct length initialization for
                     // character (& character array) before creating repeated argument
                     // list for an initialization like:
