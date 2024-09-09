@@ -2483,6 +2483,14 @@ LFORTRAN_API bool _lfortran_random_init(bool repeatable, bool image_distinct) {
     return false;
 }
 
+LFORTRAN_API int64_t _lfortran_random_seed(unsigned seed)
+{
+    srand(seed);
+    // The seed array size is typically 8 elements because Fortran's RNG often uses a seed with a fixed length of 8 integers to ensure sufficient randomness and repeatability in generating sequences of random numbers.
+    return 8;
+
+}
+
 LFORTRAN_API int64_t _lpython_open(char *path, char *flags)
 {
     FILE *fd;
