@@ -166,16 +166,24 @@ bool Parser::parse(const std::string &input)
     if (!fixed_form) {
         m_tokenizer.set_string(inp);
         if (yyparse(*this) == 0) {
+            if (diag.has_error())
+                return false;
             return true;
         }
     } else {
         f_tokenizer.set_string(inp);
         if (!f_tokenizer.tokenize_input(diag, m_a)) return false;
         if (yyparse(*this) == 0) {
+            if (diag.has_error())
+                return false;
             return true;
         }
     }
-    throw parser_local::ParserError("Parsing unsuccessful (internal compiler error)");
+
+    if (!diag.has_error()) {
+        diag.add(parser_local::ParserError("Parsing unsuccessful (internal compiler error)").d);
+    }
+    return false;
 }
 
 Result<std::vector<int>> tokens(Allocator &al, const std::string &input,
@@ -910,7 +918,7 @@ void Parser::handle_yyerror(const Location &loc, const std::string &msg)
             unsigned int invalid_token = this->f_tokenizer.token_pos;
             if (invalid_token == 0 || invalid_token > f_tokenizer.tokens.size()) {
                 message = "unknown error";
-                throw parser_local::ParserError(message, loc);
+                diag.add(parser_local::ParserError(message, loc).d);
             }
             invalid_token--;
             LCOMPILERS_ASSERT(invalid_token < f_tokenizer.tokens.size())
@@ -941,7 +949,7 @@ void Parser::handle_yyerror(const Location &loc, const std::string &msg)
     } else {
         message = "Internal Compiler Error: parser returned unknown error";
     }
-    throw parser_local::ParserError(message, loc);
+    diag.add(parser_local::ParserError(message, loc).d);
 }
 
 } // namespace LCompilers::LFortran

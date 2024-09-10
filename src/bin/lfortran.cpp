@@ -296,11 +296,12 @@ int prompt(bool verbose, CompilerOptions &cu)
             }
             LCompilers::Result<LCompilers::FortranEvaluator::EvalResult>
             res = e.evaluate(input, verbose, lm, lpm, diagnostics);
-            std::cerr << diagnostics.render(lm, cu);
             if (res.ok) {
                 r = res.result;
             } else {
                 LCOMPILERS_ASSERT(diagnostics.has_error())
+                std::cerr << diagnostics.render(lm, cu);
+                diagnostics.clear();
                 continue;
             }
         } catch (const LCompilers::LCompilersException &e) {
