@@ -223,11 +223,11 @@ namespace LCompilers {
 
         llvm::Value* SimpleCMODescriptor::
         get_pointer_to_dimension_descriptor_array(llvm::Type* type, llvm::Value* arr, bool load) {
-            llvm::Value* dim_des_arr_ptr = llvm_utils->create_gep(arr, 2);
+            llvm::Value* dim_des_arr_ptr = llvm_utils->create_gep2(type, arr, 2);
             if( !load ) {
                 return dim_des_arr_ptr;
             }
-            return llvm_utils->CreateLoad2(type, dim_des_arr_ptr);
+            return llvm_utils->CreateLoad2(dim_des->getPointerTo(), dim_des_arr_ptr);
         }
 
         llvm::Value* SimpleCMODescriptor::
@@ -276,13 +276,13 @@ namespace LCompilers {
             llvm::Value* dim_des_first = llvm_utils->CreateAlloca(*builder, dim_des, arr_rank);
             builder->CreateStore(dim_des_first, dim_des_val);
             builder->CreateStore(arr_rank, get_rank(arr, true));
-            dim_des_val = llvm_utils->CreateLoad(dim_des_val);
+            dim_des_val = llvm_utils->CreateLoad2(dim_des->getPointerTo(), dim_des_val);
             llvm::Value* prod = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
             for( int r = 0; r < n_dims; r++ ) {
-                llvm::Value* dim_val = llvm_utils->create_ptr_gep(dim_des_val, r);
-                llvm::Value* s_val = llvm_utils->create_gep(dim_val, 0);
-                llvm::Value* l_val = llvm_utils->create_gep(dim_val, 1);
-                llvm::Value* dim_size_ptr = llvm_utils->create_gep(dim_val, 2);
+                llvm::Value* dim_val = llvm_utils->create_ptr_gep2(dim_des, dim_des_val, r);
+                llvm::Value* s_val = llvm_utils->create_gep2(dim_des, dim_val, 0);
+                llvm::Value* l_val = llvm_utils->create_gep2(dim_des, dim_val, 1);
+                llvm::Value* dim_size_ptr = llvm_utils->create_gep2(dim_des, dim_val, 2);
                 builder->CreateStore(prod, s_val);
                 builder->CreateStore(llvm_dims[r].first, l_val);
                 llvm::Value* dim_size = llvm_dims[r].second;
@@ -437,7 +437,7 @@ namespace LCompilers {
             }
         }
 
-        void SimpleCMODescriptor::fill_descriptor_for_array_section(
+        void SimpleCMODescriptor::fill_descriptor_for_array_section(llvm::Type* value_desc_type,
             llvm::Value* value_desc, llvm::Value* target,
             llvm::Value** lbs, llvm::Value** ubs,
             llvm::Value** ds, llvm::Value** non_sliced_indices,
@@ -453,7 +453,7 @@ namespace LCompilers {
                     section_first_indices.push_back(non_sliced_indices[i]);
                 }
             }
-            llvm::Value* target_offset = cmo_convertor_single_element(
+            llvm::Value* target_offset = cmo_convertor_single_element(value_desc_type,
                 value_desc, section_first_indices, value_rank, false);
             value_desc_data = llvm_utils->create_ptr_gep(value_desc_data, target_offset);
             llvm::Value* target_data = get_pointer_to_data(target);
@@ -562,12 +562,17 @@ namespace LCompilers {
             return llvm_utils->create_gep(arr, 0);
         }
 
+        llvm::Value* SimpleCMODescriptor::get_pointer_to_data(llvm::Type* type, llvm::Value* arr) {
+            return llvm_utils->create_gep2(type, arr, 0);
+        }
+
         llvm::Value* SimpleCMODescriptor::get_offset(llvm::Value* arr, bool load) {
             llvm::Value* offset = llvm_utils->create_gep(arr, 1);
             if( !load ) {
                 return offset;
             }
-            return llvm_utils->CreateLoad(offset);
+            llvm::Type *i32 = llvm::Type::getInt32Ty(context);
+            return llvm_utils->CreateLoad2(i32, offset);
         }
 
         llvm::Value* SimpleCMODescriptor::get_lower_bound(llvm::Value* dims, bool load) {
@@ -599,10 +604,10 @@ namespace LCompilers {
         // void check_single_element(llvm::Value* curr_idx, llvm::Value* arr) {
         // }
 
-        llvm::Value* SimpleCMODescriptor::cmo_convertor_single_element(
+        llvm::Value* SimpleCMODescriptor::cmo_convertor_single_element(llvm::Type *type,
             llvm::Value* arr, std::vector<llvm::Value*>& m_args,
             int n_args, bool check_for_bounds) {
-            llvm::Value* dim_des_arr_ptr = llvm_utils->CreateLoad2(dim_des->getPointerTo(), llvm_utils->create_gep(arr, 2));
+            llvm::Value* dim_des_arr_ptr = get_pointer_to_dimension_descriptor_array(type, arr);
             llvm::Value* idx = llvm::ConstantInt::get(context, llvm::APInt(32, 0));
             llvm::Type *i32 = llvm::Type::getInt32Ty(context);
             for( int r = 0; r < n_args; r++ ) {
@@ -618,7 +623,7 @@ namespace LCompilers {
                 llvm::Value* stride = llvm_utils->CreateLoad2(i32, llvm_utils->create_gep2(dim_des, dim_des_ptr, 0));
                 idx = builder->CreateAdd(idx, builder->CreateMul(stride, curr_llvm_idx));
             }
-            llvm::Value* offset_val = llvm_utils->CreateLoad2(i32, llvm_utils->create_gep(arr, 1));
+            llvm::Value* offset_val = llvm_utils->CreateLoad2(i32, llvm_utils->create_gep2(type, arr, 1));
             return builder->CreateAdd(idx, offset_val);
         }
 
@@ -648,7 +653,7 @@ namespace LCompilers {
             return idx;
         }
 
-        llvm::Value* SimpleCMODescriptor::get_single_element(llvm::Type *type, llvm::Value* array,
+        llvm::Value* SimpleCMODescriptor::get_single_element(ASR::ttype_t* asr_type, llvm::Type *type, llvm::Value* array,
             std::vector<llvm::Value*>& m_args, int n_args, bool data_only,
             bool is_fixed_size, llvm::Value** llvm_diminfo, bool polymorphic,
             llvm::Type* polymorphic_type, bool is_unbounded_pointer_to_data) {
@@ -666,8 +671,9 @@ namespace LCompilers {
                     tmp = llvm_utils->create_ptr_gep2(type, array, idx);
                 }
             } else {
-                idx = cmo_convertor_single_element(array, m_args, n_args, check_for_bounds);
-                llvm::Value* full_array = get_pointer_to_data(array);
+                llvm::Type* array_type = get_array_type(asr_type, type);
+                idx = cmo_convertor_single_element(array_type, array, m_args, n_args, check_for_bounds);
+                llvm::Value* full_array = get_pointer_to_data(array_type, array);
                 if( polymorphic ) {
                     full_array = llvm_utils->create_gep(llvm_utils->CreateLoad(full_array), 1);
                     full_array = builder->CreateBitCast(llvm_utils->CreateLoad(full_array), polymorphic_type);
