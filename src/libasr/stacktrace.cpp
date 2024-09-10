@@ -143,7 +143,7 @@ void get_local_address(StacktraceItem &item)
       // happen if the stacktrace is somehow corrupted. In that case, we simply
       // abort here.
       std::cout << "The stack address was not found in any shared library or the main program, the stack is probably corrupted. Aborting." << std::endl;
-      abort();
+      exit(1);
     }
 #else
 #ifdef HAVE_LFORTRAN_MACHO
@@ -187,7 +187,7 @@ void get_local_address(StacktraceItem &item)
         }
     }
     std::cout << "The stack address was not found in any shared library or the main program, the stack is probably corrupted. Aborting." << std::endl;
-    abort();
+    exit(1);
 #else
     item.local_pc=0;
 #endif // HAVE_LFORTRAN_MACHO
@@ -332,7 +332,7 @@ void get_symbol_info_bfd(std::string binary_filename, uintptr_t addr,
   abfd = bfd_openr(binary_filename.c_str(), NULL);
   if (abfd == NULL) {
     std::cout << "Cannot open the binary file '" + binary_filename + "'\n";
-    abort();
+    exit(1);
   }
   if (bfd_check_format(abfd, bfd_archive)) {
 #ifdef __APPLE__
@@ -344,19 +344,19 @@ void get_symbol_info_bfd(std::string binary_filename, uintptr_t addr,
 #else
     // On Linux this should work for any file, so we generate an error
     std::cout << "Cannot get addresses from the archive '" + binary_filename + "'\n";
-    abort();
+    exit(1);
 #endif
   }
   char **matching;
   if (!bfd_check_format_matches(abfd, bfd_object, &matching)) {
     std::cout << "Unknown format of the binary file '" + binary_filename + "'\n";
-    abort();
+    exit(1);
   }
   data.symbol_table = NULL;
   // This allocates the symbol_table:
   if (load_symbol_table(abfd, &data) == 1) {
     std::cout << "Failed to load the symbol table from '" + binary_filename + "'\n";
-    abort();
+    exit(1);
   }
   // Loops over all sections and try to find the line
   bfd_map_over_sections(abfd, process_section, &data);
@@ -508,7 +508,7 @@ void get_symbol_info_llvm(StacktraceItem &item, llvm::symbolize::LLVMSymbolizer 
     return;
 #endif
     std::cout << "Cannot open the binary file '" + item.binary_filename + "'\n";
-    abort();
+    exit(1);
   }
 
   llvm::object::ObjectFile *obj_file = binary_file.get().getBinary();
@@ -525,7 +525,7 @@ void get_symbol_info_llvm(StacktraceItem &item, llvm::symbolize::LLVMSymbolizer 
 
   if (!found) {
     std::cout << "Cannot find the section for the address " << item.local_pc << " in the binary file '" + item.binary_filename + "'\n";
-    abort();
+    exit(1);
   }
 
   llvm::object::SectionedAddress sa = {item.local_pc, section_index};
@@ -538,7 +538,7 @@ void get_symbol_info_llvm(StacktraceItem &item, llvm::symbolize::LLVMSymbolizer 
     item.line_number = result->Line;
   } else {
     std::cout << "Cannot open the symbol table of '" + item.binary_filename + "'\n";
-    abort();
+    exit(1);
   }
 }
 

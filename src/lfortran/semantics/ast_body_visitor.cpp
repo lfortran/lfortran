@@ -3781,7 +3781,7 @@ public:
                                 m_shared.push_back(al, v);
                             }
                         } else {
-                            throw SemanticError("The cluase variable `"+ s
+                            throw SemanticError("The clause variable `"+ s
                                 +"` is not declared", loc);
                         }
                     }
