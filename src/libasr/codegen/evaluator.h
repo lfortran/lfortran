@@ -24,6 +24,11 @@ namespace llvm {
     }
 }
 
+namespace mlir {
+    class MLIRContext;
+    class ModuleOp;
+}
+
 namespace LCompilers {
 
 class LLVMModule
@@ -35,6 +40,19 @@ public:
     std::string str();
     // Return a function return type as a string (real / integer)
     std::string get_return_type(const std::string &fn_name);
+};
+
+class MLIRModule {
+public:
+    std::unique_ptr<mlir::ModuleOp> mlir_m;
+    std::unique_ptr<mlir::MLIRContext> mlir_ctx;
+    std::unique_ptr<llvm::Module> llvm_m;
+    std::unique_ptr<llvm::LLVMContext> llvm_ctx;
+    MLIRModule(std::unique_ptr<mlir::ModuleOp> m,
+        std::unique_ptr<mlir::MLIRContext> ctx);
+    ~MLIRModule();
+    std::string str();
+    void mlir_to_llvm();
 };
 
 class LLVMEvaluator

@@ -21,6 +21,7 @@ the code size.
 enum class IntrinsicImpureSubroutines : int64_t {
     RandomNumber,
     RandomInit,
+    RandomSeed,
     GetCommand,
     // ...
 };
@@ -90,6 +91,54 @@ namespace RandomInit {
         return b.SubroutineCall(new_symbol, new_args);
     }
 } // namespace RandomInit
+
+namespace RandomSeed {
+
+    static inline void verify_args(const ASR::IntrinsicImpureSubroutine_t& x, diag::Diagnostics& diagnostics) {
+        ASRUtils::require_impl(x.n_args <= 3, "random_seed can have maximum 3 args", x.base.base.loc, diagnostics);
+        if (x.n_args == 1) {
+            ASRUtils::require_impl(ASRUtils::is_integer(*ASRUtils::expr_type(x.m_args[0])), "Arguments to random_seed must be of integer type", x.base.base.loc, diagnostics);
+        } else if (x.n_args == 2) {
+            ASRUtils::require_impl(ASRUtils::is_integer(*ASRUtils::expr_type(x.m_args[0])) && ASRUtils::is_integer(*ASRUtils::expr_type(x.m_args[0])), "Arguments to random_seed must be of integer type", x.base.base.loc, diagnostics);
+        } else if (x.n_args == 3) {
+            ASRUtils::require_impl(ASRUtils::is_integer(*ASRUtils::expr_type(x.m_args[0])) && ASRUtils::is_integer(*ASRUtils::expr_type(x.m_args[1])) && ASRUtils::is_integer(*ASRUtils::expr_type(x.m_args[2])), "Arguments to random_seed must be of integer type", x.base.base.loc, diagnostics);
+        }
+    }
+
+    static inline ASR::asr_t* create_RandomSeed(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
+        Vec<ASR::expr_t*> m_args; m_args.reserve(al, 1); m_args.push_back(al, args[0]);
+        return ASR::make_IntrinsicImpureSubroutine_t(al, loc, static_cast<int64_t>(IntrinsicImpureSubroutines::RandomSeed), m_args.p, m_args.n, 0);
+    }
+
+    static inline ASR::stmt_t* instantiate_RandomSeed(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        std::string c_func_name = "_lfortran_random_seed";
+        std::string new_name = "_lcompilers_random_seed_";
+
+        declare_basic_variables(new_name);
+        fill_func_arg_sub("r", arg_types[0], InOut);
+        SymbolTable *fn_symtab_1 = al.make_new<SymbolTable>(fn_symtab);
+        Vec<ASR::expr_t*> args_1; args_1.reserve(al, 0);
+        ASR::expr_t *return_var_1 = b.Variable(fn_symtab_1, c_func_name,
+           ASRUtils::type_get_past_array(ASRUtils::type_get_past_allocatable(arg_types[0])),
+           ASRUtils::intent_return_var, ASR::abiType::BindC, false);
+        SetChar dep_1; dep_1.reserve(al, 1);
+        Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 1);
+        ASR::symbol_t *s = make_ASR_Function_t(c_func_name, fn_symtab_1, dep_1, args_1,
+            body_1, return_var_1, ASR::abiType::BindC, ASR::deftypeType::Interface, s2c(al, c_func_name));
+        fn_symtab->add_symbol(c_func_name, s);
+        dep.push_back(al, s2c(al, c_func_name));
+        Vec<ASR::expr_t*> call_args; call_args.reserve(al, 0);
+        body.push_back(al, b.Assignment(args[0], b.Call(s, call_args, arg_types[0])));
+        
+        ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, nullptr, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, new_symbol);
+        return b.SubroutineCall(new_symbol, new_args);
+    }
+
+} // namespace RandomSeed
 
 namespace RandomNumber {
 

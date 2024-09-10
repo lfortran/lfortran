@@ -263,6 +263,12 @@ intrinsic_funcs_args = {
             "return": "logical"
         },
     ],
+    "OutOfRange": [
+        {
+            "args": [("int", "real", "bool"), ("real", "real", "bool"), ("int", "int", "bool"), ("real", "int", "bool")],
+            "return": "logical"
+        },
+    ],
     "StorageSize": [
         {
             "args": [("any",)],

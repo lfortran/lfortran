@@ -134,13 +134,14 @@ set(WITH_LLVM no CACHE BOOL "Build with LLVM support")
 set(WITH_TARGET_AARCH64 no CACHE BOOL "Enable target AARCH64")
 set(WITH_TARGET_X86 no CACHE BOOL "Enable target X86")
 set(WITH_TARGET_WASM no CACHE BOOL "Enable target WebAssembly")
+set(WITH_MLIR no CACHE BOOL "Build with MLIR support")
 if (WITH_LLVM)
     set(WITH_ZSTD yes CACHE BOOL "Detect (and require) static libzstd for llvm")
     if(WITH_ZSTD)
         find_package(StaticZSTD REQUIRED)
     endif()
 
-    set(LFORTRAN_LLVM_COMPONENTS core support mcjit orcjit native asmparser asmprinter)
+    set(LFORTRAN_LLVM_COMPONENTS core support mcjit orcjit native asmparser asmprinter symbolize object)
     find_package(LLVM REQUIRED)
     message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
     message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
@@ -193,6 +194,18 @@ if (WITH_LLVM)
         set(llvm_libs "LLVM")
     endif()
     unset(LFORTRAN_LLVM_COMPONENTS)
+
+    if (WITH_MLIR)
+        add_library(p::mlir INTERFACE IMPORTED)
+        find_package(MLIR REQUIRED CONFIG)
+        set(mlir_libs
+                MLIRIR
+                MLIRLLVMToLLVMIRTranslation
+                MLIRLLVMDialect
+            )
+        set_property(TARGET p::mlir PROPERTY INTERFACE_LINK_LIBRARIES ${mlir_libs})
+        set(HAVE_LFORTRAN_MLIR yes)
+    endif()
 
     add_library(p::llvm INTERFACE IMPORTED)
     set_property(TARGET p::llvm PROPERTY INTERFACE_INCLUDE_DIRECTORIES
@@ -354,6 +367,7 @@ message("WITH_LINKH: ${WITH_LINKH}")
 message("WITH_MACHO: ${WITH_MACHO}")
 message("HAVE_LFORTRAN_DEMANGLE: ${HAVE_LFORTRAN_DEMANGLE}")
 message("WITH_LLVM: ${WITH_LLVM}")
+message("WITH_MLIR: ${WITH_MLIR}")
 message("WITH_XEUS: ${WITH_XEUS}")
 message("WITH_JSON: ${WITH_JSON}")
 message("WITH_FMT: ${WITH_FMT}")

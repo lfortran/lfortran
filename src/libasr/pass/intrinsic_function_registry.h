@@ -67,6 +67,7 @@ inline std::string get_intrinsic_name(int64_t x) {
         INTRINSIC_NAME_CASE(CommandArgumentCount)
         INTRINSIC_NAME_CASE(Spacing)
         INTRINSIC_NAME_CASE(Modulo)
+        INTRINSIC_NAME_CASE(OutOfRange)
         INTRINSIC_NAME_CASE(BesselJ0)
         INTRINSIC_NAME_CASE(BesselJ1)
         INTRINSIC_NAME_CASE(BesselJN)
@@ -216,6 +217,8 @@ namespace IntrinsicElementalFunctionRegistry {
             {&Fix::instantiate_Fix, &Fix::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Sin),
             {&Sin::instantiate_Sin, &Sin::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::OutOfRange),
+            {&OutOfRange::instantiate_OutOfRange, &OutOfRange::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::BesselJ0),
             {&BesselJ0::instantiate_BesselJ0, &BesselJ0::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::BesselJ1),
@@ -625,6 +628,8 @@ namespace IntrinsicElementalFunctionRegistry {
             "cosd"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Tand),
             "tand"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::OutOfRange),
+            "out_of_range"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::BesselJ0),
             "bessel_j0"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::BesselJ1),
@@ -987,6 +992,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"ishftc", {&Ishftc::create_Ishftc, &Ishftc::eval_Ishftc}},
                 {"radix", {&Radix::create_Radix, &Radix::eval_Radix}},
                 {"is_contiguous", {&IsContiguous::create_IsContiguous, &IsContiguous::eval_IsContiguous}},
+                {"out_of_range", {&OutOfRange::create_OutOfRange, &OutOfRange::eval_OutOfRange}},
                 {"storage_size", {&StorageSize::create_StorageSize, &StorageSize::eval_StorageSize}},
                 {"scale", {&Scale::create_Scale, &Scale::eval_Scale}},
                 {"dprod", {&Dprod::create_Dprod, &Dprod::eval_Dprod}},

@@ -64,7 +64,7 @@ using LCompilers::endswith;
 using LCompilers::CompilerOptions;
 
 enum Backend {
-    llvm, c, cpp, x86, wasm, fortran
+    llvm, c, cpp, x86, wasm, fortran, mlir
 };
 
 std::string get_unique_ID() {
@@ -832,6 +832,81 @@ int save_mod_files(const LCompilers::ASR::TranslationUnit_t &u,
     return 0;
 }
 
+#ifdef HAVE_LFORTRAN_MLIR
+int emit_mlir(const std::string &infile, CompilerOptions &compiler_options)
+{
+    std::string input = read_file(infile);
+
+    LCompilers::FortranEvaluator fe(compiler_options);
+    LCompilers::LocationManager lm;
+    LCompilers::diag::Diagnostics diagnostics;
+    {
+        LCompilers::LocationManager::FileLocations fl;
+        fl.in_filename = infile;
+        lm.files.push_back(fl);
+        lm.file_ends.push_back(input.size());
+    }
+    LCompilers::Result<std::string> mlir = fe.get_mlir(input, lm, diagnostics);
+    std::cerr << diagnostics.render(lm, compiler_options);
+    if (mlir.ok) {
+        std::cout << mlir.result;
+        return 0;
+    } else {
+        LCOMPILERS_ASSERT(diagnostics.has_error())
+        return 1;
+    }
+}
+
+int compile_to_object_file_mlir(const std::string &infile,
+        const std::string &outfile,
+        CompilerOptions &compiler_options) {
+    std::string input = read_file(infile);
+
+    LCompilers::FortranEvaluator fe(compiler_options);
+    LCompilers::ASR::TranslationUnit_t* asr;
+
+
+    // Src -> AST -> ASR
+    LCompilers::LocationManager lm;
+
+    {
+        LCompilers::LocationManager::FileLocations fl;
+        fl.in_filename = infile;
+        lm.files.push_back(fl);
+        lm.file_ends.push_back(input.size());
+    }
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
+        result = fe.get_asr2(input, lm, diagnostics);
+    std::cerr << diagnostics.render(lm, compiler_options);
+    if (result.ok) {
+        asr = result.result;
+    } else {
+        LCOMPILERS_ASSERT(diagnostics.has_error())
+        return 1;
+    }
+
+    // ASR -> MLIR -> LLVM
+    LCompilers::LLVMEvaluator e(compiler_options.target);
+    std::unique_ptr<LCompilers::MLIRModule> m;
+    diagnostics.diagnostics.clear();
+    LCompilers::Result<std::unique_ptr<LCompilers::MLIRModule>>
+        res = fe.get_mlir2(*asr, diagnostics);
+    std::cerr << diagnostics.render(lm, compiler_options);
+    if (res.ok) {
+        m = std::move(res.result);
+    } else {
+        LCOMPILERS_ASSERT(diagnostics.has_error())
+        return 5;
+    }
+
+    // LLVM -> Machine code (saves to an object file)
+    e.save_object_file(*(m->llvm_m), outfile);
+
+    return 0;
+}
+#endif // HAVE_LFORTRAN_MLIR
+
 #ifdef HAVE_LFORTRAN_LLVM
 
 int emit_llvm(const std::string &infile, LCompilers::PassManager& pass_manager,
@@ -1570,7 +1645,7 @@ int link_executable(const std::vector<std::string> &infiles,
         std::cout << "Cannot use static_executable and shared_executable together" << std::endl;
         return 10;
     }
-    if (backend == Backend::llvm) {
+    if (backend == Backend::llvm || backend == Backend::mlir) {
         std::string run_cmd = "", compile_cmd = "";
         if (t == "x86_64-pc-windows-msvc") {
             compile_cmd = "link /NOLOGO /OUT:" + outfile + " ";
@@ -1994,6 +2069,7 @@ int main_app(int argc, char *argv[]) {
     bool arg_no_indent = false;
     bool arg_no_prescan = false;
     bool show_llvm = false;
+    bool show_mlir = false;
     bool show_cpp = false;
     bool show_c = false;
     bool show_asm = false;
@@ -2080,6 +2156,7 @@ int main_app(int argc, char *argv[]) {
     app.add_option("--pass", arg_pass, "Apply the ASR pass and show ASR (implies --show-asr)");
     app.add_option("--skip-pass", skip_pass, "Skip an ASR pass in default pipeline");
     app.add_flag("--show-llvm", show_llvm, "Show LLVM IR for the given file and exit");
+    app.add_flag("--show-mlir", show_mlir, "Show MLIR for the given file and exit");
     app.add_flag("--show-cpp", show_cpp, "Show C++ translation source for the given file and exit");
     app.add_flag("--show-c", show_c, "Show C translation source for the given file and exit");
     app.add_flag("--show-asm", show_asm, "Show assembly for the given file and exit");
@@ -2096,7 +2173,7 @@ int main_app(int argc, char *argv[]) {
     app.add_flag("--no-style-warnings", compiler_options.disable_style, "Turn off style suggestions");
     app.add_flag("--no-error-banner", compiler_options.no_error_banner, "Turn off error banner");
     app.add_option("--error-format", compiler_options.error_format, "Control how errors are produced (human, short)")->capture_default_str();
-    app.add_option("--backend", arg_backend, "Select a backend (llvm, c, cpp, x86, wasm, fortran)")->capture_default_str();
+    app.add_option("--backend", arg_backend, "Select a backend (llvm, c, cpp, x86, wasm, fortran, mlir)")->capture_default_str();
     app.add_flag("--openmp", compiler_options.openmp, "Enable openmp");
     app.add_flag("--openmp-lib-dir", compiler_options.openmp_lib_dir, "Pass path to openmp library")->capture_default_str();
     app.add_flag("--generate-object-code", compiler_options.generate_object_code, "Generate object code into .o files");
@@ -2279,8 +2356,10 @@ int main_app(int argc, char *argv[]) {
         backend = Backend::wasm;
     } else if (arg_backend == "fortran") {
         backend = Backend::fortran;
+    } else if (arg_backend == "mlir") {
+        backend = Backend::mlir;
     } else {
-        std::cerr << "The backend must be one of: llvm, cpp, x86, wasm, fortran." << std::endl;
+        std::cerr << "The backend must be one of: llvm, cpp, x86, wasm, fortran, mlir." << std::endl;
         return 1;
     }
 
@@ -2293,9 +2372,19 @@ int main_app(int argc, char *argv[]) {
 #endif
     }
 
-    // TODO: for now we ignore the other filenames, only handle
-    // the first:
+    // if it's the only file, then we use that file
+    // to set the compiler_options
     std::string arg_file = arg_files[0];
+    for (const auto& file : arg_files) {
+        // if any Fortran file is present, use the first file to
+        // set compiler_options
+        if (endswith(file, ".f90") || endswith(file, ".f") ||
+            endswith(file, ".F90") || endswith(file, ".F")) {
+            arg_file = file;
+            break;
+        }
+    }
+
     if (CLI::NonexistentPath(arg_file).empty())
         throw LCompilers::LCompilersException("File does not exist: " + arg_file);
 
@@ -2380,6 +2469,15 @@ int main_app(int argc, char *argv[]) {
         return 1;
 #endif
     }
+    if (show_mlir) {
+#ifdef HAVE_LFORTRAN_MLIR
+        return emit_mlir(arg_file, compiler_options);
+#else
+        std::cerr << "The `--show-mlir` option requires the MLIR backend to be "
+            "enabled. Recompile with `WITH_MLIR=yes`." << std::endl;
+        return 1;
+#endif
+    }
     if (show_asm) {
 #ifdef HAVE_LFORTRAN_LLVM
         return emit_asm(arg_file, compiler_options);
@@ -2439,61 +2537,80 @@ int main_app(int argc, char *argv[]) {
             return compile_to_binary_wasm(arg_file, outfile, time_report, compiler_options);
         } else if (backend == Backend::fortran) {
             return compile_to_binary_fortran(arg_file, outfile, compiler_options);
+        } else if (backend == Backend::mlir) {
+#ifdef HAVE_LFORTRAN_MLIR
+            return compile_to_object_file_mlir(arg_file, outfile, compiler_options);
+#else
+            std::cerr << "The -c option with `--backend=mlir` requires the "
+                "MLIR backend to be enabled. Recompile with `WITH_MLIR=yes`."
+                << std::endl;
+            return 1;
+#endif
         } else {
             throw LCompilers::LCompilersException("Unsupported backend.");
         }
     }
 
-    int err;
-    std::string tmp_o = outfile + ".tmp.o";
-    if (endswith(arg_file, ".f90") || endswith(arg_file, ".f") || endswith(arg_file, ".F90") || endswith(arg_file, ".F")) {
-        if (backend == Backend::x86) {
-            return compile_to_binary_x86(arg_file, outfile,
-                    time_report, compiler_options);
-        }
-        if (backend == Backend::llvm) {
-#ifdef HAVE_LFORTRAN_LLVM
-            err = compile_src_to_object_file(arg_file, tmp_o, false,
-                compiler_options, lfortran_pass_manager);
-#else
-            std::cerr << "Compiling Fortran files to object files requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
+    std::vector<std::string> object_files;
+    for (const auto &arg_file : arg_files) {
+        int err = 0;
+        std::string tmp_o = std::filesystem::path(arg_file).replace_extension(".tmp.o").string();
+        if (endswith(arg_file, ".f90") || endswith(arg_file, ".f") ||
+            endswith(arg_file, ".F90") || endswith(arg_file, ".F")) {
+            if (backend == Backend::x86) {
+                return compile_to_binary_x86(arg_file, outfile,
+                        time_report, compiler_options);
+            }
+            if (backend == Backend::llvm) {
+    #ifdef HAVE_LFORTRAN_LLVM
+                err = compile_src_to_object_file(arg_file, tmp_o, false,
+                    compiler_options, lfortran_pass_manager);
+    #else
+                std::cerr << "Compiling Fortran files to object files requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
+                return 1;
+    #endif
+            } else if (backend == Backend::cpp) {
+                err = compile_to_object_file_cpp(arg_file, tmp_o, arg_v, false,
+                        true, rtlib_header_dir, compiler_options);
+            } else if (backend == Backend::c) {
+                err = compile_to_object_file_c(arg_file, tmp_o, arg_v,
+                        false, rtlib_c_header_dir, lfortran_pass_manager, compiler_options);
+            } else if (backend == Backend::fortran) {
+                err = compile_to_binary_fortran(arg_file, tmp_o, compiler_options);
+            } else if (backend == Backend::wasm) {
+                err = compile_to_binary_wasm(arg_file, outfile,
+                        time_report, compiler_options);
+            } else if (backend == Backend::mlir) {
+    #ifdef HAVE_LFORTRAN_MLIR
+                err = compile_to_object_file_mlir(arg_file, tmp_o, compiler_options);
+    #else
+                std::cerr << "Compiling Fortran files to object files using "
+                    "`--backend=mlir` requires the MLIR backend to be enabled. "
+                    "Recompile with `WITH_MLIR=yes`." << std::endl;
+                return 1;
+    #endif
+            } else {
+                throw LCompilers::LCompilersException("Backend not supported");
+            }
+        } else if (endswith(arg_file, ".ll")) {
+            // this way we can execute LLVM IR files directly
+    #ifdef HAVE_LFORTRAN_LLVM
+            err = compile_llvm_to_object_file(arg_file, tmp_o, compiler_options);
+            if (err) return err;
+    #else
+            std::cerr << "Compiling LLVM IR to object files requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
             return 1;
-#endif
-        } else if (backend == Backend::cpp) {
-            err = compile_to_object_file_cpp(arg_file, tmp_o, arg_v, false,
-                    true, rtlib_header_dir, compiler_options);
-        } else if (backend == Backend::c) {
-            err = compile_to_object_file_c(arg_file, tmp_o, arg_v,
-                    false, rtlib_c_header_dir, lfortran_pass_manager, compiler_options);
-        } else if (backend == Backend::fortran) {
-            err = compile_to_binary_fortran(arg_file, tmp_o, compiler_options);
-        } else if (backend == Backend::wasm) {
-            err = compile_to_binary_wasm(arg_file, outfile,
-                    time_report, compiler_options);
+    #endif
         } else {
-            throw LCompilers::LCompilersException("Backend not supported");
+            // assume it's an object file
+            tmp_o = arg_file;
         }
         if (err) return err;
-        return link_executable({tmp_o}, outfile, runtime_library_dir,
-                backend, static_link, shared_link, link_with_gcc, true, arg_v, arg_L,
-		arg_l, linker_flags, compiler_options);
-    } else if (endswith(arg_file, ".ll")) {
-#ifdef HAVE_LFORTRAN_LLVM
-        err = compile_llvm_to_object_file(arg_file, tmp_o, compiler_options);
-        if (err) return err;
-#else
-        std::cerr << "Compiling LLVM IR to object files requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
-        return 1;
-#endif
-        link_executable({tmp_o}, outfile, runtime_library_dir,
-                backend, static_link, shared_link, link_with_gcc, true, arg_v, arg_L,
-		arg_l, linker_flags, compiler_options);
-    } else {
-        return link_executable(arg_files, outfile, runtime_library_dir,
-                backend, static_link, shared_link, link_with_gcc, true, arg_v, arg_L,
-		arg_l, linker_flags, compiler_options);
+        object_files.push_back(tmp_o);
     }
-    return 0;
+
+    return link_executable(object_files, outfile, runtime_library_dir, backend, static_link, shared_link,
+                           link_with_gcc, true, arg_v, arg_L, arg_l, linker_flags, compiler_options);
 }
 
 int main(int argc, char *argv[])

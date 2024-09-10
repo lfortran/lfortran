@@ -76,12 +76,12 @@ set(SRC
     asr_utils.cpp
     casting_utils.cpp
     diagnostics.cpp
-    stacktrace.cpp
     string_utils.cpp
     asr_scopes.cpp
     modfile.cpp
     pickle.cpp
     serialization.cpp
+    stacktrace.cpp
     utils2.cpp
 )
 if (WITH_LLVM)
@@ -91,6 +91,9 @@ if (WITH_LLVM)
         codegen/llvm_array_utils.cpp
         codegen/llvm_utils.cpp
     )
+    if (WITH_MLIR)
+        set(SRC ${SRC} codegen/asr_to_mlir.cpp)
+    endif()
     # We use deprecated API in LLVM, so we disable the warning until we upgrade
     if (NOT MSVC)
         set_source_files_properties(codegen/evaluator.cpp PROPERTIES
@@ -100,6 +103,8 @@ if (WITH_LLVM)
         set_source_files_properties(codegen/llvm_array_utils.cpp PROPERTIES
             COMPILE_FLAGS -Wno-deprecated-declarations)
         set_source_files_properties(codegen/llvm_utils.cpp PROPERTIES
+            COMPILE_FLAGS -Wno-deprecated-declarations)
+        set_source_files_properties(stacktrace.cpp PROPERTIES
             COMPILE_FLAGS -Wno-deprecated-declarations)
     endif()
 endif()
