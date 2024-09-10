@@ -5261,12 +5261,12 @@ namespace DotProduct {
         } else if (is_real(*return_type)) {
             body.push_back(al, b.Assignment(result, make_ConstantWithType(make_RealConstant_t, 0.0, return_type, loc)));
             body.push_back(al, b.DoLoop(i, LBound(args[0], 1), UBound(args[0], 1), {
-                b.Assignment(result, b.Add(result, b.Mul(b.ArrayItem_01(b.r2r_t(args[0], arg_types[1], false), {i}), b.ArrayItem_01(b.r2r_t(args[1], arg_types[0], false), {i}))))
+                b.Assignment(result, b.Add(result, b.Mul(b.ArrayItem_01(args[0], {i}), b.r2r_t(b.ArrayItem_01(args[1], {i}), ASRUtils::type_get_past_array(arg_types[0])))))
             }, nullptr));
         } else {
             body.push_back(al, b.Assignment(result, make_ConstantWithType(make_IntegerConstant_t, 0, return_type, loc)));
             body.push_back(al, b.DoLoop(i, LBound(args[0], 1), UBound(args[0], 1), {
-                b.Assignment(result, b.Add(result, b.Mul(b.ArrayItem_01(b.i2i_t(args[0], arg_types[1], false), {i}), b.ArrayItem_01(b.i2i_t(args[1], arg_types[0], false), {i}))))
+                b.Assignment(result, b.Add(result, b.Mul(b.ArrayItem_01(args[0], {i}), b.i2i_t(b.ArrayItem_01(args[1], {i}), ASRUtils::type_get_past_array(arg_types[0])))))
             }, nullptr));
         }
         body.push_back(al, b.Return());
