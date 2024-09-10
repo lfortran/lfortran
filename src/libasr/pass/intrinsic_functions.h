@@ -1124,21 +1124,21 @@ namespace OutOfRange
                 if (kind1 == 4) {
                     max_val = b.f32(3.4028235e+38f);
                     min_val = b.f32(-3.4028235e+38f);
-                    body.push_back(al, b.If(b.Or(b.Gt(args[0], max_val), b.Lt(args[0], min_val)), 
-                     { b.Assignment(result, b.bool_t(true, return_type)) }, 
+                    body.push_back(al, b.If(b.Or(b.Gt(args[0], max_val), b.Lt(args[0], min_val)),
+                     { b.Assignment(result, b.bool_t(true, return_type)) },
                      { b.Assignment(result, b.bool_t(false, return_type)) }));
                 } else if (kind1 == 8) {
                     max_val = b.f64(3.4028235e+38f);
                     min_val = b.f64(-3.4028235e+38f);
-                    body.push_back(al, b.If(b.Or(b.Gt(args[0], max_val), b.Lt(args[0], min_val)), 
-                    { b.Assignment(result, b.bool_t(true, return_type))}, 
+                    body.push_back(al, b.If(b.Or(b.Gt(args[0], max_val), b.Lt(args[0], min_val)),
+                    { b.Assignment(result, b.bool_t(true, return_type))},
                     { b.Assignment(result, b.bool_t(false, return_type))}));
                 }
             } else if (kind2 == 8) {
                 max_val = b.f64(1.7976931348623157e+308);
                 min_val = b.f64(-1.7976931348623157e+308);
-                body.push_back(al, b.If( b.Or(b.Gt(b.i2i_t(args[0], arg_types[1]), max_val), b.Lt(b.i2i_t(args[0], arg_types[1]), min_val)), 
-                { b.Assignment(result, b.bool_t(true, return_type)) }, 
+                body.push_back(al, b.If( b.Or(b.Gt(b.i2i_t(args[0], arg_types[1]), max_val), b.Lt(b.i2i_t(args[0], arg_types[1]), min_val)),
+                { b.Assignment(result, b.bool_t(true, return_type)) },
             { b.Assignment(result, b.bool_t(false, return_type)) }));
             }
         }
@@ -5629,11 +5629,11 @@ namespace Max {
         }
         if (is_compile_time) {
             ASR::expr_t *value = eval_Max(al, loc, expr_type(args[0]), arg_values, diag);
-            return ASR::make_IntrinsicElementalFunction_t(al, loc,
+            return ASRUtils::make_IntrinsicElementalFunction_t_util(al, loc,
                 static_cast<int64_t>(IntrinsicElementalFunctions::Max),
                 args.p, args.n, 0, ASRUtils::expr_type(args[0]), value);
         } else {
-            return ASR::make_IntrinsicElementalFunction_t(al, loc,
+            return ASRUtils::make_IntrinsicElementalFunction_t_util(al, loc,
                 static_cast<int64_t>(IntrinsicElementalFunctions::Max),
                 args.p, args.n, 0, ASRUtils::expr_type(args[0]), nullptr);
         }
@@ -5780,11 +5780,11 @@ namespace Min {
         }
         if (is_compile_time) {
             ASR::expr_t *value = eval_Min(al, loc, expr_type(args[0]), arg_values, diag);
-            return ASR::make_IntrinsicElementalFunction_t(al, loc,
+            return ASRUtils::make_IntrinsicElementalFunction_t_util(al, loc,
                 static_cast<int64_t>(IntrinsicElementalFunctions::Min),
                 args.p, args.n, 0, ASRUtils::expr_type(args[0]), value);
         } else {
-            return ASR::make_IntrinsicElementalFunction_t(al, loc,
+            return ASRUtils::make_IntrinsicElementalFunction_t_util(al, loc,
                 static_cast<int64_t>(IntrinsicElementalFunctions::Min),
                 args.p, args.n, 0, ASRUtils::expr_type(args[0]), nullptr);
         }
