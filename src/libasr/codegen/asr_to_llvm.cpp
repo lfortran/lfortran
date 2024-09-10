@@ -9882,7 +9882,7 @@ public:
 
         ASR::ttype_t* x_mv_type = ASRUtils::expr_type(x.m_v);
         llvm::Type* target_type = llvm_utils->get_type_from_ttype_t_util(
-                ASRUtils::type_get_past_pointer(x_mv_type), module.get());
+                ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_array(ASRUtils::type_get_past_pointer(x_mv_type))), module.get());
         int64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 2 - // Sync: instead of 2 - , should this be ptr_loads_copy -
                     (LLVM::is_llvm_pointer(*ASRUtils::expr_type(x.m_v)));
@@ -9892,9 +9892,6 @@ public:
         if (is_pointer_array) {
             tmp = llvm_utils->CreateLoad(tmp);
         }
-        if (tmp->getType()->isPointerTy()) {
-            tmp = llvm_utils->CreateLoad2(target_type->getPointerTo(), tmp);
-        }
         llvm::Value* llvm_arg1 = tmp;
         visit_expr_wrapper(x.m_dim, true);
         llvm::Value* dim_val = tmp;
@@ -9902,7 +9899,7 @@ public:
         ASR::array_physical_typeType physical_type = ASRUtils::extract_physical_type(x_mv_type);
         switch( physical_type ) {
             case ASR::array_physical_typeType::DescriptorArray: {
-                llvm::Value* dim_des_val = arr_descr->get_pointer_to_dimension_descriptor_array(target_type, llvm_arg1);
+                llvm::Value* dim_des_val = arr_descr->get_pointer_to_dimension_descriptor_array(arr_descr->get_array_type(ASRUtils::type_get_past_pointer(x_mv_type), target_type), llvm_arg1);
                 llvm::Value* const_1 = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
                 dim_val = builder->CreateSub(dim_val, const_1);
                 llvm::Value* dim_struct = arr_descr->get_pointer_to_dimension_descriptor(dim_des_val, dim_val);
