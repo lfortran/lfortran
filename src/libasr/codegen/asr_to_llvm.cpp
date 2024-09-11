@@ -2636,6 +2636,7 @@ public:
         if (x.m_symbolic_value != nullptr){
             this->visit_expr_wrapper(x.m_symbolic_value, true);
             init_value = llvm::dyn_cast<llvm::Constant>(tmp);
+            std::cout<<"init_value: "<<init_value<<std::endl;
         }
         if (x.m_type->type == ASR::ttypeType::Integer
             || x.m_type->type == ASR::ttypeType::UnsignedInteger) {
@@ -3507,6 +3508,7 @@ public:
         if (v->m_intent == intent_local ||
             v->m_intent == intent_return_var ||
             !v->m_intent) {
+            std::cout<<"m_intent: "<<v->m_intent<<" "<<v->m_name<<std::endl;
             type = llvm_utils->get_type_from_ttype_t(
                 v->m_type, v->m_type_declaration, v->m_storage, is_array_type,
                 is_malloc_array_type, is_list, m_dims, n_dims, a_kind, module.get());
@@ -3677,6 +3679,7 @@ public:
                     this->visit_expr_wrapper(v->m_symbolic_value, true);
                 }
                 llvm::Value *init_value = tmp;
+                std::cout<<"init_value.1: "<<init_value<<std::endl;
                 if( ASRUtils::is_array(v->m_type) &&
                     ASRUtils::is_array(ASRUtils::expr_type(v->m_symbolic_value)) &&
                     (ASR::is_a<ASR::ArrayConstant_t>(*v->m_symbolic_value) ||
