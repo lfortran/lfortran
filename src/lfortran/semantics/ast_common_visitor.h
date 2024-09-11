@@ -2929,9 +2929,6 @@ public:
                     }
                     init_expr = ASRUtils::EXPR(tmp);
                     value = ASRUtils::expr_value(init_expr);
-                    if(value->type==63 && type->type==0){
-                        throw SemanticError("Initialisation using ArrayConstant is supported only for single dimensional arrays",x.base.base.loc);
-                    }
                     // we do checks and correct length initialization for
                     // character (& character array) before creating repeated argument
                     // list for an initialization like:
@@ -3006,6 +3003,9 @@ public:
                         value = init_expr;
                     }
                     ASR::ttype_t *init_type = ASRUtils::expr_type(init_expr);
+                     if(ASRUtils::extract_n_dims_from_ttype(init_type)!=ASRUtils::extract_n_dims_from_ttype(type)){
+                        throw SemanticError("Initialisation using ArrayConstant is supported only for single dimensional arrays",x.base.base.loc);
+                    }
                     if (init_type->type == ASR::ttypeType::Integer
                         && ASRUtils::type_get_past_array(ASRUtils::type_get_past_pointer(type))->type == ASR::ttypeType::Character
                         && s.m_sym == AST::symbolType::Asterisk) {
