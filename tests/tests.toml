@@ -3770,7 +3770,7 @@ filename = "int_to_complex_cast_in_comparison.f90"
 fortran = true
 
 [[test]]
-filename = "int_to_real_cast_m_value.f90"
+filename = "cast_node_m_value.f90"
 asr = true
 
 [[test]]

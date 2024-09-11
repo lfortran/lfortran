@@ -1,0 +1,13 @@
+{
+    "basename": "asr-cast_node_m_value-8b7098f",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/cast_node_m_value.f90",
+    "infile_hash": "5f3f294e5ab3e568a06488b35be289ec4bd51ea9821f5505f170df1a",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-cast_node_m_value-8b7098f.stdout",
+    "stdout_hash": "26581a9b5020ffd3bf28f84a0542ddd51e9681afd802fb6f13db20ad",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
