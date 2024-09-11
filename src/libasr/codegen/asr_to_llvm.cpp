@@ -189,6 +189,8 @@ public:
     std::map<ASR::symbol_t*, llvm::Type*> type2vtabtype;
     std::map<ASR::symbol_t*, int> type2vtabid;
     std::map<ASR::symbol_t*, std::map<std::string, int64_t>> vtabtype2procidx;
+    // Stores the map of pointer and associated type, map<ptr, i32>, Used by Load or GEP
+    std::map<llvm::Value *, llvm::Type *> ptr_type;
     llvm::Type* current_select_type_block_type;
     std::string current_select_type_block_der_type;
 
@@ -228,7 +230,7 @@ public:
     llvm_utils(std::make_unique<LLVMUtils>(context, builder.get(),
         current_der_type_name, name2dertype, name2dercontext, struct_type_stack,
         dertype2parent, name2memidx, compiler_options, arr_arg_type_cache,
-        fname2arg_type)),
+        fname2arg_type, ptr_type)),
     list_api(std::make_unique<LLVMList>(context, llvm_utils.get(), builder.get())),
     tuple_api(std::make_unique<LLVMTuple>(context, llvm_utils.get(), builder.get())),
     dict_api_lp(std::make_unique<LLVMDictOptimizedLinearProbing>(context, llvm_utils.get(), builder.get())),
@@ -1095,7 +1097,7 @@ public:
     }
 
     inline void call_lfortran_free(llvm::Function* fn, llvm::Type* llvm_data_type) {
-        llvm::Value* arr = llvm_utils->CreateLoad(arr_descr->get_pointer_to_data(tmp));
+        llvm::Value* arr = llvm_utils->CreateLoad2(llvm_data_type->getPointerTo(), arr_descr->get_pointer_to_data(tmp));
         llvm::AllocaInst *arg_arr = llvm_utils->CreateAlloca(*builder, character_type);
         builder->CreateStore(builder->CreateBitCast(arr, character_type), arg_arr);
         std::vector<llvm::Value*> args = {llvm_utils->CreateLoad(arg_arr)};
@@ -3575,7 +3577,17 @@ public:
                     llvm::Constant *init_value = llvm::Constant::getNullValue(type);
                     gptr->setInitializer(init_value);
                 } else {
+#if LLVM_VERSION_MAJOR > 16
+                    bool is_llvm_ptr = false;
+                    if ( !ASR::is_a<ASR::Character_t>(*ASRUtils::extract_type(v->m_type))
+                            && LLVM::is_llvm_pointer(*v->m_type) ) {
+                        is_llvm_ptr = true;
+                    }
+                    ptr = llvm_utils->CreateAlloca(*builder, type_, array_size,
+                        v->m_name, is_llvm_ptr);
+#else
                     ptr = llvm_utils->CreateAlloca(*builder, type, array_size, v->m_name);
+#endif
                 }
             }
             set_pointer_variable_to_null(llvm::ConstantPointerNull::get(
@@ -9228,10 +9240,7 @@ public:
         int n_dims = ASRUtils::extract_n_dims_from_ttype(asr_type);
         if( n_dims > 0 ) {
             llvm::Type* llvm_data_type = llvm_utils->get_type_from_ttype_t_util(
-            ASRUtils::type_get_past_allocatable(
-                ASRUtils::type_get_past_pointer(
-                    ASRUtils::type_get_past_array(asr_type))),
-            module.get(), ASRUtils::expr_abi(arg));
+                ASRUtils::extract_type(asr_type), module.get(), ASRUtils::expr_abi(arg));
             tmp = arr_descr->get_is_allocated_flag(tmp, llvm_data_type);
         } else {
             tmp = builder->CreateICmpNE(
@@ -9762,7 +9771,7 @@ public:
                     LLVM::is_llvm_pointer(*ASRUtils::expr_type(m_v));
         visit_expr_wrapper(m_v);
         ptr_loads = ptr_loads_copy;
-        bool is_pointer_array = tmp->getType()->getContainedType(0)->isPointerTy();
+        bool is_pointer_array = (tmp->getType()->getNumContainedTypes() > 0) && (tmp->getType()->getContainedType(0)->isPointerTy());
         if (is_pointer_array) {
             tmp = llvm_utils->CreateLoad(tmp);
         }
@@ -9876,7 +9885,7 @@ public:
         ptr_loads = ptr_loads_copy;
         bool is_pointer_array = (tmp->getType()->getNumContainedTypes() > 0) && (tmp->getType()->getContainedType(0)->isPointerTy());
         if (is_pointer_array) {
-            tmp = llvm_utils->CreateLoad2(ASRUtils::expr_type(x.m_v), tmp);
+            tmp = llvm_utils->CreateLoad(tmp);
         }
         llvm::Value* llvm_arg1 = tmp;
         visit_expr_wrapper(x.m_dim, true);
@@ -9886,13 +9895,7 @@ public:
         ASR::array_physical_typeType physical_type = ASRUtils::extract_physical_type(x_mv_type);
         switch( physical_type ) {
             case ASR::array_physical_typeType::DescriptorArray: {
-                llvm::Type* el_type_llvm_arg1;
-                if (llvm_arg1->getType()->getNumContainedTypes() > 0) {
-                    el_type_llvm_arg1 = llvm_arg1->getType()->getContainedType(0);
-                } else {
-                    el_type_llvm_arg1 = llvm_arg1->getType();
-                }
-                llvm::Value* dim_des_val = arr_descr->get_pointer_to_dimension_descriptor_array(el_type_llvm_arg1, llvm_arg1);
+                llvm::Value* dim_des_val = arr_descr->get_pointer_to_dimension_descriptor_array(llvm_arg1);
                 llvm::Value* const_1 = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
                 dim_val = builder->CreateSub(dim_val, const_1);
                 llvm::Value* dim_struct = arr_descr->get_pointer_to_dimension_descriptor(dim_des_val, dim_val);
