@@ -237,6 +237,7 @@ public:
                             new_array[i] = double(((int8_t*) data)[i]);
                           }
                         }
+                        new_data = new_array;
                     }
                     if (new_data) {
                         ASR::ttype_t* new_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, dest_type2->base.loc, dest_type2,
