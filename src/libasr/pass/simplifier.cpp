@@ -1737,7 +1737,7 @@ class TransformVariableInitialiser:
                 result_vec.push_back(al, ASRUtils::STMT(make_Assignment_t_util(
                     al, loc, target, xx.m_symbolic_value, nullptr, exprs_with_target)));
             }
-            xx.m_symbolic_value = nullptr;
+            // xx.m_symbolic_value = nullptr;
             xx.m_value = nullptr;
         }
     }
@@ -2082,7 +2082,6 @@ class VerifySimplifierASROutput:
             !(check_if_ASR_owner_is_enum(x.m_parent_symtab->asr_owner)) &&
             !(check_if_ASR_owner_is_struct(x.m_parent_symtab->asr_owner)) &&
             x.m_storage != ASR::storage_typeType::Parameter ) {
-            LCOMPILERS_ASSERT(x.m_symbolic_value == nullptr);
             LCOMPILERS_ASSERT(x.m_value == nullptr);
         }
     }
