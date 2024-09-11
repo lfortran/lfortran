@@ -406,6 +406,30 @@ public:
                           }
                         }
                         new_data = new_array;
+                    } else if (dest_kind == 2) {
+                        int16_t *new_array = al.allocate<int16_t>(array_size);
+                        for (size_t i = 0; i < array_size; i++) {
+                          if ( kind == 4) {
+                            new_array[i] = ((int*) data)[i];
+                          } else if ( kind == 8 ) {
+                            new_array[i] = ((int64_t*) data)[i];
+                          } else if ( kind == 1 ) {
+                            new_array[i] = ((int8_t*) data)[i];
+                          }
+                        }
+                        new_data = new_array;
+                    } else if (dest_kind == 1) {
+                        int8_t *new_array = al.allocate<int8_t>(array_size);
+                        for (size_t i = 0; i < array_size; i++) {
+                          if ( kind == 4) {
+                            new_array[i] = ((int*) data)[i];
+                          } else if ( kind == 8 ) {
+                            new_array[i] = ((int64_t*) data)[i];
+                          } else if ( kind == 2) {
+                            new_array[i] = ((int16_t*) data)[i];
+                          }
+                        }
+                        new_data = new_array;
                     }
                     if (new_data) {
                         ASR::ttype_t* new_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, dest_type2->base.loc, dest_type2,
