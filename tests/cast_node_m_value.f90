@@ -10,4 +10,5 @@ program cast_node_m_value
     complex(8) :: i4_to_c8(3) = [1, 2, 3]
     complex(4) :: r4_to_c4(3) = [1., 2., 3.]
     complex(8) :: r4_to_c8(3) = [1., 2., 3.]
+    integer(1) :: i4_to_i1(3) = [1, 2, 3]
 end program cast_node_m_value
