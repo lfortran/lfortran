@@ -1729,13 +1729,25 @@ class TransformVariableInitialiser:
             }
             Vec<ASR::stmt_t*>& result_vec = symtab2decls[current_scope];
             ASR::expr_t* target = ASRUtils::EXPR(ASR::make_Var_t(al, loc, &(xx.base)));
-            exprs_with_target[xx.m_symbolic_value] = std::make_pair(target, targetType::OriginalTarget);
+
+            // if `m_value` is present, then use that for converting it into
+            // assignment/association below, otherwise use `m_symbolic_value`
+            // for the same. As `m_value` is usually more "simplified" than
+            // `m_symbolic_value`
+            ASR::expr_t* value = nullptr;
+            if (xx.m_value) {
+                value = xx.m_value;
+            } else {
+                value = xx.m_symbolic_value;
+            }
+
+            exprs_with_target[value] = std::make_pair(target, targetType::OriginalTarget);
             if (ASRUtils::is_pointer(x.m_type)) {
                 result_vec.push_back(al, ASRUtils::STMT(ASR::make_Associate_t(
-                    al, loc, target, xx.m_symbolic_value)));
+                    al, loc, target, value)));
             } else {
                 result_vec.push_back(al, ASRUtils::STMT(make_Assignment_t_util(
-                    al, loc, target, xx.m_symbolic_value, nullptr, exprs_with_target)));
+                    al, loc, target, value, nullptr, exprs_with_target)));
             }
             xx.m_symbolic_value = nullptr;
             xx.m_value = nullptr;
