@@ -3770,6 +3770,10 @@ filename = "int_to_complex_cast_in_comparison.f90"
 fortran = true
 
 [[test]]
+filename = "cast_node_m_value.f90"
+asr = true
+
+[[test]]
 filename = "errors/loop_test.f90"
 asr = true
 
