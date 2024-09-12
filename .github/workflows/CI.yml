@@ -84,6 +84,12 @@ jobs:
       #   run: |
       #       xonsh ci/test.xsh
 
+      - name: Test LFortran's Command Line Interface (Linux / macOS)
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
+        run: |
+            ./test_lfortran_cmdline
+
       # - name: Test (Windows)
       #   if: contains(matrix.os, 'windows')
       #   shell: cmd

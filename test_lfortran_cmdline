@@ -3,6 +3,8 @@
 set -e
 set -x
 
+CC=clang
+
 if [[ $1 == "" ]]; then
     echo "Test local lfortran"
     PATH="$(pwd):$PATH"
@@ -19,7 +21,14 @@ else
 fi
 
 f=`pwd`/examples/expr2.f90
-ASM_PATTERN="movq\|movl\|retq"
+f1=`pwd`/tests/unordered_linking.f90
+add_c=`pwd`/tests/add.c
+
+if [[ "$(uname)" == "Linux" ]]; then
+    ASM_PATTERN="movq\|movl\|retq"
+else
+    ASM_PATTERN="mov\|sp"
+fi
 
 cd $(mktemp -d)
 $FC $f -o a.out
@@ -70,5 +79,40 @@ cd $(mktemp -d)
 $FC -S -o xx1 -c $f
 [ -f "xx1" ]
 grep $ASM_PATTERN xx1
+
+cd $(mktemp -d)
+echo "Testing multiple file orders"
+$CC -c $add_c -o add.o
+$FC $f1 add.o -o a.out
+[ -f "a.out" ]
+[ -x "a.out" ]
+./a.out
+
+echo "Reverse the order of f1 and add.o"
+$CC -c $add_c -o add.o
+$FC add.o $f1 -o a.out
+[ -f "a.out" ]
+[ -x "a.out" ]
+./a.out
+
+echo "Compile and run f1 and add_c together"
+$FC $f1 $add_c -o a.out
+[ -f "a.out" ]
+[ -x "a.out" ]
+./a.out
+
+cd $(mktemp -d)
+cd $(mktemp -d)
+echo "Testing incorrect usage"
+! $FC nonexistentfile.f90  # ensure this fails
+
+cd $(mktemp -d)
+$FC -c $f1
+[ -f "unordered_linking.o" ]
+[ ! -x "unordered_linking.o" ]
+
+cd $(mktemp -d)
+echo "Testing invalid command-line usage"
+! $FC -invalidflag $f1 2>&1 | grep "unrecognized command line option"
 
 echo "All tests succeeded"
