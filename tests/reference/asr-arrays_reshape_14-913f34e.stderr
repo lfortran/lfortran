@@ -1,5 +1,4 @@
-semantic error: Initialisation using ArrayConstant is supported only for single dimensional arrays
- --> tests/../integration_tests/arrays_reshape_14.f90:4:1
-  |
-4 | integer :: i23(2, 3) = reshape([-14, 3, 0, -2, 19, 1], [2, 3])
-  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+LCOMPILERS_ASSERT failed: $DIR/src/libasr/asr.h
+function expr_type0(), line number 50559 at 
+f != nullptr
+Aborted
