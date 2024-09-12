@@ -1,0 +1,34 @@
+(TranslationUnit
+    [(Program
+        main
+        ()
+        []
+        []
+        [(Declaration
+            (AttrType
+                TypeInteger
+                []
+                ()
+                ()
+                None
+            )
+            []
+            [(x
+            []
+            []
+            ()
+            (ArrayInitializer
+                ()
+                ()
+                [1
+                2
+                3]
+            )
+            Equal
+            ())]
+            ()
+        )]
+        []
+        []
+    )]
+)

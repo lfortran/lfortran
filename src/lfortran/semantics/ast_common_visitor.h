@@ -4145,6 +4145,12 @@ public:
             body.push_back(al, expr);
         }
 
+        int num_dims = ASRUtils::extract_n_dims_from_ttype(type);
+        if (num_dims != 1) {
+            throw SemanticError("Initialisation using ArrayConstant is supported only for single-dimensional arrays, found: " 
+                + std::to_string(num_dims), x.base.base.loc);
+        }
+
         ASR::dimension_t dim;
         dim.loc = x.base.base.loc;
         ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
