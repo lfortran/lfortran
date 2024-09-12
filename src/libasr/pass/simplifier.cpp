@@ -1737,7 +1737,10 @@ class TransformVariableInitialiser:
                 result_vec.push_back(al, ASRUtils::STMT(make_Assignment_t_util(
                     al, loc, target, xx.m_symbolic_value, nullptr, exprs_with_target)));
             }
-            // xx.m_symbolic_value = nullptr;
+            if( ASRUtils::is_array(xx.m_type) ||
+                ASRUtils::is_aggregate_type(xx.m_type) ) {
+                xx.m_symbolic_value = nullptr;
+            }
             xx.m_value = nullptr;
         }
     }
