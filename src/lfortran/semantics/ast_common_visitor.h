@@ -3003,7 +3003,7 @@ public:
                         value = init_expr;
                     }
                     ASR::ttype_t *init_type = ASRUtils::expr_type(init_expr);
-                     if(ASRUtils::extract_n_dims_from_ttype(init_type)!=ASRUtils::extract_n_dims_from_ttype(type)){
+                    if(ASRUtils::extract_n_dims_from_ttype(init_type)!=ASRUtils::extract_n_dims_from_ttype(type) && ASRUtils::extract_n_dims_from_ttype(type)==0){
                         throw SemanticError("Initialisation using ArrayConstant is supported only for single dimensional arrays",x.base.base.loc);
                     }
                     if (init_type->type == ASR::ttypeType::Integer
