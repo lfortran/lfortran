@@ -1648,11 +1648,13 @@ namespace LCompilers {
     }
 
     llvm::Value *LLVMUtils::CreateLoad2(llvm::Type *t, llvm::Value *x) {
+        ptr_type[x] = t;
         return builder->CreateLoad(t, x);
     }
 
     llvm::Value* LLVMUtils::CreateLoad2(ASR::ttype_t *type, llvm::Value *x) {
         llvm::Type* el_type = LLVMUtils::get_type_from_ttype_t_util(type, module);
+        ptr_type[x] = el_type;
         return builder->CreateLoad(el_type, x);
     }
 
@@ -1676,6 +1678,7 @@ namespace LCompilers {
 
     llvm::Value* LLVMUtils::CreateGEP2(llvm::Type *t, llvm::Value *x,
             std::vector<llvm::Value *> &idx) {
+        ptr_type[x] = t;
         return builder->CreateGEP(t, x, idx);
     }
 
@@ -1709,6 +1712,7 @@ namespace LCompilers {
 
     llvm::Value* LLVMUtils::CreateInBoundsGEP2(llvm::Type *t,
             llvm::Value *x, std::vector<llvm::Value *> &idx) {
+        ptr_type[x] = t;
         return builder->CreateInBoundsGEP(t, x, idx);
     }
 
