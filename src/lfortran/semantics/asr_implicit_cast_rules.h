@@ -507,7 +507,34 @@ public:
                     value = (ASR::expr_t *)ASR::make_ComplexConstant_t(al, a_loc,
                       re, im, dest_type2);
                 } else {
-                    value = nullptr;
+                    LCOMPILERS_ASSERT(ASR::is_a<ASR::ArrayConstant_t>(*value));
+                    ASR::ArrayConstant_t* array = ASR::down_cast<ASR::ArrayConstant_t>(value);
+                    ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(array->m_type);
+                    void *data = array->m_data;
+                    size_t array_size = ASRUtils::get_fixed_size_of_array(array->m_type);
+                    int dest_kind = ASRUtils::extract_kind_from_ttype_t(dest_type2);
+                    void *new_data = nullptr;
+
+                    if (dest_kind == 8) {
+                        std::complex<double> *new_array = al.allocate<std::complex<double>>(array_size);
+                        for (size_t i = 0; i < array_size; i++) {
+                            new_array[i] = std::complex<double>(((std::complex<float>*)data)[i]);
+                        }
+                        new_data = new_array;
+                    } else if (dest_kind == 4) {
+                        std::complex<float> *new_array = al.allocate<std::complex<float>>(array_size);
+                        for (size_t i = 0; i < array_size; i++) {
+                            new_array[i] = std::complex<float>(((std::complex<double>*)data)[i]);
+                        }
+                        new_data = new_array;
+                    }
+
+                    if (new_data) {
+                        ASR::ttype_t* new_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, dest_type2->base.loc, dest_type2,
+                                                          array_type->m_dims, array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray));
+                        value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, value->base.loc, array_size * dest_kind,
+                                                new_data, new_array_type, array->m_storage_format));
+                    }
                 }
             }
         }
