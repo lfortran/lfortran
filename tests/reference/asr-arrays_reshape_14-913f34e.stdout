@@ -50,6 +50,8 @@
                                         (Array
                                             (Integer 4)
                                             [(()
+                                            ())
+                                            (()
                                             ())]
                                             FixedSizeArray
                                         )
@@ -458,6 +460,8 @@
                                             (Array
                                                 (Real 8)
                                                 [(()
+                                                ())
+                                                (()
                                                 ())]
                                                 FixedSizeArray
                                             )

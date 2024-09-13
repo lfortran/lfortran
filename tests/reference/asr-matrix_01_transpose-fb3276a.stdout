@@ -311,6 +311,8 @@
                             (Array
                                 (Integer 4)
                                 [(()
+                                ())
+                                (()
                                 ())]
                                 FixedSizeArray
                             )
@@ -464,6 +466,8 @@
                                 (Array
                                     (Integer 4)
                                     [(()
+                                    ())
+                                    (()
                                     ())]
                                     FixedSizeArray
                                 )
@@ -643,6 +647,8 @@
                                 (Array
                                     (Integer 4)
                                     [(()
+                                    ())
+                                    (()
                                     ())]
                                     FixedSizeArray
                                 )
@@ -878,6 +884,8 @@
                             (Array
                                 (Complex 4)
                                 [(()
+                                ())
+                                (()
                                 ())]
                                 FixedSizeArray
                             )
