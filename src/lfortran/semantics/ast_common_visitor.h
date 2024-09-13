@@ -854,6 +854,7 @@ public:
         {"dshiftr", {IntrinsicSignature({"i", "j", "shift"}, 3, 3)}},
         {"random_number", {IntrinsicSignature({"r"}, 1, 1)}},
         {"random_init", {IntrinsicSignature({"repeatable", "image"}, 2, 2)}},
+        {"random_seed", {IntrinsicSignature({"size", "put", "get"}, 0, 3)}},
         {"get_command", {IntrinsicSignature({"command", "length", "status"}, 3, 3)}},
         {"mvbits", {IntrinsicSignature({"from", "frompos", "len", "to", "topos"}, 5, 5)}},
         {"modulo", {IntrinsicSignature({"a", "p"}, 2, 2)}},
@@ -866,6 +867,7 @@ public:
         {"real", {IntrinsicSignature({"a", "kind"}, 1, 2)}},
         {"storage_size", {IntrinsicSignature({"a", "kind"}, 1, 2)}},
         {"spread", {IntrinsicSignature({"source", "dim", "ncopies"}, 3, 3)}},
+        {"out_of_range", {IntrinsicSignature({"value", "mold", "round"}, 2, 3)}},
     };
 
     std::map<std::string, std::pair<std::string, std::vector<std::string>>> intrinsic_mapping = {
@@ -1596,11 +1598,7 @@ public:
                 ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(object);
                 v2 = ASR::down_cast<ASR::Variable_t>(v->m_v);
             }
-            if( v2->m_storage == ASR::storage_typeType::Parameter ) {
-                v2->m_value = ASRUtils::EXPR(tmp);
-            } else {
-                v2->m_value = nullptr;
-            }
+            v2->m_value = ASRUtils::EXPR(tmp);
             v2->m_symbolic_value = ASRUtils::EXPR(tmp);
             SetChar var_deps_vec;
             var_deps_vec.reserve(al, 1);
@@ -1683,11 +1681,7 @@ public:
         if (ASR::is_a<ASR::StructInstanceMember_t>(*object)) {
             ASR::StructInstanceMember_t *mem = ASR::down_cast<ASR::StructInstanceMember_t>(object);
             ASR::Variable_t* v2 = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(mem->m_m));
-            if( v2->m_storage == ASR::storage_typeType::Parameter ) {
-                v2->m_value = expression_value;
-            } else {
-                v2->m_value = nullptr;
-            }
+            v2->m_value = expression_value;
             v2->m_symbolic_value = expression_value;
             SetChar var_deps_vec;
             var_deps_vec.reserve(al, 1);
@@ -1705,11 +1699,7 @@ public:
             // y / 2 /
             ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(object);
             ASR::Variable_t *v2 = ASR::down_cast<ASR::Variable_t>(v->m_v);
-            if( v2->m_storage == ASR::storage_typeType::Parameter ) {
-                v2->m_value = expression_value;
-            } else {
-                v2->m_value = nullptr;
-            }
+            v2->m_value = expression_value;
             v2->m_symbolic_value = expression_value;
             SetChar var_deps_vec;
             var_deps_vec.reserve(al, 1);
@@ -3279,9 +3269,6 @@ public:
                 }
                 if( std::find(excluded_from_symtab.begin(), excluded_from_symtab.end(), sym) == excluded_from_symtab.end() ) {
                     if ( !is_implicitly_declared && !is_external) {
-                        if( storage_type != ASR::storage_typeType::Parameter ) {
-                            value = nullptr;
-                        }
                         SetChar variable_dependencies_vec;
                         variable_dependencies_vec.reserve(al, 1);
                         ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, type, init_expr, value);
@@ -5555,6 +5542,8 @@ public:
     void fill_optional_args(std::string intrinsic_name, Vec<ASR::expr_t*> &args, const Location &loc) {
         ASR::ttype_t *int_type = ASRUtils::TYPE(
                     ASR::make_Integer_t(al, loc, 4));
+        ASR::ttype_t *bool_type = ASRUtils::TYPE(
+                    ASR::make_Logical_t(al, loc, 4));
         if (intrinsic_name == "selected_real_kind") {
             ASR::expr_t* zero = ASRUtils::EXPR(
                 ASR::make_IntegerConstant_t(al, loc, 0,
@@ -5600,6 +5589,13 @@ public:
                 value = kind*8;
                 ASR::expr_t* val = ASRUtils::EXPR(
                     ASR::make_IntegerConstant_t(al, loc, value, int_type));
+                args.p[2] = val;
+            }
+        } else if (intrinsic_name == "out_of_range"){
+            if(args[2] == nullptr){
+                bool value = false;
+                ASR::expr_t* val = ASRUtils::EXPR(
+                    ASR::make_LogicalConstant_t(al, loc, value, bool_type));
                 args.p[2] = val;
             }
         }

@@ -84,6 +84,12 @@ jobs:
       #   run: |
       #       xonsh ci/test.xsh
 
+      # - name: Test LFortran's Command Line Interface (Linux / macOS)
+      #   shell: bash -e -l {0}
+      #   if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
+      #   run: |
+      #       ./test_lfortran_cmdline
+
       # - name: Test (Windows)
       #   if: contains(matrix.os, 'windows')
       #   shell: cmd
@@ -495,68 +501,68 @@ jobs:
           variant: sccache
           key: ${{ github.job }}-${{ matrix.os }}
 
-      # - name: Build Linux
-      #   shell: bash -e -l {0}
-      #   if: contains(matrix.os, 'ubuntu')
-      #   run: |
-      #       ./build0.sh
-      #       cmake . -GNinja \
-      #         -DCMAKE_BUILD_TYPE=Debug \
-      #         -DWITH_LLVM=yes \
-      #         -DLFORTRAN_BUILD_ALL=yes \
-      #         -DWITH_STACKTRACE=no \
-      #         -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
-      #         -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
-      #         -DCMAKE_C_COMPILER_LAUNCHER=sccache \
-      #         -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+      - name: Build Linux
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu')
+        run: |
+            ./build0.sh
+            cmake . -GNinja \
+              -DCMAKE_BUILD_TYPE=Debug \
+              -DWITH_LLVM=yes \
+              -DLFORTRAN_BUILD_ALL=yes \
+              -DWITH_STACKTRACE=no \
+              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
+              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
+              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 
-      #       cmake --build . -j16 --target install
+            cmake --build . -j16 --target install
 
-      # - name: Build MacOS
-      #   shell: bash -e -l {0}
-      #   if: contains(matrix.os, 'macos')
-      #   run: |
-      #       ./build0.sh
-      #       ./build1.sh
+      - name: Build MacOS
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'macos')
+        run: |
+            ./build0.sh
+            ./build1.sh
 
-      # - name: Test Legacy Minpack (SciPy)
-      #   shell: bash -e -x -l {0}
-      #   run: |
-      #       git clone https://github.com/certik/minpack.git
-      #       cd minpack
-      #       git checkout -t origin/scipy30
-      #       git checkout 409ba02a107f47ee835f3976952bbc64dd46de8a
-      #       mkdir lf
-      #       cd lf
-      #       FC="$(pwd)/../../src/bin/lfortran --intrinsic-mangling" cmake ..
-      #       make
-      #       examples/example_hybrd
-      #       examples/example_hybrd1
-      #       examples/example_lmder1
-      #       examples/example_lmdif1
-      #       examples/example_primes
-      #       ctest
+      - name: Test Legacy Minpack (SciPy)
+        shell: bash -e -x -l {0}
+        run: |
+            git clone https://github.com/certik/minpack.git
+            cd minpack
+            git checkout -t origin/scipy30
+            git checkout 409ba02a107f47ee835f3976952bbc64dd46de8a
+            mkdir lf
+            cd lf
+            FC="$(pwd)/../../src/bin/lfortran --intrinsic-mangling" cmake ..
+            make
+            examples/example_hybrd
+            examples/example_hybrd1
+            examples/example_lmder1
+            examples/example_lmdif1
+            examples/example_primes
+            ctest
 
-      # - name: Test Modern Minpack (Fortran-Lang)
-      #   shell: bash -e -x -l {0}
-      #   run: |
-      #       git clone https://github.com/fortran-lang/minpack modern_minpack_01
-      #       cd modern_minpack_01
-      #       git checkout c0b5aea9fcd2b83865af921a7a7e881904f8d3c2
-      #       $(pwd)/../src/bin/lfortran ./src/minpack.f90 -c --legacy-array-sections
+      - name: Test Modern Minpack (Fortran-Lang)
+        shell: bash -e -x -l {0}
+        run: |
+            git clone https://github.com/fortran-lang/minpack modern_minpack_01
+            cd modern_minpack_01
+            git checkout c0b5aea9fcd2b83865af921a7a7e881904f8d3c2
+            $(pwd)/../src/bin/lfortran ./src/minpack.f90 -c --legacy-array-sections
       #       $(pwd)/../src/bin/lfortran ./examples/example_hybrd.f90 --legacy-array-sections
       #       $(pwd)/../src/bin/lfortran ./examples/example_hybrd1.f90 --legacy-array-sections
       #       $(pwd)/../src/bin/lfortran ./examples/example_lmdif1.f90 --legacy-array-sections
       #       $(pwd)/../src/bin/lfortran ./examples/example_lmder1.f90 --legacy-array-sections
 
-      # - name: Test Modern Minpack (check results)
-      #   shell: bash -e -x -l {0}
-      #   run: |
-      #       git clone https://github.com/Pranavchiku/modern_minpack.git modern_minpack_02
-      #       cd modern_minpack_02
-      #       git checkout -t origin/w5
-      #       git checkout fcde66ca86348eb0c4012dbdf0f4d8dba61261d8
-      #       $(pwd)/../src/bin/lfortran ./src/minpack.f90 -c --legacy-array-sections
+      - name: Test Modern Minpack (check results)
+        shell: bash -e -x -l {0}
+        run: |
+            git clone https://github.com/Pranavchiku/modern_minpack.git modern_minpack_02
+            cd modern_minpack_02
+            git checkout -t origin/w5
+            git checkout fcde66ca86348eb0c4012dbdf0f4d8dba61261d8
+            $(pwd)/../src/bin/lfortran ./src/minpack.f90 -c --legacy-array-sections
       #       $(pwd)/../src/bin/lfortran ./examples/example_hybrd.f90 --legacy-array-sections
       #       $(pwd)/../src/bin/lfortran ./examples/example_hybrd1.f90 --legacy-array-sections
       #       $(pwd)/../src/bin/lfortran ./examples/example_lmdif1.f90 --legacy-array-sections
@@ -778,35 +784,13 @@ jobs:
 
       # In LLVM 17 we can only compile a subset for now, so we have a dedicated
       # LLVM 17 test here:
-      - name: Test Linux LLVM 17
-        if: contains(matrix.llvm-version, '17') == true
-        shell: bash -e -l {0}
-        run: |
-            src/bin/lfortran --show-llvm examples/expr2.f90
-            src/bin/lfortran examples/expr2.f90
-            ./expr2.out
-            src/bin/lfortran --show-llvm integration_tests/print_03.f90
-            src/bin/lfortran integration_tests/print_03.f90
-            ./print_03.out
-            src/bin/lfortran --show-llvm tests/subroutine3.f90
-            src/bin/lfortran --show-llvm integration_tests/module_function_without_nopass.f90
-            src/bin/lfortran integration_tests/module_function_without_nopass.f90
-            ./module_function_without_nopass.out
-            src/bin/lfortran --show-llvm integration_tests/module_function_with_nopass.f90
-            src/bin/lfortran integration_tests/module_function_with_nopass.f90
-            ./module_function_with_nopass.out
-            src/bin/lfortran --show-llvm integration_tests/elemental_01.f90
-            src/bin/lfortran integration_tests/elemental_01.f90
-            ./elemental_01.out
-            src/bin/lfortran --show-llvm integration_tests/elemental_04.f90
-            src/bin/lfortran integration_tests/elemental_04.f90
-            ./elemental_04.out
-            src/bin/lfortran --show-llvm integration_tests/types_23.f90
-            src/bin/lfortran integration_tests/types_23.f90
-            ./types_23.out
-            src/bin/lfortran --show-llvm integration_tests/character_01.f90
-            src/bin/lfortran integration_tests/character_01.f90
-            ./character_01.out
+      # - name: Test Linux LLVM 17
+      #   if: contains(matrix.llvm-version, '17') == true
+      #   shell: bash -e -l {0}
+      #   run: |
+      #       cd integration_tests
+      #       ./run_tests.py -b llvm17
+      #       ./run_tests.py -b llvm17 -f
 
   test_llvm_wasm:
     name: Test LLVM->WASM ${{ matrix.llvm-version }}

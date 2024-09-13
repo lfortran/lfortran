@@ -21,6 +21,7 @@ inline std::string get_intrinsic_subroutine_name(int x) {
     switch (x) {
         INTRINSIC_SUBROUTINE_NAME_CASE(RandomNumber)
         INTRINSIC_SUBROUTINE_NAME_CASE(RandomInit)
+        INTRINSIC_SUBROUTINE_NAME_CASE(RandomSeed)
         INTRINSIC_SUBROUTINE_NAME_CASE(GetCommand)
         default : {
             throw LCompilersException("pickle: intrinsic_id not implemented");
@@ -39,6 +40,8 @@ namespace IntrinsicImpureSubroutineRegistry {
             {&RandomNumber::instantiate_RandomNumber, &RandomNumber::verify_args}},
         {static_cast<int64_t>(IntrinsicImpureSubroutines::RandomInit),
             {&RandomInit::instantiate_RandomInit, &RandomInit::verify_args}},
+        {static_cast<int64_t>(IntrinsicImpureSubroutines::RandomSeed),
+            {&RandomSeed::instantiate_RandomSeed, &RandomSeed::verify_args}},
         {static_cast<int64_t>(IntrinsicImpureSubroutines::GetCommand),
             {&GetCommand::instantiate_GetCommand, &GetCommand::verify_args}},
     };
@@ -48,6 +51,8 @@ namespace IntrinsicImpureSubroutineRegistry {
             "random_number"},
         {static_cast<int64_t>(IntrinsicImpureSubroutines::RandomInit),
             "random_init"},
+        {static_cast<int64_t>(IntrinsicImpureSubroutines::RandomSeed),
+            "random_seed"},
         {static_cast<int64_t>(IntrinsicImpureSubroutines::GetCommand),
             "get_command"},
     };
@@ -57,6 +62,7 @@ namespace IntrinsicImpureSubroutineRegistry {
         create_intrinsic_subroutine>& intrinsic_subroutine_by_name_db = {
                 {"random_number", &RandomNumber::create_RandomNumber},
                 {"random_init", &RandomInit::create_RandomInit},
+                {"random_seed", &RandomSeed::create_RandomSeed},
                 {"get_command", &GetCommand::create_GetCommand},
     };
 
