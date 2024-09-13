@@ -4163,3 +4163,7 @@ asr = true
 [[test]]
 filename = "implied_do_loop1.f90"
 run = true
+
+[[test]]
+filename = "./errors/incompatible_rank.f90"
+asr = true
