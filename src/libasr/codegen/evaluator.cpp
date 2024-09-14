@@ -234,13 +234,18 @@ LLVMEvaluator::~LLVMEvaluator()
     context.reset();
 }
 
-std::unique_ptr<llvm::Module> LLVMEvaluator::parse_module(const std::string &source)
+std::unique_ptr<llvm::Module> LLVMEvaluator::parse_module(const std::string &source, const std::string &filename="")
 {
     llvm::SMDiagnostic err;
-    std::unique_ptr<llvm::Module> module
-        = llvm::parseAssemblyString(source, err, *context);
+    std::unique_ptr<llvm::Module> module;
+    if (!filename.empty()) {
+        module = llvm::parseAssemblyFile(filename, err, *context);
+    } else {
+        module = llvm::parseAssemblyString(source, err, *context);
+    }
     if (!module) {
-        throw LCompilersException("parse_module(): Invalid LLVM IR");
+        err.print("", llvm::errs());
+        std::exit(1);
     }
     bool v = llvm::verifyModule(*module);
     if (v) {
@@ -251,8 +256,8 @@ std::unique_ptr<llvm::Module> LLVMEvaluator::parse_module(const std::string &sou
     return module;
 }
 
-std::unique_ptr<LLVMModule> LLVMEvaluator::parse_module2(const std::string &source) {
-    return std::make_unique<LLVMModule>(parse_module(source));
+std::unique_ptr<LLVMModule> LLVMEvaluator::parse_module2(const std::string &source, const std::string &filename="") {
+    return std::make_unique<LLVMModule>(parse_module(source, filename));
 }
 
 void LLVMEvaluator::add_module(const std::string &source) {
