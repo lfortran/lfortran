@@ -2930,6 +2930,17 @@ public:
                     init_expr = ASRUtils::EXPR(tmp);
                     value = ASRUtils::expr_value(init_expr);
 
+                    int LHS_rank = ASRUtils::extract_n_dims_from_ttype(type);
+
+                    ASR::ttype_t* value_expr_type = ASRUtils::expr_type(value);
+                    int RHS_rank = ASRUtils::extract_n_dims_from_ttype(value_expr_type);
+                    
+                    if(LHS_rank != RHS_rank){
+                        throw SemanticError("Incompatible ranks "+
+                            std::to_string(LHS_rank) + " and " +
+                            std::to_string(RHS_rank)+" in assignment", x.base.base.loc);
+                    }
+
                     // we do checks and correct length initialization for
                     // character (& character array) before creating repeated argument
                     // list for an initialization like:

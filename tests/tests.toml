@@ -4171,3 +4171,7 @@ run = true
 [[test]]
 filename = "multi_error1.f90"
 ast = true
+
+[[test]]
+filename = "./errors/incompatible_rank.f90"
+asr = true
