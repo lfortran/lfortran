@@ -5213,8 +5213,9 @@ public:
             if( ASR::is_a<ASR::StructInstanceMember_t>(*m_arg) ) {
                 arg = llvm_utils->CreateLoad(arg);
             }
-            tmp = llvm_utils->CreateLoad2(ASRUtils::expr_type(m_arg), arr_descr->get_pointer_to_data(arg));
-            tmp = llvm_utils->create_ptr_gep2(llvm_utils->get_type_from_ttype_t_util(ASRUtils::expr_type(m_arg), module.get()), tmp, arr_descr->get_offset(arg));
+            llvm::Type *data_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::extract_type(ASRUtils::expr_type(m_arg)), module.get());
+            tmp = llvm_utils->CreateLoad2(data_type->getPointerTo(), arr_descr->get_pointer_to_data(arg));
+            tmp = llvm_utils->create_ptr_gep2(data_type, tmp, arr_descr->get_offset(arg));
         } else if(
             m_new == ASR::array_physical_typeType::PointerToDataArray &&
             m_old == ASR::array_physical_typeType::FixedSizeArray) {
