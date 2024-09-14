@@ -3586,8 +3586,8 @@ public:
                 } else {
 #if LLVM_VERSION_MAJOR > 16
                     bool is_llvm_ptr = false;
-                    if ( !ASR::is_a<ASR::Character_t>(*ASRUtils::extract_type(v->m_type))
-                            && LLVM::is_llvm_pointer(*v->m_type) ) {
+                    if (/* !ASR::is_a<ASR::Character_t>(*ASRUtils::extract_type(v->m_type))
+                            &&*/ LLVM::is_llvm_pointer(*v->m_type) ) {
                         is_llvm_ptr = true;
                     }
                     ptr = llvm_utils->CreateAlloca(*builder, type_, array_size,
@@ -9887,9 +9887,8 @@ public:
         }
 
         ASR::ttype_t* x_mv_type = ASRUtils::expr_type(x.m_v);
-        llvm::Type* target_type = llvm_utils->get_type_from_ttype_t_util(
-                ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_array(ASRUtils::type_get_past_pointer(x_mv_type))), module.get());
-        llvm::Type* array_type = arr_descr->get_array_type(ASRUtils::type_get_past_pointer(x_mv_type), target_type);
+        llvm::Type* array_type = llvm_utils->get_type_from_ttype_t_util(
+                ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(x_mv_type)), module.get());
         int64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 2 - // Sync: instead of 2 - , should this be ptr_loads_copy -
                     (LLVM::is_llvm_pointer(*ASRUtils::expr_type(x.m_v)));
