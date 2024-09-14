@@ -1,1 +1,0 @@
-semantic error: The `runtime stacktrace` is not enabled. To get the stack traces or debugging information, please re-build LFortran with `-DWITH_RUNTIME_STACKTRACE=yes`
