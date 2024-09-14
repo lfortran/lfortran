@@ -245,7 +245,7 @@ std::unique_ptr<llvm::Module> LLVMEvaluator::parse_module(const std::string &sou
     }
     if (!module) {
         err.print("", llvm::errs());
-        std::exit(1);
+        throw LCompilersException("parse_module(): Invalid LLVM IR");
     }
     bool v = llvm::verifyModule(*module);
     if (v) {
