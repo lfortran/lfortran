@@ -46,15 +46,6 @@ interface
         error stop "Not implemented yet"
     end subroutine
 
-    subroutine get_environment_variable(name, value, length, status, trim_name)
-    character(len=*), intent(in) :: name
-    character(len=*), intent(in), optional :: value
-    integer, intent(in), optional :: length
-    integer, intent(in), optional :: status
-    logical, intent(in), optional :: trim_name
-        error stop "Not implemented yet"
-    end subroutine
-
     integer function command_argument_count() result(r)
         error stop "Not implemented yet"
     end function
