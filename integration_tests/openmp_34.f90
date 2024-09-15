@@ -18,7 +18,7 @@ print *, "n = ", n
 if (n /= 10) error stop
 end subroutine
 
-program openmp_01
+program openmp_34
 integer, parameter :: n = 10
 call omp_func(n)
 print *, "Done for n = ", n
