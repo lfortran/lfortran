@@ -1,0 +1,23 @@
+(TranslationUnit
+    [(Module
+        e
+        ()
+        []
+        []
+        []
+        []
+        []
+    )
+    (Program
+        main
+        ()
+        []
+        [(ImplicitNone
+            []
+            ()
+        )]
+        []
+        []
+        []
+    )]
+)
