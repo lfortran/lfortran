@@ -1262,6 +1262,7 @@ public:
             SET_INTRINSIC_SUBROUTINE_NAME(RandomSeed, "random_seed");
             SET_INTRINSIC_SUBROUTINE_NAME(GetCommand, "get_command");
             SET_INTRINSIC_SUBROUTINE_NAME(GetEnvironmentVariable, "get_environment_variable");
+            SET_INTRINSIC_SUBROUTINE_NAME(ExecuteCommandLine, "execute_command_line");
             default : {
                 throw LCompilersException("IntrinsicImpureSubroutine: `"
                     + ASRUtils::get_intrinsic_name(x.m_sub_intrinsic_id)
