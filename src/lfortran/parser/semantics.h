@@ -167,6 +167,8 @@ static inline Vec<kind_item_t> a2kind_list(Allocator &al,
 
 #define SIMPLE_ATTR(x, l) make_SimpleAttribute_t( \
             p.m_a, l, simple_attributeType::Attr##x)
+#define SIMPLE_ATTR_INVALID(l) make_SimpleAttribute_t( \
+            p.m_a, l, (simple_attributeType)-1)
 #define INTENT(x, l) make_AttrIntent_t( \
             p.m_a, l, attr_intentType::x)
 #define BIND(x, l) make_AttrBind_t( \
@@ -1861,6 +1863,7 @@ void add_ws_warning(const Location &loc,
 #define REDUCE_OP_TYPE_ADD(l) reduce_opType::ReduceAdd
 #define REDUCE_OP_TYPE_MUL(l) reduce_opType::ReduceMul
 #define REDUCE_OP_TYPE_ID(id, l) convert_id_to_reduce_type(l, id)
+#define REDUCE_OP_TYPE_INVALID (reduce_opType)-1
 
 #define VAR_SYM_DECL1(id, l)         DECL3(p.m_a, id, nullptr, nullptr)
 #define VAR_SYM_DECL2(id, e, l)      DECL3(p.m_a, id, nullptr, EXPR(e))
@@ -2305,6 +2308,7 @@ return make_Submodule_t(al, a_loc,
 #define INTERFACE_HEADER_READ(x, l) make_InterfaceHeaderRead_t(p.m_a, l, name2char(x))
 
 #define OPERATOR(op, l) intrinsicopType::op
+#define OPERATOR_INVALID(l) (intrinsicopType)-1
 
 #define INTERFACE(header, trivia, contains, l) make_Interface_t(p.m_a, l, \
         down_cast<interface_header_t>(header), \

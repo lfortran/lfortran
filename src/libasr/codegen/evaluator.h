@@ -65,8 +65,8 @@ private:
 public:
     LLVMEvaluator(const std::string &t = "");
     ~LLVMEvaluator();
-    std::unique_ptr<llvm::Module> parse_module(const std::string &source);
-    std::unique_ptr<LLVMModule> parse_module2(const std::string &source);
+    std::unique_ptr<llvm::Module> parse_module(const std::string &source, const std::string &filename);
+    std::unique_ptr<LLVMModule> parse_module2(const std::string &source, const std::string &filename);
     void add_module(const std::string &source);
     void add_module(std::unique_ptr<llvm::Module> mod);
     void add_module(std::unique_ptr<LLVMModule> m);
