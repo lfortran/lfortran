@@ -296,11 +296,12 @@ int prompt(bool verbose, CompilerOptions &cu)
             }
             LCompilers::Result<LCompilers::FortranEvaluator::EvalResult>
             res = e.evaluate(input, verbose, lm, lpm, diagnostics);
-            std::cerr << diagnostics.render(lm, cu);
             if (res.ok) {
                 r = res.result;
             } else {
                 LCOMPILERS_ASSERT(diagnostics.has_error())
+                std::cerr << diagnostics.render(lm, cu);
+                diagnostics.clear();
                 continue;
             }
         } catch (const LCompilers::LCompilersException &e) {
@@ -1056,7 +1057,7 @@ int compile_llvm_to_object_file(const std::string& infile,
     std::string input = read_file(infile);
     LCompilers::LLVMEvaluator e(compiler_options.target);
 
-    std::unique_ptr<LCompilers::LLVMModule> m = e.parse_module2(input);
+    std::unique_ptr<LCompilers::LLVMModule> m = e.parse_module2(input, infile);
     e.save_object_file(*(m->m_m), outfile);
 
     return 0;

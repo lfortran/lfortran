@@ -2679,6 +2679,10 @@ filename = "fixedform_data.f"
 ast = true
 
 [[test]]
+filename = "fixedform_module.f"
+ast = true
+
+[[test]]
 filename = "../integration_tests/format_03.f"
 ast = true
 
@@ -3770,6 +3774,10 @@ filename = "int_to_complex_cast_in_comparison.f90"
 fortran = true
 
 [[test]]
+filename = "cast_node_m_value.f90"
+asr = true
+
+[[test]]
 filename = "errors/loop_test.f90"
 asr = true
 
@@ -4163,3 +4171,7 @@ asr = true
 [[test]]
 filename = "implied_do_loop1.f90"
 run = true
+
+[[test]]
+filename = "multi_error1.f90"
+ast = true

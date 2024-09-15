@@ -852,7 +852,9 @@ public:
         {"random_number", {IntrinsicSignature({"r"}, 1, 1)}},
         {"random_init", {IntrinsicSignature({"repeatable", "image"}, 2, 2)}},
         {"random_seed", {IntrinsicSignature({"size", "put", "get"}, 0, 3)}},
-        {"get_command", {IntrinsicSignature({"command", "length", "status"}, 3, 3)}},
+        {"get_command", {IntrinsicSignature({"command", "length", "status"}, 0, 3)}},
+        {"get_environment_variable", {IntrinsicSignature({"name", "value", "length", "status", "trim_name"}, 1, 5)}},
+        {"execute_command_line", {IntrinsicSignature({"command", "wait", "exitstat", "cmdstat", "cmdmsg"}, 1, 5)}},
         {"mvbits", {IntrinsicSignature({"from", "frompos", "len", "to", "topos"}, 5, 5)}},
         {"modulo", {IntrinsicSignature({"a", "p"}, 2, 2)}},
         {"bessel_jn", {IntrinsicSignature({"n", "x"}, 2, 2)}},
@@ -5201,40 +5203,68 @@ public:
 
     ASR::asr_t* create_ArrayReshape(const AST::FuncCallOrArray_t& x) {
         if( x.n_args != 2 ) {
-             throw SemanticError("reshape accepts only 2 arguments, got " +
-                                 std::to_string(x.n_args) + " arguments instead.",
-                                 x.base.base.loc);
-         }
-         this->visit_expr(*x.m_args[0].m_end);
-         ASR::expr_t* array = ASRUtils::EXPR(tmp);
-         this->visit_expr(*x.m_args[1].m_end);
-         ASR::expr_t* newshape = ASRUtils::EXPR(tmp);
-         if( !ASRUtils::is_array(ASRUtils::expr_type(newshape)) ) {
-             throw SemanticError("reshape only accept arrays for shape "
-                                 "arguments, found " +
-                                 ASRUtils::type_to_str_python(ASRUtils::expr_type(newshape)) +
-                                 " instead.",
-                                 x.base.base.loc);
-         }
-         Vec<ASR::dimension_t> dims;
-         dims.reserve(al, 1);
-         ASR::dimension_t newdim;
-         newdim.loc = x.base.base.loc;
-         newdim.m_start = nullptr, newdim.m_length = nullptr;
-         dims.push_back(al, newdim);
-         ASR::ttype_t* empty_type = nullptr;
-         ASR::array_physical_typeType array_physical_type = ASRUtils::extract_physical_type(
-                                                                ASRUtils::expr_type(array));
-         if( array_physical_type == ASR::array_physical_typeType::FixedSizeArray ) {
-            empty_type = ASRUtils::duplicate_type(al, ASRUtils::type_get_past_allocatable(
-                            ASRUtils::type_get_past_pointer(ASRUtils::expr_type(array))),
-                            &dims, array_physical_type, true);
-         } else {
-            empty_type = ASRUtils::duplicate_type(al, ASRUtils::type_get_past_allocatable(
-                            ASRUtils::type_get_past_pointer(ASRUtils::expr_type(array))), &dims);
-         }
-         newshape = ASRUtils::cast_to_descriptor(al, newshape);
-         return ASR::make_ArrayReshape_t(al, x.base.base.loc, array, newshape, empty_type, nullptr);
+            throw SemanticError("reshape accepts only 2 arguments, got " +
+                                std::to_string(x.n_args) + " arguments instead.",
+                                x.base.base.loc);
+        }
+        this->visit_expr(*x.m_args[0].m_end);
+        ASR::expr_t* array = ASRUtils::EXPR(tmp);
+        this->visit_expr(*x.m_args[1].m_end);
+        ASR::expr_t* newshape = ASRUtils::EXPR(tmp);
+        if( !ASRUtils::is_array(ASRUtils::expr_type(newshape)) ) {
+            throw SemanticError("reshape only accept arrays for shape "
+                "arguments, found " +
+                ASRUtils::type_to_str_python(ASRUtils::expr_type(newshape)) +
+                " instead.", x.base.base.loc);
+        }
+        ASR::array_physical_typeType array_physical_type = ASRUtils::extract_physical_type(
+                                                            ASRUtils::expr_type(array));
+
+        // the size (i.e. number of elements) of 'newshape' array determines
+        // the dimension size of 'ArrayReshape'
+        ASR::Array_t* newshape_array_type = ASR::down_cast<ASR::Array_t>(ASRUtils::expr_type(newshape));
+        size_t newshape_dims = ASR::down_cast<ASR::IntegerConstant_t>(newshape_array_type->m_dims[0].m_length)->m_n;
+        ASR::ttype_t* arr_element_type = ASRUtils::type_get_past_array_pointer_allocatable(ASRUtils::expr_type(array));
+
+        ASR::ttype_t* reshape_ttype = ASRUtils::TYPE(ASR::make_Array_t(al, arr_element_type->base.loc, arr_element_type,
+                                                    nullptr, newshape_dims, ASR::array_physical_typeType::FixedSizeArray));
+
+        size_t n_dims_array_reshape = ASRUtils::extract_n_dims_from_ttype(reshape_ttype);
+
+        Vec<ASR::dimension_t> dims;
+        dims.reserve(al, n_dims_array_reshape);
+
+        Location loc = newshape->base.loc;
+        // if 'newshape' is an ArrayConstant, then assign all of it's
+        // elements as dimensions
+        if (ASR::is_a<ASR::ArrayConstant_t>(*newshape)) {
+            ASR::ArrayConstant_t* const_newshape = ASR::down_cast<ASR::ArrayConstant_t>(newshape);
+            ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+            for (size_t i=0; i < n_dims_array_reshape; i++) {
+                ASR::dimension_t dim;
+                dim.loc = loc;
+                dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, int_type));
+                dim.m_length = ASRUtils::fetch_ArrayConstant_value(al, const_newshape, i);
+                dims.push_back(al, dim);
+            }
+        } else {
+            // otherwise empty dimensions
+            dims.reserve(al, n_dims_array_reshape);
+            for (size_t i=0; i < n_dims_array_reshape; i++) {
+                ASR::dimension_t dim;
+                dim.loc = loc;
+                dim.m_start = nullptr;
+                dim.m_length = nullptr;
+                dims.push_back(al, dim);
+            }
+        }
+
+        reshape_ttype = ASRUtils::duplicate_type(al, reshape_ttype, &dims, array_physical_type, true);
+        newshape = ASRUtils::cast_to_descriptor(al, newshape);
+        // TODO: 'value' is assigned as nullptr always to ArrayReshape, when both
+        // 'array' and 'newshape' are ArrayConstant's we can set 'value'
+        // as well
+        return ASR::make_ArrayReshape_t(al, x.base.base.loc, array, newshape, reshape_ttype, nullptr);
     }
 
     ASR::asr_t* create_BitCast(const AST::FuncCallOrArray_t& x) {

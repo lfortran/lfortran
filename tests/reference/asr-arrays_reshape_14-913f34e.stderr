@@ -1,0 +1,4 @@
+LCOMPILERS_ASSERT failed: $DIR/src/libasr/asr.h
+function expr_type0(), line number 50559 at 
+f != nullptr
+Aborted

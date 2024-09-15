@@ -1396,6 +1396,21 @@ struct FixedFormRecursiveDescent {
         }
     }
 
+    /*
+        explicit_program: This flag indicates whether the Fortran
+            program being lexed is explicitly declared with the
+            program keyword or implicitly defined by the presence
+            of statements that belong to a main program but without
+            an explicit program declaration.
+
+            E.g.; program where `explicit_program` is false:
+            ```
+                   integer :: x
+                   x = 42
+                   print *, x
+                   end
+            ```
+    */
     void lex_program(unsigned char *&cur, bool explicit_program) {
         if (explicit_program) {
             push_token_advance(cur, "program");
@@ -1417,6 +1432,28 @@ struct FixedFormRecursiveDescent {
             tokenize_line(cur);
         } else {
             error(cur, "Expecting terminating symbol for program");
+        }
+    }
+
+    void lex_module(unsigned char *&cur) {
+        push_token_advance(cur, "module");
+        tokenize_line(cur);
+        while(lex_body_statement(cur));
+        eat_label(cur);
+        if (next_is(cur, "contains")) {
+            push_token_advance(cur, "contains");
+            push_token_no_advance(cur, "\n");
+            next_line(cur);
+            while(lex_procedure(cur));
+        }
+        if (next_is(cur, "endmodule")) {
+            push_token_advance(cur, "endmodule");
+            tokenize_line(cur);
+        } else if (next_is(cur, "end")) {
+            push_token_advance(cur, "end");
+            tokenize_line(cur);
+        } else {
+            error(cur, "Expecting terminating symbol for module");
         }
     }
 
@@ -1515,6 +1552,10 @@ struct FixedFormRecursiveDescent {
         return next_is(cur, "program");
     }
 
+    bool is_module(unsigned char *cur) {
+        return next_is(cur, "module");
+    }
+
     bool lex_procedure(unsigned char *&cur) {
         std::vector<std::string> subroutine_keywords{"recursive", "pure",
             "elemental"};
@@ -1543,6 +1584,8 @@ struct FixedFormRecursiveDescent {
         }
         if (is_program(cur)) {
             lex_program(cur, true);
+        } else if (is_module(cur)) {
+            lex_module(cur);
         } else if (lex_procedure(cur)) {
             return;
         } else if (next_is(cur, "blockdata")) {
