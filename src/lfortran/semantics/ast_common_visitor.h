@@ -4641,21 +4641,23 @@ public:
             }
 
             void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
-                ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(x.m_name));
-                ASR::FunctionType_t* f_type = ASR::down_cast<ASR::FunctionType_t>(f->m_function_signature);
-                std::map<int, ASR::ttype_t*> array_arg_index;
-                for (size_t i = 0; i < f->n_args; i++) {
-                    if (ASRUtils::is_array(ASRUtils::expr_type(f->m_args[i]))) {
-                        array_arg_index[i] = f_type->m_arg_types[i];
+                if ( ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(x.m_name)) ) {
+                    ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(x.m_name));
+                    ASR::FunctionType_t* f_type = ASR::down_cast<ASR::FunctionType_t>(f->m_function_signature);
+                    std::map<int, ASR::ttype_t*> array_arg_index;
+                    for (size_t i = 0; i < f->n_args; i++) {
+                        if (ASRUtils::is_array(ASRUtils::expr_type(f->m_args[i]))) {
+                            array_arg_index[i] = f_type->m_arg_types[i];
+                        }
                     }
-                }
-                // iterate only over args of type array.
-                for( auto it: array_arg_index ) {
-                    ASR::expr_t* arg_expr = x.m_args[it.first].m_value;
-                    if ( arg_expr != nullptr ) {
-                        *current_expr = arg_expr;
-                        call_replacer_(array_arg_index);
-                        x.m_args[it.first].m_value = *current_expr;
+                    // iterate only over args of type array.
+                    for( auto it: array_arg_index ) {
+                        ASR::expr_t* arg_expr = x.m_args[it.first].m_value;
+                        if ( arg_expr != nullptr ) {
+                            *current_expr = arg_expr;
+                            call_replacer_(array_arg_index);
+                            x.m_args[it.first].m_value = *current_expr;
+                        }
                     }
                 }
             }
