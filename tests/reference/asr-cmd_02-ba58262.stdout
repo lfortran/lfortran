@@ -4,8 +4,6 @@
         {
             iso_fortran_env:
                 (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin),
             lfortran_intrinsic_string:
                 (IntrinsicModule lfortran_intrinsic_string),
             test_exec:
@@ -13,16 +11,6 @@
                     (SymbolTable
                         2
                         {
-                            execute_command_line:
-                                (ExternalSymbol
-                                    2
-                                    execute_command_line
-                                    11 execute_command_line
-                                    lfortran_intrinsic_builtin
-                                    []
-                                    execute_command_line
-                                    Private
-                                ),
                             homedir:
                                 (Variable
                                     2
@@ -90,18 +78,13 @@
                         ()
                         ()
                     )
-                    (SubroutineCall
-                        2 execute_command_line
-                        ()
-                        [((StringConstant
+                    (IntrinsicImpureSubroutine
+                        ExecuteCommandLine
+                        [(StringConstant
                             "printenv"
                             (Character 1 8 ())
-                        ))
-                        (())
-                        (())
-                        (())
-                        (())]
-                        ()
+                        )]
+                        0
                     )]
                 )
         })
