@@ -1,5 +1,0 @@
-semantic error: Function 'cpu_time' not found or not implemented yet (if it is intrinsic)
-   --> tests/../integration_tests/matmul_01.f90:159:1
-    |
-159 | call cpu_time(t1)
-    | ^^^^^^^^^^^^^^^^^ 

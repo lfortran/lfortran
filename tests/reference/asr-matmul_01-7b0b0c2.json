@@ -5,9 +5,9 @@
     "infile_hash": "ec3292a2c15be93d0603a137188615c65b2ac61e21b928e5ac85740b",
     "outfile": null,
     "outfile_hash": null,
-    "stdout": null,
-    "stdout_hash": null,
-    "stderr": "asr-matmul_01-7b0b0c2.stderr",
-    "stderr_hash": "37f840c9dc13ca2c817c35261c10f1c60bd44ab3d7c4f0e811d8dd5a",
-    "returncode": 2
+    "stdout": "asr-matmul_01-7b0b0c2.stdout",
+    "stdout_hash": "a2ba2c202446e5c3fc3c272bfbd49eb8985be20f7be9e3448c759c8e",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
 }

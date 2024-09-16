@@ -11,6 +11,10 @@ interface srand
     module procedure f_srand
 end interface
 
+interface cpu_time
+    module procedure sp_cpu_time, dp_cpu_time
+end interface
+
 contains
 
 ! cpu_time ---------------------------------------------------------------------
