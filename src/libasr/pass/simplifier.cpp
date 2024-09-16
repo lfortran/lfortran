@@ -1681,7 +1681,13 @@ class ReplaceModuleVarWithValue:
         }
 
         ASRUtils::ExprStmtDuplicator expr_duplicator(al);
-        *current_expr = expr_duplicator.duplicate_expr(y->m_symbolic_value);
+        ASR::expr_t* value = nullptr;
+        if (y->m_value) {
+            value = y->m_value;
+        } else {
+            value = y->m_symbolic_value;
+        }
+        *current_expr = expr_duplicator.duplicate_expr(value);
         replace_expr(*current_expr);
     }
 
