@@ -1089,9 +1089,13 @@ public:
         for( size_t i = 0; i < x.n_vars; i++ ) {
             std::uint32_t h = get_hash((ASR::asr_t*)x.m_vars[i]);
             llvm::Value *target = llvm_symtab[h];
-            llvm::Type* tp = target->getType()->getContainedType(0);
+            llvm::Type* tp = llvm_utils->get_type_from_ttype_t_util(
+                ASRUtils::type_get_past_pointer(
+                ASRUtils::type_get_past_allocatable(
+                ASRUtils::symbol_type(x.m_vars[i]))), module.get());
             llvm::Value* np = builder->CreateIntToPtr(
-                llvm::ConstantInt::get(context, llvm::APInt(32, 0)), tp);
+                llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
+                tp->getPointerTo());
             builder->CreateStore(np, target);
         }
     }
@@ -4986,7 +4990,7 @@ public:
             int n_dims = ASRUtils::extract_n_dims_from_ttype(expr_type(x.m_value));
             if (n_dims == 0) {
                 if (lhs_is_string_arrayref && value->getType()->isPointerTy()) {
-                    value = llvm_utils->CreateLoad(value);
+                    value = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context), value);
                 }
                 if ( (ASR::is_a<ASR::FunctionCall_t>(*x.m_value) ||
                      ASR::is_a<ASR::StringConcat_t>(*x.m_value) ||
@@ -6147,7 +6151,7 @@ public:
             idx = builder->CreateSub(builder->CreateSExtOrTrunc(idx, llvm::Type::getInt32Ty(context)),
                 llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
             std::vector<llvm::Value*> idx_vec = {idx};
-            tmp = llvm_utils->CreateGEP(str, idx_vec);
+            tmp = llvm_utils->CreateGEP2(llvm::Type::getInt8Ty(context), str, idx_vec);
         } else {
             tmp = lfortran_str_item(str, idx);
             strings_to_be_deallocated.push_back(al, tmp);
