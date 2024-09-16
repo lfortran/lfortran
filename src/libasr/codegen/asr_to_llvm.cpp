@@ -2602,7 +2602,7 @@ public:
         }
         int member_idx = name2memidx[current_der_type_name][member_name];
 
-        llvm::Type *xtype =llvm_utils->get_type_from_ttype_t_util(x_m_v_type, module.get()); 
+        llvm::Type *xtype = name2dertype[current_der_type_name];
         tmp = llvm_utils->create_gep2(xtype, tmp, member_idx);
         ASR::ttype_t* member_type = ASRUtils::type_get_past_pointer(
             ASRUtils::type_get_past_allocatable(member->m_type));
@@ -4423,7 +4423,9 @@ public:
         ptr_loads = 1 - !LLVM::is_llvm_pointer(*value_array_type);
         visit_expr_wrapper(array_section->m_v);
         llvm::Value* value_desc = tmp;
-        llvm::Type* value_desc_type = llvm_utils->get_type_from_ttype_t_util(array_section->m_type, module.get());
+        llvm::Type* value_desc_type = llvm_utils->get_type_from_ttype_t_util(
+            ASRUtils::type_get_past_allocatable(
+            ASRUtils::type_get_past_pointer(value_array_type)), module.get());
         if( ASR::is_a<ASR::StructInstanceMember_t>(*array_section->m_v) &&
             ASRUtils::extract_physical_type(value_array_type) !=
                 ASR::array_physical_typeType::FixedSizeArray ) {
@@ -5208,12 +5210,12 @@ public:
             return ;
         }
 
+        llvm::Type *data_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::extract_type(ASRUtils::expr_type(m_arg)), module.get());
         if( m_new == ASR::array_physical_typeType::PointerToDataArray &&
             m_old == ASR::array_physical_typeType::DescriptorArray ) {
             if( ASR::is_a<ASR::StructInstanceMember_t>(*m_arg) ) {
                 arg = llvm_utils->CreateLoad(arg);
             }
-            llvm::Type *data_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::extract_type(ASRUtils::expr_type(m_arg)), module.get());
             tmp = llvm_utils->CreateLoad2(data_type->getPointerTo(), arr_descr->get_pointer_to_data(arg));
             tmp = llvm_utils->create_ptr_gep2(data_type, tmp, arr_descr->get_offset(arg));
         } else if(
@@ -5273,7 +5275,7 @@ public:
             llvm::AllocaInst *target = llvm_utils->CreateAlloca(
                 target_type, nullptr, "array_descriptor");
             builder->CreateStore(llvm_utils->create_ptr_gep2(
-                llvm_utils->get_type_from_ttype_t_util(ASRUtils::expr_type(m_arg), module.get()),
+                data_type,
                 llvm_utils->CreateLoad(arr_descr->get_pointer_to_data(tmp)),
                 arr_descr->get_offset(tmp)), arr_descr->get_pointer_to_data(target));
             int n_dims = ASRUtils::extract_n_dims_from_ttype(m_type_for_dimensions);
@@ -9785,6 +9787,7 @@ public:
         if (is_pointer_array) {
             tmp = llvm_utils->CreateLoad(tmp);
         }
+        is_pointer_array = false;
         llvm::Value* llvm_arg = tmp;
 
         llvm::Value* llvm_dim = nullptr;
@@ -9899,6 +9902,7 @@ public:
         if (is_pointer_array) {
             tmp = llvm_utils->CreateLoad2(array_type->getPointerTo(), tmp);
         }
+        is_pointer_array = false;
         llvm::Value* llvm_arg1 = tmp;
         visit_expr_wrapper(x.m_dim, true);
         llvm::Value* dim_val = tmp;
