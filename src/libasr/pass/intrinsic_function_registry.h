@@ -301,7 +301,7 @@ namespace IntrinsicElementalFunctionRegistry {
         {static_cast<int64_t>(IntrinsicElementalFunctions::BesselYN),
             {&BesselYN::instantiate_BesselYN, &BesselYN::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::SameTypeAs),
-            {nullptr, &UnaryIntrinsicFunction::verify_args}},
+            {nullptr, &SameTypeAs::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Merge),
             {&Merge::instantiate_Merge, &Merge::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Mvbits),

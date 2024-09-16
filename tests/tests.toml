@@ -4009,7 +4009,7 @@ filename = "errors/sqrt_neg.f90"
 asr = true
 
 [[test]]
-filename = "errors/same_type_as.f90"
+filename = "errors/Same_type.f90"
 asr = true
 
 [[test]]
