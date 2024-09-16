@@ -4153,6 +4153,9 @@ filename = "exit2.f90"
 run = true
 
 [[test]]
+fix_duplicate_procedures
+filename = "errors/test_duplicate_module_procedures.f90"
+
 filename = "errors/kind_01.f90"
 asr = true
 
@@ -4170,6 +4173,7 @@ asr = true
 
 [[test]]
 filename = "implied_do_loop1.f90"
+ main
 run = true
 
 [[test]]
