@@ -1089,9 +1089,13 @@ public:
         for( size_t i = 0; i < x.n_vars; i++ ) {
             std::uint32_t h = get_hash((ASR::asr_t*)x.m_vars[i]);
             llvm::Value *target = llvm_symtab[h];
-            llvm::Type* tp = target->getType()->getContainedType(0);
+            llvm::Type* tp = llvm_utils->get_type_from_ttype_t_util(
+                ASRUtils::type_get_past_pointer(
+                ASRUtils::type_get_past_allocatable(
+                ASRUtils::symbol_type(x.m_vars[i]))), module.get());
             llvm::Value* np = builder->CreateIntToPtr(
-                llvm::ConstantInt::get(context, llvm::APInt(32, 0)), tp);
+                llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
+                tp->getPointerTo());
             builder->CreateStore(np, target);
         }
     }

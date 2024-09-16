@@ -363,7 +363,7 @@ RUN(NAME subroutines_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm llvm1
 RUN(NAME subroutines_06 LABELS gfortran llvm llvm17)
 RUN(NAME subroutines_07 LABELS gfortran llvm llvm17)
 RUN(NAME subroutines_08 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm llvm17)
-RUN(NAME subroutines_09 LABELS gfortran llvm)
+RUN(NAME subroutines_09 LABELS gfortran llvm llvm17)
 RUN(NAME subroutines_10 LABELS gfortran)
 RUN(NAME subroutines_11 LABELS gfortran llvm llvm17)
 RUN(NAME subroutines_12 LABELS gfortran llvm llvm17)
