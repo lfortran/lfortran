@@ -896,7 +896,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"bessel_j1", {&BesselJ1::create_BesselJ1, &BesselJ1::eval_BesselJ1}},
                 {"bessel_y0", {&BesselY0::create_BesselY0, &BesselY0::eval_BesselY0}},
                 {"bessel_y1", {&BesselY1::create_BesselY1, &BesselY1::eval_BesselY1}},
-                {"SAME_TYPE_AS", {&SameTypeAs::create_SameTypeAs, &SameTypeAs::eval_SameTypeAs}},
+                {"same_type_as", {&SameTypeAs::create_SameTypeAs, &SameTypeAs::eval_SameTypeAs}},
                 {"asind", {&Asind::create_Asind, &Asind::eval_Asind}},
                 {"acosd", {&Acosd::create_Acosd, &Acosd::eval_Acosd}},
                 {"atand", {&Atand::create_Atand, &Atand::eval_Atand}},

@@ -1,4 +1,4 @@
-semantic error: Function 'same_type_as' not found or not implemented yet (if it is intrinsic)
+semantic error: same_type_as is not implemented yet
  --> tests/errors/Same_type.f90:2:14
   |
 2 |     print *, same_type_as(1.0, 1.0)
