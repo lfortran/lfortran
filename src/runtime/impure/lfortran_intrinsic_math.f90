@@ -11,10 +11,6 @@ interface srand
     module procedure f_srand
 end interface
 
-interface random_number
-    module procedure sp_rand_num, dp_rand_num
-end interface
-
 interface cpu_time
     module procedure sp_cpu_time, dp_cpu_time
 end interface
@@ -96,32 +92,5 @@ interface
 end interface
 call c_srand(seed)
 end subroutine
-
-! random_number ----------------------------------------------------------------
-
-elemental pure subroutine sp_rand_num(harvest)
-real(sp), intent(out) :: harvest
-interface
-    pure subroutine c_sp_rand_num(harvest) &
-        bind(c, name="_lfortran_sp_rand_num")
-        import :: c_float
-        real(c_float), intent(out) :: harvest
-    end subroutine
-end interface
-call c_sp_rand_num(harvest)
-end subroutine
-
-elemental pure subroutine dp_rand_num(harvest)
-real(dp), intent(out) :: harvest
-interface
-    pure subroutine c_dp_rand_num(harvest) &
-        bind(c, name="_lfortran_dp_rand_num")
-        import :: c_double
-        real(c_double), intent(out) :: harvest
-    end subroutine
-end interface
-call c_dp_rand_num(harvest)
-end subroutine
-
 
 end module
