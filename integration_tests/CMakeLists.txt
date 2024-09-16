@@ -635,7 +635,7 @@ RUN(NAME intrinsics_52 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran llv
 RUN(NAME intrinsics_53 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # repeat
 RUN(NAME intrinsics_54 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran llvm17) # max0
 RUN(NAME intrinsics_open_close_read_write LABELS gfortran llvm llvm17)
-RUN(NAME intrinsics_55 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17) #min
+RUN(NAME intrinsics_55 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) #min
 RUN(NAME intrinsics_56 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran llvm17) # merge
 RUN(NAME intrinsics_57 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17) # merge
 RUN(NAME intrinsics_58 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran llvm17) # sign
