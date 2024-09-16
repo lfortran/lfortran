@@ -3582,8 +3582,7 @@ public:
                 } else {
 #if LLVM_VERSION_MAJOR > 16
                     bool is_llvm_ptr = false;
-                    if (/* !ASR::is_a<ASR::Character_t>(*ASRUtils::extract_type(v->m_type))
-                            &&*/ LLVM::is_llvm_pointer(*v->m_type) ) {
+                    if (LLVM::is_llvm_pointer(*v->m_type) ) {
                         is_llvm_ptr = true;
                     }
                     ptr = llvm_utils->CreateAlloca(*builder, type_, array_size,

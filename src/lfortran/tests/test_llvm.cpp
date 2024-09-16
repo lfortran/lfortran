@@ -1312,6 +1312,12 @@ end function sub
     CHECK(r.result.f32 == -1.0);
 }
 
+TEST_CASE("llvm ir 1") {
+    LCompilers::LLVMEvaluator e;
+    CHECK_THROWS_AS(e.parse_module2("", "src/lfortran/tests/ir.ll"), LCompilers::LCompilersException);
+    CHECK_THROWS_WITH(e.parse_module2("", "src/lfortran/tests/ir.ll"), "parse_module(): Invalid LLVM IR");
+}
+
 // This test does not work on Windows yet
 // https://github.com/lfortran/lfortran/issues/913
 #if !defined(_WIN32)
