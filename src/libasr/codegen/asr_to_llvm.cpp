@@ -175,8 +175,6 @@ public:
     bool lookup_enum_value_for_nonints;
     bool is_assignment_target;
 
-    bool is_pointer_array;
-
     CompilerOptions &compiler_options;
 
     // For handling debug information
@@ -226,7 +224,6 @@ public:
     ptr_loads(2),
     lookup_enum_value_for_nonints(false),
     is_assignment_target(false),
-    is_pointer_array(false),
     compiler_options(compiler_options_),
     current_select_type_block_type(nullptr),
     current_scope(nullptr),
@@ -2320,7 +2317,9 @@ public:
             if ( LLVM::is_llvm_pointer(*x_mv_type) ||
                ((is_bindc_array && !ASRUtils::is_fixed_size_array(m_dims, n_dims)) &&
                 ASR::is_a<ASR::StructInstanceMember_t>(*x.m_v)) ) {
-                array = llvm_utils->CreateLoad2(x_mv_type, array);
+                llvm::Type *array_type = llvm_utils->get_type_from_ttype_t_util(x_mv_type_, module.get());
+                array = llvm_utils->CreateLoad2(array_type->getPointerTo(), array);
+                ptr_type[array] = array_type;
             }
 
             Vec<llvm::Value*> llvm_diminfo;
@@ -2620,9 +2619,6 @@ public:
                 member_type)->m_class_type;
             current_der_type_name = ASRUtils::symbol_name(
                 ASRUtils::symbol_get_past_external(s_sym));
-        } else if (ASR::is_a<ASR::Pointer_t>(*member->m_type) 
-            && ASR::is_a<ASR::Array_t>(*member_type)) {
-            is_pointer_array = true;
         }
     }
 
@@ -9783,11 +9779,10 @@ public:
                     LLVM::is_llvm_pointer(*ASRUtils::expr_type(m_v));
         visit_expr_wrapper(m_v);
         ptr_loads = ptr_loads_copy;
-        is_pointer_array = is_pointer_array || ((tmp->getType()->getNumContainedTypes() > 0) && (tmp->getType()->getContainedType(0)->isPointerTy()));
+        bool is_pointer_array = ((tmp->getType()->getNumContainedTypes() > 0) && (tmp->getType()->getContainedType(0)->isPointerTy()));
         if (is_pointer_array) {
             tmp = llvm_utils->CreateLoad(tmp);
         }
-        is_pointer_array = false;
         llvm::Value* llvm_arg = tmp;
 
         llvm::Value* llvm_dim = nullptr;
@@ -9898,11 +9893,10 @@ public:
                     (LLVM::is_llvm_pointer(*ASRUtils::expr_type(x.m_v)));
         visit_expr_wrapper(x.m_v);
         ptr_loads = ptr_loads_copy;
-        is_pointer_array = is_pointer_array || ((tmp->getType()->getNumContainedTypes() > 0) && (tmp->getType()->getContainedType(0)->isPointerTy()));
-        if (is_pointer_array) {
+        if (is_a<ASR::StructInstanceMember_t>(*x.m_v)) {
             tmp = llvm_utils->CreateLoad2(array_type->getPointerTo(), tmp);
+            ptr_type[tmp] = array_type;
         }
-        is_pointer_array = false;
         llvm::Value* llvm_arg1 = tmp;
         visit_expr_wrapper(x.m_dim, true);
         llvm::Value* dim_val = tmp;
