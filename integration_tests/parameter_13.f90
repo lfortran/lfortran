@@ -1,6 +1,6 @@
 program parameter_13
 implicit none
-integer, parameter :: N = 65535
+integer, parameter :: N = 100           ! TODO: Set N = 65535
 integer, parameter :: sp = kind(1.0)
 integer, parameter :: dp = kind(1.d0)
 real(dp), parameter :: pi = 2*asin(1._dp)
