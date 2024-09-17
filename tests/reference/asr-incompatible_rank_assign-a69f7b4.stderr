@@ -1,0 +1,5 @@
+semantic error: Initialisation using ArrayConstant is supported only for single dimensional arrays
+ --> tests/errors/incompatible_rank_assign.f90:2:1
+  |
+2 | integer :: x = [1,2,3]
+  | ^^^^^^^^^^^^^^^^^^^^^^ 
