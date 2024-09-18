@@ -4429,7 +4429,9 @@ public:
                             ASRUtils::get_FunctionType(func)->m_return_var_type,
                             &new_dims);
         } else {
+            ASRUtils::ExprStmtWithScopeDuplicator node_duplicator(al, current_scope);
             type = ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
+            type = node_duplicator.duplicate_ttype(type);
         }
         if (ASRUtils::symbol_parent_symtab(v)->get_counter() != current_scope->get_counter()) {
             ADD_ASR_DEPENDENCIES(current_scope, v, current_function_dependencies);
