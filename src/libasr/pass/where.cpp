@@ -431,6 +431,24 @@ public:
         ASR::stmt_t* assign_stmt = nullptr;
         ASR::stmt_t* if_stmt = nullptr;
 
+        // We initially handle this case for logical arrays inside the AST node visitor. We need to handle it here
+        // again to work with the changes introduced during the ASR passes before this.
+        if (ASR::is_a<ASR::Logical_t>(*ASRUtils::type_get_past_array_pointer_allocatable(ASRUtils::expr_type(test)))) {
+            ASR::expr_t* logical_true = ASRUtils::EXPR(
+                                            ASR::make_LogicalConstant_t(
+                                                al,
+                                                x.base.base.loc,
+                                                true,
+                                                ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, 4))));
+            test = ASRUtils::EXPR(ASR::make_LogicalBinOp_t(al,
+                                                           x.base.base.loc,
+                                                           test,
+                                                           ASR::logicalbinopType::Eqv,
+                                                           logical_true,
+                                                           ASRUtils::expr_type(test),
+                                                           nullptr));
+        }
+
         if (ASR::is_a<ASR::IntegerCompare_t>(*test)) {
             int_cmp = ASR::down_cast<ASR::IntegerCompare_t>(test);
             left = int_cmp->m_left;
@@ -441,7 +459,7 @@ public:
             log_bin_op = ASR::down_cast<ASR::LogicalBinOp_t>(test);
             left = log_bin_op->m_left;
         } else {
-            throw LCompilersException("Unsupported type, " + std::to_string(test->type));
+            throw LCompilersException("Unsupported type, " + ASRUtils::type_to_str_python(ASRUtils::expr_type(test)));
         }
 
         // create index variables.
