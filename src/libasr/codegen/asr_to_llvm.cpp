@@ -6833,7 +6833,7 @@ public:
         int64_t ptr_loads_copy = ptr_loads;
         tmp = x_v;
         while( ptr_loads_copy-- ) {
-            tmp = llvm_utils->CreateLoad(tmp);
+            tmp = llvm_utils->CreateLoad2(x->m_type, tmp);
         }
     }
 
@@ -9905,7 +9905,9 @@ public:
         ASR::array_physical_typeType physical_type = ASRUtils::extract_physical_type(x_mv_type);
         switch( physical_type ) {
             case ASR::array_physical_typeType::DescriptorArray: {
-                llvm::Value* dim_des_val = arr_descr->get_pointer_to_dimension_descriptor_array(llvm_arg1);
+                llvm::Value* dim_des_val = arr_descr->get_pointer_to_dimension_descriptor_array(
+                    llvm_utils->get_type_from_ttype_t_util(ASRUtils::type_get_past_allocatable(
+                        ASRUtils::type_get_past_pointer(x.m_type)), module.get()), llvm_arg1);                
                 llvm::Value* const_1 = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
                 dim_val = builder->CreateSub(dim_val, const_1);
                 llvm::Value* dim_struct = arr_descr->get_pointer_to_dimension_descriptor(dim_des_val, dim_val);
