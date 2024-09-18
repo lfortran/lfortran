@@ -143,11 +143,53 @@ class ASRBuilder {
     }
 
     ASR::expr_t* ArrayUBound(ASR::expr_t* x, int64_t dim) {
-        return ASRUtils::EXPR(ASR::make_ArrayBound_t(al, loc, x, i32(dim), int32, ASR::arrayboundType::UBound, nullptr));
+        ASR::expr_t* value = nullptr;
+        ASR::ttype_t* type = ASRUtils::expr_type(x);
+        if ( ASRUtils::is_array(type) ) {
+            ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(type)));
+            ASR::dimension_t* dims = array_type->m_dims;
+            ASRUtils::extract_dimensions_from_ttype(type, dims);
+            int new_dim = dim - 1;
+            if( dims[new_dim].m_start && dims[new_dim].m_length ) {
+                ASR::expr_t* start = ASRUtils::expr_value(dims[new_dim].m_start);
+                ASR::expr_t* length = ASRUtils::expr_value(dims[new_dim].m_length);
+                if( ASRUtils::is_value_constant(start) &&
+                ASRUtils::is_value_constant(length) ) {
+                    int64_t const_lbound = -1;
+                    if( !ASRUtils::extract_value(start, const_lbound) ) {
+                        LCOMPILERS_ASSERT(false);
+                    }
+                    int64_t const_length = -1;
+                    if( !ASRUtils::extract_value(length, const_length) ) {
+                        LCOMPILERS_ASSERT(false);
+                    }
+                    value = i32(const_lbound + const_length - 1);
+                }
+            }
+        }
+        return ASRUtils::EXPR(ASR::make_ArrayBound_t(al, loc, x, i32(dim), int32, ASR::arrayboundType::UBound, value));
     }
 
     ASR::expr_t* ArrayLBound(ASR::expr_t* x, int64_t dim) {
-        return ASRUtils::EXPR(ASR::make_ArrayBound_t(al, loc, x, i32(dim), int32, ASR::arrayboundType::LBound, nullptr));
+        ASR::expr_t* value = nullptr;
+        ASR::ttype_t* type = ASRUtils::expr_type(x);
+        if ( ASRUtils::is_array(type) ) {
+            ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(type)));
+            ASR::dimension_t* dims = array_type->m_dims;
+            ASRUtils::extract_dimensions_from_ttype(type, dims);
+            int new_dim = dim - 1;
+            if( dims[new_dim].m_start ) {
+                ASR::expr_t* start = ASRUtils::expr_value(dims[new_dim].m_start);
+                if( ASRUtils::is_value_constant(start) ) {
+                    int64_t const_lbound = -1;
+                    if( !ASRUtils::extract_value(start, const_lbound) ) {
+                        LCOMPILERS_ASSERT(false);
+                    }
+                    value = i32(const_lbound);
+                }
+            }
+        }
+        return ASRUtils::EXPR(ASR::make_ArrayBound_t(al, loc, x, i32(dim), int32, ASR::arrayboundType::LBound, value));
     }
 
     inline ASR::expr_t* i_t(int64_t x, ASR::ttype_t* t) {
