@@ -1330,7 +1330,8 @@ namespace LCompilers {
                         llvm_type = arr_api->get_array_type(asr_type, el_type);
                         break;
                     }
-                    case ASR::array_physical_typeType::PointerToDataArray: {
+                    case ASR::array_physical_typeType::PointerToDataArray:
+                    case ASR::array_physical_typeType::UnboundedPointerToDataArray : {
                         llvm_type = get_el_type(v_type->m_type, module)->getPointerTo();
                         break;
                     }
