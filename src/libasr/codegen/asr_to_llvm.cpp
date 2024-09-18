@@ -1033,7 +1033,7 @@ public:
                             llvm::ConstantInt::getNullValue(llvm::Type::getInt64PtrTy(context))};
                     }
                     builder->CreateCall(fn, args);
-                    llvm::Value* ptr_to_memset = (x_arr->getType() == string_descriptor->getPointerTo()) ? x_arr : LLVM::CreateLoad(*builder, x_arr); 
+                    llvm::Value* ptr_to_memset = (x_arr->getType() == string_descriptor->getPointerTo()) ? x_arr : llvm_utils->CreateLoad(x_arr); 
                     builder->CreateMemSet(ptr_to_memset,
                         llvm::ConstantInt::get(llvm::Type::getInt8Ty(context), llvm::APInt(8, 0)),
                         alloc_size, llvm::MaybeAlign());
