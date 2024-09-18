@@ -3844,7 +3844,11 @@ public:
                     uint32_t h = get_hash((ASR::asr_t*)arg);
                     std::string arg_s = arg->m_name;
                     llvm_arg.setName(arg_s);
+                    llvm::Type *arg_type = llvm_utils->get_type_from_ttype_t_util(
+                        ASRUtils::type_get_past_allocatable(
+                        ASRUtils::type_get_past_pointer(arg->m_type)), module.get());
                     llvm_symtab[h] = llvm_sym;
+                    ptr_type[llvm_sym] = arg_type;
                 }
             }
             if (is_a<ASR::Function_t>(*s)) {
