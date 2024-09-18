@@ -4566,10 +4566,9 @@ public:
             Allocator& al;
         public:
             ASR::expr_t** current_expr;
-            std::map<int, ASR::ttype_t*> array_arg_index;
 
             ReplaceArrayItemWithArraySection(Allocator& al_) :
-                al(al_) {}
+                al(al_), current_expr(nullptr) {}
 
             void replace_ArrayItem(ASR::ArrayItem_t* x) {
                 Vec<ASR::array_index_t> array_indices; array_indices.reserve(al, x->n_args);
@@ -4600,10 +4599,9 @@ public:
         public:
             ASR::expr_t** current_expr;
             LegacyArraySectionsVisitor(Allocator& al_) :
-                al(al_), replacer(al_) {}
+                al(al_), replacer(al_), current_expr(nullptr) {}
 
-            void call_replacer_(std::map<int, ASR::ttype_t*> &array_arg_index) {
-                replacer.array_arg_index = array_arg_index;
+            void call_replacer_() {
                 replacer.current_expr = current_expr;
                 replacer.replace_expr(*current_expr);
                 current_expr = replacer.current_expr;
@@ -4654,9 +4652,11 @@ public:
                     for( auto it: array_arg_index ) {
                         ASR::expr_t* arg_expr = x.m_args[it.first].m_value;
                         if ( arg_expr != nullptr ) {
-                            *current_expr = arg_expr;
-                            call_replacer_(array_arg_index);
+                            ASR::expr_t** current_expr_copy = current_expr;
+                            current_expr = const_cast<ASR::expr_t**>(&(arg_expr));;
+                            call_replacer_();
                             x.m_args[it.first].m_value = *current_expr;
+                            current_expr = current_expr_copy;
                         }
                     }
                 }
