@@ -8495,28 +8495,19 @@ public:
                                             if (c_kind == 4) {
                                                 if (compiler_options.platform == Platform::Windows) {
                                                     // tmp is {float, float}*
-                                                    // type_fx2p is i64*
-                                                    llvm::Type* type_fx2p = llvm::Type::getInt64PtrTy(context);
-                                                    // Convert {float,float}* to i64* using bitcast
-                                                    tmp = builder->CreateBitCast(tmp, type_fx2p);
-                                                    // Then convert i64* -> i64
-                                                    tmp = llvm_utils->CreateLoad(tmp);
+                                                    // type_fx2 is i64
+                                                    llvm::Type* type_fx2 = llvm::Type::getInt64Ty(context);
+                                                    tmp = llvm_utils->CreateLoad2(type_fx2, tmp);
                                                 } else if (compiler_options.platform == Platform::macOS_ARM) {
                                                     // tmp is {float, float}*
-                                                    // type_fx2p is [2 x float]*
-                                                    llvm::Type* type_fx2p = llvm::ArrayType::get(llvm::Type::getFloatTy(context), 2)->getPointerTo();
-                                                    // Convert {float,float}* to [2 x float]* using bitcast
-                                                    tmp = builder->CreateBitCast(tmp, type_fx2p);
-                                                    // Then convert [2 x float]* -> [2 x float]
-                                                    tmp = llvm_utils->CreateLoad(tmp);
+                                                    // type_fx2 is [2 x float]
+                                                    llvm::Type* type_fx2 = llvm::ArrayType::get(llvm::Type::getFloatTy(context), 2);
+                                                    tmp = llvm_utils->CreateLoad2(type_fx2, tmp);
                                                 } else {
                                                     // tmp is {float, float}*
-                                                    // type_fx2p is <2 x float>*
-                                                    llvm::Type* type_fx2p = FIXED_VECTOR_TYPE::get(llvm::Type::getFloatTy(context), 2)->getPointerTo();
-                                                    // Convert {float,float}* to <2 x float>* using bitcast
-                                                    tmp = builder->CreateBitCast(tmp, type_fx2p);
-                                                    // Then convert <2 x float>* -> <2 x float>
-                                                    tmp = llvm_utils->CreateLoad(tmp);
+                                                    // type_fx2 is <2 x float>
+                                                    llvm::Type* type_fx2 = FIXED_VECTOR_TYPE::get(llvm::Type::getFloatTy(context), 2);
+                                                    tmp = llvm_utils->CreateLoad2(type_fx2, tmp);
                                                 }
                                             } else {
                                                 LCOMPILERS_ASSERT(c_kind == 8)
@@ -8524,7 +8515,7 @@ public:
                                                     // 128 bit aggregate type is passed by reference
                                                 } else {
                                                     // Pass by value
-                                                    tmp = llvm_utils->CreateLoad(tmp);
+                                                    tmp = llvm_utils->CreateLoad2(arg_type, tmp);
                                                 }
                                             }
                                         }
