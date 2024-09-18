@@ -5529,7 +5529,7 @@ public:
             x->type == ASR::exprType::StructInstanceMember ) {
             if( load_ref &&
                 !ASRUtils::is_value_constant(ASRUtils::expr_value(x)) && !is_string_descriptor ) {
-                tmp = CreateLoad2(ASRUtils::expr_type(x), tmp);
+                tmp = llvm_utils->CreateLoad2(ASRUtils::expr_type(x), tmp);
             }
         }
         // TODO : Remove the assertion below.
@@ -7000,7 +7000,7 @@ public:
             == ASR::string_physical_typeType::DescriptorString;
 
         while( ptr_loads_copy-- && !is_descriptorString) {
-            tmp = CreateLoad(tmp);
+            tmp = llvm_utils->CreateLoad(tmp);
         }
         // TODO : Remove this assertion
         if(is_descriptorString){
