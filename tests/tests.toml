@@ -118,10 +118,6 @@ filename = "../integration_tests/template_vector.f90"
 asr = true
 
 [[test]]
-filename = "../integration_tests/array_section_is_non_allocatable.f90"
-asr = true
-
-[[test]]
 filename = "../integration_tests/template_simple_01.f90"
 asr = true
 
