@@ -867,7 +867,7 @@ public:
         {"storage_size", {IntrinsicSignature({"a", "kind"}, 1, 2)}},
         {"spread", {IntrinsicSignature({"source", "dim", "ncopies"}, 3, 3)}},
         {"out_of_range", {IntrinsicSignature({"value", "mold", "round"}, 2, 3)}},
-        {"same_type_as", {IntrinsicSignature({"val1", "val2"}, 2, 2)}},
+        {"same_type_as", {IntrinsicSignature({"a", "b"}, 2, 2)}},
     };
 
     std::map<std::string, std::pair<std::string, std::vector<std::string>>> intrinsic_mapping = {

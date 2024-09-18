@@ -646,7 +646,7 @@ namespace IntrinsicElementalFunctionRegistry {
         {static_cast<int64_t>(IntrinsicElementalFunctions::BesselYN),
             "bessel_yn"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::SameTypeAs),
-            "SAME_TYPE_AS"},
+            "same_type_as"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Merge),
             "merge"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Mvbits),

@@ -845,6 +845,7 @@ compile_time_only_fn = [
     "Kind",
     "MaxExponent",
     "MinExponent",
+    "SameTypeAs",
 ]
 
 type_to_asr_type_check = {
