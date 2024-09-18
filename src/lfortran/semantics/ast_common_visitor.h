@@ -4072,7 +4072,8 @@ public:
                     array_section_dims.push_back(al, empty_dim);
                 }
             }
-            type = ASRUtils::duplicate_type(al, type, &array_section_dims);
+            type = ASRUtils::duplicate_type(al, ASRUtils::type_get_past_allocatable(type),
+                    &array_section_dims);
             return ASR::make_ArraySection_t(al, loc,
                 v_Var, args.p, args.size(), type, arr_ref_val);
         }
