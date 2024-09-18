@@ -88,12 +88,28 @@ public:
         *current_expr = ASRUtils::EXPR(ASR::Constructor(al, x->base.base.loc, \
             left, x->m_op, right, x->m_type, nullptr)); \
 
+    #define CompareReplacement(Constructor) ASR::expr_t** current_expr_copy = current_expr; \
+        current_expr = const_cast<ASR::expr_t**>(&(x->m_left)); \
+        this->replace_expr(x->m_left); \
+        ASR::expr_t* left = *current_expr; \
+        current_expr = current_expr_copy; \
+        current_expr = const_cast<ASR::expr_t**>(&(x->m_right)); \
+        this->replace_expr(x->m_right); \
+        ASR::expr_t* right = *current_expr; \
+        current_expr = current_expr_copy; \
+        *current_expr = ASRUtils::EXPR(ASR::Constructor(al, x->base.base.loc, \
+            left, x->m_op, right, x->m_type, nullptr)); \
+
     void replace_IntegerBinOp(ASR::IntegerBinOp_t* x) {
         BinOpReplacement(make_IntegerBinOp_t)
     }
 
     void replace_RealBinOp(ASR::RealBinOp_t* x) {
         BinOpReplacement(make_RealBinOp_t)
+    }
+
+    void replace_IntegerCompare(ASR::IntegerCompare_t* x) {
+        CompareReplacement(make_IntegerCompare_t)
     }
 
     void replace_IntrinsicElementalFunction(ASR::IntrinsicElementalFunction_t* x) {
@@ -431,6 +447,24 @@ public:
         ASR::stmt_t* assign_stmt = nullptr;
         ASR::stmt_t* if_stmt = nullptr;
 
+        // We initially handle this case for logical arrays inside the AST node visitor. We need to handle it here
+        // again to work with the changes introduced during the ASR passes before this.
+        if (ASR::is_a<ASR::Logical_t>(*ASRUtils::type_get_past_array_pointer_allocatable(ASRUtils::expr_type(test)))) {
+            ASR::expr_t* logical_true = ASRUtils::EXPR(
+                                            ASR::make_LogicalConstant_t(
+                                                al,
+                                                x.base.base.loc,
+                                                true,
+                                                ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, 4))));
+            test = ASRUtils::EXPR(ASR::make_LogicalBinOp_t(al,
+                                                           x.base.base.loc,
+                                                           test,
+                                                           ASR::logicalbinopType::Eqv,
+                                                           logical_true,
+                                                           ASRUtils::expr_type(test),
+                                                           nullptr));
+        }
+
         if (ASR::is_a<ASR::IntegerCompare_t>(*test)) {
             int_cmp = ASR::down_cast<ASR::IntegerCompare_t>(test);
             left = int_cmp->m_left;
@@ -441,7 +475,7 @@ public:
             log_bin_op = ASR::down_cast<ASR::LogicalBinOp_t>(test);
             left = log_bin_op->m_left;
         } else {
-            throw LCompilersException("Unsupported type, " + std::to_string(test->type));
+            throw LCompilersException("Unsupported type, " + ASRUtils::type_to_str_python(ASRUtils::expr_type(test)));
         }
 
         // create index variables.
