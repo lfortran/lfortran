@@ -1729,11 +1729,11 @@ class TransformVariableInitialiser:
 
         ASR::Variable_t& xx = const_cast<ASR::Variable_t&>(x);
         if( x.m_symbolic_value) {
-            if( symtab2decls.find(current_scope) == symtab2decls.end() ) {
+            if( symtab2decls.find(x.m_parent_symtab) == symtab2decls.end() ) {
                 Vec<ASR::stmt_t*> result_vec; result_vec.reserve(al, 1);
-                symtab2decls[current_scope] = result_vec;
+                symtab2decls[x.m_parent_symtab] = result_vec;
             }
-            Vec<ASR::stmt_t*>& result_vec = symtab2decls[current_scope];
+            Vec<ASR::stmt_t*>& result_vec = symtab2decls[x.m_parent_symtab];
             ASR::expr_t* target = ASRUtils::EXPR(ASR::make_Var_t(al, loc, &(xx.base)));
 
             // if `m_value` is present, then use that for converting it into
