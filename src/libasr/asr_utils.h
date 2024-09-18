@@ -63,6 +63,8 @@ ASR::asr_t* make_Cmpop_util(Allocator &al, const Location& loc, ASR::cmpopType c
 
 inline bool check_equal_type(ASR::ttype_t* x, ASR::ttype_t* y, bool check_for_dimensions=false);
 
+static inline std::string type_to_str_python(const ASR::ttype_t *t, bool for_error_message=true);
+
 static inline  double extract_real(const char *s) {
     // TODO: this is inefficient. We should
     // convert this in the tokenizer where we know most information
@@ -446,7 +448,7 @@ static inline ASR::abiType expr_abi(ASR::expr_t* e) {
         }
         default:
             throw LCompilersException("Cannot extract the ABI of " +
-                    std::to_string(e->type) + " expression.");
+                    ASRUtils::type_to_str_python(ASRUtils::expr_type(e)) + " expression.");
     }
 }
 
@@ -1628,8 +1630,7 @@ static inline std::string get_type_code(ASR::ttype_t** types, size_t n_types,
     return code;
 }
 
-static inline std::string type_to_str_python(const ASR::ttype_t *t,
-                                             bool for_error_message=true)
+static inline std::string type_to_str_python(const ASR::ttype_t *t, bool for_error_message)
 {
     switch (t->type) {
         case ASR::ttypeType::Array: {
