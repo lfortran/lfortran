@@ -88,28 +88,12 @@ public:
         *current_expr = ASRUtils::EXPR(ASR::Constructor(al, x->base.base.loc, \
             left, x->m_op, right, x->m_type, nullptr)); \
 
-    #define CompareReplacement(Constructor) ASR::expr_t** current_expr_copy = current_expr; \
-        current_expr = const_cast<ASR::expr_t**>(&(x->m_left)); \
-        this->replace_expr(x->m_left); \
-        ASR::expr_t* left = *current_expr; \
-        current_expr = current_expr_copy; \
-        current_expr = const_cast<ASR::expr_t**>(&(x->m_right)); \
-        this->replace_expr(x->m_right); \
-        ASR::expr_t* right = *current_expr; \
-        current_expr = current_expr_copy; \
-        *current_expr = ASRUtils::EXPR(ASR::Constructor(al, x->base.base.loc, \
-            left, x->m_op, right, x->m_type, nullptr)); \
-
     void replace_IntegerBinOp(ASR::IntegerBinOp_t* x) {
         BinOpReplacement(make_IntegerBinOp_t)
     }
 
     void replace_RealBinOp(ASR::RealBinOp_t* x) {
         BinOpReplacement(make_RealBinOp_t)
-    }
-
-    void replace_IntegerCompare(ASR::IntegerCompare_t* x) {
-        CompareReplacement(make_IntegerCompare_t)
     }
 
     void replace_IntrinsicElementalFunction(ASR::IntrinsicElementalFunction_t* x) {
