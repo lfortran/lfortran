@@ -194,6 +194,12 @@ static inline ASR::ttype_t* type_get_past_array_pointer_allocatable(
             type_get_past_pointer(f)));
 }
 
+static inline ASR::ttype_t* type_get_past_pointer_allocatable(ASR::ttype_t* f) {
+    return 
+        type_get_past_allocatable(
+            type_get_past_pointer(f));
+}
+
 static inline int extract_kind_from_ttype_t(const ASR::ttype_t* type) {
     if (type == nullptr) {
         return -1;

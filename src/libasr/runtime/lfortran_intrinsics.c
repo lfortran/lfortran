@@ -1927,7 +1927,7 @@ LFORTRAN_API void _lfortran_strcat(char** s1, char** s2, char** dest)
 
 // strcpy -----------------------------------------------------------
 
-LFORTRAN_API void _lfortran_strcpy(char** x, char *y, int8_t free_target)
+LFORTRAN_API void _lfortran_strcpy(char** x, char *y, int8_t free_target, int64_t x_size, int64_t x_capacity)
 {
     if (free_target) {
         if (*x) {
@@ -2311,7 +2311,7 @@ LFORTRAN_API void _lfortran_free(char* ptr) {
     free((void*)ptr);
 }
 
-LFORTRAN_API void _lfortran_alloc(char** ptr, int32_t size) {
+LFORTRAN_API void _lfortran_alloc(char** ptr, int32_t size, int64_t* string_size, int64_t* string_capacity) {
     *ptr = (char *) malloc(size);
 }
 
@@ -3155,7 +3155,7 @@ LFORTRAN_API void _lfortran_string_write(char **str, int32_t* iostat, const char
     va_start(args, format);
     char *s = (char *) malloc(strlen(*str)*sizeof(char));
     vsprintf(s, format, args);
-    _lfortran_strcpy(str, s, 0);
+    _lfortran_strcpy(str, s, 0, -1, -1);
     free(s);
     va_end(args);
     *iostat = 0;
