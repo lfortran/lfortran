@@ -385,7 +385,7 @@ RUN(NAME functions_13 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran
 RUN(NAME functions_15 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17)
 RUN(NAME functions_16 LABELS gfortran llvm llvm17)
 RUN(NAME functions_17 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17)
-# RUN(NAME functions_18 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME functions_18 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17)
 RUN(NAME functions_19 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17)
 RUN(NAME functions_20 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17)
 RUN(NAME functions_21 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17)
