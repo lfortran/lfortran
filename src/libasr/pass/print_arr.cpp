@@ -218,25 +218,18 @@ public:
                 }
                 print_stmt = print_array_using_doloop(x.m_values[i], nullptr, x.base.base.loc);
                 pass_result.push_back(al, print_stmt);
-                pass_result.push_back(al, back);
-                if (x.m_separator) {
-                    if (i == x.n_values - 1) {
-                        empty_print_endl = ASRUtils::STMT(ASR::make_Print_t(al, x.base.base.loc,
-                            nullptr, 0, nullptr, x.m_end));
-                    } else {
-                        empty_print_endl = ASRUtils::STMT(ASR::make_Print_t(al, x.base.base.loc,
-                            nullptr, 0, nullptr, x.m_separator));
-                    }
-                } else {
-                    if (i == x.n_values - 1) {
-                        empty_print_endl = ASRUtils::STMT(ASR::make_Print_t(al, x.base.base.loc,
-                            nullptr, 0, nullptr, x.m_end));
-                    } else {
-                        empty_print_endl = ASRUtils::STMT(ASR::make_Print_t(al, x.base.base.loc,
-                            nullptr, 0, nullptr, nullptr));
-                    }
+                if (i == x.n_values - 1) {
+                    pass_result.push_back(al, back);
                 }
-                pass_result.push_back(al, empty_print_endl);
+                if (x.m_separator && (i != x.n_values - 1)) {
+                    empty_print_endl = ASRUtils::STMT(ASR::make_Print_t(al, x.base.base.loc,
+                        nullptr, 0, nullptr, x.m_separator));
+                    pass_result.push_back(al, empty_print_endl);
+                } else if (i == x.n_values - 1) {
+                    empty_print_endl = ASRUtils::STMT(ASR::make_Print_t(al, x.base.base.loc,
+                        nullptr, 0, nullptr, x.m_end));
+                    pass_result.push_back(al, empty_print_endl);
+                }
             } else {
                 print_body.push_back(x.m_values[i]);
             }
