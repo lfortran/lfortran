@@ -4179,3 +4179,7 @@ ast = true
 [[test]]
 filename = "errors/incompatible_rank_assign.f90"
 asr = true
+
+[[test]]
+filename = "function_call1.f90"
+asr = true

@@ -1021,11 +1021,12 @@ public:
                             std::vector<llvm::Value*> idx_vec = {
                             llvm::ConstantInt::get(context, llvm::APInt(32, 1))};
                             llvm::Value* null_array_ptr = llvm::ConstantPointerNull::get(type->getPointerTo());
-                            llvm::Value* size_of_array_struct = llvm_utils->CreateGEP(null_array_ptr, idx_vec);
+                            llvm::Value* size_of_array_struct = llvm_utils->CreateGEP2(type, null_array_ptr, idx_vec);
                             llvm::Value* size_of_array_struct_casted = builder->CreatePtrToInt(size_of_array_struct, llvm::Type::getInt32Ty(context)); //cast to int32
                             llvm::Value* struct_ptr = LLVMArrUtils::lfortran_malloc(
                                 context, *module, *builder, size_of_array_struct_casted);
                             ptr_ = builder->CreateBitCast(struct_ptr, type->getPointerTo());
+                            ptr_type[ptr_] = type;
                             arr_descr->fill_dimension_descriptor(ptr_, n_dims, module.get(), ASRUtils::expr_type(tmp_expr));
                         } else {
                             ptr_ = llvm_utils->CreateAlloca(*builder, type);
@@ -2609,6 +2610,9 @@ public:
         tmp = llvm_utils->create_gep2(xtype, tmp, member_idx);
         ASR::ttype_t* member_type = ASRUtils::type_get_past_pointer(
             ASRUtils::type_get_past_allocatable(member->m_type));
+        llvm::Type* llvm_type = llvm_utils->get_type_from_ttype_t_util(
+            member_type, module.get());
+        ptr_type[tmp] = llvm_type;
         if( ASR::is_a<ASR::StructType_t>(*member_type) ) {
             ASR::symbol_t *s_sym = ASR::down_cast<ASR::StructType_t>(
                 member_type)->m_derived_type;
@@ -3844,7 +3848,11 @@ public:
                     uint32_t h = get_hash((ASR::asr_t*)arg);
                     std::string arg_s = arg->m_name;
                     llvm_arg.setName(arg_s);
+                    llvm::Type *arg_type = llvm_utils->get_type_from_ttype_t_util(
+                        ASRUtils::type_get_past_allocatable(
+                        ASRUtils::type_get_past_pointer(arg->m_type)), module.get());
                     llvm_symtab[h] = llvm_sym;
+                    ptr_type[llvm_sym] = arg_type;
                 }
             }
             if (is_a<ASR::Function_t>(*s)) {

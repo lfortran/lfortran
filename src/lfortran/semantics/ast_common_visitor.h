@@ -4072,7 +4072,8 @@ public:
                     array_section_dims.push_back(al, empty_dim);
                 }
             }
-            type = ASRUtils::duplicate_type(al, type, &array_section_dims);
+            type = ASRUtils::duplicate_type(al, ASRUtils::type_get_past_allocatable(type),
+                    &array_section_dims);
             return ASR::make_ArraySection_t(al, loc,
                 v_Var, args.p, args.size(), type, arr_ref_val);
         }
@@ -4429,7 +4430,9 @@ public:
                             ASRUtils::get_FunctionType(func)->m_return_var_type,
                             &new_dims);
         } else {
+            ASRUtils::ExprStmtWithScopeDuplicator node_duplicator(al, current_scope);
             type = ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
+            type = node_duplicator.duplicate_ttype(type);
         }
         if (ASRUtils::symbol_parent_symtab(v)->get_counter() != current_scope->get_counter()) {
             ADD_ASR_DEPENDENCIES(current_scope, v, current_function_dependencies);
@@ -4559,6 +4562,126 @@ public:
         }
     }
 
+    void replace_ArrayItem_in_SubroutineCall(Allocator &al, bool legacy_array_sections, SymbolTable* current_scope) {
+
+    class ReplaceArrayItemWithArraySection: public ASR::BaseExprReplacer<ReplaceArrayItemWithArraySection> {
+        private:
+            Allocator& al;
+        public:
+            ASR::expr_t** current_expr;
+
+            ReplaceArrayItemWithArraySection(Allocator& al_) :
+                al(al_), current_expr(nullptr) {}
+
+            void replace_ArrayItem(ASR::ArrayItem_t* x) {
+                Vec<ASR::array_index_t> array_indices; array_indices.reserve(al, x->n_args);
+                ASRUtils::ASRBuilder b(al, x->base.base.loc);
+
+                for ( size_t i = 0; i < x->n_args; i++ ) {
+                    ASR::array_index_t array_index;
+                    array_index.loc = x->m_args[i].loc;
+                    array_index.m_left = x->m_args[i].m_right;
+                    array_index.m_right = b.ArrayUBound(x->m_v, i + 1);
+                    if ( ASRUtils::expr_value(array_index.m_right) ) {
+                        array_index.m_right = ASRUtils::expr_value(array_index.m_right);
+                    }
+                    array_index.m_step = b.i32( i + 1 );
+                    array_indices.push_back(al, array_index);
+                }
+                ASR::ttype_t* new_type = ASRUtils::duplicate_type_with_empty_dims(al, ASRUtils::expr_type(x->m_v));
+                *current_expr = ASRUtils::EXPR(ASR::make_ArraySection_t(al, x->base.base.loc, x->m_v,
+                    array_indices.p, array_indices.n, new_type, nullptr));
+            }
+
+    };
+
+    class LegacyArraySectionsVisitor : public ASR::CallReplacerOnExpressionsVisitor<LegacyArraySectionsVisitor> {
+        private:
+            Allocator& al;
+            ReplaceArrayItemWithArraySection replacer;
+        public:
+            ASR::expr_t** current_expr;
+            LegacyArraySectionsVisitor(Allocator& al_) :
+                al(al_), replacer(al_), current_expr(nullptr) {}
+
+            void call_replacer_() {
+                replacer.current_expr = current_expr;
+                replacer.replace_expr(*current_expr);
+                current_expr = replacer.current_expr;
+            }
+
+            void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
+                Vec<ASR::stmt_t*> body;
+                body.reserve(al, n_body);
+                for (size_t i=0; i<n_body; i++) {
+                    this->visit_stmt(*m_body[i]);
+                    body.push_back(al, m_body[i]);
+                }
+                m_body = body.p;
+                n_body = body.size();
+            }
+
+            void visit_Function(const ASR::Function_t &x) {
+                ASR::Function_t& xx = const_cast<ASR::Function_t&>(x);
+
+                for (auto &a : xx.m_symtab->get_scope()) {
+                    this->visit_symbol(*a.second);
+                }
+
+                transform_stmts(xx.m_body, xx.n_body);
+            }
+
+            void visit_Program(const ASR::Program_t &x) {
+                ASR::Program_t& xx = const_cast<ASR::Program_t&>(x);
+
+                for (auto &a : xx.m_symtab->get_scope()) {
+                    this->visit_symbol(*a.second);
+                }
+
+                transform_stmts(xx.m_body, xx.n_body);
+            }
+
+            void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
+                if ( ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(x.m_name)) ) {
+                    ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(x.m_name));
+                    ASR::FunctionType_t* f_type = ASR::down_cast<ASR::FunctionType_t>(f->m_function_signature);
+                    std::map<int, ASR::ttype_t*> array_arg_index;
+                    for (size_t i = 0; i < f->n_args; i++) {
+                        if (ASRUtils::is_array(ASRUtils::expr_type(f->m_args[i]))) {
+                            array_arg_index[i] = f_type->m_arg_types[i];
+                        }
+                    }
+                    // iterate only over args of type array.
+                    for( auto it: array_arg_index ) {
+                        ASR::expr_t* arg_expr = x.m_args[it.first].m_value;
+                        if ( arg_expr != nullptr ) {
+                            ASR::expr_t** current_expr_copy = current_expr;
+                            current_expr = const_cast<ASR::expr_t**>(&(arg_expr));;
+                            call_replacer_();
+                            x.m_args[it.first].m_value = *current_expr;
+                            current_expr = current_expr_copy;
+                        }
+                    }
+                }
+            }
+    };
+
+        if ( legacy_array_sections ) {
+            LegacyArraySectionsVisitor v(al);
+            ASR::asr_t* asr_owner = current_scope->asr_owner;
+            if ( ASR::is_a<ASR::symbol_t>(*asr_owner) ) {
+                ASR::symbol_t* sym = ASR::down_cast<ASR::symbol_t>(asr_owner);
+                if ( ASR::is_a<ASR::Function_t>(*sym) ) {
+                    ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(sym);
+                    v.visit_Function(*f);
+                } else if ( ASR::is_a<ASR::Program_t>(*sym) ) {
+                    ASR::Program_t* p = ASR::down_cast<ASR::Program_t>(sym);
+                    v.visit_Program(*p);
+                }
+            }
+        }
+    }
+
     void legacy_array_sections_helper(ASR::symbol_t *v, Vec<ASR::call_arg_t>& args, const Location &loc) {
         ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(v));
         if (compiler_options.legacy_array_sections) {
@@ -4640,6 +4763,26 @@ public:
                 }
             }
             args = args_with_array_section;
+            // There can be a possibility that initially it is ArrayItem and now we realised
+            // that it must be an ArraySection instead.
+            array_arg_idx.clear();
+            for ( size_t i = 0; i < args.size(); i++ ) {
+                ASR::expr_t* arg_expr = args[i].m_value;
+                if ( arg_expr && ASRUtils::is_array(ASRUtils::expr_type(arg_expr)) ) {
+                    array_arg_idx[i] = ASRUtils::expr_type(arg_expr);
+                }
+            }
+            // bool visit_required = false;
+            for ( auto it: array_arg_idx ) {
+                ASR::expr_t* func_arg = f->m_args[it.first];
+                if ( !ASRUtils::is_array(ASRUtils::EXPR2VAR(func_arg)->m_type) ) {
+                    // create array type with empty dimensions and physical type as PointerToDataArray
+                    ASR::ttype_t* new_type = ASRUtils::duplicate_type_with_empty_dims(al, it.second, ASR::array_physical_typeType::PointerToDataArray, true);
+                    ASRUtils::EXPR2VAR(func_arg)->m_type = new_type;
+                    f_type->m_arg_types[it.first] = new_type;
+                    // visit_required = true;
+                }
+            }
         }
     }
 

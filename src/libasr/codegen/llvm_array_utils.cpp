@@ -395,7 +395,7 @@ namespace LCompilers {
                 std::vector<llvm::Value*> idx_vec = {
                     llvm::ConstantInt::get(context, llvm::APInt(32, 1))};
                     llvm::Value* null_dim_des_ptr = llvm::ConstantPointerNull::get(dim_des->getPointerTo());
-                    llvm::Value* size_of_dim_des_struct = llvm_utils->CreateGEP(null_dim_des_ptr, idx_vec);
+                    llvm::Value* size_of_dim_des_struct = llvm_utils->CreateGEP2(dim_des, null_dim_des_ptr, idx_vec);
                     llvm::Value* size_of_dim_des_struct_casted = builder->CreatePtrToInt(size_of_dim_des_struct, llvm::Type::getInt32Ty(context)); //cast to int32
                     llvm::Value* size_mul_ndim = builder->CreateMul(size_of_dim_des_struct_casted, llvm::ConstantInt::get(context, llvm::APInt(32, n_dims)));
                     llvm::Value* struct_ptr = LLVMArrUtils::lfortran_malloc(
