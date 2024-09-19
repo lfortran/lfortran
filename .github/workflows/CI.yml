@@ -452,25 +452,25 @@ jobs:
 
             cmake --build . -j16 --target install
 
-      # - name: Test Linux
-      #   shell: bash -e -l {0}
-      #   run: |
-      #       ctest
-      #       ./run_tests.py
-      #       ./run_tests.py -vh
-      #       cd integration_tests
-      #       ./run_tests.py -m
-      #       ./run_tests.py -b llvm
-      #       ./run_tests.py -b llvm -f
+      - name: Test Linux
+        shell: bash -e -l {0}
+        run: |
+            #ctest
+            #./run_tests.py
+            #./run_tests.py -vh
+            cd integration_tests
+            ./run_tests.py -m
+            ./run_tests.py -b llvm
+            #./run_tests.py -b llvm -f
 
-      # - name: Test Installation
-      #   shell: bash -e -l {0}
-      #   run: |
-      #       test -x inst/bin/tastic/lfortran
-      #       test -f inst/oh/my/sweet/lib/liblfortran_runtime_static.a
-      #       test -f inst/oh/my/sweet/lib/liblfortran_runtime.so
-      #       test -f inst/incl/O/Matic/lfortran/impure/lfortran_intrinsics.h
-      #       test -f inst/man/O/man/man1/lfortran.1
+      - name: Test Installation
+        shell: bash -e -l {0}
+        run: |
+            test -x inst/bin/tastic/lfortran
+            test -f inst/oh/my/sweet/lib/liblfortran_runtime_static.a
+            test -f inst/oh/my/sweet/lib/liblfortran_runtime.so
+            test -f inst/incl/O/Matic/lfortran/impure/lfortran_intrinsics.h
+            test -f inst/man/O/man/man1/lfortran.1
 
   third_party_code_compile:
     name: Check Third Party Code Compilation

@@ -1845,6 +1845,7 @@ class VerifySimplifierASROutput:
     VerifySimplifierASROutput(Allocator& al_, ExprsWithTargetType& exprs_with_target_) :
         al(al_), exprs_with_target(exprs_with_target_) {
         visit_compile_time_value = false;
+        (void)exprs_with_target; // explicitly reference to avoid unused warning
     }
 
     void visit_ArrayBroadcast(const ASR::ArrayBroadcast_t &x) {
