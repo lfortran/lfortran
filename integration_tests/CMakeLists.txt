@@ -629,7 +629,7 @@ RUN(NAME intrinsics_45 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortra
 RUN(NAME intrinsics_46 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17) # ichar & iachar
 RUN(NAME intrinsics_47 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran llvm17) # all
 RUN(NAME intrinsics_48 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran llvm17) # log_gamma
-RUN(NAME intrinsics_49 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # cmplx, sin
+RUN(NAME intrinsics_49 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17) # cmplx, sin
 RUN(NAME intrinsics_50 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME intrinsics_51 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17) #trig
 RUN(NAME intrinsics_52 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran llvm17) # max0, min0
@@ -793,7 +793,7 @@ RUN(NAME intrinsics_208 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran ll
 RUN(NAME intrinsics_209 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17) # atand
 RUN(NAME intrinsics_210 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRAFILES lcompilers_test_module.f90) # bessel_jn
 # RUN(NAME intrinsics_211 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # bessel_yn
-RUN(NAME intrinsics_212 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # specific type intrinsics
+RUN(NAME intrinsics_212 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17) # specific type intrinsics
 RUN(NAME intrinsics_213 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17) # cpu_time
 RUN(NAME intrinsics_214 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17) # sind
 RUN(NAME intrinsics_215 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17) # cosd
@@ -845,9 +845,9 @@ RUN(NAME intrinsics_260 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17) # 
 RUN(NAME intrinsics_261 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran llvm17) # ceiling
 RUN(NAME intrinsics_262 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran llvm17) # floor
 RUN(NAME intrinsics_263 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran llvm17) # maxval
-RUN(NAME intrinsics_264 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # sin
-RUN(NAME intrinsics_265 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # cos
-RUN(NAME intrinsics_266 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # tan
+RUN(NAME intrinsics_264 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17) # sin
+RUN(NAME intrinsics_265 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17) # cos
+RUN(NAME intrinsics_266 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17) # tan
 RUN(NAME intrinsics_267 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17) # dsin, dcos, dtan
 RUN(NAME intrinsics_268 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran llvm17) # asin
 RUN(NAME intrinsics_269 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17) # acos
@@ -875,7 +875,7 @@ RUN(NAME intrinsics_291 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17) # 
 RUN(NAME intrinsics_292 LABELS gfortran llvm llvm17) # command_argument_count
 RUN(NAME intrinsics_293 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17) # dgamma
 RUN(NAME intrinsics_294 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17) # log_gamma
-RUN(NAME intrinsics_295 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # exp
+RUN(NAME intrinsics_295 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17) # exp
 RUN(NAME intrinsics_296 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17) # storage_size
 RUN(NAME intrinsics_297 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17) # poppar
 RUN(NAME intrinsics_298 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17 fortran) # dot_product
