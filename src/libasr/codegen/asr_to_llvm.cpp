@@ -1026,7 +1026,9 @@ public:
                             llvm::Value* struct_ptr = LLVMArrUtils::lfortran_malloc(
                                 context, *module, *builder, size_of_array_struct_casted);
                             ptr_ = builder->CreateBitCast(struct_ptr, type->getPointerTo());
+#if LLVM_VERSION_MAJOR > 16
                             ptr_type[ptr_] = type;
+#endif
                             arr_descr->fill_dimension_descriptor(ptr_, n_dims, module.get(), ASRUtils::expr_type(tmp_expr));
                         } else {
                             ptr_ = llvm_utils->CreateAlloca(*builder, type);
@@ -2324,7 +2326,9 @@ public:
                 ASR::is_a<ASR::StructInstanceMember_t>(*x.m_v)) ) {
                 llvm::Type *array_type = llvm_utils->get_type_from_ttype_t_util(x_mv_type_, module.get());
                 array = llvm_utils->CreateLoad2(array_type->getPointerTo(), array);
+#if LLVM_VERSION_MAJOR > 16
                 ptr_type[array] = array_type;
+#endif
             }
 
             Vec<llvm::Value*> llvm_diminfo;
@@ -2610,9 +2614,10 @@ public:
         tmp = llvm_utils->create_gep2(xtype, tmp, member_idx);
         ASR::ttype_t* member_type = ASRUtils::type_get_past_pointer(
             ASRUtils::type_get_past_allocatable(member->m_type));
-        llvm::Type* llvm_type = llvm_utils->get_type_from_ttype_t_util(
+#if LLVM_VERSION_MAJOR > 16
+        ptr_type[tmp] = llvm_utils->get_type_from_ttype_t_util(
             member_type, module.get());
-        ptr_type[tmp] = llvm_type;
+#endif
         if( ASR::is_a<ASR::StructType_t>(*member_type) ) {
             ASR::symbol_t *s_sym = ASR::down_cast<ASR::StructType_t>(
                 member_type)->m_derived_type;
@@ -3848,11 +3853,12 @@ public:
                     uint32_t h = get_hash((ASR::asr_t*)arg);
                     std::string arg_s = arg->m_name;
                     llvm_arg.setName(arg_s);
-                    llvm::Type *arg_type = llvm_utils->get_type_from_ttype_t_util(
+                    llvm_symtab[h] = llvm_sym;
+#if LLVM_VERSION_MAJOR > 16
+                    ptr_type[llvm_sym] = llvm_utils->get_type_from_ttype_t_util(
                         ASRUtils::type_get_past_allocatable(
                         ASRUtils::type_get_past_pointer(arg->m_type)), module.get());
-                    llvm_symtab[h] = llvm_sym;
-                    ptr_type[llvm_sym] = arg_type;
+#endif
                 }
             }
             if (is_a<ASR::Function_t>(*s)) {
@@ -9782,7 +9788,9 @@ public:
             ASRUtils::expr_type(m_v))), module.get());
         if ( is_a<ASR::StructInstanceMember_t>(*m_v) ) {
             tmp = llvm_utils->CreateLoad2(array_type->getPointerTo(), tmp);
+#if LLVM_VERSION_MAJOR > 16
             ptr_type[tmp] = array_type;
+#endif
         }
         llvm::Value* llvm_arg = tmp;
 
@@ -9896,7 +9904,9 @@ public:
         ptr_loads = ptr_loads_copy;
         if (is_a<ASR::StructInstanceMember_t>(*x.m_v)) {
             tmp = llvm_utils->CreateLoad2(array_type->getPointerTo(), tmp);
+#if LLVM_VERSION_MAJOR > 16
             ptr_type[tmp] = array_type;
+#endif
         }
         llvm::Value* llvm_arg1 = tmp;
         visit_expr_wrapper(x.m_dim, true);
