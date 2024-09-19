@@ -333,7 +333,8 @@
                                                                     "fields": {
                                                                         "kind": -1,
                                                                         "len": 0,
-                                                                        "len_expr": []
+                                                                        "len_expr": [],
+                                                                        "physical_type": "PointerString"
                                                                     },
                                                                     "loc": {
                                                                         "first": 98,

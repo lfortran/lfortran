@@ -510,7 +510,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (Character 1 -2 () PointerString)
                                                     )
                                                     ()
                                                     Source
@@ -528,7 +528,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (Character 1 -2 () PointerString)
                                                     )
                                                     ()
                                                     Source

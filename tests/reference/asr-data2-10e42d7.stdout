@@ -90,11 +90,11 @@
                             ()
                             [(StringConstant
                                 "factor in a:"
-                                (Character 1 12 ())
+                                (Character 1 12 () PointerString)
                             )
                             (Var 3 factor)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
                         )]
                         ()
@@ -156,11 +156,11 @@
                             ()
                             [(StringConstant
                                 "factor: "
-                                (Character 1 8 ())
+                                (Character 1 8 () PointerString)
                             )
                             (Var 4 factor)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
                         )]
                         ()

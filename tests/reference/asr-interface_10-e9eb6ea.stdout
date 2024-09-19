@@ -46,7 +46,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Character 1 1 ())
+                                    (Character 1 1 () PointerString)
                                     ()
                                     Source
                                     Public
@@ -62,7 +62,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Character 1 1 ())
+                                    (Character 1 1 () PointerString)
                                     ()
                                     Source
                                     Public
@@ -76,7 +76,7 @@
                         (Var 4 x)
                         (StringConstant
                             "A"
-                            (Character 1 1 ())
+                            (Character 1 1 () PointerString)
                         )
                         ()
                     )
@@ -119,7 +119,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 1 ())
+                                                    (Character 1 1 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -135,7 +135,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 ())
+                                                    (Character 1 -1 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -145,8 +145,8 @@
                                         })
                                     identity
                                     (FunctionType
-                                        [(Character 1 1 ())
-                                        (Character 1 -1 ())]
+                                        [(Character 1 1 () PointerString)
+                                        (Character 1 -1 () PointerString)]
                                         ()
                                         Source
                                         Implementation

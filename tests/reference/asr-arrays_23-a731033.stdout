@@ -86,7 +86,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (Character 1 -2 () PointerString)
                                                     )
                                                     ()
                                                     Source
@@ -103,7 +103,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 20 ())
+                                                    (Character 1 20 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -114,7 +114,7 @@
                                     add_context
                                     (FunctionType
                                         [(Allocatable
-                                            (Character 1 -2 ())
+                                            (Character 1 -2 () PointerString)
                                         )
                                         (StructType
                                             2 toml_context
@@ -156,7 +156,7 @@
                                             [(StringFormat
                                                 (StringConstant
                                                     "(\"line\",1x,i0,\":\")"
-                                                    (Character 1 18 ())
+                                                    (Character 1 18 () PointerString)
                                                 )
                                                 [(StructInstanceMember
                                                     (Var 4 context)
@@ -165,7 +165,7 @@
                                                     ()
                                                 )]
                                                 FormatFortran
-                                                (Character -1 0 ())
+                                                (Character -1 0 () PointerString)
                                                 ()
                                             )]
                                             ()
@@ -224,11 +224,11 @@
                                                         )
                                                         (Integer 4)
                                                         ()
-                                                    ))
+                                                    ) PointerString)
                                                     ()
                                                 )
                                                 (Var 4 message)
-                                                (Character 1 -1 ())
+                                                (Character 1 -1 () PointerString)
                                                 ()
                                             )
                                             ()
@@ -243,9 +243,9 @@
                                                     (Var 4 message)
                                                     (StringConstant
                                                         "   | "
-                                                        (Character 1 5 ())
+                                                        (Character 1 5 () PointerString)
                                                     )
-                                                    (Character 1 -1 ())
+                                                    (Character 1 -1 () PointerString)
                                                     ()
                                                 )
                                                 (StringSection
@@ -253,7 +253,7 @@
                                                         (Var 4 context)
                                                         4 1_toml_context_ptr
                                                         (Pointer
-                                                            (Character 1 -2 ())
+                                                            (Character 1 -2 () PointerString)
                                                         )
                                                         ()
                                                     )
@@ -278,17 +278,17 @@
                                                         )
                                                         (Integer 4)
                                                         ()
-                                                    ))
+                                                    ) PointerString)
                                                     ()
                                                 )
-                                                (Character 1 -1 ())
+                                                (Character 1 -1 () PointerString)
                                                 ()
                                             )
                                             (StringConstant
                                                 "   |"
-                                                (Character 1 4 ())
+                                                (Character 1 4 () PointerString)
                                             )
-                                            (Character 1 -1 ())
+                                            (Character 1 -1 () PointerString)
                                             ()
                                         )
                                         ()
@@ -346,7 +346,7 @@
                                                     ()
                                                     Default
                                                     (Pointer
-                                                        (Character 1 -2 ())
+                                                        (Character 1 -2 () PointerString)
                                                     )
                                                     ()
                                                     Source
@@ -409,7 +409,7 @@
                     [(Print
                         [(StringConstant
                             "working"
-                            (Character 1 7 ())
+                            (Character 1 7 () PointerString)
                         )]
                         ()
                         ()

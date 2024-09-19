@@ -211,7 +211,7 @@
                                     [(Print
                                         [(StringConstant
                                             "Calling integer_add_subrout"
-                                            (Character 1 27 ())
+                                            (Character 1 27 () PointerString)
                                         )]
                                         ()
                                         ()
@@ -398,7 +398,7 @@
                                     [(Print
                                         [(StringConstant
                                             "Calling real_add_subrout"
-                                            (Character 1 24 ())
+                                            (Character 1 24 () PointerString)
                                         )]
                                         ()
                                         ()
@@ -743,7 +743,7 @@
                                 ()
                             )]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
                         )]
                         ()
@@ -815,7 +815,7 @@
                                 ()
                             )]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
                         )]
                         ()

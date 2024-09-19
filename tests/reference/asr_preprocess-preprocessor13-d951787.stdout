@@ -14,7 +14,7 @@
                     [(Print
                         [(StringConstant
                             "1 LFortran"
-                            (Character 1 10 ())
+                            (Character 1 10 () PointerString)
                         )]
                         ()
                         ()
@@ -22,7 +22,7 @@
                     (Print
                         [(StringConstant
                             "2 LFortran 1"
-                            (Character 1 12 ())
+                            (Character 1 12 () PointerString)
                         )]
                         ()
                         ()
@@ -30,7 +30,7 @@
                     (Print
                         [(StringConstant
                             "3 LFortran 1"
-                            (Character 1 12 ())
+                            (Character 1 12 () PointerString)
                         )]
                         ()
                         ()
@@ -38,7 +38,7 @@
                     (Print
                         [(StringConstant
                             "4 LFortran 1"
-                            (Character 1 12 ())
+                            (Character 1 12 () PointerString)
                         )]
                         ()
                         ()
@@ -46,7 +46,7 @@
                     (Print
                         [(StringConstant
                             "42 LFortran 1"
-                            (Character 1 13 ())
+                            (Character 1 13 () PointerString)
                         )]
                         ()
                         ()
@@ -54,7 +54,7 @@
                     (Print
                         [(StringConstant
                             "X is 1"
-                            (Character 1 6 ())
+                            (Character 1 6 () PointerString)
                         )]
                         ()
                         ()
@@ -62,7 +62,7 @@
                     (Print
                         [(StringConstant
                             "1 Y is 1"
-                            (Character 1 8 ())
+                            (Character 1 8 () PointerString)
                         )]
                         ()
                         ()
@@ -70,7 +70,7 @@
                     (Print
                         [(StringConstant
                             "X is 2"
-                            (Character 1 6 ())
+                            (Character 1 6 () PointerString)
                         )]
                         ()
                         ()
@@ -78,7 +78,7 @@
                     (Print
                         [(StringConstant
                             "2 Y is 3"
-                            (Character 1 8 ())
+                            (Character 1 8 () PointerString)
                         )]
                         ()
                         ()
@@ -86,7 +86,7 @@
                     (Print
                         [(StringConstant
                             "X is 4"
-                            (Character 1 6 ())
+                            (Character 1 6 () PointerString)
                         )]
                         ()
                         ()
@@ -94,7 +94,7 @@
                     (Print
                         [(StringConstant
                             "4 Y is 4"
-                            (Character 1 8 ())
+                            (Character 1 8 () PointerString)
                         )]
                         ()
                         ()
@@ -102,7 +102,7 @@
                     (Print
                         [(StringConstant
                             "X is not 1-4"
-                            (Character 1 12 ())
+                            (Character 1 12 () PointerString)
                         )]
                         ()
                         ()
@@ -110,7 +110,7 @@
                     (Print
                         [(StringConstant
                             "5 Y is not 1-4"
-                            (Character 1 14 ())
+                            (Character 1 14 () PointerString)
                         )]
                         ()
                         ()
