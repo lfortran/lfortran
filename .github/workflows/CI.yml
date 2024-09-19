@@ -428,29 +428,29 @@ jobs:
           variant: sccache
           key: ${{ github.job }}-${{ matrix.os }}
 
-      # - name: Build Linux
-      #   shell: bash -e -l {0}
-      #   run: |
-      #       ./build0.sh
-      #       export CXXFLAGS="-Werror"
-      #       export CFLAGS="-Werror"
-      #       cmake . -GNinja \
-      #         -DCMAKE_BUILD_TYPE=Release \
-      #         -DWITH_LLVM=yes \
-      #         -DCMAKE_VERBOSE_MAKEFILE= yes \
-      #         -DLFORTRAN_BUILD_ALL=yes \
-      #         -DWITH_STACKTRACE=no \
-      #         -DWITH_RUNTIME_STACKTRACE=yes \
-      #         -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
-      #         -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
-      #         -DCMAKE_INSTALL_BINDIR=bin/tastic \
-      #         -DCMAKE_INSTALL_LIBDIR=oh/my/sweet/lib \
-      #         -DCMAKE_INSTALL_INCLUDEDIR=incl/O/Matic \
-      #         -DCMAKE_INSTALL_MANDIR=man/O/man \
-      #         -DCMAKE_C_COMPILER_LAUNCHER=sccache \
-      #         -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+      - name: Build Linux
+        shell: bash -e -l {0}
+        run: |
+            ./build0.sh
+            export CXXFLAGS="-Werror"
+            export CFLAGS="-Werror"
+            cmake . -GNinja \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DWITH_LLVM=yes \
+              -DCMAKE_VERBOSE_MAKEFILE= yes \
+              -DLFORTRAN_BUILD_ALL=yes \
+              -DWITH_STACKTRACE=no \
+              -DWITH_RUNTIME_STACKTRACE=yes \
+              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
+              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
+              -DCMAKE_INSTALL_BINDIR=bin/tastic \
+              -DCMAKE_INSTALL_LIBDIR=oh/my/sweet/lib \
+              -DCMAKE_INSTALL_INCLUDEDIR=incl/O/Matic \
+              -DCMAKE_INSTALL_MANDIR=man/O/man \
+              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 
-      #       cmake --build . -j16 --target install
+            cmake --build . -j16 --target install
 
       # - name: Test Linux
       #   shell: bash -e -l {0}
