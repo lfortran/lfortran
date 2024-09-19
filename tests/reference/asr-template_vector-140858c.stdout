@@ -508,13 +508,11 @@
                                                                 ()
                                                             )
                                                             (IntegerConstant 1 (Integer 4) Decimal))]
-                                                            (Allocatable
-                                                                (Array
-                                                                    (Integer 4)
-                                                                    [(()
-                                                                    ())]
-                                                                    DescriptorArray
-                                                                )
+                                                            (Array
+                                                                (Integer 4)
+                                                                [(()
+                                                                ())]
+                                                                DescriptorArray
                                                             )
                                                             ()
                                                         )
@@ -1170,15 +1168,13 @@
                                                                 ()
                                                             )
                                                             (IntegerConstant 1 (Integer 4) Decimal))]
-                                                            (Allocatable
-                                                                (Array
-                                                                    (TypeParameter
-                                                                        t
-                                                                    )
-                                                                    [(()
-                                                                    ())]
-                                                                    DescriptorArray
+                                                            (Array
+                                                                (TypeParameter
+                                                                    t
                                                                 )
+                                                                [(()
+                                                                ())]
+                                                                DescriptorArray
                                                             )
                                                             ()
                                                         )

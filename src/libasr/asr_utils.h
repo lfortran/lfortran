@@ -3937,6 +3937,20 @@ class ExprStmtDuplicator: public ASR::BaseExprStmtDuplicator<ExprStmtDuplicator>
 
 };
 
+class ExprStmtWithScopeDuplicator: public ASR::BaseExprStmtDuplicator<ExprStmtWithScopeDuplicator>
+{
+    public:
+    SymbolTable* current_scope;
+    ExprStmtWithScopeDuplicator(Allocator &al, SymbolTable* current_scope): BaseExprStmtDuplicator(al), current_scope(current_scope) {}
+
+    ASR::asr_t* duplicate_Var(ASR::Var_t* x) {
+        ASR::symbol_t* m_v = current_scope->get_symbol(ASRUtils::symbol_name(x->m_v));
+        LCOMPILERS_ASSERT(m_v != nullptr);
+        return ASR::make_Var_t(al, x->base.base.loc, m_v);
+    }
+
+};
+
 class FixScopedTypeVisitor: public ASR::BaseExprReplacer<FixScopedTypeVisitor> {
 
     private:

@@ -869,6 +869,10 @@ public:
     }
 
     void visit_ArraySection(const ArraySection_t &x) {
+        require(
+            ASR::is_a<ASR::Array_t>(*x.m_type),
+            "ArrayItemSection::m_type can only be an Array"
+        );
         handle_ArrayItemSection(x);
     }
 

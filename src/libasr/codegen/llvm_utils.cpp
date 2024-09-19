@@ -1330,7 +1330,8 @@ namespace LCompilers {
                         llvm_type = arr_api->get_array_type(asr_type, el_type);
                         break;
                     }
-                    case ASR::array_physical_typeType::PointerToDataArray: {
+                    case ASR::array_physical_typeType::PointerToDataArray:
+                    case ASR::array_physical_typeType::UnboundedPointerToDataArray : {
                         llvm_type = get_el_type(v_type->m_type, module)->getPointerTo();
                         break;
                     }
@@ -1640,6 +1641,18 @@ namespace LCompilers {
                 llvm::dyn_cast<llvm::AllocaInst>(x)->getAllocatedType()->isPointerTy())) {
             type = type->getPointerTo();
         }
+
+        if ( llvm::GetElementPtrInst *
+                gep = llvm::dyn_cast<llvm::GetElementPtrInst>(x) ) {
+            llvm::Type *src_type = gep->getSourceElementType();
+            LCOMPILERS_ASSERT(llvm::isa<llvm::StructType>(src_type));
+            std::string s_name = std::string(llvm::dyn_cast<llvm::StructType>(
+                gep->getSourceElementType())->getName());
+            if ( name2dertype.find(s_name) != name2dertype.end() ) {
+                type = type->getPointerTo();
+            }
+        }
+
         llvm::Value *load = builder->CreateLoad(type, x);
         LCOMPILERS_ASSERT(type_copy);
         ptr_type[load] = type_copy;
