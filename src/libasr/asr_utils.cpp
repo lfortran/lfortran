@@ -1649,6 +1649,21 @@ void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,
     }
 }
 
+ASR::ttype_t* create_array_type_with_empty_dims(Allocator& al,
+    size_t value_n_dims, ASR::ttype_t* value_type) {
+    Vec<ASR::dimension_t> empty_dims; empty_dims.reserve(al, value_n_dims);
+    for( size_t i = 0; i < value_n_dims; i++ ) {
+        ASR::dimension_t empty_dim;
+        Location loc; loc.first = 1, loc.last = 1;
+        empty_dim.loc = loc;
+        empty_dim.m_length = nullptr;
+        empty_dim.m_start = nullptr;
+        empty_dims.push_back(al, empty_dim);
+    }
+    return ASRUtils::make_Array_t_util(al, value_type->base.loc,
+        ASRUtils::extract_type(value_type), empty_dims.p, empty_dims.size());
+}
+
 void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,
     ASR::expr_t*& expr1, ASR::expr_t*& expr2) {
     ASR::ttype_t* expr1_type = ASRUtils::expr_type(expr1);
