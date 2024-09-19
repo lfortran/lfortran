@@ -1838,7 +1838,7 @@ class VerifySimplifierASROutput:
     private:
 
     Allocator& al;
-    [[maybe_unused]] ExprsWithTargetType& exprs_with_target;
+    ExprsWithTargetType& exprs_with_target;
 
     public:
 
