@@ -79,7 +79,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 ())
+                                                    (Character 1 -1 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -130,7 +130,7 @@
                                         [(ClassType
                                             9 toml_vector
                                         )
-                                        (Character 1 -1 ())
+                                        (Character 1 -1 () PointerString)
                                         (Pointer
                                             (ClassType
                                                 9 toml_value
@@ -638,7 +638,7 @@
                                                 (Var 8 self)
                                                 8 1_toml_value_key
                                                 (Allocatable
-                                                    (Character 1 -2 ())
+                                                    (Character 1 -2 () PointerString)
                                                 )
                                                 ()
                                             )]
@@ -651,7 +651,7 @@
                                                 (Var 8 self)
                                                 8 1_toml_value_key
                                                 (Allocatable
-                                                    (Character 1 -2 ())
+                                                    (Character 1 -2 () PointerString)
                                                 )
                                                 ()
                                             )]
@@ -665,7 +665,7 @@
                                                 (Var 8 self)
                                                 8 1_toml_keyval_raw
                                                 (Allocatable
-                                                    (Character 1 -2 ())
+                                                    (Character 1 -2 () PointerString)
                                                 )
                                                 ()
                                             )]
@@ -678,7 +678,7 @@
                                                 (Var 8 self)
                                                 8 1_toml_keyval_raw
                                                 (Allocatable
-                                                    (Character 1 -2 ())
+                                                    (Character 1 -2 () PointerString)
                                                 )
                                                 ()
                                             )]
@@ -717,7 +717,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (Character 1 -2 () PointerString)
                                                     )
                                                     ()
                                                     Source
@@ -832,7 +832,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 ())
+                                                    (Character 1 -1 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -879,7 +879,7 @@
                                         [(ClassType
                                             2 toml_value
                                         )
-                                        (Character 1 -1 ())]
+                                        (Character 1 -1 () PointerString)]
                                         (Logical 4)
                                         Source
                                         Implementation
@@ -902,7 +902,7 @@
                                                 (Var 5 self)
                                                 5 1_toml_value_key
                                                 (Allocatable
-                                                    (Character 1 -2 ())
+                                                    (Character 1 -2 () PointerString)
                                                 )
                                                 ()
                                             )]
@@ -919,7 +919,7 @@
                                                     (Var 5 self)
                                                     5 1_toml_value_key
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (Character 1 -2 () PointerString)
                                                     )
                                                     ()
                                                 )
@@ -969,7 +969,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (Character 1 -2 () PointerString)
                                                     )
                                                     ()
                                                     Source

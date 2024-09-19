@@ -321,7 +321,7 @@
                             ()
                             [(Var 3 x)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
                         )]
                         ()
@@ -345,7 +345,7 @@
                             ()
                             [(Var 3 y)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
                         )]
                         ()
@@ -387,7 +387,7 @@
                             ()
                             [(Var 3 z)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
                         )]
                         ()
@@ -437,7 +437,7 @@
                                 ()
                             )]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
                         )]
                         ()
@@ -495,7 +495,7 @@
                                 ()
                             )]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
                         )]
                         ()
@@ -553,7 +553,7 @@
                                 ()
                             )]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
                         )]
                         ()
@@ -603,7 +603,7 @@
                             ()
                             [(Var 3 bf1)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
                         )]
                         ()
@@ -645,7 +645,7 @@
                             ()
                             [(Var 3 xx90)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
                         )]
                         ()
@@ -687,7 +687,7 @@
                             ()
                             [(Var 3 xx95)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
                         )]
                         ()

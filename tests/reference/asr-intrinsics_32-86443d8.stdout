@@ -289,7 +289,7 @@
                             ()
                             [(Var 2 result)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
                         )]
                         ()
