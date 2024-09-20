@@ -2606,7 +2606,7 @@ public:
                 throw CodeGenError(current_der_type_name + " doesn't have any member named " + member_name,
                                     x.base.base.loc);
             }
-            tmp = llvm_utils->create_gep(tmp, 0);
+            tmp = llvm_utils->create_gep2(name2dertype[current_der_type_name], tmp, 0);
             current_der_type_name = dertype2parent[current_der_type_name];
         }
         int member_idx = name2memidx[current_der_type_name][member_name];
