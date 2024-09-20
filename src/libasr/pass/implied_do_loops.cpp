@@ -545,8 +545,12 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                         ASR::down_cast<ASR::ImpliedDoLoop_t>(x->m_values[i])));
                 } else {
                     Vec<ASR::expr_t*> print_values; print_values.reserve(al, 1);
-                    print_values.push_back(al, x->m_values[i]);
                     ASR::stmt_t* stmt = nullptr;
+                    Vec<ASR::expr_t*> args;
+                    args.reserve(al, 1);
+                    args.push_back(al, x->m_values[i]);
+                    ASR::expr_t* fmt_val = ASRUtils::EXPR(ASR::make_StringFormat_t(al,x->base.base.loc, nullptr, args.p, 1,ASR::string_format_kindType::FormatFortran, ASRUtils::TYPE(ASR::make_Character_t(al,x->base.base.loc,-1,-1,nullptr)), nullptr));
+                    print_values.push_back(al, fmt_val);
                     if ( print ) {
                         stmt = ASRUtils::STMT(ASR::make_Print_t(al, x->m_values[i]->base.loc, print_values.p, print_values.size(), nullptr, nullptr));
                     } else {
