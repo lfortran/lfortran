@@ -1185,7 +1185,7 @@ public:
                 check_for_deallocation(tmp_member, tmp_expr->base.loc);
             } else {
                 throw SemanticError("Cannot deallocate variables in expression " +
-                                    std::to_string(tmp_expr->type),
+                                    ASRUtils::type_to_str_python(ASRUtils::expr_type((tmp_expr))),
                                     tmp_expr->base.loc);
             }
             arg_vec.push_back(al, tmp_expr);

@@ -1089,7 +1089,7 @@ namespace LCompilers {
                     break;
                 }
                 default :
-                    throw CodeGenError("Type not implemented " + std::to_string(return_var_type));
+                    throw CodeGenError("Type not implemented " + ASRUtils::type_to_str_python(return_var_type0));
             }
         } else {
             return_type = llvm::Type::getVoidTy(context);
@@ -1287,7 +1287,7 @@ namespace LCompilers {
                     break;
                 }
                 default :
-                    throw CodeGenError("Type not implemented " + std::to_string(return_var_type));
+                    throw CodeGenError("Type not implemented " + ASRUtils::type_to_str_python(return_var_type0));
             }
         } else {
             return_type = llvm::Type::getVoidTy(context);
