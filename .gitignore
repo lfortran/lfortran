@@ -44,6 +44,7 @@ CPackConfig.cmake
 CPackSourceConfig.cmake
 _CPack_Packages
 /CMakeSettings.json
+.cmake
 
 ## libraries
 *.a
