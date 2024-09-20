@@ -441,7 +441,7 @@ public:
             log_bin_op = ASR::down_cast<ASR::LogicalBinOp_t>(test);
             left = log_bin_op->m_left;
         } else {
-            throw LCompilersException("Unsupported type, " + std::to_string(test->type));
+            throw LCompilersException("Unsupported type, " + ASRUtils::type_to_str_python(ASRUtils::expr_type(test)));
         }
 
         // create index variables.
