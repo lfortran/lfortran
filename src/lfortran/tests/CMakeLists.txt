@@ -66,24 +66,12 @@ if (WITH_LLVM)
 endif()
 
 if (WITH_LLVM)
-    add_executable(test_ast ${SRC_AST})
-    target_link_libraries(test_ast lfortran_lib p::doctest)
-    if (HAVE_BUILD_TO_WASM)
-        set(WASM_COMPILE_FLAGS "-g0 -fexceptions")
-        set(WASM_LINK_FLAGS
-        "-Oz -g0 -fexceptions -Wall -Wextra -s ASSERTIONS -s ALLOW_MEMORY_GROWTH=1 -s WASM_BIGINT"
-        )
-        set_target_properties(test_ast PROPERTIES COMPILE_FLAGS ${WASM_COMPILE_FLAGS})
-        set_target_properties(test_ast PROPERTIES LINK_FLAGS ${WASM_LINK_FLAGS})
-    endif()
-    add_test(test_ast ${PROJECT_BINARY_DIR}/test_ast)
-endif()
-
-if (WITH_LLVM)
+    add_executable(test_asr ${SRC_AST})
+    target_link_libraries(test_asr lfortran_lib p::doctest)
+    add_test(test_asr ${PROJECT_BINARY_DIR}/test_ast)
     if (CMAKE_SYSTEM_NAME STREQUAL "Linux"
         OR CMAKE_SYSTEM_NAME STREQUAL "FreeBSD"
         OR CMAKE_SYSTEM_NAME STREQUAL "OpenBSD")
-
-        target_link_options(test_ast PRIVATE "LINKER:--export-dynamic")
+        target_link_options(test_asr PRIVATE "LINKER:--export-dynamic")
     endif()
 endif()
