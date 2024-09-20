@@ -68,7 +68,7 @@ endif()
 if (WITH_LLVM)
     add_executable(test_asr ${SRC_AST})
     target_link_libraries(test_asr lfortran_lib p::doctest)
-    add_test(test_asr ${PROJECT_BINARY_DIR}/test_ast)
+    add_test(test_asr ${PROJECT_BINARY_DIR}/test_asr)
     if (CMAKE_SYSTEM_NAME STREQUAL "Linux"
         OR CMAKE_SYSTEM_NAME STREQUAL "FreeBSD"
         OR CMAKE_SYSTEM_NAME STREQUAL "OpenBSD")
