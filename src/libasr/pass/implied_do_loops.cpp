@@ -549,7 +549,9 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                     Vec<ASR::expr_t*> args;
                     args.reserve(al, 1);
                     args.push_back(al, x->m_values[i]);
-                    ASR::expr_t* fmt_val = ASRUtils::EXPR(ASR::make_StringFormat_t(al,x->base.base.loc, nullptr, args.p, 1,ASR::string_format_kindType::FormatFortran, ASRUtils::TYPE(ASR::make_Character_t(al,x->base.base.loc,-1,-1,nullptr)), nullptr));
+                    ASR::expr_t* fmt_val = ASRUtils::EXPR(ASR::make_StringFormat_t(al,x->base.base.loc, nullptr,
+                        args.p, 1,ASR::string_format_kindType::FormatFortran, 
+                        ASRUtils::TYPE(ASR::make_Character_t(al,x->base.base.loc,-1,-1,nullptr, ASR::string_physical_typeType::PointerString)), nullptr));
                     print_values.push_back(al, fmt_val);
                     if ( print ) {
                         stmt = ASRUtils::STMT(ASR::make_Print_t(al, x->m_values[i]->base.loc, print_values.p, print_values.size(), nullptr, nullptr));
