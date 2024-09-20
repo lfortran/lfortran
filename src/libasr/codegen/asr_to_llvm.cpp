@@ -7954,7 +7954,7 @@ public:
             iostat = llvm_utils->CreateAlloca(*builder,
                         llvm::Type::getInt32PtrTy(context));
             builder->CreateStore(llvm::ConstantInt::getNullValue(llvm::Type::getInt32PtrTy(context)), iostat);
-            iostat = builder->CreateLoad(iostat);
+            iostat = llvm_utils->CreateLoad(iostat);
         }
 
         if (x.m_separator) {
