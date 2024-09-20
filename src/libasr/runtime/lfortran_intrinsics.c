@@ -156,7 +156,15 @@ LFORTRAN_API void _lfortran_printf(const char* format, ...)
 {
     va_list args;
     va_start(args, format);
-    vfprintf(stdout, format, args);
+    char* str = va_arg(args, char*);
+    char* end = va_arg(args, char*);
+    // Detect "\b" to raise error
+    if(str[0] == '\b'){
+        str = str+1;
+        fprintf(stderr, "%s", str);
+        exit(1);
+    }
+    fprintf(stdout, format, str, end);
     fflush(stdout);
     va_end(args);
 }
@@ -915,33 +923,22 @@ char* int_to_format_specifier(int32_t type_as_int){
     }
 }
 
-void check_format_match(char format_value, int32_t current_arg_type_int){
+bool is_format_match(char format_value, int32_t current_arg_type_int){
     char* current_arg_correct_format = int_to_format_specifier(current_arg_type_int);
-    char original_format_value  = format_value;
-    if(tolower(format_value) == 'd' || tolower(format_value) == 'e'){
-        format_value = 'f'; // set formats 'f', 'd' ,'e' (passed by user) to --> 'f'.
+    char lowered_format_value = tolower(format_value);
+    if(lowered_format_value == 'd' || lowered_format_value == 'e'){
+        lowered_format_value = 'f';
     }
-    if(tolower(format_value) != current_arg_correct_format[0]){
-        char* type;
-        switch (current_arg_correct_format[0])
-        {
-        case 'i':
-            type = "INTEGER";
-            break;
-        case 'f':
-            type = "REAL";
-            break;
-        case 'l':
-            type = "LOGICAL";
-            break;
-        case 'a':
-            type = "CHARACTER";
-            break;
-        }
-        fprintf(stderr,"Runtime Error : Got argument of type (%s), while the format specifier is (%c)\n",type ,original_format_value);
-        exit(1);
+    // Special conditions that are allowed by gfortran.
+    bool special_conditions = (lowered_format_value == 'l' && current_arg_correct_format[0] == 'a') ||
+                              (lowered_format_value == 'a' && current_arg_correct_format[0] == 'l');
+    if(lowered_format_value != current_arg_correct_format[0] && !special_conditions){
+        return false;
+    } else {
+        return true;
     }
 }
+
 LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* format, ...)
 {
     va_list args;
@@ -1064,7 +1061,31 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
                     count--;
                 }
                 if(!default_formatting){
-                    check_format_match(value[0], current_arg_type_int);
+                    if (!is_format_match(value[0], current_arg_type_int)){
+                        char* type;
+                        switch (int_to_format_specifier(current_arg_type_int)[0])
+                        {
+                            case 'i':
+                                type = "INTEGER";
+                                break;
+                            case 'f':
+                                type = "REAL";
+                                break;
+                            case 'l':
+                                type = "LOGICAL";
+                                break;
+                            case 'a':
+                                type = "CHARACTER";
+                                break;
+                        }
+                        free(result);
+                        result = (char*)malloc(150 * sizeof(char));
+                        sprintf(result, " Runtime Error : Got argument of type (%s), while the format specifier is (%c)\n",type ,value[0]);
+                        // Special indication for error --> "\b" to be handled by `lfortran_print` or `lfortran_file_write`
+                        result[0] = '\b'; 
+                        count = 0; // Break while loop.
+                        break;
+                    }
                 }
                 is_array = check_array_iteration(&count, &current_arg_type_int, &args,&array_state);
                 if (tolower(value[0]) == 'a') {
@@ -3131,10 +3152,21 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
     if (!filep) {
         filep = stdout;
     }
+    va_list args;
+    va_start(args, format);
+    char* str = va_arg(args, char*);
+    // Detect "\b" to raise error
+    if(str[0] == '\b'){
+        if(iostat == NULL){
+            str = str+1;
+            fprintf(stderr, "%s",str);
+            exit(1);
+        } else { // Delegate error handling to the user.
+            *iostat = 11;
+            return;
+        }
+    }
     if (unit_file_bin) {
-        va_list args;
-        va_start(args, format);
-        const char* str = va_arg(args, const char*);
         // size the size of `str_len` to bytes
         size_t str_len = strlen(str);
 
@@ -3155,32 +3187,51 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
             // it should be a positive value unique from other predefined iostat values
             // like IOSTAT_INQUIRE_INTERNAL_UNIT, IOSTAT_END, and IOSTAT_EOR.
             // currently, I've set it to 11
-            *iostat = 11;
+            if(iostat != NULL) *iostat = 11;
             exit(1);
         } else {
-            *iostat = 0;
+            if(iostat != NULL) *iostat = 0;
         }
-
-        va_end(args);
     } else {
-        va_list args;
-        va_start(args, format);
-        vfprintf(filep, format, args);
-        va_end(args);
-        *iostat = 0;
+        if(strcmp(format, "%s%s") == 0){
+            char* end = va_arg(args, char*);
+            fprintf(filep, format, str, end);
+        } else {
+            fprintf(filep, format, str);
+        }
+        if(iostat != NULL) *iostat = 0;
     }
+    va_end(args);
     (void)!ftruncate(fileno(filep), ftell(filep));
 }
 
-LFORTRAN_API void _lfortran_string_write(char **str, int32_t* iostat, const char *format, ...) {
+LFORTRAN_API void _lfortran_string_write(char **str_holder, int32_t* iostat, const char *format, ...) {
     va_list args;
     va_start(args, format);
-    char *s = (char *) malloc(strlen(*str)*sizeof(char));
-    vsprintf(s, format, args);
-    _lfortran_strcpy(str, s, 0);
+    char* str = va_arg(args, char*);
+    char *s = (char *) malloc(strlen(*str_holder)*sizeof(char));
+    // Detect "\b" to raise error
+    if(str[0] == '\b'){
+        if(iostat == NULL){
+            str = str+1;
+            fprintf(stderr, "%s",str);
+            exit(1);
+        } else { // Delegate error handling to the user.
+            *iostat = 11;
+            return;
+        }
+    }
+
+    if(strcmp(format, "%s%s") == 0){
+        char* end = va_arg(args, char*);
+        sprintf(s, format, str, end);
+    } else {
+        sprintf(s, format, str);
+    }
+    _lfortran_strcpy(str_holder, s, 0);
     free(s);
     va_end(args);
-    *iostat = 0;
+    if(iostat != NULL) *iostat = 0;
 }
 
 LFORTRAN_API void _lfortran_string_read(char *str, char *format, int *i) {
