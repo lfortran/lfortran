@@ -6232,7 +6232,7 @@ public:
         a_kind = down_cast<ASR::Real_t>(ASRUtils::type_get_past_pointer(x.m_type))->m_kind;
         type = llvm_utils->getFPType(a_kind);
         if (ASR::is_a<ASR::ArrayItem_t>(*(x.m_target))) {
-            target = llvm_utils->CreateLoad(target);
+            target = llvm_utils->CreateLoad2(type, target);
         }
         if (ASR::is_a<ASR::ArrayItem_t>(*(x.m_source))) {
             source = llvm_utils->CreateLoad(source);
@@ -9133,7 +9133,8 @@ public:
                 }
                 args = convert_call_args(x, is_method);
                 LCOMPILERS_ASSERT(args.size() > 0);
-                tmp = builder->CreateCall(fn, {llvm_utils->CreateLoad(args[0])});
+                tmp = builder->CreateCall(fn, {llvm_utils->CreateLoad2(
+                    llvm::Type::getInt32Ty(context), args[0])});
                 if (args.size() > 1)
                     builder->CreateStore(tmp, args[1]);
                 return;

@@ -597,9 +597,9 @@ RUN(NAME intrinsics_16 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran llv
 RUN(NAME intrinsics_17 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran llvm17) # exp, log, erf
 RUN(NAME intrinsics_17b LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c fortran llvm17) # log
 RUN(NAME intrinsics_18 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran llvm17) # trig
-RUN(NAME intrinsics_18c LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # trig
+RUN(NAME intrinsics_18c LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17) # trig
 RUN(NAME intrinsics_19 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran llvm17) # multiple intrinsics
-RUN(NAME intrinsics_19c LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # exp, log, sqrt
+RUN(NAME intrinsics_19c LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17) # exp, log, sqrt
 RUN(NAME intrinsics_20 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran llvm17) # trig
 RUN(NAME intrinsics_21 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm llvm17) # modulo and mod
 RUN(NAME intrinsics_22 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran llvm17) # min, max
@@ -636,7 +636,7 @@ RUN(NAME intrinsics_52 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran llv
 RUN(NAME intrinsics_53 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # repeat
 RUN(NAME intrinsics_54 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran llvm17) # max0
 RUN(NAME intrinsics_open_close_read_write LABELS gfortran llvm llvm17)
-RUN(NAME intrinsics_55 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) #min
+RUN(NAME intrinsics_55 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NOFAST llvm17) #min
 RUN(NAME intrinsics_56 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran llvm17) # merge
 RUN(NAME intrinsics_57 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17) # merge
 RUN(NAME intrinsics_58 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran llvm17) # sign
@@ -647,7 +647,7 @@ RUN(NAME intrinsics_62 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # shape
 RUN(NAME intrinsics_63 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # any
 RUN(NAME intrinsics_64 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm llvm17) # sign
 RUN(NAME intrinsics_65 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # matmul
-RUN(NAME intrinsics_66 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # sign
+RUN(NAME intrinsics_66 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran llvm17) # sign
 RUN(NAME intrinsics_67 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran llvm17) # dcosh, dsinh, dtanh, dtan
 RUN(NAME intrinsics_68 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran llvm17) # dsign
 RUN(NAME intrinsics_69 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran llvm17) # radix
@@ -1384,7 +1384,7 @@ RUN(NAME cpu_time_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17)
 RUN(NAME cpu_time_02_wasm LABELS wasm)
 RUN(NAME system_clock_01 LABELS gfortran llvm llvm17)
 RUN(NAME boz_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17)
-RUN(NAME cmd_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME cmd_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17)
 RUN(NAME cmd_02 LABELS gfortran llvm llvm17 NOFAST)
 
 RUN(NAME flip_sign LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm llvm17)
@@ -1405,7 +1405,7 @@ RUN(NAME conv_complex2real LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm ll
 
 RUN(NAME template_02 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_03 LABELS llvm llvm_wasm llvm_wasm_emcc wasm llvm17)
-RUN(NAME template_04 LABELS llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME template_04 LABELS llvm llvm_wasm llvm_wasm_emcc llvm17)
 RUN(NAME template_05 LABELS llvm llvm_wasm llvm_wasm_emcc wasm llvm17)
 RUN(NAME template_add_01 LABELS llvm llvm_wasm llvm_wasm_emcc wasm llvm17)
 RUN(NAME template_add_01b LABELS llvm llvm_wasm llvm_wasm_emcc wasm llvm17)
@@ -1686,7 +1686,7 @@ RUN(NAME selected_int_kind_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fort
 RUN(NAME capital_01 LABELS gfortran llvmImplicit)
 
 RUN(NAME do_concurrent_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17)
-RUN(NAME do_concurrent_02 LABELS llvm_omp)
+RUN(NAME do_concurrent_02 LABELS llvm_omp llvm llvm17)
 RUN(NAME do_concurrent_03 LABELS llvm_omp)
 RUN(NAME do_concurrent_04 LABELS llvm_omp)
 RUN(NAME do_concurrent_05 LABELS llvm_omp)
