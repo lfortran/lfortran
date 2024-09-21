@@ -2631,10 +2631,6 @@ public:
     }
 
     void visit_Variable(const ASR::Variable_t &x) {
-        if (x.m_value && x.m_storage == ASR::storage_typeType::Parameter) {
-            this->visit_expr_wrapper(x.m_value, true);
-            return;
-        }
         uint32_t h = get_hash((ASR::asr_t*)&x);
         // This happens at global scope, so the intent can only be either local
         // (global variable declared/initialized in this translation unit), or
@@ -3079,9 +3075,7 @@ public:
             if (is_a<ASR::Variable_t>(*item.second)) {
                 ASR::Variable_t *v = down_cast<ASR::Variable_t>(
                         item.second);
-                if( v->m_storage != ASR::storage_typeType::Parameter ) {
-                    visit_Variable(*v);
-                }
+                visit_Variable(*v);
             } else if (is_a<ASR::Function_t>(*item.second)) {
                 ASR::Function_t *v = down_cast<ASR::Function_t>(
                         item.second);
