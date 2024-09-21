@@ -37,10 +37,6 @@ interface
         error stop "Not implemented yet"
     end subroutine
 
-    integer function command_argument_count() result(r)
-        error stop "Not implemented yet"
-    end function
-
 end interface
 
 end module
