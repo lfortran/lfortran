@@ -3155,8 +3155,6 @@ public:
     void visit_Print(const AST::Print_t &x) {
         Vec<ASR::expr_t*> body;
         body.reserve(al, x.n_values);
-        body.reserve(al, x.n_values);
-
         ASR::expr_t *fmt=nullptr;
         if (x.m_fmt != nullptr) {
             this->visit_expr(*x.m_fmt);
