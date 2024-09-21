@@ -30,19 +30,41 @@ std::string get_unique_ID() {
 
 bool read_file(const std::string &filename, std::string &text)
 {
-    std::ifstream ifs(filename.c_str(), std::ios::in | std::ios::binary
-            | std::ios::ate);
+    if (filename.empty()) {
+        // Handle empty filename
+        return false;
+    }
 
-    std::ifstream::pos_type filesize = ifs.tellg();
-    if (filesize < 0) return false;
+    try {
+        std::ifstream ifs(filename.c_str(), std::ios::in | std::ios::binary | std::ios::ate);
 
-    ifs.seekg(0, std::ios::beg);
+        if (!ifs.is_open()) {
+            // Handle file open error
+            return false;
+        }
 
-    std::vector<char> bytes(filesize);
-    ifs.read(&bytes[0], filesize);
+        std::ifstream::pos_type filesize = ifs.tellg();
+        if (filesize < 0 || filesize > std::numeric_limits<int32_t>::max()) {
+            // Handle invalid file size
+            return false;
+        }
 
-    text = std::string(&bytes[0], filesize);
-    return true;
+        ifs.seekg(0, std::ios::beg);
+
+        std::vector<char> bytes(filesize);
+        ifs.read(&bytes[0], filesize);
+
+        if (!ifs.good()) {
+            // Handle read error
+            return false;
+        }
+
+        text = std::string(&bytes[0], filesize);
+        return true;
+    } catch (const std::exception &e) {
+        // Handle any exceptions that occur during file reading
+        return false;
+    }
 }
 
 bool present(Vec<char*> &v, const char* name) {
