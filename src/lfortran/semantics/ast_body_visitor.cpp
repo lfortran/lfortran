@@ -192,7 +192,7 @@ public:
                         ASR::StringFormat_t* string_fmt_arg = ASR::down_cast<ASR::StringFormat_t>(
                             print_stmt->m_text);
                         ASR::ttype_t *fmt_type = ASRUtils::TYPE(ASR::make_Character_t(
-                            al, print_stmt->base.base.loc, 1, format_statements[label].size(), nullptr));
+                            al, print_stmt->base.base.loc, 1, format_statements[label].size(), nullptr, ASR::string_physical_typeType::PointerString));
                         ASR::expr_t *fmt_constant = ASRUtils::EXPR(ASR::make_StringConstant_t(
                             al, print_stmt->base.base.loc, s2c(al, format_statements[label]), fmt_type));
                         string_fmt_arg->m_fmt = fmt_constant;
@@ -3175,7 +3175,7 @@ public:
             int64_t label = f->m_n;
             if (format_statements.find(label) == format_statements.end()) {
                 ASR::ttype_t *char_type = ASRUtils::TYPE(ASR::make_Character_t(
-                al, x.base.base.loc, -1, 0, nullptr));
+                al, x.base.base.loc, -1, 0, nullptr, ASR::string_physical_typeType::PointerString));
                 tmp =  ASR::make_Print_t(al, x.base.base.loc,
                     ASRUtils::EXPR(ASR::make_StringFormat_t(al, x.base.base.loc, nullptr, body.p, body.size(),
                     ASR::string_format_kindType::FormatFortran, char_type, nullptr)));

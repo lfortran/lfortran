@@ -60,8 +60,6 @@ public:
         ASR::stmt_t* doloop = nullptr;
         ASR::ttype_t *str_type_len_2 = ASRUtils::TYPE(ASR::make_Character_t(
             al, loc, 1, 0, nullptr, ASR::string_physical_typeType::PointerString));
-        ASR::expr_t *space = ASRUtils::EXPR(ASR::make_StringConstant_t(
-            al, loc, s2c(al, " "), str_type_len_1));
         ASR::expr_t *empty_space = ASRUtils::EXPR(ASR::make_StringConstant_t(
             al, loc, s2c(al, ""), str_type_len_2));
         ASR::stmt_t* empty_print_endl = ASRUtils::STMT(ASR::make_Print_t(al, loc, empty_space));
@@ -158,7 +156,7 @@ public:
             ASR::stmt_t* empty_print_endl;
             ASR::stmt_t* print_stmt;
             ASR::ttype_t *str_type_len_2 = ASRUtils::TYPE(ASR::make_Character_t(
-            al, x.base.base.loc, 1, 0, nullptr));
+            al, x.base.base.loc, 1, 0, nullptr, ASR::string_physical_typeType::PointerString));
             ASR::expr_t *empty_space = ASRUtils::EXPR(ASR::make_StringConstant_t(
             al, x.base.base.loc, s2c(al, ""), str_type_len_2));
             empty_print_endl = ASRUtils::STMT(ASR::make_Print_t(al, x.base.base.loc, empty_space));
@@ -187,6 +185,7 @@ public:
             return;
         } else {
             remove_original_stmt = false;
+        }
     }
 
     ASR::stmt_t* write_array_using_doloop(ASR::expr_t *arr_expr, ASR::StringFormat_t* format, ASR::expr_t* unit, const Location &loc) {

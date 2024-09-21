@@ -5467,7 +5467,7 @@ static inline ASR::asr_t* make_print_t_util(Allocator& al, const Location& loc,
         return ASR::make_Print_t(al, loc, a_args[0]);
     } else {
         ASR::ttype_t *char_type = ASRUtils::TYPE(ASR::make_Character_t(
-            al, loc, -1, 0, nullptr));
+            al, loc, -1, 0, nullptr, ASR::string_physical_typeType::PointerString));
         return ASR::make_Print_t(al, loc,
             ASRUtils::EXPR(ASR::make_StringFormat_t(al, loc, nullptr, a_args,n_args,
             ASR::string_format_kindType::FormatFortran, char_type, nullptr)));
