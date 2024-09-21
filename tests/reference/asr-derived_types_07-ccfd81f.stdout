@@ -48,7 +48,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 256 ())
+                                                    (Character 1 256 () PointerString)
                                                     ()
                                                     Source
                                                     Private

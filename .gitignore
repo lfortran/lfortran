@@ -9,6 +9,7 @@ src/lfortran/parser/parser.output
 tests/output
 src/lfortran/tests/test_asm
 src/lfortran/tests/test_ast
+src/lfortran/tests/test_asr
 src/lfortran/tests/test_llvm
 src/lfortran/tests/test_parse
 src/lfortran/tests/test_pickle
@@ -44,6 +45,7 @@ CPackConfig.cmake
 CPackSourceConfig.cmake
 _CPack_Packages
 /CMakeSettings.json
+.cmake
 
 ## libraries
 *.a

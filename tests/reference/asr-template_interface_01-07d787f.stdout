@@ -2380,7 +2380,7 @@
                                             ()
                                             [(Var 17 ri)]
                                             FormatFortran
-                                            (Character -1 0 ())
+                                            (Character -1 0 () PointerString)
                                             ()
                                         )]
                                         ()
@@ -2391,7 +2391,7 @@
                                             ()
                                             [(Var 17 rr)]
                                             FormatFortran
-                                            (Character -1 0 ())
+                                            (Character -1 0 () PointerString)
                                             ()
                                         )]
                                         ()
@@ -2420,7 +2420,7 @@
                                                 ()
                                             )]
                                             FormatFortran
-                                            (Character -1 0 ())
+                                            (Character -1 0 () PointerString)
                                             ()
                                         )]
                                         ()
@@ -2449,7 +2449,7 @@
                                                 ()
                                             )]
                                             FormatFortran
-                                            (Character -1 0 ())
+                                            (Character -1 0 () PointerString)
                                             ()
                                         )]
                                         ()

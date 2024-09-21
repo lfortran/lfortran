@@ -1089,7 +1089,7 @@ namespace LCompilers {
                     break;
                 }
                 default :
-                    throw CodeGenError("Type not implemented " + std::to_string(return_var_type));
+                    throw CodeGenError("Type not implemented " + ASRUtils::type_to_str_python(return_var_type0));
             }
         } else {
             return_type = llvm::Type::getVoidTy(context);
@@ -1287,7 +1287,7 @@ namespace LCompilers {
                     break;
                 }
                 default :
-                    throw CodeGenError("Type not implemented " + std::to_string(return_var_type));
+                    throw CodeGenError("Type not implemented " + ASRUtils::type_to_str_python(return_var_type0));
             }
         } else {
             return_type = llvm::Type::getVoidTy(context);
@@ -2047,8 +2047,10 @@ namespace LCompilers {
                             break;
                         }
                         case ASR::array_physical_typeType::FixedSizeArray: {
-                            src = create_gep(src, 0);
-                            dest = create_gep(dest, 0);
+                            llvm::Type* llvm_array_type = get_type_from_ttype_t_util(
+                                ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(asr_type)), module);
+                            src = create_gep2(llvm_array_type, src, 0);
+                            dest = create_gep2(llvm_array_type, dest, 0);
                             ASR::dimension_t* asr_dims = nullptr;
                             size_t asr_n_dims = ASRUtils::extract_dimensions_from_ttype(asr_type, asr_dims);
                             int64_t size = ASRUtils::get_fixed_size_of_array(asr_dims, asr_n_dims);

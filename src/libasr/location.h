@@ -128,7 +128,7 @@ struct LocationManager {
     uint32_t output_to_input_pos(uint32_t out_pos, bool show_last) const {
         // Determine where the error is from using position, i.e., loc
         uint32_t index = bisection(file_ends, out_pos);
-        if (index == file_ends.size()) index -= 1;
+        if (index != 0 && index == file_ends.size()) index -= 1;
         if (files[index].out_start.size() == 0) return 0;
         uint32_t interval = bisection(files[index].out_start, out_pos)-1;
         uint32_t rel_pos = out_pos - files[index].out_start[interval];
@@ -167,7 +167,7 @@ struct LocationManager {
             std::string &filename) const {
         // Determine where the error is from using position, i.e., loc
         uint32_t index = bisection(file_ends, position);
-        if (index == file_ends.size()) index -= 1;
+        if (index != 0 && index == file_ends.size()) index -= 1;
         filename = files[index].in_filename;
         // Get the actual location by subtracting the previous file size.
         if (index > 0) position -= file_ends[index - 1];

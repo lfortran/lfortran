@@ -14,7 +14,7 @@
                     [(Print
                         [(StringConstant
                             "running modules_27 program"
-                            (Character 1 26 ())
+                            (Character 1 26 () PointerString)
                         )]
                         ()
                         ()

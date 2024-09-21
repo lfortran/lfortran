@@ -54,7 +54,7 @@
                                     ()
                                     Default
                                     (Allocatable
-                                        (Character 1 -2 ())
+                                        (Character 1 -2 () PointerString)
                                     )
                                     ()
                                     Source
@@ -71,7 +71,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Character 1 20 ())
+                                    (Character 1 20 () PointerString)
                                     ()
                                     Source
                                     Public
@@ -88,7 +88,7 @@
                                     ()
                                     Default
                                     (Allocatable
-                                        (Character 1 -2 ())
+                                        (Character 1 -2 () PointerString)
                                     )
                                     ()
                                     Source
@@ -145,7 +145,7 @@
                         (Var 2 num)
                         (StringConstant
                             "lfortran"
-                            (Character 1 8 ())
+                            (Character 1 8 () PointerString)
                         )
                         ()
                     )
@@ -162,7 +162,7 @@
                                 (Integer 4)
                                 ()
                                 ()
-                            ))
+                            ) PointerString)
                             ()
                             ()
                         )
@@ -174,7 +174,7 @@
                             NotEq
                             (StringConstant
                                 "lfortran"
-                                (Character 1 8 ())
+                                (Character 1 8 () PointerString)
                             )
                             (Logical 4)
                             ()
@@ -188,7 +188,7 @@
                         (Var 2 num)
                         (StringConstant
                             "lfortran working"
-                            (Character 1 16 ())
+                            (Character 1 16 () PointerString)
                         )
                         ()
                     )
@@ -243,7 +243,7 @@
                                 )
                                 (Integer 4)
                                 ()
-                            ))
+                            ) PointerString)
                             ()
                         )
                         ()
@@ -253,7 +253,7 @@
                             ()
                             [(Var 2 message)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
                         )]
                         ()

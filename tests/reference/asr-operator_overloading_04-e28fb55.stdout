@@ -49,7 +49,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 ())
+                                                    (Character 1 -1 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -62,7 +62,7 @@
                                         [(StructType
                                             2 string_type
                                         )
-                                        (Character 1 -1 ())]
+                                        (Character 1 -1 () PointerString)]
                                         ()
                                         Source
                                         Implementation
@@ -83,7 +83,7 @@
                                             (Var 4 lhs)
                                             4 1_string_type_raw
                                             (Allocatable
-                                                (Character 1 -2 ())
+                                                (Character 1 -2 () PointerString)
                                             )
                                             ()
                                         )
@@ -111,7 +111,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (Character 1 -2 () PointerString)
                                                     )
                                                     ()
                                                     Source
@@ -210,7 +210,7 @@
                                             (Var 5 string)
                                             5 1_string_type_raw
                                             (Allocatable
-                                                (Character 1 -2 ())
+                                                (Character 1 -2 () PointerString)
                                             )
                                             ()
                                         )
@@ -222,7 +222,7 @@
                                                 (Var 5 string)
                                                 5 1_string_type_raw
                                                 (Allocatable
-                                                    (Character 1 -2 ())
+                                                    (Character 1 -2 () PointerString)
                                                 )
                                                 ()
                                             ))]

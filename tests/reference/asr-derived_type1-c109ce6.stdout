@@ -32,18 +32,18 @@
                                                         Achar
                                                         [(IntegerConstant 10 (Integer 4) Decimal)]
                                                         0
-                                                        (Character 1 1 ())
+                                                        (Character 1 1 () PointerString)
                                                         (StringConstant
                                                             "\n"
-                                                            (Character 1 1 ())
+                                                            (Character 1 1 () PointerString)
                                                         )
                                                     )
                                                     (StringConstant
                                                         "\n"
-                                                        (Character 1 1 ())
+                                                        (Character 1 1 () PointerString)
                                                     )
                                                     Save
-                                                    (Character 1 1 ())
+                                                    (Character 1 1 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -71,29 +71,29 @@
                                     (StringConcat
                                         (StringConstant
                                             " "
-                                            (Character 1 1 ())
+                                            (Character 1 1 () PointerString)
                                         )
                                         (StructInstanceMember
                                             (Var 2 toml_escape)
                                             2 1_enum_escape_newline
-                                            (Character 1 1 ())
+                                            (Character 1 1 () PointerString)
                                             (StringConstant
                                                 "\n"
-                                                (Character 1 1 ())
+                                                (Character 1 1 () PointerString)
                                             )
                                         )
-                                        (Character 1 2 ())
+                                        (Character 1 2 () PointerString)
                                         (StringConstant
                                             " \n"
-                                            (Character 1 2 ())
+                                            (Character 1 2 () PointerString)
                                         )
                                     )
                                     (StringConstant
                                         " \n"
-                                        (Character 1 2 ())
+                                        (Character 1 2 () PointerString)
                                     )
                                     Parameter
-                                    (Character 1 2 ())
+                                    (Character 1 2 () PointerString)
                                     ()
                                     Source
                                     Public
@@ -110,7 +110,7 @@
                                         SelectedCharKind
                                         [(StringConstant
                                             "DEFAULT"
-                                            (Character 1 7 ())
+                                            (Character 1 7 () PointerString)
                                         )]
                                         0
                                         (Integer 4)

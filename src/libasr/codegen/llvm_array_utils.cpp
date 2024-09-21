@@ -341,10 +341,11 @@ namespace LCompilers {
         };
 
         void SimpleCMODescriptor::fill_malloc_array_details(
-            llvm::Value* arr, llvm::Type* llvm_data_type, int n_dims,
+            llvm::Value* arr, llvm::Type* arr_type, llvm::Type* llvm_data_type, int n_dims,
             std::vector<std::pair<llvm::Value*, llvm::Value*>>& llvm_dims,
             llvm::Module* module, bool realloc) {
-            arr = llvm_utils->CreateLoad(arr);
+            arr = llvm_utils->CreateLoad2(arr_type->getPointerTo(), arr);
+            llvm_utils->ptr_type[arr] = arr_type;
             llvm::Value* offset_val = llvm_utils->create_gep(arr, 1);
             builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
                                     offset_val);

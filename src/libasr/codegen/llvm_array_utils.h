@@ -149,7 +149,7 @@ namespace LCompilers {
                 */
                 virtual
                 void fill_malloc_array_details(
-                    llvm::Value* arr, llvm::Type* llvm_data_type, int n_dims,
+                    llvm::Value* arr, llvm::Type *arr_type, llvm::Type* llvm_data_type, int n_dims,
                     std::vector<std::pair<llvm::Value*, llvm::Value*>>& llvm_dims,
                     llvm::Module* module, bool realloc=false) = 0;
 
@@ -369,7 +369,7 @@ namespace LCompilers {
 
                 virtual
                 void fill_malloc_array_details(
-                    llvm::Value* arr, llvm::Type* llvm_data_type, int n_dims,
+                    llvm::Value* arr, llvm::Type *arr_type, llvm::Type* llvm_data_type, int n_dims,
                     std::vector<std::pair<llvm::Value*, llvm::Value*>>& llvm_dims,
                     llvm::Module* module, bool realloc=false);
 
