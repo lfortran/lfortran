@@ -240,6 +240,51 @@ Result<std::string> FortranEvaluator::get_asr(const std::string &code,
     }
 }
 
+// Converts (line, col) to a linear position.
+uint64_t linecol_to_pos(const std::string &s, uint16_t line, uint16_t col) {
+    uint64_t pos = 0;
+    uint64_t l = 1;
+    while (true) {
+        if (l == line) break;
+        if (pos >= s.size()) return 0;
+        while (s[pos] != '\n' && pos < s.size()) pos++;
+        l++;
+        pos++;
+    }
+    pos += col-1;
+    if (pos >= s.size()) return 0;
+    return pos;
+}
+
+Result<ASR::asr_t*> FortranEvaluator::get_lookup_asr2(
+            const std::string &code_orig, LocationManager &lm,
+            diag::Diagnostics &diagnostics, std::string line, std::string column)
+{
+    // convert string to uint16_t
+    uint16_t l = std::stoi(compiler_options.line);
+    uint16_t c = std::stoi(compiler_options.column);
+    uint64_t pos = linecol_to_pos(code_orig, l, c);
+    // Src -> AST
+    Result<LFortran::AST::TranslationUnit_t*>
+        res = get_ast2(code_orig, lm, diagnostics);
+    LFortran::AST::TranslationUnit_t* ast;
+    if (res.ok) {
+        ast = res.result;
+    } else {
+        LCOMPILERS_ASSERT(diagnostics.has_error())
+        return res.error;
+    }
+
+    // AST -> ASR
+    Result<ASR::asr_t*> res2 = get_lookup_asr3(*ast, diagnostics, pos);
+    if (res2.ok) {
+        return res2.result;
+    } else {
+        LCOMPILERS_ASSERT(diagnostics.has_error())
+        return res2.error;
+    }
+}
+
 Result<ASR::TranslationUnit_t*> FortranEvaluator::get_asr2(
             const std::string &code_orig, LocationManager &lm,
             diag::Diagnostics &diagnostics)
@@ -263,6 +308,30 @@ Result<ASR::TranslationUnit_t*> FortranEvaluator::get_asr2(
         LCOMPILERS_ASSERT(diagnostics.has_error())
         return res2.error;
     }
+}
+
+Result<ASR::asr_t*> FortranEvaluator::get_lookup_asr3(
+    LFortran::AST::TranslationUnit_t &ast, diag::Diagnostics &diagnostics, uint16_t pos)
+{
+    ASR::asr_t* asr;
+    // AST -> ASR
+    // Remove the old execution function if it exists
+    if (symbol_table) {
+        if (symbol_table->get_symbol(run_fn) != nullptr) {
+            symbol_table->erase_symbol(run_fn);
+        }
+        symbol_table->mark_all_variables_external(al);
+    }
+    auto res = LFortran::ast_to_asr2(al, ast, diagnostics, symbol_table,
+        compiler_options.symtab_only, compiler_options, pos);
+    if (res.ok) {
+        asr = res.result;
+    } else {
+        LCOMPILERS_ASSERT(diagnostics.has_error())
+        return res.error;
+    }
+
+    return asr;
 }
 
 Result<ASR::TranslationUnit_t*> FortranEvaluator::get_asr3(
