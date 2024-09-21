@@ -261,8 +261,8 @@ Result<ASR::asr_t*> FortranEvaluator::get_lookup_asr2(
             diag::Diagnostics &diagnostics, std::string line, std::string column)
 {
     // convert string to uint16_t
-    uint16_t l = std::stoi(compiler_options.line);
-    uint16_t c = std::stoi(compiler_options.column);
+    uint16_t l = std::stoi(line);
+    uint16_t c = std::stoi(column);
     uint64_t pos = linecol_to_pos(code_orig, l, c);
     // Src -> AST
     Result<LFortran::AST::TranslationUnit_t*>
