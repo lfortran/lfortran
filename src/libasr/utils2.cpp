@@ -52,14 +52,18 @@ bool read_file(const std::string &filename, std::string &text)
         ifs.seekg(0, std::ios::beg);
 
         std::vector<char> bytes(filesize);
-        ifs.read(&bytes[0], filesize);
+        if (filesize == 0) {
+            text = "";
+        } else {
+            ifs.read(&bytes[0], filesize);
 
-        if (!ifs.good()) {
-            // Handle read error
-            return false;
+            if (!ifs.good()) {
+                // Handle read error
+                return false;
+            }
+
+            text = std::string(&bytes[0], filesize);
         }
-
-        text = std::string(&bytes[0], filesize);
         return true;
     } catch (const std::exception &e) {
         // Handle any exceptions that occur during file reading
