@@ -855,6 +855,7 @@ public:
         {"get_command", {IntrinsicSignature({"command", "length", "status"}, 0, 3)}},
         {"get_environment_variable", {IntrinsicSignature({"name", "value", "length", "status", "trim_name"}, 1, 5)}},
         {"execute_command_line", {IntrinsicSignature({"command", "wait", "exitstat", "cmdstat", "cmdmsg"}, 1, 5)}},
+        {"move_alloc", {IntrinsicSignature({"from", "to"}, 2, 2)}},
         {"mvbits", {IntrinsicSignature({"from", "frompos", "len", "to", "topos"}, 5, 5)}},
         {"modulo", {IntrinsicSignature({"a", "p"}, 2, 2)}},
         {"bessel_jn", {IntrinsicSignature({"n", "x"}, 2, 2)}},
