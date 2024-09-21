@@ -1,6 +1,21 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
 
+@character_kinds = external global [1 x i32]
+@error_unit = external global i32
+@input_unit = external global i32
+@int16 = external global i32
+@int32 = external global i32
+@int64 = external global i32
+@int8 = external global i32
+@integer_kinds = external global [2 x i32]
+@iostat_end = external global i32
+@logical_kinds = external global [1 x i32]
+@output_unit = external global i32
+@real128 = external global i32
+@real32 = external global i32
+@real64 = external global i32
+@real_kinds = external global [2 x i32]
 @0 = private unnamed_addr constant [2 x i8] c" \00", align 1
 @1 = private unnamed_addr constant [2 x i8] c" \00", align 1
 @2 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
