@@ -29,16 +29,6 @@
                                     Required
                                     .false.
                                 ),
-                            command_argument_count:
-                                (ExternalSymbol
-                                    2
-                                    command_argument_count
-                                    4 command_argument_count
-                                    lfortran_intrinsic_builtin
-                                    []
-                                    command_argument_count
-                                    Private
-                                ),
                             count:
                                 (Variable
                                     2
@@ -85,7 +75,7 @@
                                 (ExternalSymbol
                                     2
                                     len_trim
-                                    14 len_trim
+                                    13 len_trim
                                     lfortran_intrinsic_string
                                     []
                                     len_trim
@@ -95,7 +85,7 @@
                                 (ExternalSymbol
                                     2
                                     trim
-                                    14 trim
+                                    13 trim
                                     lfortran_intrinsic_string
                                     []
                                     trim
@@ -106,13 +96,12 @@
                     []
                     [(Assignment
                         (Var 2 count)
-                        (FunctionCall
-                            2 command_argument_count
-                            ()
+                        (IntrinsicElementalFunction
+                            CommandArgumentCount
                             []
+                            0
                             (Integer 4)
-                            ()
-                            ()
+                            (IntegerConstant 0 (Integer 4) Decimal)
                         )
                         ()
                     )
