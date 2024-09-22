@@ -5791,7 +5791,6 @@ inline ASR::ttype_t* make_Pointer_t_util(Allocator& al, const Location& loc, ASR
 
 int64_t compute_trailing_zeros(int64_t number, int64_t kind);
 int64_t compute_leading_zeros(int64_t number, int64_t kind);
-int32_t get_command_argument_count();
 void append_error(diag::Diagnostics& diag, const std::string& msg,
                 const Location& loc);
 
