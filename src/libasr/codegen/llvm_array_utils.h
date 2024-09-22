@@ -163,7 +163,7 @@ namespace LCompilers {
 
                 virtual
                 void fill_descriptor_for_array_section(
-                    llvm::Value* value_desc, llvm::Value* target,
+                    llvm::Value* value_desc, llvm::Type* value_el_type, llvm::Value* target,
                     llvm::Value** lbs, llvm::Value** ubs,
                     llvm::Value** ds, llvm::Value** non_sliced_indices,
                     int value_rank, int target_rank) = 0;
@@ -232,7 +232,7 @@ namespace LCompilers {
                     llvm::Value* dim, bool load=true) = 0;
 
                 virtual
-                llvm::Value* get_dimension_size(llvm::Value* dim_des,
+                llvm::Value* get_dimension_size(llvm::Value* dim_des_arr,
                     bool load=true) = 0;
 
                 virtual
@@ -383,7 +383,7 @@ namespace LCompilers {
 
                 virtual
                 void fill_descriptor_for_array_section(
-                    llvm::Value* value_desc, llvm::Value* target,
+                    llvm::Value* value_desc, llvm::Type* value_el_type, llvm::Value* target,
                     llvm::Value** lbs, llvm::Value** ubs,
                     llvm::Value** ds, llvm::Value** non_sliced_indices,
                     int value_rank, int target_rank);
@@ -421,7 +421,7 @@ namespace LCompilers {
                     llvm::Value* dim, bool load=true);
 
                 virtual
-                llvm::Value* get_dimension_size(llvm::Value* dim_des,
+                llvm::Value* get_dimension_size(llvm::Value* dim_des_arr,
                     bool load=true);
 
                 virtual
