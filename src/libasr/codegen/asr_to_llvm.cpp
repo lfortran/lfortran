@@ -2844,7 +2844,6 @@ public:
                     module->getNamedGlobal(x.m_name)->setInitializer(
                             init_value);
                 } else {
-                    std::cout << "setting nullptr" << std::endl;
                     module->getNamedGlobal(x.m_name)->setInitializer(
                             llvm::ConstantPointerNull::get(
                                 static_cast<llvm::PointerType*>(x_ptr))
