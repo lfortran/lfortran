@@ -257,8 +257,8 @@ namespace LCompilers {
         }
 
         llvm::Value* SimpleCMODescriptor::
-        get_dimension_size(llvm::Value* dim_des, bool load) {
-            llvm::Value* dim_size = llvm_utils->create_gep(dim_des, 2);
+        get_dimension_size(llvm::Value* dim_des_arr, bool load) {
+            llvm::Value* dim_size = llvm_utils->create_gep2(dim_des, dim_des_arr, 2);
             if( !load ) {
                 return dim_size;
             }
@@ -439,11 +439,11 @@ namespace LCompilers {
         }
 
         void SimpleCMODescriptor::fill_descriptor_for_array_section(
-            llvm::Value* value_desc, llvm::Value* target,
+            llvm::Value* value_desc, llvm::Type *value_el_type, llvm::Value* target,
             llvm::Value** lbs, llvm::Value** ubs,
             llvm::Value** ds, llvm::Value** non_sliced_indices,
             int value_rank, int target_rank) {
-            llvm::Value* value_desc_data = llvm_utils->CreateLoad(get_pointer_to_data(value_desc));
+            llvm::Value* value_desc_data = llvm_utils->CreateLoad2(value_el_type->getPointerTo(), get_pointer_to_data(value_desc));
             std::vector<llvm::Value*> section_first_indices;
             for( int i = 0; i < value_rank; i++ ) {
                 if( ds[i] != nullptr ) {
@@ -456,7 +456,7 @@ namespace LCompilers {
             }
             llvm::Value* target_offset = cmo_convertor_single_element(
                 value_desc, section_first_indices, value_rank, false);
-            value_desc_data = llvm_utils->create_ptr_gep(value_desc_data, target_offset);
+            value_desc_data = llvm_utils->create_ptr_gep2(value_el_type, value_desc_data, target_offset);
             llvm::Value* target_data = get_pointer_to_data(target);
             builder->CreateStore(value_desc_data, target_data);
 
@@ -477,8 +477,8 @@ namespace LCompilers {
                         llvm::ConstantInt::get(llvm::Type::getInt32Ty(context),
                                                 llvm::APInt(32, 1))
                         );
-                    llvm::Value* value_dim_des = llvm_utils->create_ptr_gep(value_dim_des_array, i);
-                    llvm::Value* target_dim_des = llvm_utils->create_ptr_gep(target_dim_des_array, j);
+                    llvm::Value* value_dim_des = llvm_utils->create_ptr_gep2(dim_des, value_dim_des_array, i);
+                    llvm::Value* target_dim_des = llvm_utils->create_ptr_gep2(dim_des, target_dim_des_array, j);
                     llvm::Value* value_stride = get_stride(value_dim_des, true);
                     llvm::Value* target_stride = get_stride(target_dim_des, false);
                     builder->CreateStore(builder->CreateMul(value_stride, builder->CreateZExtOrTrunc(
@@ -594,7 +594,8 @@ namespace LCompilers {
             if( !load ) {
                 return stride;
             }
-            return llvm_utils->CreateLoad(stride);
+            llvm::Type *i32 = llvm::Type::getInt32Ty(context);
+            return llvm_utils->CreateLoad2(i32, stride);
         }
 
         // TODO: Uncomment and implement later

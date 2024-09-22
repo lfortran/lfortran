@@ -4441,6 +4441,8 @@ public:
                 ASR::array_physical_typeType::FixedSizeArray ) {
             value_desc = llvm_utils->CreateLoad(value_desc);
         }
+        llvm::Type *value_el_type = llvm_utils->get_type_from_ttype_t_util(
+              ASRUtils::extract_type(value_array_type), module.get());
         ptr_loads = 0;
         visit_expr(*x.m_target);
         llvm::Value* target_desc = tmp;
@@ -4504,7 +4506,7 @@ public:
                 lbs.p, ubs.p, ds.p, non_sliced_indices.p,
                 llvm_diminfo.p, value_rank, target_rank);
         } else {
-            arr_descr->fill_descriptor_for_array_section(value_desc, target,
+            arr_descr->fill_descriptor_for_array_section(value_desc, value_el_type, target,
                 lbs.p, ubs.p, ds.p, non_sliced_indices.p,
                 array_section->n_args, target_rank);
         }
