@@ -2572,7 +2572,7 @@ public:
                                     ASR::asr_t* get_pointer = ASR::make_GetPointer_t(al, asr_eq2->base.loc, asr_eq2, pointer_type_, nullptr);
                                     ASR::ttype_t *cptr = ASRUtils::TYPE(ASR::make_CPtr_t(al, asr_eq2->base.loc));
                                     ASR::asr_t* pointer_to_cptr = ASR::make_PointerToCPtr_t(al, asr_eq2->base.loc, ASRUtils::EXPR(get_pointer), cptr, nullptr);
-                                    
+
                                     ASR::ttype_t* arg_type1 = ASRUtils::expr_type(asr_eq1);
                                     ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(asr_eq1);
                                     ASR::Variable_t *var__ = ASR::down_cast<ASR::Variable_t>(var->m_v);
@@ -5369,6 +5369,7 @@ public:
         // the size (i.e. number of elements) of 'newshape' array determines
         // the dimension size of 'ArrayReshape'
         ASR::Array_t* newshape_array_type = ASR::down_cast<ASR::Array_t>(ASRUtils::expr_type(newshape));
+        LCOMPILERS_ASSERT_MSG(newshape_array_type->n_dims == 1, "newshape must be a 1D array");
         size_t newshape_dims = ASR::down_cast<ASR::IntegerConstant_t>(newshape_array_type->m_dims[0].m_length)->m_n;
         ASR::ttype_t* arr_element_type = ASRUtils::type_get_past_array_pointer_allocatable(ASRUtils::expr_type(array));
 
@@ -5381,6 +5382,11 @@ public:
         dims.reserve(al, n_dims_array_reshape);
 
         Location loc = newshape->base.loc;
+        if (ASR::is_a<ASR::ArrayConstructor_t>(*newshape) &&
+            ASR::down_cast<ASR::ArrayConstructor_t>(newshape)->m_value != nullptr) {
+            newshape = ASR::down_cast<ASR::ArrayConstructor_t>(newshape)->m_value;
+        }
+
         // if 'newshape' is an ArrayConstant, then assign all of it's
         // elements as dimensions
         if (ASR::is_a<ASR::ArrayConstant_t>(*newshape)) {
@@ -5699,7 +5705,7 @@ public:
     }
 
     void scalar_kind_arg(std::string &name, Vec<ASR::expr_t*> &args) {
-        std::vector<std::string> optional_kind_arg = {"logical", "storage_size", "anint", "nint", "aint", "floor", 
+        std::vector<std::string> optional_kind_arg = {"logical", "storage_size", "anint", "nint", "aint", "floor",
             "ceiling", "aimag", "maskl", "maskr", "ichar", "char", "achar", "real"};
         if (std::find(optional_kind_arg.begin(), optional_kind_arg.end(), name) != optional_kind_arg.end()) {
             if (args[1]) {
