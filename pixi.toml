@@ -1,6 +1,6 @@
 [project]
 name = "lfortran"
-version = "0.1.0"
+version = "0.40.0"
 description = "Modern interactive LLVM-based Fortran compiler"
 authors = ["LFortran Maintainers <lfortran@groups.io>"]
 channels = ["https://fast.prefix.dev/conda-forge"]
@@ -10,7 +10,11 @@ platforms = ["osx-arm64", "win-64", "linux-64"]
 start = "./build/src/bin/lfortran"
 test = "cmake --build . --parallel --target test && pytest -v"
 
-[feature.host.dependencies]
+[feature.host.tasks]
+# an empty task to make sure the dependencies are installed
+setup = "echo 'host dependencies installed'"
+
+[host-dependencies]
 llvmdev = "11.*"
 toml = "*"
 pytest = "*"
@@ -23,27 +27,23 @@ xonsh = "0.16.0"
 numpy = "*"
 rapidjson = "*"
 zlib = "*"
+zstd-static = ">=1.5.6,<2"
 
-[feature.host.tasks]
-# an empty task to make sure the dependencies are installed
-setup = "echo 'host dependencies installed'"
-
-[feature.build.dependencies]
+[build-dependencies]
 python = "*"
 cmake = "*"
 ninja = "*"
 cxx-compiler = "*"
 re2c = "*"
 
-[feature.build.target.unix.dependencies]
+[target.unix.build-dependencies]
 bison = "3.4"
 
-[feature.build.target.win.dependencies]
+[target.win.build-dependencies]
 m2-bison = "3.0.4"
 
 [feature.build.tasks]
-build1 = { cmd = "bash ./build1.sh", env = { CMAKE_PREFIX_PATH_LFORTRAN = "$PIXI_PROJECT_ROOT/.pixi/envs/host/" }, depends-on = ["setup"]}
-build0 = { cmd = "bash ./build0.sh" }
+build = { cmd = "bash ./build1.sh", env = { CMAKE_PREFIX_PATH_LFORTRAN = "$PIXI_PROJECT_ROOT/.pixi/envs/host/" }, depends-on = ["setup"]}
 
 [environments]
 build = ["build"]
