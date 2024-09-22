@@ -36,7 +36,7 @@ if (WITH_LLVM)
     )
 endif()
 
-if (WITH_LLVM)
+if (WITH_LSP)
     set(SRC_AST ${SRC_AST}
         test_ast.cpp
     )
@@ -65,7 +65,7 @@ if (WITH_LLVM)
     endif()
 endif()
 
-if (WITH_LLVM)
+if (WITH_LSP)
     add_executable(test_asr ${SRC_AST})
     target_link_libraries(test_asr lfortran_lib p::doctest)
     add_test(test_asr ${PROJECT_BINARY_DIR}/test_asr)
