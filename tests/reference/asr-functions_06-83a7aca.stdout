@@ -499,8 +499,8 @@
                     .false.
                     .false.
                 ),
-            iso_fortran_env:
-                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
+            lfortran_intrinsic_iso_fortran_env:
+                (Module lfortran_intrinsic_iso_fortran_env),
             lfortran_intrinsic_string:
                 (IntrinsicModule lfortran_intrinsic_string)
         })

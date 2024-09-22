@@ -3,7 +3,7 @@
         1
         {
             lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin),
+                (Module lfortran_intrinsic_builtin),
             m_cli2:
                 (Module
                     (SymbolTable
