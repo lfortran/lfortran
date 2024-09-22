@@ -2,10 +2,6 @@ module lfortran_intrinsic_builtin
 implicit none
 
 interface
-    subroutine move_alloc(from, to)
-    integer, allocatable, intent(inout) :: from
-    integer, allocatable, intent(out) :: to
-    end subroutine
 
     integer function int(x, kind)
     real, intent(in) :: x(:)
