@@ -3010,7 +3010,7 @@ public:
                     size_t rhs_rank = ASRUtils::extract_n_dims_from_ttype(init_type);
                     size_t lhs_rank = ASRUtils::extract_n_dims_from_ttype(type);
 
-                    if(lhs_rank!=rhs_rank){
+                    if( lhs_rank != rhs_rank ){
                         throw SemanticError("Incompatible ranks `"+ std::to_string(lhs_rank) + "` and `" 
                                                                   + std::to_string(rhs_rank) + "` in assignment",
                                             x.base.base.loc);

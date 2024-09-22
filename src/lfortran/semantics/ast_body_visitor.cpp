@@ -2328,7 +2328,7 @@ public:
         // real :: x(4); x = [1, 2, 3, 4] to be a valid assignment (as RHS is "integer array")
         // TODO: the only reason to not do this check for "reshape" is because
         // incorrect 'n_dims' and 'shape' returned for "reshape" currently
-        if (target_type->type == ASR::ttypeType::Array && value_type->type == ASR::ttypeType::Array) {
+        if ( target_type != nullptr && value_type != nullptr && ASRUtils::is_array(target_type) && ASRUtils::is_array(value_type) ) {
             ASR::dimension_t* target_dims = nullptr;
             ASR::dimension_t* value_dims = nullptr;
             size_t target_rank = ASRUtils::extract_dimensions_from_ttype(target_type, target_dims);
