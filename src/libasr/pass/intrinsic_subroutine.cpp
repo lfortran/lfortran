@@ -112,6 +112,9 @@ class ReplaceIntrinsicSubroutines : public ASR::CallReplacerOnExpressionsVisitor
             std::vector<std::string> build_order
                 = ASRUtils::determine_module_dependencies(x);
             for (auto &item : build_order) {
+                if (item == "iso_fortran_env") {
+                    item = "lfortran_intrinsic_" + item;
+                }
                 LCOMPILERS_ASSERT(x.m_symtab->get_symbol(item));
                 ASR::symbol_t *mod = x.m_symtab->get_symbol(item);
                 visit_symbol(*mod);

@@ -934,6 +934,9 @@ public:
         std::vector<std::string> build_order
             = determine_module_dependencies(x);
         for (auto &item : build_order) {
+            if (item == "iso_fortran_env") {
+                item = "lfortran_intrinsic_" + item;
+            }
             LCOMPILERS_ASSERT(x.m_symtab->get_symbol(item)
                 != nullptr);
             ASR::symbol_t *mod = x.m_symtab->get_symbol(item);
@@ -2836,6 +2839,7 @@ public:
                     module->getNamedGlobal(x.m_name)->setInitializer(
                             init_value);
                 } else {
+                    std::cout << "setting nullptr" << std::endl;
                     module->getNamedGlobal(x.m_name)->setInitializer(
                             llvm::ConstantPointerNull::get(
                                 static_cast<llvm::PointerType*>(x_ptr))
@@ -2918,6 +2922,7 @@ public:
             }
             llvm_symtab[h] = ptr;
         } else if (x.m_type->type == ASR::ttypeType::TypeParameter) {
+            std::cout << "type parameter" << std::endl;
             // Ignore type variables
         } else {
             throw CodeGenError("Variable type not supported " + ASRUtils::type_to_str_python(x.m_type), x.base.base.loc);
@@ -3048,7 +3053,10 @@ public:
         uint32_t h = get_hash((ASR::asr_t*)&x);
         llvm::FunctionType *function_type = llvm::FunctionType::get(
                 llvm::Type::getVoidTy(context), {}, false);
-        LCOMPILERS_ASSERT(llvm_symtab_fn.find(h) == llvm_symtab_fn.end());
+        // Skip `lfortran_intrinsic_iso_fortran_env` as we process it when we visit the translation unit
+        if (std::string(x.m_name) != "lfortran_intrinsic_iso_fortran_env") {
+            LCOMPILERS_ASSERT(llvm_symtab_fn.find(h) == llvm_symtab_fn.end());
+        }
         std::string module_fn_name = "__lfortran_module_init_" + std::string(x.m_name);
         llvm::Function *F = llvm::Function::Create(function_type,
                 llvm::Function::ExternalLinkage, module_fn_name, module.get());

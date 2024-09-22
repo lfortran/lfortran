@@ -320,7 +320,7 @@ public:
         }
         std::string module_name = x.m_module_name;
         std::string original_name = x.m_original_name;
-        if (startswith(module_name, "lfortran_intrinsic_iso")) {
+        if (module_name != "lfortran_intrinsic_iso_fortran_env" && startswith(module_name, "lfortran_intrinsic_iso")) {
             module_name = module_name.substr(19);
         }
 
