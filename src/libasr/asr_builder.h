@@ -344,7 +344,7 @@ class ASRBuilder {
             }
             default: {
                 throw LCompilersException("Expression type, " +
-                    std::to_string(expr_type(left)->type) + " not yet supported");
+                    ASRUtils::type_to_str_python(expr_type(left)) + " not yet supported");
                 return nullptr;
             }
         }
@@ -363,7 +363,7 @@ class ASRBuilder {
             }
             default: {
                 throw LCompilersException("Expression type, " +
-                    std::to_string(expr_type(left)->type) + " not yet supported");
+                    ASRUtils::type_to_str_python(expr_type(left)) + " not yet supported");
                 return nullptr;
             }
         }
@@ -382,7 +382,7 @@ class ASRBuilder {
             }
             default: {
                 throw LCompilersException("Expression type, " +
-                    std::to_string(expr_type(left)->type) + " not yet supported");
+                    ASRUtils::type_to_str_python(expr_type(left)) + " not yet supported");
                 return nullptr;
             }
         }
@@ -399,7 +399,7 @@ class ASRBuilder {
             }
             default: {
                 throw LCompilersException("Expression type, " +
-                    std::to_string(expr_type(x)->type) + " not yet supported");
+                    ASRUtils::type_to_str_python(expr_type(x)) + " not yet supported");
                 return nullptr;
             }
         }
@@ -428,7 +428,7 @@ class ASRBuilder {
             }
             default: {
                 throw LCompilersException("Expression type, " +
-                    std::to_string(expr_type(left)->type) + " not yet supported");
+                    ASRUtils::type_to_str_python(expr_type(left)) + " not yet supported");
                 return nullptr;
             }
         }
@@ -453,7 +453,7 @@ class ASRBuilder {
             }
             default: {
                 throw LCompilersException("Expression type, " +
-                    std::to_string(expr_type(left)->type) + " not yet supported");
+                    ASRUtils::type_to_str_python(expr_type(left)) + " not yet supported");
                 return nullptr;
             }
         }
@@ -478,7 +478,7 @@ class ASRBuilder {
             }
             default: {
                 throw LCompilersException("Expression type, " +
-                    std::to_string(expr_type(left)->type) + " not yet supported");
+                    ASRUtils::type_to_str_python(expr_type(left)) + " not yet supported");
                 return nullptr;
             }
         }
@@ -503,7 +503,7 @@ class ASRBuilder {
             }
             default: {
                 throw LCompilersException("Expression type, " +
-                    std::to_string(expr_type(left)->type) + " not yet supported");
+                    ASRUtils::type_to_str_python(expr_type(left)) + " not yet supported");
                 return nullptr;
             }
         }
@@ -528,7 +528,7 @@ class ASRBuilder {
             }
             default: {
                 throw LCompilersException("Expression type, " +
-                    std::to_string(expr_type(left)->type) + " not yet supported");
+                    ASRUtils::type_to_str_python(expr_type(left)) + " not yet supported");
                 return nullptr;
             }
         }
@@ -593,7 +593,7 @@ class ASRBuilder {
             }
             default: {
                 throw LCompilersException("Expression type, " +
-                    std::to_string(expr_type(left)->type) + " not yet supported");
+                    ASRUtils::type_to_str_python(expr_type(left)) + " not yet supported");
                 return nullptr;
             }
         }
@@ -617,7 +617,7 @@ class ASRBuilder {
             }
             default: {
                 throw LCompilersException("Expression type, " +
-                    std::to_string(expr_type(left)->type) + " not yet supported");
+                    ASRUtils::type_to_str_python(expr_type(left)) + " not yet supported");
                 return nullptr;
             }
         }
@@ -641,7 +641,7 @@ class ASRBuilder {
             }
             default: {
                 throw LCompilersException("Expression type, " +
-                    std::to_string(expr_type(left)->type) + " not yet supported");
+                    ASRUtils::type_to_str_python(expr_type(left)) + " not yet supported");
                 return nullptr;
             }
         }
@@ -665,7 +665,7 @@ class ASRBuilder {
             }
             default: {
                 throw LCompilersException("Expression type, " +
-                    std::to_string(expr_type(left)->type) + " not yet supported");
+                    ASRUtils::type_to_str_python(expr_type(left)) + " not yet supported");
                 return nullptr;
             }
         }
@@ -689,7 +689,7 @@ class ASRBuilder {
             }
             default: {
                 throw LCompilersException("Expression type, " +
-                    std::to_string(expr_type(left)->type) + " not yet supported");
+                    ASRUtils::type_to_str_python(expr_type(left)) + " not yet supported");
                 return nullptr;
             }
         }
@@ -713,7 +713,7 @@ class ASRBuilder {
             }
             default: {
                 throw LCompilersException("Expression type, " +
-                    std::to_string(expr_type(left)->type) + " not yet supported");
+                    ASRUtils::type_to_str_python(expr_type(left)) + " not yet supported");
                 return nullptr;
             }
         }
