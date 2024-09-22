@@ -170,7 +170,7 @@ namespace LCompilers {
 
                 virtual
                 void fill_descriptor_for_array_section_data_only(
-                    llvm::Value* value_desc, llvm::Value* target,
+                    llvm::Value* value_desc, llvm::Type* value_el_type, llvm::Value* target,
                     llvm::Value** lbs, llvm::Value** ubs,
                     llvm::Value** ds, llvm::Value** non_sliced_indices,
                     llvm::Value** llvm_diminfo, int value_rank, int target_rank) = 0;
@@ -390,7 +390,7 @@ namespace LCompilers {
 
                 virtual
                 void fill_descriptor_for_array_section_data_only(
-                    llvm::Value* value_desc, llvm::Value* target,
+                    llvm::Value* value_desc, llvm::Type* value_el_type, llvm::Value* target,
                     llvm::Value** lbs, llvm::Value** ubs,
                     llvm::Value** ds, llvm::Value** non_sliced_indices,
                     llvm::Value** llvm_diminfo, int value_rank, int target_rank);

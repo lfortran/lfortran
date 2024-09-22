@@ -4496,7 +4496,7 @@ public:
                 visit_expr_wrapper(m_dims[i].m_length, true);
                 llvm_diminfo.push_back(al, tmp);
             }
-            arr_descr->fill_descriptor_for_array_section_data_only(value_desc, target,
+            arr_descr->fill_descriptor_for_array_section_data_only(value_desc, value_el_type, target,
                 lbs.p, ubs.p, ds.p, non_sliced_indices.p,
                 llvm_diminfo.p, value_rank, target_rank);
         } else {
