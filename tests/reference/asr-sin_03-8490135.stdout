@@ -2,8 +2,8 @@
     (SymbolTable
         1
         {
-            iso_fortran_env:
-                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
+            lfortran_intrinsic_iso_fortran_env:
+                (Module lfortran_intrinsic_iso_fortran_env),
             sin_03:
                 (Program
                     (SymbolTable
@@ -37,7 +37,7 @@
                                 )
                         })
                     sin_03
-                    [iso_fortran_env]
+                    [lfortran_intrinsic_iso_fortran_env]
                     [(Assignment
                         (Var 2 x)
                         (IntrinsicElementalFunction

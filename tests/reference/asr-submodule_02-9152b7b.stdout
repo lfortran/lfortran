@@ -2,8 +2,8 @@
     (SymbolTable
         1
         {
-            iso_fortran_env:
-                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
+            lfortran_intrinsic_iso_fortran_env:
+                (Module lfortran_intrinsic_iso_fortran_env),
             points:
                 (Module
                     (SymbolTable
@@ -681,7 +681,7 @@
                                 )
                         })
                     stdlib_kinds_submodule_02
-                    [iso_fortran_env]
+                    [lfortran_intrinsic_iso_fortran_env]
                     .false.
                     .false.
                 ),
