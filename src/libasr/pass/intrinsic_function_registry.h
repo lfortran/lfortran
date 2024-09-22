@@ -76,6 +76,7 @@ inline std::string get_intrinsic_name(int64_t x) {
         INTRINSIC_NAME_CASE(BesselYN)
         INTRINSIC_NAME_CASE(SameTypeAs)
         INTRINSIC_NAME_CASE(Mvbits)
+        INTRINSIC_NAME_CASE(MoveAlloc)
         INTRINSIC_NAME_CASE(Merge)
         INTRINSIC_NAME_CASE(Mergebits)
         INTRINSIC_NAME_CASE(Shiftr)
@@ -306,6 +307,8 @@ namespace IntrinsicElementalFunctionRegistry {
             {&Merge::instantiate_Merge, &Merge::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Mvbits),
             {&Mvbits::instantiate_Mvbits, &Mvbits::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::MoveAlloc),
+            {&MoveAlloc::instantiate_MoveAlloc, &MoveAlloc::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Mergebits),
             {&Mergebits::instantiate_Mergebits, &Mergebits::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Shiftr),
@@ -651,6 +654,8 @@ namespace IntrinsicElementalFunctionRegistry {
             "merge"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Mvbits),
             "mvbits"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::MoveAlloc),
+            "move_alloc"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Mergebits),
             "mergebits"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Shiftr),
@@ -928,13 +933,13 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"isnan", {&Isnan::create_Isnan, &Isnan::eval_Isnan}},
                 {"nearest", {&Nearest::create_Nearest, &Nearest::eval_Nearest}},
                 {"compiler_version", {&CompilerVersion::create_CompilerVersion, &CompilerVersion::eval_CompilerVersion}},
-                {"command_argument_count", {&CommandArgumentCount::create_CommandArgumentCount, &CommandArgumentCount::eval_CommandArgumentCount}},
                 {"spacing", {&Spacing::create_Spacing, &Spacing::eval_Spacing}},
                 {"modulo", {&Modulo::create_Modulo, &Modulo::eval_Modulo}},
                 {"bessel_jn", {&BesselJN::create_BesselJN, &BesselJN::eval_BesselJN}},
                 {"bessel_yn", {&BesselYN::create_BesselYN, &BesselYN::eval_BesselYN}},
                 {"merge", {&Merge::create_Merge, &Merge::eval_Merge}},
                 {"mvbits", {&Mvbits::create_Mvbits, &Mvbits::eval_Mvbits}},
+                {"move_alloc", {&MoveAlloc::create_MoveAlloc, &MoveAlloc::eval_MoveAlloc}},
                 {"merge_bits", {&Mergebits::create_Mergebits, &Mergebits::eval_Mergebits}},
                 {"shiftr", {&Shiftr::create_Shiftr, &Shiftr::eval_Shiftr}},
                 {"rshift", {&Rshift::create_Rshift, &Rshift::eval_Rshift}},

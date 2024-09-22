@@ -1637,13 +1637,21 @@ namespace LCompilers {
             type_copy = type = ptr_type[x];
         }
         LCOMPILERS_ASSERT(type);
+        // getPointerTo() is used for allocatable or pointer
         if (type != character_type && (llvm::isa<llvm::AllocaInst>(x) &&
                 llvm::dyn_cast<llvm::AllocaInst>(x)->getAllocatedType()->isPointerTy())) {
+            // AllocaInst
             type = type->getPointerTo();
+        } else if (llvm::StructType *arr_type = llvm::dyn_cast<llvm::StructType>(type)) {
+            // Function arguments
+            if (arr_type->getName() == "array") {
+                type = type->getPointerTo();
+            }
         }
 
         if ( llvm::GetElementPtrInst *
                 gep = llvm::dyn_cast<llvm::GetElementPtrInst>(x) ) {
+            // GetElementPtrInst
             llvm::Type *src_type = gep->getSourceElementType();
             LCOMPILERS_ASSERT(llvm::isa<llvm::StructType>(src_type));
             std::string s_name = std::string(llvm::dyn_cast<llvm::StructType>(
@@ -1654,8 +1662,9 @@ namespace LCompilers {
         }
 
         llvm::Value *load = builder->CreateLoad(type, x);
-        LCOMPILERS_ASSERT(type_copy);
-        ptr_type[load] = type_copy;
+        if (type != type_copy) {
+            ptr_type[load] = type_copy;
+        }
         return load;
 #endif
     }

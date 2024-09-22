@@ -86,7 +86,6 @@ struct IntrinsicProcedures {
 
             // Subroutines
             {"cpu_time", {m_math, &not_implemented, false}},
-            {"move_alloc", {m_builtin, &not_implemented, false}},
             {"present", {m_builtin, &not_implemented, false}},
             {"system_clock", {m_math, &not_implemented, false}},
             {"srand", {m_math, &not_implemented, false}},

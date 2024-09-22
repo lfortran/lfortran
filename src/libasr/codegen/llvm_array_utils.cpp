@@ -375,7 +375,7 @@ namespace LCompilers {
             llvm::Value* ptr_as_char_ptr = nullptr;
             if( realloc ) {
                 ptr_as_char_ptr = lfortran_realloc(context, *module,
-                    *builder, llvm_utils->CreateLoad(ptr2firstptr),
+                    *builder, llvm_utils->CreateLoad2(llvm_data_type->getPointerTo(), ptr2firstptr),
                     llvm_utils->CreateLoad(arg_size));
             } else {
                 ptr_as_char_ptr = lfortran_malloc(context, *module,

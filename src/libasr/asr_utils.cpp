@@ -1692,17 +1692,6 @@ int64_t compute_trailing_zeros(int64_t number, int64_t kind) {
     return trailing_zeros;
 }
 
-int32_t _argc;
-char** _argv;
-
-int32_t get_command_argument_count() {
-    int32_t result = 0;
-    for(int i=1; i<=_argc; i++) {
-        result++;
-    }
-    return result;
-}
-
 int64_t compute_leading_zeros(int64_t number, int64_t kind) {
     int64_t leading_zeros = 0;
     int64_t total_bits = 32;

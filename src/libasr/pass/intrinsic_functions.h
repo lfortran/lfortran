@@ -73,6 +73,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     SameTypeAs,
     Merge,
     Mvbits,
+    MoveAlloc,
     Mergebits,
     Shiftr,
     Rshift,
@@ -1167,7 +1168,7 @@ namespace CompilerVersion {
 
     static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
         ASRUtils::require_impl(x.n_args == 0,
-            "compiler_version() takes no argument",
+            "ASR Verify: compiler_version() takes no argument",
             x.base.base.loc, diagnostics);
     }
 
@@ -1194,21 +1195,15 @@ namespace CommandArgumentCount {
 
     static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
         ASRUtils::require_impl(x.n_args == 0,
-            "command_argument_count() takes no argument",
+            "ASR Verify: command_argument_count() takes no argument",
             x.base.base.loc, diagnostics);
     }
 
-    static ASR::expr_t *eval_CommandArgumentCount(Allocator &al, const Location &loc,
-            ASR::ttype_t *t1, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& /*diag*/) {
-        ASRBuilder b(al, loc);
-        int64_t cnt = ASRUtils::get_command_argument_count();
-        return make_ConstantWithType(make_IntegerConstant_t, cnt, t1, loc);
-    }
-
-    static inline ASR::asr_t* create_CommandArgumentCount(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
-        ASR::ttype_t *return_type = ASRUtils::extract_type(ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)));
+    static inline ASR::asr_t* create_CommandArgumentCount(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& /*args*/, diag::Diagnostics& diag) {
+        ASR::ttype_t *return_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
         ASR::expr_t *m_value = nullptr;
-        m_value = eval_CommandArgumentCount(al, loc, return_type, args, diag);
+        return_type = ASRUtils::extract_type(return_type);
+        m_value = nullptr;
         if (diag.has_error()) {
             return nullptr;
         }
@@ -1216,6 +1211,32 @@ namespace CommandArgumentCount {
                 nullptr, 0, 0, return_type, m_value);
     }
 
+    static inline ASR::expr_t* instantiate_CommandArgumentCount(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/){
+             std::string c_func_name;
+        c_func_name = "_lfortran_command_argument_count";
+        std::string new_name = "_lcompilers_command_argument_count_";
+
+        declare_basic_variables(new_name);
+        if (scope->get_symbol(new_name)) {
+            ASR::symbol_t *s = scope->get_symbol(new_name);
+            ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(s);
+            return b.Call(s, new_args, expr_type(f->m_return_var));
+        }
+        auto result = declare(new_name, return_type, ReturnVar);
+        {
+            ASR::symbol_t *s = b.create_c_func(c_func_name, fn_symtab, return_type, 2, arg_types);
+            fn_symtab->add_symbol(c_func_name, s);
+            dep.push_back(al, s2c(al, c_func_name));
+            body.push_back(al, b.Assignment(result, b.Call(s, args, return_type)));
+        }
+
+        ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, new_symbol);
+        return b.Call(new_symbol, new_args, return_type);
+    }
 } // namespace CommandArgumentCount
 
 namespace Sign {
@@ -3735,6 +3756,35 @@ namespace Mvbits {
     }
 
 } // namespace Mvbits
+
+namespace MoveAlloc {
+
+    static ASR::expr_t *eval_MoveAlloc(Allocator &/*al*/, const Location &/*loc*/,
+            ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& /*diag*/) {
+        return nullptr;
+    }
+
+    static inline ASR::expr_t* instantiate_MoveAlloc(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        
+        std::string new_name = "_lcompilers_move_alloc_" + type_to_str_python(arg_types[0]);
+        declare_basic_variables(new_name);
+        fill_func_arg("from", arg_types[0]);
+        fill_func_arg("to", arg_types[1]);
+        auto result = declare(new_name, ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc, arg_types[0])), ReturnVar);
+        LCompilers::ASR::dimension_t *m_dims = nullptr;
+        int n_dims = extract_dimensions_from_ttype(arg_types[0], m_dims);
+        body.push_back(al, b.Allocate(result, m_dims, n_dims));
+        body.push_back(al, b.Assignment(result, args[0]));
+    
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, nullptr);
+    }
+
+} // namespace MoveAlloc
 
 namespace Mergebits {
 
