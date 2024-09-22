@@ -2255,11 +2255,13 @@ namespace Nint {
         double near_integer = std::round(rv);
 
         if (kind == 4) {
-            if (near_integer < std::numeric_limits<int32_t>::min() || near_integer > std::numeric_limits<int32_t>::max()) {
+            if (near_integer < static_cast<double>(std::numeric_limits<int32_t>::min()) ||
+                near_integer > static_cast<double>(std::numeric_limits<int32_t>::max())) {
                 diag.semantic_error_label("Result of `nint` overflows its kind(" + std::to_string(kind) + ")", {loc}, "");
             }
         } else if (kind == 8) {
-            if (near_integer < std::numeric_limits<int64_t>::min() || near_integer > std::numeric_limits<int64_t>::max()) {
+            if (near_integer < static_cast<double>(std::numeric_limits<int64_t>::min()) ||
+                near_integer > static_cast<double>(std::numeric_limits<int64_t>::max())) {
                 diag.semantic_error_label("Result of `nint` overflows its kind(" + std::to_string(kind) + ")", {loc}, "");
             }
         } else {
