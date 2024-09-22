@@ -63,6 +63,8 @@ ASR::asr_t* make_Cmpop_util(Allocator &al, const Location& loc, ASR::cmpopType c
 
 inline bool check_equal_type(ASR::ttype_t* x, ASR::ttype_t* y, bool check_for_dimensions=false);
 
+static inline std::string type_to_str_python(const ASR::ttype_t *t, bool for_error_message=true);
+
 static inline  double extract_real(const char *s) {
     // TODO: this is inefficient. We should
     // convert this in the tokenizer where we know most information
@@ -403,7 +405,7 @@ static inline ASR::array_physical_typeType extract_physical_type(ASR::ttype_t* e
         }
         default:
             throw LCompilersException("Cannot extract the physical type of " +
-                    std::to_string(e->type) + " type.");
+                    ASRUtils::type_to_str_python(e) + " type.");
     }
 }
 
@@ -432,7 +434,7 @@ static inline ASR::abiType expr_abi(ASR::expr_t* e) {
         }
         default:
             throw LCompilersException("Cannot extract the ABI of " +
-                    std::to_string(e->type) + " expression.");
+                    ASRUtils::type_to_str_python(ASRUtils::expr_type(e)) + " expression.");
     }
 }
 
@@ -612,7 +614,7 @@ static inline std::string type_to_str(const ASR::ttype_t *t)
             result += ")";
             return result;
         }
-        default : throw LCompilersException("Not implemented " + std::to_string(t->type) + ".");
+        default : throw LCompilersException("Not implemented " + ASRUtils::type_to_str_python(t) + ".");
     }
 }
 
@@ -1595,7 +1597,7 @@ static inline std::string get_type_code(const ASR::ttype_t *t, bool use_undersco
         }
         default: {
             throw LCompilersException("Type encoding not implemented for "
-                                      + std::to_string(t->type));
+                                      + ASRUtils::type_to_str_python(t));
         }
     }
     if( is_dimensional && set_dimensional_hint ) {
@@ -1613,8 +1615,7 @@ static inline std::string get_type_code(ASR::ttype_t** types, size_t n_types,
     return code;
 }
 
-static inline std::string type_to_str_python(const ASR::ttype_t *t,
-                                             bool for_error_message=true)
+static inline std::string type_to_str_python(const ASR::ttype_t *t, bool for_error_message)
 {
     switch (t->type) {
         case ASR::ttypeType::Array: {
@@ -1726,7 +1727,7 @@ static inline std::string type_to_str_python(const ASR::ttype_t *t,
         case ASR::ttypeType::SymbolicExpression: {
             return "S";
         }
-        default : throw LCompilersException("Not implemented " + std::to_string(t->type));
+        default : throw LCompilersException("Not implemented " + ASRUtils::type_to_str_python(t));
     }
 }
 
@@ -1817,7 +1818,7 @@ static inline ASR::expr_t* get_constant_zero_with_given_type(Allocator& al, ASR:
             return ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, asr_type->base.loc, false, asr_type));
         }
         default: {
-            throw LCompilersException("get_constant_zero_with_given_type: Not implemented " + std::to_string(asr_type->type));
+            throw LCompilersException("get_constant_zero_with_given_type: Not implemented " + ASRUtils::type_to_str_python(asr_type));
         }
     }
     return nullptr;
@@ -1840,7 +1841,7 @@ static inline ASR::expr_t* get_constant_one_with_given_type(Allocator& al, ASR::
             return ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, asr_type->base.loc, true, asr_type));
         }
         default: {
-            throw LCompilersException("get_constant_one_with_given_type: Not implemented " + std::to_string(asr_type->type));
+            throw LCompilersException("get_constant_one_with_given_type: Not implemented " + ASRUtils::type_to_str_python(asr_type));
         }
     }
     return nullptr;
@@ -1873,7 +1874,7 @@ static inline ASR::expr_t* get_minimum_value_with_given_type(Allocator& al, ASR:
             return ASRUtils::EXPR(ASR::make_RealConstant_t(al, asr_type->base.loc, val, asr_type));
         }
         default: {
-            throw LCompilersException("get_minimum_value_with_given_type: Not implemented " + std::to_string(asr_type->type));
+            throw LCompilersException("get_minimum_value_with_given_type: Not implemented " + ASRUtils::type_to_str_python(asr_type));
         }
     }
     return nullptr;
@@ -1906,7 +1907,7 @@ static inline ASR::expr_t* get_maximum_value_with_given_type(Allocator& al, ASR:
             return ASRUtils::EXPR(ASR::make_RealConstant_t(al, asr_type->base.loc, val, asr_type));
         }
         default: {
-            throw LCompilersException("get_maximum_value_with_given_type: Not implemented " + std::to_string(asr_type->type));
+            throw LCompilersException("get_maximum_value_with_given_type: Not implemented " + ASRUtils::type_to_str_python(asr_type));
         }
     }
     return nullptr;
@@ -2223,7 +2224,7 @@ inline size_t extract_dimensions_from_ttype(ASR::ttype_t *x,
             break;
         }
         default:
-            throw LCompilersException("Not implemented " + std::to_string(x->type) + ".");
+            throw LCompilersException("Not implemented " + ASRUtils::type_to_str_python(x) + ".");
     }
     return n_dims;
 }
@@ -2559,7 +2560,7 @@ static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
         case ASR::ttypeType::Character: {
             ASR::Character_t* tnew = ASR::down_cast<ASR::Character_t>(t);
             t_ = ASRUtils::TYPE(ASR::make_Character_t(al, t->base.loc,
-                    tnew->m_kind, tnew->m_len, tnew->m_len_expr));
+                    tnew->m_kind, tnew->m_len, tnew->m_len_expr, ASR::string_physical_typeType::PointerString));
             break;
         }
         case ASR::ttypeType::StructType: {
@@ -2637,7 +2638,7 @@ static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
         case ASR::ttypeType::SymbolicExpression: {
             return ASRUtils::TYPE(ASR::make_SymbolicExpression_t(al, t->base.loc));
         }
-        default : throw LCompilersException("Not implemented " + std::to_string(t->type));
+        default : throw LCompilersException("Not implemented " + ASRUtils::type_to_str_python(t));
     }
     LCOMPILERS_ASSERT(t_ != nullptr);
     return ASRUtils::make_Array_t_util(
@@ -2710,7 +2711,7 @@ static inline ASR::ttype_t* duplicate_type_without_dims(Allocator& al, const ASR
         case ASR::ttypeType::Character: {
             ASR::Character_t* tnew = ASR::down_cast<ASR::Character_t>(t);
             return ASRUtils::TYPE(ASR::make_Character_t(al, loc,
-                        tnew->m_kind, tnew->m_len, tnew->m_len_expr));
+                        tnew->m_kind, tnew->m_len, tnew->m_len_expr, ASR::string_physical_typeType::PointerString));
         }
         case ASR::ttypeType::StructType: {
             ASR::StructType_t* tstruct = ASR::down_cast<ASR::StructType_t>(t);
@@ -2732,7 +2733,7 @@ static inline ASR::ttype_t* duplicate_type_without_dims(Allocator& al, const ASR
             ASR::TypeParameter_t* tp = ASR::down_cast<ASR::TypeParameter_t>(t);
             return ASRUtils::TYPE(ASR::make_TypeParameter_t(al, loc, tp->m_param));
         }
-        default : throw LCompilersException("Not implemented " + std::to_string(t->type));
+        default : throw LCompilersException("Not implemented " + ASRUtils::type_to_str_python(t));
     }
 }
 
@@ -2917,7 +2918,7 @@ inline int extract_len(ASR::expr_t* len_expr, const Location& loc) {
             break;
         }
         default: {
-            throw SemanticError("Only Integers or variables implemented so far for `len` expressions, found: " + std::to_string(len_expr->type),
+            throw SemanticError("Only Integers or variables implemented so far for `len` expressions, found: " + ASRUtils::type_to_str_python(ASRUtils::expr_type(len_expr)),
                                 loc);
         }
     }
@@ -3570,7 +3571,7 @@ static inline ASR::intentType expr_intent(ASR::expr_t* expr) {
         }
         default: {
             throw LCompilersException("Cannot extract intent of ASR::exprType::" +
-                std::to_string(expr->type));
+                ASRUtils::type_to_str_python(ASRUtils::expr_type(expr)));
         }
     }
     return ASR::intentType::Unspecified;
@@ -4973,7 +4974,7 @@ static inline void import_struct_t(Allocator& al,
     } else if( ASR::is_a<ASR::Character_t>(*var_type_unwrapped) ) {
         ASR::Character_t* char_t = ASR::down_cast<ASR::Character_t>(var_type_unwrapped);
         if( char_t->m_len == -1 && intent == ASR::intentType::Local ) {
-            var_type = ASRUtils::TYPE(ASR::make_Character_t(al, loc, char_t->m_kind, 1, nullptr));
+            var_type = ASRUtils::TYPE(ASR::make_Character_t(al, loc, char_t->m_kind, 1, nullptr, ASR::string_physical_typeType::PointerString));
             if( is_array ) {
                 var_type = ASRUtils::make_Array_t_util(al, loc, var_type, m_dims, n_dims,
                     ASR::abiType::Source, false, ptype, true);

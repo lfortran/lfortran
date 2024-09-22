@@ -59,7 +59,7 @@
                             (Print
                                 [(StringConstant
                                     "1"
-                                    (Character 1 1 ())
+                                    (Character 1 1 () PointerString)
                                 )]
                                 ()
                                 ()
@@ -76,7 +76,7 @@
                             (Print
                                 [(StringConstant
                                     "2"
-                                    (Character 1 1 ())
+                                    (Character 1 1 () PointerString)
                                 )]
                                 ()
                                 ()
@@ -93,7 +93,7 @@
                             (Print
                                 [(StringConstant
                                     "3"
-                                    (Character 1 1 ())
+                                    (Character 1 1 () PointerString)
                                 )]
                                 ()
                                 ()
@@ -110,7 +110,7 @@
                             (Print
                                 [(StringConstant
                                     "4"
-                                    (Character 1 1 ())
+                                    (Character 1 1 () PointerString)
                                 )]
                                 ()
                                 ()
@@ -145,7 +145,7 @@
                             (Print
                                 [(StringConstant
                                     "1"
-                                    (Character 1 1 ())
+                                    (Character 1 1 () PointerString)
                                 )]
                                 ()
                                 ()
@@ -164,7 +164,7 @@
                             (Print
                                 [(StringConstant
                                     "2,3,4"
-                                    (Character 1 5 ())
+                                    (Character 1 5 () PointerString)
                                 )]
                                 ()
                                 ()

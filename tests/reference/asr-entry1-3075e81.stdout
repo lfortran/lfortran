@@ -198,11 +198,11 @@
                             ()
                             [(StringConstant
                                 "Printed using subroutine call: "
-                                (Character 1 31 ())
+                                (Character 1 31 () PointerString)
                             )
                             (Var 5 dummy)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
                         )]
                         ()
@@ -226,11 +226,11 @@
                             ()
                             [(StringConstant
                                 "Printed using entry statement: "
-                                (Character 1 31 ())
+                                (Character 1 31 () PointerString)
                             )
                             (Var 5 dummy)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
                         )]
                         ()

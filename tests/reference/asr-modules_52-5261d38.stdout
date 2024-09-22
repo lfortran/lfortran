@@ -23,7 +23,7 @@
                                                     Default
                                                     (Allocatable
                                                         (Array
-                                                            (Character 1 -2 ())
+                                                            (Character 1 -2 () PointerString)
                                                             [(()
                                                             ())]
                                                             DescriptorArray
@@ -110,7 +110,7 @@
                                     (FunctionType
                                         [(Allocatable
                                             (Array
-                                                (Character 1 -2 ())
+                                                (Character 1 -2 () PointerString)
                                                 [(()
                                                 ())]
                                                 DescriptorArray
@@ -208,7 +208,7 @@
                                                     ()
                                                     Default
                                                     (Array
-                                                        (Character 1 -1 ())
+                                                        (Character 1 -1 () PointerString)
                                                         [(()
                                                         ())]
                                                         DescriptorArray
@@ -268,7 +268,7 @@
                                             )
                                         )
                                         (Array
-                                            (Character 1 -1 ())
+                                            (Character 1 -1 () PointerString)
                                             [(()
                                             ())]
                                             DescriptorArray
@@ -436,7 +436,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (Character 1 -2 () PointerString)
                                                     )
                                                     ()
                                                     Source

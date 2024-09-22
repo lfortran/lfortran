@@ -260,7 +260,7 @@ public:
                 handle_array(t2, type_name, true)
             } else {
                 diag.codegen_error_label("Type number '"
-                    + std::to_string(v.m_type->type)
+                    + ASRUtils::type_to_str_python(v.m_type)
                     + "' not supported", {v.base.base.loc}, "");
                 throw Abort();
             }
@@ -307,7 +307,7 @@ public:
                                     false, false);
             } else {
                 diag.codegen_error_label("Type number '"
-                    + std::to_string(v.m_type->type)
+                    + ASRUtils::type_to_str_python(v.m_type)
                     + "' not supported", {v.base.base.loc}, "");
                 throw Abort();
             }

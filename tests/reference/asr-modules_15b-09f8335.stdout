@@ -2315,7 +2315,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 ())
+                                                    (Character 1 -1 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -2325,7 +2325,7 @@
                                         })
                                     f_string
                                     (FunctionType
-                                        [(Character 1 -1 ())]
+                                        [(Character 1 -1 () PointerString)]
                                         (Integer 4)
                                         Source
                                         Implementation
@@ -2348,7 +2348,7 @@
                                             [((StringConcat
                                                 (Var 53 s)
                                                 (Var 2 c_null_char)
-                                                (Character 1 -1 ())
+                                                (Character 1 -1 () PointerString)
                                                 ()
                                             ))]
                                             (Integer 4)
@@ -2393,7 +2393,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 1 ())
+                                                    (Character 1 1 () PointerString)
                                                     ()
                                                     BindC
                                                     Public
@@ -2403,7 +2403,7 @@
                                         })
                                     f_string0
                                     (FunctionType
-                                        [(Character 1 1 ())]
+                                        [(Character 1 1 () PointerString)]
                                         (Integer 4)
                                         BindC
                                         Interface

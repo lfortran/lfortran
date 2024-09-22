@@ -156,7 +156,15 @@ LFORTRAN_API void _lfortran_printf(const char* format, ...)
 {
     va_list args;
     va_start(args, format);
-    vfprintf(stdout, format, args);
+    char* str = va_arg(args, char*);
+    char* end = va_arg(args, char*);
+    // Detect "\b" to raise error
+    if(str[0] == '\b'){
+        str = str+1;
+        fprintf(stderr, "%s", str);
+        exit(1);
+    }
+    fprintf(stdout, format, str, end);
     fflush(stdout);
     va_end(args);
 }
@@ -757,9 +765,6 @@ char** parse_fortran_format(char* format, int64_t *count, int64_t *item_start) {
     return format_values_2;
 }
 
-void check_format_match(char* format_value, int* current_arg_type_int){
-    //TO DO : check format_value() (user-specified) against current_arg_type_int(actual passed argumet) to raise runtime errors.
-}
 
 struct array_iteration_state{
     //Preserve array size and current element index
@@ -917,6 +922,23 @@ char* int_to_format_specifier(int32_t type_as_int){
             exit(0);
     }
 }
+
+bool is_format_match(char format_value, int32_t current_arg_type_int){
+    char* current_arg_correct_format = int_to_format_specifier(current_arg_type_int);
+    char lowered_format_value = tolower(format_value);
+    if(lowered_format_value == 'd' || lowered_format_value == 'e'){
+        lowered_format_value = 'f';
+    }
+    // Special conditions that are allowed by gfortran.
+    bool special_conditions = (lowered_format_value == 'l' && current_arg_correct_format[0] == 'a') ||
+                              (lowered_format_value == 'a' && current_arg_correct_format[0] == 'l');
+    if(lowered_format_value != current_arg_correct_format[0] && !special_conditions){
+        return false;
+    } else {
+        return true;
+    }
+}
+
 LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* format, ...)
 {
     va_list args;
@@ -1033,14 +1055,41 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
                     }
                 }
             } else {
-                if(!array_looping && (count > 0) && !default_formatting){ // Fetch type integer when we don't have an array.
+                if(count <= 0) break;
+                if(!array_looping && !default_formatting){ // Fetch type integer when we don't have an array.
                     current_arg_type_int =  va_arg(args,int32_t);
                     count--;
+                }
+                if(!default_formatting){
+                    if (!is_format_match(value[0], current_arg_type_int)){
+                        char* type;
+                        switch (int_to_format_specifier(current_arg_type_int)[0])
+                        {
+                            case 'i':
+                                type = "INTEGER";
+                                break;
+                            case 'f':
+                                type = "REAL";
+                                break;
+                            case 'l':
+                                type = "LOGICAL";
+                                break;
+                            case 'a':
+                                type = "CHARACTER";
+                                break;
+                        }
+                        free(result);
+                        result = (char*)malloc(150 * sizeof(char));
+                        sprintf(result, " Runtime Error : Got argument of type (%s), while the format specifier is (%c)\n",type ,value[0]);
+                        // Special indication for error --> "\b" to be handled by `lfortran_print` or `lfortran_file_write`
+                        result[0] = '\b'; 
+                        count = 0; // Break while loop.
+                        break;
+                    }
                 }
                 is_array = check_array_iteration(&count, &current_arg_type_int, &args,&array_state);
                 if (tolower(value[0]) == 'a') {
                     // Character Editing (A[n])
-                    if ( count <= 0 ) break;
                     count--;
                     char* arg = NULL;
                     if(is_array){
@@ -1066,7 +1115,6 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
                     }
                 } else if (tolower(value[0]) == 'i') {
                     // Integer Editing ( I[w[.m]] )
-                    if ( count <= 0 ) break;
                     count--;
                     if(is_array){
                         handle_integer(value, array_state.current_arr_element_int64, &result);
@@ -1076,7 +1124,6 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
                     }
                 } else if (tolower(value[0]) == 'd') {
                     // D Editing (D[w[.d]])
-                    if ( count <= 0 ) break;
                     count--;
                     if(is_array){
                         handle_decimal(value, array_state.current_arr_element_double, scale, &result, "D");;
@@ -1087,7 +1134,6 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
                 } else if (tolower(value[0]) == 'e') {
                     // Check if the next character is 'N' for EN format
                     char format_type = tolower(value[1]);
-                    if ( count <= 0 ) break;
                     count--;
                     if (format_type == 'n') {
                         if(is_array){
@@ -1105,7 +1151,6 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
                         }
                     }
                 } else if (tolower(value[0]) == 'f') {
-                    if ( count <= 0 ) break;
                     count--;
                     if(is_array){
                         handle_float(value,array_state.current_arr_element_double, &result);
@@ -1114,7 +1159,6 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
                         handle_float(value, val, &result);
                     }
                 } else if (tolower(value[0]) == 'l') {
-                    if ( count <= 0 ) break;
                     count--;
                     if(is_array){
                         bool val = array_state.current_arr_element_bool;
@@ -1125,7 +1169,6 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
                         handle_logical(value, val, &result);
                     }
                 } else if (strlen(value) != 0) {
-                    if ( count <= 0 ) break;
                     count--;
                     printf("Printing support is not available for %s format.\n",value);
                 }
@@ -3109,10 +3152,21 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
     if (!filep) {
         filep = stdout;
     }
+    va_list args;
+    va_start(args, format);
+    char* str = va_arg(args, char*);
+    // Detect "\b" to raise error
+    if(str[0] == '\b'){
+        if(iostat == NULL){
+            str = str+1;
+            fprintf(stderr, "%s",str);
+            exit(1);
+        } else { // Delegate error handling to the user.
+            *iostat = 11;
+            return;
+        }
+    }
     if (unit_file_bin) {
-        va_list args;
-        va_start(args, format);
-        const char* str = va_arg(args, const char*);
         // size the size of `str_len` to bytes
         size_t str_len = strlen(str);
 
@@ -3133,32 +3187,51 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
             // it should be a positive value unique from other predefined iostat values
             // like IOSTAT_INQUIRE_INTERNAL_UNIT, IOSTAT_END, and IOSTAT_EOR.
             // currently, I've set it to 11
-            *iostat = 11;
+            if(iostat != NULL) *iostat = 11;
             exit(1);
         } else {
-            *iostat = 0;
+            if(iostat != NULL) *iostat = 0;
         }
-
-        va_end(args);
     } else {
-        va_list args;
-        va_start(args, format);
-        vfprintf(filep, format, args);
-        va_end(args);
-        *iostat = 0;
+        if(strcmp(format, "%s%s") == 0){
+            char* end = va_arg(args, char*);
+            fprintf(filep, format, str, end);
+        } else {
+            fprintf(filep, format, str);
+        }
+        if(iostat != NULL) *iostat = 0;
     }
+    va_end(args);
     (void)!ftruncate(fileno(filep), ftell(filep));
 }
 
-LFORTRAN_API void _lfortran_string_write(char **str, int32_t* iostat, const char *format, ...) {
+LFORTRAN_API void _lfortran_string_write(char **str_holder, int32_t* iostat, const char *format, ...) {
     va_list args;
     va_start(args, format);
-    char *s = (char *) malloc(strlen(*str)*sizeof(char));
-    vsprintf(s, format, args);
-    _lfortran_strcpy(str, s, 0);
+    char* str = va_arg(args, char*);
+    char *s = (char *) malloc(strlen(*str_holder)*sizeof(char));
+    // Detect "\b" to raise error
+    if(str[0] == '\b'){
+        if(iostat == NULL){
+            str = str+1;
+            fprintf(stderr, "%s",str);
+            exit(1);
+        } else { // Delegate error handling to the user.
+            *iostat = 11;
+            return;
+        }
+    }
+
+    if(strcmp(format, "%s%s") == 0){
+        char* end = va_arg(args, char*);
+        sprintf(s, format, str, end);
+    } else {
+        sprintf(s, format, str);
+    }
+    _lfortran_strcpy(str_holder, s, 0);
     free(s);
     va_end(args);
-    *iostat = 0;
+    if(iostat != NULL) *iostat = 0;
 }
 
 LFORTRAN_API void _lfortran_string_read(char *str, char *format, int *i) {

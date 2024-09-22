@@ -458,7 +458,7 @@
                                 ()
                             )]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
                         )]
                         ()
@@ -513,7 +513,7 @@
                                 ()
                             )]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
                         )]
                         ()
@@ -558,7 +558,7 @@
                                 ()
                             )]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
                         )]
                         ()
@@ -849,7 +849,7 @@
                                 ()
                             )]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
                         )]
                         ()
@@ -931,7 +931,7 @@
                                 ()
                             )]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
                         )]
                         ()
@@ -1034,7 +1034,7 @@
                                 (IntegerConstant 4 (Integer 4) Decimal)
                             )]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
                         )]
                         ()
@@ -1089,7 +1089,7 @@
                                 (IntegerConstant 8 (Integer 4) Decimal)
                             )]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
                         )]
                         ()
@@ -1144,7 +1144,7 @@
                                 (IntegerConstant 4 (Integer 4) Decimal)
                             )]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
                         )]
                         ()

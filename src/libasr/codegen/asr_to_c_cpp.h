@@ -2610,7 +2610,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                 type = ASRUtils::expr_type(tmp_expr);
             } else {
                 throw CodeGenError("Cannot deallocate variables in expression " +
-                                    std::to_string(tmp_expr->type),
+                                    ASRUtils::type_to_str_python(ASRUtils::expr_type(tmp_expr)),
                                     tmp_expr->base.loc);
             }
             std::string sym = ASRUtils::symbol_name(tmp_sym);
@@ -2695,7 +2695,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                 tmp_sym = tmp_var->m_v;
             } else {
                 throw CodeGenError("Cannot deallocate variables in expression " +
-                                    std::to_string(tmp_expr->type),
+                                    ASRUtils::type_to_str_python(ASRUtils::expr_type(tmp_expr)),
                                     tmp_expr->base.loc);
             }
             out += std::string(ASRUtils::symbol_name(tmp_sym)) + ", ";
@@ -2715,7 +2715,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                 tmp_sym = tmp_var->m_v;
             } else {
                 throw CodeGenError("Cannot deallocate variables in expression " +
-                                    std::to_string(tmp_expr->type),
+                                    ASRUtils::type_to_str_python(ASRUtils::expr_type(tmp_expr)),
                                     tmp_expr->base.loc);
             }
             out += std::string(ASRUtils::symbol_name(tmp_sym)) + ", ";
