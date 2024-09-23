@@ -3422,7 +3422,7 @@ public:
                         break;
                     }
                     case ASR::array_physical_typeType::DescriptorArray: {
-                        ptr_i = llvm_utils->create_ptr_gep2(el_type->getPointerTo(),
+                        ptr_i = llvm_utils->create_ptr_gep2(el_type,
                             llvm_utils->CreateLoad2(el_type->getPointerTo(), arr_descr->get_pointer_to_data(ptr)),
                             llvm_utils->CreateLoad(llvmi));
                         break;
