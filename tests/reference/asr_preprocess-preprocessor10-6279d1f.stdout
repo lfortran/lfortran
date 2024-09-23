@@ -14,7 +14,7 @@
                     [(Print
                         [(StringConstant
                             "X is defined"
-                            (Character 1 12 ())
+                            (Character 1 12 () PointerString)
                         )]
                         ()
                         ()
@@ -22,7 +22,7 @@
                     (Print
                         [(StringConstant
                             "Y is defined"
-                            (Character 1 12 ())
+                            (Character 1 12 () PointerString)
                         )]
                         ()
                         ()
@@ -30,7 +30,7 @@
                     (Print
                         [(StringConstant
                             "Z is not defined"
-                            (Character 1 16 ())
+                            (Character 1 16 () PointerString)
                         )]
                         ()
                         ()
@@ -38,7 +38,7 @@
                     (Print
                         [(StringConstant
                             "X and Y is defined"
-                            (Character 1 18 ())
+                            (Character 1 18 () PointerString)
                         )]
                         ()
                         ()
@@ -46,7 +46,7 @@
                     (Print
                         [(StringConstant
                             "Z and Y is not defined"
-                            (Character 1 22 ())
+                            (Character 1 22 () PointerString)
                         )]
                         ()
                         ()
@@ -54,7 +54,7 @@
                     (Print
                         [(StringConstant
                             "Z or Y is defined"
-                            (Character 1 17 ())
+                            (Character 1 17 () PointerString)
                         )]
                         ()
                         ()
@@ -62,7 +62,7 @@
                     (Print
                         [(StringConstant
                             "X and Y and Z is not defined"
-                            (Character 1 28 ())
+                            (Character 1 28 () PointerString)
                         )]
                         ()
                         ()
@@ -70,7 +70,7 @@
                     (Print
                         [(StringConstant
                             "X and Y or Z is defined"
-                            (Character 1 23 ())
+                            (Character 1 23 () PointerString)
                         )]
                         ()
                         ()
@@ -78,7 +78,7 @@
                     (Print
                         [(StringConstant
                             "X and Y or Z is defined"
-                            (Character 1 23 ())
+                            (Character 1 23 () PointerString)
                         )]
                         ()
                         ()
@@ -86,7 +86,7 @@
                     (Print
                         [(StringConstant
                             "X and !Y or !Z is defined"
-                            (Character 1 25 ())
+                            (Character 1 25 () PointerString)
                         )]
                         ()
                         ()
@@ -94,7 +94,7 @@
                     (Print
                         [(StringConstant
                             "X and !(Y or Z) is not defined"
-                            (Character 1 30 ())
+                            (Character 1 30 () PointerString)
                         )]
                         ()
                         ()

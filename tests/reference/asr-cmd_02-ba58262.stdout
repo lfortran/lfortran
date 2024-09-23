@@ -20,7 +20,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Character 1 255 ())
+                                    (Character 1 255 () PointerString)
                                     ()
                                     Source
                                     Public
@@ -54,7 +54,7 @@
                         GetEnvironmentVariable
                         [(StringConstant
                             "HOME"
-                            (Character 1 4 ())
+                            (Character 1 4 () PointerString)
                         )
                         (Var 2 homedir)]
                         0
@@ -71,7 +71,7 @@
                                 (Integer 4)
                                 ()
                                 ()
-                            ))
+                            ) PointerString)
                             ()
                             ()
                         )]
@@ -82,7 +82,7 @@
                         ExecuteCommandLine
                         [(StringConstant
                             "printenv"
-                            (Character 1 8 ())
+                            (Character 1 8 () PointerString)
                         )]
                         0
                     )]

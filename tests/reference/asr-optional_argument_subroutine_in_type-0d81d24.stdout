@@ -112,7 +112,7 @@
                                     [(Print
                                         [(StringConstant
                                             "Hello World"
-                                            (Character 1 11 ())
+                                            (Character 1 11 () PointerString)
                                         )]
                                         ()
                                         ()

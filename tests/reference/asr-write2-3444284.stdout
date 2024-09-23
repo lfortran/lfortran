@@ -35,20 +35,20 @@
                         [(StringFormat
                             (StringConstant
                                 "(a)"
-                                (Character 1 3 ())
+                                (Character 1 3 () PointerString)
                             )
                             [(StringConstant
                                 "Some text: "
-                                (Character 1 11 ())
+                                (Character 1 11 () PointerString)
                             )]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
                         )]
                         ()
                         (StringConstant
                             ""
-                            (Character 1 0 ())
+                            (Character 1 0 () PointerString)
                         )
                         ()
                     )
@@ -68,11 +68,11 @@
                             ()
                             [(StringConstant
                                 "Got: "
-                                (Character 1 5 ())
+                                (Character 1 5 () PointerString)
                             )
                             (Var 2 i)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
                         )]
                         ()

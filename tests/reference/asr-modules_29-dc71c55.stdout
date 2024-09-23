@@ -41,7 +41,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 ())
+                                                    (Character 1 -1 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -75,7 +75,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 ())
+                                                    (Character 1 -1 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -85,8 +85,8 @@
                                         })
                                     git_target_branch
                                     (FunctionType
-                                        [(Character 1 -1 ())
-                                        (Character 1 -1 ())]
+                                        [(Character 1 -1 () PointerString)
+                                        (Character 1 -1 () PointerString)]
                                         (StructType
                                             15 git_target_t
                                         )
@@ -109,7 +109,7 @@
                                             (Var 17 self)
                                             17 1_git_target_t_url
                                             (Allocatable
-                                                (Character 1 -2 ())
+                                                (Character 1 -2 () PointerString)
                                             )
                                             ()
                                         )
@@ -121,7 +121,7 @@
                                             (Var 17 self)
                                             17 1_git_target_t_object
                                             (Allocatable
-                                                (Character 1 -2 ())
+                                                (Character 1 -2 () PointerString)
                                             )
                                             ()
                                         )
@@ -149,7 +149,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (Character 1 -2 () PointerString)
                                                     )
                                                     ()
                                                     Source
@@ -167,7 +167,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (Character 1 -2 () PointerString)
                                                     )
                                                     ()
                                                     Source
@@ -234,7 +234,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (Character 1 -2 () PointerString)
                                                     )
                                                     ()
                                                     Source
@@ -252,7 +252,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (Character 1 -2 () PointerString)
                                                     )
                                                     ()
                                                     Source
@@ -289,7 +289,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (Character 1 -2 () PointerString)
                                                     )
                                                     ()
                                                     Source
@@ -388,7 +388,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 ())
+                                                    (Character 1 -1 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -429,7 +429,7 @@
                                         (StructType
                                             8 toml_table
                                         )
-                                        (Character 1 -1 ())
+                                        (Character 1 -1 () PointerString)
                                         (Allocatable
                                             (StructType
                                                 8 error_t
@@ -484,7 +484,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (Character 1 -2 () PointerString)
                                                     )
                                                     ()
                                                     Source
@@ -520,7 +520,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (Character 1 -2 () PointerString)
                                                     )
                                                     ()
                                                     Source
@@ -692,7 +692,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (Character 1 -2 () PointerString)
                                                     )
                                                     ()
                                                     Source
@@ -710,7 +710,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (Character 1 -2 () PointerString)
                                                     )
                                                     ()
                                                     Source
@@ -728,7 +728,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (Character 1 -2 () PointerString)
                                                     )
                                                     ()
                                                     Source
@@ -1001,7 +1001,7 @@
                     [(Print
                         [(StringConstant
                             "running modules_29 program"
-                            (Character 1 26 ())
+                            (Character 1 26 () PointerString)
                         )]
                         ()
                         ()

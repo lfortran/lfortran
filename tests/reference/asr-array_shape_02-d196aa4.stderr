@@ -1,0 +1,5 @@
+semantic error: Incompatible shape of array on assignment on dimension 0 (3 and 2)
+ --> tests/errors/array_shape_02.f90:2:1
+  |
+2 | integer :: x(3,2) = reshape([1,2,3,4],[2,2])
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 

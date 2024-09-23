@@ -440,11 +440,11 @@
                             ()
                             [(StringConstant
                                 "6.0 == "
-                                (Character 1 7 ())
+                                (Character 1 7 () PointerString)
                             )
                             (Var 2 z)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
                         )]
                         ()
@@ -468,11 +468,11 @@
                             ()
                             [(StringConstant
                                 "7.0 == "
-                                (Character 1 7 ())
+                                (Character 1 7 () PointerString)
                             )
                             (Var 2 z)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
                         )]
                         ()
@@ -496,11 +496,11 @@
                             ()
                             [(StringConstant
                                 "6.0 == "
-                                (Character 1 7 ())
+                                (Character 1 7 () PointerString)
                             )
                             (Var 2 z)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
                         )]
                         ()
@@ -524,11 +524,11 @@
                             ()
                             [(StringConstant
                                 "8.0 == "
-                                (Character 1 7 ())
+                                (Character 1 7 () PointerString)
                             )
                             (Var 2 z)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
                         )]
                         ()

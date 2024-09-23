@@ -73,7 +73,7 @@
                     [(Print
                         [(StringConstant
                             "running module_25 program"
-                            (Character 1 25 ())
+                            (Character 1 25 () PointerString)
                         )]
                         ()
                         ()
@@ -177,7 +177,7 @@
                                                     ()
                                                     Default
                                                     (Pointer
-                                                        (Character 1 -2 ())
+                                                        (Character 1 -2 () PointerString)
                                                     )
                                                     ()
                                                     Source

@@ -388,7 +388,7 @@ public:
                 sub = format_type_c("", "void**", v.m_name, false, false);
             } else {
                 diag.codegen_error_label("Type number '"
-                    + std::to_string(t2->type)
+                    + ASRUtils::type_to_str_python(t2)
                     + "' not supported", {v.base.base.loc}, "");
                 throw Abort();
             }
@@ -552,7 +552,7 @@ public:
                 return "";
             } else {
                 diag.codegen_error_label("Type number '"
-                    + std::to_string(v_m_type->type)
+                    + ASRUtils::type_to_str_python(v_m_type)
                     + "' not supported", {v.base.base.loc}, "");
                 throw Abort();
             }

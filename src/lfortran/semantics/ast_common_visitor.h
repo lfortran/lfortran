@@ -858,6 +858,7 @@ public:
         {"get_command", {IntrinsicSignature({"command", "length", "status"}, 0, 3)}},
         {"get_environment_variable", {IntrinsicSignature({"name", "value", "length", "status", "trim_name"}, 1, 5)}},
         {"execute_command_line", {IntrinsicSignature({"command", "wait", "exitstat", "cmdstat", "cmdmsg"}, 1, 5)}},
+        {"move_alloc", {IntrinsicSignature({"from", "to"}, 2, 2)}},
         {"mvbits", {IntrinsicSignature({"from", "frompos", "len", "to", "topos"}, 5, 5)}},
         {"modulo", {IntrinsicSignature({"a", "p"}, 2, 2)}},
         {"bessel_jn", {IntrinsicSignature({"n", "x"}, 2, 2)}},
@@ -870,6 +871,7 @@ public:
         {"storage_size", {IntrinsicSignature({"a", "kind"}, 1, 2)}},
         {"spread", {IntrinsicSignature({"source", "dim", "ncopies"}, 3, 3)}},
         {"out_of_range", {IntrinsicSignature({"value", "mold", "round"}, 2, 3)}},
+        {"same_type_as", {IntrinsicSignature({"a", "b"}, 2, 2)}},
     };
 
     std::map<std::string, std::pair<std::string, std::vector<std::string>>> intrinsic_mapping = {
@@ -2144,7 +2146,7 @@ public:
         adjusted_str[new_length] = '\0'; // null-terminate the string
 
         ASR::ttype_t* value_type = ASRUtils::TYPE(ASR::make_Character_t(
-            al, loc, 1, new_length, nullptr));
+            al, loc, 1, new_length, nullptr, ASR::string_physical_typeType::PointerString));
 
         rhs_len = lhs_len; // Update the rhs_len to match lhs_len
         return ASRUtils::EXPR(ASR::make_StringConstant_t(
@@ -3008,9 +3010,29 @@ public:
                         value = init_expr;
                     }
                     ASR::ttype_t *init_type = ASRUtils::expr_type(init_expr);
-                    if(ASRUtils::extract_n_dims_from_ttype(init_type)!=ASRUtils::extract_n_dims_from_ttype(type) && ASRUtils::extract_n_dims_from_ttype(type)==0){
-                        throw SemanticError("Initialisation using ArrayConstant is supported only for single dimensional arrays",x.base.base.loc);
+
+                    size_t rhs_rank = ASRUtils::extract_n_dims_from_ttype(init_type);
+                    size_t lhs_rank = ASRUtils::extract_n_dims_from_ttype(type);
+
+                    if( lhs_rank != rhs_rank ){
+                        throw SemanticError("Incompatible ranks `"+ std::to_string(lhs_rank) + "` and `" 
+                                                                  + std::to_string(rhs_rank) + "` in assignment",
+                                            x.base.base.loc);
                     }
+
+                     if ( ASR::is_a<ASR::Array_t>(*init_type) && !ASR::is_a<ASR::ImpliedDoLoop_t>(*init_expr)){
+                        ASR::Array_t* arr_rhs = ASR::down_cast<ASR::Array_t>(init_type);
+                        ASR::Array_t* arr_lhs = ASR::down_cast<ASR::Array_t>(type);
+                        
+                    for (size_t i = 0; i < arr_lhs->n_dims; i++) {
+                           std::string lhs_dim = ASRUtils::extract_dim_value(arr_lhs->m_dims[i].m_length);
+                           std::string rhs_dim = ASRUtils::extract_dim_value(arr_rhs->m_dims[i].m_length);
+                            if(lhs_dim!=":" && rhs_dim!=":" && lhs_dim!=rhs_dim){
+                                    throw SemanticError("Incompatible shape of array on assignment on dimension " + std::to_string(i) +
+                                  " (" + lhs_dim + " and " + rhs_dim + ")", x.base.base.loc);
+                            }
+                        }
+                   }
                     if (init_type->type == ASR::ttypeType::Integer
                         && ASRUtils::type_get_past_array(ASRUtils::type_get_past_pointer(type))->type == ASR::ttypeType::Character
                         && s.m_sym == AST::symbolType::Asterisk) {
@@ -3030,9 +3052,9 @@ public:
                             if (ASR::is_a<ASR::Array_t>(*type)) {
                                 // case: character :: a(2)*4
                                 ASR::Array_t *array = ASR::down_cast<ASR::Array_t>(type);
-                                array->m_type = ASRUtils::TYPE(ASR::make_Character_t(al, int_const->base.base.loc, 1, len, nullptr));
+                                array->m_type = ASRUtils::TYPE(ASR::make_Character_t(al, int_const->base.base.loc, 1, len, nullptr, ASR::string_physical_typeType::PointerString));
                             } else {
-                                type = ASRUtils::TYPE(ASR::make_Character_t(al, int_const->base.base.loc, 1, len, nullptr));
+                                type = ASRUtils::TYPE(ASR::make_Character_t(al, int_const->base.base.loc, 1, len, nullptr, ASR::string_physical_typeType::PointerString));
                             }
                         } else {
                             throw SemanticError("Initialization of `" + std::string(x.m_syms[i].m_name) +
@@ -3472,7 +3494,7 @@ public:
                 a_len = 1; // The default len of "character :: x" is 1
             }
             LCOMPILERS_ASSERT(a_len != -10)
-            type = ASRUtils::TYPE(ASR::make_Character_t(al, loc, a_kind, a_len, len_expr));
+            type = ASRUtils::TYPE(ASR::make_Character_t(al, loc, a_kind, a_len, len_expr, ASR::string_physical_typeType::PointerString));
             type = ASRUtils::make_Array_t_util(
                 al, loc, type, dims.p, dims.size(), abi, is_argument,
                 dims.size() > 0 && abi == ASR::abiType::BindC ? ASR::array_physical_typeType::CharacterArraySinglePointer :
@@ -3966,7 +3988,7 @@ public:
             if( ASRUtils::is_character(*root_v_type) &&
                 !ASRUtils::is_array(root_v_type) ) {
                 ASR::ttype_t  *char_type = ASRUtils::TYPE(ASR::make_Character_t(
-                    al, type->base.loc, 1, 1, nullptr));
+                    al, type->base.loc, 1, 1, nullptr, ASR::string_physical_typeType::PointerString));
                 return ASR::make_StringItem_t(al, loc,
                     v_Var, args.p[0].m_right, char_type, arr_ref_val);
             } else if ( ASRUtils::is_character(*root_v_type) &&
@@ -4052,7 +4074,7 @@ public:
                             a_len = -3;
                         }
                         char_type = ASRUtils::TYPE(ASR::make_Character_t(al, loc,
-                                        1, a_len, a_len_expr));
+                                        1, a_len, a_len_expr, ASR::string_physical_typeType::PointerString));
                     }
 
                     return ASR::make_StringSection_t(al, loc, v_Var, l,
@@ -4252,7 +4274,7 @@ public:
                 if( func_calls[0] ) {
                     a_len = ASRUtils::extract_len<SemanticError>(func_calls[0], loc);
                 }
-                return ASRUtils::TYPE(ASR::make_Character_t(al, loc, t->m_kind, a_len, func_calls[0]));
+                return ASRUtils::TYPE(ASR::make_Character_t(al, loc, t->m_kind, a_len, func_calls[0], ASR::string_physical_typeType::PointerString));
             }
             case ASR::ttypeType::StructType: {
                 ASR::StructType_t* struct_t_type = ASR::down_cast<ASR::StructType_t>(return_type);
@@ -7903,7 +7925,7 @@ public:
                 a_len = left_type2->m_len + right_type2->m_len;
             }
             ASR::ttype_t *dest_type = ASR::down_cast<ASR::ttype_t>(ASR::make_Character_t(
-                al, x.base.base.loc, left_type2->m_kind, a_len, nullptr));
+                al, x.base.base.loc, left_type2->m_kind, a_len, nullptr, ASR::string_physical_typeType::PointerString));
 
             ASR::expr_t *value = nullptr;
             // Assign evaluation to `value` if possible, otherwise leave nullptr
@@ -7915,7 +7937,7 @@ public:
                 char* left_value_ = ASR::down_cast<ASR::StringConstant_t>(left_value)->m_s;
                 char* right_value_ = ASR::down_cast<ASR::StringConstant_t>(right_value)->m_s;
                 ASR::ttype_t *dest_value_type = ASR::down_cast<ASR::ttype_t>(ASR::make_Character_t(al, x.base.base.loc,
-                    left_value_type2->m_kind, strlen(left_value_) + strlen(right_value_), nullptr));
+                    left_value_type2->m_kind, strlen(left_value_) + strlen(right_value_), nullptr, ASR::string_physical_typeType::PointerString));
                 char* result;
                 std::string result_s = std::string(left_value_) + std::string(right_value_);
                 Str s; s.from_str_view(result_s);
@@ -7996,7 +8018,7 @@ public:
     void visit_String(const AST::String_t &x) {
         int s_len = strlen(x.m_s);
         ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Character_t(al, x.base.base.loc,
-                1, s_len, nullptr));
+                1, s_len, nullptr, ASR::string_physical_typeType::PointerString));
         tmp = ASR::make_StringConstant_t(al, x.base.base.loc, x.m_s, type);
     }
 
