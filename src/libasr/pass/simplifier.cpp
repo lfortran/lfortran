@@ -1006,25 +1006,31 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
 
     void visit_Assignment(const ASR::Assignment_t& x) {
         ASR::Assignment_t& xx = const_cast<ASR::Assignment_t&>(x);
-        if (realloc_lhs && ASR::is_a<ASR::ArrayConstructor_t>(*xx.m_value) && ASRUtils::is_allocatable(xx.m_target)) {
-            ASR::ArrayConstructor_t* array_constructor_value = ASR::down_cast<ASR::ArrayConstructor_t>(xx.m_value);
-            if (!ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_array(array_constructor_value->m_type))) {
+        // e.g.; a = [b, a], where 'a' is an allocatable
+        if (realloc_lhs && ASR::is_a<ASR::ArrayConstructor_t>(*xx.m_value) &&
+            ASRUtils::is_allocatable(xx.m_target)
+        ) {
+            // TODO: dealing with StructType would need thinking similar to the
+            // way `traverse_args` handles it, the only reason to not
+            // add it is because there is currently no integration test
+            // for it
+            if (!ASRUtils::is_struct(*ASRUtils::expr_type(xx.m_value))) {
                 ASR::Var_t* v1 = ASR::down_cast<ASR::Var_t>(xx.m_target);
-                bool create_temp = false;
+                bool create_temp_var_for_rhs = false;
                 Vec<ASR::expr_t*> array_vars; array_vars.reserve(al, 1);
                 ArrayVarCollector array_var_collector(al, array_vars);
                 array_var_collector.visit_expr(*xx.m_value);
+                // after collecting variables from RHS, we check whether
+                // there is any common variable
                 for (size_t i=0; i < array_vars.size(); i++) {
                     ASR::Var_t* v = ASR::down_cast<ASR::Var_t>(array_vars[i]);
                     if (v->m_v == v1->m_v) {
-                        create_temp = true;
+                        create_temp_var_for_rhs = true;
                     }
                 }
 
-                if (create_temp) {
+                if (create_temp_var_for_rhs) {
                     std::string name_hint = "_assignment_";
-                    // visit_expr(*xx.m_target);
-                    // visit_expr(*xx.m_value);
                     call_create_and_allocate_temporary_variable(xx.m_value)
                     xx.m_value = array_var_temporary;
                 }
