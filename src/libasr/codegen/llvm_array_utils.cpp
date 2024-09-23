@@ -499,7 +499,7 @@ namespace LCompilers {
         }
 
         void SimpleCMODescriptor::fill_descriptor_for_array_section_data_only(
-            llvm::Value* value_desc, llvm::Value* target,
+            llvm::Value* value_desc, llvm::Type* value_el_type, llvm::Value* target,
             llvm::Value** lbs, llvm::Value** ubs,
             llvm::Value** ds, llvm::Value** non_sliced_indices,
             llvm::Value** llvm_diminfo, int value_rank, int target_rank) {
@@ -515,7 +515,7 @@ namespace LCompilers {
             }
             llvm::Value* target_offset = cmo_convertor_single_element_data_only(
                 llvm_diminfo, section_first_indices, value_rank, false);
-            value_desc = llvm_utils->create_ptr_gep(value_desc, target_offset);
+            value_desc = llvm_utils->create_ptr_gep2(value_el_type, value_desc, target_offset);
             builder->CreateStore(value_desc, get_pointer_to_data(target));
 
             builder->CreateStore(
@@ -535,7 +535,7 @@ namespace LCompilers {
                         llvm::ConstantInt::get(llvm::Type::getInt32Ty(context),
                                                 llvm::APInt(32, 1))
                         );
-                    llvm::Value* target_dim_des = llvm_utils->create_ptr_gep(target_dim_des_array, j);
+                    llvm::Value* target_dim_des = llvm_utils->create_ptr_gep2(dim_des, target_dim_des_array, j);
                     builder->CreateStore(builder->CreateMul(stride, builder->CreateZExtOrTrunc(
                         ds[i], llvm::Type::getInt32Ty(context))), get_stride(target_dim_des, false));
                     builder->CreateStore(llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, 1)),
