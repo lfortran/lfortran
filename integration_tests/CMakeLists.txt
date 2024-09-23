@@ -994,7 +994,7 @@ RUN(NAME modules_54 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17)
 RUN(NAME modules_55 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17)
 RUN(NAME modules_56 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NOFAST llvm17)
 RUN(NAME modules_57 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17)
-# RUN(NAME modules_58 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRAFILES modules_58_module.f90)
+RUN(NAME modules_58 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRAFILES modules_58_module.f90)
 RUN(NAME operator_overloading_05_module3 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17 EXTRAFILES
         operator_overloading_05_module1.f90 operator_overloading_05_module2.f90)
 RUN(NAME associate_06 LABELS gfortran EXTRAFILES
