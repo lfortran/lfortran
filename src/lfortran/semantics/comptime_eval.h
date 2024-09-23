@@ -76,7 +76,6 @@ struct IntrinsicProcedures {
             {"is_iostat_eor", {m_builtin, &not_implemented, false}},
             {"is_iostat_end", {m_builtin, &not_implemented, false}},
             {"get_command_argument", {m_builtin, &not_implemented, false}},
-            {"command_argument_count", {m_builtin, &not_implemented, false}},
             {"newunit", {m_custom, &not_implemented, false}},
 
             // These will fail if used in symbol table visitor, but will be
