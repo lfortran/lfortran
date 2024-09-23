@@ -4371,9 +4371,14 @@ public:
         ASR::ttype_t* p_type = ASRUtils::expr_type(x.m_ptr);
         llvm::Value *ptr, *nptr;
         int64_t ptr_loads_copy = ptr_loads;
-        ptr_loads = 1;
+        ptr_loads = 0;
         visit_expr_wrapper(x.m_ptr, true);
         ptr = tmp;
+        llvm::Type *ptr_arr_type = llvm_utils->get_type_from_ttype_t_util(
+            ASRUtils::type_get_past_allocatable(
+            ASRUtils::type_get_past_pointer(p_type)), module.get());
+        ptr = llvm_utils->CreateLoad2(p_type, ptr);
+        ptr_type[ptr] = ptr_arr_type;
         ptr_loads = ptr_loads_copy;
         if( ASR::is_a<ASR::CPtr_t>(*ASRUtils::expr_type(x.m_ptr)) &&
             x.m_tgt && ASR::is_a<ASR::CPtr_t>(*ASRUtils::expr_type(x.m_tgt)) ) {
@@ -4411,7 +4416,9 @@ public:
                         nptr = llvm_utils->create_gep(nptr, 0);
                     }
                     if( tgt_ptype != ASR::array_physical_typeType::DescriptorArray ) {
-                        ptr = llvm_utils->CreateLoad(arr_descr->get_pointer_to_data(ptr));
+                        llvm::Type *value_type = llvm_utils->get_type_from_ttype_t_util(
+                            ASRUtils::extract_type(p_type), module.get());
+                        ptr = llvm_utils->CreateLoad2(value_type->getPointerTo(), arr_descr->get_pointer_to_data(ptr));
                     }
                 }
                 nptr = builder->CreatePtrToInt(nptr, llvm_utils->getIntType(8, false));
