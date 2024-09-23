@@ -539,6 +539,8 @@ namespace IntrinsicElementalFunctionRegistry {
             {nullptr, &SymbolicSinQ::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::SymbolicGetArgument),
             {nullptr, &SymbolicGetArgument::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::CommandArgumentCount),
+            {&CommandArgumentCount::instantiate_CommandArgumentCount, &CommandArgumentCount::verify_args}},
     };
 
     static const std::map<int64_t, std::string>& intrinsic_function_id_to_name = {
@@ -933,6 +935,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"isnan", {&Isnan::create_Isnan, &Isnan::eval_Isnan}},
                 {"nearest", {&Nearest::create_Nearest, &Nearest::eval_Nearest}},
                 {"compiler_version", {&CompilerVersion::create_CompilerVersion, &CompilerVersion::eval_CompilerVersion}},
+                {"command_argument_count", {&CommandArgumentCount::create_CommandArgumentCount, nullptr}},
                 {"spacing", {&Spacing::create_Spacing, &Spacing::eval_Spacing}},
                 {"modulo", {&Modulo::create_Modulo, &Modulo::eval_Modulo}},
                 {"bessel_jn", {&BesselJN::create_BesselJN, &BesselJN::eval_BesselJN}},
