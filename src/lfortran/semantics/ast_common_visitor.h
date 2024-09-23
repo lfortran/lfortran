@@ -3007,9 +3007,29 @@ public:
                         value = init_expr;
                     }
                     ASR::ttype_t *init_type = ASRUtils::expr_type(init_expr);
-                    if(ASRUtils::extract_n_dims_from_ttype(init_type)!=ASRUtils::extract_n_dims_from_ttype(type) && ASRUtils::extract_n_dims_from_ttype(type)==0){
-                        throw SemanticError("Initialisation using ArrayConstant is supported only for single dimensional arrays",x.base.base.loc);
+
+                    size_t rhs_rank = ASRUtils::extract_n_dims_from_ttype(init_type);
+                    size_t lhs_rank = ASRUtils::extract_n_dims_from_ttype(type);
+
+                    if( lhs_rank != rhs_rank ){
+                        throw SemanticError("Incompatible ranks `"+ std::to_string(lhs_rank) + "` and `" 
+                                                                  + std::to_string(rhs_rank) + "` in assignment",
+                                            x.base.base.loc);
                     }
+
+                     if ( ASR::is_a<ASR::Array_t>(*init_type) && !ASR::is_a<ASR::ImpliedDoLoop_t>(*init_expr)){
+                        ASR::Array_t* arr_rhs = ASR::down_cast<ASR::Array_t>(init_type);
+                        ASR::Array_t* arr_lhs = ASR::down_cast<ASR::Array_t>(type);
+                        
+                    for (size_t i = 0; i < arr_lhs->n_dims; i++) {
+                           std::string lhs_dim = ASRUtils::extract_dim_value(arr_lhs->m_dims[i].m_length);
+                           std::string rhs_dim = ASRUtils::extract_dim_value(arr_rhs->m_dims[i].m_length);
+                            if(lhs_dim!=":" && rhs_dim!=":" && lhs_dim!=rhs_dim){
+                                    throw SemanticError("Incompatible shape of array on assignment on dimension " + std::to_string(i) +
+                                  " (" + lhs_dim + " and " + rhs_dim + ")", x.base.base.loc);
+                            }
+                        }
+                   }
                     if (init_type->type == ASR::ttypeType::Integer
                         && ASRUtils::type_get_past_array(ASRUtils::type_get_past_pointer(type))->type == ASR::ttypeType::Character
                         && s.m_sym == AST::symbolType::Asterisk) {
