@@ -60,7 +60,7 @@
                         0
                     )
                     (Print
-                        [(FunctionCall
+                        (FunctionCall
                             2 trim
                             ()
                             [((Var 2 homedir))]
@@ -74,9 +74,7 @@
                             ) PointerString)
                             ()
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (IntrinsicImpureSubroutine
                         ExecuteCommandLine

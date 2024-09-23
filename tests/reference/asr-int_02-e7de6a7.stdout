@@ -96,16 +96,14 @@
                     intrinsics_15
                     [lfortran_intrinsic_builtin]
                     [(Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(Var 2 y1)
                             (Var 2 y2)]
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 ),
             lfortran_intrinsic_builtin:

@@ -63,7 +63,7 @@
                     functions_06
                     [functions_06_m]
                     [(Print
-                        [(FunctionCall
+                        (FunctionCall
                             6 trim_wrapper
                             ()
                             [((Var 6 string))]
@@ -74,12 +74,10 @@
                             ) PointerString)
                             ()
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(FunctionCall
                                 6 int_return
@@ -101,12 +99,10 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(FunctionCall
                                 6 real_return
@@ -128,9 +124,7 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 ),
             functions_06_m:

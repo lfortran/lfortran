@@ -71,12 +71,10 @@
                     module_25
                     [tomlf_de_character]
                     [(Print
-                        [(StringConstant
+                        (StringConstant
                             "running module_25 program"
                             (Character 1 25 () PointerString)
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 ),
             tomlf_de_character:

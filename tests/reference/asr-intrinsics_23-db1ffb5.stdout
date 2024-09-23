@@ -117,7 +117,7 @@
                     intrinsics_23
                     []
                     [(Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(Var 2 i32)
                             (Var 2 i64)
@@ -126,12 +126,10 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(TypeInquiry
                                 Huge
@@ -176,9 +174,7 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 )
         })

@@ -296,7 +296,7 @@
                     init_values
                     []
                     [(Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(Var 2 i)
                             (Var 2 j)
@@ -310,9 +310,7 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 )
         })

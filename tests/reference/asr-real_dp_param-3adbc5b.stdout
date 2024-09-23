@@ -125,7 +125,7 @@
                     real_dp_param
                     []
                     [(Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(Var 2 u)
                             (Var 2 v)
@@ -133,9 +133,7 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 )
         })

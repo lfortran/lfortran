@@ -12,12 +12,10 @@
                     modules_40
                     []
                     [(Print
-                        [(StringConstant
+                        (StringConstant
                             "executing modules_40"
                             (Character 1 20 () PointerString)
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 ),
             modules_40_tomlf_de_tokenizer:

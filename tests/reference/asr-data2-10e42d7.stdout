@@ -86,7 +86,7 @@
                         ()
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StringConstant
                                 "factor in a:"
@@ -96,9 +96,7 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (SubroutineCall
                         1 b
@@ -152,7 +150,7 @@
                     []
                     [(Var 4 factor)]
                     [(Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StringConstant
                                 "factor: "
@@ -162,9 +160,7 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                     ()
                     Public
