@@ -58,7 +58,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (Character 1 -2 () PointerString)
                                                     )
                                                     ()
                                                     Source
@@ -88,7 +88,7 @@
                                     date_to_string
                                     (FunctionType
                                         [(Allocatable
-                                            (Character 1 -2 ())
+                                            (Character 1 -2 () PointerString)
                                         )
                                         (ClassType
                                             2 toml_date
@@ -126,7 +126,7 @@
                                         [(StringFormat
                                             (StringConstant
                                                 "(i4.4,\"-\",i2.2,\"-\",i2.2)"
-                                                (Character 1 24 ())
+                                                (Character 1 24 () PointerString)
                                             )
                                             [(StructInstanceMember
                                                 (Var 6 rhs)
@@ -147,7 +147,7 @@
                                                 ()
                                             )]
                                             FormatFortran
-                                            (Character -1 0 ())
+                                            (Character -1 0 () PointerString)
                                             ()
                                         )]
                                         ()
@@ -205,7 +205,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (Character 1 -2 () PointerString)
                                                     )
                                                     ()
                                                     Source
@@ -241,7 +241,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (Character 1 -2 () PointerString)
                                                     )
                                                     ()
                                                     Source
@@ -253,7 +253,7 @@
                                     datetime_to_string
                                     (FunctionType
                                         [(Allocatable
-                                            (Character 1 -2 ())
+                                            (Character 1 -2 () PointerString)
                                         )
                                         (ClassType
                                             2 toml_datetime
@@ -342,7 +342,7 @@
                                                 (StringConcat
                                                     (Var 8 lhs)
                                                     (Var 8 temporary)
-                                                    (Character 1 -1 ())
+                                                    (Character 1 -1 () PointerString)
                                                     ()
                                                 )
                                                 ()
@@ -563,7 +563,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 ())
+                                                    (Character 1 -1 () PointerString)
                                                     ()
                                                     Source
                                                     Private
@@ -577,7 +577,7 @@
                                         (Integer 4)
                                         (Integer 4)
                                         (Integer 4)
-                                        (Character 1 -1 ())]
+                                        (Character 1 -1 () PointerString)]
                                         (StructType
                                             2 toml_time
                                         )
@@ -698,7 +698,7 @@
                                                 (Var 9 self)
                                                 9 1_toml_time_zone
                                                 (Allocatable
-                                                    (Character 1 -2 ())
+                                                    (Character 1 -2 () PointerString)
                                                 )
                                                 ()
                                             )
@@ -788,7 +788,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (Character 1 -2 () PointerString)
                                                     )
                                                     ()
                                                     Source
@@ -828,7 +828,7 @@
                                     time_to_string
                                     (FunctionType
                                         [(Allocatable
-                                            (Character 1 -2 ())
+                                            (Character 1 -2 () PointerString)
                                         )
                                         (ClassType
                                             2 toml_time
@@ -881,7 +881,7 @@
                                             [(StringFormat
                                                 (StringConstant
                                                     "(i2.2,\":\",i2.2,\":\",i2.2,\".\",i3.3)"
-                                                    (Character 1 33 ())
+                                                    (Character 1 33 () PointerString)
                                                 )
                                                 [(StructInstanceMember
                                                     (Var 7 rhs)
@@ -910,7 +910,7 @@
                                                     ()
                                                 )]
                                                 FormatFortran
-                                                (Character -1 0 ())
+                                                (Character -1 0 () PointerString)
                                                 ()
                                             )]
                                             ()
@@ -935,7 +935,7 @@
                                             [(StringFormat
                                                 (StringConstant
                                                     "(i2.2,\":\",i2.2,\":\",i2.2)"
-                                                    (Character 1 24 ())
+                                                    (Character 1 24 () PointerString)
                                                 )
                                                 [(StructInstanceMember
                                                     (Var 7 rhs)
@@ -956,7 +956,7 @@
                                                     ()
                                                 )]
                                                 FormatFortran
-                                                (Character -1 0 ())
+                                                (Character -1 0 () PointerString)
                                                 ()
                                             )]
                                             ()
@@ -971,7 +971,7 @@
                                                 (Var 7 rhs)
                                                 7 1_toml_time_zone
                                                 (Allocatable
-                                                    (Character 1 -2 ())
+                                                    (Character 1 -2 () PointerString)
                                                 )
                                                 ()
                                             )]
@@ -990,7 +990,7 @@
                                                         (Var 7 rhs)
                                                         7 1_toml_time_zone
                                                         (Allocatable
-                                                            (Character 1 -2 ())
+                                                            (Character 1 -2 () PointerString)
                                                         )
                                                         ()
                                                     ))]
@@ -1001,18 +1001,18 @@
                                                             (Var 7 rhs)
                                                             7 1_toml_time_zone
                                                             (Allocatable
-                                                                (Character 1 -2 ())
+                                                                (Character 1 -2 () PointerString)
                                                             )
                                                             ()
                                                         ))]
                                                         (Integer 4)
                                                         ()
                                                         ()
-                                                    ))
+                                                    ) PointerString)
                                                     ()
                                                     ()
                                                 )
-                                                (Character 1 -1 ())
+                                                (Character 1 -1 () PointerString)
                                                 ()
                                             )
                                             ()
@@ -1278,7 +1278,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (Character 1 -2 () PointerString)
                                                     )
                                                     ()
                                                     Source

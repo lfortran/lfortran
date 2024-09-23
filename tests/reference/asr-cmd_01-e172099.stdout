@@ -22,7 +22,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Character 1 32 ())
+                                    (Character 1 32 () PointerString)
                                     ()
                                     Source
                                     Public
@@ -85,7 +85,7 @@
                                 (ExternalSymbol
                                     2
                                     len_trim
-                                    14 len_trim
+                                    13 len_trim
                                     lfortran_intrinsic_string
                                     []
                                     len_trim
@@ -95,7 +95,7 @@
                                 (ExternalSymbol
                                     2
                                     trim
-                                    14 trim
+                                    13 trim
                                     lfortran_intrinsic_string
                                     []
                                     trim
@@ -121,11 +121,11 @@
                             ()
                             [(StringConstant
                                 "count: "
-                                (Character 1 7 ())
+                                (Character 1 7 () PointerString)
                             )
                             (Var 2 count)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
                         )]
                         ()
@@ -152,7 +152,7 @@
                                 (Integer 4)
                                 ()
                                 ()
-                            ))
+                            ) PointerString)
                             ()
                             ()
                         )]

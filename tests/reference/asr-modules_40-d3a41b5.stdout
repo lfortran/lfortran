@@ -14,7 +14,7 @@
                     [(Print
                         [(StringConstant
                             "executing modules_40"
-                            (Character 1 20 ())
+                            (Character 1 20 () PointerString)
                         )]
                         ()
                         ()
@@ -321,7 +321,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (Character 1 -2 () PointerString)
                                                     )
                                                     ()
                                                     Source

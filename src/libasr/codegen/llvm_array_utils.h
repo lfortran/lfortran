@@ -149,7 +149,7 @@ namespace LCompilers {
                 */
                 virtual
                 void fill_malloc_array_details(
-                    llvm::Value* arr, llvm::Type* llvm_data_type, int n_dims,
+                    llvm::Value* arr, llvm::Type *arr_type, llvm::Type* llvm_data_type, int n_dims,
                     std::vector<std::pair<llvm::Value*, llvm::Value*>>& llvm_dims,
                     llvm::Module* module, bool realloc=false) = 0;
 
@@ -163,14 +163,14 @@ namespace LCompilers {
 
                 virtual
                 void fill_descriptor_for_array_section(
-                    llvm::Value* value_desc, llvm::Value* target,
+                    llvm::Value* value_desc, llvm::Type* value_el_type, llvm::Value* target,
                     llvm::Value** lbs, llvm::Value** ubs,
                     llvm::Value** ds, llvm::Value** non_sliced_indices,
                     int value_rank, int target_rank) = 0;
 
                 virtual
                 void fill_descriptor_for_array_section_data_only(
-                    llvm::Value* value_desc, llvm::Value* target,
+                    llvm::Value* value_desc, llvm::Type* value_el_type, llvm::Value* target,
                     llvm::Value** lbs, llvm::Value** ubs,
                     llvm::Value** ds, llvm::Value** non_sliced_indices,
                     llvm::Value** llvm_diminfo, int value_rank, int target_rank) = 0;
@@ -232,7 +232,7 @@ namespace LCompilers {
                     llvm::Value* dim, bool load=true) = 0;
 
                 virtual
-                llvm::Value* get_dimension_size(llvm::Value* dim_des,
+                llvm::Value* get_dimension_size(llvm::Value* dim_des_arr,
                     bool load=true) = 0;
 
                 virtual
@@ -369,7 +369,7 @@ namespace LCompilers {
 
                 virtual
                 void fill_malloc_array_details(
-                    llvm::Value* arr, llvm::Type* llvm_data_type, int n_dims,
+                    llvm::Value* arr, llvm::Type *arr_type, llvm::Type* llvm_data_type, int n_dims,
                     std::vector<std::pair<llvm::Value*, llvm::Value*>>& llvm_dims,
                     llvm::Module* module, bool realloc=false);
 
@@ -383,14 +383,14 @@ namespace LCompilers {
 
                 virtual
                 void fill_descriptor_for_array_section(
-                    llvm::Value* value_desc, llvm::Value* target,
+                    llvm::Value* value_desc, llvm::Type* value_el_type, llvm::Value* target,
                     llvm::Value** lbs, llvm::Value** ubs,
                     llvm::Value** ds, llvm::Value** non_sliced_indices,
                     int value_rank, int target_rank);
 
                 virtual
                 void fill_descriptor_for_array_section_data_only(
-                    llvm::Value* value_desc, llvm::Value* target,
+                    llvm::Value* value_desc, llvm::Type* value_el_type, llvm::Value* target,
                     llvm::Value** lbs, llvm::Value** ubs,
                     llvm::Value** ds, llvm::Value** non_sliced_indices,
                     llvm::Value** llvm_diminfo, int value_rank, int target_rank);
@@ -421,7 +421,7 @@ namespace LCompilers {
                     llvm::Value* dim, bool load=true);
 
                 virtual
-                llvm::Value* get_dimension_size(llvm::Value* dim_des,
+                llvm::Value* get_dimension_size(llvm::Value* dim_des_arr,
                     bool load=true);
 
                 virtual

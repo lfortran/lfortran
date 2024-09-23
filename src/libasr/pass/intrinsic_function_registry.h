@@ -74,7 +74,9 @@ inline std::string get_intrinsic_name(int64_t x) {
         INTRINSIC_NAME_CASE(BesselY0)
         INTRINSIC_NAME_CASE(BesselY1)
         INTRINSIC_NAME_CASE(BesselYN)
+        INTRINSIC_NAME_CASE(SameTypeAs)
         INTRINSIC_NAME_CASE(Mvbits)
+        INTRINSIC_NAME_CASE(MoveAlloc)
         INTRINSIC_NAME_CASE(Merge)
         INTRINSIC_NAME_CASE(Mergebits)
         INTRINSIC_NAME_CASE(Shiftr)
@@ -299,10 +301,14 @@ namespace IntrinsicElementalFunctionRegistry {
             {&BesselJN::instantiate_BesselJN, &BesselJN::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::BesselYN),
             {&BesselYN::instantiate_BesselYN, &BesselYN::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::SameTypeAs),
+            {nullptr, &SameTypeAs::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Merge),
             {&Merge::instantiate_Merge, &Merge::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Mvbits),
             {&Mvbits::instantiate_Mvbits, &Mvbits::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::MoveAlloc),
+            {&MoveAlloc::instantiate_MoveAlloc, &MoveAlloc::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Mergebits),
             {&Mergebits::instantiate_Mergebits, &Mergebits::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Shiftr),
@@ -642,10 +648,14 @@ namespace IntrinsicElementalFunctionRegistry {
             "bessel_jn"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::BesselYN),
             "bessel_yn"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::SameTypeAs),
+            "same_type_as"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Merge),
             "merge"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Mvbits),
             "mvbits"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::MoveAlloc),
+            "move_alloc"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Mergebits),
             "mergebits"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Shiftr),
@@ -891,6 +901,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"bessel_j1", {&BesselJ1::create_BesselJ1, &BesselJ1::eval_BesselJ1}},
                 {"bessel_y0", {&BesselY0::create_BesselY0, &BesselY0::eval_BesselY0}},
                 {"bessel_y1", {&BesselY1::create_BesselY1, &BesselY1::eval_BesselY1}},
+                {"same_type_as", {&SameTypeAs::create_SameTypeAs, &SameTypeAs::eval_SameTypeAs}},
                 {"asind", {&Asind::create_Asind, &Asind::eval_Asind}},
                 {"acosd", {&Acosd::create_Acosd, &Acosd::eval_Acosd}},
                 {"atand", {&Atand::create_Atand, &Atand::eval_Atand}},
@@ -928,6 +939,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"bessel_yn", {&BesselYN::create_BesselYN, &BesselYN::eval_BesselYN}},
                 {"merge", {&Merge::create_Merge, &Merge::eval_Merge}},
                 {"mvbits", {&Mvbits::create_Mvbits, &Mvbits::eval_Mvbits}},
+                {"move_alloc", {&MoveAlloc::create_MoveAlloc, &MoveAlloc::eval_MoveAlloc}},
                 {"merge_bits", {&Mergebits::create_Mergebits, &Mergebits::eval_Mergebits}},
                 {"shiftr", {&Shiftr::create_Shiftr, &Shiftr::eval_Shiftr}},
                 {"rshift", {&Rshift::create_Rshift, &Rshift::eval_Rshift}},

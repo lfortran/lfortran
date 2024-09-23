@@ -198,7 +198,7 @@
                             ()
                             [(Var 2 ans)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
                         )]
                         ()
@@ -250,7 +250,7 @@
                             [(Var 2 i4)
                             (Var 2 i8)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
                         )]
                         ()
@@ -333,7 +333,7 @@
                             [(Var 2 i4)
                             (Var 2 i8)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
                         )]
                         ()

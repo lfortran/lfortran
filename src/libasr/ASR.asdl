@@ -187,7 +187,7 @@ ttype
     | UnsignedInteger(int kind)
     | Real(int kind)
     | Complex(int kind)
-    | Character(int kind, int len, expr? len_expr)
+    | Character(int kind, int len, expr? len_expr, string_physical_type physical_type)
     | Logical(int kind)
     | Set(ttype type)
     | List(ttype type)
@@ -226,6 +226,7 @@ type_stmt = TypeStmtName(symbol sym, stmt* body) | ClassStmt(symbol sym, stmt* b
 enumtype = IntegerConsecutiveFromZero | IntegerUnique | IntegerNotUnique | NonInteger
 require_instantiation = Require(identifier name, identifier* args)
 array_physical_type = DescriptorArray | PointerToDataArray | UnboundedPointerToDataArray | FixedSizeArray | CharacterArraySinglePointer | NumPyArray | ISODescriptorArray | SIMDArray
+string_physical_type = PointerString | DescriptorString
 binop = Add | Sub | Mul | Div | Pow | BitAnd | BitOr | BitXor | BitLShift | BitRShift
 reduction_op = ReduceAdd | ReduceSub | ReduceMul | ReduceMIN | ReduceMAX
 logicalbinop = And | Or | Xor | NEqv | Eqv
