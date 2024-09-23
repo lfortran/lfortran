@@ -1710,7 +1710,7 @@ public:
         ASR::expr_t *value = duplicate_expr(x->m_value);
 
         return ASR::make_ArraySection_t(al, x->base.base.loc,
-            v, args.p, args.size(), ttype, value);
+            v, args.p, args.size(), x->m_neg_idx_supported, ttype, value);
     }
 
     ASR::asr_t* duplicate_StructInstanceMember(ASR::StructInstanceMember_t *x) {

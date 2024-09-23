@@ -211,9 +211,9 @@ LFORTRAN_API void _lfortran_string_init(int size_plus_one, char *s);
 LFORTRAN_API char* _lfortran_str_item(char* s, int32_t idx);
 LFORTRAN_API char* _lfortran_str_copy(char* s, int32_t idx1, int32_t idx2); // idx1 and idx2 both start from 1
 LFORTRAN_API char* _lfortran_str_slice(char* s, int32_t idx1, int32_t idx2, int32_t step,
-                        bool idx1_present, bool idx2_present);
+                        bool idx1_present, bool idx2_present, bool neg_idx_support);
 LFORTRAN_API char* _lfortran_str_slice_assign(char* s, char *r, int32_t idx1, int32_t idx2, int32_t step,
-                        bool idx1_present, bool idx2_present);
+                        bool idx1_present, bool idx2_present, bool neg_idx_support);
 LFORTRAN_API int32_t _lfortran_mvbits32(int32_t from, int32_t frompos,
                                         int32_t len, int32_t to, int32_t topos);
 LFORTRAN_API int64_t _lfortran_mvbits64(int64_t from, int32_t frompos,

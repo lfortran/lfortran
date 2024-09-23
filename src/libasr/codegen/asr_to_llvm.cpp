@@ -713,7 +713,8 @@ public:
     }
 
     llvm::Value* lfortran_str_slice(llvm::Value* str, llvm::Value* idx1, llvm::Value* idx2,
-                    llvm::Value* step, llvm::Value* left_present, llvm::Value* right_present)
+                    llvm::Value* step, llvm::Value* left_present, llvm::Value* right_present,
+                    llvm::Value* neg_idx_supported)
     {
         std::string runtime_func_name = "_lfortran_str_slice";
         llvm::Function *fn = module->getFunction(runtime_func_name);
@@ -722,16 +723,18 @@ public:
                     character_type, {
                         character_type, llvm::Type::getInt32Ty(context),
                         llvm::Type::getInt32Ty(context), llvm::Type::getInt32Ty(context),
-                        llvm::Type::getInt1Ty(context), llvm::Type::getInt1Ty(context)
+                        llvm::Type::getInt1Ty(context), llvm::Type::getInt1Ty(context),
+                        llvm::Type::getInt1Ty(context)
                     }, false);
             fn = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, runtime_func_name, *module);
         }
-        return builder->CreateCall(fn, {str, idx1, idx2, step, left_present, right_present});
+        return builder->CreateCall(fn, {str, idx1, idx2, step, left_present, right_present, neg_idx_supported});
     }
 
     llvm::Value* lfortran_str_slice8(llvm::Value* str, llvm::Value* idx1, llvm::Value* idx2,
-                    llvm::Value* step, llvm::Value* left_present, llvm::Value* right_present)
+                    llvm::Value* step, llvm::Value* left_present, llvm::Value* right_present,
+                    llvm::Value* neg_idx_supported)
     {
         std::string runtime_func_name = "_lfortran_str_slice";
         llvm::Function *fn = module->getFunction(runtime_func_name);
@@ -740,12 +743,13 @@ public:
                     character_type, {
                         character_type, llvm::Type::getInt64Ty(context),
                         llvm::Type::getInt64Ty(context), llvm::Type::getInt64Ty(context),
-                        llvm::Type::getInt1Ty(context), llvm::Type::getInt1Ty(context)
+                        llvm::Type::getInt1Ty(context), llvm::Type::getInt1Ty(context),
+                        llvm::Type::getInt1Ty(context)
                     }, false);
             fn = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, runtime_func_name, *module);
         }
-        return builder->CreateCall(fn, {str, idx1, idx2, step, left_present, right_present});
+        return builder->CreateCall(fn, {str, idx1, idx2, step, left_present, right_present, neg_idx_supported});
     }
 
     llvm::Value* lfortran_str_copy(llvm::Value* dest, llvm::Value *src, bool is_allocatable=false) {
@@ -2426,7 +2430,8 @@ public:
         // We have to allocate a new string, copy it and add null termination.
         llvm::Value *step = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
         llvm::Value *present = llvm::ConstantInt::get(context, llvm::APInt(1, 1));
-        llvm::Value *p = lfortran_str_slice(str, idx1, idx2, step, present, present);
+        llvm::Value *neg_idx_supported = llvm::ConstantInt::get(context, llvm::APInt(1, x.m_neg_idx_supported));
+        llvm::Value *p = lfortran_str_slice(str, idx1, idx2, step, present, present, neg_idx_supported);
         tmp = llvm_utils->CreateAlloca(*builder, character_type);
         builder->CreateStore(p, tmp);
     }
@@ -4625,14 +4630,15 @@ public:
                     character_type, {
                         character_type, character_type, llvm::Type::getInt32Ty(context),
                         llvm::Type::getInt32Ty(context), llvm::Type::getInt32Ty(context),
-                        llvm::Type::getInt1Ty(context), llvm::Type::getInt1Ty(context)
+                        llvm::Type::getInt1Ty(context), llvm::Type::getInt1Ty(context),
+                        llvm::Type::getInt1Ty(context)
                     }, false);
             fn = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, runtime_func_name, *module);
         }
         ASR::StringSection_t *ss = ASR::down_cast<ASR::StringSection_t>(target);
         llvm::Value *lp, *rp;
-        llvm::Value *str, *idx1, *idx2, *step, *str_val;
+        llvm::Value *str, *idx1, *idx2, *step, *str_val, *neg_idx_supported;
         int ptr_load_copy = ptr_loads;
         ptr_loads = 0;
         this->visit_expr_wrapper(ss->m_arg, true);
@@ -4678,12 +4684,14 @@ public:
             step = llvm::ConstantInt::get(context,
                 llvm::APInt(32, 0));
         }
+        neg_idx_supported = llvm::ConstantInt::get(context,
+                llvm::APInt(1, ss->m_neg_idx_supported));
         bool flag = str->getType()->getContainedType(0)->isPointerTy();
         llvm::Value *str2 = str;
         if (flag) {
             str2 = llvm_utils->CreateLoad(str2);
         }
-        tmp = builder->CreateCall(fn, {str2, str_val, idx1, idx2, step, lp, rp});
+        tmp = builder->CreateCall(fn, {str2, str_val, idx1, idx2, step, lp, rp, neg_idx_supported});
         if (ASR::is_a<ASR::Var_t>(*ss->m_arg)) {
             ASR::Variable_t *asr_target = EXPR2VAR(ss->m_arg);
             if (ASR::is_a<ASR::Allocatable_t>(*asr_target->m_type)) {
@@ -6189,6 +6197,8 @@ public:
         llvm::Value *str = tmp;
         llvm::Value *left, *right, *step;
         llvm::Value *left_present, *right_present;
+        llvm::Value *neg_idx_supported = llvm::ConstantInt::get(context,
+            llvm::APInt(1, x.m_neg_idx_supported));
         if (x.m_start) {
             this->visit_expr_wrapper(x.m_start, true);
             left = tmp;
@@ -6216,11 +6226,12 @@ public:
             step = llvm::ConstantInt::get(context,
                 llvm::APInt(32, 1));
         }
+
         int x_step_kind = (ASRUtils::extract_kind_from_ttype_t(down_cast<ASR::IntegerConstant_t>(x.m_step)->m_type));
         if (x_step_kind == 8) {
-            tmp = lfortran_str_slice8(str, left, right, step, left_present, right_present);
+            tmp = lfortran_str_slice8(str, left, right, step, left_present, right_present, neg_idx_supported);
         } else {
-            tmp = lfortran_str_slice(str, left, right, step, left_present, right_present);
+            tmp = lfortran_str_slice(str, left, right, step, left_present, right_present, neg_idx_supported);
         }
     }
 
