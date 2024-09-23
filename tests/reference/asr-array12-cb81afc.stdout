@@ -176,7 +176,7 @@
                                             ()
                                         )
                                         [(Print
-                                            [(StringFormat
+                                            (StringFormat
                                                 ()
                                                 [(StringConstant
                                                     "PWD: "
@@ -186,9 +186,7 @@
                                                 FormatFortran
                                                 (Character -1 0 () PointerString)
                                                 ()
-                                            )]
-                                            ()
-                                            ()
+                                            )
                                         )]
                                         []
                                     )

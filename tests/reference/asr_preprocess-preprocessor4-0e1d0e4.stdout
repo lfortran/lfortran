@@ -60,7 +60,7 @@
                         ()
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(Var 2 x)
                             (IntegerBinOp
@@ -79,9 +79,7 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 )
         })

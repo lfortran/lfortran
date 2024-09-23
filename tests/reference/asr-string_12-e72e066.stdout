@@ -284,47 +284,31 @@
                     string_12
                     []
                     [(Print
-                        [(Var 2 fullhex_digits)]
-                        ()
-                        ()
+                        (Var 2 fullhex_digits)
                     )
                     (Print
-                        [(Var 2 hex_digits)]
-                        ()
-                        ()
+                        (Var 2 hex_digits)
                     )
                     (Print
-                        [(Var 2 lowerhex_digits)]
-                        ()
-                        ()
+                        (Var 2 lowerhex_digits)
                     )
                     (Print
-                        [(Var 2 digits)]
-                        ()
-                        ()
+                        (Var 2 digits)
                     )
                     (Print
-                        [(Var 2 octal_digits)]
-                        ()
-                        ()
+                        (Var 2 octal_digits)
                     )
                     (Print
-                        [(Var 2 letters)]
-                        ()
-                        ()
+                        (Var 2 letters)
                     )
                     (Print
-                        [(Var 2 uppercase)]
-                        ()
-                        ()
+                        (Var 2 uppercase)
                     )
                     (Print
-                        [(Var 2 lowercase)]
-                        ()
-                        ()
+                        (Var 2 lowercase)
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StringConstant
                                 "char("
@@ -343,9 +327,7 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (If
                         (StringCompare

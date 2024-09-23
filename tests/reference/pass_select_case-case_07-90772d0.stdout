@@ -97,12 +97,10 @@
                                             ()
                                         )
                                         (Print
-                                            [(StringConstant
+                                            (StringConstant
                                                 "one of the first ten letters"
                                                 (Character 1 28 () PointerString)
-                                            )]
-                                            ()
-                                            ()
+                                            )
                                         )]
                                         [(If
                                             (LogicalBinOp
@@ -139,12 +137,10 @@
                                                 ()
                                             )
                                             (Print
-                                                [(StringConstant
+                                                (StringConstant
                                                     "one of l, m, n, o, p"
                                                     (Character 1 20 () PointerString)
-                                                )]
-                                                ()
-                                                ()
+                                                )
                                             )]
                                             [(If
                                                 (StringCompare
@@ -166,12 +162,10 @@
                                                     ()
                                                 )
                                                 (Print
-                                                    [(StringConstant
+                                                    (StringConstant
                                                         "one of z"
                                                         (Character 1 8 () PointerString)
-                                                    )]
-                                                    ()
-                                                    ()
+                                                    )
                                                 )]
                                                 [(Assignment
                                                     (Var 3 res)
@@ -182,12 +176,10 @@
                                                     ()
                                                 )
                                                 (Print
-                                                    [(StringConstant
+                                                    (StringConstant
                                                         "other characters, which may not be letters"
                                                         (Character 1 42 () PointerString)
-                                                    )]
-                                                    ()
-                                                    ()
+                                                    )
                                                 )]
                                             )]
                                         )]

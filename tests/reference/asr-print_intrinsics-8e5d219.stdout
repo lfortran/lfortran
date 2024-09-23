@@ -61,7 +61,7 @@
                     print_intrinsics
                     []
                     [(Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StringConstant
                                 "pi=acos(-1.0_sp)  =\""
@@ -94,12 +94,10 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StringConstant
                                 "pi=acos(-1.0_dp)  =\""
@@ -132,9 +130,7 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 )
         })

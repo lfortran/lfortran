@@ -12,37 +12,31 @@
                     preprocessor7
                     []
                     [(Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(IntegerConstant 1 (Integer 4) Decimal)]
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(IntegerConstant 4 (Integer 4) Decimal)]
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(IntegerConstant 4 (Integer 4) Decimal)]
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 )
         })

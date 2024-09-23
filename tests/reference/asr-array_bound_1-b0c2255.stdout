@@ -107,7 +107,7 @@
                     array_bound_1
                     []
                     [(Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(ArrayBound
                                 (Var 2 a)
@@ -133,12 +133,10 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(ArrayBound
                                 (Var 2 a)
@@ -164,12 +162,10 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(ArrayBound
                                 (Var 2 b)
@@ -202,12 +198,10 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(ArrayBound
                                 (Var 2 b)
@@ -240,12 +234,10 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(ArrayBound
                                 (Var 2 c)
@@ -264,12 +256,10 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(ArrayBound
                                 (Var 2 c)
@@ -288,12 +278,10 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(ArrayBound
                                 (Var 2 d)
@@ -305,12 +293,10 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(ArrayBound
                                 (Var 2 d)
@@ -322,9 +308,7 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 )
         })

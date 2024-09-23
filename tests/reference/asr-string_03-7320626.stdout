@@ -166,9 +166,7 @@
                         ()
                     )
                     (Print
-                        [(Var 3 combined)]
-                        ()
-                        ()
+                        (Var 3 combined)
                     )]
                 ),
             string_03_mod:

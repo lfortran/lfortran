@@ -10,9 +10,8 @@ source_filename = "LFortran"
 @6 = private unnamed_addr constant [11 x i8] c"ERROR STOP\00", align 1
 @7 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @8 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
-@9 = private unnamed_addr constant [2 x i8] c" \00", align 1
-@10 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@11 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@9 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@10 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
@@ -63,7 +62,7 @@ else8:                                            ; preds = %ifcont6
 
 ifcont9:                                          ; preds = %else8, %then7
   %2 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 6, i8* null, i32 2, i64 48, i32 2, i64 53, i32 2, i64 57)
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @11, i32 0, i32 0), i8* %2, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @10, i32 0, i32 0))
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @10, i32 0, i32 0), i8* %2, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @9, i32 0, i32 0))
   br label %return
 
 return:                                           ; preds = %ifcont9

@@ -342,7 +342,7 @@
                             )
                             ())
                             [(Print
-                                [(StringFormat
+                                (StringFormat
                                     ()
                                     [(Var 2 i)
                                     (Var 2 j)
@@ -371,9 +371,7 @@
                                     FormatFortran
                                     (Character -1 0 () PointerString)
                                     ()
-                                )]
-                                ()
-                                ()
+                                )
                             )]
                             []
                         )]
@@ -386,7 +384,7 @@
                         ()
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(PointerToCPtr
                                 (Var 2 x)
@@ -397,9 +395,7 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (DoLoop
                         ()
@@ -438,7 +434,7 @@
                             )
                             ())
                             [(Print
-                                [(StringFormat
+                                (StringFormat
                                     ()
                                     [(Var 2 i)
                                     (Var 2 j)
@@ -467,9 +463,7 @@
                                     FormatFortran
                                     (Character -1 0 () PointerString)
                                     ()
-                                )]
-                                ()
-                                ()
+                                )
                             )]
                             []
                         )]
@@ -492,7 +486,7 @@
                         ()
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(PointerToCPtr
                                 (Var 2 x)
@@ -503,9 +497,7 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (DoLoop
                         ()
@@ -544,7 +536,7 @@
                             )
                             ())
                             [(Print
-                                [(StringFormat
+                                (StringFormat
                                     ()
                                     [(Var 2 i)
                                     (Var 2 j)
@@ -573,9 +565,7 @@
                                     FormatFortran
                                     (Character -1 0 () PointerString)
                                     ()
-                                )]
-                                ()
-                                ()
+                                )
                             )]
                             []
                         )]

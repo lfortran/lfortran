@@ -733,15 +733,13 @@
                         []
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(Var 5 r)]
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 )
         })

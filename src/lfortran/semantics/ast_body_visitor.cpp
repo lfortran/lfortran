@@ -184,9 +184,19 @@ public:
             if (format_statements.find(label) == format_statements.end()) {
                 diag.semantic_error_label("The label " + std::to_string(label) + " does not point to any format statement",
                  {x->base.loc},"Invalid label in this statement");
-            } else {
+            } else { 
+                // To Do :: after refactoring write, change process_format_statement() to tackle stringformat instead.
                 if (AST::is_a<AST::Print_t>(*x)) {
-                    process_format_statement<ASR::Print_t>(old_tmp, label, al, format_statements);
+                    ASR::Print_t* print_stmt = ASR::down_cast2<ASR::Print_t>(old_tmp);
+                    if(ASR::is_a<ASR::StringFormat_t>(*print_stmt->m_text)){
+                        ASR::StringFormat_t* string_fmt_arg = ASR::down_cast<ASR::StringFormat_t>(
+                            print_stmt->m_text);
+                        ASR::ttype_t *fmt_type = ASRUtils::TYPE(ASR::make_Character_t(
+                            al, print_stmt->base.base.loc, 1, format_statements[label].size(), nullptr, ASR::string_physical_typeType::PointerString));
+                        ASR::expr_t *fmt_constant = ASRUtils::EXPR(ASR::make_StringConstant_t(
+                            al, print_stmt->base.base.loc, s2c(al, format_statements[label]), fmt_type));
+                        string_fmt_arg->m_fmt = fmt_constant;
+                    }
                 } else if (AST::is_a<AST::Write_t>(*x)) {
                     process_format_statement<ASR::FileWrite_t>(old_tmp, label, al, format_statements);
                 } else if (AST::is_a<AST::Read_t>(*x)) {
@@ -628,7 +638,7 @@ public:
         }
         if (_type == AST::stmtType::Write && a_fmt == nullptr
                 && compiler_options.print_leading_space) {
-            ASR::asr_t* file_write_asr_t = construct_leading_space(false, loc);
+            ASR::asr_t* file_write_asr_t = construct_leading_space(loc);
             ASR::FileWrite_t* file_write = ASR::down_cast<ASR::FileWrite_t>(ASRUtils::STMT(file_write_asr_t));
             file_write->m_id = a_id;
             file_write->m_iomsg = a_iomsg;
@@ -3126,7 +3136,7 @@ public:
         throw LCompilersException("Argument not found");
     }
 
-    ASR::asr_t* construct_leading_space(bool print, const Location &loc) {
+    ASR::asr_t* construct_leading_space(const Location &loc) {
         ASR::ttype_t *str_type_len_0 = ASRUtils::TYPE(ASR::make_Character_t(
             al, loc, 1, 0, nullptr, ASR::string_physical_typeType::PointerString));
         ASR::expr_t *empty_string = ASRUtils::EXPR(ASR::make_StringConstant_t(
@@ -3138,27 +3148,20 @@ public:
         Vec<ASR::expr_t*> args;
         args.reserve(al, 1);
         args.push_back(al, space);
-
-        if (print) {
-            return ASR::make_Print_t(al, loc,
-                args.p, args.size(), nullptr, empty_string);
-        } else {
-            return ASR::make_FileWrite_t(al, loc, 0, nullptr, nullptr,
-                nullptr, nullptr, args.p, args.size(), nullptr, empty_string, nullptr);
-        }
+        return ASR::make_FileWrite_t(al, loc, 0, nullptr, nullptr,
+            nullptr, nullptr, args.p, args.size(), nullptr, empty_string, nullptr);
     }
 
     void visit_Print(const AST::Print_t &x) {
         Vec<ASR::expr_t*> body;
         body.reserve(al, x.n_values);
-
         ASR::expr_t *fmt=nullptr;
         if (x.m_fmt != nullptr) {
             this->visit_expr(*x.m_fmt);
             fmt = ASRUtils::EXPR(tmp);
         } else {
             if (compiler_options.print_leading_space) {
-                current_body->push_back(al, ASRUtils::STMT(construct_leading_space(true, x.base.base.loc)));
+                current_body->push_back(al, ASRUtils::STMT(construct_leading_space(x.base.base.loc)));
             }
         }
 
@@ -3171,8 +3174,11 @@ public:
             ASR::IntegerConstant_t *f = ASR::down_cast<ASR::IntegerConstant_t>(fmt);
             int64_t label = f->m_n;
             if (format_statements.find(label) == format_statements.end()) {
-                tmp = ASR::make_Print_t(al, x.base.base.loc,
-                    body.p, body.size(), nullptr, nullptr);
+                ASR::ttype_t *char_type = ASRUtils::TYPE(ASR::make_Character_t(
+                al, x.base.base.loc, -1, 0, nullptr, ASR::string_physical_typeType::PointerString));
+                tmp =  ASR::make_Print_t(al, x.base.base.loc,
+                    ASRUtils::EXPR(ASR::make_StringFormat_t(al, x.base.base.loc, nullptr, body.p, body.size(),
+                    ASR::string_format_kindType::FormatFortran, char_type, nullptr)));
                 print_statements[tmp] = std::make_pair(&x.base,label);
                 return;
             }
@@ -3186,16 +3192,11 @@ public:
                 fmt_constant, body.p, body.size(), ASR::string_format_kindType::FormatFortran,
                 type, nullptr));
 
-            Vec<ASR::expr_t*> print_args;
-            print_args.reserve(al, 1);
-            print_args.push_back(al, string_format);
 
-            tmp = ASR::make_Print_t(al, x.base.base.loc,
-                print_args.p, print_args.size(), nullptr, nullptr);
+            tmp = ASR::make_Print_t(al, x.base.base.loc, string_format);
         } else if (!fmt && body.size() == 1
                         && ASR::is_a<ASR::Character_t>(*ASRUtils::expr_type(body[0]))) {
-            tmp = ASR::make_Print_t(al, x.base.base.loc,
-                body.p, body.size(), nullptr, nullptr);
+            tmp = ASR::make_Print_t(al, x.base.base.loc, body[0]);
         } else {
             ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Character_t(
                         al, x.base.base.loc, -1, 0, nullptr, ASR::string_physical_typeType::PointerString));
@@ -3207,8 +3208,7 @@ public:
             print_args.reserve(al, 1);
             print_args.push_back(al, string_format);
 
-            tmp = ASR::make_Print_t(al, x.base.base.loc,
-                print_args.p, print_args.size(), nullptr, nullptr);
+            tmp = ASR::make_Print_t(al, x.base.base.loc, string_format);
         }
     }
 

@@ -249,15 +249,13 @@
                         ()
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(Var 2 message)]
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (ImplicitDeallocate
                         [(Var 2 c)

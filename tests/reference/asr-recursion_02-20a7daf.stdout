@@ -60,7 +60,7 @@
                         ()
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StringConstant
                                 "r ="
@@ -70,9 +70,7 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 ),
             recursion_02:
@@ -225,7 +223,7 @@
                                         ()
                                     )
                                     (Print
-                                        [(StringFormat
+                                        (StringFormat
                                             ()
                                             [(StringConstant
                                                 "before:"
@@ -235,9 +233,7 @@
                                             FormatFortran
                                             (Character -1 0 () PointerString)
                                             ()
-                                        )]
-                                        ()
-                                        ()
+                                        )
                                     )
                                     (Assignment
                                         (Var 3 solver)
@@ -271,7 +267,7 @@
                                         ()
                                     )
                                     (Print
-                                        [(StringFormat
+                                        (StringFormat
                                             ()
                                             [(StringConstant
                                                 "after:"
@@ -281,9 +277,7 @@
                                             FormatFortran
                                             (Character -1 0 () PointerString)
                                             ()
-                                        )]
-                                        ()
-                                        ()
+                                        )
                                     )]
                                     (Var 3 solver)
                                     Public
@@ -336,7 +330,7 @@
                                                     []
                                                     []
                                                     [(Print
-                                                        [(StringFormat
+                                                        (StringFormat
                                                             ()
                                                             [(StringConstant
                                                                 "x in getx"
@@ -346,9 +340,7 @@
                                                             FormatFortran
                                                             (Character -1 0 () PointerString)
                                                             ()
-                                                        )]
-                                                        ()
-                                                        ()
+                                                        )
                                                     )
                                                     (Assignment
                                                         (Var 6 getx)
@@ -467,12 +459,10 @@
                                         ()
                                     )
                                     (Print
-                                        [(StringConstant
+                                        (StringConstant
                                             "in sub1"
                                             (Character 1 7 () PointerString)
-                                        )]
-                                        ()
-                                        ()
+                                        )
                                     )
                                     (If
                                         (IntegerCompare

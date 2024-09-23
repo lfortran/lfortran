@@ -42,7 +42,7 @@
                     intrinsics_27
                     []
                     [(Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(IntrinsicArrayFunction
                                 Shape
@@ -90,12 +90,10 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(ArraySize
                                 (IntrinsicArrayFunction
@@ -127,9 +125,7 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 )
         })

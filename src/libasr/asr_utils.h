@@ -5459,6 +5459,22 @@ inline ASR::asr_t* make_ArrayConstructor_t_util(Allocator &al, const Location &a
 void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,
     ASR::expr_t*& expr1, ASR::expr_t*& expr2);
 
+// Wraps argument in stringformat if it's not a single argument of type Character.
+static inline ASR::asr_t* make_print_t_util(Allocator& al, const Location& loc,
+    ASR::expr_t** a_args, size_t n_args){
+    LCOMPILERS_ASSERT(n_args > 0);
+    if(n_args == 1 && ASR::is_a<ASR::Character_t>(*ASRUtils::expr_type(a_args[0]))){
+        return ASR::make_Print_t(al, loc, a_args[0]);
+    } else {
+        ASR::ttype_t *char_type = ASRUtils::TYPE(ASR::make_Character_t(
+            al, loc, -1, 0, nullptr, ASR::string_physical_typeType::PointerString));
+        return ASR::make_Print_t(al, loc,
+            ASRUtils::EXPR(ASR::make_StringFormat_t(al, loc, nullptr, a_args,n_args,
+            ASR::string_format_kindType::FormatFortran, char_type, nullptr)));
+    }
+}
+
+
 static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
     ASR::call_arg_t* a_args, size_t n_args, ASR::expr_t* a_dt, ASR::stmt_t** cast_stmt,
     bool implicit_argument_casting, bool nopass) {

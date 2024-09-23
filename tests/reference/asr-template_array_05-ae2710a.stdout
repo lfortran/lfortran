@@ -767,7 +767,7 @@
                         ()
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StructInstanceMember
                                 (Var 13 c)
@@ -783,9 +783,7 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (DoLoop
                         ()
@@ -905,7 +903,7 @@
                         ()
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StructInstanceMember
                                 (Var 13 cm)
@@ -923,9 +921,7 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 ),
             template_array_05_m:

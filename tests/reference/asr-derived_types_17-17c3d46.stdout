@@ -290,7 +290,7 @@
                                     []
                                     []
                                     [(Print
-                                        [(StringFormat
+                                        (StringFormat
                                             ()
                                             [(FunctionCall
                                                 6 subtract
@@ -305,12 +305,10 @@
                                             FormatFortran
                                             (Character -1 0 () PointerString)
                                             ()
-                                        )]
-                                        ()
-                                        ()
+                                        )
                                     )
                                     (Print
-                                        [(StringFormat
+                                        (StringFormat
                                             ()
                                             [(FunctionCall
                                                 6 add
@@ -325,9 +323,7 @@
                                             FormatFortran
                                             (Character -1 0 () PointerString)
                                             ()
-                                        )]
-                                        ()
-                                        ()
+                                        )
                                     )]
                                     ()
                                     Public

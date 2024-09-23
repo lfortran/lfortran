@@ -40,12 +40,10 @@
                                 (Character 1 1 () PointerString)
                             )]
                             [(Print
-                                [(StringConstant
+                                (StringConstant
                                     "Excellent!"
                                     (Character 1 10 () PointerString)
-                                )]
-                                ()
-                                ()
+                                )
                             )]
                             .false.
                         )
@@ -63,12 +61,10 @@
                                 (Character 1 1 () PointerString)
                             )]
                             [(Print
-                                [(StringConstant
+                                (StringConstant
                                     "Well done"
                                     (Character 1 9 () PointerString)
-                                )]
-                                ()
-                                ()
+                                )
                             )]
                             .false.
                         )
@@ -78,12 +74,10 @@
                                 (Character 1 1 () PointerString)
                             )]
                             [(Print
-                                [(StringConstant
+                                (StringConstant
                                     "You passed"
                                     (Character 1 10 () PointerString)
-                                )]
-                                ()
-                                ()
+                                )
                             )]
                             .false.
                         )
@@ -93,27 +87,23 @@
                                 (Character 1 1 () PointerString)
                             )]
                             [(Print
-                                [(StringConstant
+                                (StringConstant
                                     "Better try again"
                                     (Character 1 16 () PointerString)
-                                )]
-                                ()
-                                ()
+                                )
                             )]
                             .false.
                         )]
                         [(Print
-                            [(StringConstant
+                            (StringConstant
                                 "Invalid grade"
                                 (Character 1 13 () PointerString)
-                            )]
-                            ()
-                            ()
+                            )
                         )]
                         .false.
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StringConstant
                                 "Your grade is "
@@ -123,9 +113,7 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 )
         })

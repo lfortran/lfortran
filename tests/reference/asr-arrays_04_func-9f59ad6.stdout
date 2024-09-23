@@ -84,12 +84,10 @@
                                     []
                                     [(Var 4 a)]
                                     [(Print
-                                        [(StringConstant
+                                        (StringConstant
                                             "abs"
                                             (Character 1 3 () PointerString)
-                                        )]
-                                        ()
-                                        ()
+                                        )
                                     )
                                     (If
                                         (RealCompare
@@ -226,12 +224,10 @@
                                     []
                                     [(Var 3 a)]
                                     [(Print
-                                        [(StringConstant
+                                        (StringConstant
                                             "sum"
                                             (Character 1 3 () PointerString)
-                                        )]
-                                        ()
-                                        ()
+                                        )
                                     )
                                     (Assignment
                                         (Var 3 r)

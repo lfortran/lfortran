@@ -179,7 +179,7 @@
                                         ()
                                     )
                                     (Print
-                                        [(StringFormat
+                                        (StringFormat
                                             ()
                                             [(IntrinsicArrayFunction
                                                 Any
@@ -223,12 +223,10 @@
                                             FormatFortran
                                             (Character -1 0 () PointerString)
                                             ()
-                                        )]
-                                        ()
-                                        ()
+                                        )
                                     )
                                     (Print
-                                        [(StringFormat
+                                        (StringFormat
                                             ()
                                             [(IntrinsicArrayFunction
                                                 Any
@@ -272,9 +270,7 @@
                                             FormatFortran
                                             (Character -1 0 () PointerString)
                                             ()
-                                        )]
-                                        ()
-                                        ()
+                                        )
                                     )]
                                     ()
                                     Public
@@ -321,15 +317,13 @@
                         ()
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(Var 2 l)]
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (SubroutineCall
                         2 section

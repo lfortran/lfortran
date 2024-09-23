@@ -2065,7 +2065,7 @@
                                         ()
                                     )
                                     (Print
-                                        [(StringFormat
+                                        (StringFormat
                                             ()
                                             [(StringConstant
                                                 "tal = "
@@ -2080,9 +2080,7 @@
                                             FormatFortran
                                             (Character -1 0 () PointerString)
                                             ()
-                                        )]
-                                        ()
-                                        ()
+                                        )
                                     )]
                                     ()
                                     Public
@@ -2340,7 +2338,7 @@
                                         ()
                                     )
                                     (Print
-                                        [(StringFormat
+                                        (StringFormat
                                             ()
                                             [(StringConstant
                                                 "tmaxl ="
@@ -2355,9 +2353,7 @@
                                             FormatFortran
                                             (Character -1 0 () PointerString)
                                             ()
-                                        )]
-                                        ()
-                                        ()
+                                        )
                                     )]
                                     ()
                                     Public
@@ -2615,7 +2611,7 @@
                                         ()
                                     )
                                     (Print
-                                        [(StringFormat
+                                        (StringFormat
                                             ()
                                             [(StringConstant
                                                 "tml = "
@@ -2630,9 +2626,7 @@
                                             FormatFortran
                                             (Character -1 0 () PointerString)
                                             ()
-                                        )]
-                                        ()
-                                        ()
+                                        )
                                     )]
                                     ()
                                     Public

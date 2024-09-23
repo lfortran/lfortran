@@ -181,11 +181,13 @@ public:
 
     void visit_Print(const ASR::Print_t &x) {
         std::string fmt = "";
-        Vec<mlir::Value> args; args.reserve(al, x.n_values);
-        LCOMPILERS_ASSERT(x.n_values == 1)
-        if (ASR::is_a<ASR::StringFormat_t>(*x.m_values[0])) {
+        Vec<mlir::Value> args; 
+        LCOMPILERS_ASSERT(x.m_text != nullptr &&
+            ASR::is_a<ASR::Character_t>(*ASRUtils::expr_type(x.m_text)));
+        if (ASR::is_a<ASR::StringFormat_t>(*x.m_text)) {
             ASR::StringFormat_t *sf = ASR::down_cast<ASR::StringFormat_t>(
-                x.m_values[0]);
+                x.m_text);
+            args.reserve(al, sf->n_args);
             for (size_t i=0; i<sf->n_args; i++) {
                 ASR::ttype_t *t = ASRUtils::expr_type(sf->m_args[i]);
                 if (ASRUtils::is_integer(*t)) {

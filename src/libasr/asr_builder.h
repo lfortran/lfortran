@@ -1011,8 +1011,7 @@ class ASRBuilder {
         // Used for debugging
         Vec<ASR::expr_t *> x_exprs;
         x_exprs.from_pointer_n_copy(al, &items[0], items.size());
-        return STMT(ASR::make_Print_t(al, loc, x_exprs.p, x_exprs.n,
-            nullptr, nullptr));
+        return STMT(ASRUtils::make_print_t_util(al, loc, x_exprs.p, x_exprs.n));
     }
 
     ASR::symbol_t* create_c_func(std::string c_func_name, SymbolTable* fn_symtab, ASR::ttype_t* return_type, int n_args, Vec<ASR::ttype_t*>& arg_types) {

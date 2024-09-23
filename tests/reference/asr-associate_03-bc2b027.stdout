@@ -77,16 +77,14 @@
                     associate_03
                     []
                     [(Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(Var 2 t1)
                             (Var 2 t2)]
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (If
                         (IntegerCompare
@@ -106,15 +104,13 @@
                         )]
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(Var 2 p1)]
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Assignment
                         (Var 2 i)
