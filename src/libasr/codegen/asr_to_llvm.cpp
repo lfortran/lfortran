@@ -2588,7 +2588,8 @@ public:
             if (ASRUtils::is_allocatable(x_m_v_type)) {
                 tmp = llvm_utils->create_gep(llvm_utils->CreateLoad(tmp), 1);
             } else {
-                tmp = llvm_utils->CreateLoad(llvm_utils->create_gep(tmp, 1));
+                tmp = llvm_utils->CreateLoad2(
+                    name2dertype[current_der_type_name]->getPointerTo(), llvm_utils->create_gep(tmp, 1));
             }
             if( current_select_type_block_type ) {
                 tmp = builder->CreateBitCast(tmp, current_select_type_block_type);
@@ -3320,7 +3321,8 @@ public:
             }
             ASR::ttype_t* symbol_type = ASRUtils::symbol_type(sym);
             int idx = name2memidx[struct_type_name][item.first];
-            llvm::Value* ptr_member = llvm_utils->create_gep(ptr, idx);
+            llvm::Type* type = name2dertype[struct_type_name];
+            llvm::Value* ptr_member = llvm_utils->create_gep2(type, ptr, idx);
             ASR::Variable_t* v = nullptr;
             if( ASR::is_a<ASR::Variable_t>(*sym) ) {
                 v = ASR::down_cast<ASR::Variable_t>(sym);
@@ -3368,6 +3370,8 @@ public:
 
     void allocate_array_members_of_struct_arrays(llvm::Value* ptr, ASR::ttype_t* v_m_type) {
         ASR::array_physical_typeType phy_type = ASRUtils::extract_physical_type(v_m_type);
+        llvm::Type* el_type = llvm_utils->get_type_from_ttype_t_util(
+            ASRUtils::extract_type(v_m_type), module.get());
         llvm::Value* array_size = llvm_utils->CreateAlloca(
                 llvm::Type::getInt32Ty(context), nullptr, "array_size");
         switch( phy_type ) {
@@ -3418,8 +3422,8 @@ public:
                         break;
                     }
                     case ASR::array_physical_typeType::DescriptorArray: {
-                        ptr_i = llvm_utils->create_ptr_gep(
-                            llvm_utils->CreateLoad(arr_descr->get_pointer_to_data(ptr)),
+                        ptr_i = llvm_utils->create_ptr_gep2(el_type->getPointerTo(),
+                            llvm_utils->CreateLoad2(el_type->getPointerTo(), arr_descr->get_pointer_to_data(ptr)),
                             llvm_utils->CreateLoad(llvmi));
                         break;
                     }
@@ -6997,7 +7001,9 @@ public:
         this->visit_expr_wrapper(t.m_arg, false);
         ptr_loads = ptr_loads_copy;
         llvm::Value* des_complex_arr = tmp;
-        tmp = llvm_utils->CreateLoad(arr_descr->get_pointer_to_data(des_complex_arr));
+        llvm::Type* des_complex_type = llvm_utils->get_type_from_ttype_t_util(
+            ASRUtils::extract_type(ASRUtils::expr_type(t.m_arg)), module.get());
+        tmp = llvm_utils->CreateLoad2(des_complex_type->getPointerTo(), arr_descr->get_pointer_to_data(des_complex_arr));
         int kind = ASRUtils::extract_kind_from_ttype_t(t.m_type);
         llvm::Type* pointer_cast_type = nullptr;
         if (kind == 4) {
@@ -7008,7 +7014,8 @@ public:
         tmp = builder->CreateBitCast(tmp, pointer_cast_type);
         PointerToData_to_Descriptor(t.m_type, t.m_type);
         llvm::Value* des_real_arr = tmp;
-        llvm::Value* arr_data = llvm_utils->CreateLoad(arr_descr->get_pointer_to_data(des_complex_arr));
+        llvm::Value* arr_data = llvm_utils->CreateLoad2(
+            des_complex_type->getPointerTo(), arr_descr->get_pointer_to_data(des_complex_arr));
         tmp = builder->CreateBitCast(arr_data, pointer_cast_type);
         builder->CreateStore(tmp, arr_descr->get_pointer_to_data(des_real_arr));
         if (std::is_same<T, ASR::ComplexIm_t>::value) {
