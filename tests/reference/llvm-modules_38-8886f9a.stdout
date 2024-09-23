@@ -10,6 +10,7 @@ source_filename = "LFortran"
 %__vtab_compiler_t = type { i64 }
 
 @"1_nameless_enum" = global [3 x %0] [%0 { [11 x i8] c"id_unknown\00", i32 0 }, %0 { [25 x i8] c"id_intel_classic_windows\00", i32 1 }, %0 { [22 x i8] c"id_intel_llvm_windows\00", i32 2 }]
+@compiler_enum = global i32 4
 @0 = private unnamed_addr constant [2 x i8] c" \00", align 1
 @1 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @2 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1

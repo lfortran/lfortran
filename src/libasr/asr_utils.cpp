@@ -339,22 +339,23 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
         std::vector<std::string> modules_list
             = determine_module_dependencies(*tu);
         for (auto &item : modules_list) {
-            if (symtab->get_symbol(item)
-                    == nullptr) {
+            if (item == "iso_fortran_env") {
+                item = "lfortran_intrinsic_" + item;
+            }
+            if (symtab->get_symbol(item) == nullptr) {
                 // A module that was loaded requires to load another
                 // module
 
                 // This is not very robust, we should store that information
                 // in the ASR itself, or encode in the name in a robust way,
                 // such as using `module_name@intrinsic`:
-                bool is_intrinsic = startswith(item, "lfortran_intrinsic");
-                ASR::TranslationUnit_t *mod1 = find_and_load_module(al,
-                        item,
-                        *symtab, is_intrinsic, pass_options);
-                if (mod1 == nullptr && !is_intrinsic) {
+                ASR::TranslationUnit_t* mod1
+                    = find_and_load_module(al, item, *symtab, false, pass_options);
+                if (mod1 == nullptr) {
                     // Module not found as a regular module. Try intrinsic module
                     if (item == "iso_c_binding"
-                        ||item == "iso_fortran_env") {
+                        || item == "iso_fortran_env"
+                        || item == "ieee_arithmetic") {
                         mod1 = find_and_load_module(al, "lfortran_intrinsic_" + item,
                             *symtab, true, pass_options);
                     }
@@ -376,6 +377,9 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
     std::vector<std::string> modules_list
         = determine_module_dependencies(*tu);
     for (auto &item : modules_list) {
+        if (item == "iso_fortran_env") {
+            item = "lfortran_intrinsic_" + item;
+        }
         if (symtab->get_symbol(item) == nullptr) {
             err("ICE: Module '" + item + "' modfile was not found, but should have", loc);
         }

@@ -600,7 +600,7 @@
                     .false.
                 ),
             lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin),
+                (Module lfortran_intrinsic_builtin),
             select_type4:
                 (Program
                     (SymbolTable
