@@ -2126,29 +2126,75 @@ public:
     }
 
     // pad (with ' ') or trim character string 'value'
-    ASR::expr_t* adjust_character_length(ASR::expr_t* value, int64_t& lhs_len, int64_t& rhs_len, const Location& loc, Allocator& al) {
-        ASR::StringConstant_t* string_constant = ASR::down_cast<ASR::StringConstant_t>(value);
-        char* original_str = string_constant->m_s;
-        size_t original_length = std::strlen(original_str);
+    template <typename T>
+    ASR::expr_t* adjust_character_length(T x, Allocator& al, const Location& loc, 
+                                        ASR::ttype_t* type, ASR::expr_t* value) {
+        ASR::Character_t *lhs_type = ASR::down_cast<ASR::Character_t>(
+            ASRUtils::type_get_past_array(type));
+        ASR::Character_t *rhs_type = ASR::down_cast<ASR::Character_t>(
+            ASRUtils::type_get_past_array(ASRUtils::expr_type(value)));
+        // in case when length is specified as:
+        // character(len=4) :: x*3 = "ape", we assign "3" as the length, and ignore "4"
+        // (that's what GFortran does)
+        // The RHS len is known at compile time
+        // and the LHS is inferred length
+        int64_t lhs_len = lhs_type->m_len;
+        int64_t rhs_len = rhs_type->m_len;
+        lhs_len = (rhs_len >= 0 && lhs_len == -1) ? rhs_len : lhs_len;
+        if (rhs_len >= 0) {
+            if (lhs_len >= 0) {
+                // raise a warning only for loss of data
+                if (lhs_len < rhs_len) {
+                    diag.semantic_warning_label(
+                        "The LHS character len="
+                            + std::to_string(lhs_len)
+                            + " and the RHS character len="
+                            + std::to_string(rhs_len)
+                            + " are not equal.",
+                        {x.base.base.loc},
+                        "help: consider changing the RHS character len to match the LHS character len"
+                    );
+                }
+                // adjust character string by padding or trimming
+                if (lhs_len != rhs_len) {
+                    ASR::StringConstant_t* string_constant = ASR::down_cast<ASR::StringConstant_t>(value);
+                    char* original_str = string_constant->m_s;
+                    size_t original_length = std::strlen(original_str);
 
-        size_t new_length = static_cast<size_t>(lhs_len);
-        char* adjusted_str = al.allocate<char>(new_length + 1);
+                    size_t new_length = static_cast<size_t>(lhs_len);
+                    char* adjusted_str = al.allocate<char>(new_length + 1);
 
-        if (lhs_len < rhs_len) { // trim
-            std::memcpy(adjusted_str, original_str, new_length);
-        } else { // pad
-            std::memcpy(adjusted_str, original_str, original_length);
-            std::memset(adjusted_str + original_length, ' ', new_length - original_length);
+                    if (lhs_len < rhs_len) { // trim
+                        std::memcpy(adjusted_str, original_str, new_length);
+                    } else { // pad
+                        std::memcpy(adjusted_str, original_str, original_length);
+                        std::memset(adjusted_str + original_length, ' ', new_length - original_length);
+                    }
+                    adjusted_str[new_length] = '\0'; // null-terminate the string
+
+                    ASR::ttype_t* value_type = ASRUtils::TYPE(ASR::make_Character_t(
+                        al, loc, 1, new_length, nullptr, ASR::string_physical_typeType::PointerString));
+
+                    rhs_len = lhs_len; // Update the rhs_len to match lhs_len
+                    value = ASRUtils::EXPR(ASR::make_StringConstant_t(
+                                al, loc, adjusted_str, value_type));
+                }
+            } else {
+                LCOMPILERS_ASSERT(lhs_len == -2)
+                throw SemanticError("The LHS character len must not be allocatable in a parameter declaration",
+                    x.base.base.loc);
+            }
+        } else {
+            throw SemanticError("The RHS character len must be known at compile time",
+                x.base.base.loc);
         }
-        adjusted_str[new_length] = '\0'; // null-terminate the string
+        LCOMPILERS_ASSERT(lhs_len == rhs_len)
+        LCOMPILERS_ASSERT(lhs_len >= 0)
+        lhs_type->m_len = lhs_len;
 
-        ASR::ttype_t* value_type = ASRUtils::TYPE(ASR::make_Character_t(
-            al, loc, 1, new_length, nullptr, ASR::string_physical_typeType::PointerString));
-
-        rhs_len = lhs_len; // Update the rhs_len to match lhs_len
-        return ASRUtils::EXPR(ASR::make_StringConstant_t(
-            al, loc, adjusted_str, value_type));
+        return value;
     }
+
 
     void visit_DeclarationUtil(const AST::Declaration_t &x) {
         _declaring_variable = true;
@@ -2938,49 +2984,8 @@ public:
                     // list for an initialization like:
                     // character(*) :: x(2) = "a", as we can assign "length" to
                     // character easily
-                    if (is_char_type && storage_type == ASR::storage_typeType::Parameter) {
-                        ASR::Character_t *lhs_type = ASR::down_cast<ASR::Character_t>(
-                            ASRUtils::type_get_past_array(type));
-                        ASR::Character_t *rhs_type = ASR::down_cast<ASR::Character_t>(
-                            ASRUtils::type_get_past_array(ASRUtils::expr_type(value)));
-                        // in case when length is specified as:
-                        // character(len=4) :: x*3 = "ape", we assign "3" as the length, and ignore "4"
-                        // (that's what GFortran does)
-                        // The RHS len is known at compile time
-                        // and the LHS is inferred length
-                        int64_t lhs_len = lhs_type->m_len;
-                        int64_t rhs_len = rhs_type->m_len;
-                        lhs_len = (rhs_len >= 0 && lhs_len == -1) ? rhs_len : lhs_len;
-                        if (rhs_len >= 0) {
-                            if (lhs_len >= 0) {
-                                // raise a warning only for loss of data
-                                if (lhs_len < rhs_len) {
-                                    diag.semantic_warning_label(
-                                        "The LHS character len="
-                                            + std::to_string(lhs_len)
-                                            + " and the RHS character len="
-                                            + std::to_string(rhs_len)
-                                            + " are not equal.",
-                                        {x.base.base.loc},
-                                        "help: consider changing the RHS character len to match the LHS character len"
-                                    );
-                                }
-                                // adjust character string by padding or trimming
-                                if (lhs_len != rhs_len) {
-                                    value = adjust_character_length(value, lhs_len, rhs_len, init_expr->base.loc, al);
-                                }
-                            } else {
-                                LCOMPILERS_ASSERT(lhs_len == -2)
-                                throw SemanticError("The LHS character len must not be allocatable in a parameter declaration",
-                                    x.base.base.loc);
-                            }
-                        } else {
-                            throw SemanticError("The RHS character len must be known at compile time",
-                                x.base.base.loc);
-                        }
-                        LCOMPILERS_ASSERT(lhs_len == rhs_len)
-                        LCOMPILERS_ASSERT(lhs_len >= 0)
-                        lhs_type->m_len = lhs_len;
+                    if (is_char_type) {
+                        value = adjust_character_length(x, al, init_expr->base.loc, type, value);
                     }
 
                     ASR::expr_t* tmp_init = init_expr;
