@@ -82,13 +82,9 @@
             [(())
             (())]
             []
-            [(String
-                "A ="
-            )
+            [(String "A =")
             A
-            (String
-                "  Starting"
-            )]
+            (String "  Starting")]
             ()
         )
         (If
@@ -127,13 +123,9 @@
             [(())
             (())]
             []
-            [(String
-                "A ="
-            )
+            [(String "A =")
             A
-            (String
-                "  Got to 10"
-            )]
+            (String "  Got to 10")]
             ()
         )
         (GoTo
@@ -156,13 +148,9 @@
             [(())
             (())]
             []
-            [(String
-                "A ="
-            )
+            [(String "A =")
             A
-            (String
-                "  Got to 20"
-            )]
+            (String "  Got to 20")]
             (TriviaNode
                 []
                 [(EndOfLine)
@@ -178,13 +166,9 @@
             [(())
             (())]
             []
-            [(String
-                "A ="
-            )
+            [(String "A =")
             A
-            (String
-                "  Got to 30"
-            )]
+            (String "  Got to 30")]
             ()
         )
         (If
@@ -224,13 +208,9 @@
             [(())
             (())]
             []
-            [(String
-                "A ="
-            )
+            [(String "A =")
             A
-            (String
-                "  Got to 95"
-            )]
+            (String "  Got to 95")]
             (TriviaNode
                 []
                 [(EndOfLine)
@@ -247,13 +227,9 @@
             [(())
             (())]
             []
-            [(String
-                "A ="
-            )
+            [(String "A =")
             A
-            (String
-                "  Got to 99"
-            )]
+            (String "  Got to 99")]
             (TriviaNode
                 []
                 [(EndOfLine)
@@ -262,9 +238,7 @@
         )
         (Stop
             0
-            (String
-                " "
-            )
+            (String " ")
             ()
             ()
         )]

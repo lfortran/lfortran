@@ -109,7 +109,7 @@
                             ()
                             [(StringConstant
                                 "T>T:"
-                                (Character 1 4 () PointerString)
+                                (String 1 4 () PointerString)
                             )
                             (OverloadedCompare
                                 (Var 6 t)
@@ -131,7 +131,7 @@
                                 )
                             )]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )]
                         ()
@@ -142,7 +142,7 @@
                             ()
                             [(StringConstant
                                 "T>F:"
-                                (Character 1 4 () PointerString)
+                                (String 1 4 () PointerString)
                             )
                             (OverloadedCompare
                                 (Var 6 t)
@@ -164,7 +164,7 @@
                                 )
                             )]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )]
                         ()
@@ -175,7 +175,7 @@
                             ()
                             [(StringConstant
                                 "F>T:"
-                                (Character 1 4 () PointerString)
+                                (String 1 4 () PointerString)
                             )
                             (OverloadedCompare
                                 (Var 6 f)
@@ -197,7 +197,7 @@
                                 )
                             )]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )]
                         ()
@@ -208,7 +208,7 @@
                             ()
                             [(StringConstant
                                 "F>F:"
-                                (Character 1 4 () PointerString)
+                                (String 1 4 () PointerString)
                             )
                             (OverloadedCompare
                                 (Var 6 f)
@@ -230,7 +230,7 @@
                                 )
                             )]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )]
                         ()
@@ -241,7 +241,7 @@
                             ()
                             [(StringConstant
                                 "T<T:"
-                                (Character 1 4 () PointerString)
+                                (String 1 4 () PointerString)
                             )
                             (OverloadedCompare
                                 (Var 6 t)
@@ -263,7 +263,7 @@
                                 )
                             )]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )]
                         ()
@@ -274,7 +274,7 @@
                             ()
                             [(StringConstant
                                 "T<F:"
-                                (Character 1 4 () PointerString)
+                                (String 1 4 () PointerString)
                             )
                             (OverloadedCompare
                                 (Var 6 t)
@@ -296,7 +296,7 @@
                                 )
                             )]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )]
                         ()
@@ -307,7 +307,7 @@
                             ()
                             [(StringConstant
                                 "F<T:"
-                                (Character 1 4 () PointerString)
+                                (String 1 4 () PointerString)
                             )
                             (OverloadedCompare
                                 (Var 6 f)
@@ -329,7 +329,7 @@
                                 )
                             )]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )]
                         ()
@@ -340,7 +340,7 @@
                             ()
                             [(StringConstant
                                 "F<F:"
-                                (Character 1 4 () PointerString)
+                                (String 1 4 () PointerString)
                             )
                             (OverloadedCompare
                                 (Var 6 f)
@@ -362,7 +362,7 @@
                                 )
                             )]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )]
                         ()

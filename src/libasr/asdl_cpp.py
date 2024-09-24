@@ -1486,7 +1486,7 @@ class PickleVisitorVisitor(ASDLVisitor):
             "Integer",
             "Real",
             "Complex",
-            "Character",
+            "String",
             "Logical",
             "Var",
         ]

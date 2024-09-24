@@ -97,13 +97,9 @@
         [(Print
             0
             ()
-            [(String
-                "Printing Even number in the Range: "
-            )
+            [(String "Printing Even number in the Range: ")
             x0
-            (String
-                " to "
-            )
+            (String " to ")
             x1]
             ()
         )

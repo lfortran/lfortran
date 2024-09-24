@@ -22,7 +22,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Character 1 32 () PointerString)
+                                    (String 1 32 () PointerString)
                                     ()
                                     Source
                                     Public
@@ -121,11 +121,11 @@
                             ()
                             [(StringConstant
                                 "count: "
-                                (Character 1 7 () PointerString)
+                                (String 1 7 () PointerString)
                             )
                             (Var 2 count)]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )]
                         ()
@@ -145,7 +145,7 @@
                             2 trim
                             ()
                             [((Var 2 arg))]
-                            (Character 1 -3 (FunctionCall
+                            (String 1 -3 (FunctionCall
                                 2 len_trim
                                 ()
                                 [((Var 2 arg))]

@@ -245,7 +245,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () PointerString)
+                                                    (String 1 -1 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -261,7 +261,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () PointerString)
+                                                    (String 1 -1 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -277,7 +277,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () PointerString)
+                                                    (String 1 -1 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -303,11 +303,11 @@
                                         })
                                     error_handler
                                     (FunctionType
-                                        [(Character 1 -1 () PointerString)
+                                        [(String 1 -1 () PointerString)
                                         (Integer 4)
                                         (Integer 4)
-                                        (Character 1 -1 () PointerString)
-                                        (Character 1 -1 () PointerString)]
+                                        (String 1 -1 () PointerString)
+                                        (String 1 -1 () PointerString)]
                                         ()
                                         Source
                                         Implementation
@@ -332,7 +332,7 @@
                                             [(Var 6 error)
                                             (Var 6 status)]
                                             FormatFortran
-                                            (Character -1 0 () PointerString)
+                                            (String -1 0 () PointerString)
                                             ()
                                         )]
                                         ()
@@ -374,7 +374,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () PointerString)
+                                                    (String 1 -1 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -390,7 +390,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () PointerString)
+                                                    (String 1 -1 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -406,7 +406,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () PointerString)
+                                                    (String 1 -1 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -432,11 +432,11 @@
                                         })
                                     error_handler~genericprocedure
                                     (FunctionType
-                                        [(Character 1 -1 () PointerString)
+                                        [(String 1 -1 () PointerString)
                                         (Integer 4)
                                         (Integer 4)
-                                        (Character 1 -1 () PointerString)
-                                        (Character 1 -1 () PointerString)]
+                                        (String 1 -1 () PointerString)
+                                        (String 1 -1 () PointerString)]
                                         ()
                                         Source
                                         Interface

@@ -169,8 +169,8 @@ public:
             }
             if( expr ) {
                 switch( data->type->type ) {
-                    case ASR::ttypeType::Character: {
-                        ASR::Character_t* char_type = ASR::down_cast<ASR::Character_t>(data->type);
+                    case ASR::ttypeType::String: {
+                        ASR::String_t* char_type = ASR::down_cast<ASR::String_t>(data->type);
                         char_type->m_len_expr = expr;
                         char_type->m_len = -3;
                         if( expr->type == ASR::exprType::FunctionCall ) {
@@ -196,7 +196,7 @@ public:
                         break;
                     }
                     default: {
-                        throw SemanticError("Only Character type is supported as of now.", data->type->base.loc);
+                        throw SemanticError("Only String type is supported as of now.", data->type->base.loc);
                     }
                 }
             }
@@ -357,7 +357,7 @@ public:
                         break;
                     }
                     case (AST::decl_typeType::TypeCharacter) : {
-                        type = ASRUtils::TYPE(ASR::make_Character_t(al, x.base.base.loc, 1, a_len, nullptr, ASR::string_physical_typeType::PointerString));
+                        type = ASRUtils::TYPE(ASR::make_String_t(al, x.base.base.loc, 1, a_len, nullptr, ASR::string_physical_typeType::PointerString));
                         break;
                     }
                     default :
@@ -1168,7 +1168,7 @@ public:
                     ttype = AST::decl_typeType::TypeLogical;
                     break;
                 }
-                case ASR::ttypeType::Character: {
+                case ASR::ttypeType::String: {
                     ttype = AST::decl_typeType::TypeCharacter;
                     break;
                 }
@@ -1388,7 +1388,7 @@ public:
                     break;
                 }
                 case (AST::decl_typeType::TypeCharacter) : {
-                    type = ASRUtils::TYPE(ASR::make_Character_t(al, x.base.base.loc, 1, a_len, nullptr, ASR::string_physical_typeType::PointerString));
+                    type = ASRUtils::TYPE(ASR::make_String_t(al, x.base.base.loc, 1, a_len, nullptr, ASR::string_physical_typeType::PointerString));
                     break;
                 }
                 case (AST::decl_typeType::TypeType) : {

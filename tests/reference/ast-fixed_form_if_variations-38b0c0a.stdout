@@ -48,9 +48,7 @@
             [(Print
                 0
                 ()
-                [(String
-                    "first branch"
-                )]
+                [(String "first branch")]
                 ()
             )
             (Continue
@@ -60,9 +58,7 @@
             [(Print
                 0
                 ()
-                [(String
-                    "second branch"
-                )]
+                [(String "second branch")]
                 ()
             )]
             ()

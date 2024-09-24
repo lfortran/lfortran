@@ -203,9 +203,7 @@
                 [(Assignment
                     0
                     Sample
-                    (String
-                        "Error message"
-                    )
+                    (String "Error message")
                     ()
                 )]
                 ()
@@ -220,9 +218,7 @@
                 [(Assignment
                     0
                     Sample
-                    (String
-                        "Error message"
-                    )
+                    (String "Error message")
                     ()
                 )]
                 ()

@@ -78,9 +78,7 @@
         [(Print
             0
             ()
-            [(String
-                "Normal random numbers:"
-            )]
+            [(String "Normal random numbers:")]
             ()
         )
         (DoLoop

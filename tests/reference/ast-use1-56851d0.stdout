@@ -25,9 +25,7 @@
         [(Print
             0
             ()
-            [(String
-                "OK"
-            )]
+            [(String "OK")]
             ()
         )]
         []
@@ -66,9 +64,7 @@
         [(Print
             0
             ()
-            [(String
-                "OK"
-            )]
+            [(String "OK")]
             ()
         )
         (Assignment

@@ -8,9 +8,7 @@
         [(Print
             0
             ()
-            [(String
-                "Hello"
-            )]
+            [(String "Hello")]
             ()
         )]
         []

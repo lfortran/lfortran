@@ -46,7 +46,7 @@
                             ()
                             [(Var 2 a)]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )]
                         ()
@@ -81,7 +81,7 @@
                         [(Print
                             [(StringConstant
                                 "first branch"
-                                (Character 1 12 () PointerString)
+                                (String 1 12 () PointerString)
                             )]
                             ()
                             ()
@@ -93,7 +93,7 @@
                         [(Print
                             [(StringConstant
                                 "second branch"
-                                (Character 1 13 () PointerString)
+                                (String 1 13 () PointerString)
                             )]
                             ()
                             ()

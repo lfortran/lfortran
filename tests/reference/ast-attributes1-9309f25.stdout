@@ -77,9 +77,7 @@
                 (Bind
                     [C]
                     [(name
-                    (String
-                        "_binary_fclKernels_cl_start"
-                    ))]
+                    (String "_binary_fclKernels_cl_start"))]
                 )
             )]
             [(fclKernelStart

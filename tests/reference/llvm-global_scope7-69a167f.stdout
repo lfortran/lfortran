@@ -1,7 +1,7 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
 
-@x = global i32 6
+@x = global i32 0
 
 define void @__lfortran_evaluate_1() {
 .entry:

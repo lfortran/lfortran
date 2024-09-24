@@ -60,9 +60,9 @@ public:
         ASR::stmt_t* doloop = nullptr;
         ASR::stmt_t* empty_print_endl = ASRUtils::STMT(ASR::make_Print_t(al, loc,
             nullptr, 0, nullptr, nullptr));
-        ASR::ttype_t *str_type_len_1 = ASRUtils::TYPE(ASR::make_Character_t(
+        ASR::ttype_t *str_type_len_1 = ASRUtils::TYPE(ASR::make_String_t(
             al, loc, 1, 1, nullptr, ASR::string_physical_typeType::PointerString));
-        ASR::ttype_t *str_type_len_2 = ASRUtils::TYPE(ASR::make_Character_t(
+        ASR::ttype_t *str_type_len_2 = ASRUtils::TYPE(ASR::make_String_t(
             al, loc, 1, 0, nullptr, ASR::string_physical_typeType::PointerString));
         ASR::expr_t *space = ASRUtils::EXPR(ASR::make_StringConstant_t(
             al, loc, s2c(al, " "), str_type_len_1));
@@ -92,7 +92,7 @@ public:
                     format_args.push_back(al, string_format);
                     print_stmt = ASRUtils::STMT(ASR::make_Print_t(al, loc,
                         format_args.p, format_args.size(), nullptr, empty_space));
-                } else if (ASR::is_a<ASR::Character_t>(*ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_array(ASRUtils::expr_type(print_args[0]))))) {
+                } else if (ASR::is_a<ASR::String_t>(*ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_array(ASRUtils::expr_type(print_args[0]))))) {
                     print_stmt = ASRUtils::STMT(ASR::make_Print_t(al, loc,
                         print_args.p, print_args.size(), nullptr, empty_space));
                 } else {
@@ -185,7 +185,7 @@ public:
             }
             return;
         }
-        ASR::ttype_t *str_type_len_1 = ASRUtils::TYPE(ASR::make_Character_t(
+        ASR::ttype_t *str_type_len_1 = ASRUtils::TYPE(ASR::make_String_t(
             al, x.base.base.loc, 1, 1, nullptr, ASR::string_physical_typeType::PointerString));
         ASR::expr_t *space = ASRUtils::EXPR(ASR::make_StringConstant_t(
         al, x.base.base.loc, s2c(al, " "), str_type_len_1));
@@ -260,7 +260,7 @@ public:
         Vec<ASR::expr_t*> idx_vars;
         PassUtils::create_idx_vars(idx_vars, n_dims, loc, al, current_scope);
         ASR::stmt_t* doloop = nullptr;
-        ASR::ttype_t *str_type_len = ASRUtils::TYPE(ASR::make_Character_t(
+        ASR::ttype_t *str_type_len = ASRUtils::TYPE(ASR::make_String_t(
             al, loc, 1, 0, nullptr, ASR::string_physical_typeType::PointerString));
         ASR::expr_t *empty_space = ASRUtils::EXPR(ASR::make_StringConstant_t(
             al, loc, s2c(al, ""), str_type_len));

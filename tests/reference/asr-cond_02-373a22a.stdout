@@ -176,7 +176,7 @@
                         [(Print
                             [(StringConstant
                                 "ap == bp"
-                                (Character 1 8 () PointerString)
+                                (String 1 8 () PointerString)
                             )]
                             ()
                             ()
@@ -184,7 +184,7 @@
                         [(Print
                             [(StringConstant
                                 "ap /= bp"
-                                (Character 1 8 () PointerString)
+                                (String 1 8 () PointerString)
                             )]
                             ()
                             ()
@@ -204,7 +204,7 @@
                         [(Print
                             [(StringConstant
                                 "cp == dp"
-                                (Character 1 8 () PointerString)
+                                (String 1 8 () PointerString)
                             )]
                             ()
                             ()
@@ -212,7 +212,7 @@
                         [(Print
                             [(StringConstant
                                 "cp /= dp"
-                                (Character 1 8 () PointerString)
+                                (String 1 8 () PointerString)
                             )]
                             ()
                             ()
@@ -229,7 +229,7 @@
                         [(Print
                             [(StringConstant
                                 "a == b"
-                                (Character 1 6 () PointerString)
+                                (String 1 6 () PointerString)
                             )]
                             ()
                             ()
@@ -248,7 +248,7 @@
                             [(Print
                                 [(StringConstant
                                     "ap == bp"
-                                    (Character 1 8 () PointerString)
+                                    (String 1 8 () PointerString)
                                 )]
                                 ()
                                 ()
@@ -256,7 +256,7 @@
                             [(Print
                                 [(StringConstant
                                     "ap /= bp"
-                                    (Character 1 8 () PointerString)
+                                    (String 1 8 () PointerString)
                                 )]
                                 ()
                                 ()
@@ -284,7 +284,7 @@
                             [(Print
                                 [(StringConstant
                                     "ap == cp"
-                                    (Character 1 8 () PointerString)
+                                    (String 1 8 () PointerString)
                                 )]
                                 ()
                                 ()
@@ -303,7 +303,7 @@
                                 [(Print
                                     [(StringConstant
                                         "cp == dp"
-                                        (Character 1 8 () PointerString)
+                                        (String 1 8 () PointerString)
                                     )]
                                     ()
                                     ()
@@ -311,7 +311,7 @@
                                 [(Print
                                     [(StringConstant
                                         "cp /= dp"
-                                        (Character 1 8 () PointerString)
+                                        (String 1 8 () PointerString)
                                     )]
                                     ()
                                     ()
@@ -328,7 +328,7 @@
                                 [(Print
                                     [(StringConstant
                                         "c == d"
-                                        (Character 1 6 () PointerString)
+                                        (String 1 6 () PointerString)
                                     )]
                                     ()
                                     ()

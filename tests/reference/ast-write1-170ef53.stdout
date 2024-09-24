@@ -17,9 +17,7 @@
             [(())
             (())]
             []
-            [(String
-                "a"
-            )
+            [(String "a")
             2]
             ()
         )
@@ -41,9 +39,7 @@
         (Write
             0
             [(out_str)
-            ((String
-                "(\" Found index \", i9,\" but item is not in list.\")"
-            ))]
+            ((String "(\" Found index \", i9,\" but item is not in list.\")"))]
             []
             [index]
             ()
@@ -53,9 +49,7 @@
             [(out_string)
             (())]
             []
-            [(String
-                "Scalar_in = "
-            )
+            [(String "Scalar_in = ")
             scalar_in]
             ()
         )
@@ -73,18 +67,14 @@
             0
             [(string)]
             [(fmt
-            (String
-                "(f6.2)"
-            ))]
+            (String "(f6.2)"))]
             [max_angle]
             ()
         )
         (Write
             0
             [(fmt)
-            ((String
-                "(\"(i\",i0,\".\",i0,\")\")"
-            ))]
+            ((String "(\"(i\",i0,\".\",i0,\")\")"))]
             []
             [n
             n]
@@ -96,9 +86,7 @@
             [(unit
             ())
             (fmt
-            (String
-                "(a)"
-            ))]
+            (String "(a)"))]
             [(StrOp
                 (StrOp
                     (FuncCallOrArray
@@ -113,9 +101,7 @@
                         []
                     )
                     Concat
-                    (String
-                        ": "
-                    )
+                    (String ": ")
                 )
                 Concat
                 message
@@ -128,21 +114,15 @@
             [(unit
             0)
             (fmt
-            (String
-                "(a,i4.4)"
-            ))]
+            (String "(a,i4.4)"))]
             [(StrOp
                 (StrOp
-                    (String
-                        "Assertion failed at "
-                    )
+                    (String "Assertion failed at ")
                     Concat
                     file
                 )
                 Concat
-                (String
-                    ":"
-                )
+                (String ":")
             )
             line]
             ()
@@ -151,12 +131,8 @@
             0
             [(())]
             [(fmt
-            (String
-                "(a,l1)"
-            ))]
-            [(String
-                "exactly_conservative= "
-            )
+            (String "(a,l1)"))]
+            [(String "exactly_conservative= ")
             exactly_conservative]
             ()
         )
@@ -171,13 +147,9 @@
         (Write
             0
             [(())
-            ((String
-                "(a,a)"
-            ))]
+            ((String "(a,a)"))]
             [(advance
-            (String
-                "no"
-            ))]
+            (String "no"))]
             [(FuncCallOrArray
                 trim
                 []
@@ -189,9 +161,7 @@
                 []
                 []
             )
-            (String
-                ": "
-            )]
+            (String ": ")]
             ()
         )
         (Write
@@ -200,9 +170,7 @@
             [(FMT
             303)
             (ADVANCE
-            (String
-                "NO"
-            ))]
+            (String "NO"))]
             []
             ()
         )
@@ -223,13 +191,9 @@
         (Write
             0
             [(())
-            ((String
-                "(1X,A)"
-            ))]
+            ((String "(1X,A)"))]
             []
-            [(String
-                "Success!"
-            )]
+            [(String "Success!")]
             ()
         )
         (Write
@@ -247,9 +211,7 @@
         (Print
             0
             ()
-            [(String
-                "2"
-            )]
+            [(String "2")]
             ()
         )
         (Print
@@ -260,12 +222,8 @@
         )
         (Print
             0
-            (String
-                "(a, es22.14)"
-            )
-            [(String
-                "Ekin:     "
-            )
+            (String "(a, es22.14)")
+            [(String "Ekin:     ")
             Ekin]
             (TriviaNode
                 []

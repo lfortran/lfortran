@@ -90,7 +90,7 @@
                             (Var 2 boz_2)
                             (Var 2 boz_3)]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )]
                         ()

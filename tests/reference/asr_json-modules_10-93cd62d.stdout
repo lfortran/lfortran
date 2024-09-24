@@ -329,7 +329,7 @@
                                                                 ],
                                                                 "kind": "FormatFortran",
                                                                 "type": {
-                                                                    "node": "Character",
+                                                                    "node": "String",
                                                                     "fields": {
                                                                         "kind": -1,
                                                                         "len": 0,

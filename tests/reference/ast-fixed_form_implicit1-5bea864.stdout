@@ -38,9 +38,7 @@
             [(Print
                 0
                 ()
-                [(String
-                    "h"
-                )]
+                [(String "h")]
                 ()
             )]
             []

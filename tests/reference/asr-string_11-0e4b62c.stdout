@@ -16,7 +16,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Character 1 30 () PointerString)
+                                    (String 1 30 () PointerString)
                                     ()
                                     Source
                                     Public
@@ -32,7 +32,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Character 1 10 () PointerString)
+                                    (String 1 10 () PointerString)
                                     ()
                                     Source
                                     Public
@@ -46,7 +46,7 @@
                         (Var 2 mystring)
                         (StringConstant
                             "This is a test"
-                            (Character 1 14 () PointerString)
+                            (String 1 14 () PointerString)
                         )
                         ()
                     )
@@ -54,7 +54,7 @@
                         (Var 2 teststring)
                         (StringConstant
                             "test"
-                            (Character 1 4 () PointerString)
+                            (String 1 4 () PointerString)
                         )
                         ()
                     )
@@ -81,7 +81,7 @@
                         [(Print
                             [(StringConstant
                                 "test is not found"
-                                (Character 1 17 () PointerString)
+                                (String 1 17 () PointerString)
                             )]
                             ()
                             ()
@@ -91,7 +91,7 @@
                                 ()
                                 [(StringConstant
                                     "test is found at index: "
-                                    (Character 1 24 () PointerString)
+                                    (String 1 24 () PointerString)
                                 )
                                 (IntrinsicElementalFunction
                                     SubstrIndex
@@ -107,7 +107,7 @@
                                     ()
                                 )]
                                 FormatFortran
-                                (Character -1 0 () PointerString)
+                                (String -1 0 () PointerString)
                                 ()
                             )]
                             ()

@@ -902,7 +902,7 @@
                                             ()
                                             [(StringConstant
                                                 "The result is "
-                                                (Character 1 14 () PointerString)
+                                                (String 1 14 () PointerString)
                                             )
                                             (FunctionCall
                                                 10 add_real
@@ -914,7 +914,7 @@
                                                 ()
                                             )]
                                             FormatFortran
-                                            (Character -1 0 () PointerString)
+                                            (String -1 0 () PointerString)
                                             ()
                                         )]
                                         ()

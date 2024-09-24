@@ -35,9 +35,7 @@
                 selected_char_kind
                 []
                 [(()
-                (String
-                    "ISO_10646"
-                )
+                (String "ISO_10646")
                 ()
                 0)]
                 []
@@ -191,9 +189,7 @@
                 []
                 []
                 ()
-                (String
-                    "abcdefghijklmnopqrstuvwxyz"
-                )
+                (String "abcdefghijklmnopqrstuvwxyz")
                 Equal
                 ())]
                 ()

@@ -54,7 +54,7 @@
                                     ()
                                     Default
                                     (Allocatable
-                                        (Character 1 -2 () PointerString)
+                                        (String 1 -2 () PointerString)
                                     )
                                     ()
                                     Source
@@ -71,7 +71,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Character 1 20 () PointerString)
+                                    (String 1 20 () PointerString)
                                     ()
                                     Source
                                     Public
@@ -88,7 +88,7 @@
                                     ()
                                     Default
                                     (Allocatable
-                                        (Character 1 -2 () PointerString)
+                                        (String 1 -2 () PointerString)
                                     )
                                     ()
                                     Source
@@ -145,7 +145,7 @@
                         (Var 2 num)
                         (StringConstant
                             "lfortran"
-                            (Character 1 8 () PointerString)
+                            (String 1 8 () PointerString)
                         )
                         ()
                     )
@@ -155,7 +155,7 @@
                             2 trim
                             ()
                             [((Var 2 num))]
-                            (Character 1 -3 (FunctionCall
+                            (String 1 -3 (FunctionCall
                                 2 len_trim
                                 ()
                                 [((Var 2 num))]
@@ -174,7 +174,7 @@
                             NotEq
                             (StringConstant
                                 "lfortran"
-                                (Character 1 8 () PointerString)
+                                (String 1 8 () PointerString)
                             )
                             (Logical 4)
                             ()
@@ -188,7 +188,7 @@
                         (Var 2 num)
                         (StringConstant
                             "lfortran working"
-                            (Character 1 16 () PointerString)
+                            (String 1 16 () PointerString)
                         )
                         ()
                     )
@@ -218,7 +218,7 @@
                                 ()
                             )
                             (IntegerConstant 1 (Integer 4) Decimal)
-                            (Character 1 -3 (IntegerBinOp
+                            (String 1 -3 (IntegerBinOp
                                 (IntegerBinOp
                                     (FunctionCall
                                         2 len_trim
@@ -253,7 +253,7 @@
                             ()
                             [(Var 2 message)]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )]
                         ()

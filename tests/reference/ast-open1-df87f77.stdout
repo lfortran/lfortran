@@ -15,9 +15,7 @@
             0
             []
             [(file
-            (String
-                "p_cc"
-            ))
+            (String "p_cc"))
             (newunit
             u)]
             ()
@@ -39,9 +37,7 @@
             (IOSTAT
             ier)
             (POSITION
-            (String
-                "rewind"
-            ))]
+            (String "rewind"))]
             ()
         )
         (Open
@@ -53,9 +49,7 @@
             (file
             outfile)
             (status
-            (String
-                "replace"
-            ))
+            (String "replace"))
             (iostat
             ios)]
             ()
@@ -66,21 +60,13 @@
             [(unit
             10)
             (file
-            (String
-                "test1.inp"
-            ))
+            (String "test1.inp"))
             (position
-            (String
-                "rewind"
-            ))
+            (String "rewind"))
             (action
-            (String
-                "read"
-            ))
+            (String "read"))
             (status
-            (String
-                "old"
-            ))]
+            (String "old"))]
             ()
         )
         (Open
@@ -93,9 +79,7 @@
             (STATUS
             fstat)
             (ACCESS
-            (String
-                "SEQUENTIAL"
-            ))
+            (String "SEQUENTIAL"))
             (ACTION
             faction)
             (IOSTAT
