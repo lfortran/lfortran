@@ -271,8 +271,8 @@
                     (Assignment
                         (Var 8 char_str)
                         (StringConstant
-                            "runningmodules_48_2"
-                            (Character 1 19 () PointerString)
+                            "runningmodules_48_2                     "
+                            (Character 1 40 () PointerString)
                         )
                         ()
                     )

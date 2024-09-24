@@ -95,8 +95,8 @@
                             ()
                         )
                         (StringConstant
-                            "Mr. "
-                            (Character 1 4 () PointerString)
+                            "Mr.                                     "
+                            (Character 1 40 () PointerString)
                         )
                         ()
                     )
@@ -111,8 +111,8 @@
                             ()
                         )
                         (StringConstant
-                            "Rowan "
-                            (Character 1 6 () PointerString)
+                            "Rowan                                   "
+                            (Character 1 40 () PointerString)
                         )
                         ()
                     )
@@ -127,8 +127,8 @@
                             ()
                         )
                         (StringConstant
-                            "Atkinson"
-                            (Character 1 8 () PointerString)
+                            "Atkinson                                "
+                            (Character 1 40 () PointerString)
                         )
                         ()
                     )

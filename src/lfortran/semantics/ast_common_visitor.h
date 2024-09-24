@@ -2105,11 +2105,12 @@ public:
     // pad (with ' ') or trim character string 'value'
     template <typename T>
     ASR::expr_t* adjust_character_length(T x, Allocator& al, const Location& loc, 
-                                        ASR::ttype_t* type, ASR::expr_t* value) {
+                                        ASR::ttype_t* type, ASR::expr_t* value,
+                                        ASR::storage_typeType storage_type=ASR::storage_typeType::Save) {
         ASR::Character_t *lhs_type = ASR::down_cast<ASR::Character_t>(
             ASRUtils::type_get_past_array(type));
         ASR::Character_t *rhs_type = ASR::down_cast<ASR::Character_t>(
-            ASRUtils::type_get_past_array(ASRUtils::expr_type(value)));
+            ASRUtils::type_get_past_array(ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(value))));
         // in case when length is specified as:
         // character(len=4) :: x*3 = "ape", we assign "3" as the length, and ignore "4"
         // (that's what GFortran does)
@@ -2118,7 +2119,11 @@ public:
         int64_t lhs_len = lhs_type->m_len;
         int64_t rhs_len = rhs_type->m_len;
         lhs_len = (rhs_len >= 0 && lhs_len == -1) ? rhs_len : lhs_len;
+        // RHS is a runtime value
+        if (rhs_len < 0 && storage_type != ASR::storage_typeType::Parameter) return value;
         if (rhs_len >= 0) {
+            // LHS is a runtime vaue
+            if (lhs_len < 0 && storage_type != ASR::storage_typeType::Parameter) return value;
             if (lhs_len >= 0) {
                 // raise a warning only for loss of data
                 if (lhs_len < rhs_len) {
@@ -2134,27 +2139,31 @@ public:
                 }
                 // adjust character string by padding or trimming
                 if (lhs_len != rhs_len) {
-                    ASR::StringConstant_t* string_constant = ASR::down_cast<ASR::StringConstant_t>(value);
-                    char* original_str = string_constant->m_s;
-                    size_t original_length = std::strlen(original_str);
+                    if (ASR::is_a<ASR::StringConstant_t>(*value)) {
+                        ASR::StringConstant_t* string_constant = ASR::down_cast<ASR::StringConstant_t>(value);
+                        char* original_str = string_constant->m_s;
+                        size_t original_length = std::strlen(original_str);
 
-                    size_t new_length = static_cast<size_t>(lhs_len);
-                    char* adjusted_str = al.allocate<char>(new_length + 1);
+                        size_t new_length = static_cast<size_t>(lhs_len);
+                        char* adjusted_str = al.allocate<char>(new_length + 1);
 
-                    if (lhs_len < rhs_len) { // trim
-                        std::memcpy(adjusted_str, original_str, new_length);
-                    } else { // pad
-                        std::memcpy(adjusted_str, original_str, original_length);
-                        std::memset(adjusted_str + original_length, ' ', new_length - original_length);
+                        if (lhs_len < rhs_len) { // trim
+                            std::memcpy(adjusted_str, original_str, new_length);
+                        } else { // pad
+                            std::memcpy(adjusted_str, original_str, original_length);
+                            std::memset(adjusted_str + original_length, ' ', new_length - original_length);
+                        }
+                        adjusted_str[new_length] = '\0'; // null-terminate the string
+
+                        ASR::ttype_t* value_type = ASRUtils::TYPE(ASR::make_Character_t(
+                            al, loc, 1, new_length, nullptr, ASR::string_physical_typeType::PointerString));
+
+                        rhs_len = lhs_len; // Update the rhs_len to match lhs_len
+                        value = ASRUtils::EXPR(ASR::make_StringConstant_t(
+                                    al, loc, adjusted_str, value_type));
+                    } else {
+                        return value;
                     }
-                    adjusted_str[new_length] = '\0'; // null-terminate the string
-
-                    ASR::ttype_t* value_type = ASRUtils::TYPE(ASR::make_Character_t(
-                        al, loc, 1, new_length, nullptr, ASR::string_physical_typeType::PointerString));
-
-                    rhs_len = lhs_len; // Update the rhs_len to match lhs_len
-                    value = ASRUtils::EXPR(ASR::make_StringConstant_t(
-                                al, loc, adjusted_str, value_type));
                 }
             } else {
                 LCOMPILERS_ASSERT(lhs_len == -2)
@@ -2961,8 +2970,8 @@ public:
                     // list for an initialization like:
                     // character(*) :: x(2) = "a", as we can assign "length" to
                     // character easily
-                    if (is_char_type) {
-                        value = adjust_character_length(x, al, init_expr->base.loc, type, value);
+                    if (is_char_type && value) {
+                        value = adjust_character_length(x, al, init_expr->base.loc, type, value, storage_type);
                     }
 
                     ASR::expr_t* tmp_init = init_expr;

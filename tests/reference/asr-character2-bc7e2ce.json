@@ -6,8 +6,8 @@
     "outfile": null,
     "outfile_hash": null,
     "stdout": "asr-character2-bc7e2ce.stdout",
-    "stdout_hash": "e628da217914fb1fb52c44ee712d715ff8b8b559549d6297998ea6d4",
-    "stderr": null,
-    "stderr_hash": null,
+    "stdout_hash": "1027d25924015220412c5232613501e0caef2accc83b356e8ff80c3d",
+    "stderr": "asr-character2-bc7e2ce.stderr",
+    "stderr_hash": "a453d5cce85040dc964fdb0ee2b4255629fa29f4b8013603f586a9f0",
     "returncode": 0
 }

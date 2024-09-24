@@ -1,0 +1,5 @@
+warning: The LHS character len=29 and the RHS character len=30 are not equal.
+  --> tests/../integration_tests/string_03.f90:21:1
+   |
+21 | combined = intro//verb//posit//title//last_name//"."
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: consider changing the RHS character len to match the LHS character len

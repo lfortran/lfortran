@@ -91,8 +91,8 @@
                                         [(Assignment
                                             (Var 3 res)
                                             (StringConstant
-                                                "a:j"
-                                                (Character 1 3 () PointerString)
+                                                "a:j       "
+                                                (Character 1 10 () PointerString)
                                             )
                                             ()
                                         )
@@ -131,8 +131,8 @@
                                             [(Assignment
                                                 (Var 3 res)
                                                 (StringConstant
-                                                    "l:p"
-                                                    (Character 1 3 () PointerString)
+                                                    "l:p       "
+                                                    (Character 1 10 () PointerString)
                                                 )
                                                 ()
                                             )
@@ -156,8 +156,8 @@
                                                 [(Assignment
                                                     (Var 3 res)
                                                     (StringConstant
-                                                        "z"
-                                                        (Character 1 1 () PointerString)
+                                                        "z         "
+                                                        (Character 1 10 () PointerString)
                                                     )
                                                     ()
                                                 )
@@ -170,8 +170,8 @@
                                                 [(Assignment
                                                     (Var 3 res)
                                                     (StringConstant
-                                                        "not found"
-                                                        (Character 1 9 () PointerString)
+                                                        "not found "
+                                                        (Character 1 10 () PointerString)
                                                     )
                                                     ()
                                                 )
