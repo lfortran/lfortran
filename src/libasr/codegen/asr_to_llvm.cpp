@@ -965,6 +965,10 @@ public:
             this->visit_expr_wrapper(tmp_expr, false);
             ptr_loads = ptr_loads_copy;
             llvm::Value* x_arr = tmp;
+            if (ASR::is_a<ASR::Class_t>(*ASRUtils::type_get_past_allocatable(
+                    expr_type((tmp_expr))))) {
+                x_arr = llvm_utils->create_gep(x_arr, 1);
+            }
             ASR::ttype_t* curr_arg_m_a_type = ASRUtils::type_get_past_pointer(
                 ASRUtils::type_get_past_allocatable(
                 ASRUtils::expr_type(tmp_expr)));
@@ -996,8 +1000,13 @@ public:
                     llvm::Value* malloc_ptr = LLVMArrUtils::lfortran_malloc(
                         context, *module, *builder, malloc_size);
                     llvm::Type* llvm_arg_type = llvm_utils->get_type_from_ttype_t_util(curr_arg_m_a_type, module.get());
-                    builder->CreateStore(builder->CreateBitCast(
-                        malloc_ptr, llvm_arg_type->getPointerTo()), x_arr);
+                    malloc_ptr = builder->CreateBitCast(
+                        malloc_ptr, llvm_arg_type->getPointerTo());
+                    if (ASR::is_a<ASR::Class_t>(*curr_arg_m_a_type)) {
+                        malloc_ptr = LLVM::CreateLoad(*builder,
+                            llvm_utils->create_gep(malloc_ptr, 1));
+                    }
+                    builder->CreateStore(malloc_ptr, x_arr);
                 } else {
                     LCOMPILERS_ASSERT(false);
                 }
@@ -2600,6 +2609,8 @@ public:
         }
         ASR::Variable_t* member = down_cast<ASR::Variable_t>(symbol_get_past_external(x.m_m));
         std::string member_name = std::string(member->m_name);
+        ASR::ttype_t *cur_type = ASRUtils::type_get_past_allocatable(
+                        ASRUtils::type_get_past_pointer(x_m_v_type));
         LCOMPILERS_ASSERT(current_der_type_name.size() != 0);
         while( name2memidx[current_der_type_name].find(member_name) == name2memidx[current_der_type_name].end() ) {
             if( dertype2parent.find(current_der_type_name) == dertype2parent.end() ) {
@@ -2607,6 +2618,20 @@ public:
                                     x.base.base.loc);
             }
             tmp = llvm_utils->create_gep(tmp, 0);
+            if (ASR::is_a<ASR::Struct_t>(*cur_type)) {
+                ASR::Struct_t* der = ASR::down_cast<ASR::Struct_t>(cur_type);
+                ASR::StructType_t *st = ASR::down_cast<ASR::StructType_t>(der->m_derived_type);
+                cur_type = ASRUtils::symbol_type(st->m_symtab->get_symbol(current_der_type_name));
+                cur_type = ASRUtils::type_get_past_allocatable(
+                        ASRUtils::type_get_past_pointer(cur_type));
+            } else if (ASR::is_a<ASR::Class_t>(*cur_type)) {
+                tmp = llvm_utils->create_gep(tmp, 1);
+                ASR::Class_t* der = ASR::down_cast<ASR::Class_t>(cur_type);
+                ASR::StructType_t *st = ASR::down_cast<ASR::StructType_t>(der->m_class_type);
+                cur_type = ASRUtils::symbol_type(st->m_symtab->get_symbol(current_der_type_name));
+                cur_type = ASRUtils::type_get_past_allocatable(
+                        ASRUtils::type_get_past_pointer(cur_type));
+            }
             current_der_type_name = dertype2parent[current_der_type_name];
         }
         int member_idx = name2memidx[current_der_type_name][member_name];
@@ -2626,6 +2651,7 @@ public:
                 ASRUtils::symbol_get_past_external(s_sym));
             uint32_t h = get_hash((ASR::asr_t*)member);
             if( llvm_symtab.find(h) != llvm_symtab.end() ) {
+                // This doesn't seems to be used, verify while submitting a PR
                 tmp = llvm_symtab[h];
             }
         } else if ( ASR::is_a<ASR::ClassType_t>(*member_type) ) {
