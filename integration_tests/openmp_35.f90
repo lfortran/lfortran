@@ -35,10 +35,10 @@ end subroutine
 
 program openmp_35
     use omp_lib
-    integer, parameter :: n = 5
+    integer, parameter :: n = 16
     double precision :: ctr, sum_v1, sum_v2, sum_v3
 
-    call omp_set_num_threads(5)
+    call omp_set_num_threads(8)
     ctr = 0.0
     sum_v1 = 0.0
     sum_v2 = 1.0  ! Initializing for multiplicative reduction
