@@ -1,0 +1,5 @@
+semantic error: The RHS character len must be known at compile time
+  --> tests/../integration_tests/case_06.f90:13:5
+   |
+13 |     character, parameter :: grade_fixed = 'B'
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 

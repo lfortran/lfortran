@@ -34,8 +34,8 @@
                                         (Character 1 18 () PointerString)
                                     )
                                     (StringConstant
-                                        "Some error occured"
-                                        (Character 1 18 () PointerString)
+                                        "Some error occured  "
+                                        (Character 1 20 () PointerString)
                                     )
                                     Save
                                     (Character 1 20 () PointerString)

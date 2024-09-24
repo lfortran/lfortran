@@ -1,0 +1,5 @@
+semantic error: The RHS character len must be known at compile time
+  --> tests/../integration_tests/init_values.f90:10:5
+   |
+10 |     character(len = 1), parameter :: s1 = "l"
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 

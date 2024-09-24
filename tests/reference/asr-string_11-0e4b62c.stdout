@@ -45,16 +45,16 @@
                     [(Assignment
                         (Var 2 mystring)
                         (StringConstant
-                            "This is a test"
-                            (Character 1 14 () PointerString)
+                            "This is a test                "
+                            (Character 1 30 () PointerString)
                         )
                         ()
                     )
                     (Assignment
                         (Var 2 teststring)
                         (StringConstant
-                            "test"
-                            (Character 1 4 () PointerString)
+                            "test      "
+                            (Character 1 10 () PointerString)
                         )
                         ()
                     )

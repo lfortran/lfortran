@@ -1,0 +1,9 @@
+semantic error: The RHS character len must be known at compile time
+  --> tests/derived_type1.f90:11:5 - 12:33
+   |
+11 |        character(kind=tfc, len=*), public, parameter :: nl = &
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+12 |            &' '//toml_escape%newline
+   | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 

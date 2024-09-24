@@ -144,8 +144,8 @@
                     (Assignment
                         (Var 2 num)
                         (StringConstant
-                            "lfortran"
-                            (Character 1 8 () PointerString)
+                            "lfortran            "
+                            (Character 1 20 () PointerString)
                         )
                         ()
                     )
@@ -187,8 +187,8 @@
                     (Assignment
                         (Var 2 num)
                         (StringConstant
-                            "lfortran working"
-                            (Character 1 16 () PointerString)
+                            "lfortran working    "
+                            (Character 1 20 () PointerString)
                         )
                         ()
                     )

@@ -127,8 +127,8 @@
                     (Assignment
                         (Var 3 last_name)
                         (StringConstant
-                            "best"
-                            (Character 1 4 () PointerString)
+                            "best   "
+                            (Character 1 7 () PointerString)
                         )
                         ()
                     )
