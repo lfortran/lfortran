@@ -5,9 +5,9 @@
     "infile_hash": "78e727aecb70503bac5e780ad046d418a533f576cf7b276702bb6be1",
     "outfile": null,
     "outfile_hash": null,
-    "stdout": "fortran-char1-046b501.stdout",
-    "stdout_hash": "1eaefda83c36dbf4f0c7e0a983f35eb52878b2f5224b88ed39cdabe4",
-    "stderr": null,
-    "stderr_hash": null,
-    "returncode": 0
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "fortran-char1-046b501.stderr",
+    "stderr_hash": "7b2492beb9564b9bf748dd9c9dc5dca07daff9d2d1845aff1fafb877",
+    "returncode": 1
 }

@@ -5,9 +5,9 @@
     "infile_hash": "3987983e4c8d162530bceffbbce0bd7d038b1f794655c222c47ad714",
     "outfile": null,
     "outfile_hash": null,
-    "stdout": "pass_dead_code_removal-case_06-e7f007f.stdout",
-    "stdout_hash": "ecefc781f8b1ff1aa979bc9e79508940e3f851beea03df8d94a4c268",
-    "stderr": null,
-    "stderr_hash": null,
-    "returncode": 0
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "pass_dead_code_removal-case_06-e7f007f.stderr",
+    "stderr_hash": "f7a8a727133194afebc82e107b131805af9618c10eb231882f559745",
+    "returncode": 2
 }
