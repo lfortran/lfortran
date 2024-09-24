@@ -31,7 +31,12 @@
                         (IntegerConstant 24 (Integer 4) Decimal)
                         ()
                     )
-                    (Print
+                    (FileWrite
+                        0
+                        ()
+                        ()
+                        ()
+                        ()
                         [(StringConstant
                             " "
                             (Character 1 1 () PointerString)
@@ -41,9 +46,10 @@
                             ""
                             (Character 1 0 () PointerString)
                         )
+                        ()
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StringConstant
                                 "x is "
@@ -53,9 +59,7 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (FileWrite
                         0
@@ -95,7 +99,12 @@
                         ()
                         ()
                     )
-                    (Print
+                    (FileWrite
+                        0
+                        ()
+                        ()
+                        ()
+                        ()
                         [(StringConstant
                             " "
                             (Character 1 1 () PointerString)
@@ -105,14 +114,13 @@
                             ""
                             (Character 1 0 () PointerString)
                         )
+                        ()
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "ok"
                             (Character 1 2 () PointerString)
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (FileWrite
                         0

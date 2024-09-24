@@ -881,12 +881,10 @@
                     modules_31
                     [fpm_cmd_update_modules_31]
                     [(Print
-                        [(StringConstant
+                        (StringConstant
                             "running modules_31 program"
                             (Character 1 26 () PointerString)
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 )
         })

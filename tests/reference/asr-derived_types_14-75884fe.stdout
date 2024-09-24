@@ -513,12 +513,10 @@
                     main
                     []
                     [(Print
-                        [(StringConstant
+                        (StringConstant
                             "running derived_types_14 main program"
                             (Character 1 37 () PointerString)
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 )
         })

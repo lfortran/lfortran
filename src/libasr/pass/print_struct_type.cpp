@@ -56,9 +56,8 @@ public:
 
         bool is_struct_type_present = false;
         ASR::StringFormat_t* fmt;
-        if(x.n_values > 0  && ASR::is_a<ASR::StringFormat_t>(*x.m_values[0])){
-
-            fmt = (ASR::down_cast<ASR::StringFormat_t>(x.m_values[0]));
+        if(ASR::is_a<ASR::StringFormat_t>(*x.m_text)){
+            fmt = (ASR::down_cast<ASR::StringFormat_t>(x.m_text));
         } else {
             return;
         }
@@ -100,7 +99,7 @@ public:
 
             } else {
 
-            new_values.push_back(al, x.m_values[i]);
+            new_values.push_back(al, x_m_value);
 
             }
         }

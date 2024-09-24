@@ -27,7 +27,7 @@
                     array_03_transfer
                     []
                     [(Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(BitCast
                                 (Var 2 x)
@@ -42,9 +42,7 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 )
         })

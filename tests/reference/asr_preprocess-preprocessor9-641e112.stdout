@@ -12,7 +12,7 @@
                     preprocessor9
                     []
                     [(Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(IntegerBinOp
                                 (IntegerBinOp
@@ -48,12 +48,10 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(IntegerBinOp
                                 (IntegerBinOp
@@ -101,9 +99,7 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 )
         })

@@ -27,7 +27,7 @@
                     intrinsics_10
                     []
                     [(Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(IntrinsicElementalFunction
                                 Real
@@ -42,9 +42,7 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 )
         })

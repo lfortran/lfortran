@@ -107,7 +107,7 @@
                         ()
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StringConstant
                                 "Here is "
@@ -119,14 +119,10 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(Var 2 greetings)]
-                        ()
-                        ()
+                        (Var 2 greetings)
                     )]
                 )
         })

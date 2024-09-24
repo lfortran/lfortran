@@ -58,12 +58,10 @@
                                 ()
                             )
                             (Print
-                                [(StringConstant
+                                (StringConstant
                                     "Excellent!"
                                     (Character 1 10 () PointerString)
-                                )]
-                                ()
-                                ()
+                                )
                             )]
                         )
                         (CaseStmt_Range
@@ -75,12 +73,10 @@
                                 ()
                             )
                             (Print
-                                [(StringConstant
+                                (StringConstant
                                     "Very good!"
                                     (Character 1 10 () PointerString)
-                                )]
-                                ()
-                                ()
+                                )
                             )]
                         )
                         (CaseStmt_Range
@@ -92,12 +88,10 @@
                                 ()
                             )
                             (Print
-                                [(StringConstant
+                                (StringConstant
                                     "Well done!"
                                     (Character 1 10 () PointerString)
-                                )]
-                                ()
-                                ()
+                                )
                             )]
                         )
                         (CaseStmt_Range
@@ -109,12 +103,10 @@
                                 ()
                             )
                             (Print
-                                [(StringConstant
+                                (StringConstant
                                     "Not bad!"
                                     (Character 1 8 () PointerString)
-                                )]
-                                ()
-                                ()
+                                )
                             )]
                         )
                         (CaseStmt_Range
@@ -126,12 +118,10 @@
                                 ()
                             )
                             (Print
-                                [(StringConstant
+                                (StringConstant
                                     "You passed!"
                                     (Character 1 11 () PointerString)
-                                )]
-                                ()
-                                ()
+                                )
                             )]
                         )
                         (CaseStmt_Range
@@ -143,12 +133,10 @@
                                 ()
                             )
                             (Print
-                                [(StringConstant
+                                (StringConstant
                                     "Better try again!"
                                     (Character 1 17 () PointerString)
-                                )]
-                                ()
-                                ()
+                                )
                             )]
                         )]
                         [(Assignment
@@ -157,17 +145,15 @@
                             ()
                         )
                         (Print
-                            [(StringConstant
+                            (StringConstant
                                 "Invalid marks"
                                 (Character 1 13 () PointerString)
-                            )]
-                            ()
-                            ()
+                            )
                         )]
                         .false.
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StringConstant
                                 "Your marks are "
@@ -177,9 +163,7 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (If
                         (IntegerCompare
@@ -200,86 +184,72 @@
                             (IntegerConstant 91 (Integer 4) Decimal)
                             (IntegerConstant 100 (Integer 4) Decimal)
                             [(Print
-                                [(StringConstant
+                                (StringConstant
                                     "Excellent!"
                                     (Character 1 10 () PointerString)
-                                )]
-                                ()
-                                ()
+                                )
                             )]
                         )
                         (CaseStmt_Range
                             (IntegerConstant 81 (Integer 4) Decimal)
                             (IntegerConstant 90 (Integer 4) Decimal)
                             [(Print
-                                [(StringConstant
+                                (StringConstant
                                     "Very good!"
                                     (Character 1 10 () PointerString)
-                                )]
-                                ()
-                                ()
+                                )
                             )]
                         )
                         (CaseStmt_Range
                             (IntegerConstant 71 (Integer 4) Decimal)
                             (IntegerConstant 80 (Integer 4) Decimal)
                             [(Print
-                                [(StringConstant
+                                (StringConstant
                                     "Well done!"
                                     (Character 1 10 () PointerString)
-                                )]
-                                ()
-                                ()
+                                )
                             )]
                         )
                         (CaseStmt_Range
                             (IntegerConstant 61 (Integer 4) Decimal)
                             (IntegerConstant 70 (Integer 4) Decimal)
                             [(Print
-                                [(StringConstant
+                                (StringConstant
                                     "Not bad!"
                                     (Character 1 8 () PointerString)
-                                )]
-                                ()
-                                ()
+                                )
                             )]
                         )
                         (CaseStmt_Range
                             (IntegerConstant 41 (Integer 4) Decimal)
                             (IntegerConstant 60 (Integer 4) Decimal)
                             [(Print
-                                [(StringConstant
+                                (StringConstant
                                     "You passed!"
                                     (Character 1 11 () PointerString)
-                                )]
-                                ()
-                                ()
+                                )
                             )]
                         )
                         (CaseStmt_Range
                             ()
                             (IntegerConstant 40 (Integer 4) Decimal)
                             [(Print
-                                [(StringConstant
+                                (StringConstant
                                     "Better try again!"
                                     (Character 1 17 () PointerString)
-                                )]
-                                ()
-                                ()
+                                )
                             )]
                         )]
                         [(Print
-                            [(StringConstant
+                            (StringConstant
                                 "Invalid marks"
                                 (Character 1 13 () PointerString)
-                            )]
-                            ()
-                            ()
+                            )
                         )]
                         .false.
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StringConstant
                                 "Your marks are "
@@ -289,9 +259,7 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Select
                         (Var 2 marks)
@@ -299,86 +267,72 @@
                             (IntegerConstant 91 (Integer 4) Decimal)
                             (IntegerConstant 100 (Integer 4) Decimal)
                             [(Print
-                                [(StringConstant
+                                (StringConstant
                                     "Excellent!"
                                     (Character 1 10 () PointerString)
-                                )]
-                                ()
-                                ()
+                                )
                             )]
                         )
                         (CaseStmt_Range
                             (IntegerConstant 81 (Integer 4) Decimal)
                             (IntegerConstant 90 (Integer 4) Decimal)
                             [(Print
-                                [(StringConstant
+                                (StringConstant
                                     "Very good!"
                                     (Character 1 10 () PointerString)
-                                )]
-                                ()
-                                ()
+                                )
                             )]
                         )
                         (CaseStmt_Range
                             (IntegerConstant 71 (Integer 4) Decimal)
                             (IntegerConstant 80 (Integer 4) Decimal)
                             [(Print
-                                [(StringConstant
+                                (StringConstant
                                     "Well done!"
                                     (Character 1 10 () PointerString)
-                                )]
-                                ()
-                                ()
+                                )
                             )]
                         )
                         (CaseStmt_Range
                             (IntegerConstant 61 (Integer 4) Decimal)
                             (IntegerConstant 70 (Integer 4) Decimal)
                             [(Print
-                                [(StringConstant
+                                (StringConstant
                                     "Not bad!"
                                     (Character 1 8 () PointerString)
-                                )]
-                                ()
-                                ()
+                                )
                             )]
                         )
                         (CaseStmt_Range
                             (IntegerConstant 41 (Integer 4) Decimal)
                             (IntegerConstant 60 (Integer 4) Decimal)
                             [(Print
-                                [(StringConstant
+                                (StringConstant
                                     "You passed!"
                                     (Character 1 11 () PointerString)
-                                )]
-                                ()
-                                ()
+                                )
                             )]
                         )
                         (CaseStmt_Range
                             ()
                             (IntegerConstant 40 (Integer 4) Decimal)
                             [(Print
-                                [(StringConstant
+                                (StringConstant
                                     "Better try again!"
                                     (Character 1 17 () PointerString)
-                                )]
-                                ()
-                                ()
+                                )
                             )]
                         )]
                         [(Print
-                            [(StringConstant
+                            (StringConstant
                                 "Invalid marks"
                                 (Character 1 13 () PointerString)
-                            )]
-                            ()
-                            ()
+                            )
                         )]
                         .false.
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StringConstant
                                 "Your marks are "
@@ -388,9 +342,7 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 )
         })

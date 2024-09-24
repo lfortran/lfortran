@@ -249,15 +249,13 @@
                     implied_do_loop3
                     []
                     [(Print
-                        [(StringConstant
+                        (StringConstant
                             "Loop 1"
                             (Character 1 6 () PointerString)
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(ImpliedDoLoop
                                 [(Var 2 i)
@@ -296,20 +294,16 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "Loop 2"
                             (Character 1 6 () PointerString)
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(ImpliedDoLoop
                                 [(ImpliedDoLoop
@@ -363,20 +357,16 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "Loop 3"
                             (Character 1 6 () PointerString)
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(ImpliedDoLoop
                                 [(ImpliedDoLoop
@@ -430,20 +420,16 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "Loop4"
                             (Character 1 5 () PointerString)
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(ImpliedDoLoop
                                 [(Var 2 i)
@@ -503,20 +489,16 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "Loop5"
                             (Character 1 5 () PointerString)
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(ImpliedDoLoop
                                 [(Var 2 i)
@@ -576,9 +558,7 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 )
         })

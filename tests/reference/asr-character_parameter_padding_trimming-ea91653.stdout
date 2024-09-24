@@ -253,7 +253,7 @@
                     character_parameter_padding_trimming
                     []
                     [(Print
-                        [(StringConcat
+                        (StringConcat
                             (StringConcat
                                 (StringConstant
                                     "|"
@@ -275,51 +275,37 @@
                                 "|apple   |"
                                 (Character 1 10 () PointerString)
                             )
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(Var 2 y_pad)]
-                        ()
-                        ()
+                        (Var 2 y_pad)
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(Var 2 p_pad)]
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(Var 2 x_trim)]
-                        ()
-                        ()
+                        (Var 2 x_trim)
                     )
                     (Print
-                        [(Var 2 y_trim)]
-                        ()
-                        ()
+                        (Var 2 y_trim)
                     )
                     (Print
-                        [(Var 2 z_trim)]
-                        ()
-                        ()
+                        (Var 2 z_trim)
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(Var 2 p_trim)]
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 )
         })

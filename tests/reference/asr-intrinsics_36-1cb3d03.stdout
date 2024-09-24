@@ -228,9 +228,7 @@
                     intrinsics_36
                     []
                     [(Print
-                        [(Var 2 empty)]
-                        ()
-                        ()
+                        (Var 2 empty)
                     )
                     (If
                         (StringCompare
@@ -249,9 +247,7 @@
                         []
                     )
                     (Print
-                        [(Var 2 all_spaces)]
-                        ()
-                        ()
+                        (Var 2 all_spaces)
                     )
                     (If
                         (StringCompare
@@ -270,9 +266,7 @@
                         []
                     )
                     (Print
-                        [(Var 2 simple)]
-                        ()
-                        ()
+                        (Var 2 simple)
                     )
                     (If
                         (StringCompare
@@ -291,9 +285,7 @@
                         []
                     )
                     (Print
-                        [(Var 2 space_at_start)]
-                        ()
-                        ()
+                        (Var 2 space_at_start)
                     )
                     (If
                         (StringCompare
@@ -312,9 +304,7 @@
                         []
                     )
                     (Print
-                        [(Var 2 space_at_end)]
-                        ()
-                        ()
+                        (Var 2 space_at_end)
                     )
                     (If
                         (StringCompare
@@ -333,9 +323,7 @@
                         []
                     )
                     (Print
-                        [(Var 2 space_in_between)]
-                        ()
-                        ()
+                        (Var 2 space_in_between)
                     )
                     (If
                         (StringCompare
@@ -354,9 +342,7 @@
                         []
                     )
                     (Print
-                        [(Var 2 spaces_with_symbols)]
-                        ()
-                        ()
+                        (Var 2 spaces_with_symbols)
                     )
                     (If
                         (StringCompare

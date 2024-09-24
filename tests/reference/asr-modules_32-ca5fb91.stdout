@@ -189,12 +189,10 @@
                     modules_32
                     []
                     [(Print
-                        [(StringConstant
+                        (StringConstant
                             "running modules_32 program"
                             (Character 1 26 () PointerString)
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 )
         })

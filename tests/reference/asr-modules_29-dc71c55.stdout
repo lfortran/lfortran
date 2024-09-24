@@ -999,12 +999,10 @@
                     modules_29
                     [fpm_manifest_executable]
                     [(Print
-                        [(StringConstant
+                        (StringConstant
                             "running modules_29 program"
                             (Character 1 26 () PointerString)
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 )
         })

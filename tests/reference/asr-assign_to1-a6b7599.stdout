@@ -86,12 +86,10 @@
                         15
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "run"
                             (Character 1 3 () PointerString)
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 )
         })

@@ -12,12 +12,10 @@
                     modules_27
                     []
                     [(Print
-                        [(StringConstant
+                        (StringConstant
                             "running modules_27 program"
                             (Character 1 26 () PointerString)
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 ),
             tomlf_build:

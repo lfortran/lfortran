@@ -1004,7 +1004,44 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
 
     void visit_Print(const ASR::Print_t& x) {
         ASR::Print_t& xx = const_cast<ASR::Print_t&>(x);
-        visit_IO(xx.m_values, xx.n_values, "print");
+        std::string name_hint = "print";
+        if( is_temporary_needed(xx.m_text) ) {
+            visit_expr(*xx.m_text);
+            call_create_and_allocate_temporary_variable(xx.m_text);
+            xx.m_text = array_var_temporary;
+        } else if( ASRUtils::is_struct(*ASRUtils::expr_type(xx.m_text)) &&
+                    !ASR::is_a<ASR::Var_t>(
+                        *ASRUtils::get_past_array_physical_cast(xx.m_text)) ) {
+            visit_expr(*xx.m_text);
+            ASR::expr_t* struct_var_temporary = create_and_allocate_temporary_variable_for_struct(
+                ASRUtils::get_past_array_physical_cast(xx.m_text), name_hint, al, current_body,
+                current_scope, exprs_with_target);
+            if( ASR::is_a<ASR::ArrayPhysicalCast_t>(*xx.m_text) ) {
+                ASR::ArrayPhysicalCast_t* x_m_values_i = ASR::down_cast<ASR::ArrayPhysicalCast_t>(xx.m_text);
+                struct_var_temporary = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
+                    al, struct_var_temporary->base.loc, struct_var_temporary,
+                    ASRUtils::extract_physical_type(ASRUtils::expr_type(struct_var_temporary)),
+                    x_m_values_i->m_new, x_m_values_i->m_type, nullptr));
+            }
+            xx.m_text = struct_var_temporary;
+        } else if( ASR::is_a<ASR::ImpliedDoLoop_t>(*xx.m_text) ) {
+            ASR::ImpliedDoLoop_t* implied_do_loop = ASR::down_cast<ASR::ImpliedDoLoop_t>(xx.m_text);
+            const Location& loc = xx.m_text->base.loc;
+            Vec<ASR::expr_t*> array_con_args; array_con_args.reserve(al, 1);
+            array_con_args.push_back(al, xx.m_text);
+            Vec<ASR::dimension_t> m_dims; m_dims.reserve(al, 1);
+            ASRUtils::ASRBuilder builder(al, loc);
+            ASR::dimension_t m_dim; m_dim.loc = loc;
+            m_dim.m_start = builder.i32(1);
+            m_dim.m_length = get_ImpliedDoLoop_size(al, implied_do_loop);
+            m_dims.push_back(al, m_dim);
+            ASR::ttype_t* type = ASRUtils::make_Array_t_util(al, loc,
+                implied_do_loop->m_type, m_dims.p, m_dims.size());
+            xx.m_text = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, loc,
+                array_con_args.p, array_con_args.size(), type, ASR::arraystorageType::ColMajor));
+        } else {
+            visit_expr(*xx.m_text);
+        }
         CallReplacerOnExpressionsVisitor::visit_Print(x);
     }
 
@@ -1894,7 +1931,7 @@ class VerifySimplifierASROutput:
     }
 
     void visit_Print(const ASR::Print_t& x) {
-        visit_IO(x);
+        check_for_var_if_array(x.m_text)
     }
 
     void visit_FileWrite(const ASR::FileWrite_t& x) {

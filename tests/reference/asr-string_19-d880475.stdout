@@ -519,7 +519,7 @@
                                     [compute_lps]
                                     [(Var 8 string)]
                                     [(Print
-                                        [(StringFormat
+                                        (StringFormat
                                             ()
                                             [(FunctionCall
                                                 6 compute_lps
@@ -541,9 +541,7 @@
                                             FormatFortran
                                             (Character -1 0 () PointerString)
                                             ()
-                                        )]
-                                        ()
-                                        ()
+                                        )
                                     )]
                                     (Var 8 l)
                                     Public
@@ -631,7 +629,7 @@
                                     []
                                     [(Var 9 string)]
                                     [(Print
-                                        [(FunctionCall
+                                        (FunctionCall
                                             9 char@char_string
                                             6 char
                                             [((Var 9 string))]
@@ -645,9 +643,7 @@
                                             ) PointerString)
                                             ()
                                             ()
-                                        )]
-                                        ()
-                                        ()
+                                        )
                                     )]
                                     (Var 9 l)
                                     Public

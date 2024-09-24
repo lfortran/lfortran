@@ -199,7 +199,7 @@
                                                         })
                                                     ~select_type_block_
                                                     [(Print
-                                                        [(StringFormat
+                                                        (StringFormat
                                                             ()
                                                             [(StringConstant
                                                                 "base type: component value: "
@@ -214,9 +214,7 @@
                                                             FormatFortran
                                                             (Character -1 0 () PointerString)
                                                             ()
-                                                        )]
-                                                        ()
-                                                        ()
+                                                        )
                                                     )
                                                     (If
                                                         (IntegerCompare
@@ -265,7 +263,7 @@
                                                         })
                                                     ~select_type_block_1
                                                     [(Print
-                                                        [(StringFormat
+                                                        (StringFormat
                                                             ()
                                                             [(StringConstant
                                                                 "child type: component values: "
@@ -286,9 +284,7 @@
                                                             FormatFortran
                                                             (Character -1 0 () PointerString)
                                                             ()
-                                                        )]
-                                                        ()
-                                                        ()
+                                                        )
                                                     )
                                                     (If
                                                         (IntegerCompare
@@ -390,7 +386,7 @@
                         ()
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StructInstanceMember
                                 (Var 2 base_target)
@@ -401,12 +397,10 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StructInstanceMember
                                 (Var 2 child_target)
@@ -423,9 +417,7 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Associate
                         (Var 2 bptr)
