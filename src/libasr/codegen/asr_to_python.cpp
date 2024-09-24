@@ -144,7 +144,7 @@ public:
                 r += "c";
                 r += std::to_string(ASRUtils::extract_kind_from_ttype_t(t)*8);
                 break;
-            } case ASR::ttypeType::Character : {
+            } case ASR::ttypeType::String : {
                 r = "str";
                 break;
             } case ASR::ttypeType::Logical : {

@@ -36,7 +36,7 @@ private:
       {"UnsignedInteger", "Unsigned Integer Pointer"},
       {"Real", "Integer or Real or Real Pointer"},
       {"Complex", "Integer, Real or Complex or Complex Pointer"},
-      {"Character", "Character Pointer"},
+      {"String", "String Pointer"},
       {"Logical", "Integer or Logical Pointer"},
       {"Derived", "Derived Pointer"}
   };
@@ -65,7 +65,7 @@ private:
       {complex_to_integer, error_case, complex_to_real, complex_to_complex,
        no_cast_required, no_cast_required, no_cast_required},
 
-      // Character
+      // String
       {no_cast_required, no_cast_required, no_cast_required, no_cast_required,
        no_cast_required, no_cast_required, no_cast_required},
 
@@ -87,7 +87,7 @@ private:
       -1,  // Unsigned Integer
       5,  // Real
       6,  // Complex
-      -1, // Character
+      -1, // String
       -1, // Logical
       -1  // Derived
   };

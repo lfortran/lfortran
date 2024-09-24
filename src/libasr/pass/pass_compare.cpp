@@ -102,7 +102,7 @@ public:
                 return ASRUtils::EXPR(ASR::make_RealCompare_t(al,
                     loc, left, ASR::cmpopType::Eq, rig, bool_type, nullptr));
             }
-            case ASR::ttypeType::Character: {
+            case ASR::ttypeType::String: {
                 return ASRUtils::EXPR(ASR::make_StringCompare_t(al,
                     loc, left, ASR::cmpopType::Eq, rig, bool_type, nullptr));
             }

@@ -526,7 +526,7 @@ public:
         pass_result.n = 0;
     }
 
-    void visit_Character(const ASR::Character_t& /*x*/) {
+    void visit_String(const ASR::String_t& /*x*/) {
 
     }
 

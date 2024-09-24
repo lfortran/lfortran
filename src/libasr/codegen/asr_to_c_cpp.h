@@ -1686,7 +1686,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                std::to_string(x.n_args) + ");\n";
         for( size_t i = 0; i < x.n_args; i++ ) {
             self().visit_expr(*x.m_args[i]);
-            if( ASR::is_a<ASR::Character_t>(*t->m_type) ) {
+            if( ASR::is_a<ASR::String_t>(*t->m_type) ) {
                 src_tmp += indent + var_name + ".data[" + std::to_string(i) +"] = NULL;\n";
             }
             src_tmp += indent + c_ds_api->get_deepcopy(t->m_type, src,
@@ -1712,7 +1712,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         for (size_t i = 0; i < x.n_elements; i++) {
             self().visit_expr(*x.m_elements[i]);
             std::string ele = ".element_" + std::to_string(i);
-            if (ASR::is_a<ASR::Character_t>(*t->m_type[i])) {
+            if (ASR::is_a<ASR::String_t>(*t->m_type[i])) {
                 src_tmp += indent + var_name + ele + " = NULL;\n";
             }
             src_tmp += indent + c_ds_api->get_deepcopy(t->m_type[i], src, var_name + ele) + "\n";
@@ -2172,7 +2172,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                 last_expr_precedence = 2;
                 break;
             }
-            case (ASR::cast_kindType::LogicalToCharacter) : {
+            case (ASR::cast_kindType::LogicalToString) : {
                 src = "(" + src + " ? \"True\" : \"False\")";
                 last_expr_precedence = 2;
                 break;
@@ -2198,7 +2198,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                 last_expr_precedence = 2;
                 break;
             }
-            case (ASR::cast_kindType::CharacterToLogical) : {
+            case (ASR::cast_kindType::StringToLogical) : {
                 src = "(bool)(strlen(" + src + ") > 0)";
                 last_expr_precedence = 2;
                 break;
@@ -2208,7 +2208,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                 last_expr_precedence = 2;
                 break;
             }
-            case (ASR::cast_kindType::IntegerToCharacter) : {
+            case (ASR::cast_kindType::IntegerToString) : {
                 if (is_c) {
                     ASR::ttype_t *arg_type = ASRUtils::expr_type(x.m_arg);
                     int arg_kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
@@ -2217,7 +2217,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                         case 2: src = "_lfortran_int_to_str2(" + src + ")"; break;
                         case 4: src = "_lfortran_int_to_str4(" + src + ")"; break;
                         case 8: src = "_lfortran_int_to_str8(" + src + ")"; break;
-                        default: throw CodeGenError("Cast IntegerToCharacter: Unsupported Kind " + \
+                        default: throw CodeGenError("Cast IntegerToString: Unsupported Kind " + \
                                         std::to_string(arg_kind));
                     }
 
@@ -2227,7 +2227,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                 last_expr_precedence = 2;
                 break;
             }
-            case (ASR::cast_kindType::CharacterToInteger) : {
+            case (ASR::cast_kindType::StringToInteger) : {
                 if (is_c) {
                     src = "atoi(" + src + ")";
                 } else {
@@ -2236,14 +2236,14 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                 last_expr_precedence = 2;
                 break;
             }
-            case (ASR::cast_kindType::RealToCharacter) : {
+            case (ASR::cast_kindType::RealToString) : {
                 if (is_c) {
                     ASR::ttype_t *arg_type = ASRUtils::expr_type(x.m_arg);
                     int arg_kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
                     switch (arg_kind) {
                         case 4: src = "_lfortran_float_to_str4(" + src + ")"; break;
                         case 8: src = "_lfortran_float_to_str8(" + src + ")"; break;
-                        default: throw CodeGenError("Cast RealToCharacter: Unsupported Kind " + \
+                        default: throw CodeGenError("Cast RealToString: Unsupported Kind " + \
                                         std::to_string(arg_kind));
                     }
                 } else {
