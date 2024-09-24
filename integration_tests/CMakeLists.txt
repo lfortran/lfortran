@@ -310,6 +310,7 @@ RUN(NAME data_09 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c llvm17)
 RUN(NAME data_10 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17)
 RUN(NAME data_11 LABELS gfortran llvmImplicit)
 RUN(NAME data_12 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran llvm17)
+RUN(NAME data_13 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran llvm17)
 
 RUN(NAME minmax_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm c fortran llvm17)
 RUN(NAME arithmetic_if_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c llvm17) # arithmetic tests use goto
