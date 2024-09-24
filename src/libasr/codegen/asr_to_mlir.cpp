@@ -183,7 +183,7 @@ public:
         std::string fmt = "";
         Vec<mlir::Value> args; 
         LCOMPILERS_ASSERT(x.m_text != nullptr &&
-            ASR::is_a<ASR::Character_t>(*ASRUtils::expr_type(x.m_text)));
+            ASR::is_a<ASR::String_t>(*ASRUtils::expr_type(x.m_text)));
         if (ASR::is_a<ASR::StringFormat_t>(*x.m_text)) {
             ASR::StringFormat_t *sf = ASR::down_cast<ASR::StringFormat_t>(
                 x.m_text);

@@ -3198,7 +3198,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     void visit_Print(const ASR::Print_t &x) {
         if( ASR::is_a<ASR::StringFormat_t>(*x.m_text)){ // loop on stringformat args only.
             this->visit_expr(*x.m_text);
-        } else if (ASR::is_a<ASR::Character_t>(*ASRUtils::expr_type(x.m_text))) { //handle the stringconstant and return.
+        } else if (ASR::is_a<ASR::String_t>(*ASRUtils::expr_type(x.m_text))) { //handle the stringconstant and return.
             m_wa.emit_i32_const(1); // file type: 1 for stdout
             this->visit_expr(*x.m_text);// iov location
             m_wa.emit_i32_const(1); // size of iov vector
@@ -3219,7 +3219,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         }
         if( x.n_values == 1 && ASR::is_a<ASR::StringFormat_t>(*x.m_values[0])){ // loop on stringformat args only.
             this->visit_expr(*x.m_values[0]);
-        } else if (x.n_values == 1 && ASR::is_a<ASR::Character_t>(*ASRUtils::expr_type(x.m_values[0]))) { //handle the stringconstant and return.
+        } else if (x.n_values == 1 && ASR::is_a<ASR::String_t>(*ASRUtils::expr_type(x.m_values[0]))) { //handle the stringconstant and return.
             m_wa.emit_i32_const(1); // file type: 1 for stdout
             this->visit_expr(*x.m_values[0]);// iov location
             m_wa.emit_i32_const(1); // size of iov vector

@@ -5570,10 +5570,10 @@ void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,
 static inline ASR::asr_t* make_print_t_util(Allocator& al, const Location& loc,
     ASR::expr_t** a_args, size_t n_args){
     LCOMPILERS_ASSERT(n_args > 0);
-    if(n_args == 1 && ASR::is_a<ASR::Character_t>(*ASRUtils::expr_type(a_args[0]))){
+    if(n_args == 1 && ASR::is_a<ASR::String_t>(*ASRUtils::expr_type(a_args[0]))){
         return ASR::make_Print_t(al, loc, a_args[0]);
     } else {
-        ASR::ttype_t *char_type = ASRUtils::TYPE(ASR::make_Character_t(
+        ASR::ttype_t *char_type = ASRUtils::TYPE(ASR::make_String_t(
             al, loc, -1, 0, nullptr, ASR::string_physical_typeType::PointerString));
         return ASR::make_Print_t(al, loc,
             ASRUtils::EXPR(ASR::make_StringFormat_t(al, loc, nullptr, a_args,n_args,

@@ -584,7 +584,7 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                 integer :: i
                 print *, [(i, i=1, 10)]
             */
-            if(ASR::is_a<ASR::Character_t>(*ASRUtils::expr_type(x.m_text))){
+            if(ASR::is_a<ASR::String_t>(*ASRUtils::expr_type(x.m_text))){
                 ASR::Print_t* print_stmt = const_cast<ASR::Print_t*>(&x);
                 ASR::expr_t** current_expr_copy_9 = current_expr;
                 current_expr = const_cast<ASR::expr_t**>(&(print_stmt->m_text));
