@@ -3344,7 +3344,7 @@ public:
         }
 
         // general assignments and checks except when it's a
-        // "String" declaration
+        // "Character" declaration
         if (sym_type->m_type != AST::decl_typeType::TypeCharacter &&
             sym_type->m_kind != nullptr
         ) {
