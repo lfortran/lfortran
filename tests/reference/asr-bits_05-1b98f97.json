@@ -2,11 +2,11 @@
     "basename": "asr-bits_05-1b98f97",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/../integration_tests/bits_05.f90",
-    "infile_hash": "a5b652386ad53ff1cd611de36ef9805e15fb1793a39d2fbc9b3f78ea",
+    "infile_hash": "25055c935448005b0b3605d822bc6f26007a35864e336a316c694055",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "asr-bits_05-1b98f97.stdout",
-    "stdout_hash": "58259d5ee368ab0ba65ee47e682f201ab9af7e5cf3af67894b1fd5e6",
+    "stdout_hash": "e71138774fb0048d7d62f3e2f7d3dcd69591ff371946fc3074339437",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0

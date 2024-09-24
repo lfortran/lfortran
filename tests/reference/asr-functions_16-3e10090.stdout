@@ -14,7 +14,7 @@
                     [(Print
                         [(StringConstant
                             "running functions_16 program"
-                            (Character 1 28 () PointerString)
+                            (String 1 28 () PointerString)
                         )]
                         ()
                         ()
@@ -125,7 +125,7 @@
                                                 (Var 8 lhs)
                                                 8 1_toml_key_key
                                                 (Allocatable
-                                                    (Character 1 -2 () PointerString)
+                                                    (String 1 -2 () PointerString)
                                                 )
                                                 ()
                                             )
@@ -134,7 +134,7 @@
                                                 (Var 8 rhs)
                                                 8 1_toml_key_key
                                                 (Allocatable
-                                                    (Character 1 -2 () PointerString)
+                                                    (String 1 -2 () PointerString)
                                                 )
                                                 ()
                                             )
@@ -1219,7 +1219,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (String 1 -2 () PointerString)
                                                     )
                                                     ()
                                                     Source

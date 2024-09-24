@@ -37,11 +37,11 @@
                                                 StringFindSet
                                                 [(StringConstant
                                                     "fortran"
-                                                    (Character 1 7 () PointerString)
+                                                    (String 1 7 () PointerString)
                                                 )
                                                 (StringConstant
                                                     "ao"
-                                                    (Character 1 2 () PointerString)
+                                                    (String 1 2 () PointerString)
                                                 )
                                                 (LogicalConstant
                                                     .false.
@@ -71,11 +71,11 @@
                                                 StringFindSet
                                                 [(StringConstant
                                                     "fortran"
-                                                    (Character 1 7 () PointerString)
+                                                    (String 1 7 () PointerString)
                                                 )
                                                 (StringConstant
                                                     "ao"
-                                                    (Character 1 2 () PointerString)
+                                                    (String 1 2 () PointerString)
                                                 )
                                                 (LogicalConstant
                                                     .true.
@@ -105,11 +105,11 @@
                                                 StringFindSet
                                                 [(StringConstant
                                                     "fortran"
-                                                    (Character 1 7 () PointerString)
+                                                    (String 1 7 () PointerString)
                                                 )
                                                 (StringConstant
                                                     "c++"
-                                                    (Character 1 3 () PointerString)
+                                                    (String 1 3 () PointerString)
                                                 )
                                                 (LogicalConstant
                                                     .false.
@@ -205,11 +205,11 @@
                                                 StringContainsSet
                                                 [(StringConstant
                                                     "fortran"
-                                                    (Character 1 7 () PointerString)
+                                                    (String 1 7 () PointerString)
                                                 )
                                                 (StringConstant
                                                     "ao"
-                                                    (Character 1 2 () PointerString)
+                                                    (String 1 2 () PointerString)
                                                 )
                                                 (LogicalConstant
                                                     .false.
@@ -239,11 +239,11 @@
                                                 StringContainsSet
                                                 [(StringConstant
                                                     "fortran"
-                                                    (Character 1 7 () PointerString)
+                                                    (String 1 7 () PointerString)
                                                 )
                                                 (StringConstant
                                                     "foo"
-                                                    (Character 1 3 () PointerString)
+                                                    (String 1 3 () PointerString)
                                                 )
                                                 (LogicalConstant
                                                     .false.
@@ -273,11 +273,11 @@
                                                 StringContainsSet
                                                 [(StringConstant
                                                     "fortran"
-                                                    (Character 1 7 () PointerString)
+                                                    (String 1 7 () PointerString)
                                                 )
                                                 (StringConstant
                                                     "c++"
-                                                    (Character 1 3 () PointerString)
+                                                    (String 1 3 () PointerString)
                                                 )
                                                 (LogicalConstant
                                                     .false.
@@ -307,11 +307,11 @@
                                                 StringContainsSet
                                                 [(StringConstant
                                                     "fortran"
-                                                    (Character 1 7 () PointerString)
+                                                    (String 1 7 () PointerString)
                                                 )
                                                 (StringConstant
                                                     "c++"
-                                                    (Character 1 3 () PointerString)
+                                                    (String 1 3 () PointerString)
                                                 )
                                                 (LogicalConstant
                                                     .true.
@@ -341,11 +341,11 @@
                                                 StringContainsSet
                                                 [(StringConstant
                                                     "fortran"
-                                                    (Character 1 7 () PointerString)
+                                                    (String 1 7 () PointerString)
                                                 )
                                                 (StringConstant
                                                     "fortran"
-                                                    (Character 1 7 () PointerString)
+                                                    (String 1 7 () PointerString)
                                                 )
                                                 (LogicalConstant
                                                     .false.
@@ -404,7 +404,7 @@
                                 ()
                             )]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )]
                         ()

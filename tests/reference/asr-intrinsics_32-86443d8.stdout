@@ -278,7 +278,7 @@
                                 (Real 4)
                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                 (IntegerConstant 6 (Integer 4) Decimal))]
-                                FixedSizeArray
+                                DescriptorArray
                             )
                             ()
                         )
@@ -289,7 +289,7 @@
                             ()
                             [(Var 2 result)]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )]
                         ()

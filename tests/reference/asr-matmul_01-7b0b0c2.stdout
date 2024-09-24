@@ -388,11 +388,11 @@
                             ()
                             [(StringConstant
                                 "Size (n x n): n ="
-                                (Character 1 17 () PointerString)
+                                (String 1 17 () PointerString)
                             )
                             (Var 6 n)]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )]
                         ()
@@ -403,11 +403,11 @@
                             ()
                             [(StringConstant
                                 "Iter ="
-                                (Character 1 6 () PointerString)
+                                (String 1 6 () PointerString)
                             )
                             (Var 6 iter)]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )]
                         ()
@@ -418,7 +418,7 @@
                             ()
                             [(StringConstant
                                 "Size MB:"
-                                (Character 1 8 () PointerString)
+                                (String 1 8 () PointerString)
                             )
                             (RealBinOp
                                 (RealBinOp
@@ -467,7 +467,7 @@
                                 ()
                             )]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )]
                         ()
@@ -519,7 +519,7 @@
                     (Print
                         [(StringConstant
                             "Fortran intrinsic matmul:"
-                            (Character 1 25 () PointerString)
+                            (String 1 25 () PointerString)
                         )]
                         ()
                         ()
@@ -675,11 +675,11 @@
                             ()
                             [(StringConstant
                                 "Time: "
-                                (Character 1 6 () PointerString)
+                                (String 1 6 () PointerString)
                             )
                             (Var 6 t)]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )]
                         ()
@@ -688,7 +688,7 @@
                     (Print
                         [(StringConstant
                             "Clock cycles per element:"
-                            (Character 1 25 () PointerString)
+                            (String 1 25 () PointerString)
                         )]
                         ()
                         ()
@@ -698,15 +698,15 @@
                             ()
                             [(StringConstant
                                 "Theoretical performance peak:"
-                                (Character 1 29 () PointerString)
+                                (String 1 29 () PointerString)
                             )
                             (Var 6 fma_clock)
                             (StringConstant
                                 "cycles"
-                                (Character 1 6 () PointerString)
+                                (String 1 6 () PointerString)
                             )]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )]
                         ()
@@ -717,15 +717,15 @@
                             ()
                             [(StringConstant
                                 "Measured:                    "
-                                (Character 1 29 () PointerString)
+                                (String 1 29 () PointerString)
                             )
                             (Var 6 measured)
                             (StringConstant
                                 "cycles"
-                                (Character 1 6 () PointerString)
+                                (String 1 6 () PointerString)
                             )]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )]
                         ()
@@ -736,15 +736,15 @@
                             ()
                             [(StringConstant
                                 "Percent peak:                "
-                                (Character 1 29 () PointerString)
+                                (String 1 29 () PointerString)
                             )
                             (Var 6 percent_peak)
                             (StringConstant
                                 "%"
-                                (Character 1 1 () PointerString)
+                                (String 1 1 () PointerString)
                             )]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )]
                         ()
@@ -755,7 +755,7 @@
                             ()
                             []
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )]
                         ()
@@ -764,7 +764,7 @@
                     (Print
                         [(StringConstant
                             "matmul2:"
-                            (Character 1 8 () PointerString)
+                            (String 1 8 () PointerString)
                         )]
                         ()
                         ()
@@ -839,11 +839,11 @@
                             ()
                             [(StringConstant
                                 "Error:"
-                                (Character 1 6 () PointerString)
+                                (String 1 6 () PointerString)
                             )
                             (Var 6 err)]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )]
                         ()
@@ -959,11 +959,11 @@
                             ()
                             [(StringConstant
                                 "Time: "
-                                (Character 1 6 () PointerString)
+                                (String 1 6 () PointerString)
                             )
                             (Var 6 t)]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )]
                         ()
@@ -972,7 +972,7 @@
                     (Print
                         [(StringConstant
                             "Clock cycles per element:"
-                            (Character 1 25 () PointerString)
+                            (String 1 25 () PointerString)
                         )]
                         ()
                         ()
@@ -982,15 +982,15 @@
                             ()
                             [(StringConstant
                                 "Theoretical performance peak:"
-                                (Character 1 29 () PointerString)
+                                (String 1 29 () PointerString)
                             )
                             (Var 6 fma_clock)
                             (StringConstant
                                 "cycles"
-                                (Character 1 6 () PointerString)
+                                (String 1 6 () PointerString)
                             )]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )]
                         ()
@@ -1001,15 +1001,15 @@
                             ()
                             [(StringConstant
                                 "Measured:                    "
-                                (Character 1 29 () PointerString)
+                                (String 1 29 () PointerString)
                             )
                             (Var 6 measured)
                             (StringConstant
                                 "cycles"
-                                (Character 1 6 () PointerString)
+                                (String 1 6 () PointerString)
                             )]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )]
                         ()
@@ -1020,15 +1020,15 @@
                             ()
                             [(StringConstant
                                 "Percent peak:                "
-                                (Character 1 29 () PointerString)
+                                (String 1 29 () PointerString)
                             )
                             (Var 6 percent_peak)
                             (StringConstant
                                 "%"
-                                (Character 1 1 () PointerString)
+                                (String 1 1 () PointerString)
                             )]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )]
                         ()
@@ -1055,7 +1055,7 @@
                             ()
                             []
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )]
                         ()
@@ -1064,7 +1064,7 @@
                     (Print
                         [(StringConstant
                             "matmul1:"
-                            (Character 1 8 () PointerString)
+                            (String 1 8 () PointerString)
                         )]
                         ()
                         ()
@@ -1139,11 +1139,11 @@
                             ()
                             [(StringConstant
                                 "Error:"
-                                (Character 1 6 () PointerString)
+                                (String 1 6 () PointerString)
                             )
                             (Var 6 err)]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )]
                         ()
@@ -1259,11 +1259,11 @@
                             ()
                             [(StringConstant
                                 "Time: "
-                                (Character 1 6 () PointerString)
+                                (String 1 6 () PointerString)
                             )
                             (Var 6 t)]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )]
                         ()
@@ -1272,7 +1272,7 @@
                     (Print
                         [(StringConstant
                             "Clock cycles per element:"
-                            (Character 1 25 () PointerString)
+                            (String 1 25 () PointerString)
                         )]
                         ()
                         ()
@@ -1282,15 +1282,15 @@
                             ()
                             [(StringConstant
                                 "Theoretical performance peak:"
-                                (Character 1 29 () PointerString)
+                                (String 1 29 () PointerString)
                             )
                             (Var 6 fma_clock)
                             (StringConstant
                                 "cycles"
-                                (Character 1 6 () PointerString)
+                                (String 1 6 () PointerString)
                             )]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )]
                         ()
@@ -1301,15 +1301,15 @@
                             ()
                             [(StringConstant
                                 "Measured:                    "
-                                (Character 1 29 () PointerString)
+                                (String 1 29 () PointerString)
                             )
                             (Var 6 measured)
                             (StringConstant
                                 "cycles"
-                                (Character 1 6 () PointerString)
+                                (String 1 6 () PointerString)
                             )]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )]
                         ()
@@ -1320,15 +1320,15 @@
                             ()
                             [(StringConstant
                                 "Percent peak:                "
-                                (Character 1 29 () PointerString)
+                                (String 1 29 () PointerString)
                             )
                             (Var 6 percent_peak)
                             (StringConstant
                                 "%"
-                                (Character 1 1 () PointerString)
+                                (String 1 1 () PointerString)
                             )]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )]
                         ()

@@ -16,35 +16,35 @@
                             (StringConcat
                                 (StringConstant
                                     "This is record 1."
-                                    (Character 1 17 () PointerString)
+                                    (String 1 17 () PointerString)
                                 )
                                 (TypeInquiry
                                     NewLine
-                                    (Character 1 1 () PointerString)
+                                    (String 1 1 () PointerString)
                                     (StringConstant
                                         "A"
-                                        (Character 1 1 () PointerString)
+                                        (String 1 1 () PointerString)
                                     )
-                                    (Character 1 -1 () PointerString)
+                                    (String 1 -1 () PointerString)
                                     (StringConstant
                                         "\n"
-                                        (Character 1 0 () PointerString)
+                                        (String 1 0 () PointerString)
                                     )
                                 )
-                                (Character 1 -1 () PointerString)
+                                (String 1 -1 () PointerString)
                                 (StringConstant
                                     "This is record 1.\n"
-                                    (Character 1 18 () PointerString)
+                                    (String 1 18 () PointerString)
                                 )
                             )
                             (StringConstant
                                 "This is record 2."
-                                (Character 1 17 () PointerString)
+                                (String 1 17 () PointerString)
                             )
-                            (Character 1 -1 () PointerString)
+                            (String 1 -1 () PointerString)
                             (StringConstant
                                 "This is record 1.\nThis is record 2."
-                                (Character 1 35 () PointerString)
+                                (String 1 35 () PointerString)
                             )
                         )]
                         ()

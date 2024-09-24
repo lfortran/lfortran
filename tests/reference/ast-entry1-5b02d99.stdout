@@ -88,9 +88,7 @@
         [(Print
             0
             ()
-            [(String
-                "Printed using subroutine call: "
-            )
+            [(String "Printed using subroutine call: ")
             dummy]
             ()
         )
@@ -116,9 +114,7 @@
         (Print
             0
             ()
-            [(String
-                "Printed using entry statement: "
-            )
+            [(String "Printed using entry statement: ")
             dummy]
             ()
         )

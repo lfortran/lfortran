@@ -154,7 +154,7 @@
                                     [(Print
                                         [(StringConstant
                                             "inside check_table"
-                                            (Character 1 18 () PointerString)
+                                            (String 1 18 () PointerString)
                                         )]
                                         ()
                                         ()
@@ -613,7 +613,7 @@
                     [(Print
                         [(StringConstant
                             "running select_type4 main program"
-                            (Character 1 33 () PointerString)
+                            (String 1 33 () PointerString)
                         )]
                         ()
                         ()

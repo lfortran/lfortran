@@ -14,10 +14,10 @@ define i32 @main(i32 %0, i8** %1) {
   %array_bound3 = alloca i32, align 4
   %array_bound = alloca i32, align 4
   %__1_k = alloca i32, align 4
-  %__1_t = alloca i32, align 4
+  %__libasr_index_0_ = alloca i32, align 4
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   %__1_k1 = alloca i32, align 4
-  %__1_t2 = alloca i32, align 4
+  %__libasr_index_0_2 = alloca i32, align 4
   %x = alloca [3 x i32], align 4
   %y = alloca [3 x i32], align 4
   br i1 true, label %then, label %else
@@ -32,11 +32,11 @@ else:                                             ; preds = %.entry
 ifcont:                                           ; preds = %else, %then
   %2 = load i32, i32* %array_bound, align 4
   %3 = sub i32 %2, 1
-  store i32 %3, i32* %__1_t2, align 4
+  store i32 %3, i32* %__libasr_index_0_2, align 4
   br label %loop.head
 
 loop.head:                                        ; preds = %loop.body, %ifcont
-  %4 = load i32, i32* %__1_t2, align 4
+  %4 = load i32, i32* %__libasr_index_0_2, align 4
   %5 = add i32 %4, 1
   br i1 true, label %then4, label %else5
 
@@ -53,10 +53,10 @@ ifcont6:                                          ; preds = %else5, %then4
   br i1 %7, label %loop.body, label %loop.end
 
 loop.body:                                        ; preds = %ifcont6
-  %8 = load i32, i32* %__1_t2, align 4
+  %8 = load i32, i32* %__libasr_index_0_2, align 4
   %9 = add i32 %8, 1
-  store i32 %9, i32* %__1_t2, align 4
-  %10 = load i32, i32* %__1_t2, align 4
+  store i32 %9, i32* %__libasr_index_0_2, align 4
+  %10 = load i32, i32* %__libasr_index_0_2, align 4
   %11 = sub i32 %10, 1
   %12 = mul i32 1, %11
   %13 = add i32 0, %12
@@ -91,17 +91,17 @@ return:                                           ; preds = %loop.end
 
 define void @f_integer____0_integer____1(i32* %x, i32* %__1x, i32* %__2x, i32* %y, i32* %__1y, i32* %__2y) {
 .entry:
-  %__1_t = alloca i32, align 4
-  %__1_v = alloca i32, align 4
+  %__libasr_index_0_ = alloca i32, align 4
+  %__libasr_index_0_1 = alloca i32, align 4
   %0 = load i32, i32* %__1x, align 4
-  store i32 %0, i32* %__1_v, align 4
+  store i32 %0, i32* %__libasr_index_0_1, align 4
   %1 = load i32, i32* %__1y, align 4
   %2 = sub i32 %1, 1
-  store i32 %2, i32* %__1_t, align 4
+  store i32 %2, i32* %__libasr_index_0_, align 4
   br label %loop.head
 
 loop.head:                                        ; preds = %loop.body, %.entry
-  %3 = load i32, i32* %__1_t, align 4
+  %3 = load i32, i32* %__libasr_index_0_, align 4
   %4 = add i32 %3, 1
   %5 = load i32, i32* %__2y, align 4
   %6 = load i32, i32* %__1y, align 4
@@ -111,10 +111,10 @@ loop.head:                                        ; preds = %loop.body, %.entry
   br i1 %9, label %loop.body, label %loop.end
 
 loop.body:                                        ; preds = %loop.head
-  %10 = load i32, i32* %__1_t, align 4
+  %10 = load i32, i32* %__libasr_index_0_, align 4
   %11 = add i32 %10, 1
-  store i32 %11, i32* %__1_t, align 4
-  %12 = load i32, i32* %__1_t, align 4
+  store i32 %11, i32* %__libasr_index_0_, align 4
+  %12 = load i32, i32* %__libasr_index_0_, align 4
   %13 = load i32, i32* %__1y, align 4
   %14 = load i32, i32* %__2y, align 4
   %15 = sub i32 %12, %13
@@ -122,7 +122,7 @@ loop.body:                                        ; preds = %loop.head
   %17 = add i32 0, %16
   %18 = mul i32 1, %14
   %19 = getelementptr inbounds i32, i32* %y, i32 %17
-  %20 = load i32, i32* %__1_v, align 4
+  %20 = load i32, i32* %__libasr_index_0_1, align 4
   %21 = load i32, i32* %__1x, align 4
   %22 = load i32, i32* %__2x, align 4
   %23 = sub i32 %20, %21
@@ -132,9 +132,9 @@ loop.body:                                        ; preds = %loop.head
   %27 = getelementptr inbounds i32, i32* %x, i32 %25
   %28 = load i32, i32* %27, align 4
   store i32 %28, i32* %19, align 4
-  %29 = load i32, i32* %__1_v, align 4
+  %29 = load i32, i32* %__libasr_index_0_1, align 4
   %30 = add i32 %29, 1
-  store i32 %30, i32* %__1_v, align 4
+  store i32 %30, i32* %__libasr_index_0_1, align 4
   br label %loop.head
 
 loop.end:                                         ; preds = %loop.head

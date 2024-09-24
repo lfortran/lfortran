@@ -195,7 +195,7 @@
                                             )
                                             7 1_dependency_config_t_name
                                             (Allocatable
-                                                (Character 1 -2 () PointerString)
+                                                (String 1 -2 () PointerString)
                                             )
                                             ()
                                         ))
@@ -268,7 +268,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (String 1 -2 () PointerString)
                                                     )
                                                     ()
                                                     Source
@@ -337,7 +337,7 @@
                                                     Default
                                                     (Allocatable
                                                         (Array
-                                                            (Character 1 5 () PointerString)
+                                                            (String 1 5 () PointerString)
                                                             [(()
                                                             ())]
                                                             DescriptorArray
@@ -389,7 +389,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (String 1 -2 () PointerString)
                                                     )
                                                     ()
                                                     Source
@@ -407,7 +407,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (String 1 -2 () PointerString)
                                                     )
                                                     ()
                                                     Source
@@ -465,7 +465,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (String 1 -2 () PointerString)
                                                     )
                                                     ()
                                                     Source
@@ -483,7 +483,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (String 1 -2 () PointerString)
                                                     )
                                                     ()
                                                     Source
@@ -543,7 +543,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (String 1 -2 () PointerString)
                                                     )
                                                     ()
                                                     Source
@@ -586,7 +586,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (String 1 -2 () PointerString)
                                                     )
                                                     ()
                                                     Source
@@ -692,7 +692,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (String 1 -2 () PointerString)
                                                     )
                                                     ()
                                                     Source
@@ -746,7 +746,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () PointerString)
+                                                    (String 1 -1 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -777,7 +777,7 @@
                                         [(ClassType
                                             9 dependency_tree_t
                                         )
-                                        (Character 1 -1 () PointerString)
+                                        (String 1 -1 () PointerString)
                                         (Allocatable
                                             (StructType
                                                 9 error_t
@@ -883,7 +883,7 @@
                     [(Print
                         [(StringConstant
                             "running modules_31 program"
-                            (Character 1 26 () PointerString)
+                            (String 1 26 () PointerString)
                         )]
                         ()
                         ()

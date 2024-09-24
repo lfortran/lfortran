@@ -92,7 +92,7 @@
                                     [(Print
                                         [(StringConstant
                                             "b()"
-                                            (Character 1 3 () PointerString)
+                                            (String 1 3 () PointerString)
                                         )]
                                         ()
                                         ()
@@ -141,7 +141,7 @@
                                     [(Print
                                         [(StringConstant
                                             "d()"
-                                            (Character 1 3 () PointerString)
+                                            (String 1 3 () PointerString)
                                         )]
                                         ()
                                         ()
@@ -179,7 +179,7 @@
                                     [(Print
                                         [(StringConstant
                                             "e()"
-                                            (Character 1 3 () PointerString)
+                                            (String 1 3 () PointerString)
                                         )]
                                         ()
                                         ()

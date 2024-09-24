@@ -141,8 +141,13 @@
                                                                 (TypeParameter
                                                                     v
                                                                 )
-                                                                [(()
-                                                                ())]
+                                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                                (ArraySize
+                                                                    (Var 8 y)
+                                                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                                                    (Integer 4)
+                                                                    ()
+                                                                ))]
                                                                 DescriptorArray
                                                             )
                                                             ()
@@ -568,9 +573,14 @@
                                                             ))]
                                                             (Array
                                                                 (Real 8)
-                                                                [(()
-                                                                ())]
-                                                                DescriptorArray
+                                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                                (ArraySize
+                                                                    (Var 15 y)
+                                                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                                                    (Integer 4)
+                                                                    ()
+                                                                ))]
+                                                                PointerToDataArray
                                                             )
                                                             ()
                                                             ()
@@ -1327,8 +1337,13 @@
                                             ))]
                                             (Array
                                                 (Real 8)
-                                                [(()
-                                                ())]
+                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                (ArraySize
+                                                    (Var 11 y)
+                                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                                    (Integer 4)
+                                                    ()
+                                                ))]
                                                 DescriptorArray
                                             )
                                             ()

@@ -36,11 +36,11 @@
                                             ()
                                             [(StringConstant
                                                 "priv = "
-                                                (Character 1 7 () PointerString)
+                                                (String 1 7 () PointerString)
                                             )
                                             (Var 2 priv)]
                                             FormatFortran
-                                            (Character -1 0 () PointerString)
+                                            (String -1 0 () PointerString)
                                             ()
                                         )]
                                         ()
@@ -51,11 +51,11 @@
                                             ()
                                             [(StringConstant
                                                 "publ = "
-                                                (Character 1 7 () PointerString)
+                                                (String 1 7 () PointerString)
                                             )
                                             (Var 2 publ)]
                                             FormatFortran
-                                            (Character -1 0 () PointerString)
+                                            (String -1 0 () PointerString)
                                             ()
                                         )]
                                         ()

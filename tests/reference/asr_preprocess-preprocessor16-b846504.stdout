@@ -14,7 +14,7 @@
                     [(Print
                         [(StringConstant
                             "yes hex and int equal"
-                            (Character 1 21 () PointerString)
+                            (String 1 21 () PointerString)
                         )]
                         ()
                         ()
@@ -22,7 +22,7 @@
                     (Print
                         [(StringConstant
                             "yes hex and bin equal"
-                            (Character 1 21 () PointerString)
+                            (String 1 21 () PointerString)
                         )]
                         ()
                         ()
@@ -30,7 +30,7 @@
                     (Print
                         [(StringConstant
                             "yes bin and int equal"
-                            (Character 1 21 () PointerString)
+                            (String 1 21 () PointerString)
                         )]
                         ()
                         ()

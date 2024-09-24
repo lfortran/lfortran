@@ -31,9 +31,7 @@
             []
             []
             ()
-            (String
-                "?"
-            )
+            (String "?")
             Equal
             ())]
             ()
@@ -91,9 +89,7 @@
             ()
             0)
             (()
-            (String
-                "2*4"
-            )
+            (String "2*4")
             ()
             0)
             (()
@@ -119,9 +115,7 @@
         (Write
             0
             [(())
-            ((String
-                "(2i2,1x,a)"
-            ))]
+            ((String "(2i2,1x,a)"))]
             []
             [(* (FuncCallOrArray
                 n
@@ -156,19 +150,13 @@
         )
         (Print
             666
-            (String
-                "(a)"
-            )
-            [(String
-                " * error in n"
-            )]
+            (String "(a)")
+            [(String " * error in n")]
             ()
         )
         (Print
             0
-            (String
-                "(*(i4))"
-            )
+            (String "(*(i4))")
             [n]
             ()
         )]
@@ -359,12 +347,8 @@
                     ()
                     [(Print
                         0
-                        (String
-                            "(a)"
-                        )
-                        [(String
-                            "This should not be printed!"
-                        )]
+                        (String "(a)")
+                        [(String "This should not be printed!")]
                         ()
                     )]
                 )]
@@ -418,21 +402,15 @@
             )
             (Print
                 0
-                (String
-                    "(a)"
-                )
-                [(String
-                    "Enter anything to continue."
-                )]
+                (String "(a)")
+                [(String "Enter anything to continue.")]
                 ()
             )
             (Read
                 0
                 ()
                 [(())
-                ((String
-                    "(a)"
-                ))]
+                ((String "(a)"))]
                 [(iostat
                 i)]
                 [ch]
@@ -441,9 +419,7 @@
             (Write
                 0
                 [(b)
-                ((String
-                    "(i1)"
-                ))]
+                ((String "(i1)"))]
                 [(iostat
                 i)]
                 [666]

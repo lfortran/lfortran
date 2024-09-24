@@ -61,7 +61,7 @@
                                 ()
                                 [(Var 2 i)]
                                 FormatFortran
-                                (Character -1 0 () PointerString)
+                                (String -1 0 () PointerString)
                                 ()
                             )]
                             ()

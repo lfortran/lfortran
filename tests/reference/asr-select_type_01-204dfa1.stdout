@@ -203,7 +203,7 @@
                                                             ()
                                                             [(StringConstant
                                                                 "base type: component value: "
-                                                                (Character 1 28 () PointerString)
+                                                                (String 1 28 () PointerString)
                                                             )
                                                             (StructInstanceMember
                                                                 (Var 5 bptr)
@@ -212,7 +212,7 @@
                                                                 ()
                                                             )]
                                                             FormatFortran
-                                                            (Character -1 0 () PointerString)
+                                                            (String -1 0 () PointerString)
                                                             ()
                                                         )]
                                                         ()
@@ -269,7 +269,7 @@
                                                             ()
                                                             [(StringConstant
                                                                 "child type: component values: "
-                                                                (Character 1 30 () PointerString)
+                                                                (String 1 30 () PointerString)
                                                             )
                                                             (StructInstanceMember
                                                                 (Var 5 bptr)
@@ -284,7 +284,7 @@
                                                                 ()
                                                             )]
                                                             FormatFortran
-                                                            (Character -1 0 () PointerString)
+                                                            (String -1 0 () PointerString)
                                                             ()
                                                         )]
                                                         ()
@@ -399,7 +399,7 @@
                                 ()
                             )]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )]
                         ()
@@ -421,7 +421,7 @@
                                 ()
                             )]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )]
                         ()

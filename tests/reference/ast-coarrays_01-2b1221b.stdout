@@ -758,9 +758,7 @@
                 0)]
                 []
             )
-            (String
-                "S"
-            )
+            (String "S")
             ()
         )
         (Assignment

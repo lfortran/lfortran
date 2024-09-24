@@ -154,7 +154,7 @@
                                     [(Print
                                         [(StringConstant
                                             "inside check_table"
-                                            (Character 1 18 () PointerString)
+                                            (String 1 18 () PointerString)
                                         )]
                                         ()
                                         ()
