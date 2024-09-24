@@ -289,7 +289,7 @@ public:
         std::string r;
         switch (x.m_type) {
             ATTRTYPE2(Class, "class")
-            ATTRTYPE2(String, "character")
+            ATTRTYPE2(Character, "character")
             ATTRTYPE2(Complex, "complex")
             ATTRTYPE2(DoublePrecision, "double precision")
             ATTRTYPE2(Integer, "integer")
@@ -320,19 +320,19 @@ public:
                 )) {
                 k[0].m_id = nullptr;
             } else if (x.n_kind == 1 &&
-                    x.m_type == decl_typeType::TypeString
+                    x.m_type == decl_typeType::TypeCharacter
                 && (
                     k[0].m_id == nullptr || std::string(k[0].m_id) == "len"
                 )) {
                 k[0].m_id = (char*)"len";
             } else if (x.n_kind == 2 &&
-                    x.m_type == decl_typeType::TypeString
+                    x.m_type == decl_typeType::TypeCharacter
                 && (
                     k[0].m_id != nullptr && k[1].m_id != nullptr
                 ) && std::string(k[1].m_id) == "len") {
                     std::swap(k[0], k[1]);
             }
-            if (x.m_type == decl_typeType::TypeString &&
+            if (x.m_type == decl_typeType::TypeCharacter &&
                 k[0].m_id == nullptr) {
                     k[0].m_id = (char*)"len";
             }

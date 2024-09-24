@@ -2664,7 +2664,7 @@ public:
                 bool value_attr = false;
                 AST::AttrType_t *sym_type =
                     AST::down_cast<AST::AttrType_t>(x.m_vartype);
-                bool is_char_type = sym_type->m_type == AST::decl_typeType::TypeString;
+                bool is_char_type = sym_type->m_type == AST::decl_typeType::TypeCharacter;
                 if (assgnd_access.count(sym)) {
                     s_access = assgnd_access[sym];
                 }
@@ -3384,7 +3384,7 @@ public:
 
         // general assignments and checks except when it's a
         // "String" declaration
-        if (sym_type->m_type != AST::decl_typeType::TypeString &&
+        if (sym_type->m_type != AST::decl_typeType::TypeCharacter &&
             sym_type->m_kind != nullptr
         ) {
             if (sym_type->m_kind->m_value) {
@@ -3465,7 +3465,7 @@ public:
                 type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
                     ASRUtils::type_get_past_allocatable(type)));
             }
-        } else if (sym_type->m_type == AST::decl_typeType::TypeString) {
+        } else if (sym_type->m_type == AST::decl_typeType::TypeCharacter) {
             int a_len = -10;
             ASR::expr_t *len_expr = nullptr;
             a_kind = 1;
@@ -3576,7 +3576,7 @@ public:
                 return determine_type(loc, sym, decl_attribute, is_pointer,
                     is_allocatable, dims, type_declaration, abi, is_argument);
             } else if (derived_type_name == "character") {
-                sym_type->m_type = AST::decl_typeType::TypeString;
+                sym_type->m_type = AST::decl_typeType::TypeCharacter;
                 return determine_type(loc, sym, decl_attribute, is_pointer,
                     is_allocatable, dims, type_declaration, abi, is_argument);
             }

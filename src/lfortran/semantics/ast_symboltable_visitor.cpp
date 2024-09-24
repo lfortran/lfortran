@@ -325,7 +325,7 @@ public:
                     if (attr_type->n_kind == 1) {
                         visit_expr(*attr_type->m_kind->m_value);
                         ASR::expr_t* kind_expr = ASRUtils::EXPR(tmp);
-                        if (attr_type->m_type == AST::decl_typeType::TypeString) {
+                        if (attr_type->m_type == AST::decl_typeType::TypeCharacter) {
                             a_len = ASRUtils::extract_len<SemanticError>(kind_expr, x.base.base.loc);
                         } else {
                             a_kind = ASRUtils::extract_kind<SemanticError>(kind_expr, x.base.base.loc);
@@ -1170,7 +1170,7 @@ public:
                     break;
                 }
                 case ASR::ttypeType::String: {
-                    ttype = AST::decl_typeType::TypeString;
+                    ttype = AST::decl_typeType::TypeCharacter;
                     break;
                 }
                 default: {
@@ -1353,7 +1353,7 @@ public:
                 if (return_type->n_kind == 1) {
                     visit_expr(*return_type->m_kind->m_value);
                     ASR::expr_t* kind_expr = ASRUtils::EXPR(tmp);
-                    if (return_type->m_type == AST::decl_typeType::TypeString) {
+                    if (return_type->m_type == AST::decl_typeType::TypeCharacter) {
                         a_len = ASRUtils::extract_len<SemanticError>(kind_expr, x.base.base.loc);
                     } else {
                         a_kind = ASRUtils::extract_kind<SemanticError>(kind_expr, x.base.base.loc);
