@@ -3353,7 +3353,7 @@ public:
                 ASR::expr_t* kind_expr = ASRUtils::EXPR(tmp);
                 a_kind = ASRUtils::extract_kind<SemanticError>(kind_expr, sym_type->m_kind->loc);
             }
-            // kind=* only allowed for "String"
+            // kind=* only allowed for "Character"
             else if (sym_type->m_kind->m_type == AST::kind_item_typeType::Star) {
                 throw SemanticError("Expected initialization expression for kind",
                                 sym_type->m_kind->loc);
