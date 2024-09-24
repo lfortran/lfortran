@@ -68,12 +68,10 @@
                         100
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "hello"
                             (Character 1 5 () PointerString)
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (GoToTarget
                         200

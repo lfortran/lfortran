@@ -17,45 +17,41 @@
                             {
                                 "node": "Print",
                                 "fields": {
-                                    "values": [
-                                        {
-                                            "node": "StringConstant",
-                                            "fields": {
-                                                "s": "A \"string\".",
-                                                "type": {
-                                                    "node": "Character",
-                                                    "fields": {
-                                                        "kind": 1,
-                                                        "len": 11,
-                                                        "len_expr": [],
-                                                        "physical_type": "PointerString"
-                                                    },
-                                                    "loc": {
-                                                        "first": 59,
-                                                        "last": 73,
-                                                        "first_filename": "tests/special_chars_json.f90",
-                                                        "first_line": 3,
-                                                        "first_column": 14,
-                                                        "last_filename": "tests/special_chars_json.f90",
-                                                        "last_line": 3,
-                                                        "last_column": 28
-                                                    }
+                                    "text": {
+                                        "node": "StringConstant",
+                                        "fields": {
+                                            "s": "A \"string\".",
+                                            "type": {
+                                                "node": "Character",
+                                                "fields": {
+                                                    "kind": 1,
+                                                    "len": 11,
+                                                    "len_expr": [],
+                                                    "physical_type": "PointerString"
+                                                },
+                                                "loc": {
+                                                    "first": 59,
+                                                    "last": 73,
+                                                    "first_filename": "tests/special_chars_json.f90",
+                                                    "first_line": 3,
+                                                    "first_column": 14,
+                                                    "last_filename": "tests/special_chars_json.f90",
+                                                    "last_line": 3,
+                                                    "last_column": 28
                                                 }
-                                            },
-                                            "loc": {
-                                                "first": 59,
-                                                "last": 73,
-                                                "first_filename": "tests/special_chars_json.f90",
-                                                "first_line": 3,
-                                                "first_column": 14,
-                                                "last_filename": "tests/special_chars_json.f90",
-                                                "last_line": 3,
-                                                "last_column": 28
                                             }
+                                        },
+                                        "loc": {
+                                            "first": 59,
+                                            "last": 73,
+                                            "first_filename": "tests/special_chars_json.f90",
+                                            "first_line": 3,
+                                            "first_column": 14,
+                                            "last_filename": "tests/special_chars_json.f90",
+                                            "last_line": 3,
+                                            "last_column": 28
                                         }
-                                    ],
-                                    "separator": [],
-                                    "end": []
+                                    }
                                 },
                                 "loc": {
                                     "first": 50,

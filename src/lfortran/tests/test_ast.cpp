@@ -68,6 +68,9 @@ end program
 
     LCompilers::diag::Diagnostics diagnostics;
     CompilerOptions compiler_options;
+    compiler_options.lookup_name = true;
+    compiler_options.line = "3";
+    compiler_options.column = "12";
 
     LCompilers::LocationManager lm;
     {
@@ -100,6 +103,45 @@ end program
 
     // This will be caught by the verifier
     CHECK(!asr_verify(*asr, true, diagnostics));
+}
+
+TEST_CASE("Variable Location") {
+    Allocator al(4*1024);
+
+    std::string src = R"""(
+program expr2
+implicit none
+integer :: x
+x = (2+3)*5
+print *, x
+end program
+)""";
+
+    LCompilers::diag::Diagnostics diagnostics;
+    CompilerOptions compiler_options;
+    compiler_options.lookup_name = true;
+    compiler_options.line = "3";
+    compiler_options.column = "12";
+
+    LCompilers::LocationManager lm;
+    {
+        LCompilers::LocationManager::FileLocations fl;
+        fl.out_start0 = {};
+        fl.in_filename = "input.f90";
+        lm.files.push_back(fl);
+    }
+    FortranEvaluator e(compiler_options);
+    LCompilers::Result<LCompilers::ASR::asr_t*>
+        r = e.get_lookup_asr2(src, lm, diagnostics, "2", "12");
+    ASR::asr_t* asr2 = r.result;
+    std::vector<diag::Span> spans2 = diag::Label("", {asr2->loc}).spans;
+    for( auto it: spans2 ) {
+        populate_span(it, lm);
+        CHECK(it.first_line == 2);
+        CHECK(it.first_column == 1);
+        CHECK(it.last_line == 7);
+        CHECK(it.last_column == 11);
+    }
 }
 
 

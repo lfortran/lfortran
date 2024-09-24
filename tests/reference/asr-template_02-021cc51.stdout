@@ -901,7 +901,7 @@
                     template_02
                     [template_02_m]
                     [(Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(FunctionCall
                                 8 change_positions_int
@@ -942,12 +942,10 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(FunctionCall
                                 8 change_positions_chr
@@ -988,9 +986,7 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 ),
             template_02_m:

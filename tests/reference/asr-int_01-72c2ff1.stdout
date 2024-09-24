@@ -59,7 +59,7 @@
                     int_01
                     []
                     [(Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(Cast
                                 (Var 2 x)
@@ -71,9 +71,7 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 ),
             lfortran_intrinsic_builtin:

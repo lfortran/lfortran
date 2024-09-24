@@ -152,7 +152,7 @@
                         ()
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             (StringConstant
                                 "(a,2x,a,2x,a)"
                                 (Character 1 13 () PointerString)
@@ -163,12 +163,10 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             (StringConstant
                                 "(8i5)"
                                 (Character 1 5 () PointerString)
@@ -177,9 +175,7 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 )
         })

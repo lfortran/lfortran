@@ -37,63 +37,63 @@ void main2() {
     int32_t marks;
     int32_t marks_fixed=94;
     if (grade_fixed == "A") {
-        std::cout << "Excellent!" << std::endl;
+std::cout<< "Excellent!"<<std::endl;
     }
     else if (grade_fixed == "B") {
         if (a == b) {
-            std::cout << "a == b" << std::endl;
+std::cout<< "a == b"<<std::endl;
             if (ap == bp) {
-                std::cout << "ap == bp" << std::endl;
+std::cout<< "ap == bp"<<std::endl;
             } else {
-                std::cout << "ap /= bp" << std::endl;
+std::cout<< "ap /= bp"<<std::endl;
             }
         } else {
             if ((float)(ap) == cp) {
-                std::cout << "ap == cp" << std::endl;
+std::cout<< "ap == cp"<<std::endl;
                 if (cp == dp) {
-                    std::cout << "cp == dp" << std::endl;
+std::cout<< "cp == dp"<<std::endl;
                 } else {
-                    std::cout << "cp /= dp" << std::endl;
+std::cout<< "cp /= dp"<<std::endl;
                 }
             } else {
                 if (c == d) {
-                    std::cout << "c == d" << std::endl;
+std::cout<< "c == d"<<std::endl;
                 }
             }
         }
     }
     else if (grade_fixed == "C") {
-        std::cout << "Well done" << std::endl;
+std::cout<< "Well done"<<std::endl;
     }
     else if (grade_fixed == "D") {
-        std::cout << "You passed" << std::endl;
+std::cout<< "You passed"<<std::endl;
     }
     else if (grade_fixed == "F") {
-        std::cout << "Better try again" << std::endl;
+std::cout<< "Better try again"<<std::endl;
     }
     else {
-        std::cout << "Invalid grade" << std::endl;
+std::cout<< "Invalid grade"<<std::endl;
     }
     std::cout << "Your grade is " << " " << grade_fixed << std::endl;
     marks = 94;
     if (marks >= 40 + bp) {
-        std::cout << "Pass!" << std::endl;
+std::cout<< "Pass!"<<std::endl;
     }
     else if (marks <= 39 - ap) {
-        std::cout << "Failed!" << std::endl;
+std::cout<< "Failed!"<<std::endl;
     }
     else {
-        std::cout << "Invalid marks" << std::endl;
+std::cout<< "Invalid marks"<<std::endl;
     }
     std::cout << "Your marks are " << " " << marks << std::endl;
     if (marks_fixed >= 40 + bp) {
-        std::cout << "Pass!" << std::endl;
+std::cout<< "Pass!"<<std::endl;
     }
     else if (0 <= marks_fixed <= 39 - ap) {
-        std::cout << "Failed!" << std::endl;
+std::cout<< "Failed!"<<std::endl;
     }
     else {
-        std::cout << "Invalid marks" << std::endl;
+std::cout<< "Invalid marks"<<std::endl;
     }
     std::cout << "Your marks are " << " " << marks << std::endl;
 }

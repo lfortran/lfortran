@@ -119,15 +119,13 @@
                     test
                     [foo2]
                     [(Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(Var 5 y)]
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (If
                         (RealCompare
@@ -167,15 +165,13 @@
                         ()
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(Var 5 y)]
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (If
                         (RealCompare

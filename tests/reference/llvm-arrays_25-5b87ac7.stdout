@@ -11,12 +11,11 @@ source_filename = "LFortran"
 @3 = private unnamed_addr constant [11 x i8] c"ERROR STOP\00", align 1
 @4 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @5 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
-@6 = private unnamed_addr constant [2 x i8] c" \00", align 1
-@7 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@8 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
-@9 = private unnamed_addr constant [2 x i8] c" \00", align 1
-@10 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@11 = private unnamed_addr constant [3 x i8] c"%s\00", align 1
+@6 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@7 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@8 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@9 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@10 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
@@ -212,11 +211,11 @@ loop.body4:                                       ; preds = %loop.head3
   %136 = load i32, i32* %135, align 4
   %137 = sext i32 %136 to i64
   %138 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 2, i8* null, i32 2, i64 %137)
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @8, i32 0, i32 0), i8* %138, i8* getelementptr inbounds ([1 x i8], [1 x i8]* @7, i32 0, i32 0))
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @7, i32 0, i32 0), i8* %138, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @6, i32 0, i32 0))
   br label %loop.head3
 
 loop.end5:                                        ; preds = %loop.head3
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([3 x i8], [3 x i8]* @11, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @10, i32 0, i32 0))
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @10, i32 0, i32 0), i8* getelementptr inbounds ([1 x i8], [1 x i8]* @9, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @8, i32 0, i32 0))
   %139 = getelementptr %model_t, %model_t* %m, i32 0, i32 0
   %140 = load %array*, %array** %139, align 8
   %141 = getelementptr %array, %array* %140, i32 0, i32 0
