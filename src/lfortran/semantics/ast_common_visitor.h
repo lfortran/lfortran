@@ -2128,8 +2128,7 @@ public:
     // pad (with ' ') or trim character string 'value'
     template <typename T>
     ASR::expr_t* adjust_character_length(T x, Allocator& al, const Location& loc, 
-                                        ASR::ttype_t* type, ASR::expr_t* value,
-                                        ASR::storage_typeType storage_type=ASR::storage_typeType::Save) {
+                                        ASR::ttype_t* type, ASR::expr_t* value) {
         ASR::Character_t *lhs_type = ASR::down_cast<ASR::Character_t>(
             ASRUtils::type_get_past_array(type));
         ASR::Character_t *rhs_type = ASR::down_cast<ASR::Character_t>(
