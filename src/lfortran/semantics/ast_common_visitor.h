@@ -8442,7 +8442,7 @@ public:
                 if( ASR::is_a<ASR::ArraySection_t>(*ASRUtils::EXPR(tmp)) ) {
                     if( is_tmp_array ) {
                         throw SemanticError(
-                            "Two or more part references with non-zero rank must not be specified.", loc);
+                            "Only one array can be used in an expression with derived types", loc);
                     }
                     is_tmp_array = true;
                 }
@@ -8456,7 +8456,7 @@ public:
             if( is_tmp_array ) {
                 if( ASRUtils::is_array(tmp2_mem_type) ) {
                     throw SemanticError(
-                            "Two or more part references with non-zero rank must not be specified.", loc);
+                            "Only one array can be used in an expression with derived types", loc);
                 }
                 ASR::dimension_t* m_dims = nullptr;
                 int n_dims = ASRUtils::extract_dimensions_from_ttype(
@@ -8489,7 +8489,7 @@ public:
                 if(ASR::is_a<ASR::Variable_t>(*(tmp2_m_m_ext->m_external)) && 
                     ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable(ASRUtils::symbol_type(tmp2_m_m_ext->m_external)))){
                     if(array_found){
-                        throw SemanticError("Two or more part references with non-zero rank must not be specified.", loc);
+                        throw SemanticError("Only one array can be used in an expression with derived types", loc);
                     }
                     array_found = true;
                     array_type = ASRUtils::duplicate_type(al,ASRUtils::symbol_type(tmp2->m_m));                        
@@ -8499,7 +8499,7 @@ public:
                 ASR::ttype_t* var_type = ASRUtils::expr_type(tmp2->m_v);
                 if(ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable(var_type))){
                     if(array_found){
-                        throw SemanticError("Two or more part references with non-zero rank must not be specified.", loc);
+                        throw SemanticError("Only one array can be used in an expression with derived types", loc);
                     }
                     array_found = true;
                     array_type = ASRUtils::duplicate_type(al,var_type);
