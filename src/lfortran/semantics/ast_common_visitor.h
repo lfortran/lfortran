@@ -1525,7 +1525,7 @@ public:
 
     void handle_array_data_stmt(const AST::DataStmt_t &x, AST::DataStmtSet_t* a, ASR::ttype_t* obj_type, ASR::expr_t* object, size_t &curr_value) {
         ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(obj_type);
-        if (check_equal_value(a->m_value, a->n_value)) {
+        if (check_equal_value(a->m_value, a->n_value) && !ASR::is_a<ASR::Character_t>(*array_type->m_type)) {
             /*
                 Case:
                 integer :: x(5)
@@ -1570,6 +1570,13 @@ public:
                 }
                 ASR::expr_t* expression_value = ASRUtils::expr_value(value);
                 if (expression_value) {
+                    if (ASR::is_a<ASR::Character_t>(*ASRUtils::expr_type(expression_value))) {
+                        expression_value = adjust_character_length(x,
+                                                                   al,
+                                                                   expression_value->base.loc,
+                                                                   array_type->m_type,
+                                                                   expression_value);
+                    }
                     body.push_back(al, expression_value);
                 } else {
                     throw SemanticError("The value in data must be a constant",
