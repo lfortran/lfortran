@@ -27,8 +27,8 @@
                                         )
                                     )
                                     (StringConstant
-                                        "    "
-                                        (Character 1 4 () PointerString)
+                                        "                         "
+                                        (Character 1 25 () PointerString)
                                     )
                                     Save
                                     (Character 1 25 () PointerString)
@@ -58,8 +58,8 @@
                                         )
                                     )
                                     (StringConstant
-                                        ""
-                                        (Character 1 0 () PointerString)
+                                        "                         "
+                                        (Character 1 25 () PointerString)
                                     )
                                     Save
                                     (Character 1 25 () PointerString)
@@ -89,8 +89,8 @@
                                         )
                                     )
                                     (StringConstant
-                                        "gfortran"
-                                        (Character 1 8 () PointerString)
+                                        "gfortran                 "
+                                        (Character 1 25 () PointerString)
                                     )
                                     Save
                                     (Character 1 25 () PointerString)
@@ -120,8 +120,8 @@
                                         )
                                     )
                                     (StringConstant
-                                        "gfortran   "
-                                        (Character 1 11 () PointerString)
+                                        "gfortran                 "
+                                        (Character 1 25 () PointerString)
                                     )
                                     Save
                                     (Character 1 25 () PointerString)
@@ -151,8 +151,8 @@
                                         )
                                     )
                                     (StringConstant
-                                        "gfortran   "
-                                        (Character 1 11 () PointerString)
+                                        "gfortran                 "
+                                        (Character 1 25 () PointerString)
                                     )
                                     Save
                                     (Character 1 25 () PointerString)
@@ -182,8 +182,8 @@
                                         )
                                     )
                                     (StringConstant
-                                        "g for tran      "
-                                        (Character 1 16 () PointerString)
+                                        "g for tran               "
+                                        (Character 1 25 () PointerString)
                                     )
                                     Save
                                     (Character 1 25 () PointerString)
@@ -213,8 +213,8 @@
                                         )
                                     )
                                     (StringConstant
-                                        "# gfor* t $ ran &      "
-                                        (Character 1 23 () PointerString)
+                                        "# gfor* t $ ran &        "
+                                        (Character 1 25 () PointerString)
                                     )
                                     Save
                                     (Character 1 25 () PointerString)

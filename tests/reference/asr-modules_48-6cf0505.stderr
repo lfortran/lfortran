@@ -1,0 +1,5 @@
+semantic error: The RHS character len must be known at compile time
+  --> tests/../integration_tests/modules_48.f90:52:5
+   |
+52 |     character(len=*), parameter :: int = '0123456789'
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
