@@ -42,9 +42,7 @@
             [(Print
                 0
                 ()
-                [(String
-                    "Good morning"
-                )]
+                [(String "Good morning")]
                 ()
             )]
             [(If
@@ -54,17 +52,13 @@
                 [(Print
                     0
                     ()
-                    [(String
-                        "Good day"
-                    )]
+                    [(String "Good day")]
                     ()
                 )]
                 [(Print
                     0
                     ()
-                    [(String
-                        "Good evening"
-                    )]
+                    [(String "Good evening")]
                     ()
                 )]
                 ()

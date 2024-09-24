@@ -14,7 +14,7 @@
                     [(Print
                         (StringConstant
                             "Hello"
-                            (Character 1 5 () PointerString)
+                            (String 1 5 () PointerString)
                         )
                     )]
                 )

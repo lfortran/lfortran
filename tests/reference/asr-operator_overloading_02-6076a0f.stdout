@@ -62,11 +62,11 @@
                             ()
                             [(StringConstant
                                 "tf=0:"
-                                (Character 1 5 () PointerString)
+                                (String 1 5 () PointerString)
                             )
                             (Var 5 tf)]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )
                     )
@@ -86,11 +86,11 @@
                             ()
                             [(StringConstant
                                 "tf=1:"
-                                (Character 1 5 () PointerString)
+                                (String 1 5 () PointerString)
                             )
                             (Var 5 tf)]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )
                     )]

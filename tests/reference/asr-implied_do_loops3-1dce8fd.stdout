@@ -251,7 +251,7 @@
                     [(Print
                         (StringConstant
                             "Loop 1"
-                            (Character 1 6 () PointerString)
+                            (String 1 6 () PointerString)
                         )
                     )
                     (Print
@@ -292,14 +292,14 @@
                                 )
                             )]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )
                     )
                     (Print
                         (StringConstant
                             "Loop 2"
-                            (Character 1 6 () PointerString)
+                            (String 1 6 () PointerString)
                         )
                     )
                     (Print
@@ -355,14 +355,14 @@
                                 )
                             )]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )
                     )
                     (Print
                         (StringConstant
                             "Loop 3"
-                            (Character 1 6 () PointerString)
+                            (String 1 6 () PointerString)
                         )
                     )
                     (Print
@@ -418,14 +418,14 @@
                                 )
                             )]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )
                     )
                     (Print
                         (StringConstant
                             "Loop4"
-                            (Character 1 5 () PointerString)
+                            (String 1 5 () PointerString)
                         )
                     )
                     (Print
@@ -487,14 +487,14 @@
                                 )
                             )]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )
                     )
                     (Print
                         (StringConstant
                             "Loop5"
-                            (Character 1 5 () PointerString)
+                            (String 1 5 () PointerString)
                         )
                     )
                     (Print
@@ -556,7 +556,7 @@
                                 )
                             )]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )
                     )]

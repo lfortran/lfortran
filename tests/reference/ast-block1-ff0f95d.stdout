@@ -82,9 +82,7 @@
                 [(Print
                     0
                     ()
-                    [(String
-                        "pass"
-                    )]
+                    [(String "pass")]
                     ()
                 )]
                 []

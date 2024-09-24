@@ -31,9 +31,7 @@
             dunit [(dxf
             [])])
             (status
-            (String
-                "delete"
-            ))]
+            (String "delete"))]
             ()
         )
         (Close

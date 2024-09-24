@@ -59,7 +59,7 @@
                             (Print
                                 (StringConstant
                                     "1"
-                                    (Character 1 1 () PointerString)
+                                    (String 1 1 () PointerString)
                                 )
                             )]
                             .false.
@@ -74,7 +74,7 @@
                             (Print
                                 (StringConstant
                                     "2"
-                                    (Character 1 1 () PointerString)
+                                    (String 1 1 () PointerString)
                                 )
                             )]
                             .false.
@@ -89,7 +89,7 @@
                             (Print
                                 (StringConstant
                                     "3"
-                                    (Character 1 1 () PointerString)
+                                    (String 1 1 () PointerString)
                                 )
                             )]
                             .false.
@@ -104,7 +104,7 @@
                             (Print
                                 (StringConstant
                                     "4"
-                                    (Character 1 1 () PointerString)
+                                    (String 1 1 () PointerString)
                                 )
                             )]
                             .false.
@@ -137,7 +137,7 @@
                             (Print
                                 (StringConstant
                                     "1"
-                                    (Character 1 1 () PointerString)
+                                    (String 1 1 () PointerString)
                                 )
                             )]
                             .false.
@@ -154,7 +154,7 @@
                             (Print
                                 (StringConstant
                                     "2,3,4"
-                                    (Character 1 5 () PointerString)
+                                    (String 1 5 () PointerString)
                                 )
                             )]
                             .false.

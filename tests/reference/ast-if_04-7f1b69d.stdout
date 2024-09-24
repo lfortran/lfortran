@@ -38,9 +38,7 @@
             [(Print
                 0
                 ()
-                [(String
-                    "1"
-                )]
+                [(String "1")]
                 ()
             )]
             [(If
@@ -50,9 +48,7 @@
                 [(Print
                     0
                     ()
-                    [(String
-                        "2"
-                    )]
+                    [(String "2")]
                     ()
                 )]
                 [(If
@@ -62,9 +58,7 @@
                     [(Print
                         0
                         ()
-                        [(String
-                            "3"
-                        )]
+                        [(String "3")]
                         ()
                     )]
                     [(If
@@ -74,9 +68,7 @@
                         [(Print
                             0
                             ()
-                            [(String
-                                "4"
-                            )]
+                            [(String "4")]
                             ()
                         )]
                         []
@@ -107,9 +99,7 @@
             [(Print
                 0
                 ()
-                [(String
-                    "1"
-                )]
+                [(String "1")]
                 ()
             )]
             [(If
@@ -119,9 +109,7 @@
                 [(Print
                     0
                     ()
-                    [(String
-                        "2"
-                    )]
+                    [(String "2")]
                     ()
                 )]
                 [(If
@@ -131,9 +119,7 @@
                     [(Print
                         0
                         ()
-                        [(String
-                            "3"
-                        )]
+                        [(String "3")]
                         ()
                     )]
                     [(If
@@ -143,17 +129,13 @@
                         [(Print
                             0
                             ()
-                            [(String
-                                "4"
-                            )]
+                            [(String "4")]
                             ()
                         )]
                         [(Print
                             0
                             ()
-                            [(String
-                                "Invalid!"
-                            )]
+                            [(String "Invalid!")]
                             ()
                         )]
                         ()

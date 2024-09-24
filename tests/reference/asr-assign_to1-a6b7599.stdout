@@ -88,7 +88,7 @@
                     (Print
                         (StringConstant
                             "run"
-                            (Character 1 3 () PointerString)
+                            (String 1 3 () PointerString)
                         )
                     )]
                 )

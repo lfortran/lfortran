@@ -901,7 +901,7 @@
                                             ()
                                             [(StringConstant
                                                 "First element: "
-                                                (Character 1 15 () PointerString)
+                                                (String 1 15 () PointerString)
                                             )
                                             (FunctionCall
                                                 8 get_int_fst
@@ -912,7 +912,7 @@
                                                 ()
                                             )]
                                             FormatFortran
-                                            (Character -1 0 () PointerString)
+                                            (String -1 0 () PointerString)
                                             ()
                                         )
                                     )
@@ -931,7 +931,7 @@
                                             ()
                                             [(StringConstant
                                                 "Second element: "
-                                                (Character 1 16 () PointerString)
+                                                (String 1 16 () PointerString)
                                             )
                                             (FunctionCall
                                                 8 get_int_snd
@@ -942,7 +942,7 @@
                                                 ()
                                             )]
                                             FormatFortran
-                                            (Character -1 0 () PointerString)
+                                            (String -1 0 () PointerString)
                                             ()
                                         )
                                     )
@@ -964,7 +964,7 @@
                                             ()
                                             [(StringConstant
                                                 "First element: "
-                                                (Character 1 15 () PointerString)
+                                                (String 1 15 () PointerString)
                                             )
                                             (FunctionCall
                                                 8 get_real_fst
@@ -975,7 +975,7 @@
                                                 ()
                                             )]
                                             FormatFortran
-                                            (Character -1 0 () PointerString)
+                                            (String -1 0 () PointerString)
                                             ()
                                         )
                                     )
@@ -997,7 +997,7 @@
                                             ()
                                             [(StringConstant
                                                 "Second element: "
-                                                (Character 1 16 () PointerString)
+                                                (String 1 16 () PointerString)
                                             )
                                             (FunctionCall
                                                 8 get_real_snd
@@ -1008,7 +1008,7 @@
                                                 ()
                                             )]
                                             FormatFortran
-                                            (Character -1 0 () PointerString)
+                                            (String -1 0 () PointerString)
                                             ()
                                         )
                                     )]

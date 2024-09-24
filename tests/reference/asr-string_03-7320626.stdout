@@ -16,7 +16,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Character 1 29 () PointerString)
+                                    (String 1 29 () PointerString)
                                     ()
                                     Source
                                     Public
@@ -42,7 +42,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Character 1 7 () PointerString)
+                                    (String 1 7 () PointerString)
                                     ()
                                     Source
                                     Public
@@ -58,7 +58,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Character 1 5 () PointerString)
+                                    (String 1 5 () PointerString)
                                     ()
                                     Source
                                     Public
@@ -74,7 +74,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Character 1 4 () PointerString)
+                                    (String 1 4 () PointerString)
                                     ()
                                     Source
                                     Public
@@ -90,7 +90,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Character 1 8 () PointerString)
+                                    (String 1 8 () PointerString)
                                     ()
                                     Source
                                     Public
@@ -104,7 +104,7 @@
                         (Var 3 verb)
                         (StringConstant
                             "learned "
-                            (Character 1 8 () PointerString)
+                            (String 1 8 () PointerString)
                         )
                         ()
                     )
@@ -112,7 +112,7 @@
                         (Var 3 posit)
                         (StringConstant
                             "from "
-                            (Character 1 5 () PointerString)
+                            (String 1 5 () PointerString)
                         )
                         ()
                     )
@@ -120,7 +120,7 @@
                         (Var 3 title)
                         (StringConstant
                             "the "
-                            (Character 1 4 () PointerString)
+                            (String 1 4 () PointerString)
                         )
                         ()
                     )
@@ -128,7 +128,7 @@
                         (Var 3 last_name)
                         (StringConstant
                             "best"
-                            (Character 1 4 () PointerString)
+                            (String 1 4 () PointerString)
                         )
                         ()
                     )
@@ -141,26 +141,26 @@
                                         (StringConcat
                                             (Var 3 intro)
                                             (Var 3 verb)
-                                            (Character 1 13 () PointerString)
+                                            (String 1 13 () PointerString)
                                             ()
                                         )
                                         (Var 3 posit)
-                                        (Character 1 18 () PointerString)
+                                        (String 1 18 () PointerString)
                                         ()
                                     )
                                     (Var 3 title)
-                                    (Character 1 22 () PointerString)
+                                    (String 1 22 () PointerString)
                                     ()
                                 )
                                 (Var 3 last_name)
-                                (Character 1 29 () PointerString)
+                                (String 1 29 () PointerString)
                                 ()
                             )
                             (StringConstant
                                 "."
-                                (Character 1 1 () PointerString)
+                                (String 1 1 () PointerString)
                             )
-                            (Character 1 30 () PointerString)
+                            (String 1 30 () PointerString)
                             ()
                         )
                         ()
@@ -182,14 +182,14 @@
                                     Local
                                     (StringConstant
                                         "I've "
-                                        (Character 1 5 () PointerString)
+                                        (String 1 5 () PointerString)
                                     )
                                     (StringConstant
                                         "I've "
-                                        (Character 1 5 () PointerString)
+                                        (String 1 5 () PointerString)
                                     )
                                     Parameter
-                                    (Character 1 5 () PointerString)
+                                    (String 1 5 () PointerString)
                                     ()
                                     Source
                                     Public

@@ -99,7 +99,7 @@
                             (Var 2 b)
                             (Var 2 c)]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )
                     )]

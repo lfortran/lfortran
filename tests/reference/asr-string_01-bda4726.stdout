@@ -15,14 +15,14 @@
                                     Local
                                     (StringConstant
                                         "Dominic"
-                                        (Character 1 7 () PointerString)
+                                        (String 1 7 () PointerString)
                                     )
                                     (StringConstant
                                         "Dominic"
-                                        (Character 1 7 () PointerString)
+                                        (String 1 7 () PointerString)
                                     )
                                     Save
-                                    (Character 1 7 () PointerString)
+                                    (String 1 7 () PointerString)
                                     ()
                                     Source
                                     Public
@@ -37,11 +37,11 @@
                             ()
                             [(StringConstant
                                 "My name is "
-                                (Character 1 11 () PointerString)
+                                (String 1 11 () PointerString)
                             )
                             (Var 2 my_name)]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )
                     )]

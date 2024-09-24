@@ -700,7 +700,7 @@
                                             ()
                                             [(Var 7 a)]
                                             FormatFortran
-                                            (Character -1 0 () PointerString)
+                                            (String -1 0 () PointerString)
                                             ()
                                         )
                                     )

@@ -10440,7 +10440,7 @@
                                 ()
                             )]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )
                     )
@@ -10499,14 +10499,14 @@
                                 Achar
                                 [(IntegerConstant 10 (Integer 4) Decimal)]
                                 0
-                                (Character 1 1 () PointerString)
+                                (String 1 1 () PointerString)
                                 (StringConstant
                                     "\n"
-                                    (Character 1 1 () PointerString)
+                                    (String 1 1 () PointerString)
                                 )
                             )]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )
                     )
@@ -10577,7 +10577,7 @@
                                 ()
                             )]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )
                     )
@@ -10636,14 +10636,14 @@
                                 Achar
                                 [(IntegerConstant 10 (Integer 4) Decimal)]
                                 0
-                                (Character 1 1 () PointerString)
+                                (String 1 1 () PointerString)
                                 (StringConstant
                                     "\n"
-                                    (Character 1 1 () PointerString)
+                                    (String 1 1 () PointerString)
                                 )
                             )]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )
                     )
@@ -10992,7 +10992,7 @@
                                 ()
                             )]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )
                     )
@@ -11051,14 +11051,14 @@
                                 Achar
                                 [(IntegerConstant 10 (Integer 4) Decimal)]
                                 0
-                                (Character 1 1 () PointerString)
+                                (String 1 1 () PointerString)
                                 (StringConstant
                                     "\n"
-                                    (Character 1 1 () PointerString)
+                                    (String 1 1 () PointerString)
                                 )
                             )]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )
                     )
@@ -11129,7 +11129,7 @@
                                 ()
                             )]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )
                     )
@@ -11188,14 +11188,14 @@
                                 Achar
                                 [(IntegerConstant 10 (Integer 4) Decimal)]
                                 0
-                                (Character 1 1 () PointerString)
+                                (String 1 1 () PointerString)
                                 (StringConstant
                                     "\n"
-                                    (Character 1 1 () PointerString)
+                                    (String 1 1 () PointerString)
                                 )
                             )]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )
                     )]
@@ -18655,7 +18655,7 @@
                                                         [(ErrorStop
                                                             (StringConstant
                                                                 "n must be > 0"
-                                                                (Character 1 13 () PointerString)
+                                                                (String 1 13 () PointerString)
                                                             )
                                                         )]
                                                         []
@@ -19632,7 +19632,7 @@
                                                         [(ErrorStop
                                                             (StringConstant
                                                                 "Attempted to sconcat empty list"
-                                                                (Character 1 31 () PointerString)
+                                                                (String 1 31 () PointerString)
                                                             )
                                                         )]
                                                     )]
@@ -19750,7 +19750,7 @@
                                                         [(ErrorStop
                                                             (StringConstant
                                                                 "n must be > 0"
-                                                                (Character 1 13 () PointerString)
+                                                                (String 1 13 () PointerString)
                                                             )
                                                         )]
                                                         []

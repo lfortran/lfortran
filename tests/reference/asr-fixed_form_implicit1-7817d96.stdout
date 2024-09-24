@@ -42,7 +42,7 @@
                         [(Print
                             (StringConstant
                                 "h"
-                                (Character 1 1 () PointerString)
+                                (String 1 1 () PointerString)
                             )
                         )]
                         []

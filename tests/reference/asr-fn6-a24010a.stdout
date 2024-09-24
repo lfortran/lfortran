@@ -165,7 +165,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () PointerString)
+                                                    (String 1 -1 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -181,7 +181,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () PointerString)
+                                                    (String 1 -1 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -209,7 +209,7 @@
                                         })
                                     journal
                                     (FunctionType
-                                        [(Character 1 -1 () PointerString)
+                                        [(String 1 -1 () PointerString)
                                         (ClassType
                                             6 ~abstract_type
                                         )
@@ -234,7 +234,7 @@
                                         (ClassType
                                             6 ~abstract_type
                                         )
-                                        (Character 1 -1 () PointerString)]
+                                        (String 1 -1 () PointerString)]
                                         ()
                                         Source
                                         Implementation
@@ -267,7 +267,7 @@
                                         [(StringFormat
                                             (StringConstant
                                                 "(a)"
-                                                (Character 1 3 () PointerString)
+                                                (String 1 3 () PointerString)
                                             )
                                             [(FunctionCall
                                                 2 msg_scalar
@@ -282,13 +282,13 @@
                                                 ((Var 6 gd))
                                                 ((Var 6 sep))]
                                                 (Allocatable
-                                                    (Character 1 -2 () PointerString)
+                                                    (String 1 -2 () PointerString)
                                                 )
                                                 ()
                                                 ()
                                             )]
                                             FormatFortran
-                                            (Character -1 0 () PointerString)
+                                            (String -1 0 () PointerString)
                                             ()
                                         )]
                                         ()
@@ -501,7 +501,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 4096 () PointerString)
+                                                    (String 1 4096 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -518,7 +518,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (String 1 -2 () PointerString)
                                                     )
                                                     ()
                                                     Source
@@ -590,7 +590,7 @@
                                                                             )
                                                                             ()
                                                                             (IntegerConstant 1 (Integer 4) Decimal)
-                                                                            (Character 1 -1 () PointerString)
+                                                                            (String 1 -1 () PointerString)
                                                                             ()
                                                                         )
                                                                         ()
@@ -599,11 +599,11 @@
                                                                         [(StringFormat
                                                                             (StringConstant
                                                                                 "(i0)"
-                                                                                (Character 1 4 () PointerString)
+                                                                                (String 1 4 () PointerString)
                                                                             )
                                                                             [(Var 5 generic)]
                                                                             FormatFortran
-                                                                            (Character -1 0 () PointerString)
+                                                                            (String -1 0 () PointerString)
                                                                             ()
                                                                         )]
                                                                         ()
@@ -632,7 +632,7 @@
                                                                             )
                                                                             ()
                                                                             (IntegerConstant 1 (Integer 4) Decimal)
-                                                                            (Character 1 -1 () PointerString)
+                                                                            (String 1 -1 () PointerString)
                                                                             ()
                                                                         )
                                                                         ()
@@ -641,11 +641,11 @@
                                                                         [(StringFormat
                                                                             (StringConstant
                                                                                 "(i0)"
-                                                                                (Character 1 4 () PointerString)
+                                                                                (String 1 4 () PointerString)
                                                                             )
                                                                             [(Var 5 generic)]
                                                                             FormatFortran
-                                                                            (Character -1 0 () PointerString)
+                                                                            (String -1 0 () PointerString)
                                                                             ()
                                                                         )]
                                                                         ()
@@ -674,7 +674,7 @@
                                                                             )
                                                                             ()
                                                                             (IntegerConstant 1 (Integer 4) Decimal)
-                                                                            (Character 1 -1 () PointerString)
+                                                                            (String 1 -1 () PointerString)
                                                                             ()
                                                                         )
                                                                         ()
@@ -683,11 +683,11 @@
                                                                         [(StringFormat
                                                                             (StringConstant
                                                                                 "(i0)"
-                                                                                (Character 1 4 () PointerString)
+                                                                                (String 1 4 () PointerString)
                                                                             )
                                                                             [(Var 5 generic)]
                                                                             FormatFortran
-                                                                            (Character -1 0 () PointerString)
+                                                                            (String -1 0 () PointerString)
                                                                             ()
                                                                         )]
                                                                         ()
@@ -716,7 +716,7 @@
                                                                             )
                                                                             ()
                                                                             (IntegerConstant 1 (Integer 4) Decimal)
-                                                                            (Character 1 -1 () PointerString)
+                                                                            (String 1 -1 () PointerString)
                                                                             ()
                                                                         )
                                                                         ()
@@ -725,11 +725,11 @@
                                                                         [(StringFormat
                                                                             (StringConstant
                                                                                 "(i0)"
-                                                                                (Character 1 4 () PointerString)
+                                                                                (String 1 4 () PointerString)
                                                                             )
                                                                             [(Var 5 generic)]
                                                                             FormatFortran
-                                                                            (Character -1 0 () PointerString)
+                                                                            (String -1 0 () PointerString)
                                                                             ()
                                                                         )]
                                                                         ()
@@ -758,7 +758,7 @@
                                                                             )
                                                                             ()
                                                                             (IntegerConstant 1 (Integer 4) Decimal)
-                                                                            (Character 1 -1 () PointerString)
+                                                                            (String 1 -1 () PointerString)
                                                                             ()
                                                                         )
                                                                         ()
@@ -767,11 +767,11 @@
                                                                         [(StringFormat
                                                                             (StringConstant
                                                                                 "(1pg0)"
-                                                                                (Character 1 6 () PointerString)
+                                                                                (String 1 6 () PointerString)
                                                                             )
                                                                             [(Var 5 generic)]
                                                                             FormatFortran
-                                                                            (Character -1 0 () PointerString)
+                                                                            (String -1 0 () PointerString)
                                                                             ()
                                                                         )]
                                                                         ()
@@ -800,7 +800,7 @@
                                                                             )
                                                                             ()
                                                                             (IntegerConstant 1 (Integer 4) Decimal)
-                                                                            (Character 1 -1 () PointerString)
+                                                                            (String 1 -1 () PointerString)
                                                                             ()
                                                                         )
                                                                         ()
@@ -809,11 +809,11 @@
                                                                         [(StringFormat
                                                                             (StringConstant
                                                                                 "(1pg0)"
-                                                                                (Character 1 6 () PointerString)
+                                                                                (String 1 6 () PointerString)
                                                                             )
                                                                             [(Var 5 generic)]
                                                                             FormatFortran
-                                                                            (Character -1 0 () PointerString)
+                                                                            (String -1 0 () PointerString)
                                                                             ()
                                                                         )]
                                                                         ()
@@ -842,7 +842,7 @@
                                                                             )
                                                                             ()
                                                                             (IntegerConstant 1 (Integer 4) Decimal)
-                                                                            (Character 1 -1 () PointerString)
+                                                                            (String 1 -1 () PointerString)
                                                                             ()
                                                                         )
                                                                         ()
@@ -851,11 +851,11 @@
                                                                         [(StringFormat
                                                                             (StringConstant
                                                                                 "(l1)"
-                                                                                (Character 1 4 () PointerString)
+                                                                                (String 1 4 () PointerString)
                                                                             )
                                                                             [(Var 5 generic)]
                                                                             FormatFortran
-                                                                            (Character -1 0 () PointerString)
+                                                                            (String -1 0 () PointerString)
                                                                             ()
                                                                         )]
                                                                         ()
@@ -893,7 +893,7 @@
                                                                             )
                                                                             ()
                                                                             (IntegerConstant 1 (Integer 4) Decimal)
-                                                                            (Character 1 -1 () PointerString)
+                                                                            (String 1 -1 () PointerString)
                                                                             ()
                                                                         )
                                                                         ()
@@ -902,13 +902,13 @@
                                                                         [(StringFormat
                                                                             (StringConstant
                                                                                 "(a)"
-                                                                                (Character 1 3 () PointerString)
+                                                                                (String 1 3 () PointerString)
                                                                             )
                                                                             [(FunctionCall
                                                                                 3 trim
                                                                                 ()
                                                                                 [((Var 5 generic))]
-                                                                                (Character 1 -3 (FunctionCall
+                                                                                (String 1 -3 (FunctionCall
                                                                                     31 len_trim
                                                                                     ()
                                                                                     [((Var 5 generic))]
@@ -920,7 +920,7 @@
                                                                                 ()
                                                                             )]
                                                                             FormatFortran
-                                                                            (Character -1 0 () PointerString)
+                                                                            (String -1 0 () PointerString)
                                                                             ()
                                                                         )]
                                                                         ()
@@ -949,7 +949,7 @@
                                                                             )
                                                                             ()
                                                                             (IntegerConstant 1 (Integer 4) Decimal)
-                                                                            (Character 1 -1 () PointerString)
+                                                                            (String 1 -1 () PointerString)
                                                                             ()
                                                                         )
                                                                         ()
@@ -958,11 +958,11 @@
                                                                         [(StringFormat
                                                                             (StringConstant
                                                                                 "(\"(\",1pg0,\",\",1pg0,\")\")"
-                                                                                (Character 1 23 () PointerString)
+                                                                                (String 1 23 () PointerString)
                                                                             )
                                                                             [(Var 5 generic)]
                                                                             FormatFortran
-                                                                            (Character -1 0 () PointerString)
+                                                                            (String -1 0 () PointerString)
                                                                             ()
                                                                         )]
                                                                         ()
@@ -1042,7 +1042,7 @@
                                                             )]
                                                         )
                                                         (TypeStmtType
-                                                            (Character 1 -1 () PointerString)
+                                                            (String 1 -1 () PointerString)
                                                             [(BlockCall
                                                                 -1
                                                                 5 ~select_type_block_7
@@ -1082,7 +1082,7 @@
                                                                 3 trim
                                                                 ()
                                                                 [((Var 3 line))]
-                                                                (Character 1 -3 (FunctionCall
+                                                                (String 1 -3 (FunctionCall
                                                                     5 len_trim
                                                                     ()
                                                                     [((Var 3 line))]
@@ -1094,7 +1094,7 @@
                                                                 ()
                                                             )
                                                             (Var 3 sep_local)
-                                                            (Character 1 -1 () PointerString)
+                                                            (String 1 -1 () PointerString)
                                                             ()
                                                         )
                                                         ()
@@ -1114,7 +1114,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () PointerString)
+                                                    (String 1 -1 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -1131,7 +1131,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (String 1 -2 () PointerString)
                                                     )
                                                     ()
                                                     Source
@@ -1194,9 +1194,9 @@
                                         (ClassType
                                             3 ~abstract_type
                                         )
-                                        (Character 1 -1 () PointerString)]
+                                        (String 1 -1 () PointerString)]
                                         (Allocatable
-                                            (Character 1 -2 () PointerString)
+                                            (String 1 -2 () PointerString)
                                         )
                                         Source
                                         Implementation
@@ -1252,7 +1252,7 @@
                                             (Var 3 sep_local)
                                             (StringConstant
                                                 " "
-                                                (Character 1 1 () PointerString)
+                                                (String 1 1 () PointerString)
                                             )
                                             ()
                                         )
@@ -1271,7 +1271,7 @@
                                         (Var 3 line)
                                         (StringConstant
                                             ""
-                                            (Character 1 0 () PointerString)
+                                            (String 1 0 () PointerString)
                                         )
                                         ()
                                     )
@@ -1417,7 +1417,7 @@
                                             3 trim
                                             ()
                                             [((Var 3 line))]
-                                            (Character 1 -3 (FunctionCall
+                                            (String 1 -3 (FunctionCall
                                                 3 len_trim
                                                 ()
                                                 [((Var 3 line))]
