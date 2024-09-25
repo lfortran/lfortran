@@ -12,12 +12,10 @@
                     functions_16
                     []
                     [(Print
-                        [(StringConstant
+                        (StringConstant
                             "running functions_16 program"
                             (Character 1 28 () PointerString)
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 ),
             lfortran_intrinsic_builtin:

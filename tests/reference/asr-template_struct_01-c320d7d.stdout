@@ -897,7 +897,7 @@
                                         ()
                                     )
                                     (Print
-                                        [(StringFormat
+                                        (StringFormat
                                             ()
                                             [(StringConstant
                                                 "First element: "
@@ -914,9 +914,7 @@
                                             FormatFortran
                                             (Character -1 0 () PointerString)
                                             ()
-                                        )]
-                                        ()
-                                        ()
+                                        )
                                     )
                                     (Assignment
                                         (StructInstanceMember
@@ -929,7 +927,7 @@
                                         ()
                                     )
                                     (Print
-                                        [(StringFormat
+                                        (StringFormat
                                             ()
                                             [(StringConstant
                                                 "Second element: "
@@ -946,9 +944,7 @@
                                             FormatFortran
                                             (Character -1 0 () PointerString)
                                             ()
-                                        )]
-                                        ()
-                                        ()
+                                        )
                                     )
                                     (Assignment
                                         (StructInstanceMember
@@ -964,7 +960,7 @@
                                         ()
                                     )
                                     (Print
-                                        [(StringFormat
+                                        (StringFormat
                                             ()
                                             [(StringConstant
                                                 "First element: "
@@ -981,9 +977,7 @@
                                             FormatFortran
                                             (Character -1 0 () PointerString)
                                             ()
-                                        )]
-                                        ()
-                                        ()
+                                        )
                                     )
                                     (Assignment
                                         (StructInstanceMember
@@ -999,7 +993,7 @@
                                         ()
                                     )
                                     (Print
-                                        [(StringFormat
+                                        (StringFormat
                                             ()
                                             [(StringConstant
                                                 "Second element: "
@@ -1016,9 +1010,7 @@
                                             FormatFortran
                                             (Character -1 0 () PointerString)
                                             ()
-                                        )]
-                                        ()
-                                        ()
+                                        )
                                     )]
                                     ()
                                     Private

@@ -2990,7 +2990,7 @@ public:
                     if (!is_compile_time && ASR::is_a<ASR::Array_t>(*type)
                         && (ASR::is_a<ASR::IntegerConstant_t>(*tmp_init) || ASR::is_a<ASR::RealConstant_t>(*tmp_init)
                             || ASR::is_a<ASR::RealUnaryMinus_t>(*tmp_init) || ASR::is_a<ASR::IntegerUnaryMinus_t>(*tmp_init)
-                            || ASR::is_a<ASR::StringConstant_t>(*tmp_init))) {
+                            || ASR::is_a<ASR::StringConstant_t>(*tmp_init) || ASR::is_a<ASR::LogicalConstant_t>(*tmp_init))) {
                         /*
                             Case: integer :: x(2) = 1
                             which is equivalent to x(2) = [1,1]
@@ -3011,13 +3011,14 @@ public:
                     size_t rhs_rank = ASRUtils::extract_n_dims_from_ttype(init_type);
                     size_t lhs_rank = ASRUtils::extract_n_dims_from_ttype(type);
 
-                    if( lhs_rank != rhs_rank ){
+                    // when lhs_rank > rhs_rank it can broadcast
+                    if( lhs_rank != rhs_rank && lhs_rank < rhs_rank ){
                         throw SemanticError("Incompatible ranks `"+ std::to_string(lhs_rank) + "` and `" 
                                                                   + std::to_string(rhs_rank) + "` in assignment",
                                             x.base.base.loc);
                     }
 
-                     if ( ASR::is_a<ASR::Array_t>(*init_type) && !ASR::is_a<ASR::ImpliedDoLoop_t>(*init_expr)){
+                     if ( ASR::is_a<ASR::Array_t>(*init_type) && ASR::is_a<ASR::ArrayReshape_t>(*init_expr) ){
                         ASR::Array_t* arr_rhs = ASR::down_cast<ASR::Array_t>(init_type);
                         ASR::Array_t* arr_lhs = ASR::down_cast<ASR::Array_t>(type);
                         

@@ -12,7 +12,7 @@
                     intrinsics_29
                     []
                     [(Print
-                        [(StringConcat
+                        (StringConcat
                             (StringConcat
                                 (StringConstant
                                     "This is record 1."
@@ -46,9 +46,7 @@
                                 "This is record 1.\nThis is record 2."
                                 (Character 1 35 () PointerString)
                             )
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 )
         })

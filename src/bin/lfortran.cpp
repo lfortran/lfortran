@@ -616,6 +616,50 @@ int python_wrapper(const std::string &infile, std::string array_order,
     return 0;
 }
 
+int emit_asr_lookup_name(const std::string &infile,
+    LCompilers::PassManager& /*pass_manager*/,
+    CompilerOptions &compiler_options)
+{
+    std::string input = read_file(infile);
+
+    LCompilers::FortranEvaluator fe(compiler_options);
+    LCompilers::LocationManager lm;
+    {
+        LCompilers::LocationManager::FileLocations fl;
+        fl.in_filename = infile;
+        lm.files.push_back(fl);
+        lm.file_ends.push_back(input.size());
+    }
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::Result<LCompilers::ASR::asr_t*>
+        r = fe.get_lookup_asr2(input, lm, diagnostics, compiler_options.line, compiler_options.column);
+    std::cerr << diagnostics.render(lm, compiler_options);
+    if (!r.ok) {
+        LCOMPILERS_ASSERT(diagnostics.has_error())
+        return 2;
+    }
+    LCompilers::ASR::asr_t* asr = r.result;
+
+    Allocator al(64*1024*1024);
+    compiler_options.po.always_run = true;
+    compiler_options.po.run_fun = "f";
+
+    // pass_manager.apply_passes(al, asr, compiler_options.po, diagnostics);
+    if (compiler_options.po.tree) {
+        std::cout << LCompilers::pickle_tree(*asr,
+            compiler_options.use_colors) << std::endl;
+    } else if (compiler_options.po.json) {
+        std::cout << LCompilers::pickle_json(*asr, lm, compiler_options.po.no_loc, compiler_options.po.with_intrinsic_mods) << std::endl;
+    } else if (compiler_options.po.visualize) {
+        std::string astr_data_json = LCompilers::pickle_json(*asr, lm, compiler_options.po.no_loc, compiler_options.po.with_intrinsic_mods);
+        return visualize_json(astr_data_json, compiler_options.platform);
+    } else {
+        std::cout << LCompilers::pickle(*asr, compiler_options.use_colors, compiler_options.indent,
+                compiler_options.po.with_intrinsic_mods) << std::endl;
+    }
+    return 0;
+}
+
 int emit_asr(const std::string &infile,
     LCompilers::PassManager& pass_manager,
     CompilerOptions &compiler_options)
@@ -2400,6 +2444,9 @@ int main_app(int argc, char *argv[]) {
     app.add_option("--backend", arg_backend, "Select a backend (llvm, c, cpp, x86, wasm, fortran, mlir)")->capture_default_str();
     app.add_flag("--openmp", compiler_options.openmp, "Enable openmp");
     app.add_flag("--openmp-lib-dir", compiler_options.openmp_lib_dir, "Pass path to openmp library")->capture_default_str();
+    app.add_flag("--lookup-name", compiler_options.lookup_name, "Lookup a name specified by --line & --column in the ASR");
+    app.add_option("--line", compiler_options.line, "Line number for --lookup-name")->capture_default_str();
+    app.add_option("--column", compiler_options.column, "Column number for --lookup-name")->capture_default_str();
     app.add_flag("--generate-object-code", compiler_options.generate_object_code, "Generate object code into .o files");
     app.add_flag("--rtlib", compiler_options.rtlib, "Include the full runtime library in the LLVM output");
     app.add_flag("--use-loop-variable-after-loop", compiler_options.po.use_loop_variable_after_loop, "Allow using loop variable after the loop");
@@ -2683,6 +2730,10 @@ int main_app(int argc, char *argv[]) {
         return emit_ast_f90(arg_file, compiler_options);
     }
     lfortran_pass_manager.parse_pass_arg(arg_pass, skip_pass);
+    if (compiler_options.lookup_name) {
+        return emit_asr_lookup_name(arg_file, lfortran_pass_manager,
+                compiler_options);
+    }
     if (show_asr) {
         return emit_asr(arg_file, lfortran_pass_manager,
                 compiler_options);

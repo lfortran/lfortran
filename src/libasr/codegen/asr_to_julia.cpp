@@ -1845,14 +1845,20 @@ public:
         sep = "\" \"";
         //HACKISH way to handle print refactoring (always using stringformat).
         // TODO : Implement stringformat visitor.
-        ASR::StringFormat_t* str_fmt = nullptr;
-        size_t n_values = x.n_values;
-        if(x.m_values[0] && ASR::is_a<ASR::StringFormat_t>(*x.m_values[0])){
-            str_fmt = ASR::down_cast<ASR::StringFormat_t>(x.m_values[0]);
+        ASR::StringFormat_t* str_fmt;
+        size_t n_values = 0;
+        if(ASR::is_a<ASR::StringFormat_t>(*x.m_text)){
+            str_fmt = ASR::down_cast<ASR::StringFormat_t>(x.m_text);
             n_values = str_fmt->n_args;
-        }
+        } else if (ASR::is_a<ASR::Character_t>(*ASRUtils::expr_type(x.m_text))){
+            visit_expr(*x.m_text);
+            out += src;
+        } else {
+            throw CodeGenError("print statment supported for stringformat and single character argument",
+                x.base.base.loc);
+        } 
         for (size_t i = 0; i < n_values; i++) {
-            str_fmt? visit_expr(*str_fmt->m_args[i]) : visit_expr(*x.m_values[i]);
+            visit_expr(*str_fmt->m_args[i]);
             out += src;
             if (i + 1 != n_values) {
                 out += ", " + sep + ", ";

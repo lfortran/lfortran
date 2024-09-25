@@ -601,7 +601,7 @@
                     kwarg_use
                     [kwarg_gp]
                     [(Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(FunctionCall
                                 6 mergegp@mergei32
@@ -638,12 +638,10 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(FunctionCall
                                 6 mergegp@mergei32
@@ -691,12 +689,10 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(FunctionCall
                                 6 mergegp@mergei32
@@ -744,12 +740,10 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(FunctionCall
                                 6 mergegp@merger32
@@ -786,12 +780,10 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(FunctionCall
                                 6 mergegp@merger32
@@ -839,12 +831,10 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(FunctionCall
                                 6 mergegp@merger32
@@ -892,9 +882,7 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 )
         })

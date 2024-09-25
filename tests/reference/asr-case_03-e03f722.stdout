@@ -75,12 +75,10 @@
                             )
                             ()
                             [(Print
-                                [(StringConstant
+                                (StringConstant
                                     "Pass!"
                                     (Character 1 5 () PointerString)
-                                )]
-                                ()
-                                ()
+                                )
                             )]
                         )
                         (CaseStmt_Range
@@ -93,26 +91,22 @@
                                 (IntegerConstant 38 (Integer 4) Decimal)
                             )
                             [(Print
-                                [(StringConstant
+                                (StringConstant
                                     "Failed!"
                                     (Character 1 7 () PointerString)
-                                )]
-                                ()
-                                ()
+                                )
                             )]
                         )]
                         [(Print
-                            [(StringConstant
+                            (StringConstant
                                 "Invalid marks"
                                 (Character 1 13 () PointerString)
-                            )]
-                            ()
-                            ()
+                            )
                         )]
                         .false.
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StringConstant
                                 "Your marks are "
@@ -122,9 +116,7 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Assignment
                         (Var 2 marks)
@@ -147,12 +139,10 @@
                             )
                             ()
                             [(Print
-                                [(StringConstant
+                                (StringConstant
                                     "Pass!"
                                     (Character 1 5 () PointerString)
-                                )]
-                                ()
-                                ()
+                                )
                             )]
                         )
                         (CaseStmt_Range
@@ -165,26 +155,22 @@
                                 (IntegerConstant 38 (Integer 4) Decimal)
                             )
                             [(Print
-                                [(StringConstant
+                                (StringConstant
                                     "Failed!"
                                     (Character 1 7 () PointerString)
-                                )]
-                                ()
-                                ()
+                                )
                             )]
                         )]
                         [(Print
-                            [(StringConstant
+                            (StringConstant
                                 "Invalid marks"
                                 (Character 1 13 () PointerString)
-                            )]
-                            ()
-                            ()
+                            )
                         )]
                         .false.
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StringConstant
                                 "Your marks are "
@@ -194,9 +180,7 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 )
         })

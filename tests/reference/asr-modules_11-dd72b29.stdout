@@ -41,7 +41,7 @@
                     access_externally
                     [modules_11_module11]
                     [(Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StringConstant
                                 "j = "
@@ -51,9 +51,7 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (SubroutineCall
                         4 access_internally
@@ -92,7 +90,7 @@
                                     []
                                     []
                                     [(Print
-                                        [(StringFormat
+                                        (StringFormat
                                             ()
                                             [(StringConstant
                                                 "i = "
@@ -102,9 +100,7 @@
                                             FormatFortran
                                             (Character -1 0 () PointerString)
                                             ()
-                                        )]
-                                        ()
-                                        ()
+                                        )
                                     )]
                                     ()
                                     Public

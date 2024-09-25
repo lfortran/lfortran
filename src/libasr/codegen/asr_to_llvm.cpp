@@ -2588,7 +2588,8 @@ public:
             if (ASRUtils::is_allocatable(x_m_v_type)) {
                 tmp = llvm_utils->create_gep(llvm_utils->CreateLoad(tmp), 1);
             } else {
-                tmp = llvm_utils->CreateLoad(llvm_utils->create_gep(tmp, 1));
+                tmp = llvm_utils->CreateLoad2(
+                    name2dertype[current_der_type_name]->getPointerTo(), llvm_utils->create_gep(tmp, 1));
             }
             if( current_select_type_block_type ) {
                 tmp = builder->CreateBitCast(tmp, current_select_type_block_type);
@@ -2605,7 +2606,7 @@ public:
                 throw CodeGenError(current_der_type_name + " doesn't have any member named " + member_name,
                                     x.base.base.loc);
             }
-            tmp = llvm_utils->create_gep(tmp, 0);
+            tmp = llvm_utils->create_gep2(name2dertype[current_der_type_name], tmp, 0);
             current_der_type_name = dertype2parent[current_der_type_name];
         }
         int member_idx = name2memidx[current_der_type_name][member_name];
@@ -3320,7 +3321,8 @@ public:
             }
             ASR::ttype_t* symbol_type = ASRUtils::symbol_type(sym);
             int idx = name2memidx[struct_type_name][item.first];
-            llvm::Value* ptr_member = llvm_utils->create_gep(ptr, idx);
+            llvm::Type* type = name2dertype[struct_type_name];
+            llvm::Value* ptr_member = llvm_utils->create_gep2(type, ptr, idx);
             ASR::Variable_t* v = nullptr;
             if( ASR::is_a<ASR::Variable_t>(*sym) ) {
                 v = ASR::down_cast<ASR::Variable_t>(sym);
@@ -3368,6 +3370,8 @@ public:
 
     void allocate_array_members_of_struct_arrays(llvm::Value* ptr, ASR::ttype_t* v_m_type) {
         ASR::array_physical_typeType phy_type = ASRUtils::extract_physical_type(v_m_type);
+        llvm::Type* el_type = llvm_utils->get_type_from_ttype_t_util(
+            ASRUtils::extract_type(v_m_type), module.get());
         llvm::Value* array_size = llvm_utils->CreateAlloca(
                 llvm::Type::getInt32Ty(context), nullptr, "array_size");
         switch( phy_type ) {
@@ -3418,8 +3422,8 @@ public:
                         break;
                     }
                     case ASR::array_physical_typeType::DescriptorArray: {
-                        ptr_i = llvm_utils->create_ptr_gep(
-                            llvm_utils->CreateLoad(arr_descr->get_pointer_to_data(ptr)),
+                        ptr_i = llvm_utils->create_ptr_gep2(el_type,
+                            llvm_utils->CreateLoad2(el_type->getPointerTo(), arr_descr->get_pointer_to_data(ptr)),
                             llvm_utils->CreateLoad(llvmi));
                         break;
                     }
@@ -4371,9 +4375,14 @@ public:
         ASR::ttype_t* p_type = ASRUtils::expr_type(x.m_ptr);
         llvm::Value *ptr, *nptr;
         int64_t ptr_loads_copy = ptr_loads;
-        ptr_loads = 1;
+        ptr_loads = 0;
         visit_expr_wrapper(x.m_ptr, true);
         ptr = tmp;
+        llvm::Type *ptr_arr_type = llvm_utils->get_type_from_ttype_t_util(
+            ASRUtils::type_get_past_allocatable(
+            ASRUtils::type_get_past_pointer(p_type)), module.get());
+        ptr = llvm_utils->CreateLoad2(p_type, ptr);
+        ptr_type[ptr] = ptr_arr_type;
         ptr_loads = ptr_loads_copy;
         if( ASR::is_a<ASR::CPtr_t>(*ASRUtils::expr_type(x.m_ptr)) &&
             x.m_tgt && ASR::is_a<ASR::CPtr_t>(*ASRUtils::expr_type(x.m_tgt)) ) {
@@ -4411,7 +4420,9 @@ public:
                         nptr = llvm_utils->create_gep(nptr, 0);
                     }
                     if( tgt_ptype != ASR::array_physical_typeType::DescriptorArray ) {
-                        ptr = llvm_utils->CreateLoad(arr_descr->get_pointer_to_data(ptr));
+                        llvm::Type *value_type = llvm_utils->get_type_from_ttype_t_util(
+                            ASRUtils::extract_type(p_type), module.get());
+                        ptr = llvm_utils->CreateLoad2(value_type->getPointerTo(), arr_descr->get_pointer_to_data(ptr));
                     }
                 }
                 nptr = builder->CreatePtrToInt(nptr, llvm_utils->getIntType(8, false));
@@ -6990,7 +7001,9 @@ public:
         this->visit_expr_wrapper(t.m_arg, false);
         ptr_loads = ptr_loads_copy;
         llvm::Value* des_complex_arr = tmp;
-        tmp = llvm_utils->CreateLoad(arr_descr->get_pointer_to_data(des_complex_arr));
+        llvm::Type* des_complex_type = llvm_utils->get_type_from_ttype_t_util(
+            ASRUtils::extract_type(ASRUtils::expr_type(t.m_arg)), module.get());
+        tmp = llvm_utils->CreateLoad2(des_complex_type->getPointerTo(), arr_descr->get_pointer_to_data(des_complex_arr));
         int kind = ASRUtils::extract_kind_from_ttype_t(t.m_type);
         llvm::Type* pointer_cast_type = nullptr;
         if (kind == 4) {
@@ -7001,7 +7014,8 @@ public:
         tmp = builder->CreateBitCast(tmp, pointer_cast_type);
         PointerToData_to_Descriptor(t.m_type, t.m_type);
         llvm::Value* des_real_arr = tmp;
-        llvm::Value* arr_data = llvm_utils->CreateLoad(arr_descr->get_pointer_to_data(des_complex_arr));
+        llvm::Value* arr_data = llvm_utils->CreateLoad2(
+            des_complex_type->getPointerTo(), arr_descr->get_pointer_to_data(des_complex_arr));
         tmp = builder->CreateBitCast(arr_data, pointer_cast_type);
         builder->CreateStore(tmp, arr_descr->get_pointer_to_data(des_real_arr));
         if (std::is_same<T, ASR::ComplexIm_t>::value) {
@@ -7913,7 +7927,7 @@ public:
     }
 
     void visit_Print(const ASR::Print_t &x) {
-        handle_print(x);
+        handle_print(x.m_text, nullptr);
     }
 
     void visit_FileWrite(const ASR::FileWrite_t &x) {
@@ -7923,7 +7937,19 @@ public:
         }
 
         if (x.m_unit == nullptr) {
-            handle_print(x);
+            llvm::Value* end = nullptr;
+            if (x.m_end) {
+                this->visit_expr_wrapper(x.m_end, true);
+                end = tmp;
+            }
+            if(x.n_values  == 0){ // TODO : We should remove any function that creates a `FileWrite` with no args
+                llvm::Value *fmt_ptr = builder->CreateGlobalStringPtr("%s");
+                printf(context, *module, *builder, {fmt_ptr, end});
+            } else if (x.n_values == 1){
+                handle_print(x.m_values[0], end);
+            } else {
+                throw CodeGenError("File write should have single argument of type character)", x.base.base.loc);
+            }
             return;
         }
         std::vector<llvm::Value *> args;
@@ -8314,42 +8340,14 @@ public:
         }
     }
 
-    template <typename T>
-    void handle_print(const T &x) {
+    void handle_print(ASR::expr_t* arg, llvm::Value* end) {
         std::vector<llvm::Value *> args;
         args.push_back(nullptr); // reserve space for fmt_str
         std::vector<std::string> fmt;
-        llvm::Value *sep = nullptr;
-        llvm::Value *sep_no_space = nullptr;
-        llvm::Value *end = nullptr;
-        bool global_sep_space = false;
-        if (x.m_separator) {
-            this->visit_expr_wrapper(x.m_separator, true);
-            sep = tmp;
-        } else {
-            global_sep_space = true;
-            sep = builder->CreateGlobalStringPtr(" ");
-        }
-        if (x.m_end) {
-            this->visit_expr_wrapper(x.m_end, true);
-            end = tmp;
-        } else {
+        if(end == nullptr){
             end = builder->CreateGlobalStringPtr("\n");
         }
-        for (size_t i=0; i<x.n_values; i++) {
-            if (i != 0) {
-                fmt.push_back("%s");
-                if (global_sep_space &&
-                    !(ASRUtils::is_character(*ASRUtils::expr_type(x.m_values[i]))
-                        && ASRUtils::is_character(*ASRUtils::expr_type(x.m_values[i - 1])))) {
-                    args.push_back(sep);
-                } else {
-                    sep_no_space = sep_no_space != nullptr ? sep_no_space : builder->CreateGlobalStringPtr("");
-                    args.push_back(sep_no_space);
-                }
-            }
-            compute_fmt_specifier_and_arg(fmt, args, x.m_values[i], x.base.base.loc);
-        }
+        compute_fmt_specifier_and_arg(fmt, args, arg, arg->base.loc);
         fmt.push_back("%s");
         args.push_back(end);
         std::string fmt_str;

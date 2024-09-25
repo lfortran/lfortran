@@ -917,8 +917,8 @@ public:
         std::string r = indent;
         r += "print";
         r += " ";
-        if (x.n_values > 0 && is_a<ASR::StringFormat_t>(*x.m_values[0])) {
-            ASR::StringFormat_t *sf = down_cast<ASR::StringFormat_t>(x.m_values[0]);
+        if (is_a<ASR::StringFormat_t>(*x.m_text)) {
+            ASR::StringFormat_t *sf = down_cast<ASR::StringFormat_t>(x.m_text);
             if(sf->m_fmt){
                 visit_expr(*(sf->m_fmt));
                 if (is_a<ASR::StringConstant_t>(*sf->m_fmt)
@@ -929,13 +929,14 @@ public:
             } else {
                 r += "*";
             }
-        } else {
+        } else if (ASR::is_a<ASR::Character_t>(*ASRUtils::expr_type(x.m_text))) {
             r += "*";
-        }
-        for (size_t i = 0; i < x.n_values; i++) {
             r += ", ";
-            visit_expr(*x.m_values[i]);
+            visit_expr(*x.m_text);
             r += src;
+        } else {
+            throw CodeGenError("print statment supported for stringformat and single character argument",
+                x.base.base.loc);
         }
         handle_line_truncation(r, 2);
         r += "\n";

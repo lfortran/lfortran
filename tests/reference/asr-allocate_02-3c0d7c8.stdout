@@ -886,7 +886,7 @@
                         ()
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(FunctionCall
                                 2 whole_square
@@ -901,9 +901,7 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (ImplicitDeallocate
                         [(Var 2 a)

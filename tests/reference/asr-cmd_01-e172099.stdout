@@ -117,7 +117,7 @@
                         ()
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StringConstant
                                 "count: "
@@ -127,9 +127,7 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (SubroutineCall
                         2 get_command_argument
@@ -141,7 +139,7 @@
                         ()
                     )
                     (Print
-                        [(FunctionCall
+                        (FunctionCall
                             2 trim
                             ()
                             [((Var 2 arg))]
@@ -155,9 +153,7 @@
                             ) PointerString)
                             ()
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 )
         })

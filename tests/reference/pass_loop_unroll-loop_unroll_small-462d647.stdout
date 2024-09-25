@@ -116,15 +116,13 @@
                                     []
                                     [(Var 3 x)]
                                     [(Print
-                                        [(StringFormat
+                                        (StringFormat
                                             ()
                                             [(Var 3 x)]
                                             FormatFortran
                                             (Character -1 0 () PointerString)
                                             ()
-                                        )]
-                                        ()
-                                        ()
+                                        )
                                     )]
                                     ()
                                     Public

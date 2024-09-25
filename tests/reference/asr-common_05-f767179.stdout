@@ -608,7 +608,7 @@
                         []
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StructInstanceMember
                                 (Var 2 struct_instance_block_1)
@@ -637,9 +637,7 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (If
                         (IntegerCompare

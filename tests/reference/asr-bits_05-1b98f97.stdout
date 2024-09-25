@@ -446,7 +446,7 @@
                         ()
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(IntrinsicElementalFunction
                                 Ibits
@@ -460,9 +460,7 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (If
                         (IntegerCompare
@@ -501,7 +499,7 @@
                         ()
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(IntrinsicElementalFunction
                                 Ibits
@@ -515,9 +513,7 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (If
                         (IntegerCompare
@@ -546,7 +542,7 @@
                         []
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(IntrinsicElementalFunction
                                 Ibits
@@ -560,9 +556,7 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (If
                         (IntegerCompare
@@ -832,7 +826,7 @@
                         []
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(IntrinsicElementalFunction
                                 Ibits
@@ -851,9 +845,7 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (If
                         (IntrinsicArrayFunction
@@ -914,7 +906,7 @@
                         []
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(IntrinsicElementalFunction
                                 Ibits
@@ -933,9 +925,7 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (If
                         (IntrinsicArrayFunction
@@ -1016,7 +1006,7 @@
                         []
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(TypeInquiry
                                 Kind
@@ -1036,9 +1026,7 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (If
                         (IntegerCompare
@@ -1071,7 +1059,7 @@
                         []
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(TypeInquiry
                                 Kind
@@ -1091,9 +1079,7 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (If
                         (IntegerCompare
@@ -1126,7 +1112,7 @@
                         []
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(TypeInquiry
                                 Kind
@@ -1146,9 +1132,7 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (If
                         (IntegerCompare

@@ -68,7 +68,7 @@
                                             ()
                                         )
                                         [(Print
-                                            [(StringConcat
+                                            (StringConcat
                                                 (StringConstant
                                                     "Hello "
                                                     (Character 1 6 () PointerString)
@@ -76,17 +76,13 @@
                                                 (Var 3 name)
                                                 (Character 1 16 () PointerString)
                                                 ()
-                                            )]
-                                            ()
-                                            ()
+                                            )
                                         )]
                                         [(Print
-                                            [(StringConstant
+                                            (StringConstant
                                                 "Hello world!"
                                                 (Character 1 12 () PointerString)
-                                            )]
-                                            ()
-                                            ()
+                                            )
                                         )]
                                     )]
                                     ()

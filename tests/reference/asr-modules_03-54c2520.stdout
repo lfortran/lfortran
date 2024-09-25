@@ -32,7 +32,7 @@
                                     []
                                     []
                                     [(Print
-                                        [(StringFormat
+                                        (StringFormat
                                             ()
                                             [(StringConstant
                                                 "priv = "
@@ -42,12 +42,10 @@
                                             FormatFortran
                                             (Character -1 0 () PointerString)
                                             ()
-                                        )]
-                                        ()
-                                        ()
+                                        )
                                     )
                                     (Print
-                                        [(StringFormat
+                                        (StringFormat
                                             ()
                                             [(StringConstant
                                                 "publ = "
@@ -57,9 +55,7 @@
                                             FormatFortran
                                             (Character -1 0 () PointerString)
                                             ()
-                                        )]
-                                        ()
-                                        ()
+                                        )
                                     )]
                                     ()
                                     Public
