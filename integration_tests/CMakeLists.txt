@@ -441,8 +441,8 @@ RUN(NAME arrays_op_11 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArr
      EXTRA_ARGS --realloc-lhs)
 RUN(NAME arrays_op_13 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm llvm17)
 RUN(NAME arrays_op_14 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm llvm17)
-RUN(NAME arrays_op_15 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
-RUN(NAME arrays_op_16 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
+RUN(NAME arrays_op_15 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray llvm17)
+RUN(NAME arrays_op_16 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray llvm17)
 RUN(NAME arrays_op_17 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray llvm17)
 RUN(NAME arrays_op_18 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray llvm17
     EXTRA_ARGS --realloc-lhs)
@@ -475,13 +475,13 @@ RUN(NAME arrays_22 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray 
 RUN(NAME arrays_23 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm llvm17)
 RUN(NAME arrays_24 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray llvm17)
 RUN(NAME arrays_25 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray llvm17)
-RUN(NAME arrays_26 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
+RUN(NAME arrays_26 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray llvm17)
 RUN(NAME arrays_27 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray llvm17)
 RUN(NAME arrays_28 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray) # maxloc, minloc
 RUN(NAME arrays_29 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray llvm17)
 RUN(NAME arrays_30 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray llvm17) # maxloc
 RUN(NAME arrays_31 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm llvm17) # init expr with fixed size arr as dependency
-RUN(NAME arrays_32 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
+RUN(NAME arrays_32 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray llvm17)
 RUN(NAME arrays_33 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray llvm17)
 RUN(NAME arrays_34 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
 RUN(NAME arrays_35 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17)
