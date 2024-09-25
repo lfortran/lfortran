@@ -1154,7 +1154,7 @@ RUN(NAME derived_types_10 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17)
 RUN(NAME derived_types_11 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17)
 RUN(NAME derived_types_12 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17)
 RUN(NAME derived_types_13 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME derived_types_15 LABELS gfortran llv llvm17)
+RUN(NAME derived_types_15 LABELS gfortran llvm llvm17)
 RUN(NAME derived_types_14 LABELS gfortran
         EXTRAFILES derived_types_14_module.f90)
 RUN(NAME derived_types_16_module LABELS gfortran)
