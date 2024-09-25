@@ -4271,7 +4271,7 @@ public:
                 if( func_calls[0] ) {
                     a_len = ASRUtils::extract_len<SemanticError>(func_calls[0], loc);
                 }
-                return ASRUtils::TYPE(ASR::make_Character_t(al, loc, t->m_kind, a_len, func_calls[0], ASR::string_physical_typeType::PointerString));
+                return ASRUtils::TYPE(ASR::make_Character_t(al, loc, t->m_kind, a_len, func_calls[0], t->m_physical_type));
             }
             case ASR::ttypeType::StructType: {
                 ASR::StructType_t* struct_t_type = ASR::down_cast<ASR::StructType_t>(return_type);
