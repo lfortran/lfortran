@@ -418,7 +418,7 @@
                             (Var 2 x2)
                             (Var 2 x3)]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )
                     )
@@ -429,7 +429,7 @@
                             (Var 2 y2)
                             (Var 2 y3)]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )
                     )]

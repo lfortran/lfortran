@@ -39,12 +39,12 @@
                         ()
                         [(StringConstant
                             " "
-                            (Character 1 1 () PointerString)
+                            (String 1 1 () PointerString)
                         )]
                         ()
                         (StringConstant
                             ""
-                            (Character 1 0 () PointerString)
+                            (String 1 0 () PointerString)
                         )
                         ()
                     )
@@ -53,11 +53,11 @@
                             ()
                             [(StringConstant
                                 "x is "
-                                (Character 1 5 () PointerString)
+                                (String 1 5 () PointerString)
                             )
                             (Var 2 x)]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )
                     )
@@ -69,12 +69,12 @@
                         ()
                         [(StringConstant
                             " "
-                            (Character 1 1 () PointerString)
+                            (String 1 1 () PointerString)
                         )]
                         ()
                         (StringConstant
                             ""
-                            (Character 1 0 () PointerString)
+                            (String 1 0 () PointerString)
                         )
                         ()
                     )
@@ -88,11 +88,11 @@
                             ()
                             [(StringConstant
                                 "x is "
-                                (Character 1 5 () PointerString)
+                                (String 1 5 () PointerString)
                             )
                             (Var 2 x)]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )]
                         ()
@@ -107,19 +107,19 @@
                         ()
                         [(StringConstant
                             " "
-                            (Character 1 1 () PointerString)
+                            (String 1 1 () PointerString)
                         )]
                         ()
                         (StringConstant
                             ""
-                            (Character 1 0 () PointerString)
+                            (String 1 0 () PointerString)
                         )
                         ()
                     )
                     (Print
                         (StringConstant
                             "ok"
-                            (Character 1 2 () PointerString)
+                            (String 1 2 () PointerString)
                         )
                     )
                     (FileWrite
@@ -130,12 +130,12 @@
                         ()
                         [(StringConstant
                             " "
-                            (Character 1 1 () PointerString)
+                            (String 1 1 () PointerString)
                         )]
                         ()
                         (StringConstant
                             ""
-                            (Character 1 0 () PointerString)
+                            (String 1 0 () PointerString)
                         )
                         ()
                     )
@@ -147,7 +147,7 @@
                         ()
                         [(StringConstant
                             "ok"
-                            (Character 1 2 () PointerString)
+                            (String 1 2 () PointerString)
                         )]
                         ()
                         ()

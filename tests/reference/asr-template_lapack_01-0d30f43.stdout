@@ -532,7 +532,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (Character 1 1 () PointerString)
+                                                                    (String 1 1 () PointerString)
                                                                     ()
                                                                     Source
                                                                     Private
@@ -548,7 +548,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (Character 1 1 () PointerString)
+                                                                    (String 1 1 () PointerString)
                                                                     ()
                                                                     Source
                                                                     Private
@@ -558,8 +558,8 @@
                                                         })
                                                     gemm
                                                     (FunctionType
-                                                        [(Character 1 1 () PointerString)
-                                                        (Character 1 1 () PointerString)
+                                                        [(String 1 1 () PointerString)
+                                                        (String 1 1 () PointerString)
                                                         (Integer 4)
                                                         (Integer 4)
                                                         (Integer 4)
@@ -905,11 +905,11 @@
                                                         ()
                                                         [((StringConstant
                                                             "n"
-                                                            (Character 1 1 () PointerString)
+                                                            (String 1 1 () PointerString)
                                                         ))
                                                         ((StringConstant
                                                             "n"
-                                                            (Character 1 1 () PointerString)
+                                                            (String 1 1 () PointerString)
                                                         ))
                                                         ((Var 10 m))
                                                         ((Var 10 n))
@@ -1286,7 +1286,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (Character 1 1 () PointerString)
+                                                                    (String 1 1 () PointerString)
                                                                     ()
                                                                     Source
                                                                     Private
@@ -1302,7 +1302,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (Character 1 1 () PointerString)
+                                                                    (String 1 1 () PointerString)
                                                                     ()
                                                                     Source
                                                                     Private
@@ -1312,8 +1312,8 @@
                                                         })
                                                     gemm
                                                     (FunctionType
-                                                        [(Character 1 1 () PointerString)
-                                                        (Character 1 1 () PointerString)
+                                                        [(String 1 1 () PointerString)
+                                                        (String 1 1 () PointerString)
                                                         (Integer 4)
                                                         (Integer 4)
                                                         (Integer 4)
@@ -1829,11 +1829,11 @@
                                         ()
                                         [((StringConstant
                                             "n"
-                                            (Character 1 1 () PointerString)
+                                            (String 1 1 () PointerString)
                                         ))
                                         ((StringConstant
                                             "n"
-                                            (Character 1 1 () PointerString)
+                                            (String 1 1 () PointerString)
                                         ))
                                         ((Var 15 m))
                                         ((Var 15 n))
@@ -2159,7 +2159,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 1 () PointerString)
+                                                    (String 1 1 () PointerString)
                                                     ()
                                                     Source
                                                     Private
@@ -2175,7 +2175,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 1 () PointerString)
+                                                    (String 1 1 () PointerString)
                                                     ()
                                                     Source
                                                     Private
@@ -2185,8 +2185,8 @@
                                         })
                                     my_gemm_double
                                     (FunctionType
-                                        [(Character 1 1 () PointerString)
-                                        (Character 1 1 () PointerString)
+                                        [(String 1 1 () PointerString)
+                                        (String 1 1 () PointerString)
                                         (Integer 4)
                                         (Integer 4)
                                         (Integer 4)
@@ -2475,7 +2475,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 1 () PointerString)
+                                                    (String 1 1 () PointerString)
                                                     ()
                                                     Source
                                                     Private
@@ -2491,7 +2491,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 1 () PointerString)
+                                                    (String 1 1 () PointerString)
                                                     ()
                                                     Source
                                                     Private
@@ -2501,8 +2501,8 @@
                                         })
                                     my_gemm_real
                                     (FunctionType
-                                        [(Character 1 1 () PointerString)
-                                        (Character 1 1 () PointerString)
+                                        [(String 1 1 () PointerString)
+                                        (String 1 1 () PointerString)
                                         (Integer 4)
                                         (Integer 4)
                                         (Integer 4)
@@ -2872,7 +2872,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (Character 1 1 () PointerString)
+                                                                    (String 1 1 () PointerString)
                                                                     ()
                                                                     Source
                                                                     Private
@@ -2888,7 +2888,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (Character 1 1 () PointerString)
+                                                                    (String 1 1 () PointerString)
                                                                     ()
                                                                     Source
                                                                     Private
@@ -2898,8 +2898,8 @@
                                                         })
                                                     gemm
                                                     (FunctionType
-                                                        [(Character 1 1 () PointerString)
-                                                        (Character 1 1 () PointerString)
+                                                        [(String 1 1 () PointerString)
+                                                        (String 1 1 () PointerString)
                                                         (Integer 4)
                                                         (Integer 4)
                                                         (Integer 4)
@@ -3261,11 +3261,11 @@
                                                         ()
                                                         [((StringConstant
                                                             "n"
-                                                            (Character 1 1 () PointerString)
+                                                            (String 1 1 () PointerString)
                                                         ))
                                                         ((StringConstant
                                                             "n"
-                                                            (Character 1 1 () PointerString)
+                                                            (String 1 1 () PointerString)
                                                         ))
                                                         ((Var 19 m))
                                                         ((Var 19 n))
@@ -3647,11 +3647,11 @@
                                                         ()
                                                         [((StringConstant
                                                             "n"
-                                                            (Character 1 1 () PointerString)
+                                                            (String 1 1 () PointerString)
                                                         ))
                                                         ((StringConstant
                                                             "n"
-                                                            (Character 1 1 () PointerString)
+                                                            (String 1 1 () PointerString)
                                                         ))
                                                         ((Var 24 m))
                                                         ((Var 24 n))
@@ -3983,11 +3983,11 @@
                                                         ()
                                                         [((StringConstant
                                                             "n"
-                                                            (Character 1 1 () PointerString)
+                                                            (String 1 1 () PointerString)
                                                         ))
                                                         ((StringConstant
                                                             "n"
-                                                            (Character 1 1 () PointerString)
+                                                            (String 1 1 () PointerString)
                                                         ))
                                                         ((Var 25 m))
                                                         ((Var 25 n))
@@ -4482,11 +4482,11 @@
                                                         ()
                                                         [((StringConstant
                                                             "n"
-                                                            (Character 1 1 () PointerString)
+                                                            (String 1 1 () PointerString)
                                                         ))
                                                         ((StringConstant
                                                             "n"
-                                                            (Character 1 1 () PointerString)
+                                                            (String 1 1 () PointerString)
                                                         ))
                                                         ((Var 22 m))
                                                         ((Var 22 n))
@@ -4818,11 +4818,11 @@
                                                         ()
                                                         [((StringConstant
                                                             "n"
-                                                            (Character 1 1 () PointerString)
+                                                            (String 1 1 () PointerString)
                                                         ))
                                                         ((StringConstant
                                                             "n"
-                                                            (Character 1 1 () PointerString)
+                                                            (String 1 1 () PointerString)
                                                         ))
                                                         ((Var 21 m))
                                                         ((Var 21 n))

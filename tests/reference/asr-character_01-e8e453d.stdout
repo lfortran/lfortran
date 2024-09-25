@@ -15,14 +15,14 @@
                                     Local
                                     (StringConstant
                                         "ball"
-                                        (Character 1 4 () PointerString)
+                                        (String 1 4 () PointerString)
                                     )
                                     (StringConstant
                                         "b"
-                                        (Character 1 1 () PointerString)
+                                        (String 1 1 () PointerString)
                                     )
                                     Parameter
-                                    (Character 1 1 () PointerString)
+                                    (String 1 1 () PointerString)
                                     ()
                                     Source
                                     Public

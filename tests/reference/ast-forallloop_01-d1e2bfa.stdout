@@ -181,9 +181,7 @@
         (Print
             0
             ()
-            [(String
-                "End Stream Triad"
-            )]
+            [(String "End Stream Triad")]
             (TriviaNode
                 []
                 [(EndOfLine)

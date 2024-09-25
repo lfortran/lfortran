@@ -99,9 +99,7 @@
                 [(Print
                     0
                     ()
-                    [(String
-                        "i did not expect rank"
-                    )
+                    [(String "i did not expect rank")
                     (FuncCallOrArray
                         rank
                         []
@@ -113,9 +111,7 @@
                         []
                         []
                     )
-                    (String
-                        "shape"
-                    )
+                    (String "shape")
                     (FuncCallOrArray
                         shape
                         []
@@ -131,9 +127,7 @@
                 )
                 (ErrorStop
                     0
-                    (String
-                        "process bad arg"
-                    )
+                    (String "process bad arg")
                     ()
                     ()
                 )]

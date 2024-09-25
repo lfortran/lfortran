@@ -86,7 +86,7 @@
                                     [(Print
                                         (StringConstant
                                             "abs"
-                                            (Character 1 3 () PointerString)
+                                            (String 1 3 () PointerString)
                                         )
                                     )
                                     (If
@@ -226,7 +226,7 @@
                                     [(Print
                                         (StringConstant
                                             "sum"
-                                            (Character 1 3 () PointerString)
+                                            (String 1 3 () PointerString)
                                         )
                                     )
                                     (Assignment

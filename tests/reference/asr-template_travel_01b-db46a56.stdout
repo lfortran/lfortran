@@ -1341,11 +1341,11 @@
                                             ()
                                             [(StringConstant
                                                 "s1="
-                                                (Character 1 3 () PointerString)
+                                                (String 1 3 () PointerString)
                                             )
                                             (Var 12 s1)]
                                             FormatFortran
-                                            (Character -1 0 () PointerString)
+                                            (String -1 0 () PointerString)
                                             ()
                                         )
                                     )
@@ -1354,11 +1354,11 @@
                                             ()
                                             [(StringConstant
                                                 "s2="
-                                                (Character 1 3 () PointerString)
+                                                (String 1 3 () PointerString)
                                             )
                                             (Var 12 s2)]
                                             FormatFortran
-                                            (Character -1 0 () PointerString)
+                                            (String -1 0 () PointerString)
                                             ()
                                         )
                                     )
@@ -1367,11 +1367,11 @@
                                             ()
                                             [(StringConstant
                                                 "i1="
-                                                (Character 1 3 () PointerString)
+                                                (String 1 3 () PointerString)
                                             )
                                             (Var 12 i1)]
                                             FormatFortran
-                                            (Character -1 0 () PointerString)
+                                            (String -1 0 () PointerString)
                                             ()
                                         )
                                     )
@@ -1380,11 +1380,11 @@
                                             ()
                                             [(StringConstant
                                                 "i2="
-                                                (Character 1 3 () PointerString)
+                                                (String 1 3 () PointerString)
                                             )
                                             (Var 12 i2)]
                                             FormatFortran
-                                            (Character -1 0 () PointerString)
+                                            (String -1 0 () PointerString)
                                             ()
                                         )
                                     )]

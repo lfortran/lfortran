@@ -189,9 +189,7 @@
                     )]
                     [(ErrorStop
                         0
-                        (String
-                            "Runtime error: Illegal dim argument provided in conform"
-                        )
+                        (String "Runtime error: Illegal dim argument provided in conform")
                         ()
                         ()
                     )]

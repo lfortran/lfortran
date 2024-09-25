@@ -461,7 +461,7 @@
                     (Print
                         (StringConstant
                             "End Stream Triad"
-                            (Character 1 16 () PointerString)
+                            (String 1 16 () PointerString)
                         )
                     )]
                 )

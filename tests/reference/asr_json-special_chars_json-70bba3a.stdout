@@ -22,7 +22,7 @@
                                         "fields": {
                                             "s": "A \"string\".",
                                             "type": {
-                                                "node": "Character",
+                                                "node": "String",
                                                 "fields": {
                                                     "kind": 1,
                                                     "len": 11,

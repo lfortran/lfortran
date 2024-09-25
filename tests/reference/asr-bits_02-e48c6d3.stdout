@@ -100,7 +100,7 @@
                             ()
                             [(Var 2 block_size)]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )
                     )
@@ -109,7 +109,7 @@
                             ()
                             [(Var 2 all_zeros)]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )
                     )
@@ -118,7 +118,7 @@
                             ()
                             [(Var 2 all_ones)]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )
                     )]

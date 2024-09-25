@@ -399,7 +399,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (String 1 -2 () PointerString)
                                                     )
                                                     ()
                                                     Source
@@ -417,7 +417,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (String 1 -2 () PointerString)
                                                     )
                                                     ()
                                                     Source
