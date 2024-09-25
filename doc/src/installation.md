@@ -332,6 +332,11 @@ stacktrace support is turned off by default, to enable it,
 compile LFortran with the `-DWITH_STACKTRACE=yes` cmake option after installing
 the prerequisites on each platform per the instructions below.
 
+### LLVM
+In all platforms having LLVM, stacktraces can be shown with LLVM, so no
+additional prerequisites are required. If LLVM is not available, you can use
+the following instructions, depending on your platform.
+
 ### Ubuntu
 
 In Ubuntu, `apt install binutils-dev`.

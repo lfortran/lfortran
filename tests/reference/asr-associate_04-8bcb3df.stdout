@@ -124,7 +124,7 @@
                                         (Var 2 myreal)
                                     )
                                     (Print
-                                        [(StringFormat
+                                        (StringFormat
                                             ()
                                             [(RealBinOp
                                                 (Var 2 a)
@@ -142,11 +142,9 @@
                                             )
                                             (Var 3 v)]
                                             FormatFortran
-                                            (Character -1 0 ())
+                                            (Character -1 0 () PointerString)
                                             ()
-                                        )]
-                                        ()
-                                        ()
+                                        )
                                     )
                                     (Assignment
                                         (Var 3 v)
@@ -276,15 +274,13 @@
                         2 associate_block
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(Var 2 myreal)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (If
                         (LogicalBinOp

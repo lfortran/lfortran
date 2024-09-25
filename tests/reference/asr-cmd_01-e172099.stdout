@@ -22,7 +22,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Character 1 32 ())
+                                    (Character 1 32 () PointerString)
                                     ()
                                     Source
                                     Public
@@ -85,7 +85,7 @@
                                 (ExternalSymbol
                                     2
                                     len_trim
-                                    16 len_trim
+                                    13 len_trim
                                     lfortran_intrinsic_string
                                     []
                                     len_trim
@@ -95,7 +95,7 @@
                                 (ExternalSymbol
                                     2
                                     trim
-                                    16 trim
+                                    13 trim
                                     lfortran_intrinsic_string
                                     []
                                     trim
@@ -117,19 +117,17 @@
                         ()
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StringConstant
                                 "count: "
-                                (Character 1 7 ())
+                                (Character 1 7 () PointerString)
                             )
                             (Var 2 count)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (SubroutineCall
                         2 get_command_argument
@@ -141,7 +139,7 @@
                         ()
                     )
                     (Print
-                        [(FunctionCall
+                        (FunctionCall
                             2 trim
                             ()
                             [((Var 2 arg))]
@@ -152,12 +150,10 @@
                                 (Integer 4)
                                 ()
                                 ()
-                            ))
+                            ) PointerString)
                             ()
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 )
         })

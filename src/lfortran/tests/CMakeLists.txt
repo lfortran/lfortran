@@ -36,6 +36,12 @@ if (WITH_LLVM)
     )
 endif()
 
+if (WITH_LSP)
+    set(SRC_AST ${SRC_AST}
+        test_ast.cpp
+    )
+endif()
+
 
 # Add one main test suite for LFortran, composed of many individual cpp files:
 add_executable(test_lfortran ${SRC})
@@ -56,5 +62,16 @@ if (WITH_LLVM)
         OR CMAKE_SYSTEM_NAME STREQUAL "OpenBSD")
 
         target_link_options(test_lfortran PRIVATE "LINKER:--export-dynamic")
+    endif()
+endif()
+
+if (WITH_LSP)
+    add_executable(test_asr ${SRC_AST})
+    target_link_libraries(test_asr lfortran_lib p::doctest)
+    add_test(test_asr ${PROJECT_BINARY_DIR}/test_asr)
+    if (CMAKE_SYSTEM_NAME STREQUAL "Linux"
+        OR CMAKE_SYSTEM_NAME STREQUAL "FreeBSD"
+        OR CMAKE_SYSTEM_NAME STREQUAL "OpenBSD")
+        target_link_options(test_asr PRIVATE "LINKER:--export-dynamic")
     endif()
 endif()

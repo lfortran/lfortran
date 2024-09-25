@@ -119,7 +119,7 @@
                         (IntegerConstant 35 (Integer 4) Decimal)
                         ())
                         [(Print
-                            [(StringFormat
+                            (StringFormat
                                 ()
                                 [(ArrayItem
                                     (Var 2 array)
@@ -131,11 +131,9 @@
                                     ()
                                 )]
                                 FormatFortran
-                                (Character -1 0 ())
+                                (Character -1 0 () PointerString)
                                 ()
-                            )]
-                            ()
-                            ()
+                            )
                         )]
                         []
                     )

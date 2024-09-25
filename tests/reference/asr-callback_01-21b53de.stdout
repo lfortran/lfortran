@@ -338,7 +338,7 @@
                                     [(Var 5 c)
                                     (Var 5 d)]
                                     [(Print
-                                        [(StringFormat
+                                        (StringFormat
                                             ()
                                             [(FunctionCall
                                                 2 cb
@@ -351,11 +351,9 @@
                                                 ()
                                             )]
                                             FormatFortran
-                                            (Character -1 0 ())
+                                            (Character -1 0 () PointerString)
                                             ()
-                                        )]
-                                        ()
-                                        ()
+                                        )
                                     )]
                                     ()
                                     Public

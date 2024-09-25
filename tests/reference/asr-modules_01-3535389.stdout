@@ -57,12 +57,10 @@
                                     []
                                     []
                                     [(Print
-                                        [(StringConstant
+                                        (StringConstant
                                             "b()"
-                                            (Character 1 3 ())
-                                        )]
-                                        ()
-                                        ()
+                                            (Character 1 3 () PointerString)
+                                        )
                                     )]
                                     ()
                                     Public

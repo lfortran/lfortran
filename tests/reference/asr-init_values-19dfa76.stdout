@@ -230,18 +230,18 @@
                                     (StringConcat
                                         (Var 2 s1)
                                         (Var 2 s2)
-                                        (Character 1 4 ())
+                                        (Character 1 4 () PointerString)
                                         (StringConstant
                                             "left"
-                                            (Character 1 4 ())
+                                            (Character 1 4 () PointerString)
                                         )
                                     )
                                     (StringConstant
                                         "left"
-                                        (Character 1 4 ())
+                                        (Character 1 4 () PointerString)
                                     )
                                     Parameter
-                                    (Character 1 4 ())
+                                    (Character 1 4 () PointerString)
                                     ()
                                     Source
                                     Public
@@ -256,14 +256,14 @@
                                     Local
                                     (StringConstant
                                         "l"
-                                        (Character 1 1 ())
+                                        (Character 1 1 () PointerString)
                                     )
                                     (StringConstant
                                         "l"
-                                        (Character 1 1 ())
+                                        (Character 1 1 () PointerString)
                                     )
                                     Parameter
-                                    (Character 1 1 ())
+                                    (Character 1 1 () PointerString)
                                     ()
                                     Source
                                     Public
@@ -278,14 +278,14 @@
                                     Local
                                     (StringConstant
                                         "eft"
-                                        (Character 1 3 ())
+                                        (Character 1 3 () PointerString)
                                     )
                                     (StringConstant
                                         "eft"
-                                        (Character 1 3 ())
+                                        (Character 1 3 () PointerString)
                                     )
                                     Parameter
-                                    (Character 1 3 ())
+                                    (Character 1 3 () PointerString)
                                     ()
                                     Source
                                     Public
@@ -296,7 +296,7 @@
                     init_values
                     []
                     [(Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(Var 2 i)
                             (Var 2 j)
@@ -308,11 +308,9 @@
                             (Var 2 r_minus)
                             (Var 2 s)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 )
         })

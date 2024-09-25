@@ -49,8 +49,10 @@
                                         )
                                         (Array
                                             (Integer 4)
-                                            [(()
-                                            ())]
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 2 (Integer 4) Decimal))
+                                            ((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 3 (Integer 4) Decimal))]
                                             FixedSizeArray
                                         )
                                         ()
@@ -458,6 +460,8 @@
                                             (Array
                                                 (Real 8)
                                                 [(()
+                                                ())
+                                                (()
                                                 ())]
                                                 FixedSizeArray
                                             )
@@ -620,6 +624,10 @@
                                             (Array
                                                 (Real 8)
                                                 [(()
+                                                ())
+                                                (()
+                                                ())
+                                                (()
                                                 ())]
                                                 DescriptorArray
                                             )
@@ -1852,15 +1860,13 @@
                     array_reshape_14
                     []
                     [(Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(Var 2 i23)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (SubroutineCall
                         2 test_reshape_with_argument

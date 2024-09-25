@@ -223,11 +223,11 @@ namespace LCompilers {
 
         llvm::Value* SimpleCMODescriptor::
         get_pointer_to_dimension_descriptor_array(llvm::Type* type, llvm::Value* arr, bool load) {
-            llvm::Value* dim_des_arr_ptr = llvm_utils->create_gep(arr, 2);
+            llvm::Value* dim_des_arr_ptr = llvm_utils->create_gep2(type, arr, 2);
             if( !load ) {
                 return dim_des_arr_ptr;
             }
-            return llvm_utils->CreateLoad2(type, dim_des_arr_ptr);
+            return llvm_utils->CreateLoad2(dim_des->getPointerTo(), dim_des_arr_ptr);
         }
 
         llvm::Value* SimpleCMODescriptor::
@@ -257,8 +257,8 @@ namespace LCompilers {
         }
 
         llvm::Value* SimpleCMODescriptor::
-        get_dimension_size(llvm::Value* dim_des, bool load) {
-            llvm::Value* dim_size = llvm_utils->create_gep(dim_des, 2);
+        get_dimension_size(llvm::Value* dim_des_arr, bool load) {
+            llvm::Value* dim_size = llvm_utils->create_gep2(dim_des, dim_des_arr, 2);
             if( !load ) {
                 return dim_size;
             }
@@ -276,13 +276,13 @@ namespace LCompilers {
             llvm::Value* dim_des_first = llvm_utils->CreateAlloca(*builder, dim_des, arr_rank);
             builder->CreateStore(dim_des_first, dim_des_val);
             builder->CreateStore(arr_rank, get_rank(arr, true));
-            dim_des_val = llvm_utils->CreateLoad(dim_des_val);
+            dim_des_val = llvm_utils->CreateLoad2(dim_des->getPointerTo(), dim_des_val);
             llvm::Value* prod = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
             for( int r = 0; r < n_dims; r++ ) {
-                llvm::Value* dim_val = llvm_utils->create_ptr_gep(dim_des_val, r);
-                llvm::Value* s_val = llvm_utils->create_gep(dim_val, 0);
-                llvm::Value* l_val = llvm_utils->create_gep(dim_val, 1);
-                llvm::Value* dim_size_ptr = llvm_utils->create_gep(dim_val, 2);
+                llvm::Value* dim_val = llvm_utils->create_ptr_gep2(dim_des, dim_des_val, r);
+                llvm::Value* s_val = llvm_utils->create_gep2(dim_des, dim_val, 0);
+                llvm::Value* l_val = llvm_utils->create_gep2(dim_des, dim_val, 1);
+                llvm::Value* dim_size_ptr = llvm_utils->create_gep2(dim_des, dim_val, 2);
                 builder->CreateStore(prod, s_val);
                 builder->CreateStore(llvm_dims[r].first, l_val);
                 llvm::Value* dim_size = llvm_dims[r].second;
@@ -341,10 +341,11 @@ namespace LCompilers {
         };
 
         void SimpleCMODescriptor::fill_malloc_array_details(
-            llvm::Value* arr, llvm::Type* llvm_data_type, int n_dims,
+            llvm::Value* arr, llvm::Type* arr_type, llvm::Type* llvm_data_type, int n_dims,
             std::vector<std::pair<llvm::Value*, llvm::Value*>>& llvm_dims,
             llvm::Module* module, bool realloc) {
-            arr = llvm_utils->CreateLoad(arr);
+            arr = llvm_utils->CreateLoad2(arr_type->getPointerTo(), arr);
+            llvm_utils->ptr_type[arr] = arr_type;
             llvm::Value* offset_val = llvm_utils->create_gep(arr, 1);
             builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
                                     offset_val);
@@ -374,7 +375,7 @@ namespace LCompilers {
             llvm::Value* ptr_as_char_ptr = nullptr;
             if( realloc ) {
                 ptr_as_char_ptr = lfortran_realloc(context, *module,
-                    *builder, llvm_utils->CreateLoad(ptr2firstptr),
+                    *builder, llvm_utils->CreateLoad2(llvm_data_type->getPointerTo(), ptr2firstptr),
                     llvm_utils->CreateLoad(arg_size));
             } else {
                 ptr_as_char_ptr = lfortran_malloc(context, *module,
@@ -394,7 +395,7 @@ namespace LCompilers {
                 std::vector<llvm::Value*> idx_vec = {
                     llvm::ConstantInt::get(context, llvm::APInt(32, 1))};
                     llvm::Value* null_dim_des_ptr = llvm::ConstantPointerNull::get(dim_des->getPointerTo());
-                    llvm::Value* size_of_dim_des_struct = llvm_utils->CreateGEP(null_dim_des_ptr, idx_vec);
+                    llvm::Value* size_of_dim_des_struct = llvm_utils->CreateGEP2(dim_des, null_dim_des_ptr, idx_vec);
                     llvm::Value* size_of_dim_des_struct_casted = builder->CreatePtrToInt(size_of_dim_des_struct, llvm::Type::getInt32Ty(context)); //cast to int32
                     llvm::Value* size_mul_ndim = builder->CreateMul(size_of_dim_des_struct_casted, llvm::ConstantInt::get(context, llvm::APInt(32, n_dims)));
                     llvm::Value* struct_ptr = LLVMArrUtils::lfortran_malloc(
@@ -438,11 +439,11 @@ namespace LCompilers {
         }
 
         void SimpleCMODescriptor::fill_descriptor_for_array_section(
-            llvm::Value* value_desc, llvm::Value* target,
+            llvm::Value* value_desc, llvm::Type *value_el_type, llvm::Value* target,
             llvm::Value** lbs, llvm::Value** ubs,
             llvm::Value** ds, llvm::Value** non_sliced_indices,
             int value_rank, int target_rank) {
-            llvm::Value* value_desc_data = llvm_utils->CreateLoad(get_pointer_to_data(value_desc));
+            llvm::Value* value_desc_data = llvm_utils->CreateLoad2(value_el_type->getPointerTo(), get_pointer_to_data(value_desc));
             std::vector<llvm::Value*> section_first_indices;
             for( int i = 0; i < value_rank; i++ ) {
                 if( ds[i] != nullptr ) {
@@ -455,7 +456,7 @@ namespace LCompilers {
             }
             llvm::Value* target_offset = cmo_convertor_single_element(
                 value_desc, section_first_indices, value_rank, false);
-            value_desc_data = llvm_utils->create_ptr_gep(value_desc_data, target_offset);
+            value_desc_data = llvm_utils->create_ptr_gep2(value_el_type, value_desc_data, target_offset);
             llvm::Value* target_data = get_pointer_to_data(target);
             builder->CreateStore(value_desc_data, target_data);
 
@@ -476,8 +477,8 @@ namespace LCompilers {
                         llvm::ConstantInt::get(llvm::Type::getInt32Ty(context),
                                                 llvm::APInt(32, 1))
                         );
-                    llvm::Value* value_dim_des = llvm_utils->create_ptr_gep(value_dim_des_array, i);
-                    llvm::Value* target_dim_des = llvm_utils->create_ptr_gep(target_dim_des_array, j);
+                    llvm::Value* value_dim_des = llvm_utils->create_ptr_gep2(dim_des, value_dim_des_array, i);
+                    llvm::Value* target_dim_des = llvm_utils->create_ptr_gep2(dim_des, target_dim_des_array, j);
                     llvm::Value* value_stride = get_stride(value_dim_des, true);
                     llvm::Value* target_stride = get_stride(target_dim_des, false);
                     builder->CreateStore(builder->CreateMul(value_stride, builder->CreateZExtOrTrunc(
@@ -498,7 +499,7 @@ namespace LCompilers {
         }
 
         void SimpleCMODescriptor::fill_descriptor_for_array_section_data_only(
-            llvm::Value* value_desc, llvm::Value* target,
+            llvm::Value* value_desc, llvm::Type* value_el_type, llvm::Value* target,
             llvm::Value** lbs, llvm::Value** ubs,
             llvm::Value** ds, llvm::Value** non_sliced_indices,
             llvm::Value** llvm_diminfo, int value_rank, int target_rank) {
@@ -514,7 +515,7 @@ namespace LCompilers {
             }
             llvm::Value* target_offset = cmo_convertor_single_element_data_only(
                 llvm_diminfo, section_first_indices, value_rank, false);
-            value_desc = llvm_utils->create_ptr_gep(value_desc, target_offset);
+            value_desc = llvm_utils->create_ptr_gep2(value_el_type, value_desc, target_offset);
             builder->CreateStore(value_desc, get_pointer_to_data(target));
 
             builder->CreateStore(
@@ -534,7 +535,7 @@ namespace LCompilers {
                         llvm::ConstantInt::get(llvm::Type::getInt32Ty(context),
                                                 llvm::APInt(32, 1))
                         );
-                    llvm::Value* target_dim_des = llvm_utils->create_ptr_gep(target_dim_des_array, j);
+                    llvm::Value* target_dim_des = llvm_utils->create_ptr_gep2(dim_des, target_dim_des_array, j);
                     builder->CreateStore(builder->CreateMul(stride, builder->CreateZExtOrTrunc(
                         ds[i], llvm::Type::getInt32Ty(context))), get_stride(target_dim_des, false));
                     builder->CreateStore(llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, 1)),
@@ -567,7 +568,8 @@ namespace LCompilers {
             if( !load ) {
                 return offset;
             }
-            return llvm_utils->CreateLoad(offset);
+            llvm::Type *i32 = llvm::Type::getInt32Ty(context);
+            return llvm_utils->CreateLoad2(i32, offset);
         }
 
         llvm::Value* SimpleCMODescriptor::get_lower_bound(llvm::Value* dims, bool load) {
@@ -592,7 +594,8 @@ namespace LCompilers {
             if( !load ) {
                 return stride;
             }
-            return llvm_utils->CreateLoad(stride);
+            llvm::Type *i32 = llvm::Type::getInt32Ty(context);
+            return llvm_utils->CreateLoad2(i32, stride);
         }
 
         // TODO: Uncomment and implement later

@@ -17,21 +17,21 @@
                                         Adjustl
                                         [(StringConstant
                                             "    "
-                                            (Character 1 4 ())
+                                            (Character 1 4 () PointerString)
                                         )]
                                         0
-                                        (Character 1 4 ())
+                                        (Character 1 4 () PointerString)
                                         (StringConstant
                                             "    "
-                                            (Character 1 4 ())
+                                            (Character 1 4 () PointerString)
                                         )
                                     )
                                     (StringConstant
                                         "    "
-                                        (Character 1 4 ())
+                                        (Character 1 4 () PointerString)
                                     )
                                     Save
-                                    (Character 1 25 ())
+                                    (Character 1 25 () PointerString)
                                     ()
                                     Source
                                     Public
@@ -48,21 +48,21 @@
                                         Adjustl
                                         [(StringConstant
                                             ""
-                                            (Character 1 0 ())
+                                            (Character 1 0 () PointerString)
                                         )]
                                         0
-                                        (Character 1 0 ())
+                                        (Character 1 0 () PointerString)
                                         (StringConstant
                                             ""
-                                            (Character 1 0 ())
+                                            (Character 1 0 () PointerString)
                                         )
                                     )
                                     (StringConstant
                                         ""
-                                        (Character 1 0 ())
+                                        (Character 1 0 () PointerString)
                                     )
                                     Save
-                                    (Character 1 25 ())
+                                    (Character 1 25 () PointerString)
                                     ()
                                     Source
                                     Public
@@ -79,21 +79,21 @@
                                         Adjustl
                                         [(StringConstant
                                             "gfortran"
-                                            (Character 1 8 ())
+                                            (Character 1 8 () PointerString)
                                         )]
                                         0
-                                        (Character 1 8 ())
+                                        (Character 1 8 () PointerString)
                                         (StringConstant
                                             "gfortran"
-                                            (Character 1 8 ())
+                                            (Character 1 8 () PointerString)
                                         )
                                     )
                                     (StringConstant
                                         "gfortran"
-                                        (Character 1 8 ())
+                                        (Character 1 8 () PointerString)
                                     )
                                     Save
-                                    (Character 1 25 ())
+                                    (Character 1 25 () PointerString)
                                     ()
                                     Source
                                     Public
@@ -110,21 +110,21 @@
                                         Adjustl
                                         [(StringConstant
                                             "gfortran   "
-                                            (Character 1 11 ())
+                                            (Character 1 11 () PointerString)
                                         )]
                                         0
-                                        (Character 1 11 ())
+                                        (Character 1 11 () PointerString)
                                         (StringConstant
                                             "gfortran   "
-                                            (Character 1 11 ())
+                                            (Character 1 11 () PointerString)
                                         )
                                     )
                                     (StringConstant
                                         "gfortran   "
-                                        (Character 1 11 ())
+                                        (Character 1 11 () PointerString)
                                     )
                                     Save
-                                    (Character 1 25 ())
+                                    (Character 1 25 () PointerString)
                                     ()
                                     Source
                                     Public
@@ -141,21 +141,21 @@
                                         Adjustl
                                         [(StringConstant
                                             "   gfortran"
-                                            (Character 1 11 ())
+                                            (Character 1 11 () PointerString)
                                         )]
                                         0
-                                        (Character 1 11 ())
+                                        (Character 1 11 () PointerString)
                                         (StringConstant
                                             "gfortran   "
-                                            (Character 1 11 ())
+                                            (Character 1 11 () PointerString)
                                         )
                                     )
                                     (StringConstant
                                         "gfortran   "
-                                        (Character 1 11 ())
+                                        (Character 1 11 () PointerString)
                                     )
                                     Save
-                                    (Character 1 25 ())
+                                    (Character 1 25 () PointerString)
                                     ()
                                     Source
                                     Public
@@ -172,21 +172,21 @@
                                         Adjustl
                                         [(StringConstant
                                             "   g for tran   "
-                                            (Character 1 16 ())
+                                            (Character 1 16 () PointerString)
                                         )]
                                         0
-                                        (Character 1 16 ())
+                                        (Character 1 16 () PointerString)
                                         (StringConstant
                                             "g for tran      "
-                                            (Character 1 16 ())
+                                            (Character 1 16 () PointerString)
                                         )
                                     )
                                     (StringConstant
                                         "g for tran      "
-                                        (Character 1 16 ())
+                                        (Character 1 16 () PointerString)
                                     )
                                     Save
-                                    (Character 1 25 ())
+                                    (Character 1 25 () PointerString)
                                     ()
                                     Source
                                     Public
@@ -203,21 +203,21 @@
                                         Adjustl
                                         [(StringConstant
                                             "  # gfor* t $ ran &    "
-                                            (Character 1 23 ())
+                                            (Character 1 23 () PointerString)
                                         )]
                                         0
-                                        (Character 1 23 ())
+                                        (Character 1 23 () PointerString)
                                         (StringConstant
                                             "# gfor* t $ ran &      "
-                                            (Character 1 23 ())
+                                            (Character 1 23 () PointerString)
                                         )
                                     )
                                     (StringConstant
                                         "# gfor* t $ ran &      "
-                                        (Character 1 23 ())
+                                        (Character 1 23 () PointerString)
                                     )
                                     Save
-                                    (Character 1 25 ())
+                                    (Character 1 25 () PointerString)
                                     ()
                                     Source
                                     Public
@@ -228,9 +228,7 @@
                     intrinsics_36
                     []
                     [(Print
-                        [(Var 2 empty)]
-                        ()
-                        ()
+                        (Var 2 empty)
                     )
                     (If
                         (StringCompare
@@ -238,7 +236,7 @@
                             NotEq
                             (StringConstant
                                 ""
-                                (Character 1 0 ())
+                                (Character 1 0 () PointerString)
                             )
                             (Logical 4)
                             ()
@@ -249,9 +247,7 @@
                         []
                     )
                     (Print
-                        [(Var 2 all_spaces)]
-                        ()
-                        ()
+                        (Var 2 all_spaces)
                     )
                     (If
                         (StringCompare
@@ -259,7 +255,7 @@
                             NotEq
                             (StringConstant
                                 "    "
-                                (Character 1 4 ())
+                                (Character 1 4 () PointerString)
                             )
                             (Logical 4)
                             ()
@@ -270,9 +266,7 @@
                         []
                     )
                     (Print
-                        [(Var 2 simple)]
-                        ()
-                        ()
+                        (Var 2 simple)
                     )
                     (If
                         (StringCompare
@@ -280,7 +274,7 @@
                             NotEq
                             (StringConstant
                                 "gfortran"
-                                (Character 1 8 ())
+                                (Character 1 8 () PointerString)
                             )
                             (Logical 4)
                             ()
@@ -291,9 +285,7 @@
                         []
                     )
                     (Print
-                        [(Var 2 space_at_start)]
-                        ()
-                        ()
+                        (Var 2 space_at_start)
                     )
                     (If
                         (StringCompare
@@ -301,7 +293,7 @@
                             NotEq
                             (StringConstant
                                 "gfortran   "
-                                (Character 1 11 ())
+                                (Character 1 11 () PointerString)
                             )
                             (Logical 4)
                             ()
@@ -312,9 +304,7 @@
                         []
                     )
                     (Print
-                        [(Var 2 space_at_end)]
-                        ()
-                        ()
+                        (Var 2 space_at_end)
                     )
                     (If
                         (StringCompare
@@ -322,7 +312,7 @@
                             NotEq
                             (StringConstant
                                 "gfortran   "
-                                (Character 1 11 ())
+                                (Character 1 11 () PointerString)
                             )
                             (Logical 4)
                             ()
@@ -333,9 +323,7 @@
                         []
                     )
                     (Print
-                        [(Var 2 space_in_between)]
-                        ()
-                        ()
+                        (Var 2 space_in_between)
                     )
                     (If
                         (StringCompare
@@ -343,7 +331,7 @@
                             NotEq
                             (StringConstant
                                 "g for tran      "
-                                (Character 1 16 ())
+                                (Character 1 16 () PointerString)
                             )
                             (Logical 4)
                             ()
@@ -354,9 +342,7 @@
                         []
                     )
                     (Print
-                        [(Var 2 spaces_with_symbols)]
-                        ()
-                        ()
+                        (Var 2 spaces_with_symbols)
                     )
                     (If
                         (StringCompare
@@ -364,7 +350,7 @@
                             NotEq
                             (StringConstant
                                 "# gfor* t $ ran &      "
-                                (Character 1 23 ())
+                                (Character 1 23 () PointerString)
                             )
                             (Logical 4)
                             ()

@@ -64,7 +64,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (Character 1 -2 () PointerString)
                                                     )
                                                     ()
                                                     Source
@@ -199,15 +199,13 @@
                                                         (Var 5 i)
                                                     )
                                                     (Print
-                                                        [(StringFormat
+                                                        (StringFormat
                                                             ()
                                                             [(Var 6 ii)]
                                                             FormatFortran
-                                                            (Character -1 0 ())
+                                                            (Character -1 0 () PointerString)
                                                             ()
-                                                        )]
-                                                        ()
-                                                        ()
+                                                        )
                                                     )
                                                     (SubroutineCall
                                                         6 1_to_string
@@ -267,7 +265,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (Character 1 -2 () PointerString)
                                                     )
                                                     ()
                                                     Source
@@ -372,7 +370,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (Character 1 -2 () PointerString)
                                                     )
                                                     ()
                                                     Source
@@ -387,7 +385,7 @@
                                             10 version_t
                                         )]
                                         (Allocatable
-                                            (Character 1 -2 ())
+                                            (Character 1 -2 () PointerString)
                                         )
                                         Source
                                         Implementation
@@ -454,7 +452,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (Character 1 -2 () PointerString)
                                                     )
                                                     ()
                                                     Source
@@ -469,7 +467,7 @@
                                             10 version_t
                                         )
                                         (Allocatable
-                                            (Character 1 -2 ())
+                                            (Character 1 -2 () PointerString)
                                         )]
                                         ()
                                         Source
@@ -560,12 +558,10 @@
                     modules_34
                     []
                     [(Print
-                        [(StringConstant
+                        (StringConstant
                             "running modules_34 program"
-                            (Character 1 26 ())
-                        )]
-                        ()
-                        ()
+                            (Character 1 26 () PointerString)
+                        )
                     )]
                 )
         })

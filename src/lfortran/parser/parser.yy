@@ -677,6 +677,7 @@ endinterface
     | endinterface0 KW_OPERATOR "(" operator_type ")"
     | endinterface0 KW_OPERATOR "(" "/)"
     | endinterface0 KW_OPERATOR "(" TK_DEF_OP ")"
+    | error
     ;
 
 endinterface0
@@ -718,6 +719,7 @@ endenum
 enum_var_modifiers
     : %empty { LIST_NEW($$); }
     | var_modifier_list { $$ = $1; }
+    | error { LIST_NEW($$); }
     ;
 
 derived_type_decl
@@ -751,10 +753,12 @@ require_decl
 unit_require_plus
     : unit_require_plus "," unit_require { $$ = $1; LIST_ADD($$, $3); }
     | unit_require { LIST_NEW($$); LIST_ADD($$, $1); }
+    | error { LIST_NEW($$); }
     ;
 
 unit_require
     : id "(" instantiate_symbol_list ")" { $$ = UNIT_REQUIRE($1, $3, @$); }
+    ;
 
 instantiate
     : KW_INSTANTIATE id "(" instantiate_symbol_list ")" sep {
@@ -810,16 +814,19 @@ procedure_decl
             $$ = GENERIC_READ($2, $5, $8, TRIVIA_AFTER($9, @$), @$); }
     | KW_FINAL "::" id sep { $$ = FINAL_NAME($3, TRIVIA_AFTER($4, @$), @$); }
     | KW_PRIVATE sep { $$ = PRIVATE(Private, TRIVIA_AFTER($2, @$), @$); }
+    | error { $$ = nullptr; }
     ;
 
 access_spec_list
     : "::" { LIST_NEW($$); }
     | access_spec "::" { LIST_NEW($$); LIST_ADD($$, $1); }
+    | error { LIST_NEW($$); }
     ;
 
 access_spec
     : "," KW_PRIVATE  { $$ = SIMPLE_ATTR(Private, @$); }
     | "," KW_PUBLIC { $$ = SIMPLE_ATTR(Public, @$); }
+    | error { $$ = SIMPLE_ATTR_INVALID(@$); }
     ;
 
 operator_type
@@ -841,6 +848,7 @@ operator_type
     | ".xor."  { $$ = OPERATOR(XOR, @$); }
     | ".eqv."  { $$ = OPERATOR(EQV, @$); }
     | ".neqv." { $$ = OPERATOR(NEQV, @$); }
+    | error { $$ = OPERATOR_INVALID(@$); }
     ;
 
 proc_modifiers
@@ -862,6 +870,7 @@ proc_modifier
     | KW_NOPASS { $$ = SIMPLE_ATTR(NoPass, @$); }
     | KW_DEFERRED { $$ = SIMPLE_ATTR(Deferred, @$); }
     | KW_NON_OVERRIDABLE { $$ = SIMPLE_ATTR(NonDeferred, @$); }
+    | error { $$ = SIMPLE_ATTR_INVALID(@$); }
     ;
 
 
@@ -897,6 +906,7 @@ end_blockdata
     : KW_END_BLOCK_DATA id_opt
     | KW_ENDBLOCKDATA id_opt
     | KW_END
+    | error
     ;
 
 end_subroutine
@@ -920,11 +930,13 @@ end_function
 end_associate
     : KW_END_ASSOCIATE
     | KW_ENDASSOCIATE
+    | error
     ;
 
 end_block
     : KW_END_BLOCK
     | KW_ENDBLOCK
+    | error
     ;
 
 end_select
@@ -935,6 +947,7 @@ end_select
 end_critical
     : KW_END_CRITICAL
     | KW_ENDCRITICAL
+    | error
     ;
 
 end_team
@@ -1040,6 +1053,7 @@ function
 fn_mod_plus
     : fn_mod_plus fn_mod { $$ = $1; LIST_ADD($$, $2); }
     | fn_mod { LIST_NEW($$); LIST_ADD($$, $1); }
+    | error { LIST_NEW($$); }
     ;
 
 fn_mod
@@ -1084,11 +1098,13 @@ contains_block_opt
     : KW_CONTAINS sep sub_or_func_plus { $$ = $3; }
     | KW_CONTAINS sep { LIST_NEW($$); }
     | %empty { LIST_NEW($$); }
+    | error { LIST_NEW($$); }
     ;
 
 sub_or_func_star
     : sub_or_func_plus
     | %empty { LIST_NEW($$); }
+    | error { LIST_NEW($$); }
 
 sub_or_func_plus
     : sub_or_func_plus sub_or_func { LIST_ADD($$, $2); }
@@ -1104,6 +1120,7 @@ sub_or_func
 sub_args
     : "(" id_or_star_list ")" { $$ = $2; }
     | %empty { LIST_NEW($$); }
+    | error { LIST_NEW($$); }
     ;
 
 id_or_star_list
@@ -1129,6 +1146,7 @@ bind
 result_opt
     : result { $$ = $1; }
     | %empty { $$ = nullptr; }
+    | error { $$ = nullptr; }
     ;
 
 result
@@ -1202,6 +1220,7 @@ implicit_statement
 implicit_none_spec_list
     : implicit_none_spec_list "," implicit_none_spec { $$ = $1; LIST_ADD($$, $3); }
     | implicit_none_spec { LIST_NEW($$); LIST_ADD($$, $1); }
+    | error { LIST_NEW($$); }
     ;
 
 implicit_none_spec
@@ -1284,12 +1303,14 @@ use_modifier_list
 use_modifier
     : KW_INTRINSIC { $$ = SIMPLE_ATTR(Intrinsic, @$); }
     | KW_NON_INTRINSIC { $$ = SIMPLE_ATTR(Non_Intrinsic, @$); }
+    | error { $$ = SIMPLE_ATTR_INVALID(@$); }
     ;
 
 // var_decl*
 var_decl_star
     : var_decl_star var_decl { $$ = $1; LIST_ADD($$, $2); }
     | %empty { LIST_NEW($$); }
+    | error { LIST_NEW($$); }
     ;
 
 var_decl
@@ -1316,6 +1337,7 @@ var_decl
 equivalence_set_list
     : equivalence_set_list "," equivalence_set { $$ = $1; PLIST_ADD($$, $3); }
     | equivalence_set { LIST_NEW($$); PLIST_ADD($$, $1); }
+    | error { LIST_NEW($$); }
     ;
 
 equivalence_set
@@ -1326,6 +1348,7 @@ named_constant_def_list
     : named_constant_def_list "," named_constant_def {
             $$ = $1; PLIST_ADD($$, $3); }
     | named_constant_def { LIST_NEW($$); PLIST_ADD($$, $1); }
+    | error { LIST_NEW($$); }
     ;
 
 named_constant_def
@@ -1402,6 +1425,7 @@ data_stmt_constant
 integer_type
     : KW_INTEGER "(" kind_arg_list ")" "::" {
             $$ = ATTR_TYPE_KIND(Integer, $3, @$); }
+    | error { $$ = nullptr; }
     ;
 
 kind_arg_list
@@ -1717,10 +1741,12 @@ block_statement
 allocate_statement
     : KW_ALLOCATE "(" fnarray_arg_list_opt ")" {
             $$ = ALLOCATE_STMT($3, @$); }
+    ;
 
 deallocate_statement
     : KW_DEALLOCATE "(" fnarray_arg_list_opt ")" {
             $$ = DEALLOCATE_STMT($3, @$); }
+    ;
 
 subroutine_call
     : KW_CALL id "(" fnarray_arg_list_opt ")" {
@@ -1753,9 +1779,11 @@ format
 
 open_statement
     : KW_OPEN "(" write_arg_list ")" { $$ = OPEN($3, @$); }
+    ;
 
 close_statement
     : KW_CLOSE "(" write_arg_list ")" { $$ = CLOSE($3, @$); }
+    ;
 
 write_arg_list
     : write_arg_list "," write_arg2 { $$ = $1; PLIST_ADD($$, $3); }
@@ -1790,9 +1818,11 @@ read_statement
 nullify_statement
     : KW_NULLIFY "(" write_arg_list ")" {
             $$ = NULLIFY($3, @$); }
+    ;
 
 include_statement
     : KW_INCLUDE TK_STRING { $$ = INCLUDE($2, @$); }
+    ;
 
 inquire_statement
     : KW_INQUIRE "(" write_arg_list ")" expr_list { $$ = INQUIRE($3, $5, @$); }
@@ -1865,6 +1895,7 @@ elseif_block
             $$ = IF3($3, TRIVIA_AFTER($7, @$), $8, $10, @$); }
     | KW_ELSEIF "(" expr ")" KW_THEN id_opt sep statements elseif_block {
             $$ = IF3($3, TRIVIA_AFTER($7, @$), $8, $9, @$); }
+    | error { $$ = nullptr; }
     ;
 
 where_statement
@@ -1903,6 +1934,7 @@ elsewhere_block
             $$ = WHERE1($3, TRIVIA_AFTER($5, @$), $6, @$); }
     | KW_ELSE KW_WHERE "(" expr ")" sep statements {
             $$ = WHERE1($4, TRIVIA_AFTER($6, @$), $7, @$); }
+    | error { $$ = nullptr; }
     ;
 
 select_statement
@@ -1915,6 +1947,7 @@ select_statement
 case_statements
     : case_statements case_statement { $$ = $1; LIST_ADD($$, $2); }
     | %empty { LIST_NEW($$); }
+    | error { LIST_NEW($$); }
     ;
 
 case_statement
@@ -1950,6 +1983,7 @@ select_rank
 select_rank_case_stmts
     : select_rank_case_stmts select_rank_case_stmt { $$ = $1; LIST_ADD($$, $2); }
     | %empty { LIST_NEW($$); }
+    | error { LIST_NEW($$); }
     ;
 
 select_rank_case_stmt
@@ -1976,6 +2010,7 @@ select_type_body_statements
     : select_type_body_statements select_type_body_statement {
                         $$ = $1; LIST_ADD($$, $2); }
     | %empty { LIST_NEW($$); }
+    | error { LIST_NEW($$); }
     ;
 
 select_type_body_statement
@@ -2016,6 +2051,7 @@ concurrent_control_list
     : concurrent_control_list "," concurrent_control {
         $$ = $1; LIST_ADD($$, $3); }
     | concurrent_control { LIST_NEW($$); LIST_ADD($$, $1); }
+    | error { LIST_NEW($$); }
     ;
 
 concurrent_control
@@ -2029,6 +2065,7 @@ concurrent_locality_star
     : concurrent_locality_star concurrent_locality {
         $$ = $1; LIST_ADD($$, $2); }
     | %empty { LIST_NEW($$); }
+    | error { LIST_NEW($$); }
     ;
 
 concurrent_locality
@@ -2096,11 +2133,13 @@ enddo
     | TK_LABEL KW_END_DO
     | KW_ENDDO { WARN_ENDDO(@$); }
     | TK_LABEL KW_ENDDO {}
+    | error
     ;
 
 endforall
     : KW_END_FORALL
     | KW_ENDFORALL
+    | error
     ;
 
 endif
@@ -2171,6 +2210,7 @@ sync_all_statement
     | sync_all "(" ")" { $$ = SYNC_ALL1(@$); }
     | sync_all "(" sync_stat_list ")" { $$ = SYNC_ALL2($3, @$); }
     ;
+
 sync_all
     : KW_SYNC KW_ALL
     | KW_SYNC_ALL
@@ -2183,6 +2223,7 @@ sync_images_statement
             $$ = SYNC_IMAGE3(Asterisk, $4, @$); }
     | sync_images "(" expr sync_stat_list ")" { $$ = SYNC_IMAGE4($3, $4, @$); }
     ;
+
 sync_images
     : KW_SYNC KW_IMAGES
     | KW_SYNC_IMAGES
@@ -2212,6 +2253,7 @@ event_wait_spec_list
     : event_wait_spec_list "," sync_stat { $$ = $1; LIST_ADD($$, $3); }
     | event_wait_spec { LIST_NEW($$); LIST_ADD($$, $1); }
     | %empty { LIST_NEW($$); }
+    | error { LIST_NEW($$); }
     ;
 
 event_wait_spec
@@ -2220,6 +2262,7 @@ event_wait_spec
 
 event_post_stat_list
     : sync_stat { LIST_NEW($$); LIST_ADD($$, $1); }
+    | error { LIST_NEW($$); }
     ;
 
 sync_stat_list
@@ -2262,6 +2305,7 @@ coarray_association_list
     : coarray_association_list "," coarray_association { $$ = $1; LIST_ADD($$, $3); }
     | coarray_association { LIST_NEW($$); LIST_ADD($$, $1); }
     | %empty { LIST_NEW($$); }
+    | error { LIST_NEW($$);}
     ;
 
 coarray_association
@@ -2617,4 +2661,5 @@ id
     | KW_WHERE { $$ = SYMBOL($1, @$); }
     | KW_WHILE { $$ = SYMBOL($1, @$); }
     | KW_WRITE { $$ = SYMBOL($1, @$); }
+    | error { $$ = SYMBOL(LCompilers::Str(), @$); }
     ;

@@ -131,37 +131,31 @@
                                                     []
                                                     [(Var 4 z)]
                                                     [(Print
-                                                        [(StringFormat
+                                                        (StringFormat
                                                             ()
                                                             [(Var 4 z)]
                                                             FormatFortran
-                                                            (Character -1 0 ())
+                                                            (Character -1 0 () PointerString)
                                                             ()
-                                                        )]
-                                                        ()
-                                                        ()
+                                                        )
                                                     )
                                                     (Print
-                                                        [(StringFormat
+                                                        (StringFormat
                                                             ()
                                                             [(Var 3 y)]
                                                             FormatFortran
-                                                            (Character -1 0 ())
+                                                            (Character -1 0 () PointerString)
                                                             ()
-                                                        )]
-                                                        ()
-                                                        ()
+                                                        )
                                                     )
                                                     (Print
-                                                        [(StringFormat
+                                                        (StringFormat
                                                             ()
                                                             [(Var 3 yy)]
                                                             FormatFortran
-                                                            (Character -1 0 ())
+                                                            (Character -1 0 () PointerString)
                                                             ()
-                                                        )]
-                                                        ()
-                                                        ()
+                                                        )
                                                     )
                                                     (Assignment
                                                         (Var 4 c)
@@ -254,12 +248,10 @@
                                         ()
                                     )
                                     (Print
-                                        [(StringConstant
+                                        (StringConstant
                                             "b()"
-                                            (Character 1 3 ())
-                                        )]
-                                        ()
-                                        ()
+                                            (Character 1 3 () PointerString)
+                                        )
                                     )
                                     (Assignment
                                         (Var 3 b)

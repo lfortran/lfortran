@@ -459,12 +459,10 @@
                         ()
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "End Stream Triad"
-                            (Character 1 16 ())
-                        )]
-                        ()
-                        ()
+                            (Character 1 16 () PointerString)
+                        )
                     )]
                 )
         })

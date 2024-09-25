@@ -199,11 +199,11 @@
                                                         })
                                                     ~select_type_block_
                                                     [(Print
-                                                        [(StringFormat
+                                                        (StringFormat
                                                             ()
                                                             [(StringConstant
                                                                 "base type: component value: "
-                                                                (Character 1 28 ())
+                                                                (Character 1 28 () PointerString)
                                                             )
                                                             (StructInstanceMember
                                                                 (Var 5 bptr)
@@ -212,11 +212,9 @@
                                                                 ()
                                                             )]
                                                             FormatFortran
-                                                            (Character -1 0 ())
+                                                            (Character -1 0 () PointerString)
                                                             ()
-                                                        )]
-                                                        ()
-                                                        ()
+                                                        )
                                                     )
                                                     (If
                                                         (IntegerCompare
@@ -265,11 +263,11 @@
                                                         })
                                                     ~select_type_block_1
                                                     [(Print
-                                                        [(StringFormat
+                                                        (StringFormat
                                                             ()
                                                             [(StringConstant
                                                                 "child type: component values: "
-                                                                (Character 1 30 ())
+                                                                (Character 1 30 () PointerString)
                                                             )
                                                             (StructInstanceMember
                                                                 (Var 5 bptr)
@@ -284,11 +282,9 @@
                                                                 ()
                                                             )]
                                                             FormatFortran
-                                                            (Character -1 0 ())
+                                                            (Character -1 0 () PointerString)
                                                             ()
-                                                        )]
-                                                        ()
-                                                        ()
+                                                        )
                                                     )
                                                     (If
                                                         (IntegerCompare
@@ -390,7 +386,7 @@
                         ()
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StructInstanceMember
                                 (Var 2 base_target)
@@ -399,14 +395,12 @@
                                 ()
                             )]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StructInstanceMember
                                 (Var 2 child_target)
@@ -421,11 +415,9 @@
                                 ()
                             )]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Associate
                         (Var 2 bptr)

@@ -216,7 +216,7 @@
                         ()
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(Var 2 l_knd)
                             (Var 2 sp)
@@ -224,11 +224,9 @@
                             (Var 2 i32)
                             (Var 2 i64)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 )
         })

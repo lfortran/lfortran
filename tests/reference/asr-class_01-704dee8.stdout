@@ -356,11 +356,11 @@
                                         ()
                                     )
                                     (Print
-                                        [(StringFormat
+                                        (StringFormat
                                             ()
                                             [(StringConstant
                                                 "Circle: r = "
-                                                (Character 1 12 ())
+                                                (Character 1 12 () PointerString)
                                             )
                                             (StructInstanceMember
                                                 (Var 5 this)
@@ -370,15 +370,13 @@
                                             )
                                             (StringConstant
                                                 " area = "
-                                                (Character 1 8 ())
+                                                (Character 1 8 () PointerString)
                                             )
                                             (Var 5 area)]
                                             FormatFortran
-                                            (Character -1 0 ())
+                                            (Character -1 0 () PointerString)
                                             ()
-                                        )]
-                                        ()
-                                        ()
+                                        )
                                     )]
                                     ()
                                     Private

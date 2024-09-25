@@ -67,20 +67,16 @@
                             ()
                         )
                         [(Print
-                            [(StringConstant
+                            (StringConstant
                                 "Line 1 - Condition is true"
-                                (Character 1 26 ())
-                            )]
-                            ()
-                            ()
+                                (Character 1 26 () PointerString)
+                            )
                         )]
                         [(Print
-                            [(StringConstant
+                            (StringConstant
                                 "Line 1 - Condition is false"
-                                (Character 1 27 ())
-                            )]
-                            ()
-                            ()
+                                (Character 1 27 () PointerString)
+                            )
                         )]
                     )]
                 )

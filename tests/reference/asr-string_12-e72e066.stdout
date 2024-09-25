@@ -24,18 +24,18 @@
                                         )
                                         (IntegerConstant 10 (Integer 4) Decimal)
                                         (IntegerConstant 1 (Integer 4) Decimal)
-                                        (Character 1 22 ())
+                                        (Character 1 22 () PointerString)
                                         (StringConstant
                                             "0123456789"
-                                            (Character 1 22 ())
+                                            (Character 1 22 () PointerString)
                                         )
                                     )
                                     (StringConstant
                                         "0123456789"
-                                        (Character 1 22 ())
+                                        (Character 1 22 () PointerString)
                                     )
                                     Parameter
-                                    (Character 1 22 ())
+                                    (Character 1 22 () PointerString)
                                     ()
                                     Source
                                     Public
@@ -50,14 +50,14 @@
                                     Local
                                     (StringConstant
                                         "0123456789ABCDEFabcdef"
-                                        (Character 1 22 ())
+                                        (Character 1 22 () PointerString)
                                     )
                                     (StringConstant
                                         "0123456789ABCDEFabcdef"
-                                        (Character 1 22 ())
+                                        (Character 1 22 () PointerString)
                                     )
                                     Parameter
-                                    (Character 1 22 ())
+                                    (Character 1 22 () PointerString)
                                     ()
                                     Source
                                     Public
@@ -81,18 +81,18 @@
                                         )
                                         (IntegerConstant 16 (Integer 4) Decimal)
                                         (IntegerConstant 1 (Integer 4) Decimal)
-                                        (Character 1 22 ())
+                                        (Character 1 22 () PointerString)
                                         (StringConstant
                                             "0123456789ABCDEF"
-                                            (Character 1 22 ())
+                                            (Character 1 22 () PointerString)
                                         )
                                     )
                                     (StringConstant
                                         "0123456789ABCDEF"
-                                        (Character 1 22 ())
+                                        (Character 1 22 () PointerString)
                                     )
                                     Parameter
-                                    (Character 1 22 ())
+                                    (Character 1 22 () PointerString)
                                     ()
                                     Source
                                     Public
@@ -107,14 +107,14 @@
                                     Local
                                     (StringConstant
                                         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-                                        (Character 1 52 ())
+                                        (Character 1 52 () PointerString)
                                     )
                                     (StringConstant
                                         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-                                        (Character 1 52 ())
+                                        (Character 1 52 () PointerString)
                                     )
                                     Parameter
-                                    (Character 1 52 ())
+                                    (Character 1 52 () PointerString)
                                     ()
                                     Source
                                     Public
@@ -138,18 +138,18 @@
                                         )
                                         ()
                                         (IntegerConstant 1 (Integer 4) Decimal)
-                                        (Character 1 52 ())
+                                        (Character 1 52 () PointerString)
                                         (StringConstant
                                             "abcdefghijklmnopqrstuvwxyz"
-                                            (Character 1 52 ())
+                                            (Character 1 52 () PointerString)
                                         )
                                     )
                                     (StringConstant
                                         "abcdefghijklmnopqrstuvwxyz"
-                                        (Character 1 52 ())
+                                        (Character 1 52 () PointerString)
                                     )
                                     Parameter
-                                    (Character 1 52 ())
+                                    (Character 1 52 () PointerString)
                                     ()
                                     Source
                                     Public
@@ -164,14 +164,14 @@
                                     Local
                                     (StringConstant
                                         "0123456789abcdef"
-                                        (Character 1 16 ())
+                                        (Character 1 16 () PointerString)
                                     )
                                     (StringConstant
                                         "0123456789abcdef"
-                                        (Character 1 16 ())
+                                        (Character 1 16 () PointerString)
                                     )
                                     Parameter
-                                    (Character 1 16 ())
+                                    (Character 1 16 () PointerString)
                                     ()
                                     Source
                                     Public
@@ -195,18 +195,18 @@
                                         )
                                         (IntegerConstant 8 (Integer 4) Decimal)
                                         (IntegerConstant 1 (Integer 4) Decimal)
-                                        (Character 1 22 ())
+                                        (Character 1 22 () PointerString)
                                         (StringConstant
                                             "01234567"
-                                            (Character 1 22 ())
+                                            (Character 1 22 () PointerString)
                                         )
                                     )
                                     (StringConstant
                                         "01234567"
-                                        (Character 1 22 ())
+                                        (Character 1 22 () PointerString)
                                     )
                                     Parameter
-                                    (Character 1 22 ())
+                                    (Character 1 22 () PointerString)
                                     ()
                                     Source
                                     Public
@@ -227,18 +227,18 @@
                                             (IntegerConstant 52 (Integer 4) Decimal)
                                         )]
                                         0
-                                        (Character 1 1 ())
+                                        (Character 1 1 () PointerString)
                                         (StringConstant
                                             "4"
-                                            (Character 1 1 ())
+                                            (Character 1 1 () PointerString)
                                         )
                                     )
                                     (StringConstant
                                         "4"
-                                        (Character 1 1 ())
+                                        (Character 1 1 () PointerString)
                                     )
                                     Parameter
-                                    (Character 1 1 ())
+                                    (Character 1 1 () PointerString)
                                     ()
                                     Source
                                     Public
@@ -262,18 +262,18 @@
                                         )
                                         (IntegerConstant 26 (Integer 4) Decimal)
                                         (IntegerConstant 1 (Integer 4) Decimal)
-                                        (Character 1 52 ())
+                                        (Character 1 52 () PointerString)
                                         (StringConstant
                                             "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-                                            (Character 1 52 ())
+                                            (Character 1 52 () PointerString)
                                         )
                                     )
                                     (StringConstant
                                         "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-                                        (Character 1 52 ())
+                                        (Character 1 52 () PointerString)
                                     )
                                     Parameter
-                                    (Character 1 52 ())
+                                    (Character 1 52 () PointerString)
                                     ()
                                     Source
                                     Public
@@ -284,51 +284,35 @@
                     string_12
                     []
                     [(Print
-                        [(Var 2 fullhex_digits)]
-                        ()
-                        ()
+                        (Var 2 fullhex_digits)
                     )
                     (Print
-                        [(Var 2 hex_digits)]
-                        ()
-                        ()
+                        (Var 2 hex_digits)
                     )
                     (Print
-                        [(Var 2 lowerhex_digits)]
-                        ()
-                        ()
+                        (Var 2 lowerhex_digits)
                     )
                     (Print
-                        [(Var 2 digits)]
-                        ()
-                        ()
+                        (Var 2 digits)
                     )
                     (Print
-                        [(Var 2 octal_digits)]
-                        ()
-                        ()
+                        (Var 2 octal_digits)
                     )
                     (Print
-                        [(Var 2 letters)]
-                        ()
-                        ()
+                        (Var 2 letters)
                     )
                     (Print
-                        [(Var 2 uppercase)]
-                        ()
-                        ()
+                        (Var 2 uppercase)
                     )
                     (Print
-                        [(Var 2 lowercase)]
-                        ()
-                        ()
+                        (Var 2 lowercase)
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StringConstant
                                 "char("
-                                (Character 1 5 ())
+                                (Character 1 5 () PointerString)
                             )
                             (StringLen
                                 (Var 2 letters)
@@ -337,15 +321,13 @@
                             )
                             (StringConstant
                                 ") = "
-                                (Character 1 4 ())
+                                (Character 1 4 () PointerString)
                             )
                             (Var 2 string)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (If
                         (StringCompare
@@ -353,7 +335,7 @@
                             NotEq
                             (StringConstant
                                 "4"
-                                (Character 1 1 ())
+                                (Character 1 1 () PointerString)
                             )
                             (Logical 4)
                             (LogicalConstant

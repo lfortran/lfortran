@@ -16,7 +16,7 @@
                                     (Iachar
                                         (StringConstant
                                             "0"
-                                            (Character 1 1 ())
+                                            (Character 1 1 () PointerString)
                                         )
                                         (Integer 4)
                                         (IntegerConstant 48 (Integer 4) Decimal)
@@ -39,7 +39,7 @@
                                     (Iachar
                                         (StringConstant
                                             "5"
-                                            (Character 1 1 ())
+                                            (Character 1 1 () PointerString)
                                         )
                                         (Integer 4)
                                         (IntegerConstant 53 (Integer 4) Decimal)
@@ -62,7 +62,7 @@
                                     (Iachar
                                         (StringConstant
                                             "9"
-                                            (Character 1 1 ())
+                                            (Character 1 1 () PointerString)
                                         )
                                         (Integer 4)
                                         (IntegerConstant 57 (Integer 4) Decimal)
@@ -128,17 +128,15 @@
                         []
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(Var 2 ia0)
                             (Var 2 ia5)
                             (Var 2 ia9)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 )
         })

@@ -21,7 +21,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 20 ())
+                                                    (Character 1 20 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -106,7 +106,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 20 ())
+                                                    (Character 1 20 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -122,7 +122,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 20 ())
+                                                    (Character 1 20 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -138,7 +138,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 1 ())
+                                                    (Character 1 1 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -306,16 +306,16 @@
                             5 person
                             [((StringConstant
                                 "Jack"
-                                (Character 1 4 ())
+                                (Character 1 4 () PointerString)
                             ))
                             ((StringConstant
                                 "Smith"
-                                (Character 1 5 ())
+                                (Character 1 5 () PointerString)
                             ))
                             ((IntegerConstant 1984 (Integer 4) Decimal))
                             ((StringConstant
                                 "M"
-                                (Character 1 1 ())
+                                (Character 1 1 () PointerString)
                             ))]
                             (StructType
                                 5 person
@@ -332,16 +332,16 @@
                                 5 person
                                 [((StringConstant
                                     "Jill"
-                                    (Character 1 4 ())
+                                    (Character 1 4 () PointerString)
                                 ))
                                 ((StringConstant
                                     "Smith"
-                                    (Character 1 5 ())
+                                    (Character 1 5 () PointerString)
                                 ))
                                 ((IntegerConstant 1984 (Integer 4) Decimal))
                                 ((StringConstant
                                     "F"
-                                    (Character 1 1 ())
+                                    (Character 1 1 () PointerString)
                                 ))]
                                 (StructType
                                     5 person
@@ -351,7 +351,7 @@
                             ((IntegerConstant 2003 (Integer 4) Decimal))
                             ((StringConstant
                                 "sales"
-                                (Character 1 5 ())
+                                (Character 1 5 () PointerString)
                             ))]
                             (StructType
                                 5 employee
@@ -361,18 +361,18 @@
                         ()
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StructInstanceMember
                                 (Var 5 jack)
                                 5 1_person_first
-                                (Character 1 20 ())
+                                (Character 1 20 () PointerString)
                                 ()
                             )
                             (StructInstanceMember
                                 (Var 5 jack)
                                 5 1_person_last
-                                (Character 1 20 ())
+                                (Character 1 20 () PointerString)
                                 ()
                             )
                             (StructInstanceMember
@@ -384,18 +384,16 @@
                             (StructInstanceMember
                                 (Var 5 jack)
                                 5 1_person_sgender
-                                (Character 1 1 ())
+                                (Character 1 1 () PointerString)
                                 ()
                             )]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StructInstanceMember
                                 (StructInstanceMember
@@ -407,7 +405,7 @@
                                     ()
                                 )
                                 5 1_person_first
-                                (Character 1 20 ())
+                                (Character 1 20 () PointerString)
                                 ()
                             )
                             (StructInstanceMember
@@ -420,7 +418,7 @@
                                     ()
                                 )
                                 5 1_person_last
-                                (Character 1 20 ())
+                                (Character 1 20 () PointerString)
                                 ()
                             )
                             (StructInstanceMember
@@ -446,13 +444,13 @@
                                     ()
                                 )
                                 5 1_person_sgender
-                                (Character 1 1 ())
+                                (Character 1 1 () PointerString)
                                 ()
                             )
                             (StructInstanceMember
                                 (Var 5 jill)
                                 5 1_employee_department
-                                (Character 1 20 ())
+                                (Character 1 20 () PointerString)
                                 ()
                             )
                             (StructInstanceMember
@@ -462,11 +460,9 @@
                                 ()
                             )]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 )
         })

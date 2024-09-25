@@ -209,12 +209,10 @@
                                     (Var 4 i)
                                     (Var 4 sum)]
                                     [(Print
-                                        [(StringConstant
+                                        (StringConstant
                                             "Calling integer_add_subrout"
-                                            (Character 1 27 ())
-                                        )]
-                                        ()
-                                        ()
+                                            (Character 1 27 () PointerString)
+                                        )
                                     )
                                     (Assignment
                                         (StructInstanceMember
@@ -396,12 +394,10 @@
                                     (Var 5 i)
                                     (Var 5 sum)]
                                     [(Print
-                                        [(StringConstant
+                                        (StringConstant
                                             "Calling real_add_subrout"
-                                            (Character 1 24 ())
-                                        )]
-                                        ()
-                                        ()
+                                            (Character 1 24 () PointerString)
+                                        )
                                     )
                                     (Assignment
                                         (StructInstanceMember
@@ -728,7 +724,7 @@
                         (Var 6 c)
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StructInstanceMember
                                 (Var 6 a)
@@ -743,11 +739,9 @@
                                 ()
                             )]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (If
                         (RealCompare
@@ -800,7 +794,7 @@
                         (Var 6 c)
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StructInstanceMember
                                 (Var 6 a)
@@ -815,11 +809,9 @@
                                 ()
                             )]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (If
                         (RealCompare

@@ -35,14 +35,14 @@
                                     Local
                                     (StringConstant
                                         "  abc"
-                                        (Character 1 5 ())
+                                        (Character 1 5 () PointerString)
                                     )
                                     (StringConstant
                                         "  abc"
-                                        (Character 1 5 ())
+                                        (Character 1 5 () PointerString)
                                     )
                                     Save
-                                    (Character 1 5 ())
+                                    (Character 1 5 () PointerString)
                                     ()
                                     Source
                                     Public
@@ -63,7 +63,7 @@
                     functions_06
                     [functions_06_m]
                     [(Print
-                        [(FunctionCall
+                        (FunctionCall
                             6 trim_wrapper
                             ()
                             [((Var 6 string))]
@@ -71,15 +71,13 @@
                                 (Var 6 string)
                                 (Integer 4)
                                 ()
-                            ))
+                            ) PointerString)
                             ()
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(FunctionCall
                                 6 int_return
@@ -99,14 +97,12 @@
                                 ()
                             )]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(FunctionCall
                                 6 real_return
@@ -126,11 +122,9 @@
                                 ()
                             )]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 ),
             functions_06_m:
@@ -193,7 +187,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 ())
+                                                    (Character 1 -1 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -203,14 +197,14 @@
                                         })
                                     int_return
                                     (FunctionType
-                                        [(Character 1 -1 ())]
+                                        [(Character 1 -1 () PointerString)]
                                         (Array
                                             (Integer 4)
                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                             (StringLen
                                                 (FunctionParam
                                                     0
-                                                    (Character 1 -1 ())
+                                                    (Character 1 -1 () PointerString)
                                                     ()
                                                 )
                                                 (Integer 4)
@@ -317,7 +311,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 ())
+                                                    (Character 1 -1 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -327,14 +321,14 @@
                                         })
                                     real_return
                                     (FunctionType
-                                        [(Character 1 -1 ())]
+                                        [(Character 1 -1 () PointerString)]
                                         (Array
                                             (Real 4)
                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                             (StringLen
                                                 (FunctionParam
                                                     0
-                                                    (Character 1 -1 ())
+                                                    (Character 1 -1 () PointerString)
                                                     ()
                                                 )
                                                 (Integer 4)
@@ -417,7 +411,7 @@
                                                         (Var 3 s)
                                                         (Integer 4)
                                                         ()
-                                                    ))
+                                                    ) PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -433,7 +427,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 ())
+                                                    (Character 1 -1 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -453,8 +447,8 @@
                                         })
                                     trim_wrapper
                                     (FunctionType
-                                        [(Character 1 -1 ())]
-                                        (Character 1 -1 ())
+                                        [(Character 1 -1 () PointerString)]
+                                        (Character 1 -1 () PointerString)
                                         Source
                                         Implementation
                                         ()
@@ -481,7 +475,7 @@
                                                 (Integer 4)
                                                 ()
                                                 ()
-                                            ))
+                                            ) PointerString)
                                             ()
                                             ()
                                         )

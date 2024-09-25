@@ -304,64 +304,61 @@
                                             {
                                                 "node": "Print",
                                                 "fields": {
-                                                    "values": [
-                                                        {
-                                                            "node": "StringFormat",
-                                                            "fields": {
-                                                                "fmt": [],
-                                                                "args": [
-                                                                    {
-                                                                        "node": "Var",
-                                                                        "fields": {
-                                                                            "v": "my_global (SymbolTable2)"
-                                                                        },
-                                                                        "loc": {
-                                                                            "first": 107,
-                                                                            "last": 115,
-                                                                            "first_filename": "tests/modules_10.f90",
-                                                                            "first_line": 5,
-                                                                            "first_column": 18,
-                                                                            "last_filename": "tests/modules_10.f90",
-                                                                            "last_line": 5,
-                                                                            "last_column": 26
-                                                                        }
-                                                                    }
-                                                                ],
-                                                                "kind": "FormatFortran",
-                                                                "type": {
-                                                                    "node": "Character",
+                                                    "text": {
+                                                        "node": "StringFormat",
+                                                        "fields": {
+                                                            "fmt": [],
+                                                            "args": [
+                                                                {
+                                                                    "node": "Var",
                                                                     "fields": {
-                                                                        "kind": -1,
-                                                                        "len": 0,
-                                                                        "len_expr": []
+                                                                        "v": "my_global (SymbolTable2)"
                                                                     },
                                                                     "loc": {
-                                                                        "first": 98,
+                                                                        "first": 107,
                                                                         "last": 115,
                                                                         "first_filename": "tests/modules_10.f90",
                                                                         "first_line": 5,
-                                                                        "first_column": 9,
+                                                                        "first_column": 18,
                                                                         "last_filename": "tests/modules_10.f90",
                                                                         "last_line": 5,
                                                                         "last_column": 26
                                                                     }
+                                                                }
+                                                            ],
+                                                            "kind": "FormatFortran",
+                                                            "type": {
+                                                                "node": "Character",
+                                                                "fields": {
+                                                                    "kind": -1,
+                                                                    "len": 0,
+                                                                    "len_expr": [],
+                                                                    "physical_type": "PointerString"
                                                                 },
-                                                                "value": []
+                                                                "loc": {
+                                                                    "first": 98,
+                                                                    "last": 115,
+                                                                    "first_filename": "tests/modules_10.f90",
+                                                                    "first_line": 5,
+                                                                    "first_column": 9,
+                                                                    "last_filename": "tests/modules_10.f90",
+                                                                    "last_line": 5,
+                                                                    "last_column": 26
+                                                                }
                                                             },
-                                                            "loc": {
-                                                                "first": 98,
-                                                                "last": 115,
-                                                                "first_filename": "tests/modules_10.f90",
-                                                                "first_line": 5,
-                                                                "first_column": 9,
-                                                                "last_filename": "tests/modules_10.f90",
-                                                                "last_line": 5,
-                                                                "last_column": 26
-                                                            }
+                                                            "value": []
+                                                        },
+                                                        "loc": {
+                                                            "first": 98,
+                                                            "last": 115,
+                                                            "first_filename": "tests/modules_10.f90",
+                                                            "first_line": 5,
+                                                            "first_column": 9,
+                                                            "last_filename": "tests/modules_10.f90",
+                                                            "last_line": 5,
+                                                            "last_column": 26
                                                         }
-                                                    ],
-                                                    "separator": [],
-                                                    "end": []
+                                                    }
                                                 },
                                                 "loc": {
                                                     "first": 98,

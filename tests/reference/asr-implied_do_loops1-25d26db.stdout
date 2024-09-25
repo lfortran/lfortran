@@ -117,7 +117,7 @@
                                     []
                                     []
                                     [(Print
-                                        [(StringFormat
+                                        (StringFormat
                                             ()
                                             [(ImpliedDoLoop
                                                 [(Var 2 j)]
@@ -139,11 +139,9 @@
                                                 )
                                             )]
                                             FormatFortran
-                                            (Character -1 0 ())
+                                            (Character -1 0 () PointerString)
                                             ()
-                                        )]
-                                        ()
-                                        ()
+                                        )
                                     )]
                                     ()
                                     Public
@@ -161,7 +159,7 @@
                         ()
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(ImpliedDoLoop
                                 [(ArrayItem
@@ -191,11 +189,9 @@
                                 )
                             )]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 )
         })

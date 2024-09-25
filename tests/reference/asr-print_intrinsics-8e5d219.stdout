@@ -61,11 +61,11 @@
                     print_intrinsics
                     []
                     [(Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StringConstant
                                 "pi=acos(-1.0_sp)  =\""
-                                (Character 1 20 ())
+                                (Character 1 20 () PointerString)
                             )
                             (IntrinsicElementalFunction
                                 Acos
@@ -89,21 +89,19 @@
                             )
                             (StringConstant
                                 "\""
-                                (Character 1 1 ())
+                                (Character 1 1 () PointerString)
                             )]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StringConstant
                                 "pi=acos(-1.0_dp)  =\""
-                                (Character 1 20 ())
+                                (Character 1 20 () PointerString)
                             )
                             (IntrinsicElementalFunction
                                 Acos
@@ -127,14 +125,12 @@
                             )
                             (StringConstant
                                 "\""
-                                (Character 1 1 ())
+                                (Character 1 1 () PointerString)
                             )]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 )
         })

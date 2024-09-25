@@ -12,77 +12,61 @@
                     preprocessor8
                     []
                     [(Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(IntegerConstant 1 (Integer 4) Decimal)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "__VERSION__ present"
-                            (Character 1 19 ())
-                        )]
-                        ()
-                        ()
+                            (Character 1 19 () PointerString)
+                        )
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "__LFORTRAN_MAJOR__ present"
-                            (Character 1 26 ())
-                        )]
-                        ()
-                        ()
+                            (Character 1 26 () PointerString)
+                        )
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "__LFORTRAN_MINOR__ present"
-                            (Character 1 26 ())
-                        )]
-                        ()
-                        ()
+                            (Character 1 26 () PointerString)
+                        )
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "__LFORTRAN_PATCHLEVEL__ present"
-                            (Character 1 31 ())
-                        )]
-                        ()
-                        ()
+                            (Character 1 31 () PointerString)
+                        )
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "tests/preprocessor8.f90"
-                            (Character 1 23 ())
-                        )]
-                        ()
-                        ()
+                            (Character 1 23 () PointerString)
+                        )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(IntegerConstant 19 (Integer 4) Decimal)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(IntegerConstant 20 (Integer 4) Decimal)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 )
         })

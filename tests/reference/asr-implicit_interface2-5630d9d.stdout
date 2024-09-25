@@ -153,7 +153,7 @@
                     implicit_interface2
                     []
                     [(Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(FunctionCall
                                 2 f
@@ -176,11 +176,9 @@
                                 ()
                             )]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 )
         })

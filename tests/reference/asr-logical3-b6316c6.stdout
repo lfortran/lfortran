@@ -67,23 +67,19 @@
                             ()
                         )
                         [(Print
-                            [(StringConstant
+                            (StringConstant
                                 "Line 1 - Condition is true"
-                                (Character 1 26 ())
-                            )]
-                            ()
-                            ()
+                                (Character 1 26 () PointerString)
+                            )
                         )
                         (ErrorStop
                             ()
                         )]
                         [(Print
-                            [(StringConstant
+                            (StringConstant
                                 "Line 1 - Condition is false"
-                                (Character 1 27 ())
-                            )]
-                            ()
-                            ()
+                                (Character 1 27 () PointerString)
+                            )
                         )]
                     )
                     (If
@@ -95,20 +91,16 @@
                             ()
                         )
                         [(Print
-                            [(StringConstant
+                            (StringConstant
                                 "Line 2 - Condition is true"
-                                (Character 1 26 ())
-                            )]
-                            ()
-                            ()
+                                (Character 1 26 () PointerString)
+                            )
                         )]
                         [(Print
-                            [(StringConstant
+                            (StringConstant
                                 "Line 2 - Condition is false"
-                                (Character 1 27 ())
-                            )]
-                            ()
-                            ()
+                                (Character 1 27 () PointerString)
+                            )
                         )
                         (ErrorStop
                             ()
@@ -123,20 +115,16 @@
                             ()
                         )
                         [(Print
-                            [(StringConstant
+                            (StringConstant
                                 "Line xor - Condition is true"
-                                (Character 1 28 ())
-                            )]
-                            ()
-                            ()
+                                (Character 1 28 () PointerString)
+                            )
                         )]
                         [(Print
-                            [(StringConstant
+                            (StringConstant
                                 "Line xor - Condition is false"
-                                (Character 1 29 ())
-                            )]
-                            ()
-                            ()
+                                (Character 1 29 () PointerString)
+                            )
                         )
                         (ErrorStop
                             ()
@@ -171,20 +159,16 @@
                             ()
                         )
                         [(Print
-                            [(StringConstant
+                            (StringConstant
                                 "Line 3 - Condition is true"
-                                (Character 1 26 ())
-                            )]
-                            ()
-                            ()
+                                (Character 1 26 () PointerString)
+                            )
                         )]
                         [(Print
-                            [(StringConstant
+                            (StringConstant
                                 "Line 3 - Condition is false"
-                                (Character 1 27 ())
-                            )]
-                            ()
-                            ()
+                                (Character 1 27 () PointerString)
+                            )
                         )
                         (ErrorStop
                             ()
@@ -199,20 +183,16 @@
                             ()
                         )
                         [(Print
-                            [(StringConstant
+                            (StringConstant
                                 "Line 4 - Condition is true"
-                                (Character 1 26 ())
-                            )]
-                            ()
-                            ()
+                                (Character 1 26 () PointerString)
+                            )
                         )]
                         [(Print
-                            [(StringConstant
+                            (StringConstant
                                 "Line 4 - Condition is false"
-                                (Character 1 27 ())
-                            )]
-                            ()
-                            ()
+                                (Character 1 27 () PointerString)
+                            )
                         )
                         (ErrorStop
                             ()
@@ -227,23 +207,19 @@
                             ()
                         )
                         [(Print
-                            [(StringConstant
+                            (StringConstant
                                 "Line 5 - Condition is true"
-                                (Character 1 26 ())
-                            )]
-                            ()
-                            ()
+                                (Character 1 26 () PointerString)
+                            )
                         )
                         (ErrorStop
                             ()
                         )]
                         [(Print
-                            [(StringConstant
+                            (StringConstant
                                 "Line 5 - Condition is false"
-                                (Character 1 27 ())
-                            )]
-                            ()
-                            ()
+                                (Character 1 27 () PointerString)
+                            )
                         )]
                     )
                     (Assignment
@@ -271,20 +247,16 @@
                             ()
                         )
                         [(Print
-                            [(StringConstant
+                            (StringConstant
                                 "Line 6 - Condition is true"
-                                (Character 1 26 ())
-                            )]
-                            ()
-                            ()
+                                (Character 1 26 () PointerString)
+                            )
                         )]
                         [(Print
-                            [(StringConstant
+                            (StringConstant
                                 "Line 6 - Condition is false"
-                                (Character 1 27 ())
-                            )]
-                            ()
-                            ()
+                                (Character 1 27 () PointerString)
+                            )
                         )
                         (ErrorStop
                             ()
@@ -299,20 +271,16 @@
                             ()
                         )
                         [(Print
-                            [(StringConstant
+                            (StringConstant
                                 "Line 7 - Condition is true"
-                                (Character 1 26 ())
-                            )]
-                            ()
-                            ()
+                                (Character 1 26 () PointerString)
+                            )
                         )]
                         [(Print
-                            [(StringConstant
+                            (StringConstant
                                 "Line 7 - Condition is false"
-                                (Character 1 27 ())
-                            )]
-                            ()
-                            ()
+                                (Character 1 27 () PointerString)
+                            )
                         )
                         (ErrorStop
                             ()
@@ -327,23 +295,19 @@
                             ()
                         )
                         [(Print
-                            [(StringConstant
+                            (StringConstant
                                 "Line 8 xor - Condition is true"
-                                (Character 1 30 ())
-                            )]
-                            ()
-                            ()
+                                (Character 1 30 () PointerString)
+                            )
                         )
                         (ErrorStop
                             ()
                         )]
                         [(Print
-                            [(StringConstant
+                            (StringConstant
                                 "Line 8 xor - Condition is false"
-                                (Character 1 31 ())
-                            )]
-                            ()
-                            ()
+                                (Character 1 31 () PointerString)
+                            )
                         )]
                     )]
                 )

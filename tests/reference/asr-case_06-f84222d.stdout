@@ -167,14 +167,14 @@
                                     Local
                                     (StringConstant
                                         "B"
-                                        (Character 1 1 ())
+                                        (Character 1 1 () PointerString)
                                     )
                                     (StringConstant
                                         "B"
-                                        (Character 1 1 ())
+                                        (Character 1 1 () PointerString)
                                     )
                                     Parameter
-                                    (Character 1 1 ())
+                                    (Character 1 1 () PointerString)
                                     ()
                                     Source
                                     Public
@@ -221,22 +221,20 @@
                         [(CaseStmt
                             [(StringConstant
                                 "A"
-                                (Character 1 1 ())
+                                (Character 1 1 () PointerString)
                             )]
                             [(Print
-                                [(StringConstant
+                                (StringConstant
                                     "Excellent!"
-                                    (Character 1 10 ())
-                                )]
-                                ()
-                                ()
+                                    (Character 1 10 () PointerString)
+                                )
                             )]
                             .false.
                         )
                         (CaseStmt
                             [(StringConstant
                                 "B"
-                                (Character 1 1 ())
+                                (Character 1 1 () PointerString)
                             )]
                             [(If
                                 (IntegerCompare
@@ -247,12 +245,10 @@
                                     ()
                                 )
                                 [(Print
-                                    [(StringConstant
+                                    (StringConstant
                                         "a == b"
-                                        (Character 1 6 ())
-                                    )]
-                                    ()
-                                    ()
+                                        (Character 1 6 () PointerString)
+                                    )
                                 )
                                 (If
                                     (IntegerCompare
@@ -266,20 +262,16 @@
                                         )
                                     )
                                     [(Print
-                                        [(StringConstant
+                                        (StringConstant
                                             "ap == bp"
-                                            (Character 1 8 ())
-                                        )]
-                                        ()
-                                        ()
+                                            (Character 1 8 () PointerString)
+                                        )
                                     )]
                                     [(Print
-                                        [(StringConstant
+                                        (StringConstant
                                             "ap /= bp"
-                                            (Character 1 8 ())
-                                        )]
-                                        ()
-                                        ()
+                                            (Character 1 8 () PointerString)
+                                        )
                                     )]
                                 )]
                                 [(If
@@ -302,12 +294,10 @@
                                         )
                                     )
                                     [(Print
-                                        [(StringConstant
+                                        (StringConstant
                                             "ap == cp"
-                                            (Character 1 8 ())
-                                        )]
-                                        ()
-                                        ()
+                                            (Character 1 8 () PointerString)
+                                        )
                                     )
                                     (If
                                         (RealCompare
@@ -321,20 +311,16 @@
                                             )
                                         )
                                         [(Print
-                                            [(StringConstant
+                                            (StringConstant
                                                 "cp == dp"
-                                                (Character 1 8 ())
-                                            )]
-                                            ()
-                                            ()
+                                                (Character 1 8 () PointerString)
+                                            )
                                         )]
                                         [(Print
-                                            [(StringConstant
+                                            (StringConstant
                                                 "cp /= dp"
-                                                (Character 1 8 ())
-                                            )]
-                                            ()
-                                            ()
+                                                (Character 1 8 () PointerString)
+                                            )
                                         )]
                                     )]
                                     [(If
@@ -346,12 +332,10 @@
                                             ()
                                         )
                                         [(Print
-                                            [(StringConstant
+                                            (StringConstant
                                                 "c == d"
-                                                (Character 1 6 ())
-                                            )]
-                                            ()
-                                            ()
+                                                (Character 1 6 () PointerString)
+                                            )
                                         )]
                                         []
                                     )]
@@ -362,72 +346,62 @@
                         (CaseStmt
                             [(StringConstant
                                 "C"
-                                (Character 1 1 ())
+                                (Character 1 1 () PointerString)
                             )]
                             [(Print
-                                [(StringConstant
+                                (StringConstant
                                     "Well done"
-                                    (Character 1 9 ())
-                                )]
-                                ()
-                                ()
+                                    (Character 1 9 () PointerString)
+                                )
                             )]
                             .false.
                         )
                         (CaseStmt
                             [(StringConstant
                                 "D"
-                                (Character 1 1 ())
+                                (Character 1 1 () PointerString)
                             )]
                             [(Print
-                                [(StringConstant
+                                (StringConstant
                                     "You passed"
-                                    (Character 1 10 ())
-                                )]
-                                ()
-                                ()
+                                    (Character 1 10 () PointerString)
+                                )
                             )]
                             .false.
                         )
                         (CaseStmt
                             [(StringConstant
                                 "F"
-                                (Character 1 1 ())
+                                (Character 1 1 () PointerString)
                             )]
                             [(Print
-                                [(StringConstant
+                                (StringConstant
                                     "Better try again"
-                                    (Character 1 16 ())
-                                )]
-                                ()
-                                ()
+                                    (Character 1 16 () PointerString)
+                                )
                             )]
                             .false.
                         )]
                         [(Print
-                            [(StringConstant
+                            (StringConstant
                                 "Invalid grade"
-                                (Character 1 13 ())
-                            )]
-                            ()
-                            ()
+                                (Character 1 13 () PointerString)
+                            )
                         )]
                         .false.
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StringConstant
                                 "Your grade is "
-                                (Character 1 14 ())
+                                (Character 1 14 () PointerString)
                             )
                             (Var 2 grade_fixed)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Assignment
                         (Var 2 marks)
@@ -446,12 +420,10 @@
                             )
                             ()
                             [(Print
-                                [(StringConstant
+                                (StringConstant
                                     "Pass!"
-                                    (Character 1 5 ())
-                                )]
-                                ()
-                                ()
+                                    (Character 1 5 () PointerString)
+                                )
                             )]
                         )
                         (CaseStmt_Range
@@ -464,38 +436,32 @@
                                 (IntegerConstant 38 (Integer 4) Decimal)
                             )
                             [(Print
-                                [(StringConstant
+                                (StringConstant
                                     "Failed!"
-                                    (Character 1 7 ())
-                                )]
-                                ()
-                                ()
+                                    (Character 1 7 () PointerString)
+                                )
                             )]
                         )]
                         [(Print
-                            [(StringConstant
+                            (StringConstant
                                 "Invalid marks"
-                                (Character 1 13 ())
-                            )]
-                            ()
-                            ()
+                                (Character 1 13 () PointerString)
+                            )
                         )]
                         .false.
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StringConstant
                                 "Your marks are "
-                                (Character 1 15 ())
+                                (Character 1 15 () PointerString)
                             )
                             (Var 2 marks)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Select
                         (Var 2 marks_fixed)
@@ -509,12 +475,10 @@
                             )
                             ()
                             [(Print
-                                [(StringConstant
+                                (StringConstant
                                     "Pass!"
-                                    (Character 1 5 ())
-                                )]
-                                ()
-                                ()
+                                    (Character 1 5 () PointerString)
+                                )
                             )]
                         )
                         (CaseStmt_Range
@@ -527,38 +491,32 @@
                                 (IntegerConstant 38 (Integer 4) Decimal)
                             )
                             [(Print
-                                [(StringConstant
+                                (StringConstant
                                     "Failed!"
-                                    (Character 1 7 ())
-                                )]
-                                ()
-                                ()
+                                    (Character 1 7 () PointerString)
+                                )
                             )]
                         )]
                         [(Print
-                            [(StringConstant
+                            (StringConstant
                                 "Invalid marks"
-                                (Character 1 13 ())
-                            )]
-                            ()
-                            ()
+                                (Character 1 13 () PointerString)
+                            )
                         )]
                         .false.
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StringConstant
                                 "Your marks are "
-                                (Character 1 15 ())
+                                (Character 1 15 () PointerString)
                             )
                             (Var 2 marks)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 )
         })

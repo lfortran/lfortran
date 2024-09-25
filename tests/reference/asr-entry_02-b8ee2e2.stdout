@@ -197,19 +197,17 @@
                         1
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StringConstant
                                 "Printed using subroutine call: "
-                                (Character 1 31 ())
+                                (Character 1 31 () PointerString)
                             )
                             (Var 4 dummy)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (If
                         (RealCompare
@@ -251,19 +249,17 @@
                         ()
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StringConstant
                                 "Printed using entry statement: "
-                                (Character 1 31 ())
+                                (Character 1 31 () PointerString)
                             )
                             (Var 4 dummy)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (If
                         (RealCompare
@@ -302,19 +298,17 @@
                         2
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StringConstant
                                 "Printed using entry statement: "
-                                (Character 1 31 ())
+                                (Character 1 31 () PointerString)
                             )
                             (Var 4 dummy)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (If
                         (RealCompare

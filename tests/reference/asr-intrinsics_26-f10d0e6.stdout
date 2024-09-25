@@ -37,7 +37,7 @@
                     intrinsics_26
                     [stdlib_bitsets_64]
                     [(Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(FunctionCall
                                 4 all_set
@@ -49,11 +49,9 @@
                                 ()
                             )]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 ),
             stdlib_bitsets_64:

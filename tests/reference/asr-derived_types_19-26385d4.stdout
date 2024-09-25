@@ -198,12 +198,10 @@
                                     []
                                     []
                                     [(Print
-                                        [(StringConstant
+                                        (StringConstant
                                             "default class"
-                                            (Character 1 13 ())
-                                        )]
-                                        ()
-                                        ()
+                                            (Character 1 13 () PointerString)
+                                        )
                                     )]
                                     ()
                                     Public
@@ -243,12 +241,10 @@
                                     []
                                     []
                                     [(Print
-                                        [(StringConstant
+                                        (StringConstant
                                             "not ok"
-                                            (Character 1 6 ())
-                                        )]
-                                        ()
-                                        ()
+                                            (Character 1 6 () PointerString)
+                                        )
                                     )]
                                     ()
                                     Public
@@ -271,7 +267,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (Character 1 -2 () PointerString)
                                                     )
                                                     ()
                                                     Source
@@ -364,12 +360,10 @@
                     main
                     []
                     [(Print
-                        [(StringConstant
+                        (StringConstant
                             "running derived_types_19 main program"
-                            (Character 1 37 ())
-                        )]
-                        ()
-                        ()
+                            (Character 1 37 () PointerString)
+                        )
                     )]
                 )
         })

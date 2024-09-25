@@ -71,7 +71,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (Character 1 -2 () PointerString)
                                                     )
                                                     ()
                                                     Source
@@ -89,7 +89,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (Character 1 -2 () PointerString)
                                                     )
                                                     ()
                                                     Source
@@ -189,12 +189,10 @@
                     modules_32
                     []
                     [(Print
-                        [(StringConstant
+                        (StringConstant
                             "running modules_32 program"
-                            (Character 1 26 ())
-                        )]
-                        ()
-                        ()
+                            (Character 1 26 () PointerString)
+                        )
                     )]
                 )
         })

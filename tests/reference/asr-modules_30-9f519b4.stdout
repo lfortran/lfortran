@@ -51,7 +51,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 ())
+                                                    (Character 1 -1 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -82,7 +82,7 @@
                                         [(StructType
                                             7 executable_config
                                         )
-                                        (Character 1 -1 ())]
+                                        (Character 1 -1 () PointerString)]
                                         ()
                                         Source
                                         Implementation
@@ -103,7 +103,7 @@
                                             (Var 9 self)
                                             9 1_executable_config_name
                                             (Allocatable
-                                                (Character 1 -2 ())
+                                                (Character 1 -2 () PointerString)
                                             )
                                             ()
                                         )
@@ -115,13 +115,13 @@
                                             (Var 9 self)
                                             9 1_executable_config_source_dir
                                             (Allocatable
-                                                (Character 1 -2 ())
+                                                (Character 1 -2 () PointerString)
                                             )
                                             ()
                                         )
                                         (StringConstant
                                             "app"
-                                            (Character 1 3 ())
+                                            (Character 1 3 () PointerString)
                                         )
                                         ()
                                     )
@@ -130,13 +130,13 @@
                                             (Var 9 self)
                                             9 1_executable_config_main
                                             (Allocatable
-                                                (Character 1 -2 ())
+                                                (Character 1 -2 () PointerString)
                                             )
                                             ()
                                         )
                                         (StringConstant
                                             "main.f90"
-                                            (Character 1 8 ())
+                                            (Character 1 8 () PointerString)
                                         )
                                         ()
                                     )]
@@ -161,7 +161,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (Character 1 -2 () PointerString)
                                                     )
                                                     ()
                                                     Source
@@ -179,7 +179,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (Character 1 -2 () PointerString)
                                                     )
                                                     ()
                                                     Source
@@ -197,7 +197,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (Character 1 -2 () PointerString)
                                                     )
                                                     ()
                                                     Source
@@ -312,7 +312,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 ())
+                                                    (Character 1 -1 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -325,7 +325,7 @@
                                         [(StructType
                                             2 package_config_t
                                         )
-                                        (Character 1 -1 ())]
+                                        (Character 1 -1 () PointerString)]
                                         ()
                                         Source
                                         Implementation
@@ -397,7 +397,7 @@
                                             (Var 10 package)
                                             10 1_package_config_t_name
                                             (Allocatable
-                                                (Character 1 -2 ())
+                                                (Character 1 -2 () PointerString)
                                             )
                                             ()
                                         ))]
@@ -471,7 +471,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (Character 1 -2 () PointerString)
                                                     )
                                                     ()
                                                     Source
@@ -508,12 +508,10 @@
                     modules_30
                     []
                     [(Print
-                        [(StringConstant
+                        (StringConstant
                             "running modules_30 program"
-                            (Character 1 26 ())
-                        )]
-                        ()
-                        ()
+                            (Character 1 26 () PointerString)
+                        )
                     )]
                 )
         })

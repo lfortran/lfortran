@@ -95,11 +95,11 @@
                     operator_overloading_01
                     [operator_overloading_01_overload_asterisk_m]
                     [(Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StringConstant
                                 "T*T:"
-                                (Character 1 4 ())
+                                (Character 1 4 () PointerString)
                             )
                             (OverloadedBinOp
                                 (Var 5 t)
@@ -118,18 +118,16 @@
                                 )
                             )]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StringConstant
                                 "T*F:"
-                                (Character 1 4 ())
+                                (Character 1 4 () PointerString)
                             )
                             (OverloadedBinOp
                                 (Var 5 t)
@@ -148,18 +146,16 @@
                                 )
                             )]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StringConstant
                                 "F*T:"
-                                (Character 1 4 ())
+                                (Character 1 4 () PointerString)
                             )
                             (OverloadedBinOp
                                 (Var 5 f)
@@ -178,18 +174,16 @@
                                 )
                             )]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StringConstant
                                 "F*F:"
-                                (Character 1 4 ())
+                                (Character 1 4 () PointerString)
                             )
                             (OverloadedBinOp
                                 (Var 5 f)
@@ -208,18 +202,16 @@
                                 )
                             )]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StringConstant
                                 "T+T:"
-                                (Character 1 4 ())
+                                (Character 1 4 () PointerString)
                             )
                             (OverloadedBinOp
                                 (Var 5 t)
@@ -238,18 +230,16 @@
                                 )
                             )]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StringConstant
                                 "T+F:"
-                                (Character 1 4 ())
+                                (Character 1 4 () PointerString)
                             )
                             (OverloadedBinOp
                                 (Var 5 t)
@@ -268,18 +258,16 @@
                                 )
                             )]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StringConstant
                                 "F+T:"
-                                (Character 1 4 ())
+                                (Character 1 4 () PointerString)
                             )
                             (OverloadedBinOp
                                 (Var 5 f)
@@ -298,18 +286,16 @@
                                 )
                             )]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StringConstant
                                 "F+F:"
-                                (Character 1 4 ())
+                                (Character 1 4 () PointerString)
                             )
                             (OverloadedBinOp
                                 (Var 5 f)
@@ -328,11 +314,9 @@
                                 )
                             )]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 ),
             operator_overloading_01_overload_asterisk_m:

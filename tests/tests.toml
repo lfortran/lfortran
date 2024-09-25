@@ -1758,6 +1758,10 @@ filename = "format3.f90"
 run = true
 
 [[test]]
+filename = "format4.f90"
+run = true
+
+[[test]]
 filename = "../integration_tests/format_11.f90"
 run = true
 
@@ -2676,6 +2680,10 @@ ast = true
 
 [[test]]
 filename = "fixedform_data.f"
+ast = true
+
+[[test]]
+filename = "fixedform_module.f"
 ast = true
 
 [[test]]
@@ -3770,6 +3778,10 @@ filename = "int_to_complex_cast_in_comparison.f90"
 fortran = true
 
 [[test]]
+filename = "cast_node_m_value.f90"
+asr = true
+
+[[test]]
 filename = "errors/loop_test.f90"
 asr = true
 
@@ -4001,6 +4013,10 @@ filename = "errors/sqrt_neg.f90"
 asr = true
 
 [[test]]
+filename = "errors/Same_type.f90"
+asr = true
+
+[[test]]
 filename = "errors/idint_real4.f90"
 asr = true
 
@@ -4163,3 +4179,28 @@ asr = true
 [[test]]
 filename = "implied_do_loop1.f90"
 run = true
+
+[[test]]
+filename = "multi_error1.f90"
+ast = true
+
+[[test]]
+filename = "errors/incompatible_rank_assign.f90"
+asr = true
+
+[[test]]
+filename = "errors/array_shape_01.f90"
+asr = true
+
+[[test]]
+filename = "errors/array_shape_02.f90"
+asr = true
+[[test]]
+filename = "function_call1.f90"
+asr = true
+
+[[test]]
+filename = "lookup_name1.f90"
+lookup_name = true
+line = 3
+column = 12

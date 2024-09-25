@@ -110,12 +110,10 @@
                                     []
                                     [(Var 4 x)]
                                     [(Print
-                                        [(StringConstant
+                                        (StringConstant
                                             "Hello World"
-                                            (Character 1 11 ())
-                                        )]
-                                        ()
-                                        ()
+                                            (Character 1 11 () PointerString)
+                                        )
                                     )]
                                     ()
                                     Public

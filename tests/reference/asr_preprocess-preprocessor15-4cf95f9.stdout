@@ -12,100 +12,76 @@
                     preprocessor15
                     []
                     [(Print
-                        [(StringConstant
+                        (StringConstant
                             "X == 4"
-                            (Character 1 6 ())
-                        )]
-                        ()
-                        ()
+                            (Character 1 6 () PointerString)
+                        )
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "X == 4"
-                            (Character 1 6 ())
-                        )]
-                        ()
-                        ()
+                            (Character 1 6 () PointerString)
+                        )
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "X == 4"
-                            (Character 1 6 ())
-                        )]
-                        ()
-                        ()
+                            (Character 1 6 () PointerString)
+                        )
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "X == 2"
-                            (Character 1 6 ())
-                        )]
-                        ()
-                        ()
+                            (Character 1 6 () PointerString)
+                        )
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "X == 2"
-                            (Character 1 6 ())
-                        )]
-                        ()
-                        ()
+                            (Character 1 6 () PointerString)
+                        )
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "X == 2"
-                            (Character 1 6 ())
-                        )]
-                        ()
-                        ()
+                            (Character 1 6 () PointerString)
+                        )
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "X == 1"
-                            (Character 1 6 ())
-                        )]
-                        ()
-                        ()
+                            (Character 1 6 () PointerString)
+                        )
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "X == 1"
-                            (Character 1 6 ())
-                        )]
-                        ()
-                        ()
+                            (Character 1 6 () PointerString)
+                        )
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "X == 1"
-                            (Character 1 6 ())
-                        )]
-                        ()
-                        ()
+                            (Character 1 6 () PointerString)
+                        )
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "X == 2"
-                            (Character 1 6 ())
-                        )]
-                        ()
-                        ()
+                            (Character 1 6 () PointerString)
+                        )
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "X == 2"
-                            (Character 1 6 ())
-                        )]
-                        ()
-                        ()
+                            (Character 1 6 () PointerString)
+                        )
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "X == 2"
-                            (Character 1 6 ())
-                        )]
-                        ()
-                        ()
+                            (Character 1 6 () PointerString)
+                        )
                     )]
                 )
         })

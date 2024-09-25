@@ -113,7 +113,7 @@
                         ()
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(PointerToCPtr
                                 (Var 2 x)
@@ -122,18 +122,16 @@
                             )
                             (Var 2 queries)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Associate
                         (Var 2 x)
                         (Var 2 y)
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(PointerToCPtr
                                 (Var 2 x)
@@ -152,11 +150,9 @@
                                 ()
                             )]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 ),
             iso_c_binding:

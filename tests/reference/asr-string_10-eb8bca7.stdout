@@ -15,14 +15,14 @@
                                     Local
                                     (StringConstant
                                         "BC"
-                                        (Character 1 2 ())
+                                        (Character 1 2 () PointerString)
                                     )
                                     (StringConstant
                                         "BC"
-                                        (Character 1 2 ())
+                                        (Character 1 2 () PointerString)
                                     )
                                     Save
-                                    (Character 1 2 ())
+                                    (Character 1 2 () PointerString)
                                     ()
                                     Source
                                     Public
@@ -54,7 +54,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Character 1 3 ())
+                                    (Character 1 3 () PointerString)
                                     ()
                                     Source
                                     Public
@@ -73,7 +73,7 @@
                                     GtE
                                     (StringConstant
                                         "A"
-                                        (Character 1 1 ())
+                                        (Character 1 1 () PointerString)
                                     )
                                     (Logical 4)
                                     ()
@@ -84,7 +84,7 @@
                                     LtE
                                     (StringConstant
                                         "Z"
-                                        (Character 1 1 ())
+                                        (Character 1 1 () PointerString)
                                     )
                                     (Logical 4)
                                     ()
@@ -99,7 +99,7 @@
                                     GtE
                                     (StringConstant
                                         "a"
-                                        (Character 1 1 ())
+                                        (Character 1 1 () PointerString)
                                     )
                                     (Logical 4)
                                     ()
@@ -110,7 +110,7 @@
                                     LtE
                                     (StringConstant
                                         "z"
-                                        (Character 1 1 ())
+                                        (Character 1 1 () PointerString)
                                     )
                                     (Logical 4)
                                     ()
@@ -124,21 +124,19 @@
                         ()
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(Var 2 is_alpha)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Assignment
                         (Var 2 c)
                         (StringConstant
                             "@a"
-                            (Character 1 2 ())
+                            (Character 1 2 () PointerString)
                         )
                         ()
                     )
@@ -151,7 +149,7 @@
                                     GtE
                                     (StringConstant
                                         "A"
-                                        (Character 1 1 ())
+                                        (Character 1 1 () PointerString)
                                     )
                                     (Logical 4)
                                     ()
@@ -162,7 +160,7 @@
                                     LtE
                                     (StringConstant
                                         "Z"
-                                        (Character 1 1 ())
+                                        (Character 1 1 () PointerString)
                                     )
                                     (Logical 4)
                                     ()
@@ -177,7 +175,7 @@
                                     GtE
                                     (StringConstant
                                         "a"
-                                        (Character 1 1 ())
+                                        (Character 1 1 () PointerString)
                                     )
                                     (Logical 4)
                                     ()
@@ -188,7 +186,7 @@
                                     LtE
                                     (StringConstant
                                         "z"
-                                        (Character 1 1 ())
+                                        (Character 1 1 () PointerString)
                                     )
                                     (Logical 4)
                                     ()
@@ -202,21 +200,19 @@
                         ()
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(Var 2 is_alpha)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Assignment
                         (Var 2 c)
                         (StringConstant
                             "a@"
-                            (Character 1 2 ())
+                            (Character 1 2 () PointerString)
                         )
                         ()
                     )
@@ -229,7 +225,7 @@
                                     GtE
                                     (StringConstant
                                         "A"
-                                        (Character 1 1 ())
+                                        (Character 1 1 () PointerString)
                                     )
                                     (Logical 4)
                                     ()
@@ -240,7 +236,7 @@
                                     LtE
                                     (StringConstant
                                         "Z"
-                                        (Character 1 1 ())
+                                        (Character 1 1 () PointerString)
                                     )
                                     (Logical 4)
                                     ()
@@ -255,7 +251,7 @@
                                     GtE
                                     (StringConstant
                                         "a"
-                                        (Character 1 1 ())
+                                        (Character 1 1 () PointerString)
                                     )
                                     (Logical 4)
                                     ()
@@ -266,7 +262,7 @@
                                     LtE
                                     (StringConstant
                                         "z"
-                                        (Character 1 1 ())
+                                        (Character 1 1 () PointerString)
                                     )
                                     (Logical 4)
                                     ()
@@ -280,15 +276,13 @@
                         ()
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(Var 2 is_alpha)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Assignment
                         (StringSection
@@ -314,12 +308,12 @@
                                 )
                                 (Integer 4)
                                 ()
-                            ))
+                            ) PointerString)
                             ()
                         )
                         (StringConstant
                             "sbs"
-                            (Character 1 3 ())
+                            (Character 1 3 () PointerString)
                         )
                         ()
                     )
@@ -329,7 +323,7 @@
                             NotEq
                             (StringConstant
                                 "sbs"
-                                (Character 1 3 ())
+                                (Character 1 3 () PointerString)
                             )
                             (Logical 4)
                             ()

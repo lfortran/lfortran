@@ -310,11 +310,11 @@
                                         (Var 4 p_or_cp)
                                     )
                                     (Print
-                                        [(StringFormat
+                                        (StringFormat
                                             ()
                                             [(StringConstant
                                                 "point: "
-                                                (Character 1 7 ())
+                                                (Character 1 7 () PointerString)
                                             )
                                             (StructInstanceMember
                                                 (Var 7 an)
@@ -329,11 +329,9 @@
                                                 ()
                                             )]
                                             FormatFortran
-                                            (Character -1 0 ())
+                                            (Character -1 0 () PointerString)
                                             ()
-                                        )]
-                                        ()
-                                        ()
+                                        )
                                     )]
                                 ),
                             ~select_type_block_1:
@@ -398,11 +396,11 @@
                                         (Var 4 p_or_cp)
                                     )
                                     (Print
-                                        [(StringFormat
+                                        (StringFormat
                                             ()
                                             [(StringConstant
                                                 "color_point: "
-                                                (Character 1 13 ())
+                                                (Character 1 13 () PointerString)
                                             )
                                             (StructInstanceMember
                                                 (Var 8 an)
@@ -423,11 +421,9 @@
                                                 ()
                                             )]
                                             FormatFortran
-                                            (Character -1 0 ())
+                                            (Character -1 0 () PointerString)
                                             ()
-                                        )]
-                                        ()
-                                        ()
+                                        )
                                     )]
                                 )
                         })

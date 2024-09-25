@@ -58,19 +58,17 @@
                         )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StringConstant
                                 "tf=0:"
-                                (Character 1 5 ())
+                                (Character 1 5 () PointerString)
                             )
                             (Var 5 tf)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Assignment
                         (Var 5 tf)
@@ -84,19 +82,17 @@
                         )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StringConstant
                                 "tf=1:"
-                                (Character 1 5 ())
+                                (Character 1 5 () PointerString)
                             )
                             (Var 5 tf)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 ),
             overload_assignment_m:

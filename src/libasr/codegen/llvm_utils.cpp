@@ -1089,7 +1089,7 @@ namespace LCompilers {
                     break;
                 }
                 default :
-                    throw CodeGenError("Type not implemented " + std::to_string(return_var_type));
+                    throw CodeGenError("Type not implemented " + ASRUtils::type_to_str_python(return_var_type0));
             }
         } else {
             return_type = llvm::Type::getVoidTy(context);
@@ -1287,7 +1287,7 @@ namespace LCompilers {
                     break;
                 }
                 default :
-                    throw CodeGenError("Type not implemented " + std::to_string(return_var_type));
+                    throw CodeGenError("Type not implemented " + ASRUtils::type_to_str_python(return_var_type0));
             }
         } else {
             return_type = llvm::Type::getVoidTy(context);
@@ -1330,7 +1330,8 @@ namespace LCompilers {
                         llvm_type = arr_api->get_array_type(asr_type, el_type);
                         break;
                     }
-                    case ASR::array_physical_typeType::PointerToDataArray: {
+                    case ASR::array_physical_typeType::PointerToDataArray:
+                    case ASR::array_physical_typeType::UnboundedPointerToDataArray : {
                         llvm_type = get_el_type(v_type->m_type, module)->getPointerTo();
                         break;
                     }
@@ -1632,17 +1633,42 @@ namespace LCompilers {
         return builder->CreateLoad(t2, x);
 #else
         llvm::Type *type = nullptr, *type_copy = nullptr;
+        bool is_type_pointer = false;
         if (ptr_type.find(x) != ptr_type.end()) {
             type_copy = type = ptr_type[x];
         }
         LCOMPILERS_ASSERT(type);
+        // getPointerTo() is used for allocatable or pointer
         if (type != character_type && (llvm::isa<llvm::AllocaInst>(x) &&
                 llvm::dyn_cast<llvm::AllocaInst>(x)->getAllocatedType()->isPointerTy())) {
+            // AllocaInst
             type = type->getPointerTo();
+            is_type_pointer = true;
+        } else if (llvm::StructType *arr_type = llvm::dyn_cast<llvm::StructType>(type)) {
+            // Function arguments
+            if (arr_type->getName() == "array") {
+                type = type->getPointerTo();
+                is_type_pointer = true;
+            }
         }
+
+        if ( llvm::GetElementPtrInst *
+                gep = llvm::dyn_cast<llvm::GetElementPtrInst>(x) ) {
+            // GetElementPtrInst
+            llvm::Type *src_type = gep->getSourceElementType();
+            LCOMPILERS_ASSERT(llvm::isa<llvm::StructType>(src_type));
+            std::string s_name = std::string(llvm::dyn_cast<llvm::StructType>(
+                gep->getSourceElementType())->getName());
+            if ( name2dertype.find(s_name) != name2dertype.end() ) {
+                type = type->getPointerTo();
+                is_type_pointer = true;
+            }
+        }
+
         llvm::Value *load = builder->CreateLoad(type, x);
-        LCOMPILERS_ASSERT(type_copy);
-        ptr_type[load] = type_copy;
+        if (is_type_pointer) {
+            ptr_type[load] = type_copy;
+        }
         return load;
 #endif
     }
@@ -2034,8 +2060,10 @@ namespace LCompilers {
                             break;
                         }
                         case ASR::array_physical_typeType::FixedSizeArray: {
-                            src = create_gep(src, 0);
-                            dest = create_gep(dest, 0);
+                            llvm::Type* llvm_array_type = get_type_from_ttype_t_util(
+                                ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(asr_type)), module);
+                            src = create_gep2(llvm_array_type, src, 0);
+                            dest = create_gep2(llvm_array_type, dest, 0);
                             ASR::dimension_t* asr_dims = nullptr;
                             size_t asr_n_dims = ASRUtils::extract_dimensions_from_ttype(asr_type, asr_dims);
                             int64_t size = ASRUtils::get_fixed_size_of_array(asr_dims, asr_n_dims);

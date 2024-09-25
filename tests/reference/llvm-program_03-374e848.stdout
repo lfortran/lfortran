@@ -2,9 +2,8 @@
 source_filename = "LFortran"
 
 @__lcompilers_created__nested_context__closuretest_z = global i32 0
-@0 = private unnamed_addr constant [2 x i8] c" \00", align 1
-@1 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@2 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@1 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
@@ -33,7 +32,7 @@ loop.body:                                        ; preds = %loop.head
   %9 = call i32 @apply(i32 (i32*)* @add_z, i32* %call_arg_value)
   %10 = sext i32 %9 to i64
   %11 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 2, i8* null, i32 2, i64 %10)
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @2, i32 0, i32 0), i8* %11, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0))
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %11, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
   %12 = load i32, i32* @__lcompilers_created__nested_context__closuretest_z, align 4
   store i32 %12, i32* %z1, align 4
   br label %loop.head

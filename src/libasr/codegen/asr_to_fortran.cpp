@@ -917,8 +917,8 @@ public:
         std::string r = indent;
         r += "print";
         r += " ";
-        if (x.n_values > 0 && is_a<ASR::StringFormat_t>(*x.m_values[0])) {
-            ASR::StringFormat_t *sf = down_cast<ASR::StringFormat_t>(x.m_values[0]);
+        if (is_a<ASR::StringFormat_t>(*x.m_text)) {
+            ASR::StringFormat_t *sf = down_cast<ASR::StringFormat_t>(x.m_text);
             if(sf->m_fmt){
                 visit_expr(*(sf->m_fmt));
                 if (is_a<ASR::StringConstant_t>(*sf->m_fmt)
@@ -929,13 +929,14 @@ public:
             } else {
                 r += "*";
             }
-        } else {
+        } else if (ASR::is_a<ASR::Character_t>(*ASRUtils::expr_type(x.m_text))) {
             r += "*";
-        }
-        for (size_t i = 0; i < x.n_values; i++) {
             r += ", ";
-            visit_expr(*x.m_values[i]);
+            visit_expr(*x.m_text);
             r += src;
+        } else {
+            throw CodeGenError("print statment supported for stringformat and single character argument",
+                x.base.base.loc);
         }
         handle_line_truncation(r, 2);
         r += "\n";
@@ -1260,6 +1261,9 @@ public:
             SET_INTRINSIC_SUBROUTINE_NAME(RandomNumber, "random_number");
             SET_INTRINSIC_SUBROUTINE_NAME(RandomInit, "random_init");
             SET_INTRINSIC_SUBROUTINE_NAME(RandomSeed, "random_seed");
+            SET_INTRINSIC_SUBROUTINE_NAME(GetCommand, "get_command");
+            SET_INTRINSIC_SUBROUTINE_NAME(GetEnvironmentVariable, "get_environment_variable");
+            SET_INTRINSIC_SUBROUTINE_NAME(ExecuteCommandLine, "execute_command_line");
             default : {
                 throw LCompilersException("IntrinsicImpureSubroutine: `"
                     + ASRUtils::get_intrinsic_name(x.m_sub_intrinsic_id)

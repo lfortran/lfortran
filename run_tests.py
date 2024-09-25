@@ -38,6 +38,13 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     ast_cpp = is_included("ast_cpp")
     ast_cpp_hip = is_included("ast_cpp_hip")
     ast_openmp = is_included("ast_openmp")
+    lookup_name = is_included("lookup_name")
+    line = "-1"
+    if is_included("line"):
+        line = str(test["line"])
+    column = "-1"
+    if is_included("column"):
+        column = str(test["column"])
     asr = is_included("asr")
     asr_ignore_pragma = is_included("asr_ignore_pragma")
     asr_implicit_typing = is_included("asr_implicit_typing")
@@ -101,6 +108,10 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
         extra_args += " --interactive-parse"
     if cpp_infer:
         extra_args += " --cpp-infer"
+    if line:
+        extra_args += " --line=" + line
+    if column:
+        extra_args += " --column=" + column
 
     if tokens:
         run_test(
@@ -205,7 +216,15 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                 "cpptranslate --show-ast-openmp {infile}",
                 filename,
                 update_reference)
-
+    if lookup_name:
+        run_test(
+            filename,
+            "lookup_name",
+            "lfortran --lookup-name --no-color {infile} -o {outfile}",
+            filename,
+            update_reference,
+            verify_hash,
+            extra_args)
     if asr:
         # run fixed form
         if filename.endswith(".f"):

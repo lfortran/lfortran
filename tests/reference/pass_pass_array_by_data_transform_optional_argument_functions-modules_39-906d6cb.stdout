@@ -37,12 +37,10 @@
                         ()
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "executing modules_39"
-                            (Character 1 20 ())
-                        )]
-                        ()
-                        ()
+                            (Character 1 20 () PointerString)
+                        )
                     )]
                 ),
             modules_39_fpm_39:
@@ -64,7 +62,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 1 ())
+                                                    (Character 1 1 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -80,7 +78,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 1 ())
+                                                    (Character 1 1 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -96,7 +94,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 1 ())
+                                                    (Character 1 1 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -129,11 +127,11 @@
                                             ()
                                             [((StringConstant
                                                 "build"
-                                                (Character 1 5 ())
+                                                (Character 1 5 () PointerString)
                                             ))
                                             ((StringConstant
                                                 ".gitignore"
-                                                (Character 1 10 ())
+                                                (Character 1 10 () PointerString)
                                             ))
                                             ((Var 7 __libasr_created_variable_))
                                             ((LogicalConstant
@@ -151,7 +149,7 @@
                                                 (Logical 4)
                                             ))]
                                             (Allocatable
-                                                (Character 1 -2 ())
+                                                (Character 1 -2 () PointerString)
                                             )
                                             ()
                                             ()
@@ -161,7 +159,7 @@
                                                 1
                                                 ["*"]
                                                 (Array
-                                                    (Character 1 1 ())
+                                                    (Character 1 1 () PointerString)
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 1 (Integer 4) Decimal))]
                                                     FixedSizeArray
@@ -171,7 +169,7 @@
                                             FixedSizeArray
                                             PointerToDataArray
                                             (Array
-                                                (Character 1 1 ())
+                                                (Character 1 1 () PointerString)
                                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                                 (IntegerConstant 1 (Integer 4) Decimal))]
                                                 PointerToDataArray
@@ -267,7 +265,7 @@
                                                     ()
                                                     Default
                                                     (Array
-                                                        (Character 1 -1 ())
+                                                        (Character 1 -1 () PointerString)
                                                         [((Var 9 __1filedata)
                                                         (Var 9 __2filedata))]
                                                         PointerToDataArray
@@ -287,7 +285,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 ())
+                                                    (Character 1 -1 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -297,9 +295,9 @@
                                         })
                                     filewrite_character____1
                                     (FunctionType
-                                        [(Character 1 -1 ())
+                                        [(Character 1 -1 () PointerString)
                                         (Array
-                                            (Character 1 -1 ())
+                                            (Character 1 -1 () PointerString)
                                             [((FunctionParam
                                                 2
                                                 (Integer 4)
@@ -352,7 +350,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 ())
+                                                    (Character 1 -1 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -368,7 +366,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 ())
+                                                    (Character 1 -1 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -384,7 +382,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 ())
+                                                    (Character 1 -1 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -400,7 +398,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 ())
+                                                    (Character 1 -1 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -416,7 +414,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 ())
+                                                    (Character 1 -1 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -481,7 +479,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (Character 1 -2 () PointerString)
                                                     )
                                                     ()
                                                     Source
@@ -492,16 +490,16 @@
                                         })
                                     join_path
                                     (FunctionType
-                                        [(Character 1 -1 ())
-                                        (Character 1 -1 ())
-                                        (Character 1 -1 ())
+                                        [(Character 1 -1 () PointerString)
+                                        (Character 1 -1 () PointerString)
+                                        (Character 1 -1 () PointerString)
                                         (Logical 4)
-                                        (Character 1 -1 ())
+                                        (Character 1 -1 () PointerString)
                                         (Logical 4)
-                                        (Character 1 -1 ())
+                                        (Character 1 -1 () PointerString)
                                         (Logical 4)]
                                         (Allocatable
-                                            (Character 1 -2 ())
+                                            (Character 1 -2 () PointerString)
                                         )
                                         Source
                                         Implementation

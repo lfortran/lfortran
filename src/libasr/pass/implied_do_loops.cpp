@@ -545,10 +545,16 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                         ASR::down_cast<ASR::ImpliedDoLoop_t>(x->m_values[i])));
                 } else {
                     Vec<ASR::expr_t*> print_values; print_values.reserve(al, 1);
-                    print_values.push_back(al, x->m_values[i]);
                     ASR::stmt_t* stmt = nullptr;
+                    Vec<ASR::expr_t*> args;
+                    args.reserve(al, 1);
+                    args.push_back(al, x->m_values[i]);
+                    ASR::expr_t* fmt_val = ASRUtils::EXPR(ASR::make_StringFormat_t(al,x->base.base.loc, nullptr,
+                        args.p, 1,ASR::string_format_kindType::FormatFortran, 
+                        ASRUtils::TYPE(ASR::make_Character_t(al,x->base.base.loc,-1,-1,nullptr, ASR::string_physical_typeType::PointerString)), nullptr));
+                    print_values.push_back(al, fmt_val);
                     if ( print ) {
-                        stmt = ASRUtils::STMT(ASR::make_Print_t(al, x->m_values[i]->base.loc, print_values.p, print_values.size(), nullptr, nullptr));
+                        stmt = ASRUtils::STMT(ASRUtils::make_print_t_util(al, x->m_values[i]->base.loc, print_values.p, print_values.size()));
                     } else {
                         // this will be file_write
                         LCOMPILERS_ASSERT(file_write);
@@ -572,33 +578,19 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                 integer :: i
                 print *, [(i, i=1, 10)]
             */
-            ASR::Print_t* print_stmt = const_cast<ASR::Print_t*>(&x);
-            for(size_t i = 0; i < x.n_values; i++) {
-                ASR::expr_t* value = x.m_values[i];
-                if (ASR::is_a<ASR::ImpliedDoLoop_t>(*value)) {
-                    ASR::asr_t* array_constant = create_array_constant(x, value);
-                    print_stmt->m_values[i] = ASRUtils::EXPR(array_constant);
-
-                    replacer.result_var = value;
-                    resultvar2value[replacer.result_var] = ASRUtils::EXPR(array_constant);
-                    ASR::expr_t** current_expr_copy_9 = current_expr;
-                    current_expr = const_cast<ASR::expr_t**>(&(print_stmt->m_values[i]));
-                    this->call_replacer();
-                    current_expr = current_expr_copy_9;
-                    if( !remove_original_statement ) {
-                        this->visit_expr(*print_stmt->m_values[i]);
-                    }
-                } else {
-                    ASR::expr_t** current_expr_copy_9 = current_expr;
-                    current_expr = const_cast<ASR::expr_t**>(&(print_stmt->m_values[i]));
-                    this->call_replacer();
-                    current_expr = current_expr_copy_9;
-                    if( !remove_original_statement ) {
-                        this->visit_expr(*print_stmt->m_values[i]);
-                    }
+            if(ASR::is_a<ASR::Character_t>(*ASRUtils::expr_type(x.m_text))){
+                ASR::Print_t* print_stmt = const_cast<ASR::Print_t*>(&x);
+                ASR::expr_t** current_expr_copy_9 = current_expr;
+                current_expr = const_cast<ASR::expr_t**>(&(print_stmt->m_text));
+                this->call_replacer();
+                current_expr = current_expr_copy_9;
+                if( !remove_original_statement ) {
+                    this->visit_expr(*print_stmt->m_text);
                 }
+                print = false;
+            } else {
+                LCOMPILERS_ASSERT_MSG(false, "print should support stringFormat or single string");
             }
-            print = false;
         }
 
         void visit_StringFormat(const ASR::StringFormat_t &x) {

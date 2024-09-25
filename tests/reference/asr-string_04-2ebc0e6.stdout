@@ -18,7 +18,7 @@
                                     Default
                                     (Allocatable
                                         (Array
-                                            (Character 1 1 ())
+                                            (Character 1 1 () PointerString)
                                             [(()
                                             ())]
                                             DescriptorArray
@@ -40,7 +40,7 @@
                                     ()
                                     Default
                                     (Allocatable
-                                        (Character 1 -2 ())
+                                        (Character 1 -2 () PointerString)
                                     )
                                     ()
                                     Source
@@ -59,7 +59,7 @@
                                     Default
                                     (Allocatable
                                         (Array
-                                            (Character 1 40 ())
+                                            (Character 1 40 () PointerString)
                                             [(()
                                             ())]
                                             DescriptorArray
@@ -90,13 +90,13 @@
                             [(()
                             (IntegerConstant 1 (Integer 4) Decimal)
                             ())]
-                            (Character 1 40 ())
+                            (Character 1 40 () PointerString)
                             ColMajor
                             ()
                         )
                         (StringConstant
                             "Mr. "
-                            (Character 1 4 ())
+                            (Character 1 4 () PointerString)
                         )
                         ()
                     )
@@ -106,13 +106,13 @@
                             [(()
                             (IntegerConstant 2 (Integer 4) Decimal)
                             ())]
-                            (Character 1 40 ())
+                            (Character 1 40 () PointerString)
                             ColMajor
                             ()
                         )
                         (StringConstant
                             "Rowan "
-                            (Character 1 6 ())
+                            (Character 1 6 () PointerString)
                         )
                         ()
                     )
@@ -122,13 +122,13 @@
                             [(()
                             (IntegerConstant 3 (Integer 4) Decimal)
                             ())]
-                            (Character 1 40 ())
+                            (Character 1 40 () PointerString)
                             ColMajor
                             ()
                         )
                         (StringConstant
                             "Atkinson"
-                            (Character 1 8 ())
+                            (Character 1 8 () PointerString)
                         )
                         ()
                     )
@@ -148,13 +148,13 @@
                             [(()
                             (IntegerConstant 1 (Integer 4) Decimal)
                             ())]
-                            (Character 1 1 ())
+                            (Character 1 1 () PointerString)
                             ColMajor
                             ()
                         )
                         (StringConstant
                             "h"
-                            (Character 1 1 ())
+                            (Character 1 1 () PointerString)
                         )
                         ()
                     )
@@ -164,13 +164,13 @@
                             [(()
                             (IntegerConstant 2 (Integer 4) Decimal)
                             ())]
-                            (Character 1 1 ())
+                            (Character 1 1 () PointerString)
                             ColMajor
                             ()
                         )
                         (StringConstant
                             "e"
-                            (Character 1 1 ())
+                            (Character 1 1 () PointerString)
                         )
                         ()
                     )
@@ -180,13 +180,13 @@
                             [(()
                             (IntegerConstant 3 (Integer 4) Decimal)
                             ())]
-                            (Character 1 1 ())
+                            (Character 1 1 () PointerString)
                             ColMajor
                             ()
                         )
                         (StringConstant
                             "l"
-                            (Character 1 1 ())
+                            (Character 1 1 () PointerString)
                         )
                         ()
                     )
@@ -196,13 +196,13 @@
                             [(()
                             (IntegerConstant 4 (Integer 4) Decimal)
                             ())]
-                            (Character 1 1 ())
+                            (Character 1 1 () PointerString)
                             ColMajor
                             ()
                         )
                         (StringConstant
                             "l"
-                            (Character 1 1 ())
+                            (Character 1 1 () PointerString)
                         )
                         ()
                     )
@@ -212,29 +212,29 @@
                             [(()
                             (IntegerConstant 5 (Integer 4) Decimal)
                             ())]
-                            (Character 1 1 ())
+                            (Character 1 1 () PointerString)
                             ColMajor
                             ()
                         )
                         (StringConstant
                             "o"
-                            (Character 1 1 ())
+                            (Character 1 1 () PointerString)
                         )
                         ()
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StringConstant
                                 "Here is "
-                                (Character 1 8 ())
+                                (Character 1 8 () PointerString)
                             )
                             (ArrayItem
                                 (Var 2 user_data)
                                 [(()
                                 (IntegerConstant 1 (Integer 4) Decimal)
                                 ())]
-                                (Character 1 40 ())
+                                (Character 1 40 () PointerString)
                                 ColMajor
                                 ()
                             )
@@ -243,7 +243,7 @@
                                 [(()
                                 (IntegerConstant 2 (Integer 4) Decimal)
                                 ())]
-                                (Character 1 40 ())
+                                (Character 1 40 () PointerString)
                                 ColMajor
                                 ()
                             )
@@ -252,27 +252,23 @@
                                 [(()
                                 (IntegerConstant 3 (Integer 4) Decimal)
                                 ())]
-                                (Character 1 40 ())
+                                (Character 1 40 () PointerString)
                                 ColMajor
                                 ()
                             )]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(Var 2 greetings)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Allocate
                         [((Var 2 str)
@@ -287,7 +283,7 @@
                         (Var 2 str)
                         (StringConstant
                             "abcd"
-                            (Character 1 4 ())
+                            (Character 1 4 () PointerString)
                         )
                         ()
                     )
@@ -305,7 +301,7 @@
                                     )
                                     ()
                                     (IntegerConstant 1 (Integer 4) Decimal)
-                                    (Character 1 -1 ())
+                                    (Character 1 -1 () PointerString)
                                     ()
                                 )
                                 (Integer 4)

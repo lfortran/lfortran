@@ -127,7 +127,7 @@
                         ()
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(Var 2 sp)
                             (Var 2 dp)
@@ -135,11 +135,9 @@
                             (Var 2 r2)
                             (Var 2 r3)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 )
         })

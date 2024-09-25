@@ -152,12 +152,10 @@
                                     []
                                     [(Var 7 tab)]
                                     [(Print
-                                        [(StringConstant
+                                        (StringConstant
                                             "inside check_table"
-                                            (Character 1 18 ())
-                                        )]
-                                        ()
-                                        ()
+                                            (Character 1 18 () PointerString)
+                                        )
                                     )]
                                     ()
                                     Public
@@ -604,19 +602,17 @@
             select_type4:
                 (Program
                     (SymbolTable
-                        25
+                        22
                         {
                             
                         })
                     select_type4
                     []
                     [(Print
-                        [(StringConstant
+                        (StringConstant
                             "running select_type4 main program"
-                            (Character 1 33 ())
-                        )]
-                        ()
-                        ()
+                            (Character 1 33 () PointerString)
+                        )
                     )]
                 )
         })

@@ -388,7 +388,7 @@ public:
                 sub = format_type_c("", "void**", v.m_name, false, false);
             } else {
                 diag.codegen_error_label("Type number '"
-                    + std::to_string(t2->type)
+                    + ASRUtils::type_to_str_python(t2)
                     + "' not supported", {v.base.base.loc}, "");
                 throw Abort();
             }
@@ -552,7 +552,7 @@ public:
                 return "";
             } else {
                 diag.codegen_error_label("Type number '"
-                    + std::to_string(v_m_type->type)
+                    + ASRUtils::type_to_str_python(v_m_type)
                     + "' not supported", {v.base.base.loc}, "");
                 throw Abort();
             }
@@ -1149,15 +1149,23 @@ R"(    // Initialise Numpy
         separator = "\" \"";
         //HACKISH way to handle print refactoring (always using stringformat).
         // TODO : Implement stringformat visitor.
-        ASR::StringFormat_t* str_fmt = nullptr;
-        size_t n_values = x.n_values;
-        if(x.m_values[0] && ASR::is_a<ASR::StringFormat_t>(*x.m_values[0])){
-            str_fmt = ASR::down_cast<ASR::StringFormat_t>(x.m_values[0]);
+        ASR::StringFormat_t* str_fmt;
+        size_t n_values = 0;
+        if(ASR::is_a<ASR::StringFormat_t>(*x.m_text)){
+            str_fmt = ASR::down_cast<ASR::StringFormat_t>(x.m_text);
             n_values = str_fmt->n_args;
+        } else if (ASR::is_a<ASR::Character_t>(*ASRUtils::expr_type(x.m_text))) {
+            this->visit_expr(*x.m_text);
+            src = indent + "printf(\"%s\\n\"," + src + ");\n";
+            return;
+        } else {
+            throw CodeGenError("print statment supported for stringformat and single character argument",
+            x.base.base.loc);
         }
+
         for (size_t i=0; i<n_values; i++) {
-            str_fmt? this->visit_expr(*(str_fmt->m_args[i])) : this->visit_expr(*x.m_values[i]);
-            ASR::ttype_t* value_type = str_fmt? ASRUtils::expr_type(str_fmt->m_args[i]) : ASRUtils::expr_type(x.m_values[i]);
+            this->visit_expr(*(str_fmt->m_args[i]));
+            ASR::ttype_t* value_type = ASRUtils::expr_type(str_fmt->m_args[i]);
             if( ASRUtils::is_array(value_type) ) {
                 src += "->data";
             }
@@ -1177,7 +1185,7 @@ R"(    // Initialise Numpy
                 out += indent + p_func + "(" + src + ");\n";
                 continue;
             }
-            tmp_gen +=c_ds_api->get_print_type(value_type, ASR::is_a<ASR::ArrayItem_t>(str_fmt? *(str_fmt->m_args[i]) : *x.m_values[i]));
+            tmp_gen +=c_ds_api->get_print_type(value_type, ASR::is_a<ASR::ArrayItem_t>(*(str_fmt->m_args[i])));
             v.push_back(src);
             if (ASR::is_a<ASR::Complex_t>(*value_type)) {
                 v.pop_back();

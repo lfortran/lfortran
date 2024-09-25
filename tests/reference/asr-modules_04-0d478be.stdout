@@ -32,34 +32,30 @@
                                     []
                                     []
                                     [(Print
-                                        [(StringFormat
+                                        (StringFormat
                                             ()
                                             [(StringConstant
                                                 "priv = "
-                                                (Character 1 7 ())
+                                                (Character 1 7 () PointerString)
                                             )
                                             (Var 2 priv)]
                                             FormatFortran
-                                            (Character -1 0 ())
+                                            (Character -1 0 () PointerString)
                                             ()
-                                        )]
-                                        ()
-                                        ()
+                                        )
                                     )
                                     (Print
-                                        [(StringFormat
+                                        (StringFormat
                                             ()
                                             [(StringConstant
                                                 "publ = "
-                                                (Character 1 7 ())
+                                                (Character 1 7 () PointerString)
                                             )
                                             (Var 2 publ)]
                                             FormatFortran
-                                            (Character -1 0 ())
+                                            (Character -1 0 () PointerString)
                                             ()
-                                        )]
-                                        ()
-                                        ()
+                                        )
                                     )]
                                     ()
                                     Public

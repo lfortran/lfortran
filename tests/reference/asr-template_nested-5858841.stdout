@@ -898,11 +898,11 @@
                                         ()
                                     )
                                     (Print
-                                        [(StringFormat
+                                        (StringFormat
                                             ()
                                             [(StringConstant
                                                 "The result is "
-                                                (Character 1 14 ())
+                                                (Character 1 14 () PointerString)
                                             )
                                             (FunctionCall
                                                 10 add_real
@@ -914,11 +914,9 @@
                                                 ()
                                             )]
                                             FormatFortran
-                                            (Character -1 0 ())
+                                            (Character -1 0 () PointerString)
                                             ()
-                                        )]
-                                        ()
-                                        ()
+                                        )
                                     )
                                     (If
                                         (RealCompare

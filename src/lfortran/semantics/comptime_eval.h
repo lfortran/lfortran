@@ -77,8 +77,6 @@ struct IntrinsicProcedures {
             {"is_iostat_end", {m_builtin, &not_implemented, false}},
             {"get_command_argument", {m_builtin, &not_implemented, false}},
             {"command_argument_count", {m_builtin, &not_implemented, false}},
-            {"execute_command_line", {m_builtin, &not_implemented, false}},
-            {"get_environment_variable", {m_builtin, &not_implemented, false}},
             {"newunit", {m_custom, &not_implemented, false}},
 
             // These will fail if used in symbol table visitor, but will be
@@ -88,10 +86,8 @@ struct IntrinsicProcedures {
 
             // Subroutines
             {"cpu_time", {m_math, &not_implemented, false}},
-            {"move_alloc", {m_builtin, &not_implemented, false}},
             {"present", {m_builtin, &not_implemented, false}},
             {"system_clock", {m_math, &not_implemented, false}},
-            {"random_number", {m_math, &not_implemented, false}},
             {"srand", {m_math, &not_implemented, false}},
             {"date_and_time", {m_string, &not_implemented, false}},
 

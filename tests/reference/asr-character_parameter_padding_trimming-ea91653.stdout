@@ -17,7 +17,7 @@
                                         12
                                         ["2   ", "2   ", "2   "]
                                         (Array
-                                            (Character 1 4 ())
+                                            (Character 1 4 () PointerString)
                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                             (IntegerConstant 3 (Integer 4) Decimal))]
                                             FixedSizeArray
@@ -28,7 +28,7 @@
                                         12
                                         ["2   ", "2   ", "2   "]
                                         (Array
-                                            (Character 1 4 ())
+                                            (Character 1 4 () PointerString)
                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                             (IntegerConstant 3 (Integer 4) Decimal))]
                                             FixedSizeArray
@@ -37,7 +37,7 @@
                                     )
                                     Parameter
                                     (Array
-                                        (Character 1 4 ())
+                                        (Character 1 4 () PointerString)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 3 (Integer 4) Decimal))]
                                         FixedSizeArray
@@ -58,7 +58,7 @@
                                         3
                                         ["2", "2", "2"]
                                         (Array
-                                            (Character 1 1 ())
+                                            (Character 1 1 () PointerString)
                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                             (IntegerConstant 3 (Integer 4) Decimal))]
                                             FixedSizeArray
@@ -69,7 +69,7 @@
                                         3
                                         ["2", "2", "2"]
                                         (Array
-                                            (Character 1 1 ())
+                                            (Character 1 1 () PointerString)
                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                             (IntegerConstant 3 (Integer 4) Decimal))]
                                             FixedSizeArray
@@ -78,7 +78,7 @@
                                     )
                                     Parameter
                                     (Array
-                                        (Character 1 1 ())
+                                        (Character 1 1 () PointerString)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 3 (Integer 4) Decimal))]
                                         FixedSizeArray
@@ -97,14 +97,14 @@
                                     Local
                                     (StringConstant
                                         "apple"
-                                        (Character 1 5 ())
+                                        (Character 1 5 () PointerString)
                                     )
                                     (StringConstant
                                         "apple   "
-                                        (Character 1 8 ())
+                                        (Character 1 8 () PointerString)
                                     )
                                     Parameter
-                                    (Character 1 8 ())
+                                    (Character 1 8 () PointerString)
                                     ()
                                     Source
                                     Public
@@ -119,14 +119,14 @@
                                     Local
                                     (StringConstant
                                         "apple"
-                                        (Character 1 5 ())
+                                        (Character 1 5 () PointerString)
                                     )
                                     (StringConstant
                                         "ap"
-                                        (Character 1 2 ())
+                                        (Character 1 2 () PointerString)
                                     )
                                     Parameter
-                                    (Character 1 2 ())
+                                    (Character 1 2 () PointerString)
                                     ()
                                     Source
                                     Public
@@ -141,14 +141,14 @@
                                     Local
                                     (StringConstant
                                         "Ball"
-                                        (Character 1 4 ())
+                                        (Character 1 4 () PointerString)
                                     )
                                     (StringConstant
                                         "Ball      "
-                                        (Character 1 10 ())
+                                        (Character 1 10 () PointerString)
                                     )
                                     Parameter
-                                    (Character 1 10 ())
+                                    (Character 1 10 () PointerString)
                                     ()
                                     Source
                                     Public
@@ -163,14 +163,14 @@
                                     Local
                                     (StringConstant
                                         "Ball"
-                                        (Character 1 4 ())
+                                        (Character 1 4 () PointerString)
                                     )
                                     (StringConstant
                                         "Bal"
-                                        (Character 1 3 ())
+                                        (Character 1 3 () PointerString)
                                     )
                                     Parameter
-                                    (Character 1 3 ())
+                                    (Character 1 3 () PointerString)
                                     ()
                                     Source
                                     Public
@@ -188,25 +188,25 @@
                                         (StringConcat
                                             (Var 2 x_pad)
                                             (Var 2 y_pad)
-                                            (Character 1 18 ())
+                                            (Character 1 18 () PointerString)
                                             (StringConstant
                                                 "apple   Ball      "
-                                                (Character 1 18 ())
+                                                (Character 1 18 () PointerString)
                                             )
                                         )
                                         (Var 2 x_pad)
-                                        (Character 1 26 ())
+                                        (Character 1 26 () PointerString)
                                         (StringConstant
                                             "apple   Ball      apple   "
-                                            (Character 1 26 ())
+                                            (Character 1 26 () PointerString)
                                         )
                                     )
                                     (StringConstant
                                         "apple   Ball      apple       "
-                                        (Character 1 30 ())
+                                        (Character 1 30 () PointerString)
                                     )
                                     Parameter
-                                    (Character 1 30 ())
+                                    (Character 1 30 () PointerString)
                                     ()
                                     Source
                                     Public
@@ -224,25 +224,25 @@
                                         (StringConcat
                                             (Var 2 x_trim)
                                             (Var 2 y_trim)
-                                            (Character 1 5 ())
+                                            (Character 1 5 () PointerString)
                                             (StringConstant
                                                 "apBal"
-                                                (Character 1 5 ())
+                                                (Character 1 5 () PointerString)
                                             )
                                         )
                                         (Var 2 x_trim)
-                                        (Character 1 7 ())
+                                        (Character 1 7 () PointerString)
                                         (StringConstant
                                             "apBalap"
-                                            (Character 1 7 ())
+                                            (Character 1 7 () PointerString)
                                         )
                                     )
                                     (StringConstant
                                         "apBal"
-                                        (Character 1 5 ())
+                                        (Character 1 5 () PointerString)
                                     )
                                     Parameter
-                                    (Character 1 5 ())
+                                    (Character 1 5 () PointerString)
                                     ()
                                     Source
                                     Public
@@ -253,73 +253,59 @@
                     character_parameter_padding_trimming
                     []
                     [(Print
-                        [(StringConcat
+                        (StringConcat
                             (StringConcat
                                 (StringConstant
                                     "|"
-                                    (Character 1 1 ())
+                                    (Character 1 1 () PointerString)
                                 )
                                 (Var 2 x_pad)
-                                (Character 1 9 ())
+                                (Character 1 9 () PointerString)
                                 (StringConstant
                                     "|apple   "
-                                    (Character 1 9 ())
+                                    (Character 1 9 () PointerString)
                                 )
                             )
                             (StringConstant
                                 "|"
-                                (Character 1 1 ())
+                                (Character 1 1 () PointerString)
                             )
-                            (Character 1 10 ())
+                            (Character 1 10 () PointerString)
                             (StringConstant
                                 "|apple   |"
-                                (Character 1 10 ())
+                                (Character 1 10 () PointerString)
                             )
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(Var 2 y_pad)]
-                        ()
-                        ()
+                        (Var 2 y_pad)
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(Var 2 p_pad)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(Var 2 x_trim)]
-                        ()
-                        ()
+                        (Var 2 x_trim)
                     )
                     (Print
-                        [(Var 2 y_trim)]
-                        ()
-                        ()
+                        (Var 2 y_trim)
                     )
                     (Print
-                        [(Var 2 z_trim)]
-                        ()
-                        ()
+                        (Var 2 z_trim)
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(Var 2 p_trim)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 )
         })

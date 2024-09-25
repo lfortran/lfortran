@@ -68,6 +68,12 @@ intrinsic_funcs_args = {
             "ret_type_arg_idx": 3
         },
     ],
+    "MoveAlloc": [
+        {
+            "args": [("any", "any")],
+            "ret_type_arg_idx": 0
+        },
+    ],
     "Leadz": [
         {
             "args": [("int",)],
@@ -305,6 +311,12 @@ intrinsic_funcs_args = {
         {
             "args": [("real",)],
             "return": "logical",
+        }
+    ],
+    "SameTypeAs": [
+        {
+            "args": [("any", "any")],
+            "return": "logical"
         }
     ],
     "Nint": [
@@ -839,6 +851,8 @@ compile_time_only_fn = [
     "Kind",
     "MaxExponent",
     "MinExponent",
+    "SameTypeAs",
+    "Digits",
 ]
 
 type_to_asr_type_check = {

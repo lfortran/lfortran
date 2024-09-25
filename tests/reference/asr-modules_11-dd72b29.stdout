@@ -41,19 +41,17 @@
                     access_externally
                     [modules_11_module11]
                     [(Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StringConstant
                                 "j = "
-                                (Character 1 4 ())
+                                (Character 1 4 () PointerString)
                             )
                             (Var 4 j)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (SubroutineCall
                         4 access_internally
@@ -92,19 +90,17 @@
                                     []
                                     []
                                     [(Print
-                                        [(StringFormat
+                                        (StringFormat
                                             ()
                                             [(StringConstant
                                                 "i = "
-                                                (Character 1 4 ())
+                                                (Character 1 4 () PointerString)
                                             )
                                             (Var 2 i)]
                                             FormatFortran
-                                            (Character -1 0 ())
+                                            (Character -1 0 () PointerString)
                                             ()
-                                        )]
-                                        ()
-                                        ()
+                                        )
                                     )]
                                     ()
                                     Public

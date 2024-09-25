@@ -255,7 +255,7 @@
                         (IntegerConstant 10 (Integer 4) Decimal)
                         ())
                         [(Print
-                            [(StringFormat
+                            (StringFormat
                                 ()
                                 [(FunctionCall
                                     2 apply
@@ -267,11 +267,9 @@
                                     ()
                                 )]
                                 FormatFortran
-                                (Character -1 0 ())
+                                (Character -1 0 () PointerString)
                                 ()
-                            )]
-                            ()
-                            ()
+                            )
                         )]
                         []
                     )]

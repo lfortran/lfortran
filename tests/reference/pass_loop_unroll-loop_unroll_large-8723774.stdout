@@ -997,7 +997,7 @@
                             ()
                         )
                         (Print
-                            [(StringFormat
+                            (StringFormat
                                 ()
                                 [(ArrayItem
                                     (Var 2 array)
@@ -1009,11 +1009,9 @@
                                     ()
                                 )]
                                 FormatFortran
-                                (Character -1 0 ())
+                                (Character -1 0 () PointerString)
                                 ()
-                            )]
-                            ()
-                            ()
+                            )
                         )
                         (Assignment
                             (Var 2 i)
@@ -1027,7 +1025,7 @@
                             ()
                         )
                         (Print
-                            [(StringFormat
+                            (StringFormat
                                 ()
                                 [(ArrayItem
                                     (Var 2 array)
@@ -1039,11 +1037,9 @@
                                     ()
                                 )]
                                 FormatFortran
-                                (Character -1 0 ())
+                                (Character -1 0 () PointerString)
                                 ()
-                            )]
-                            ()
-                            ()
+                            )
                         )
                         (Assignment
                             (Var 2 i)
@@ -1057,7 +1053,7 @@
                             ()
                         )
                         (Print
-                            [(StringFormat
+                            (StringFormat
                                 ()
                                 [(ArrayItem
                                     (Var 2 array)
@@ -1069,11 +1065,9 @@
                                     ()
                                 )]
                                 FormatFortran
-                                (Character -1 0 ())
+                                (Character -1 0 () PointerString)
                                 ()
-                            )]
-                            ()
-                            ()
+                            )
                         )
                         (Assignment
                             (Var 2 i)
@@ -1087,7 +1081,7 @@
                             ()
                         )
                         (Print
-                            [(StringFormat
+                            (StringFormat
                                 ()
                                 [(ArrayItem
                                     (Var 2 array)
@@ -1099,11 +1093,9 @@
                                     ()
                                 )]
                                 FormatFortran
-                                (Character -1 0 ())
+                                (Character -1 0 () PointerString)
                                 ()
-                            )]
-                            ()
-                            ()
+                            )
                         )
                         (Assignment
                             (Var 2 i)
@@ -1117,7 +1109,7 @@
                             ()
                         )
                         (Print
-                            [(StringFormat
+                            (StringFormat
                                 ()
                                 [(ArrayItem
                                     (Var 2 array)
@@ -1129,11 +1121,9 @@
                                     ()
                                 )]
                                 FormatFortran
-                                (Character -1 0 ())
+                                (Character -1 0 () PointerString)
                                 ()
-                            )]
-                            ()
-                            ()
+                            )
                         )
                         (Assignment
                             (Var 2 i)
@@ -1147,7 +1137,7 @@
                             ()
                         )
                         (Print
-                            [(StringFormat
+                            (StringFormat
                                 ()
                                 [(ArrayItem
                                     (Var 2 array)
@@ -1159,11 +1149,9 @@
                                     ()
                                 )]
                                 FormatFortran
-                                (Character -1 0 ())
+                                (Character -1 0 () PointerString)
                                 ()
-                            )]
-                            ()
-                            ()
+                            )
                         )
                         (Assignment
                             (Var 2 i)
@@ -1177,7 +1165,7 @@
                             ()
                         )
                         (Print
-                            [(StringFormat
+                            (StringFormat
                                 ()
                                 [(ArrayItem
                                     (Var 2 array)
@@ -1189,11 +1177,9 @@
                                     ()
                                 )]
                                 FormatFortran
-                                (Character -1 0 ())
+                                (Character -1 0 () PointerString)
                                 ()
-                            )]
-                            ()
-                            ()
+                            )
                         )
                         (Assignment
                             (Var 2 i)
@@ -1207,7 +1193,7 @@
                             ()
                         )
                         (Print
-                            [(StringFormat
+                            (StringFormat
                                 ()
                                 [(ArrayItem
                                     (Var 2 array)
@@ -1219,11 +1205,9 @@
                                     ()
                                 )]
                                 FormatFortran
-                                (Character -1 0 ())
+                                (Character -1 0 () PointerString)
                                 ()
-                            )]
-                            ()
-                            ()
+                            )
                         )
                         (Assignment
                             (Var 2 i)
@@ -1237,7 +1221,7 @@
                             ()
                         )
                         (Print
-                            [(StringFormat
+                            (StringFormat
                                 ()
                                 [(ArrayItem
                                     (Var 2 array)
@@ -1249,11 +1233,9 @@
                                     ()
                                 )]
                                 FormatFortran
-                                (Character -1 0 ())
+                                (Character -1 0 () PointerString)
                                 ()
-                            )]
-                            ()
-                            ()
+                            )
                         )
                         (Assignment
                             (Var 2 i)
@@ -1267,7 +1249,7 @@
                             ()
                         )
                         (Print
-                            [(StringFormat
+                            (StringFormat
                                 ()
                                 [(ArrayItem
                                     (Var 2 array)
@@ -1279,11 +1261,9 @@
                                     ()
                                 )]
                                 FormatFortran
-                                (Character -1 0 ())
+                                (Character -1 0 () PointerString)
                                 ()
-                            )]
-                            ()
-                            ()
+                            )
                         )
                         (Assignment
                             (Var 2 i)
@@ -1297,7 +1277,7 @@
                             ()
                         )
                         (Print
-                            [(StringFormat
+                            (StringFormat
                                 ()
                                 [(ArrayItem
                                     (Var 2 array)
@@ -1309,11 +1289,9 @@
                                     ()
                                 )]
                                 FormatFortran
-                                (Character -1 0 ())
+                                (Character -1 0 () PointerString)
                                 ()
-                            )]
-                            ()
-                            ()
+                            )
                         )
                         (Assignment
                             (Var 2 i)
@@ -1327,7 +1305,7 @@
                             ()
                         )
                         (Print
-                            [(StringFormat
+                            (StringFormat
                                 ()
                                 [(ArrayItem
                                     (Var 2 array)
@@ -1339,11 +1317,9 @@
                                     ()
                                 )]
                                 FormatFortran
-                                (Character -1 0 ())
+                                (Character -1 0 () PointerString)
                                 ()
-                            )]
-                            ()
-                            ()
+                            )
                         )
                         (Assignment
                             (Var 2 i)
@@ -1357,7 +1333,7 @@
                             ()
                         )
                         (Print
-                            [(StringFormat
+                            (StringFormat
                                 ()
                                 [(ArrayItem
                                     (Var 2 array)
@@ -1369,11 +1345,9 @@
                                     ()
                                 )]
                                 FormatFortran
-                                (Character -1 0 ())
+                                (Character -1 0 () PointerString)
                                 ()
-                            )]
-                            ()
-                            ()
+                            )
                         )
                         (Assignment
                             (Var 2 i)
@@ -1387,7 +1361,7 @@
                             ()
                         )
                         (Print
-                            [(StringFormat
+                            (StringFormat
                                 ()
                                 [(ArrayItem
                                     (Var 2 array)
@@ -1399,11 +1373,9 @@
                                     ()
                                 )]
                                 FormatFortran
-                                (Character -1 0 ())
+                                (Character -1 0 () PointerString)
                                 ()
-                            )]
-                            ()
-                            ()
+                            )
                         )
                         (Assignment
                             (Var 2 i)
@@ -1417,7 +1389,7 @@
                             ()
                         )
                         (Print
-                            [(StringFormat
+                            (StringFormat
                                 ()
                                 [(ArrayItem
                                     (Var 2 array)
@@ -1429,11 +1401,9 @@
                                     ()
                                 )]
                                 FormatFortran
-                                (Character -1 0 ())
+                                (Character -1 0 () PointerString)
                                 ()
-                            )]
-                            ()
-                            ()
+                            )
                         )
                         (Assignment
                             (Var 2 i)
@@ -1447,7 +1417,7 @@
                             ()
                         )
                         (Print
-                            [(StringFormat
+                            (StringFormat
                                 ()
                                 [(ArrayItem
                                     (Var 2 array)
@@ -1459,11 +1429,9 @@
                                     ()
                                 )]
                                 FormatFortran
-                                (Character -1 0 ())
+                                (Character -1 0 () PointerString)
                                 ()
-                            )]
-                            ()
-                            ()
+                            )
                         )
                         (Assignment
                             (Var 2 i)
@@ -1477,7 +1445,7 @@
                             ()
                         )
                         (Print
-                            [(StringFormat
+                            (StringFormat
                                 ()
                                 [(ArrayItem
                                     (Var 2 array)
@@ -1489,11 +1457,9 @@
                                     ()
                                 )]
                                 FormatFortran
-                                (Character -1 0 ())
+                                (Character -1 0 () PointerString)
                                 ()
-                            )]
-                            ()
-                            ()
+                            )
                         )
                         (Assignment
                             (Var 2 i)
@@ -1507,7 +1473,7 @@
                             ()
                         )
                         (Print
-                            [(StringFormat
+                            (StringFormat
                                 ()
                                 [(ArrayItem
                                     (Var 2 array)
@@ -1519,11 +1485,9 @@
                                     ()
                                 )]
                                 FormatFortran
-                                (Character -1 0 ())
+                                (Character -1 0 () PointerString)
                                 ()
-                            )]
-                            ()
-                            ()
+                            )
                         )
                         (Assignment
                             (Var 2 i)
@@ -1537,7 +1501,7 @@
                             ()
                         )
                         (Print
-                            [(StringFormat
+                            (StringFormat
                                 ()
                                 [(ArrayItem
                                     (Var 2 array)
@@ -1549,11 +1513,9 @@
                                     ()
                                 )]
                                 FormatFortran
-                                (Character -1 0 ())
+                                (Character -1 0 () PointerString)
                                 ()
-                            )]
-                            ()
-                            ()
+                            )
                         )
                         (Assignment
                             (Var 2 i)
@@ -1567,7 +1529,7 @@
                             ()
                         )
                         (Print
-                            [(StringFormat
+                            (StringFormat
                                 ()
                                 [(ArrayItem
                                     (Var 2 array)
@@ -1579,11 +1541,9 @@
                                     ()
                                 )]
                                 FormatFortran
-                                (Character -1 0 ())
+                                (Character -1 0 () PointerString)
                                 ()
-                            )]
-                            ()
-                            ()
+                            )
                         )
                         (Assignment
                             (Var 2 i)
@@ -1597,7 +1557,7 @@
                             ()
                         )
                         (Print
-                            [(StringFormat
+                            (StringFormat
                                 ()
                                 [(ArrayItem
                                     (Var 2 array)
@@ -1609,11 +1569,9 @@
                                     ()
                                 )]
                                 FormatFortran
-                                (Character -1 0 ())
+                                (Character -1 0 () PointerString)
                                 ()
-                            )]
-                            ()
-                            ()
+                            )
                         )
                         (Assignment
                             (Var 2 i)
@@ -1627,7 +1585,7 @@
                             ()
                         )
                         (Print
-                            [(StringFormat
+                            (StringFormat
                                 ()
                                 [(ArrayItem
                                     (Var 2 array)
@@ -1639,11 +1597,9 @@
                                     ()
                                 )]
                                 FormatFortran
-                                (Character -1 0 ())
+                                (Character -1 0 () PointerString)
                                 ()
-                            )]
-                            ()
-                            ()
+                            )
                         )
                         (Assignment
                             (Var 2 i)
@@ -1657,7 +1613,7 @@
                             ()
                         )
                         (Print
-                            [(StringFormat
+                            (StringFormat
                                 ()
                                 [(ArrayItem
                                     (Var 2 array)
@@ -1669,11 +1625,9 @@
                                     ()
                                 )]
                                 FormatFortran
-                                (Character -1 0 ())
+                                (Character -1 0 () PointerString)
                                 ()
-                            )]
-                            ()
-                            ()
+                            )
                         )
                         (Assignment
                             (Var 2 i)
@@ -1687,7 +1641,7 @@
                             ()
                         )
                         (Print
-                            [(StringFormat
+                            (StringFormat
                                 ()
                                 [(ArrayItem
                                     (Var 2 array)
@@ -1699,11 +1653,9 @@
                                     ()
                                 )]
                                 FormatFortran
-                                (Character -1 0 ())
+                                (Character -1 0 () PointerString)
                                 ()
-                            )]
-                            ()
-                            ()
+                            )
                         )
                         (Assignment
                             (Var 2 i)
@@ -1717,7 +1669,7 @@
                             ()
                         )
                         (Print
-                            [(StringFormat
+                            (StringFormat
                                 ()
                                 [(ArrayItem
                                     (Var 2 array)
@@ -1729,11 +1681,9 @@
                                     ()
                                 )]
                                 FormatFortran
-                                (Character -1 0 ())
+                                (Character -1 0 () PointerString)
                                 ()
-                            )]
-                            ()
-                            ()
+                            )
                         )
                         (Assignment
                             (Var 2 i)
@@ -1747,7 +1697,7 @@
                             ()
                         )
                         (Print
-                            [(StringFormat
+                            (StringFormat
                                 ()
                                 [(ArrayItem
                                     (Var 2 array)
@@ -1759,11 +1709,9 @@
                                     ()
                                 )]
                                 FormatFortran
-                                (Character -1 0 ())
+                                (Character -1 0 () PointerString)
                                 ()
-                            )]
-                            ()
-                            ()
+                            )
                         )
                         (Assignment
                             (Var 2 i)
@@ -1777,7 +1725,7 @@
                             ()
                         )
                         (Print
-                            [(StringFormat
+                            (StringFormat
                                 ()
                                 [(ArrayItem
                                     (Var 2 array)
@@ -1789,11 +1737,9 @@
                                     ()
                                 )]
                                 FormatFortran
-                                (Character -1 0 ())
+                                (Character -1 0 () PointerString)
                                 ()
-                            )]
-                            ()
-                            ()
+                            )
                         )
                         (Assignment
                             (Var 2 i)
@@ -1807,7 +1753,7 @@
                             ()
                         )
                         (Print
-                            [(StringFormat
+                            (StringFormat
                                 ()
                                 [(ArrayItem
                                     (Var 2 array)
@@ -1819,11 +1765,9 @@
                                     ()
                                 )]
                                 FormatFortran
-                                (Character -1 0 ())
+                                (Character -1 0 () PointerString)
                                 ()
-                            )]
-                            ()
-                            ()
+                            )
                         )
                         (Assignment
                             (Var 2 i)
@@ -1837,7 +1781,7 @@
                             ()
                         )
                         (Print
-                            [(StringFormat
+                            (StringFormat
                                 ()
                                 [(ArrayItem
                                     (Var 2 array)
@@ -1849,11 +1793,9 @@
                                     ()
                                 )]
                                 FormatFortran
-                                (Character -1 0 ())
+                                (Character -1 0 () PointerString)
                                 ()
-                            )]
-                            ()
-                            ()
+                            )
                         )
                         (Assignment
                             (Var 2 i)
@@ -1867,7 +1809,7 @@
                             ()
                         )
                         (Print
-                            [(StringFormat
+                            (StringFormat
                                 ()
                                 [(ArrayItem
                                     (Var 2 array)
@@ -1879,11 +1821,9 @@
                                     ()
                                 )]
                                 FormatFortran
-                                (Character -1 0 ())
+                                (Character -1 0 () PointerString)
                                 ()
-                            )]
-                            ()
-                            ()
+                            )
                         )
                         (Assignment
                             (Var 2 i)
@@ -1897,7 +1837,7 @@
                             ()
                         )
                         (Print
-                            [(StringFormat
+                            (StringFormat
                                 ()
                                 [(ArrayItem
                                     (Var 2 array)
@@ -1909,11 +1849,9 @@
                                     ()
                                 )]
                                 FormatFortran
-                                (Character -1 0 ())
+                                (Character -1 0 () PointerString)
                                 ()
-                            )]
-                            ()
-                            ()
+                            )
                         )
                         (Assignment
                             (Var 2 i)
@@ -1927,7 +1865,7 @@
                             ()
                         )
                         (Print
-                            [(StringFormat
+                            (StringFormat
                                 ()
                                 [(ArrayItem
                                     (Var 2 array)
@@ -1939,11 +1877,9 @@
                                     ()
                                 )]
                                 FormatFortran
-                                (Character -1 0 ())
+                                (Character -1 0 () PointerString)
                                 ()
-                            )]
-                            ()
-                            ()
+                            )
                         )]
                         []
                     )
@@ -1959,7 +1895,7 @@
                         ()
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(ArrayItem
                                 (Var 2 array)
@@ -1971,11 +1907,9 @@
                                 ()
                             )]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Assignment
                         (Var 2 i)
@@ -1989,7 +1923,7 @@
                         ()
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(ArrayItem
                                 (Var 2 array)
@@ -2001,11 +1935,9 @@
                                 ()
                             )]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Assignment
                         (Var 2 i)
@@ -2019,7 +1951,7 @@
                         ()
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(ArrayItem
                                 (Var 2 array)
@@ -2031,11 +1963,9 @@
                                 ()
                             )]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (ImplicitDeallocate
                         [(Var 2 array)]

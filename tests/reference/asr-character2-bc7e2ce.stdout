@@ -15,14 +15,14 @@
                                     Local
                                     (StringConstant
                                         "Goat"
-                                        (Character 1 4 ())
+                                        (Character 1 4 () PointerString)
                                     )
                                     (StringConstant
                                         "Goat"
-                                        (Character 1 4 ())
+                                        (Character 1 4 () PointerString)
                                     )
                                     Save
-                                    (Character 1 4 ())
+                                    (Character 1 4 () PointerString)
                                     ()
                                     Source
                                     Public
@@ -38,7 +38,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Character 1 4 ())
+                                    (Character 1 4 () PointerString)
                                     ()
                                     Source
                                     Public
@@ -53,14 +53,14 @@
                                     Local
                                     (StringConstant
                                         "App"
-                                        (Character 1 3 ())
+                                        (Character 1 3 () PointerString)
                                     )
                                     (StringConstant
                                         "App"
-                                        (Character 1 3 ())
+                                        (Character 1 3 () PointerString)
                                     )
                                     Parameter
-                                    (Character 1 3 ())
+                                    (Character 1 3 () PointerString)
                                     ()
                                     Source
                                     Public
@@ -74,7 +74,7 @@
                         (Var 2 char2)
                         (StringConstant
                             "Balle"
-                            (Character 1 5 ())
+                            (Character 1 5 () PointerString)
                         )
                         ()
                     )]

@@ -55,7 +55,7 @@
                                         SelectedCharKind
                                         [(StringConstant
                                             "default"
-                                            (Character 1 7 ())
+                                            (Character 1 7 () PointerString)
                                         )]
                                         0
                                         (Integer 4)
@@ -311,7 +311,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Character 1 7 ())
+                                    (Character 1 7 () PointerString)
                                     ()
                                     Source
                                     Public
@@ -325,7 +325,7 @@
                         (Var 2 s1)
                         (StringConstant
                             "default"
-                            (Character 1 7 ())
+                            (Character 1 7 () PointerString)
                         )
                         ()
                     )
@@ -335,7 +335,7 @@
                         ()
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(IntrinsicElementalFunction
                                 SelectedIntKind
@@ -346,14 +346,12 @@
                             )
                             (Var 2 k1)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(IntrinsicElementalFunction
                                 SelectedIntKind
@@ -364,14 +362,12 @@
                             )
                             (Var 2 k2)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(IntrinsicElementalFunction
                                 SelectedIntKind
@@ -382,14 +378,12 @@
                             )
                             (Var 2 k3)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(IntrinsicElementalFunction
                                 SelectedIntKind
@@ -400,14 +394,12 @@
                             )
                             (Var 2 k4)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(IntrinsicElementalFunction
                                 SelectedIntKind
@@ -418,14 +410,12 @@
                             )
                             (Var 2 k5)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(IntrinsicElementalFunction
                                 SelectedRealKind
@@ -438,14 +428,12 @@
                             )
                             (Var 2 k6)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(IntrinsicElementalFunction
                                 SelectedRealKind
@@ -458,14 +446,12 @@
                             )
                             (Var 2 k7)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(IntrinsicElementalFunction
                                 SelectedRealKind
@@ -478,14 +464,12 @@
                             )
                             (Var 2 k8)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(IntrinsicElementalFunction
                                 SelectedRealKind
@@ -498,20 +482,18 @@
                             )
                             (Var 2 k9)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(IntrinsicElementalFunction
                                 SelectedCharKind
                                 [(StringConstant
                                     "default"
-                                    (Character 1 7 ())
+                                    (Character 1 7 () PointerString)
                                 )]
                                 0
                                 (Integer 4)
@@ -519,14 +501,12 @@
                             )
                             (Var 2 k10)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(IntrinsicElementalFunction
                                 SelectedIntKind
@@ -536,14 +516,12 @@
                                 ()
                             )]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(IntrinsicElementalFunction
                                 SelectedRealKind
@@ -555,14 +533,12 @@
                                 ()
                             )]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(IntrinsicElementalFunction
                                 SelectedCharKind
@@ -572,14 +548,12 @@
                                 ()
                             )]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(IntrinsicElementalFunction
                                 SelectedRealKind
@@ -592,14 +566,12 @@
                             )
                             (Var 2 k11)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(IntrinsicElementalFunction
                                 SelectedRealKind
@@ -612,11 +584,9 @@
                             )
                             (Var 2 k12)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 )
         })

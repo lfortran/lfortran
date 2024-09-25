@@ -163,20 +163,16 @@
                     cond_02
                     []
                     [(Print
-                        [(StringConstant
+                        (StringConstant
                             "ap /= bp"
-                            (Character 1 8 ())
-                        )]
-                        ()
-                        ()
+                            (Character 1 8 () PointerString)
+                        )
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "cp /= dp"
-                            (Character 1 8 ())
-                        )]
-                        ()
-                        ()
+                            (Character 1 8 () PointerString)
+                        )
                     )
                     (If
                         (IntegerCompare
@@ -187,36 +183,28 @@
                             ()
                         )
                         [(Print
-                            [(StringConstant
+                            (StringConstant
                                 "a == b"
-                                (Character 1 6 ())
-                            )]
-                            ()
-                            ()
+                                (Character 1 6 () PointerString)
+                            )
                         )
                         (Print
-                            [(StringConstant
+                            (StringConstant
                                 "ap /= bp"
-                                (Character 1 8 ())
-                            )]
-                            ()
-                            ()
+                                (Character 1 8 () PointerString)
+                            )
                         )]
                         [(Print
-                            [(StringConstant
+                            (StringConstant
                                 "ap == cp"
-                                (Character 1 8 ())
-                            )]
-                            ()
-                            ()
+                                (Character 1 8 () PointerString)
+                            )
                         )
                         (Print
-                            [(StringConstant
+                            (StringConstant
                                 "cp /= dp"
-                                (Character 1 8 ())
-                            )]
-                            ()
-                            ()
+                                (Character 1 8 () PointerString)
+                            )
                         )]
                     )]
                 )

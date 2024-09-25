@@ -855,7 +855,10 @@ public:
         {"random_number", {IntrinsicSignature({"r"}, 1, 1)}},
         {"random_init", {IntrinsicSignature({"repeatable", "image"}, 2, 2)}},
         {"random_seed", {IntrinsicSignature({"size", "put", "get"}, 0, 3)}},
-        {"get_command", {IntrinsicSignature({"command", "length", "status"}, 3, 3)}},
+        {"get_command", {IntrinsicSignature({"command", "length", "status"}, 0, 3)}},
+        {"get_environment_variable", {IntrinsicSignature({"name", "value", "length", "status", "trim_name"}, 1, 5)}},
+        {"execute_command_line", {IntrinsicSignature({"command", "wait", "exitstat", "cmdstat", "cmdmsg"}, 1, 5)}},
+        {"move_alloc", {IntrinsicSignature({"from", "to"}, 2, 2)}},
         {"mvbits", {IntrinsicSignature({"from", "frompos", "len", "to", "topos"}, 5, 5)}},
         {"modulo", {IntrinsicSignature({"a", "p"}, 2, 2)}},
         {"bessel_jn", {IntrinsicSignature({"n", "x"}, 2, 2)}},
@@ -868,6 +871,7 @@ public:
         {"storage_size", {IntrinsicSignature({"a", "kind"}, 1, 2)}},
         {"spread", {IntrinsicSignature({"source", "dim", "ncopies"}, 3, 3)}},
         {"out_of_range", {IntrinsicSignature({"value", "mold", "round"}, 2, 3)}},
+        {"same_type_as", {IntrinsicSignature({"a", "b"}, 2, 2)}},
     };
 
     std::map<std::string, std::pair<std::string, std::vector<std::string>>> intrinsic_mapping = {
@@ -2154,7 +2158,7 @@ public:
         adjusted_str[new_length] = '\0'; // null-terminate the string
 
         ASR::ttype_t* value_type = ASRUtils::TYPE(ASR::make_Character_t(
-            al, loc, 1, new_length, nullptr));
+            al, loc, 1, new_length, nullptr, ASR::string_physical_typeType::PointerString));
 
         rhs_len = lhs_len; // Update the rhs_len to match lhs_len
         return ASRUtils::EXPR(ASR::make_StringConstant_t(
@@ -2944,7 +2948,6 @@ public:
                     }
                     init_expr = ASRUtils::EXPR(tmp);
                     value = ASRUtils::expr_value(init_expr);
-
                     // we do checks and correct length initialization for
                     // character (& character array) before creating repeated argument
                     // list for an initialization like:
@@ -3002,7 +3005,7 @@ public:
                     if (!is_compile_time && ASR::is_a<ASR::Array_t>(*type)
                         && (ASR::is_a<ASR::IntegerConstant_t>(*tmp_init) || ASR::is_a<ASR::RealConstant_t>(*tmp_init)
                             || ASR::is_a<ASR::RealUnaryMinus_t>(*tmp_init) || ASR::is_a<ASR::IntegerUnaryMinus_t>(*tmp_init)
-                            || ASR::is_a<ASR::StringConstant_t>(*tmp_init))) {
+                            || ASR::is_a<ASR::StringConstant_t>(*tmp_init) || ASR::is_a<ASR::LogicalConstant_t>(*tmp_init))) {
                         /*
                             Case: integer :: x(2) = 1
                             which is equivalent to x(2) = [1,1]
@@ -3019,6 +3022,30 @@ public:
                         value = init_expr;
                     }
                     ASR::ttype_t *init_type = ASRUtils::expr_type(init_expr);
+
+                    size_t rhs_rank = ASRUtils::extract_n_dims_from_ttype(init_type);
+                    size_t lhs_rank = ASRUtils::extract_n_dims_from_ttype(type);
+
+                    // when lhs_rank > rhs_rank it can broadcast
+                    if( lhs_rank != rhs_rank && lhs_rank < rhs_rank ){
+                        throw SemanticError("Incompatible ranks `"+ std::to_string(lhs_rank) + "` and `" 
+                                                                  + std::to_string(rhs_rank) + "` in assignment",
+                                            x.base.base.loc);
+                    }
+
+                     if ( ASR::is_a<ASR::Array_t>(*init_type) && ASR::is_a<ASR::ArrayReshape_t>(*init_expr) ){
+                        ASR::Array_t* arr_rhs = ASR::down_cast<ASR::Array_t>(init_type);
+                        ASR::Array_t* arr_lhs = ASR::down_cast<ASR::Array_t>(type);
+                        
+                    for (size_t i = 0; i < arr_lhs->n_dims; i++) {
+                           std::string lhs_dim = ASRUtils::extract_dim_value(arr_lhs->m_dims[i].m_length);
+                           std::string rhs_dim = ASRUtils::extract_dim_value(arr_rhs->m_dims[i].m_length);
+                            if(lhs_dim!=":" && rhs_dim!=":" && lhs_dim!=rhs_dim){
+                                    throw SemanticError("Incompatible shape of array on assignment on dimension " + std::to_string(i) +
+                                  " (" + lhs_dim + " and " + rhs_dim + ")", x.base.base.loc);
+                            }
+                        }
+                   }
                     if (init_type->type == ASR::ttypeType::Integer
                         && ASRUtils::type_get_past_array(ASRUtils::type_get_past_pointer(type))->type == ASR::ttypeType::Character
                         && s.m_sym == AST::symbolType::Asterisk) {
@@ -3038,9 +3065,9 @@ public:
                             if (ASR::is_a<ASR::Array_t>(*type)) {
                                 // case: character :: a(2)*4
                                 ASR::Array_t *array = ASR::down_cast<ASR::Array_t>(type);
-                                array->m_type = ASRUtils::TYPE(ASR::make_Character_t(al, int_const->base.base.loc, 1, len, nullptr));
+                                array->m_type = ASRUtils::TYPE(ASR::make_Character_t(al, int_const->base.base.loc, 1, len, nullptr, ASR::string_physical_typeType::PointerString));
                             } else {
-                                type = ASRUtils::TYPE(ASR::make_Character_t(al, int_const->base.base.loc, 1, len, nullptr));
+                                type = ASRUtils::TYPE(ASR::make_Character_t(al, int_const->base.base.loc, 1, len, nullptr, ASR::string_physical_typeType::PointerString));
                             }
                         } else {
                             throw SemanticError("Initialization of `" + std::string(x.m_syms[i].m_name) +
@@ -3483,7 +3510,7 @@ public:
                 a_len = 1; // The default len of "character :: x" is 1
             }
             LCOMPILERS_ASSERT(a_len != -10)
-            type = ASRUtils::TYPE(ASR::make_Character_t(al, loc, a_kind, a_len, len_expr));
+            type = ASRUtils::TYPE(ASR::make_Character_t(al, loc, a_kind, a_len, len_expr, ASR::string_physical_typeType::PointerString));
             type = ASRUtils::make_Array_t_util(
                 al, loc, type, dims.p, dims.size(), abi, is_argument,
                 dims.size() > 0 && abi == ASR::abiType::BindC ? ASR::array_physical_typeType::CharacterArraySinglePointer :
@@ -3977,7 +4004,7 @@ public:
             if( ASRUtils::is_character(*root_v_type) &&
                 !ASRUtils::is_array(root_v_type) ) {
                 ASR::ttype_t  *char_type = ASRUtils::TYPE(ASR::make_Character_t(
-                    al, type->base.loc, 1, 1, nullptr));
+                    al, type->base.loc, 1, 1, nullptr, ASR::string_physical_typeType::PointerString));
                 return ASR::make_StringItem_t(al, loc,
                     v_Var, args.p[0].m_right, char_type, arr_ref_val);
             } else if ( ASRUtils::is_character(*root_v_type) &&
@@ -4063,7 +4090,7 @@ public:
                             a_len = -3;
                         }
                         char_type = ASRUtils::TYPE(ASR::make_Character_t(al, loc,
-                                        1, a_len, a_len_expr));
+                                        1, a_len, a_len_expr, ASR::string_physical_typeType::PointerString));
                     }
 
                     return ASR::make_StringSection_t(al, loc, v_Var, l,
@@ -4086,7 +4113,8 @@ public:
                     array_section_dims.push_back(al, empty_dim);
                 }
             }
-            type = ASRUtils::duplicate_type(al, type, &array_section_dims);
+            type = ASRUtils::duplicate_type(al, ASRUtils::type_get_past_allocatable(type),
+                    &array_section_dims);
             return ASR::make_ArraySection_t(al, loc,
                 v_Var, args.p, args.size(), type, arr_ref_val);
         }
@@ -4262,7 +4290,7 @@ public:
                 if( func_calls[0] ) {
                     a_len = ASRUtils::extract_len<SemanticError>(func_calls[0], loc);
                 }
-                return ASRUtils::TYPE(ASR::make_Character_t(al, loc, t->m_kind, a_len, func_calls[0]));
+                return ASRUtils::TYPE(ASR::make_Character_t(al, loc, t->m_kind, a_len, func_calls[0], ASR::string_physical_typeType::PointerString));
             }
             case ASR::ttypeType::StructType: {
                 ASR::StructType_t* struct_t_type = ASR::down_cast<ASR::StructType_t>(return_type);
@@ -4443,7 +4471,9 @@ public:
                             ASRUtils::get_FunctionType(func)->m_return_var_type,
                             &new_dims);
         } else {
+            ASRUtils::ExprStmtWithScopeDuplicator node_duplicator(al, current_scope);
             type = ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
+            type = node_duplicator.duplicate_ttype(type);
         }
         if (ASRUtils::symbol_parent_symtab(v)->get_counter() != current_scope->get_counter()) {
             ADD_ASR_DEPENDENCIES(current_scope, v, current_function_dependencies);
@@ -4573,6 +4603,126 @@ public:
         }
     }
 
+    void replace_ArrayItem_in_SubroutineCall(Allocator &al, bool legacy_array_sections, SymbolTable* current_scope) {
+
+    class ReplaceArrayItemWithArraySection: public ASR::BaseExprReplacer<ReplaceArrayItemWithArraySection> {
+        private:
+            Allocator& al;
+        public:
+            ASR::expr_t** current_expr;
+
+            ReplaceArrayItemWithArraySection(Allocator& al_) :
+                al(al_), current_expr(nullptr) {}
+
+            void replace_ArrayItem(ASR::ArrayItem_t* x) {
+                Vec<ASR::array_index_t> array_indices; array_indices.reserve(al, x->n_args);
+                ASRUtils::ASRBuilder b(al, x->base.base.loc);
+
+                for ( size_t i = 0; i < x->n_args; i++ ) {
+                    ASR::array_index_t array_index;
+                    array_index.loc = x->m_args[i].loc;
+                    array_index.m_left = x->m_args[i].m_right;
+                    array_index.m_right = b.ArrayUBound(x->m_v, i + 1);
+                    if ( ASRUtils::expr_value(array_index.m_right) ) {
+                        array_index.m_right = ASRUtils::expr_value(array_index.m_right);
+                    }
+                    array_index.m_step = b.i32( i + 1 );
+                    array_indices.push_back(al, array_index);
+                }
+                ASR::ttype_t* new_type = ASRUtils::duplicate_type_with_empty_dims(al, ASRUtils::expr_type(x->m_v));
+                *current_expr = ASRUtils::EXPR(ASR::make_ArraySection_t(al, x->base.base.loc, x->m_v,
+                    array_indices.p, array_indices.n, new_type, nullptr));
+            }
+
+    };
+
+    class LegacyArraySectionsVisitor : public ASR::CallReplacerOnExpressionsVisitor<LegacyArraySectionsVisitor> {
+        private:
+            Allocator& al;
+            ReplaceArrayItemWithArraySection replacer;
+        public:
+            ASR::expr_t** current_expr;
+            LegacyArraySectionsVisitor(Allocator& al_) :
+                al(al_), replacer(al_), current_expr(nullptr) {}
+
+            void call_replacer_() {
+                replacer.current_expr = current_expr;
+                replacer.replace_expr(*current_expr);
+                current_expr = replacer.current_expr;
+            }
+
+            void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
+                Vec<ASR::stmt_t*> body;
+                body.reserve(al, n_body);
+                for (size_t i=0; i<n_body; i++) {
+                    this->visit_stmt(*m_body[i]);
+                    body.push_back(al, m_body[i]);
+                }
+                m_body = body.p;
+                n_body = body.size();
+            }
+
+            void visit_Function(const ASR::Function_t &x) {
+                ASR::Function_t& xx = const_cast<ASR::Function_t&>(x);
+
+                for (auto &a : xx.m_symtab->get_scope()) {
+                    this->visit_symbol(*a.second);
+                }
+
+                transform_stmts(xx.m_body, xx.n_body);
+            }
+
+            void visit_Program(const ASR::Program_t &x) {
+                ASR::Program_t& xx = const_cast<ASR::Program_t&>(x);
+
+                for (auto &a : xx.m_symtab->get_scope()) {
+                    this->visit_symbol(*a.second);
+                }
+
+                transform_stmts(xx.m_body, xx.n_body);
+            }
+
+            void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
+                if ( ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(x.m_name)) ) {
+                    ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(x.m_name));
+                    ASR::FunctionType_t* f_type = ASR::down_cast<ASR::FunctionType_t>(f->m_function_signature);
+                    std::map<int, ASR::ttype_t*> array_arg_index;
+                    for (size_t i = 0; i < f->n_args; i++) {
+                        if (ASRUtils::is_array(ASRUtils::expr_type(f->m_args[i]))) {
+                            array_arg_index[i] = f_type->m_arg_types[i];
+                        }
+                    }
+                    // iterate only over args of type array.
+                    for( auto it: array_arg_index ) {
+                        ASR::expr_t* arg_expr = x.m_args[it.first].m_value;
+                        if ( arg_expr != nullptr ) {
+                            ASR::expr_t** current_expr_copy = current_expr;
+                            current_expr = const_cast<ASR::expr_t**>(&(arg_expr));;
+                            call_replacer_();
+                            x.m_args[it.first].m_value = *current_expr;
+                            current_expr = current_expr_copy;
+                        }
+                    }
+                }
+            }
+    };
+
+        if ( legacy_array_sections ) {
+            LegacyArraySectionsVisitor v(al);
+            ASR::asr_t* asr_owner = current_scope->asr_owner;
+            if ( ASR::is_a<ASR::symbol_t>(*asr_owner) ) {
+                ASR::symbol_t* sym = ASR::down_cast<ASR::symbol_t>(asr_owner);
+                if ( ASR::is_a<ASR::Function_t>(*sym) ) {
+                    ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(sym);
+                    v.visit_Function(*f);
+                } else if ( ASR::is_a<ASR::Program_t>(*sym) ) {
+                    ASR::Program_t* p = ASR::down_cast<ASR::Program_t>(sym);
+                    v.visit_Program(*p);
+                }
+            }
+        }
+    }
+
     void legacy_array_sections_helper(ASR::symbol_t *v, Vec<ASR::call_arg_t>& args, const Location &loc) {
         ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(v));
         if (compiler_options.legacy_array_sections) {
@@ -4654,6 +4804,26 @@ public:
                 }
             }
             args = args_with_array_section;
+            // There can be a possibility that initially it is ArrayItem and now we realised
+            // that it must be an ArraySection instead.
+            array_arg_idx.clear();
+            for ( size_t i = 0; i < args.size(); i++ ) {
+                ASR::expr_t* arg_expr = args[i].m_value;
+                if ( arg_expr && ASRUtils::is_array(ASRUtils::expr_type(arg_expr)) ) {
+                    array_arg_idx[i] = ASRUtils::expr_type(arg_expr);
+                }
+            }
+            // bool visit_required = false;
+            for ( auto it: array_arg_idx ) {
+                ASR::expr_t* func_arg = f->m_args[it.first];
+                if ( !ASRUtils::is_array(ASRUtils::EXPR2VAR(func_arg)->m_type) ) {
+                    // create array type with empty dimensions and physical type as PointerToDataArray
+                    ASR::ttype_t* new_type = ASRUtils::duplicate_type_with_empty_dims(al, it.second, ASR::array_physical_typeType::PointerToDataArray, true);
+                    ASRUtils::EXPR2VAR(func_arg)->m_type = new_type;
+                    f_type->m_arg_types[it.first] = new_type;
+                    // visit_required = true;
+                }
+            }
         }
     }
 
@@ -5217,40 +5387,68 @@ public:
 
     ASR::asr_t* create_ArrayReshape(const AST::FuncCallOrArray_t& x) {
         if( x.n_args != 2 ) {
-             throw SemanticError("reshape accepts only 2 arguments, got " +
-                                 std::to_string(x.n_args) + " arguments instead.",
-                                 x.base.base.loc);
-         }
-         this->visit_expr(*x.m_args[0].m_end);
-         ASR::expr_t* array = ASRUtils::EXPR(tmp);
-         this->visit_expr(*x.m_args[1].m_end);
-         ASR::expr_t* newshape = ASRUtils::EXPR(tmp);
-         if( !ASRUtils::is_array(ASRUtils::expr_type(newshape)) ) {
-             throw SemanticError("reshape only accept arrays for shape "
-                                 "arguments, found " +
-                                 ASRUtils::type_to_str_python(ASRUtils::expr_type(newshape)) +
-                                 " instead.",
-                                 x.base.base.loc);
-         }
-         Vec<ASR::dimension_t> dims;
-         dims.reserve(al, 1);
-         ASR::dimension_t newdim;
-         newdim.loc = x.base.base.loc;
-         newdim.m_start = nullptr, newdim.m_length = nullptr;
-         dims.push_back(al, newdim);
-         ASR::ttype_t* empty_type = nullptr;
-         ASR::array_physical_typeType array_physical_type = ASRUtils::extract_physical_type(
-                                                                ASRUtils::expr_type(array));
-         if( array_physical_type == ASR::array_physical_typeType::FixedSizeArray ) {
-            empty_type = ASRUtils::duplicate_type(al, ASRUtils::type_get_past_allocatable(
-                            ASRUtils::type_get_past_pointer(ASRUtils::expr_type(array))),
-                            &dims, array_physical_type, true);
-         } else {
-            empty_type = ASRUtils::duplicate_type(al, ASRUtils::type_get_past_allocatable(
-                            ASRUtils::type_get_past_pointer(ASRUtils::expr_type(array))), &dims);
-         }
-         newshape = ASRUtils::cast_to_descriptor(al, newshape);
-         return ASR::make_ArrayReshape_t(al, x.base.base.loc, array, newshape, empty_type, nullptr);
+            throw SemanticError("reshape accepts only 2 arguments, got " +
+                                std::to_string(x.n_args) + " arguments instead.",
+                                x.base.base.loc);
+        }
+        this->visit_expr(*x.m_args[0].m_end);
+        ASR::expr_t* array = ASRUtils::EXPR(tmp);
+        this->visit_expr(*x.m_args[1].m_end);
+        ASR::expr_t* newshape = ASRUtils::EXPR(tmp);
+        if( !ASRUtils::is_array(ASRUtils::expr_type(newshape)) ) {
+            throw SemanticError("reshape only accept arrays for shape "
+                "arguments, found " +
+                ASRUtils::type_to_str_python(ASRUtils::expr_type(newshape)) +
+                " instead.", x.base.base.loc);
+        }
+        ASR::array_physical_typeType array_physical_type = ASRUtils::extract_physical_type(
+                                                            ASRUtils::expr_type(array));
+
+        // the size (i.e. number of elements) of 'newshape' array determines
+        // the dimension size of 'ArrayReshape'
+        ASR::Array_t* newshape_array_type = ASR::down_cast<ASR::Array_t>(ASRUtils::expr_type(newshape));
+        size_t newshape_dims = ASR::down_cast<ASR::IntegerConstant_t>(newshape_array_type->m_dims[0].m_length)->m_n;
+        ASR::ttype_t* arr_element_type = ASRUtils::type_get_past_array_pointer_allocatable(ASRUtils::expr_type(array));
+
+        ASR::ttype_t* reshape_ttype = ASRUtils::TYPE(ASR::make_Array_t(al, arr_element_type->base.loc, arr_element_type,
+                                                    nullptr, newshape_dims, ASR::array_physical_typeType::FixedSizeArray));
+
+        size_t n_dims_array_reshape = ASRUtils::extract_n_dims_from_ttype(reshape_ttype);
+
+        Vec<ASR::dimension_t> dims;
+        dims.reserve(al, n_dims_array_reshape);
+
+        Location loc = newshape->base.loc;
+        // if 'newshape' is an ArrayConstant, then assign all of it's
+        // elements as dimensions
+        if (ASR::is_a<ASR::ArrayConstant_t>(*newshape)) {
+            ASR::ArrayConstant_t* const_newshape = ASR::down_cast<ASR::ArrayConstant_t>(newshape);
+            ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+            for (size_t i=0; i < n_dims_array_reshape; i++) {
+                ASR::dimension_t dim;
+                dim.loc = loc;
+                dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, int_type));
+                dim.m_length = ASRUtils::fetch_ArrayConstant_value(al, const_newshape, i);
+                dims.push_back(al, dim);
+            }
+        } else {
+            // otherwise empty dimensions
+            dims.reserve(al, n_dims_array_reshape);
+            for (size_t i=0; i < n_dims_array_reshape; i++) {
+                ASR::dimension_t dim;
+                dim.loc = loc;
+                dim.m_start = nullptr;
+                dim.m_length = nullptr;
+                dims.push_back(al, dim);
+            }
+        }
+
+        reshape_ttype = ASRUtils::duplicate_type(al, reshape_ttype, &dims, array_physical_type, true);
+        newshape = ASRUtils::cast_to_descriptor(al, newshape);
+        // TODO: 'value' is assigned as nullptr always to ArrayReshape, when both
+        // 'array' and 'newshape' are ArrayConstant's we can set 'value'
+        // as well
+        return ASR::make_ArrayReshape_t(al, x.base.base.loc, array, newshape, reshape_ttype, nullptr);
     }
 
     ASR::asr_t* create_BitCast(const AST::FuncCallOrArray_t& x) {
@@ -7737,7 +7935,7 @@ public:
                 a_len = left_type2->m_len + right_type2->m_len;
             }
             ASR::ttype_t *dest_type = ASR::down_cast<ASR::ttype_t>(ASR::make_Character_t(
-                al, x.base.base.loc, left_type2->m_kind, a_len, nullptr));
+                al, x.base.base.loc, left_type2->m_kind, a_len, nullptr, ASR::string_physical_typeType::PointerString));
 
             ASR::expr_t *value = nullptr;
             // Assign evaluation to `value` if possible, otherwise leave nullptr
@@ -7749,7 +7947,7 @@ public:
                 char* left_value_ = ASR::down_cast<ASR::StringConstant_t>(left_value)->m_s;
                 char* right_value_ = ASR::down_cast<ASR::StringConstant_t>(right_value)->m_s;
                 ASR::ttype_t *dest_value_type = ASR::down_cast<ASR::ttype_t>(ASR::make_Character_t(al, x.base.base.loc,
-                    left_value_type2->m_kind, strlen(left_value_) + strlen(right_value_), nullptr));
+                    left_value_type2->m_kind, strlen(left_value_) + strlen(right_value_), nullptr, ASR::string_physical_typeType::PointerString));
                 char* result;
                 std::string result_s = std::string(left_value_) + std::string(right_value_);
                 Str s; s.from_str_view(result_s);
@@ -7830,7 +8028,7 @@ public:
     void visit_String(const AST::String_t &x) {
         int s_len = strlen(x.m_s);
         ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Character_t(al, x.base.base.loc,
-                1, s_len, nullptr));
+                1, s_len, nullptr, ASR::string_physical_typeType::PointerString));
         tmp = ASR::make_StringConstant_t(al, x.base.base.loc, x.m_s, type);
     }
 

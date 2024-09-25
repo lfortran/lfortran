@@ -279,19 +279,17 @@
                         ()
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StringConstant
                                 "10.0 =="
-                                (Character 1 7 ())
+                                (Character 1 7 () PointerString)
                             )
                             (Var 2 z)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Assignment
                         (Var 2 z)
@@ -307,19 +305,17 @@
                         ()
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StringConstant
                                 "49.0 =="
-                                (Character 1 7 ())
+                                (Character 1 7 () PointerString)
                             )
                             (Var 2 z)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Assignment
                         (Var 2 z)
@@ -335,19 +331,17 @@
                         ()
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StringConstant
                                 "10.0 =="
-                                (Character 1 7 ())
+                                (Character 1 7 () PointerString)
                             )
                             (Var 2 z)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 )
         })

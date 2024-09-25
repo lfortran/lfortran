@@ -2065,24 +2065,22 @@
                                         ()
                                     )
                                     (Print
-                                        [(StringFormat
+                                        (StringFormat
                                             ()
                                             [(StringConstant
                                                 "tal = "
-                                                (Character 1 6 ())
+                                                (Character 1 6 () PointerString)
                                             )
                                             (Var 25 tal)
                                             (StringConstant
                                                 " tar = "
-                                                (Character 1 7 ())
+                                                (Character 1 7 () PointerString)
                                             )
                                             (Var 25 tar)]
                                             FormatFortran
-                                            (Character -1 0 ())
+                                            (Character -1 0 () PointerString)
                                             ()
-                                        )]
-                                        ()
-                                        ()
+                                        )
                                     )]
                                     ()
                                     Public
@@ -2340,24 +2338,22 @@
                                         ()
                                     )
                                     (Print
-                                        [(StringFormat
+                                        (StringFormat
                                             ()
                                             [(StringConstant
                                                 "tmaxl ="
-                                                (Character 1 7 ())
+                                                (Character 1 7 () PointerString)
                                             )
                                             (Var 31 tmaxl)
                                             (StringConstant
                                                 " tmaxr ="
-                                                (Character 1 8 ())
+                                                (Character 1 8 () PointerString)
                                             )
                                             (Var 31 tmaxr)]
                                             FormatFortran
-                                            (Character -1 0 ())
+                                            (Character -1 0 () PointerString)
                                             ()
-                                        )]
-                                        ()
-                                        ()
+                                        )
                                     )]
                                     ()
                                     Public
@@ -2615,24 +2611,22 @@
                                         ()
                                     )
                                     (Print
-                                        [(StringFormat
+                                        (StringFormat
                                             ()
                                             [(StringConstant
                                                 "tml = "
-                                                (Character 1 6 ())
+                                                (Character 1 6 () PointerString)
                                             )
                                             (Var 28 tml)
                                             (StringConstant
                                                 " tmr = "
-                                                (Character 1 7 ())
+                                                (Character 1 7 () PointerString)
                                             )
                                             (Var 28 tmr)]
                                             FormatFortran
-                                            (Character -1 0 ())
+                                            (Character -1 0 () PointerString)
                                             ()
-                                        )]
-                                        ()
-                                        ()
+                                        )
                                     )]
                                     ()
                                     Public

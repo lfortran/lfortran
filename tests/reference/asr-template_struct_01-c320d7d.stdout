@@ -897,11 +897,11 @@
                                         ()
                                     )
                                     (Print
-                                        [(StringFormat
+                                        (StringFormat
                                             ()
                                             [(StringConstant
                                                 "First element: "
-                                                (Character 1 15 ())
+                                                (Character 1 15 () PointerString)
                                             )
                                             (FunctionCall
                                                 8 get_int_fst
@@ -912,11 +912,9 @@
                                                 ()
                                             )]
                                             FormatFortran
-                                            (Character -1 0 ())
+                                            (Character -1 0 () PointerString)
                                             ()
-                                        )]
-                                        ()
-                                        ()
+                                        )
                                     )
                                     (Assignment
                                         (StructInstanceMember
@@ -929,11 +927,11 @@
                                         ()
                                     )
                                     (Print
-                                        [(StringFormat
+                                        (StringFormat
                                             ()
                                             [(StringConstant
                                                 "Second element: "
-                                                (Character 1 16 ())
+                                                (Character 1 16 () PointerString)
                                             )
                                             (FunctionCall
                                                 8 get_int_snd
@@ -944,11 +942,9 @@
                                                 ()
                                             )]
                                             FormatFortran
-                                            (Character -1 0 ())
+                                            (Character -1 0 () PointerString)
                                             ()
-                                        )]
-                                        ()
-                                        ()
+                                        )
                                     )
                                     (Assignment
                                         (StructInstanceMember
@@ -964,11 +960,11 @@
                                         ()
                                     )
                                     (Print
-                                        [(StringFormat
+                                        (StringFormat
                                             ()
                                             [(StringConstant
                                                 "First element: "
-                                                (Character 1 15 ())
+                                                (Character 1 15 () PointerString)
                                             )
                                             (FunctionCall
                                                 8 get_real_fst
@@ -979,11 +975,9 @@
                                                 ()
                                             )]
                                             FormatFortran
-                                            (Character -1 0 ())
+                                            (Character -1 0 () PointerString)
                                             ()
-                                        )]
-                                        ()
-                                        ()
+                                        )
                                     )
                                     (Assignment
                                         (StructInstanceMember
@@ -999,11 +993,11 @@
                                         ()
                                     )
                                     (Print
-                                        [(StringFormat
+                                        (StringFormat
                                             ()
                                             [(StringConstant
                                                 "Second element: "
-                                                (Character 1 16 ())
+                                                (Character 1 16 () PointerString)
                                             )
                                             (FunctionCall
                                                 8 get_real_snd
@@ -1014,11 +1008,9 @@
                                                 ()
                                             )]
                                             FormatFortran
-                                            (Character -1 0 ())
+                                            (Character -1 0 () PointerString)
                                             ()
-                                        )]
-                                        ()
-                                        ()
+                                        )
                                     )]
                                     ()
                                     Private

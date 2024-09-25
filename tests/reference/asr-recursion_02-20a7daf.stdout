@@ -60,19 +60,17 @@
                         ()
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StringConstant
                                 "r ="
-                                (Character 1 3 ())
+                                (Character 1 3 () PointerString)
                             )
                             (Var 7 r)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 ),
             recursion_02:
@@ -225,19 +223,17 @@
                                         ()
                                     )
                                     (Print
-                                        [(StringFormat
+                                        (StringFormat
                                             ()
                                             [(StringConstant
                                                 "before:"
-                                                (Character 1 7 ())
+                                                (Character 1 7 () PointerString)
                                             )
                                             (Var 3 f_val)]
                                             FormatFortran
-                                            (Character -1 0 ())
+                                            (Character -1 0 () PointerString)
                                             ()
-                                        )]
-                                        ()
-                                        ()
+                                        )
                                     )
                                     (Assignment
                                         (Var 3 solver)
@@ -271,19 +267,17 @@
                                         ()
                                     )
                                     (Print
-                                        [(StringFormat
+                                        (StringFormat
                                             ()
                                             [(StringConstant
                                                 "after:"
-                                                (Character 1 6 ())
+                                                (Character 1 6 () PointerString)
                                             )
                                             (Var 3 f_val)]
                                             FormatFortran
-                                            (Character -1 0 ())
+                                            (Character -1 0 () PointerString)
                                             ()
-                                        )]
-                                        ()
-                                        ()
+                                        )
                                     )]
                                     (Var 3 solver)
                                     Public
@@ -336,19 +330,17 @@
                                                     []
                                                     []
                                                     [(Print
-                                                        [(StringFormat
+                                                        (StringFormat
                                                             ()
                                                             [(StringConstant
                                                                 "x in getx"
-                                                                (Character 1 9 ())
+                                                                (Character 1 9 () PointerString)
                                                             )
                                                             (Var 5 x)]
                                                             FormatFortran
-                                                            (Character -1 0 ())
+                                                            (Character -1 0 () PointerString)
                                                             ()
-                                                        )]
-                                                        ()
-                                                        ()
+                                                        )
                                                     )
                                                     (Assignment
                                                         (Var 6 getx)
@@ -467,12 +459,10 @@
                                         ()
                                     )
                                     (Print
-                                        [(StringConstant
+                                        (StringConstant
                                             "in sub1"
-                                            (Character 1 7 ())
-                                        )]
-                                        ()
-                                        ()
+                                            (Character 1 7 () PointerString)
+                                        )
                                     )
                                     (If
                                         (IntegerCompare

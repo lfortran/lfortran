@@ -64,7 +64,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Character 1 1 ())
+                                    (Character 1 1 () PointerString)
                                     ()
                                     Source
                                     Public
@@ -117,7 +117,7 @@
                         ()
                         (StringConstant
                             "file_b"
-                            (Character 1 6 ())
+                            (Character 1 6 () PointerString)
                         )
                         ()
                         ()
@@ -219,24 +219,20 @@
                         10
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "err rewind"
-                            (Character 1 10 ())
-                        )]
-                        ()
-                        ()
+                            (Character 1 10 () PointerString)
+                        )
                     )
                     (GoToTarget
                         20
                         20
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "err inquire"
-                            (Character 1 11 ())
-                        )]
-                        ()
-                        ()
+                            (Character 1 11 () PointerString)
+                        )
                     )]
                 )
         })

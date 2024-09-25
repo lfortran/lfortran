@@ -342,7 +342,7 @@
                             )
                             ())
                             [(Print
-                                [(StringFormat
+                                (StringFormat
                                     ()
                                     [(Var 2 i)
                                     (Var 2 j)
@@ -369,11 +369,9 @@
                                         ()
                                     )]
                                     FormatFortran
-                                    (Character -1 0 ())
+                                    (Character -1 0 () PointerString)
                                     ()
-                                )]
-                                ()
-                                ()
+                                )
                             )]
                             []
                         )]
@@ -386,7 +384,7 @@
                         ()
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(PointerToCPtr
                                 (Var 2 x)
@@ -395,11 +393,9 @@
                             )
                             (Var 2 queries)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (DoLoop
                         ()
@@ -438,7 +434,7 @@
                             )
                             ())
                             [(Print
-                                [(StringFormat
+                                (StringFormat
                                     ()
                                     [(Var 2 i)
                                     (Var 2 j)
@@ -465,11 +461,9 @@
                                         ()
                                     )]
                                     FormatFortran
-                                    (Character -1 0 ())
+                                    (Character -1 0 () PointerString)
                                     ()
-                                )]
-                                ()
-                                ()
+                                )
                             )]
                             []
                         )]
@@ -492,7 +486,7 @@
                         ()
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(PointerToCPtr
                                 (Var 2 x)
@@ -501,11 +495,9 @@
                             )
                             (Var 2 queries)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (DoLoop
                         ()
@@ -544,7 +536,7 @@
                             )
                             ())
                             [(Print
-                                [(StringFormat
+                                (StringFormat
                                     ()
                                     [(Var 2 i)
                                     (Var 2 j)
@@ -571,11 +563,9 @@
                                         ()
                                     )]
                                     FormatFortran
-                                    (Character -1 0 ())
+                                    (Character -1 0 () PointerString)
                                     ()
-                                )]
-                                ()
-                                ()
+                                )
                             )]
                             []
                         )]

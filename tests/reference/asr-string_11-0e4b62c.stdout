@@ -16,7 +16,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Character 1 30 ())
+                                    (Character 1 30 () PointerString)
                                     ()
                                     Source
                                     Public
@@ -32,7 +32,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Character 1 10 ())
+                                    (Character 1 10 () PointerString)
                                     ()
                                     Source
                                     Public
@@ -46,7 +46,7 @@
                         (Var 2 mystring)
                         (StringConstant
                             "This is a test"
-                            (Character 1 14 ())
+                            (Character 1 14 () PointerString)
                         )
                         ()
                     )
@@ -54,7 +54,7 @@
                         (Var 2 teststring)
                         (StringConstant
                             "test"
-                            (Character 1 4 ())
+                            (Character 1 4 () PointerString)
                         )
                         ()
                     )
@@ -79,19 +79,17 @@
                             ()
                         )
                         [(Print
-                            [(StringConstant
+                            (StringConstant
                                 "test is not found"
-                                (Character 1 17 ())
-                            )]
-                            ()
-                            ()
+                                (Character 1 17 () PointerString)
+                            )
                         )]
                         [(Print
-                            [(StringFormat
+                            (StringFormat
                                 ()
                                 [(StringConstant
                                     "test is found at index: "
-                                    (Character 1 24 ())
+                                    (Character 1 24 () PointerString)
                                 )
                                 (IntrinsicElementalFunction
                                     SubstrIndex
@@ -107,11 +105,9 @@
                                     ()
                                 )]
                                 FormatFortran
-                                (Character -1 0 ())
+                                (Character -1 0 () PointerString)
                                 ()
-                            )]
-                            ()
-                            ()
+                            )
                         )]
                     )]
                 )

@@ -260,7 +260,7 @@ public:
                 handle_array(t2, type_name, true)
             } else {
                 diag.codegen_error_label("Type number '"
-                    + std::to_string(v.m_type->type)
+                    + ASRUtils::type_to_str_python(v.m_type)
                     + "' not supported", {v.base.base.loc}, "");
                 throw Abort();
             }
@@ -307,7 +307,7 @@ public:
                                     false, false);
             } else {
                 diag.codegen_error_label("Type number '"
-                    + std::to_string(v.m_type->type)
+                    + ASRUtils::type_to_str_python(v.m_type)
                     + "' not supported", {v.base.base.loc}, "");
                 throw Abort();
             }
@@ -604,15 +604,22 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
         std::string out = indent + "std::cout ", sep;
         //HACKISH way to handle print refactoring (always using stringformat).
         // TODO : Implement stringformat visitor.
-        ASR::StringFormat_t* str_fmt = nullptr;
-        size_t n_values = x.n_values;
+        ASR::StringFormat_t* str_fmt;
+        size_t n_values = 0;
         sep = "\" \"";
-        if(x.m_values[0] && ASR::is_a<ASR::StringFormat_t>(*x.m_values[0])) {
-            str_fmt = ASR::down_cast<ASR::StringFormat_t>(x.m_values[0]);
+        if(ASR::is_a<ASR::StringFormat_t>(*x.m_text)) {
+            str_fmt = ASR::down_cast<ASR::StringFormat_t>(x.m_text);
             n_values = str_fmt->n_args;
+        } else if(ASR::is_a<ASR::Character_t>(*ASRUtils::expr_type(x.m_text))){
+            this->visit_expr(*x.m_text);
+            src = "std::cout<< " + src + "<<std::endl;\n";
+            return;
+        } else {
+            throw CodeGenError("print statment supported for stringformat and single character argument",
+                x.base.base.loc);
         }
         for (size_t i=0; i<n_values; i++) {
-            str_fmt? this->visit_expr(*(str_fmt->m_args[i])): this->visit_expr(*x.m_values[i]);
+            this->visit_expr(*(str_fmt->m_args[i]));
             out += "<< " + src + " ";
             if (i+1 != n_values) {
                 out += "<< " + sep + " ";

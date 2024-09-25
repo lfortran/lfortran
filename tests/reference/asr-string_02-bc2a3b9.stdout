@@ -16,7 +16,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Character 1 15 ())
+                                    (Character 1 15 () PointerString)
                                     ()
                                     Source
                                     Public
@@ -32,7 +32,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Character 1 25 ())
+                                    (Character 1 25 () PointerString)
                                     ()
                                     Source
                                     Public
@@ -48,7 +48,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Character 1 15 ())
+                                    (Character 1 15 () PointerString)
                                     ()
                                     Source
                                     Public
@@ -64,7 +64,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Character 1 6 ())
+                                    (Character 1 6 () PointerString)
                                     ()
                                     Source
                                     Public
@@ -78,7 +78,7 @@
                         (Var 2 title)
                         (StringConstant
                             "Mr. "
-                            (Character 1 4 ())
+                            (Character 1 4 () PointerString)
                         )
                         ()
                     )
@@ -86,7 +86,7 @@
                         (Var 2 firstname)
                         (StringConstant
                             "Rowan "
-                            (Character 1 6 ())
+                            (Character 1 6 () PointerString)
                         )
                         ()
                     )
@@ -94,7 +94,7 @@
                         (Var 2 surname)
                         (StringConstant
                             "Atkinson"
-                            (Character 1 8 ())
+                            (Character 1 8 () PointerString)
                         )
                         ()
                     )
@@ -102,31 +102,27 @@
                         (Var 2 greetings)
                         (StringConstant
                             "A big hello from Mr. Bean"
-                            (Character 1 25 ())
+                            (Character 1 25 () PointerString)
                         )
                         ()
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StringConstant
                                 "Here is "
-                                (Character 1 8 ())
+                                (Character 1 8 () PointerString)
                             )
                             (Var 2 title)
                             (Var 2 firstname)
                             (Var 2 surname)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(Var 2 greetings)]
-                        ()
-                        ()
+                        (Var 2 greetings)
                     )]
                 )
         })

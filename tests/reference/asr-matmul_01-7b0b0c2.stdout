@@ -384,41 +384,37 @@
                         ()
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StringConstant
                                 "Size (n x n): n ="
-                                (Character 1 17 ())
+                                (Character 1 17 () PointerString)
                             )
                             (Var 6 n)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StringConstant
                                 "Iter ="
-                                (Character 1 6 ())
+                                (Character 1 6 () PointerString)
                             )
                             (Var 6 iter)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StringConstant
                                 "Size MB:"
-                                (Character 1 8 ())
+                                (Character 1 8 () PointerString)
                             )
                             (RealBinOp
                                 (RealBinOp
@@ -467,11 +463,9 @@
                                 ()
                             )]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Allocate
                         [((Var 6 a)
@@ -517,12 +511,10 @@
                         0
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "Fortran intrinsic matmul:"
-                            (Character 1 25 ())
-                        )]
-                        ()
-                        ()
+                            (Character 1 25 () PointerString)
+                        )
                     )
                     (SubroutineCall
                         6 cpu_time@sp_cpu_time
@@ -671,103 +663,89 @@
                         ()
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StringConstant
                                 "Time: "
-                                (Character 1 6 ())
+                                (Character 1 6 () PointerString)
                             )
                             (Var 6 t)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "Clock cycles per element:"
-                            (Character 1 25 ())
-                        )]
-                        ()
-                        ()
+                            (Character 1 25 () PointerString)
+                        )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StringConstant
                                 "Theoretical performance peak:"
-                                (Character 1 29 ())
+                                (Character 1 29 () PointerString)
                             )
                             (Var 6 fma_clock)
                             (StringConstant
                                 "cycles"
-                                (Character 1 6 ())
+                                (Character 1 6 () PointerString)
                             )]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StringConstant
                                 "Measured:                    "
-                                (Character 1 29 ())
+                                (Character 1 29 () PointerString)
                             )
                             (Var 6 measured)
                             (StringConstant
                                 "cycles"
-                                (Character 1 6 ())
+                                (Character 1 6 () PointerString)
                             )]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StringConstant
                                 "Percent peak:                "
-                                (Character 1 29 ())
+                                (Character 1 29 () PointerString)
                             )
                             (Var 6 percent_peak)
                             (StringConstant
                                 "%"
-                                (Character 1 1 ())
+                                (Character 1 1 () PointerString)
                             )]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             []
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "matmul2:"
-                            (Character 1 8 ())
-                        )]
-                        ()
-                        ()
+                            (Character 1 8 () PointerString)
+                        )
                     )
                     (SubroutineCall
                         6 cpu_time@sp_cpu_time
@@ -835,19 +813,17 @@
                         ()
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StringConstant
                                 "Error:"
-                                (Character 1 6 ())
+                                (Character 1 6 () PointerString)
                             )
                             (Var 6 err)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Assignment
                         (Var 6 t)
@@ -955,84 +931,74 @@
                         ()
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StringConstant
                                 "Time: "
-                                (Character 1 6 ())
+                                (Character 1 6 () PointerString)
                             )
                             (Var 6 t)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "Clock cycles per element:"
-                            (Character 1 25 ())
-                        )]
-                        ()
-                        ()
+                            (Character 1 25 () PointerString)
+                        )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StringConstant
                                 "Theoretical performance peak:"
-                                (Character 1 29 ())
+                                (Character 1 29 () PointerString)
                             )
                             (Var 6 fma_clock)
                             (StringConstant
                                 "cycles"
-                                (Character 1 6 ())
+                                (Character 1 6 () PointerString)
                             )]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StringConstant
                                 "Measured:                    "
-                                (Character 1 29 ())
+                                (Character 1 29 () PointerString)
                             )
                             (Var 6 measured)
                             (StringConstant
                                 "cycles"
-                                (Character 1 6 ())
+                                (Character 1 6 () PointerString)
                             )]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StringConstant
                                 "Percent peak:                "
-                                (Character 1 29 ())
+                                (Character 1 29 () PointerString)
                             )
                             (Var 6 percent_peak)
                             (StringConstant
                                 "%"
-                                (Character 1 1 ())
+                                (Character 1 1 () PointerString)
                             )]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (If
                         (RealCompare
@@ -1051,23 +1017,19 @@
                         []
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             []
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "matmul1:"
-                            (Character 1 8 ())
-                        )]
-                        ()
-                        ()
+                            (Character 1 8 () PointerString)
+                        )
                     )
                     (SubroutineCall
                         6 cpu_time@sp_cpu_time
@@ -1135,19 +1097,17 @@
                         ()
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StringConstant
                                 "Error:"
-                                (Character 1 6 ())
+                                (Character 1 6 () PointerString)
                             )
                             (Var 6 err)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Assignment
                         (Var 6 t)
@@ -1255,84 +1215,74 @@
                         ()
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StringConstant
                                 "Time: "
-                                (Character 1 6 ())
+                                (Character 1 6 () PointerString)
                             )
                             (Var 6 t)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "Clock cycles per element:"
-                            (Character 1 25 ())
-                        )]
-                        ()
-                        ()
+                            (Character 1 25 () PointerString)
+                        )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StringConstant
                                 "Theoretical performance peak:"
-                                (Character 1 29 ())
+                                (Character 1 29 () PointerString)
                             )
                             (Var 6 fma_clock)
                             (StringConstant
                                 "cycles"
-                                (Character 1 6 ())
+                                (Character 1 6 () PointerString)
                             )]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StringConstant
                                 "Measured:                    "
-                                (Character 1 29 ())
+                                (Character 1 29 () PointerString)
                             )
                             (Var 6 measured)
                             (StringConstant
                                 "cycles"
-                                (Character 1 6 ())
+                                (Character 1 6 () PointerString)
                             )]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StringConstant
                                 "Percent peak:                "
-                                (Character 1 29 ())
+                                (Character 1 29 () PointerString)
                             )
                             (Var 6 percent_peak)
                             (StringConstant
                                 "%"
-                                (Character 1 1 ())
+                                (Character 1 1 () PointerString)
                             )]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (If
                         (RealCompare

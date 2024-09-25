@@ -15,14 +15,14 @@
                                     Local
                                     (StringConstant
                                         "a"
-                                        (Character 1 1 ())
+                                        (Character 1 1 () PointerString)
                                     )
                                     (StringConstant
                                         "a"
-                                        (Character 1 1 ())
+                                        (Character 1 1 () PointerString)
                                     )
                                     Save
-                                    (Character 1 1 ())
+                                    (Character 1 1 () PointerString)
                                     ()
                                     Source
                                     Public
@@ -121,7 +121,7 @@
                                         3
                                         ["a", "A", "@"]
                                         (Array
-                                            (Character 1 1 ())
+                                            (Character 1 1 () PointerString)
                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                             (IntegerConstant 3 (Integer 4) Decimal))]
                                             FixedSizeArray
@@ -132,7 +132,7 @@
                                         3
                                         ["a", "A", "@"]
                                         (Array
-                                            (Character 1 1 ())
+                                            (Character 1 1 () PointerString)
                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                             (IntegerConstant 3 (Integer 4) Decimal))]
                                             FixedSizeArray
@@ -141,7 +141,7 @@
                                     )
                                     Save
                                     (Array
-                                        (Character 1 1 ())
+                                        (Character 1 1 () PointerString)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 3 (Integer 4) Decimal))]
                                         FixedSizeArray
@@ -160,14 +160,14 @@
                                     Local
                                     (StringConstant
                                         "b"
-                                        (Character 1 1 ())
+                                        (Character 1 1 () PointerString)
                                     )
                                     (StringConstant
                                         "b"
-                                        (Character 1 1 ())
+                                        (Character 1 1 () PointerString)
                                     )
                                     Save
-                                    (Character 1 1 ())
+                                    (Character 1 1 () PointerString)
                                     ()
                                     Source
                                     Public
@@ -198,14 +198,14 @@
                                     Local
                                     (StringConstant
                                         "b"
-                                        (Character 1 1 ())
+                                        (Character 1 1 () PointerString)
                                     )
                                     (StringConstant
                                         "b"
-                                        (Character 1 1 ())
+                                        (Character 1 1 () PointerString)
                                     )
                                     Save
-                                    (Character 1 1 ())
+                                    (Character 1 1 () PointerString)
                                     ()
                                     Source
                                     Public
@@ -220,14 +220,14 @@
                                     Local
                                     (StringConstant
                                         "#"
-                                        (Character 1 1 ())
+                                        (Character 1 1 () PointerString)
                                     )
                                     (StringConstant
                                         "#"
-                                        (Character 1 1 ())
+                                        (Character 1 1 () PointerString)
                                     )
                                     Save
-                                    (Character 1 1 ())
+                                    (Character 1 1 () PointerString)
                                     ()
                                     Source
                                     Public
@@ -269,7 +269,7 @@
                                     ()
                                     Default
                                     (Array
-                                        (Character 1 1 ())
+                                        (Character 1 1 () PointerString)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 3 (Integer 4) Decimal))]
                                         FixedSizeArray
@@ -306,7 +306,7 @@
                                         Ichar
                                         [(StringConstant
                                             "a"
-                                            (Character 1 1 ())
+                                            (Character 1 1 () PointerString)
                                         )]
                                         0
                                         (Integer 4)
@@ -331,7 +331,7 @@
                                         Ichar
                                         [(StringConstant
                                             "a"
-                                            (Character 1 1 ())
+                                            (Character 1 1 () PointerString)
                                         )]
                                         0
                                         (Integer 8)
@@ -472,15 +472,13 @@
                     intrinsics_46
                     []
                     [(Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(Var 2 i1)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (If
                         (IntegerCompare
@@ -499,15 +497,13 @@
                         []
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(Var 2 i2)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (If
                         (IntegerCompare
@@ -531,15 +527,13 @@
                         []
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(Var 2 ar1)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (If
                         (IntrinsicArrayFunction
@@ -600,15 +594,13 @@
                         []
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(Var 2 ar2)]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (If
                         (IntrinsicArrayFunction
@@ -689,7 +681,7 @@
                         []
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(IntrinsicElementalFunction
                                 Ichar
@@ -704,11 +696,9 @@
                                 ()
                             )]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (If
                         (IntrinsicArrayFunction
@@ -772,7 +762,7 @@
                             Ichar
                             [(StringConstant
                                 " "
-                                (Character 1 1 ())
+                                (Character 1 1 () PointerString)
                             )]
                             0
                             (Integer 4)
@@ -785,7 +775,7 @@
                         (Iachar
                             (StringConstant
                                 " "
-                                (Character 1 1 ())
+                                (Character 1 1 () PointerString)
                             )
                             (Integer 4)
                             (IntegerConstant 32 (Integer 4) Decimal)
@@ -798,7 +788,7 @@
                             Ichar
                             [(StringConstant
                                 "A"
-                                (Character 1 1 ())
+                                (Character 1 1 () PointerString)
                             )]
                             0
                             (Integer 8)
@@ -811,7 +801,7 @@
                         (Iachar
                             (StringConstant
                                 "a"
-                                (Character 1 1 ())
+                                (Character 1 1 () PointerString)
                             )
                             (Integer 8)
                             (IntegerConstant 97 (Integer 8) Decimal)
@@ -824,7 +814,7 @@
                             Ichar
                             [(StringConstant
                                 "Z"
-                                (Character 1 1 ())
+                                (Character 1 1 () PointerString)
                             )]
                             0
                             (Integer 8)
@@ -837,7 +827,7 @@
                         (Iachar
                             (StringConstant
                                 "z"
-                                (Character 1 1 ())
+                                (Character 1 1 () PointerString)
                             )
                             (Integer 8)
                             (IntegerConstant 122 (Integer 8) Decimal)
@@ -850,10 +840,10 @@
                             Char
                             [(IntegerConstant 100 (Integer 4) Decimal)]
                             0
-                            (Character 1 1 ())
+                            (Character 1 1 () PointerString)
                             (StringConstant
                                 "d"
-                                (Character 1 1 ())
+                                (Character 1 1 () PointerString)
                             )
                         )
                         ()
@@ -864,7 +854,7 @@
                             3
                             ["a", "b", "c"]
                             (Array
-                                (Character 1 1 ())
+                                (Character 1 1 () PointerString)
                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                 (IntegerConstant 3 (Integer 4) Decimal))]
                                 FixedSizeArray
@@ -1255,13 +1245,13 @@
                                 Char
                                 [(Var 2 c)]
                                 0
-                                (Character 1 1 ())
+                                (Character 1 1 () PointerString)
                                 ()
                             )
                             NotEq
                             (StringConstant
                                 "d"
-                                (Character 1 1 ())
+                                (Character 1 1 () PointerString)
                             )
                             (Logical 4)
                             ()
@@ -1282,10 +1272,10 @@
                             Achar
                             [(IntegerConstant 100 (Integer 4) Decimal)]
                             0
-                            (Character 1 1 ())
+                            (Character 1 1 () PointerString)
                             (StringConstant
                                 "d"
-                                (Character 1 1 ())
+                                (Character 1 1 () PointerString)
                             )
                         )
                         ()
@@ -1296,7 +1286,7 @@
                             NotEq
                             (StringConstant
                                 "d"
-                                (Character 1 1 ())
+                                (Character 1 1 () PointerString)
                             )
                             (Logical 4)
                             ()
@@ -1312,7 +1302,7 @@
                             Achar
                             [(Var 2 c)]
                             0
-                            (Character 1 1 ())
+                            (Character 1 1 () PointerString)
                             ()
                         )
                         ()
@@ -1323,7 +1313,7 @@
                             NotEq
                             (StringConstant
                                 "d"
-                                (Character 1 1 ())
+                                (Character 1 1 () PointerString)
                             )
                             (Logical 4)
                             ()
@@ -1339,10 +1329,10 @@
                             Char
                             [(IntegerConstant 100 (Integer 4) Decimal)]
                             0
-                            (Character 1 1 ())
+                            (Character 1 1 () PointerString)
                             (StringConstant
                                 "d"
-                                (Character 1 1 ())
+                                (Character 1 1 () PointerString)
                             )
                         )
                         ()
@@ -1353,7 +1343,7 @@
                             NotEq
                             (StringConstant
                                 "d"
-                                (Character 1 1 ())
+                                (Character 1 1 () PointerString)
                             )
                             (Logical 4)
                             ()
@@ -1369,7 +1359,7 @@
                             Char
                             [(Var 2 c)]
                             0
-                            (Character 1 1 ())
+                            (Character 1 1 () PointerString)
                             ()
                         )
                         ()
@@ -1380,7 +1370,7 @@
                             NotEq
                             (StringConstant
                                 "d"
-                                (Character 1 1 ())
+                                (Character 1 1 () PointerString)
                             )
                             (Logical 4)
                             ()
@@ -1394,7 +1384,7 @@
                         (Var 2 c_1)
                         (StringConstant
                             "e"
-                            (Character 1 1 ())
+                            (Character 1 1 () PointerString)
                         )
                         ()
                     )
@@ -1403,7 +1393,7 @@
                         (Iachar
                             (StringConstant
                                 "e"
-                                (Character 1 1 ())
+                                (Character 1 1 () PointerString)
                             )
                             (Integer 4)
                             (IntegerConstant 101 (Integer 4) Decimal)
@@ -1451,7 +1441,7 @@
                             Ichar
                             [(StringConstant
                                 "e"
-                                (Character 1 1 ())
+                                (Character 1 1 () PointerString)
                             )]
                             0
                             (Integer 4)
@@ -1497,7 +1487,7 @@
                         []
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(IntrinsicElementalFunction
                                 Ichar
@@ -1507,11 +1497,9 @@
                                 ()
                             )]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (If
                         (IntegerCompare
@@ -1533,7 +1521,7 @@
                         []
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(IntrinsicElementalFunction
                                 Ichar
@@ -1543,11 +1531,9 @@
                                 ()
                             )]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (If
                         (IntegerCompare
@@ -1569,7 +1555,7 @@
                         []
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(IntrinsicElementalFunction
                                 Ichar
@@ -1579,11 +1565,9 @@
                                 ()
                             )]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (If
                         (IntegerCompare
@@ -1605,24 +1589,22 @@
                         []
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(IntrinsicElementalFunction
                                 Ichar
                                 [(StringConstant
                                     "a"
-                                    (Character 1 1 ())
+                                    (Character 1 1 () PointerString)
                                 )]
                                 0
                                 (Integer 4)
                                 (IntegerConstant 97 (Integer 4) Decimal)
                             )]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (If
                         (IntegerCompare
@@ -1630,7 +1612,7 @@
                                 Ichar
                                 [(StringConstant
                                     "a"
-                                    (Character 1 1 ())
+                                    (Character 1 1 () PointerString)
                                 )]
                                 0
                                 (Integer 4)
@@ -1650,24 +1632,22 @@
                         []
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(IntrinsicElementalFunction
                                 Ichar
                                 [(StringConstant
                                     "b"
-                                    (Character 1 1 ())
+                                    (Character 1 1 () PointerString)
                                 )]
                                 0
                                 (Integer 4)
                                 (IntegerConstant 98 (Integer 4) Decimal)
                             )]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (If
                         (IntegerCompare
@@ -1675,7 +1655,7 @@
                                 Ichar
                                 [(StringConstant
                                     "b"
-                                    (Character 1 1 ())
+                                    (Character 1 1 () PointerString)
                                 )]
                                 0
                                 (Integer 4)
@@ -1695,24 +1675,22 @@
                         []
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(IntrinsicElementalFunction
                                 Ichar
                                 [(StringConstant
                                     "C"
-                                    (Character 1 1 ())
+                                    (Character 1 1 () PointerString)
                                 )]
                                 0
                                 (Integer 4)
                                 (IntegerConstant 67 (Integer 4) Decimal)
                             )]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (If
                         (IntegerCompare
@@ -1720,7 +1698,7 @@
                                 Ichar
                                 [(StringConstant
                                     "C"
-                                    (Character 1 1 ())
+                                    (Character 1 1 () PointerString)
                                 )]
                                 0
                                 (Integer 4)
@@ -1740,24 +1718,22 @@
                         []
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(IntrinsicElementalFunction
                                 Ichar
                                 [(StringConstant
                                     "#"
-                                    (Character 1 1 ())
+                                    (Character 1 1 () PointerString)
                                 )]
                                 0
                                 (Integer 4)
                                 (IntegerConstant 35 (Integer 4) Decimal)
                             )]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (If
                         (IntegerCompare
@@ -1765,7 +1741,7 @@
                                 Ichar
                                 [(StringConstant
                                     "#"
-                                    (Character 1 1 ())
+                                    (Character 1 1 () PointerString)
                                 )]
                                 0
                                 (Integer 4)
@@ -1785,7 +1761,7 @@
                         []
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(TypeInquiry
                                 Kind
@@ -1801,11 +1777,9 @@
                                 (IntegerConstant 4 (Integer 4) Decimal)
                             )]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (If
                         (IntegerCompare
@@ -1836,7 +1810,7 @@
                         []
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(TypeInquiry
                                 Kind
@@ -1852,11 +1826,9 @@
                                 (IntegerConstant 8 (Integer 4) Decimal)
                             )]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (If
                         (IntegerCompare
@@ -1887,7 +1859,7 @@
                         []
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(TypeInquiry
                                 Kind
@@ -1896,7 +1868,7 @@
                                     Ichar
                                     [(StringConstant
                                         "a"
-                                        (Character 1 1 ())
+                                        (Character 1 1 () PointerString)
                                     )]
                                     0
                                     (Integer 4)
@@ -1906,11 +1878,9 @@
                                 (IntegerConstant 4 (Integer 4) Decimal)
                             )]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (If
                         (IntegerCompare
@@ -1921,7 +1891,7 @@
                                     Ichar
                                     [(StringConstant
                                         "a"
-                                        (Character 1 1 ())
+                                        (Character 1 1 () PointerString)
                                     )]
                                     0
                                     (Integer 4)
@@ -1944,7 +1914,7 @@
                         []
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(TypeInquiry
                                 Kind
@@ -1953,7 +1923,7 @@
                                     Ichar
                                     [(StringConstant
                                         "a"
-                                        (Character 1 1 ())
+                                        (Character 1 1 () PointerString)
                                     )]
                                     0
                                     (Integer 8)
@@ -1963,11 +1933,9 @@
                                 (IntegerConstant 8 (Integer 4) Decimal)
                             )]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (If
                         (IntegerCompare
@@ -1978,7 +1946,7 @@
                                     Ichar
                                     [(StringConstant
                                         "a"
-                                        (Character 1 1 ())
+                                        (Character 1 1 () PointerString)
                                     )]
                                     0
                                     (Integer 8)
@@ -2001,7 +1969,7 @@
                         []
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(IntrinsicElementalFunction
                                 Ichar
@@ -2016,11 +1984,9 @@
                                 ()
                             )]
                             FormatFortran
-                            (Character -1 0 ())
+                            (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (If
                         (IntrinsicArrayFunction
