@@ -3479,7 +3479,8 @@ public:
                 a_len = 1; // The default len of "character :: x" is 1
             }
             LCOMPILERS_ASSERT(a_len != -10)
-            type = ASRUtils::TYPE(ASR::make_Character_t(al, loc, a_kind, a_len, len_expr, ASR::string_physical_typeType::PointerString));
+            type = ASRUtils::TYPE(ASR::make_Character_t(al, loc, a_kind, a_len, len_expr, 
+                (is_allocatable && dims.size() == 0) ? ASR::string_physical_typeType::DescriptorString : ASR::string_physical_typeType::PointerString));
             type = ASRUtils::make_Array_t_util(
                 al, loc, type, dims.p, dims.size(), abi, is_argument,
                 dims.size() > 0 && abi == ASR::abiType::BindC ? ASR::array_physical_typeType::CharacterArraySinglePointer :
