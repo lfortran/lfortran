@@ -1602,11 +1602,7 @@ public:
                 ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(object);
                 v2 = ASR::down_cast<ASR::Variable_t>(v->m_v);
             }
-            if( v2->m_storage == ASR::storage_typeType::Parameter ) {
-                v2->m_value = ASRUtils::EXPR(tmp);
-            } else {
-                v2->m_value = nullptr;
-            }
+            v2->m_value = ASRUtils::EXPR(tmp);
             v2->m_symbolic_value = ASRUtils::EXPR(tmp);
             SetChar var_deps_vec;
             var_deps_vec.reserve(al, 1);
@@ -1689,11 +1685,7 @@ public:
         if (ASR::is_a<ASR::StructInstanceMember_t>(*object)) {
             ASR::StructInstanceMember_t *mem = ASR::down_cast<ASR::StructInstanceMember_t>(object);
             ASR::Variable_t* v2 = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(mem->m_m));
-            if( v2->m_storage == ASR::storage_typeType::Parameter ) {
-                v2->m_value = expression_value;
-            } else {
-                v2->m_value = nullptr;
-            }
+            v2->m_value = expression_value;
             v2->m_symbolic_value = expression_value;
             SetChar var_deps_vec;
             var_deps_vec.reserve(al, 1);
@@ -1711,11 +1703,7 @@ public:
             // y / 2 /
             ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(object);
             ASR::Variable_t *v2 = ASR::down_cast<ASR::Variable_t>(v->m_v);
-            if( v2->m_storage == ASR::storage_typeType::Parameter ) {
-                v2->m_value = expression_value;
-            } else {
-                v2->m_value = nullptr;
-            }
+            v2->m_value = expression_value;
             v2->m_symbolic_value = expression_value;
             SetChar var_deps_vec;
             var_deps_vec.reserve(al, 1);
@@ -2586,7 +2574,7 @@ public:
                                     ASR::asr_t* get_pointer = ASR::make_GetPointer_t(al, asr_eq2->base.loc, asr_eq2, pointer_type_, nullptr);
                                     ASR::ttype_t *cptr = ASRUtils::TYPE(ASR::make_CPtr_t(al, asr_eq2->base.loc));
                                     ASR::asr_t* pointer_to_cptr = ASR::make_PointerToCPtr_t(al, asr_eq2->base.loc, ASRUtils::EXPR(get_pointer), cptr, nullptr);
-                                    
+
                                     ASR::ttype_t* arg_type1 = ASRUtils::expr_type(asr_eq1);
                                     ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(asr_eq1);
                                     ASR::Variable_t *var__ = ASR::down_cast<ASR::Variable_t>(var->m_v);
@@ -3308,9 +3296,6 @@ public:
                 }
                 if( std::find(excluded_from_symtab.begin(), excluded_from_symtab.end(), sym) == excluded_from_symtab.end() ) {
                     if ( !is_implicitly_declared && !is_external) {
-                        if( storage_type != ASR::storage_typeType::Parameter ) {
-                            value = nullptr;
-                        }
                         SetChar variable_dependencies_vec;
                         variable_dependencies_vec.reserve(al, 1);
                         ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, type, init_expr, value);
@@ -5407,6 +5392,7 @@ public:
         // the size (i.e. number of elements) of 'newshape' array determines
         // the dimension size of 'ArrayReshape'
         ASR::Array_t* newshape_array_type = ASR::down_cast<ASR::Array_t>(ASRUtils::expr_type(newshape));
+        LCOMPILERS_ASSERT_MSG(newshape_array_type->n_dims == 1, "newshape must be a 1D array");
         size_t newshape_dims = ASR::down_cast<ASR::IntegerConstant_t>(newshape_array_type->m_dims[0].m_length)->m_n;
         ASR::ttype_t* arr_element_type = ASRUtils::type_get_past_array_pointer_allocatable(ASRUtils::expr_type(array));
 
@@ -5419,6 +5405,11 @@ public:
         dims.reserve(al, n_dims_array_reshape);
 
         Location loc = newshape->base.loc;
+        if (ASR::is_a<ASR::ArrayConstructor_t>(*newshape) &&
+            ASR::down_cast<ASR::ArrayConstructor_t>(newshape)->m_value != nullptr) {
+            newshape = ASR::down_cast<ASR::ArrayConstructor_t>(newshape)->m_value;
+        }
+
         // if 'newshape' is an ArrayConstant, then assign all of it's
         // elements as dimensions
         if (ASR::is_a<ASR::ArrayConstant_t>(*newshape)) {
@@ -5737,7 +5728,7 @@ public:
     }
 
     void scalar_kind_arg(std::string &name, Vec<ASR::expr_t*> &args) {
-        std::vector<std::string> optional_kind_arg = {"logical", "storage_size", "anint", "nint", "aint", "floor", 
+        std::vector<std::string> optional_kind_arg = {"logical", "storage_size", "anint", "nint", "aint", "floor",
             "ceiling", "aimag", "maskl", "maskr", "ichar", "char", "achar", "real"};
         if (std::find(optional_kind_arg.begin(), optional_kind_arg.end(), name) != optional_kind_arg.end()) {
             if (args[1]) {

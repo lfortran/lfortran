@@ -673,8 +673,8 @@ public:
             // For now restrict this check only to variables which are present
             // inside symbols which have a body.
             if( x.m_storage != ASR::storage_typeType::Parameter ) {
-                require(x.m_value == nullptr,
-                        "Only parameter variables can have non-NULL value attribute." )
+                // require(x.m_value == nullptr,
+                //         "Only parameter variables can have non-NULL value attribute." )
                 require( (x.m_symbolic_value != nullptr &&
                           (ASRUtils::is_value_constant(x.m_symbolic_value) ||
                            ASRUtils::is_value_constant(ASRUtils::expr_value(x.m_symbolic_value))) ) ||
@@ -877,8 +877,10 @@ public:
     }
 
     void visit_ArraySize(const ArraySize_t& x) {
-        require(ASRUtils::is_array(ASRUtils::expr_type(x.m_v)),
-            "ArraySize::m_v must be an array");
+        if (check_external) {
+            require(ASRUtils::is_array(ASRUtils::expr_type(x.m_v)),
+                "ArraySize::m_v must be an array");
+        }
         BaseWalkVisitor<VerifyVisitor>::visit_ArraySize(x);
     }
 

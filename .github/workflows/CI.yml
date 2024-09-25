@@ -84,6 +84,12 @@ jobs:
       #   run: |
       #       xonsh ci/test.xsh
 
+      # - name: Test LFortran's Command Line Interface (Linux / macOS)
+      #   shell: bash -e -l {0}
+      #   if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
+      #   run: |
+      #       ./test_lfortran_cmdline
+
       # - name: Test (Windows)
       #   if: contains(matrix.os, 'windows')
       #   shell: cmd
@@ -422,49 +428,49 @@ jobs:
           variant: sccache
           key: ${{ github.job }}-${{ matrix.os }}
 
-      # - name: Build Linux
-      #   shell: bash -e -l {0}
-      #   run: |
-      #       ./build0.sh
-      #       export CXXFLAGS="-Werror"
-      #       export CFLAGS="-Werror"
-      #       cmake . -GNinja \
-      #         -DCMAKE_BUILD_TYPE=Release \
-      #         -DWITH_LLVM=yes \
-      #         -DCMAKE_VERBOSE_MAKEFILE= yes \
-      #         -DLFORTRAN_BUILD_ALL=yes \
-      #         -DWITH_STACKTRACE=no \
-      #         -DWITH_RUNTIME_STACKTRACE=yes \
-      #         -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
-      #         -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
-      #         -DCMAKE_INSTALL_BINDIR=bin/tastic \
-      #         -DCMAKE_INSTALL_LIBDIR=oh/my/sweet/lib \
-      #         -DCMAKE_INSTALL_INCLUDEDIR=incl/O/Matic \
-      #         -DCMAKE_INSTALL_MANDIR=man/O/man \
-      #         -DCMAKE_C_COMPILER_LAUNCHER=sccache \
-      #         -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+      - name: Build Linux
+        shell: bash -e -l {0}
+        run: |
+            ./build0.sh
+            export CXXFLAGS="-Werror"
+            export CFLAGS="-Werror"
+            cmake . -GNinja \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DWITH_LLVM=yes \
+              -DCMAKE_VERBOSE_MAKEFILE= yes \
+              -DLFORTRAN_BUILD_ALL=yes \
+              -DWITH_STACKTRACE=no \
+              -DWITH_RUNTIME_STACKTRACE=yes \
+              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
+              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
+              -DCMAKE_INSTALL_BINDIR=bin/tastic \
+              -DCMAKE_INSTALL_LIBDIR=oh/my/sweet/lib \
+              -DCMAKE_INSTALL_INCLUDEDIR=incl/O/Matic \
+              -DCMAKE_INSTALL_MANDIR=man/O/man \
+              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 
-      #       cmake --build . -j16 --target install
+            cmake --build . -j16 --target install
 
-      # - name: Test Linux
-      #   shell: bash -e -l {0}
-      #   run: |
-      #       ctest
-      #       ./run_tests.py
-      #       ./run_tests.py -vh
-      #       cd integration_tests
-      #       ./run_tests.py -m
-      #       ./run_tests.py -b llvm
-      #       ./run_tests.py -b llvm -f
+      - name: Test Linux
+        shell: bash -e -l {0}
+        run: |
+            #ctest
+            #./run_tests.py
+            #./run_tests.py -vh
+            cd integration_tests
+            ./run_tests.py -m
+            ./run_tests.py -b llvm
+            #./run_tests.py -b llvm -f
 
-      # - name: Test Installation
-      #   shell: bash -e -l {0}
-      #   run: |
-      #       test -x inst/bin/tastic/lfortran
-      #       test -f inst/oh/my/sweet/lib/liblfortran_runtime_static.a
-      #       test -f inst/oh/my/sweet/lib/liblfortran_runtime.so
-      #       test -f inst/incl/O/Matic/lfortran/impure/lfortran_intrinsics.h
-      #       test -f inst/man/O/man/man1/lfortran.1
+      - name: Test Installation
+        shell: bash -e -l {0}
+        run: |
+            test -x inst/bin/tastic/lfortran
+            test -f inst/oh/my/sweet/lib/liblfortran_runtime_static.a
+            test -f inst/oh/my/sweet/lib/liblfortran_runtime.so
+            test -f inst/incl/O/Matic/lfortran/impure/lfortran_intrinsics.h
+            test -f inst/man/O/man/man1/lfortran.1
 
   third_party_code_compile:
     name: Check Third Party Code Compilation
@@ -544,10 +550,10 @@ jobs:
             cd modern_minpack_01
             git checkout c0b5aea9fcd2b83865af921a7a7e881904f8d3c2
             $(pwd)/../src/bin/lfortran ./src/minpack.f90 -c --legacy-array-sections
-      #       $(pwd)/../src/bin/lfortran ./examples/example_hybrd.f90 --legacy-array-sections
-      #       $(pwd)/../src/bin/lfortran ./examples/example_hybrd1.f90 --legacy-array-sections
-      #       $(pwd)/../src/bin/lfortran ./examples/example_lmdif1.f90 --legacy-array-sections
-      #       $(pwd)/../src/bin/lfortran ./examples/example_lmder1.f90 --legacy-array-sections
+            $(pwd)/../src/bin/lfortran ./examples/example_hybrd.f90 --legacy-array-sections
+            $(pwd)/../src/bin/lfortran ./examples/example_hybrd1.f90 --legacy-array-sections
+            $(pwd)/../src/bin/lfortran ./examples/example_lmdif1.f90 --legacy-array-sections
+            $(pwd)/../src/bin/lfortran ./examples/example_lmder1.f90 --legacy-array-sections
 
       - name: Test Modern Minpack (check results)
         shell: bash -e -x -l {0}
@@ -557,10 +563,10 @@ jobs:
             git checkout -t origin/w5
             git checkout fcde66ca86348eb0c4012dbdf0f4d8dba61261d8
             $(pwd)/../src/bin/lfortran ./src/minpack.f90 -c --legacy-array-sections
-      #       $(pwd)/../src/bin/lfortran ./examples/example_hybrd.f90 --legacy-array-sections
-      #       $(pwd)/../src/bin/lfortran ./examples/example_hybrd1.f90 --legacy-array-sections
-      #       $(pwd)/../src/bin/lfortran ./examples/example_lmdif1.f90 --legacy-array-sections
-      #       $(pwd)/../src/bin/lfortran ./examples/example_lmder1.f90 --legacy-array-sections
+            $(pwd)/../src/bin/lfortran ./examples/example_hybrd.f90 --legacy-array-sections
+            $(pwd)/../src/bin/lfortran ./examples/example_hybrd1.f90 --legacy-array-sections
+            $(pwd)/../src/bin/lfortran ./examples/example_lmdif1.f90 --legacy-array-sections
+            $(pwd)/../src/bin/lfortran ./examples/example_lmder1.f90 --legacy-array-sections
 
       #       # $(pwd)/../src/bin/lfortran --fast ./examples/example_hybrd.f90 --legacy-array-sections
       #       # $(pwd)/../src/bin/lfortran --fast ./examples/example_hybrd1.f90 --legacy-array-sections

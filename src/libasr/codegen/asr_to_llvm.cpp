@@ -4556,12 +4556,15 @@ public:
                     return;
                 }
             }
-            bool is_target_class = ASR::is_a<ASR::ClassType_t>(
+            [[maybe_unused]] bool is_target_class = ASR::is_a<ASR::ClassType_t>(
                 *ASRUtils::type_get_past_pointer(target_type));
-            bool is_value_class = ASR::is_a<ASR::ClassType_t>(
+            [[maybe_unused]] bool is_value_class = ASR::is_a<ASR::ClassType_t>(
                 *ASRUtils::type_get_past_pointer(
                     ASRUtils::type_get_past_allocatable(value_type)));
-            if( is_target_class && !is_value_class ) {
+
+            if (ASR::is_a<ASR::PointerNullConstant_t>(*x.m_value)) {
+                builder->CreateStore(llvm_value, llvm_target);
+            } else if( is_target_class && !is_value_class ) {
                 llvm::Value* vtab_address_ptr = llvm_utils->create_gep(llvm_target, 0);
                 llvm_target = llvm_utils->create_gep(llvm_target, 1);
                 ASR::StructType_t* struct_t = ASR::down_cast<ASR::StructType_t>(
@@ -9797,6 +9800,7 @@ public:
         visit_expr_wrapper(m_v);
         ptr_loads = ptr_loads_copy;
         ASR::ttype_t* x_mv_type = ASRUtils::expr_type(m_v);
+        LCOMPILERS_ASSERT(ASRUtils::is_array(x_mv_type));
         llvm::Type* array_type = llvm_utils->get_type_from_ttype_t_util(
                 ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(x_mv_type)), module.get());
         if (is_a<ASR::StructInstanceMember_t>(*m_v)) {
