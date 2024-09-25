@@ -4700,10 +4700,10 @@ public:
             step = llvm::ConstantInt::get(context,
                 llvm::APInt(32, 0));
         }
-        bool flag = str->getType()->getContainedType(0)->isPointerTy();
+        bool flag = is_a<ASR::StructInstanceMember_t>(*ss->m_arg);
         llvm::Value *str2 = str;
-        if (flag) {
-            str2 = llvm_utils->CreateLoad(str2);
+        if (!flag) {
+            str2 = llvm_utils->CreateLoad2(character_type, str2);
         }
         tmp = builder->CreateCall(fn, {str2, str_val, idx1, idx2, step, lp, rp});
         if (ASR::is_a<ASR::Var_t>(*ss->m_arg)) {
@@ -4713,8 +4713,8 @@ public:
                 return;
             }
         }
-        if (!flag) {
-            tmp = llvm_utils->CreateLoad(tmp);
+        if (flag) {
+            tmp = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context), tmp);
         }
         builder->CreateStore(tmp, str);
         strings_to_be_deallocated.push_back(al, tmp);
