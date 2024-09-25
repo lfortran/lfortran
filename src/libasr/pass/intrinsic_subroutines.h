@@ -349,18 +349,13 @@ namespace GetCommandArgument {
         }
         if (arg_types.size() > 2) {
             fill_func_arg_sub("length", arg_types[2], InOut);
-            ASR::expr_t *return_var_2 = b.Variable(fn_symtab_1, c_func_name_1,
-            ASRUtils::type_get_past_array(ASRUtils::type_get_past_allocatable(arg_types[2])),
-            ASRUtils::intent_return_var, ASR::abiType::BindC, false);
-            ASR::symbol_t *s_1 = make_ASR_Function_t(c_func_name_2, fn_symtab_1, dep_1, args_1,
-            body_1, return_var_2, ASR::abiType::BindC, ASR::deftypeType::Interface, s2c(al, c_func_name_2));
-
-            ASR::symbol_t *s_2 = b.create_c_func_subroutines(c_func_name_2, fn_symtab, 0, arg_types[2]);
+            
+            ASR::symbol_t *s_2 = b.create_c_func_subroutines(c_func_name_2, fn_symtab, 1, arg_types[2]);
             fn_symtab->add_symbol(c_func_name_2, s_2);
             dep.push_back(al, s2c(al, c_func_name_2));
             Vec<ASR::expr_t*> call_args2; call_args2.reserve(al, 1);
             call_args2.push_back(al, args[0]);
-            body.push_back(al, b.Assignment(args[2], b.Call(s_2, call_args, arg_types[2])));
+            body.push_back(al, b.Assignment(args[2], b.Call(s_2, call_args2, arg_types[2])));
         }
         if (arg_types.size() == 4) {
             fill_func_arg_sub("status", arg_types[3], InOut);
