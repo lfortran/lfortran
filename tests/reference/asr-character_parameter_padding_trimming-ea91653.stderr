@@ -1,5 +1,23 @@
-semantic error: The RHS character len must be known at compile time
- --> tests/character_parameter_padding_trimming.f90:6:5
-  |
-6 |     character(len=8), parameter :: x_pad = "apple" !> char length on right is 5
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+warning: The LHS character len=2 and the RHS character len=5 are not equal.
+  --> tests/character_parameter_padding_trimming.f90:16:5
+   |
+16 |     character(len=2), parameter :: x_trim = "apple" !> char length on right is 5
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: consider changing the RHS character len to match the LHS character len
+
+warning: The LHS character len=3 and the RHS character len=4 are not equal.
+  --> tests/character_parameter_padding_trimming.f90:17:5
+   |
+17 |     character(len=3), parameter :: y_trim = "Ball" !> char length on right is 4
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: consider changing the RHS character len to match the LHS character len
+
+warning: The LHS character len=5 and the RHS character len=7 are not equal.
+  --> tests/character_parameter_padding_trimming.f90:18:5
+   |
+18 |     character(len=5), parameter :: z_trim = x_trim // y_trim // x_trim !> char length on right is 26
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: consider changing the RHS character len to match the LHS character len
+
+warning: The LHS character len=1 and the RHS character len=2 are not equal.
+  --> tests/character_parameter_padding_trimming.f90:19:5
+   |
+19 |     character(len=1), parameter :: p_trim(3) = "25" !> char length on right is 2
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: consider changing the RHS character len to match the LHS character len

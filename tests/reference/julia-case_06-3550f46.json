@@ -5,9 +5,9 @@
     "infile_hash": "3987983e4c8d162530bceffbbce0bd7d038b1f794655c222c47ad714",
     "outfile": null,
     "outfile_hash": null,
-    "stdout": null,
-    "stdout_hash": null,
-    "stderr": "julia-case_06-3550f46.stderr",
-    "stderr_hash": "f7a8a727133194afebc82e107b131805af9618c10eb231882f559745",
-    "returncode": 1
+    "stdout": "julia-case_06-3550f46.stdout",
+    "stdout_hash": "9e8bf3e13ad760e57b03f3633c68d025586c89ee46283869c692b604",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
 }

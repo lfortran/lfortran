@@ -1,5 +1,5 @@
-semantic error: The RHS character len must be known at compile time
- --> tests/errors/incorrect_type_where_04.f90:3:4
-  |
-3 |    character(5), parameter :: c = "hello"
-  |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+semantic error: the argument to `where` must be an array
+  --> tests/errors/incorrect_type_where_04.f90:11:10
+   |
+11 |    where(c) b = 12121
+   |          ^ 

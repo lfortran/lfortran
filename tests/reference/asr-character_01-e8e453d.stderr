@@ -1,5 +1,5 @@
-semantic error: The RHS character len must be known at compile time
+warning: The LHS character len=1 and the RHS character len=4 are not equal.
  --> tests/warnings/character_01.f90:3:5
   |
 3 |     character(len=1, kind=1), parameter :: c_null_char = "ball"
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: consider changing the RHS character len to match the LHS character len
