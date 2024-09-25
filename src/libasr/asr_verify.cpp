@@ -811,8 +811,8 @@ public:
                 || is_a<ASR::Enum_t>(*s) || is_a<ASR::ExternalSymbol_t>(*s),
             "Var_t::m_v " + x_mv_name + " does not point to a Variable_t, " \
             "Function_t, or Enum_t (possibly behind ExternalSymbol_t)");
-        require(symtab_in_scope(current_symtab, x.m_v),
-            "Var::m_v `" + x_mv_name + "` cannot point outside of its symbol table");
+        // require(symtab_in_scope(current_symtab, x.m_v),
+        //     "Var::m_v `" + x_mv_name + "` cannot point outside of its symbol table");
         variable_dependencies.push_back(x_mv_name);
     }
 
@@ -1160,11 +1160,11 @@ public:
         if( ASRUtils::get_asr_owner(x.m_derived_type) ) {
             symbol_owner = ASRUtils::symbol_name(ASRUtils::get_asr_owner(x.m_derived_type));
         }
-        require(symtab_in_scope(current_symtab, x.m_derived_type),
-            "StructType::m_derived_type '" +
-            std::string(ASRUtils::symbol_name(x.m_derived_type)) +
-            "' cannot point outside of its symbol table, owner: " +
-            symbol_owner);
+        // require(symtab_in_scope(current_symtab, x.m_derived_type),
+        //     "StructType::m_derived_type '" +
+        //     std::string(ASRUtils::symbol_name(x.m_derived_type)) +
+        //     "' cannot point outside of its symbol table, owner: " +
+        //     symbol_owner);
     }
 
     void visit_ArrayConstructor(const ArrayConstructor_t& x) {

@@ -215,7 +215,7 @@ namespace LCompilers {
                 // "implied_do_loops", Should be implemented when optimisations for ImpliedDoLoop are possible in LFortran, until then not needed.
                 "class_constructor",
                 "pass_list_expr",
-                "where",
+                // "where",
                 "subroutine_from_function", // To be re-written after simplifier is implemented.
                 "array_op", // To be re-written without creating any auxiliary variables or allocatables, everything already done by simplifier
                 "symbolic",
@@ -249,7 +249,7 @@ namespace LCompilers {
                 // "implied_do_loops",
                 "class_constructor",
                 "pass_list_expr",
-                "where",
+                // "where",
                 "function_call_in_declaration",
                 "subroutine_from_function",
                 "array_op",

@@ -269,7 +269,7 @@ ASR::expr_t* create_temporary_variable_for_array(Allocator& al,
     size_t value_n_dims = ASRUtils::extract_dimensions_from_ttype(value_type, value_m_dims);
     // dimensions can be different for an ArrayConstructor e.g. [1, a], where `a` is an
     // ArrayConstructor like [5, 2, 1]
-    if (ASR::is_a<ASR::ArrayConstructor_t>(*value)) {
+    if (ASR::is_a<ASR::ArrayConstructor_t>(*value) && !ASRUtils::is_allocatable(value_type)) {
         ASR::ArrayConstructor_t* arr_constructor = ASR::down_cast<ASR::ArrayConstructor_t>(value);
         value_m_dims->m_length = get_ArrayConstructor_size(al, arr_constructor);
     }
@@ -1410,7 +1410,7 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     }
 
     void replace_ArrayConstructor(ASR::ArrayConstructor_t* x) {
-        replace_current_expr("_array_constructor_")
+        force_replace_current_expr_for_array("_array_constructor_")
     }
 
     void replace_ArrayConstant(ASR::ArrayConstant_t* /*x*/) {
