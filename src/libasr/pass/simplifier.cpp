@@ -1788,22 +1788,31 @@ class TransformVariableInitialiser:
     }
 
     void visit_Variable(const ASR::Variable_t &x) {
-        bool is_symbolic_value_array_constructor_or_struct_constructor =
-            (x.m_symbolic_value &&
-                (ASR::is_a<ASR::ArrayConstructor_t>(*x.m_symbolic_value) ||
-                ASR::is_a<ASR::StructConstructor_t>(*x.m_symbolic_value))
-            );
+        ASR::expr_t* value = x.m_value ? x.m_value : x.m_symbolic_value;
+        bool is_parameter = (x.m_storage == ASR::storage_typeType::Parameter);
+        bool is_constant_value = false;
+        if (is_parameter) {
+            // TODO: these values aren't evaluated at compile time currently,
+            // so we convert them to an assignment, see:
+            // https://github.com/lfortran/lfortran/issues/4909
+            is_constant_value = ASRUtils::is_value_constant(value) &&
+                !ASR::is_a<ASR::StructType_t>(
+                    *ASRUtils::type_get_past_array_pointer_allocatable(ASRUtils::expr_type(value))
+                );
+        }
+        // once https://github.com/lfortran/lfortran/issues/4909 is fixed,
+        // we wouldn't need "is_constant_value"
+        bool is_parameterized_constant_value = is_parameter && is_constant_value;
+
+        bool is_module_owned = check_if_ASR_owner_is_module(x.m_parent_symtab->asr_owner);
+        bool is_enum_owned = check_if_ASR_owner_is_enum(x.m_parent_symtab->asr_owner);
+        bool is_struct_owned = check_if_ASR_owner_is_struct(x.m_parent_symtab->asr_owner);
         // Check if variable belongs to a module, enum, struct, or
         // is a parameter with value not an ArrayConstructor nor a
         // StructConstructor
-        if( (check_if_ASR_owner_is_module(x.m_parent_symtab->asr_owner)) ||
-            (check_if_ASR_owner_is_enum(x.m_parent_symtab->asr_owner)) ||
-            (check_if_ASR_owner_is_struct(x.m_parent_symtab->asr_owner)) ||
-            // we need to convert `type(TYP), parameter :: x = inst(9.5)`
-            // to an assignment
-            (x.m_storage == ASR::storage_typeType::Parameter &&
-             !is_symbolic_value_array_constructor_or_struct_constructor) ) {
-            return ;
+        if (is_module_owned || is_enum_owned || is_struct_owned ||
+            is_parameterized_constant_value) {
+            return;
         }
 
         const Location& loc = x.base.base.loc;
@@ -1813,7 +1822,7 @@ class TransformVariableInitialiser:
         }
 
         ASR::Variable_t& xx = const_cast<ASR::Variable_t&>(x);
-        if( x.m_symbolic_value) {
+        if (value) {
             if( symtab2decls.find(x.m_parent_symtab) == symtab2decls.end() ) {
                 Vec<ASR::stmt_t*> result_vec; result_vec.reserve(al, 1);
                 symtab2decls[x.m_parent_symtab] = result_vec;
