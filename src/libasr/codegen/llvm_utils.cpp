@@ -1633,6 +1633,7 @@ namespace LCompilers {
         return builder->CreateLoad(t2, x);
 #else
         llvm::Type *type = nullptr, *type_copy = nullptr;
+        bool is_type_pointer = false;
         if (ptr_type.find(x) != ptr_type.end()) {
             type_copy = type = ptr_type[x];
         }
@@ -1642,10 +1643,12 @@ namespace LCompilers {
                 llvm::dyn_cast<llvm::AllocaInst>(x)->getAllocatedType()->isPointerTy())) {
             // AllocaInst
             type = type->getPointerTo();
+            is_type_pointer = true;
         } else if (llvm::StructType *arr_type = llvm::dyn_cast<llvm::StructType>(type)) {
             // Function arguments
             if (arr_type->getName() == "array") {
                 type = type->getPointerTo();
+                is_type_pointer = true;
             }
         }
 
@@ -1658,11 +1661,12 @@ namespace LCompilers {
                 gep->getSourceElementType())->getName());
             if ( name2dertype.find(s_name) != name2dertype.end() ) {
                 type = type->getPointerTo();
+                is_type_pointer = true;
             }
         }
 
         llvm::Value *load = builder->CreateLoad(type, x);
-        if (type != type_copy) {
+        if (is_type_pointer) {
             ptr_type[load] = type_copy;
         }
         return load;
