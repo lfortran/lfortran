@@ -1262,6 +1262,7 @@ public:
             SET_INTRINSIC_SUBROUTINE_NAME(RandomInit, "random_init");
             SET_INTRINSIC_SUBROUTINE_NAME(RandomSeed, "random_seed");
             SET_INTRINSIC_SUBROUTINE_NAME(GetCommand, "get_command");
+            SET_INTRINSIC_SUBROUTINE_NAME(GetCommandArgument, "get_command_argument");
             SET_INTRINSIC_SUBROUTINE_NAME(GetEnvironmentVariable, "get_environment_variable");
             SET_INTRINSIC_SUBROUTINE_NAME(ExecuteCommandLine, "execute_command_line");
             default : {
