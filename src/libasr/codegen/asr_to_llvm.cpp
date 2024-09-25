@@ -4192,17 +4192,18 @@ public:
         // For pointers, the actual LLVM variable will be a
         // double pointer, so we need to load one time and then
         // use it later on.
-        if( is_nested_pointer(llvm_tmp) &&
-            !ASR::is_a<ASR::CPtr_t>(*asr_type)) {
+        if(ASR::is_a<ASR::Pointer_t>(*asr_type) && 
+            (LLVM::is_llvm_pointer(*ASRUtils::type_get_past_pointer(asr_type)))) {
             llvm_tmp = llvm_utils->CreateLoad(llvm_tmp);
         }
 
         if( ASRUtils::is_array(asr_type) &&
             !ASR::is_a<ASR::CPtr_t>(*asr_type) ) {
             ASR::array_physical_typeType physical_type = ASRUtils::extract_physical_type(asr_type);
+            llvm::Type *el_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::extract_type(asr_type), module.get());
             switch( physical_type ) {
                 case ASR::array_physical_typeType::DescriptorArray: {
-                    llvm_tmp = llvm_utils->CreateLoad(arr_descr->get_pointer_to_data(llvm_tmp));
+                    llvm_tmp = llvm_utils->CreateLoad2(el_type->getPointerTo(), arr_descr->get_pointer_to_data(llvm_tmp));
                     break;
                 }
                 case ASR::array_physical_typeType::FixedSizeArray: {
@@ -4336,9 +4337,11 @@ public:
                 llvm::Value* new_ub = nullptr;
                 if( ASRUtils::extract_physical_type(asr_shape_type) == ASR::array_physical_typeType::DescriptorArray ||
                     ASRUtils::extract_physical_type(asr_shape_type) == ASR::array_physical_typeType::PointerToDataArray ) {
-                    new_ub = shape_data ? llvm_utils->CreateLoad(llvm_utils->create_ptr_gep(shape_data, i)) : i32_one;
+                    new_ub = shape_data ? llvm_utils->CreateLoad2(
+                        llvm::Type::getInt32Ty(context), llvm_utils->create_ptr_gep(shape_data, i)) : i32_one;
                 } else if( ASRUtils::extract_physical_type(asr_shape_type) == ASR::array_physical_typeType::FixedSizeArray ) {
-                    new_ub = shape_data ? llvm_utils->CreateLoad(llvm_utils->create_gep(shape_data, i)) : i32_one;
+                    new_ub = shape_data ? llvm_utils->CreateLoad2(
+                        llvm::Type::getInt32Ty(context), llvm_utils->create_gep(shape_data, i)) : i32_one;
                 }
                 builder->CreateStore(new_lb, desi_lb);
                 llvm::Value* new_size = builder->CreateAdd(builder->CreateSub(new_ub, new_lb), i32_one);
