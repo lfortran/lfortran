@@ -861,11 +861,13 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
     Allocator& al;
     Vec<ASR::stmt_t*>* current_body;
     ExprsWithTargetType& exprs_with_target;
+    bool realloc_lhs;
 
     public:
 
-    ArgSimplifier(Allocator& al_, ExprsWithTargetType& exprs_with_target_) :
-        al(al_), current_body(nullptr), exprs_with_target(exprs_with_target_) {}
+    ArgSimplifier(Allocator& al_, ExprsWithTargetType& exprs_with_target_, bool realloc_lhs_) :
+        al(al_), current_body(nullptr), exprs_with_target(exprs_with_target_),
+        realloc_lhs(realloc_lhs_) {}
 
     void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
         transform_stmts_impl
@@ -1001,6 +1003,41 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
     // void visit_ArrayBroadcast(const ASR::ArrayBroadcast_t& /*x*/) {
     //     // Do nothing
     // }
+
+    void visit_Assignment(const ASR::Assignment_t& x) {
+        ASR::Assignment_t& xx = const_cast<ASR::Assignment_t&>(x);
+        // e.g.; a = [b, a], where 'a' is an allocatable
+        if (realloc_lhs && ASR::is_a<ASR::ArrayConstructor_t>(*xx.m_value) &&
+            ASRUtils::is_allocatable(xx.m_target)
+        ) {
+            // TODO: dealing with StructType would need thinking similar to the
+            // way `traverse_args` handles it, the only reason to not
+            // add it is because there is currently no integration test
+            // for it
+            if (!ASRUtils::is_struct(*ASRUtils::expr_type(xx.m_value))) {
+                ASR::Var_t* v1 = ASR::down_cast<ASR::Var_t>(xx.m_target);
+                bool create_temp_var_for_rhs = false;
+                Vec<ASR::expr_t*> array_vars; array_vars.reserve(al, 1);
+                ArrayVarCollector array_var_collector(al, array_vars);
+                array_var_collector.visit_expr(*xx.m_value);
+                // after collecting variables from RHS, we check whether
+                // there is any common variable
+                for (size_t i=0; i < array_vars.size(); i++) {
+                    ASR::Var_t* v = ASR::down_cast<ASR::Var_t>(array_vars[i]);
+                    if (v->m_v == v1->m_v) {
+                        create_temp_var_for_rhs = true;
+                    }
+                }
+
+                if (create_temp_var_for_rhs) {
+                    std::string name_hint = "_assignment_";
+                    call_create_and_allocate_temporary_variable(xx.m_value)
+                    xx.m_value = array_var_temporary;
+                }
+            }
+        }
+        CallReplacerOnExpressionsVisitor::visit_Assignment(x);
+    }
 
     void visit_Print(const ASR::Print_t& x) {
         ASR::Print_t& xx = const_cast<ASR::Print_t&>(x);
@@ -2190,7 +2227,7 @@ void pass_simplifier(Allocator &al, ASR::TranslationUnit_t &unit,
     init_expr_with_target.visit_TranslationUnit(unit);
     TransformVariableInitialiser a(al, exprs_with_target);
     a.visit_TranslationUnit(unit);
-    ArgSimplifier b(al, exprs_with_target);
+    ArgSimplifier b(al, exprs_with_target, pass_options.realloc_lhs);
     b.visit_TranslationUnit(unit);
     ReplaceExprWithTemporaryVisitor c(al, exprs_with_target, pass_options.realloc_lhs);
     c.visit_TranslationUnit(unit);
