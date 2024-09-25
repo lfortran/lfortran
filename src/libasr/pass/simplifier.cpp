@@ -1039,15 +1039,6 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         CallReplacerOnExpressionsVisitor::visit_Assignment(x);
     }
 
-    void visit_Print(const ASR::Print_t& x) {
-        ASR::Print_t& xx = const_cast<ASR::Print_t&>(x);
-        if( ASR::is_a<ASR::StringFormat_t>(*xx.m_text) ) {
-            ASR::StringFormat_t* string_format = ASR::down_cast<ASR::StringFormat_t>(xx.m_text);
-            visit_IO(string_format->m_args, string_format->n_args, "print");
-            CallReplacerOnExpressionsVisitor::visit_Print(x);
-        }
-    }
-
     void visit_FileWrite(const ASR::FileWrite_t& x) {
         ASR::FileWrite_t& xx = const_cast<ASR::FileWrite_t&>(x);
         visit_IO(xx.m_values, xx.n_values, "file_write");
@@ -1936,8 +1927,10 @@ class VerifySimplifierASROutput:
         }
     }
 
-    void visit_Print(const ASR::Print_t& x) {
-        check_for_var_if_array(x.m_text)
+    void visit_StringFormat(const ASR::StringFormat_t& x) {
+        for( size_t i = 0; i < x.n_args; i++ ) {
+            check_for_var_if_array(x.m_args[i]);
+        }
     }
 
     void visit_FileWrite(const ASR::FileWrite_t& x) {

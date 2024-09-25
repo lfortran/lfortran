@@ -9818,8 +9818,6 @@ public:
             llvm_dim = tmp;
         }
 
-        ASR::ttype_t* x_mv_type = ASRUtils::expr_type(m_v);
-        LCOMPILERS_ASSERT(ASRUtils::is_array(x_mv_type));
         ASR::array_physical_typeType physical_type = ASRUtils::extract_physical_type(x_mv_type);
         if (physical_type == ASR::array_physical_typeType::CharacterArraySinglePointer) {
             if (ASRUtils::is_fixed_size_array(x_mv_type)) {
