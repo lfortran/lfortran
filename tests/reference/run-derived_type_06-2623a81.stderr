@@ -1,4 +1,4 @@
-semantic error: Two or more part references with non-zero rank must not be specified.
+semantic error: Only one array can be used in an expression with derived types.
   --> tests/errors/derived_type_06.f90:14:5
    |
 14 |     main_arr%arr_2%num = 22
