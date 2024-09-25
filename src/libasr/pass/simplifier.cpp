@@ -1004,8 +1004,11 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
 
     void visit_Print(const ASR::Print_t& x) {
         ASR::Print_t& xx = const_cast<ASR::Print_t&>(x);
-        visit_IO(xx.m_values, xx.n_values, "print");
-        CallReplacerOnExpressionsVisitor::visit_Print(x);
+        if( ASR::is_a<ASR::StringFormat_t>(*xx.m_text) ) {
+            ASR::StringFormat_t* string_format = ASR::down_cast<ASR::StringFormat_t>(xx.m_text);
+            visit_IO(string_format->m_args, string_format->n_args, "print");
+            CallReplacerOnExpressionsVisitor::visit_Print(x);
+        }
     }
 
     void visit_FileWrite(const ASR::FileWrite_t& x) {
@@ -1409,7 +1412,7 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         replace_current_expr("_dict_constant_")
     }
 
-    void replace_ArrayConstructor(ASR::ArrayConstructor_t* x) {
+    void replace_ArrayConstructor(ASR::ArrayConstructor_t* /*x*/) {
         force_replace_current_expr_for_array("_array_constructor_")
     }
 
