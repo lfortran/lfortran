@@ -12,12 +12,10 @@
                     testfortran
                     []
                     [(Print
-                        [(StringConstant
+                        (StringConstant
                             "Hello"
                             (Character 1 5 () PointerString)
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 )
         })

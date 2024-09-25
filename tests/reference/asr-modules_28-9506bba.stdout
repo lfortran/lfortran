@@ -706,12 +706,10 @@
                     modules_28
                     [fpm_manifest_dependency]
                     [(Print
-                        [(StringConstant
+                        (StringConstant
                             "running modules_28 program"
                             (Character 1 26 () PointerString)
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 )
         })

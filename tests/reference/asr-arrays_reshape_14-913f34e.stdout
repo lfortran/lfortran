@@ -1860,15 +1860,13 @@
                     array_reshape_14
                     []
                     [(Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(Var 2 i23)]
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (SubroutineCall
                         2 test_reshape_with_argument

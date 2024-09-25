@@ -407,12 +407,10 @@
                     main
                     [arrays_23]
                     [(Print
-                        [(StringConstant
+                        (StringConstant
                             "working"
                             (Character 1 7 () PointerString)
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 )
         })

@@ -65,7 +65,7 @@
                                     [(Var 4 file)
                                     (Var 4 line)]
                                     [(Print
-                                        [(StringFormat
+                                        (StringFormat
                                             ()
                                             [(StringConcat
                                                 (StringConcat
@@ -88,9 +88,7 @@
                                             FormatFortran
                                             (Character -1 0 () PointerString)
                                             ()
-                                        )]
-                                        ()
-                                        ()
+                                        )
                                     )
                                     (ErrorStop
                                         ()

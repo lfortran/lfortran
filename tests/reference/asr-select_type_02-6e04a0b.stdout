@@ -310,7 +310,7 @@
                                         (Var 4 p_or_cp)
                                     )
                                     (Print
-                                        [(StringFormat
+                                        (StringFormat
                                             ()
                                             [(StringConstant
                                                 "point: "
@@ -331,9 +331,7 @@
                                             FormatFortran
                                             (Character -1 0 () PointerString)
                                             ()
-                                        )]
-                                        ()
-                                        ()
+                                        )
                                     )]
                                 ),
                             ~select_type_block_1:
@@ -398,7 +396,7 @@
                                         (Var 4 p_or_cp)
                                     )
                                     (Print
-                                        [(StringFormat
+                                        (StringFormat
                                             ()
                                             [(StringConstant
                                                 "color_point: "
@@ -425,9 +423,7 @@
                                             FormatFortran
                                             (Character -1 0 () PointerString)
                                             ()
-                                        )]
-                                        ()
-                                        ()
+                                        )
                                     )]
                                 )
                         })

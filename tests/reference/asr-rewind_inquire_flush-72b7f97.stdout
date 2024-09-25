@@ -219,24 +219,20 @@
                         10
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "err rewind"
                             (Character 1 10 () PointerString)
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (GoToTarget
                         20
                         20
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "err inquire"
                             (Character 1 11 () PointerString)
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 )
         })

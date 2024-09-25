@@ -678,15 +678,13 @@
                         2 associate_block
                     )
                     (Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(Var 2 myreal)]
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (ImplicitDeallocate
                         [(Var 2 myreal)]

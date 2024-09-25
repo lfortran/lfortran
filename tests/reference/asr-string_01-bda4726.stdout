@@ -33,7 +33,7 @@
                     print_01
                     []
                     [(Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(StringConstant
                                 "My name is "
@@ -43,9 +43,7 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 )
         })

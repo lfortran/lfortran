@@ -276,12 +276,10 @@
                         ()
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "executing modules_35"
                             (Character 1 20 () PointerString)
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (SubroutineCall
                         4 get_args_fixed_length_a_array

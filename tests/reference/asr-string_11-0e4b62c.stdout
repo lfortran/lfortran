@@ -79,15 +79,13 @@
                             ()
                         )
                         [(Print
-                            [(StringConstant
+                            (StringConstant
                                 "test is not found"
                                 (Character 1 17 () PointerString)
-                            )]
-                            ()
-                            ()
+                            )
                         )]
                         [(Print
-                            [(StringFormat
+                            (StringFormat
                                 ()
                                 [(StringConstant
                                     "test is found at index: "
@@ -109,9 +107,7 @@
                                 FormatFortran
                                 (Character -1 0 () PointerString)
                                 ()
-                            )]
-                            ()
-                            ()
+                            )
                         )]
                     )]
                 )

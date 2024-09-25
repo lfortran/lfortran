@@ -68,7 +68,7 @@
                                     [solution]
                                     []
                                     [(Print
-                                        [(StringFormat
+                                        (StringFormat
                                             ()
                                             [(ArraySize
                                                 (FunctionCall
@@ -91,9 +91,7 @@
                                             FormatFortran
                                             (Character -1 0 () PointerString)
                                             ()
-                                        )]
-                                        ()
-                                        ()
+                                        )
                                     )
                                     (DoLoop
                                         ()
@@ -145,7 +143,7 @@
                                         (IntegerConstant 2 (Integer 4) Decimal)
                                         ())
                                         [(Print
-                                            [(StringFormat
+                                            (StringFormat
                                                 ()
                                                 [(ArrayItem
                                                     (Var 3 x)
@@ -159,9 +157,7 @@
                                                 FormatFortran
                                                 (Character -1 0 () PointerString)
                                                 ()
-                                            )]
-                                            ()
-                                            ()
+                                            )
                                         )
                                         (If
                                             (RealCompare

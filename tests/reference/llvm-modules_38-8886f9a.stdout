@@ -10,9 +10,8 @@ source_filename = "LFortran"
 %__vtab_compiler_t = type { i64 }
 
 @"1_nameless_enum" = global [3 x %0] [%0 { [11 x i8] c"id_unknown\00", i32 0 }, %0 { [25 x i8] c"id_intel_classic_windows\00", i32 1 }, %0 { [22 x i8] c"id_intel_llvm_windows\00", i32 2 }]
-@0 = private unnamed_addr constant [2 x i8] c" \00", align 1
-@1 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@2 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@1 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 
 define i8* @__module_fpm_compiler_enumerate_libraries(%compiler_t_polymorphic* %self, i8** %prefix, %array* %libs) {
 .entry:
@@ -120,7 +119,7 @@ loop.end:                                         ; preds = %loop.head
   store i32 4, i32* %31, align 4
   %32 = call i8* @__module_fpm_compiler_enumerate_libraries(%compiler_t_polymorphic* %18, i8** %prefix_arg, %array* %array_descriptor)
   %33 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 2, i8* null, i32 7, i8* %32)
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @2, i32 0, i32 0), i8* %33, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0))
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %33, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
   br label %return
 
 return:                                           ; preds = %loop.end

@@ -152,12 +152,10 @@
                                     []
                                     [(Var 9 tab)]
                                     [(Print
-                                        [(StringConstant
+                                        (StringConstant
                                             "inside check_table"
                                             (Character 1 18 () PointerString)
-                                        )]
-                                        ()
-                                        ()
+                                        )
                                     )]
                                     ()
                                     Public

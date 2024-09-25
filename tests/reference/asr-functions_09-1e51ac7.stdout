@@ -42,7 +42,7 @@
                     stdlib_quadrature
                     [stdlib_quadrature_simps]
                     [(Print
-                        [(StringFormat
+                        (StringFormat
                             ()
                             [(FunctionCall
                                 5 simps38_weights_dp
@@ -71,9 +71,7 @@
                             FormatFortran
                             (Character -1 0 () PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 ),
             stdlib_quadrature_simps:
@@ -220,7 +218,7 @@
                                     [simps38_weights_dp]
                                     [(Var 4 x1)]
                                     [(Print
-                                        [(StringFormat
+                                        (StringFormat
                                             ()
                                             [(FunctionCall
                                                 2 simps38_weights_dp
@@ -238,9 +236,7 @@
                                             FormatFortran
                                             (Character -1 0 () PointerString)
                                             ()
-                                        )]
-                                        ()
-                                        ()
+                                        )
                                     )]
                                     ()
                                     Public
