@@ -4506,7 +4506,11 @@ public:
             arr_physical_type == ASR::array_physical_typeType::CharacterArraySinglePointer) {
             if( arr_physical_type == ASR::array_physical_typeType::FixedSizeArray ||
                 arr_physical_type == ASR::array_physical_typeType::CharacterArraySinglePointer) {
-                value_desc = llvm_utils->create_gep(value_desc, 0);
+                llvm::Type *val_type = llvm_utils->get_type_from_ttype_t_util(
+                    ASRUtils::type_get_past_allocatable(
+                    ASRUtils::type_get_past_pointer(value_array_type)),
+                    module.get());
+                value_desc = llvm_utils->create_gep2(val_type, value_desc, 0);
             }
             ASR::dimension_t* m_dims = nullptr;
             // Fill in m_dims:
