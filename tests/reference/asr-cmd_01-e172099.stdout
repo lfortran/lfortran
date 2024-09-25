@@ -45,16 +45,6 @@
                                     Required
                                     .false.
                                 ),
-                            get_command_argument:
-                                (ExternalSymbol
-                                    2
-                                    get_command_argument
-                                    4 get_command_argument
-                                    lfortran_intrinsic_builtin
-                                    []
-                                    get_command_argument
-                                    Private
-                                ),
                             i:
                                 (Variable
                                     2
@@ -118,14 +108,11 @@
                             ()
                         )
                     )
-                    (SubroutineCall
-                        2 get_command_argument
-                        ()
-                        [((Var 2 i))
-                        ((Var 2 arg))
-                        (())
-                        (())]
-                        ()
+                    (IntrinsicImpureSubroutine
+                        GetCommandArgument
+                        [(Var 2 i)
+                        (Var 2 arg)]
+                        0
                     )
                     (Print
                         (FunctionCall
