@@ -1788,10 +1788,21 @@ class TransformVariableInitialiser:
     }
 
     void visit_Variable(const ASR::Variable_t &x) {
+        bool is_symbolic_value_array_constructor_or_struct_constructor =
+            (x.m_symbolic_value &&
+                (ASR::is_a<ASR::ArrayConstructor_t>(*x.m_symbolic_value) ||
+                ASR::is_a<ASR::StructConstructor_t>(*x.m_symbolic_value))
+            );
+        // Check if variable belongs to a module, enum, struct, or
+        // is a parameter with value not an ArrayConstructor nor a
+        // StructConstructor
         if( (check_if_ASR_owner_is_module(x.m_parent_symtab->asr_owner)) ||
             (check_if_ASR_owner_is_enum(x.m_parent_symtab->asr_owner)) ||
             (check_if_ASR_owner_is_struct(x.m_parent_symtab->asr_owner)) ||
-            x.m_storage == ASR::storage_typeType::Parameter ) {
+            // we need to convert `type(TYP), parameter :: x = inst(9.5)`
+            // to an assignment
+            (x.m_storage == ASR::storage_typeType::Parameter &&
+             !is_symbolic_value_array_constructor_or_struct_constructor) ) {
             return ;
         }
 
