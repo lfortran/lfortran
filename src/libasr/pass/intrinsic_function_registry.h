@@ -292,7 +292,7 @@ namespace IntrinsicElementalFunctionRegistry {
         {static_cast<int64_t>(IntrinsicElementalFunctions::CompilerVersion),
             {nullptr, &CompilerVersion::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::CommandArgumentCount),
-            {nullptr, &CommandArgumentCount::verify_args}},
+            {&CommandArgumentCount::instantiate_CommandArgumentCount, &CommandArgumentCount::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Spacing),
             {&Spacing::instantiate_Spacing, &Spacing::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Modulo),
