@@ -1789,29 +1789,22 @@ class TransformVariableInitialiser:
 
     void visit_Variable(const ASR::Variable_t &x) {
         ASR::expr_t* value = x.m_value ? x.m_value : x.m_symbolic_value;
-        bool is_parameter = (x.m_storage == ASR::storage_typeType::Parameter);
-        bool is_constant_value = false;
-        if (is_parameter) {
-            // TODO: these values aren't evaluated at compile time currently,
-            // so we convert them to an assignment, see:
-            // https://github.com/lfortran/lfortran/issues/4909
-            is_constant_value = ASRUtils::is_value_constant(value) &&
+        // TODO: StructType expressions aren't evaluated at compile time
+        // currently, see: https://github.com/lfortran/lfortran/issues/4909
+        if ((check_if_ASR_owner_is_module(x.m_parent_symtab->asr_owner)) ||
+            (check_if_ASR_owner_is_enum(x.m_parent_symtab->asr_owner)) ||
+            (check_if_ASR_owner_is_struct(x.m_parent_symtab->asr_owner)) ||
+            ( x.m_storage == ASR::storage_typeType::Parameter &&
+                // this condition ensures that currently constants
+                // not evaluated at compile time like
+                // real(4), parameter :: z(1) = [x % y]
+                // are converted to an assignment for now
+                ASRUtils::is_value_constant(value) &&
                 !ASR::is_a<ASR::StructType_t>(
                     *ASRUtils::type_get_past_array_pointer_allocatable(ASRUtils::expr_type(value))
-                );
-        }
-        // once https://github.com/lfortran/lfortran/issues/4909 is fixed,
-        // we wouldn't need "is_constant_value"
-        bool is_parameterized_constant_value = is_parameter && is_constant_value;
-
-        bool is_module_owned = check_if_ASR_owner_is_module(x.m_parent_symtab->asr_owner);
-        bool is_enum_owned = check_if_ASR_owner_is_enum(x.m_parent_symtab->asr_owner);
-        bool is_struct_owned = check_if_ASR_owner_is_struct(x.m_parent_symtab->asr_owner);
-        // Check if variable belongs to a module, enum, struct, or
-        // is a parameter with value not an ArrayConstructor nor a
-        // StructConstructor
-        if (is_module_owned || is_enum_owned || is_struct_owned ||
-            is_parameterized_constant_value) {
+                )
+            )
+        ) {
             return;
         }
 
