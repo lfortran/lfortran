@@ -4185,17 +4185,20 @@ public:
     }
 
 
-    llvm::Value* GetPointerCPtrUtil(llvm::Value* llvm_tmp, ASR::ttype_t* asr_type) {
+    llvm::Value* GetPointerCPtrUtil(llvm::Value* llvm_tmp, ASR::expr_t* asr_expr) {
         // If the input is a simple variable and not a pointer
         // then this check will fail and load will not happen
         // (which is what we want for simple variables).
         // For pointers, the actual LLVM variable will be a
         // double pointer, so we need to load one time and then
         // use it later on.
+        ASR::ttype_t* asr_type = ASRUtils::expr_type(asr_expr);
         if(ASR::is_a<ASR::Pointer_t>(*asr_type) && 
-            (LLVM::is_llvm_pointer(*ASRUtils::type_get_past_pointer(asr_type)))) {
+            (LLVM::is_llvm_pointer(*ASRUtils::type_get_past_pointer(asr_type))
+             || ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_pointer(asr_type)))) {
             llvm_tmp = llvm_utils->CreateLoad(llvm_tmp);
         }
+        asr_type = ASRUtils::get_contained_type(asr_type);
 
         if( ASRUtils::is_array(asr_type) &&
             !ASR::is_a<ASR::CPtr_t>(*asr_type) ) {
@@ -4237,8 +4240,7 @@ public:
         ptr_loads = 0;
         this->visit_expr(*x.m_arg);
         ptr_loads = ptr_loads_copy;
-        ASR::ttype_t* arg_type = ASRUtils::get_contained_type(ASRUtils::expr_type(x.m_arg));
-        tmp = GetPointerCPtrUtil(tmp, arg_type);
+        tmp = GetPointerCPtrUtil(tmp, x.m_arg);
     }
 
     void visit_PointerToCPtr(const ASR::PointerToCPtr_t& x) {
@@ -4247,9 +4249,7 @@ public:
         this->visit_expr(*x.m_arg);
         ptr_loads = ptr_loads_copy;
         if( !ASR::is_a<ASR::GetPointer_t>(*x.m_arg) ) {
-            ASR::ttype_t* arg_type = ASRUtils::get_contained_type(
-                                         ASRUtils::expr_type(x.m_arg));
-            tmp = GetPointerCPtrUtil(tmp, arg_type);
+            tmp = GetPointerCPtrUtil(tmp, x.m_arg);
         }
         tmp = builder->CreateBitCast(tmp,
                     llvm::Type::getVoidTy(context)->getPointerTo());
