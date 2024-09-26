@@ -3309,7 +3309,7 @@ LFORTRAN_API int32_t _lfortran_get_command_argument_length(int n) {
 }
 
 LFORTRAN_API int32_t _lfortran_get_command_argument_status() {
-    return 1;
+    return 0;
 }
 
 // get_command

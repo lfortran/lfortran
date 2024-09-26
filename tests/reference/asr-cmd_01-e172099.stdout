@@ -4,8 +4,6 @@
         {
             iso_fortran_env:
                 (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin),
             lfortran_intrinsic_string:
                 (IntrinsicModule lfortran_intrinsic_string),
             test_get_command_argument:
@@ -65,7 +63,7 @@
                                 (ExternalSymbol
                                     2
                                     len_trim
-                                    12 len_trim
+                                    4 len_trim
                                     lfortran_intrinsic_string
                                     []
                                     len_trim
@@ -75,7 +73,7 @@
                                 (ExternalSymbol
                                     2
                                     trim
-                                    12 trim
+                                    4 trim
                                     lfortran_intrinsic_string
                                     []
                                     trim
