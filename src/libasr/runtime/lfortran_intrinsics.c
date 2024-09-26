@@ -3329,11 +3329,7 @@ LFORTRAN_API void _lpython_call_initial_functions(int32_t argc_1, char *argv_1[]
 }
 
 LFORTRAN_API int32_t _lfortran_command_argument_count() {
-    int32_t result = 0;
-    for(int i=1; i<=_argc; i++) {
-        result++;
-    }
-    return result;
+    return _argc - 1;
 }
 // << Initial setup << ---------------------------------------------------------
 
