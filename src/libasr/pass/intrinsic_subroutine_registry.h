@@ -23,6 +23,7 @@ inline std::string get_intrinsic_subroutine_name(int x) {
         INTRINSIC_SUBROUTINE_NAME_CASE(RandomInit)
         INTRINSIC_SUBROUTINE_NAME_CASE(RandomSeed)
         INTRINSIC_SUBROUTINE_NAME_CASE(GetCommand)
+        INTRINSIC_SUBROUTINE_NAME_CASE(GetCommandArgument)
         INTRINSIC_SUBROUTINE_NAME_CASE(GetEnvironmentVariable)
         INTRINSIC_SUBROUTINE_NAME_CASE(ExecuteCommandLine)
         default : {
@@ -46,6 +47,8 @@ namespace IntrinsicImpureSubroutineRegistry {
             {&RandomSeed::instantiate_RandomSeed, &RandomSeed::verify_args}},
         {static_cast<int64_t>(IntrinsicImpureSubroutines::GetCommand),
             {&GetCommand::instantiate_GetCommand, &GetCommand::verify_args}},
+        {static_cast<int64_t>(IntrinsicImpureSubroutines::GetCommandArgument),
+            {&GetCommandArgument::instantiate_GetCommandArgument, &GetCommandArgument::verify_args}},
         {static_cast<int64_t>(IntrinsicImpureSubroutines::GetEnvironmentVariable),
             {&GetEnvironmentVariable::instantiate_GetEnvironmentVariable, &GetEnvironmentVariable::verify_args}},
         {static_cast<int64_t>(IntrinsicImpureSubroutines::ExecuteCommandLine),
@@ -61,6 +64,8 @@ namespace IntrinsicImpureSubroutineRegistry {
             "random_seed"},
         {static_cast<int64_t>(IntrinsicImpureSubroutines::GetCommand),
             "get_command"},
+        {static_cast<int64_t>(IntrinsicImpureSubroutines::GetCommandArgument),
+            "get_command_argument"},
         {static_cast<int64_t>(IntrinsicImpureSubroutines::GetEnvironmentVariable),
             "get_environment_variable"},
         {static_cast<int64_t>(IntrinsicImpureSubroutines::ExecuteCommandLine),
@@ -74,6 +79,7 @@ namespace IntrinsicImpureSubroutineRegistry {
                 {"random_init", &RandomInit::create_RandomInit},
                 {"random_seed", &RandomSeed::create_RandomSeed},
                 {"get_command", &GetCommand::create_GetCommand},
+                {"get_command_argument", &GetCommandArgument::create_GetCommandArgument},
                 {"get_environment_variable", &GetEnvironmentVariable::create_GetEnvironmentVariable},
                 {"execute_command_line", &ExecuteCommandLine::create_ExecuteCommandLine},
     };

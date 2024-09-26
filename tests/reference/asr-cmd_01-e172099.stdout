@@ -4,8 +4,6 @@
         {
             iso_fortran_env:
                 (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin),
             lfortran_intrinsic_string:
                 (IntrinsicModule lfortran_intrinsic_string),
             test_get_command_argument:
@@ -45,16 +43,6 @@
                                     Required
                                     .false.
                                 ),
-                            get_command_argument:
-                                (ExternalSymbol
-                                    2
-                                    get_command_argument
-                                    4 get_command_argument
-                                    lfortran_intrinsic_builtin
-                                    []
-                                    get_command_argument
-                                    Private
-                                ),
                             i:
                                 (Variable
                                     2
@@ -75,7 +63,7 @@
                                 (ExternalSymbol
                                     2
                                     len_trim
-                                    12 len_trim
+                                    4 len_trim
                                     lfortran_intrinsic_string
                                     []
                                     len_trim
@@ -85,7 +73,7 @@
                                 (ExternalSymbol
                                     2
                                     trim
-                                    12 trim
+                                    4 trim
                                     lfortran_intrinsic_string
                                     []
                                     trim
@@ -118,14 +106,11 @@
                             ()
                         )
                     )
-                    (SubroutineCall
-                        2 get_command_argument
-                        ()
-                        [((Var 2 i))
-                        ((Var 2 arg))
-                        (())
-                        (())]
-                        ()
+                    (IntrinsicImpureSubroutine
+                        GetCommandArgument
+                        [(Var 2 i)
+                        (Var 2 arg)]
+                        0
                     )
                     (Print
                         (FunctionCall

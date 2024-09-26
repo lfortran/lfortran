@@ -3294,7 +3294,25 @@ LFORTRAN_API char *_lpython_get_argv(int32_t index) {
     return _argv[index];
 }
 
+// get_command_argument
+LFORTRAN_API char *_lfortran_get_command_argument_value(int n) {
+    if (n >= 0 && n < _argc) {
+        return strdup(_argv[n]);  // Return a copy of the nth argument
+    } else {
+        return "";
+    }
+}
 
+LFORTRAN_API int32_t _lfortran_get_command_argument_length(int n) {
+    char* out = _lfortran_get_command_argument_value(n);
+    return strlen(out);
+}
+
+LFORTRAN_API int32_t _lfortran_get_command_argument_status() {
+    return 0;
+}
+
+// get_command
 LFORTRAN_API char *_lfortran_get_command_command() {
     char* out;
     for(int i=0; i<_argc; i++) {
@@ -3309,12 +3327,10 @@ LFORTRAN_API char *_lfortran_get_command_command() {
     return out;
 }
 
-
 LFORTRAN_API int32_t _lfortran_get_command_length() {
     char* out = _lfortran_get_command_command();
     return strlen(out);
 }
-
 
 LFORTRAN_API int32_t _lfortran_get_command_status() {
     return 1;
