@@ -1,4 +1,4 @@
-semantic error: Only one array can be used in an expression with derived types.
+semantic error: The expression with derived types contains two or more arrays.
   --> tests/errors/derived_type_06.f90:14:5
    |
 14 |     main_arr%arr_2%num = 22
