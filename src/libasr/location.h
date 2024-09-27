@@ -159,6 +159,24 @@ struct LocationManager {
         }
     }
 
+    // Converts given line and column to the position in the original code
+    // `line` and `col` starts from 1
+    // uses precomputed `in_newlines` to compute the position
+    uint64_t linecol_to_pos(uint16_t line, uint16_t col) {
+        // use in_newlines and compute pos
+        uint64_t pos = 0;
+        uint64_t l = 1;
+        while(true) {
+            if (l == line) break;
+            if (l >= files[0].in_newlines.size()) return 0;
+            l++;
+        }
+        if ( l == 1 ) pos = 0;
+        else pos = files[0].in_newlines[l-2];
+        pos = pos + col;
+        return pos;
+    }
+
     // Converts a linear position `position` to a (line, col) tuple
     // `position` starts from 0
     // `line` and `col` starts from 1

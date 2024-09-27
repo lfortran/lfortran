@@ -25,18 +25,6 @@ interface
     integer, intent(in) :: i
     end function
 
-    subroutine get_command_argument(number, value, length, status)
-    integer, intent(in) :: number
-    character(len=*), optional, intent(out) :: value
-    integer, optional, intent(out) :: length
-    integer, optional, intent(out) :: status
-        error stop "Not implemented yet"
-    end subroutine
-
-    integer function command_argument_count() result(r)
-        error stop "Not implemented yet"
-    end function
-
 end interface
 
 end module

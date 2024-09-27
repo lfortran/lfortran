@@ -12,13 +12,6 @@ namespace LCompilers::LFortran {
         bool symtab_only,
         CompilerOptions &compiler_options);
 
-    Result<ASR::asr_t*> ast_to_asr2(Allocator &al,
-        AST::TranslationUnit_t &ast, diag::Diagnostics &diagnostics,
-        SymbolTable *symbol_table,
-        bool symtab_only,
-        CompilerOptions &compiler_options,
-        uint16_t pos = 0);
-
 } // namespace LCompilers::LFortran
 
 #endif // LFORTRAN_AST_TO_ASR_H
