@@ -1198,13 +1198,13 @@ RUN(NAME allocate_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17)
 RUN(NAME allocate_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17)
 RUN(NAME allocate_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17)
 RUN(NAME allocate_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17)
-RUN(NAME allocate_10 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME allocate_10 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17)
 RUN(NAME allocate_11 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc
     EXTRA_ARGS --realloc-lhs)
 RUN(NAME allocate_12 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc
     EXTRA_ARGS --realloc-lhs)
 RUN(NAME allocate_13 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME allocate_14 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc
+RUN(NAME allocate_14 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17
     EXTRA_ARGS --realloc-lhs)
 RUN(NAME allocate_15 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17)
 RUN(NAME allocate_16 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17)
