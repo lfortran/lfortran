@@ -4,8 +4,6 @@
         {
             iso_fortran_env:
                 (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin),
             lfortran_intrinsic_string:
                 (IntrinsicModule lfortran_intrinsic_string),
             test_get_command_argument:
@@ -29,16 +27,6 @@
                                     Required
                                     .false.
                                 ),
-                            command_argument_count:
-                                (ExternalSymbol
-                                    2
-                                    command_argument_count
-                                    4 command_argument_count
-                                    lfortran_intrinsic_builtin
-                                    []
-                                    command_argument_count
-                                    Private
-                                ),
                             count:
                                 (Variable
                                     2
@@ -54,16 +42,6 @@
                                     Public
                                     Required
                                     .false.
-                                ),
-                            get_command_argument:
-                                (ExternalSymbol
-                                    2
-                                    get_command_argument
-                                    4 get_command_argument
-                                    lfortran_intrinsic_builtin
-                                    []
-                                    get_command_argument
-                                    Private
                                 ),
                             i:
                                 (Variable
@@ -85,7 +63,7 @@
                                 (ExternalSymbol
                                     2
                                     len_trim
-                                    13 len_trim
+                                    4 len_trim
                                     lfortran_intrinsic_string
                                     []
                                     len_trim
@@ -95,7 +73,7 @@
                                 (ExternalSymbol
                                     2
                                     trim
-                                    13 trim
+                                    4 trim
                                     lfortran_intrinsic_string
                                     []
                                     trim
@@ -106,12 +84,11 @@
                     []
                     [(Assignment
                         (Var 2 count)
-                        (FunctionCall
-                            2 command_argument_count
-                            ()
+                        (IntrinsicElementalFunction
+                            CommandArgumentCount
                             []
+                            0
                             (Integer 4)
-                            ()
                             ()
                         )
                         ()
@@ -129,14 +106,11 @@
                             ()
                         )
                     )
-                    (SubroutineCall
-                        2 get_command_argument
-                        ()
-                        [((Var 2 i))
-                        ((Var 2 arg))
-                        (())
-                        (())]
-                        ()
+                    (IntrinsicImpureSubroutine
+                        GetCommandArgument
+                        [(Var 2 i)
+                        (Var 2 arg)]
+                        0
                     )
                     (Print
                         (FunctionCall

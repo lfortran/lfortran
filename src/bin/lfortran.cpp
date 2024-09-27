@@ -616,50 +616,6 @@ int python_wrapper(const std::string &infile, std::string array_order,
     return 0;
 }
 
-int emit_asr_lookup_name(const std::string &infile,
-    LCompilers::PassManager& /*pass_manager*/,
-    CompilerOptions &compiler_options)
-{
-    std::string input = read_file(infile);
-
-    LCompilers::FortranEvaluator fe(compiler_options);
-    LCompilers::LocationManager lm;
-    {
-        LCompilers::LocationManager::FileLocations fl;
-        fl.in_filename = infile;
-        lm.files.push_back(fl);
-        lm.file_ends.push_back(input.size());
-    }
-    LCompilers::diag::Diagnostics diagnostics;
-    LCompilers::Result<LCompilers::ASR::asr_t*>
-        r = fe.get_lookup_asr2(input, lm, diagnostics, compiler_options.line, compiler_options.column);
-    std::cerr << diagnostics.render(lm, compiler_options);
-    if (!r.ok) {
-        LCOMPILERS_ASSERT(diagnostics.has_error())
-        return 2;
-    }
-    LCompilers::ASR::asr_t* asr = r.result;
-
-    Allocator al(64*1024*1024);
-    compiler_options.po.always_run = true;
-    compiler_options.po.run_fun = "f";
-
-    // pass_manager.apply_passes(al, asr, compiler_options.po, diagnostics);
-    if (compiler_options.po.tree) {
-        std::cout << LCompilers::pickle_tree(*asr,
-            compiler_options.use_colors) << std::endl;
-    } else if (compiler_options.po.json) {
-        std::cout << LCompilers::pickle_json(*asr, lm, compiler_options.po.no_loc, compiler_options.po.with_intrinsic_mods) << std::endl;
-    } else if (compiler_options.po.visualize) {
-        std::string astr_data_json = LCompilers::pickle_json(*asr, lm, compiler_options.po.no_loc, compiler_options.po.with_intrinsic_mods);
-        return visualize_json(astr_data_json, compiler_options.platform);
-    } else {
-        std::cout << LCompilers::pickle(*asr, compiler_options.use_colors, compiler_options.indent,
-                compiler_options.po.with_intrinsic_mods) << std::endl;
-    }
-    return 0;
-}
-
 int emit_asr(const std::string &infile,
     LCompilers::PassManager& pass_manager,
     CompilerOptions &compiler_options)
@@ -681,6 +637,17 @@ int emit_asr(const std::string &infile,
     if (!r.ok) {
         LCOMPILERS_ASSERT(diagnostics.has_error())
         return 2;
+    }
+    if ( compiler_options.lookup_name ) {
+        // TODO: output in any format we want, right now just print normal ASR.
+        // convert string to uint16_t
+        uint16_t l = std::stoi(compiler_options.line);
+        uint16_t c = std::stoi(compiler_options.column);
+        uint64_t pos = lm.linecol_to_pos(l, c);
+        LCompilers::ASR::asr_t* asr = fe.handle_lookup_name(r.result, pos);
+        std::cout << LCompilers::pickle(*asr, compiler_options.use_colors, compiler_options.indent,
+                compiler_options.po.with_intrinsic_mods) << std::endl;
+        return 0;
     }
     LCompilers::ASR::TranslationUnit_t* asr = r.result;
 
@@ -2730,11 +2697,7 @@ int main_app(int argc, char *argv[]) {
         return emit_ast_f90(arg_file, compiler_options);
     }
     lfortran_pass_manager.parse_pass_arg(arg_pass, skip_pass);
-    if (compiler_options.lookup_name) {
-        return emit_asr_lookup_name(arg_file, lfortran_pass_manager,
-                compiler_options);
-    }
-    if (show_asr) {
+    if (show_asr || compiler_options.lookup_name) {
         return emit_asr(arg_file, lfortran_pass_manager,
                 compiler_options);
     }
