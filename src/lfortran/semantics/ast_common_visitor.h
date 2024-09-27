@@ -3000,11 +3000,21 @@ public:
                         Vec<ASR::expr_t*> args;
                         args.reserve(al, size);
                         LCOMPILERS_ASSERT(tmp_init != nullptr)
+                        // in case of declaration like:
+                        // REAL :: x(2) = 1, we need to cast `tmp_init`
+                        ImplicitCastRules::set_converted_value(
+                            al, x.base.base.loc, &tmp_init,
+                            ASRUtils::expr_type(tmp_init),
+                            ASRUtils::type_get_past_allocatable(type)
+                        );
                         for (int64_t i = 0; i < size; i++) {
                             args.push_back(al, tmp_init);
                         }
-                        init_expr = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, init_expr->base.loc,
-                                    args.p, args.n, type, ASR::arraystorageType::ColMajor));
+                        init_expr = ASRUtils::expr_value(
+                            ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, init_expr->base.loc,
+                                args.p, args.n, type, ASR::arraystorageType::ColMajor))
+                        );
+                        LCOMPILERS_ASSERT(ASR::is_a<ASR::ArrayConstant_t>(*init_expr));
                         value = init_expr;
                     }
                     ASR::ttype_t *init_type = ASRUtils::expr_type(init_expr);
