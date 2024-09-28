@@ -237,20 +237,40 @@ class ASTNodeVisitor(ASDLVisitor):
         self.emit(    "%s_t base;" % base, 2);
         args = ["Allocator &al", "const Location &a_loc"]
         lines = []
-        for f in cons.fields:
-            type_ = convert_type(f.type, f.seq, f.opt, self.mod.name.lower())
-            if f.seq:
-                seq = " size_t n_%s; // Sequence" % f.name
-            else:
-                seq = ""
-            self.emit("%s m_%s;%s" % (type_, f.name, seq), 2)
-            args.append("%s a_%s" % (type_, f.name))
-            lines.append("n->m_%s = a_%s;" % (f.name, f.name))
-            if f.name in ["global_scope", "symtab"]:
-                lines.append("a_%s->asr_owner = (asr_t*)n;" % (f.name))
-            if f.seq:
-                args.append("size_t n_%s" % (f.name))
-                lines.append("n->n_%s = n_%s;" % (f.name, f.name))
+        if cons.name=="DoConcurrentLoop":
+            for f in cons.fields:
+                type_ = convert_type(f.type, f.seq, f.opt, self.mod.name.lower())
+                if f.seq:
+                    seq = " size_t n_%s; // Sequence" % f.name
+                else:
+                    seq = ""
+                if f.type == "do_loop_head":
+                    self.emit("Vec<%s_t> m_%s;%s" % (f.type, f.name, seq), 2)
+                    args.append("Vec<%s_t>& a_%s" % (f.type, f.name))
+                else:
+                    self.emit("%s m_%s;%s" % (type_, f.name, seq), 2)
+                    args.append("%s a_%s" % (type_, f.name))
+                lines.append("n->m_%s = a_%s;" % (f.name, f.name))
+                if f.name in ["global_scope", "symtab"]:
+                    lines.append("a_%s->asr_owner = (asr_t*)n;" % (f.name))
+                if f.seq:
+                    args.append("size_t n_%s" % (f.name))
+                    lines.append("n->n_%s = n_%s;" % (f.name, f.name))
+        else:
+            for f in cons.fields:
+                type_ = convert_type(f.type, f.seq, f.opt, self.mod.name.lower())
+                if f.seq:
+                    seq = " size_t n_%s; // Sequence" % f.name
+                else:
+                    seq = ""
+                self.emit("%s m_%s;%s" % (type_, f.name, seq), 2)
+                args.append("%s a_%s" % (type_, f.name))
+                lines.append("n->m_%s = a_%s;" % (f.name, f.name))
+                if f.name in ["global_scope", "symtab"]:
+                    lines.append("a_%s->asr_owner = (asr_t*)n;" % (f.name))
+                if f.seq:
+                    args.append("size_t n_%s" % (f.name))
+                    lines.append("n->n_%s = n_%s;" % (f.name, f.name))
         self.emit("};", 1)
         if ( cons.name == "IntegerConstant" ):
             args[-1] += " = ASR::integerbozType::Decimal"
@@ -1093,7 +1113,8 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
                 if (field.type != "call_arg" and
                     field.type != "array_index" and
                     field.type != "alloc_arg" and
-                    field.type != "dimension"):
+                    field.type != "dimension" and
+                    field.type != "do_loop_head"):
                     pointer_char = '*'
                 self.emit("Vec<%s_t%s> m_%s;" % (field.type, pointer_char, field.name), level)
                 self.emit("m_%s.reserve(al, x->n_%s);" % (field.name, field.name), level)
@@ -1136,10 +1157,21 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
                     self.emit("    dim_copy.m_start = self().duplicate_expr(x->m_%s[i].m_start);"%(field.name), level)
                     self.emit("    dim_copy.m_length = self().duplicate_expr(x->m_%s[i].m_length);"%(field.name), level)
                     self.emit("    m_%s.push_back(al, dim_copy);" % (field.name), level)
+                elif field.type == "do_loop_head":
+                    self.emit("    ASR::do_loop_head_t head;", level)
+                    self.emit("    head.loc = x->m_head[i].loc;", level)
+                    self.emit("    head.m_v = duplicate_expr(x->m_head[i].m_v);", level)
+                    self.emit("    head.m_start = duplicate_expr(x->m_head[i].m_start);", level)
+                    self.emit("    head.m_end = duplicate_expr(x->m_head[i].m_end);", level)
+                    self.emit("    head.m_increment = duplicate_expr(x->m_head[i].m_increment);", level) 
+                    self.emit("    m_%s.push_back(al, head);" % (field.name), level)
                 else:
                     self.emit("    m_%s.push_back(al, self().duplicate_%s(x->m_%s[i]));" % (field.name, field.type, field.name), level)
                 self.emit("}", level)
-                arguments = ("m_" + field.name + ".p", "x->n_" + field.name)
+                if field.type == "do_loop_head":
+                    arguments = ("m_" + field.name, "x->n_" + field.name)
+                else:
+                    arguments = ("m_" + field.name + ".p", "x->n_" + field.name)
             else:
                 if field.type == "symbol":
                     self.emit("%s_t* m_%s = x->m_%s;" % (field.type, field.name, field.name), level)
@@ -2348,8 +2380,12 @@ class DeserializationVisitorVisitor(ASDLVisitor):
                     else:
                         print(f.type)
                         assert False
-                args.append("v_%s.p" % (f.name))
-                args.append("v_%s.n" % (f.name))
+                if f.name == "head" and name=="DoConcurrentLoop":
+                    args.append("v_%s" % (f.name))
+                    args.append("n_head")
+                else:
+                    args.append("v_%s.p" % (f.name))
+                    args.append("v_%s.n" % (f.name))
             else:
                 # if builtin or simple types, handle appropriately
                 if f.type in asdl.builtin_types:
