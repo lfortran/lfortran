@@ -354,6 +354,106 @@ class ASTVisitorVisitor2(ASDLVisitor):
                 self.emit("""void visit_%s(const %s_t & /* x */) { throw LCompilersException("visit_%s() not implemented"); }""" \
                         % (type_.name, type_.name, type_.name), 2)
 
+class DefaultLookupNameVisitor(ASDLVisitor):
+
+    def visitModule(self, mod):
+        self.emit("/" + "*"*78 + "/")
+        self.emit("// Walk Visitor base class")
+        self.emit("")
+        self.emit("template <class StructType>")
+        self.emit("class DefaultLookupNameVisitor : public BaseVisitor<StructType>")
+        self.emit("{")
+        self.emit("private:")
+        self.emit("    StructType& self() { return static_cast<StructType&>(*this); }")
+        self.emit("public:")
+        self.emit("uint16_t pos;", 1)
+        self.emit("uint32_t min_span = UINT32_MAX;", 1)
+        self.emit("ASR::asr_t* node_to_return = nullptr;", 1)
+        self.emit("bool test_loc_and_set_span(Location loc) {", 1)
+        self.emit("uint32_t first = loc.first;", 2)
+        self.emit("uint32_t last = loc.last;", 2)
+        self.emit("if (first <= pos && pos <= last) {", 2)
+        self.emit("uint32_t span = last - first;", 3)
+        self.emit("if (span < min_span) {", 3)
+        self.emit("min_span = span;", 4)
+        self.emit("return true;", 4)
+        self.emit("}", 3)
+        self.emit("}", 2)
+        self.emit("return false;", 2)
+        self.emit("}", 1)
+
+        super(DefaultLookupNameVisitor, self).visitModule(mod)
+        self.emit("};")
+
+    def visitType(self, tp):
+        if not (isinstance(tp.value, asdl.Sum) and
+                is_simple_sum(tp.value)):
+            super(DefaultLookupNameVisitor, self).visitType(tp, tp.name)
+
+    def visitProduct(self, prod, name):
+        self.make_visitor(name, prod.fields)
+
+    def visitConstructor(self, cons, _):
+        self.make_visitor(cons.name, cons.fields)
+
+    def make_visitor(self, name, fields):
+        # if (test_loc_and_set_span(x.base.base.loc)) {
+        #     node_to_return = (ASR::asr_t*) &x;
+        # }
+        self.emit("void visit_%s(const %s_t &x) {" % (name, name), 1)
+        self.used = False
+        have_body = False
+        for field in fields:
+            self.visitField(field)
+        if not self.used:
+            # Note: a better solution would be to change `&x` to `& /* x */`
+            # above, but we would need to change emit to return a string.
+            self.emit("if ((bool&)x) { } // Suppress unused warning", 2)
+        if name in products:
+            self.emit("if (test_loc_and_set_span(x.loc)) {", 2)
+        else:
+            self.emit("if (test_loc_and_set_span(x.base.base.loc)) {", 2)
+        self.emit("node_to_return = (ASR::asr_t*) &x;", 3)
+        self.emit("}", 2)
+        self.emit("}", 1)
+
+    def visitField(self, field):
+        if (field.type not in asdl.builtin_types and
+            field.type not in self.data.simple_types):
+            level = 2
+            if field.seq:
+                self.used = True
+                self.emit("for (size_t i=0; i<x.n_%s; i++) {" % field.name, level)
+                if field.type in products:
+                    self.emit("    self().visit_%s(x.m_%s[i]);" % (field.type, field.name), level)
+
+                else:
+                    if field.type != "symbol":
+                        self.emit("    self().visit_%s(*x.m_%s[i]);" % (field.type, field.name), level)
+                self.emit("}", level)
+            else:
+                if field.type in products:
+                    self.used = True
+                    if field.opt:
+                        self.emit("if (x.m_%s)" % field.name, 2)
+                        level = 3
+                    if field.opt:
+                        self.emit("self().visit_%s(*x.m_%s);" % (field.type, field.name), level)
+                    else:
+                        self.emit("self().visit_%s(x.m_%s);" % (field.type, field.name), level)
+                else:
+                    if field.type != "symbol":
+                        self.used = True
+                        if field.opt:
+                            self.emit("if (x.m_%s)" % field.name, 2)
+                            level = 3
+                        self.emit("self().visit_%s(*x.m_%s);" % (field.type, field.name), level)
+        elif field.type == "symbol_table" and field.name in["symtab",
+                "global_scope"]:
+            self.used = True
+            self.emit("for (auto &a : x.m_%s->get_scope()) {" % field.name, 2)
+            self.emit(  "this->visit_symbol(*a.second);", 3)
+            self.emit("}", 2)
 
 class ASTWalkVisitorVisitor(ASDLVisitor):
 
@@ -2764,7 +2864,7 @@ FOOT = r"""} // namespace LCompilers::%(MOD)s
 visitors = [ASTNodeVisitor0, ASTNodeVisitor1, ASTNodeVisitor,
         ASTVisitorVisitor1, ASTVisitorVisitor1b, ASTVisitorVisitor2,
         ASTWalkVisitorVisitor, TreeVisitorVisitor, PickleVisitorVisitor,
-        JsonVisitorVisitor, SerializationVisitorVisitor, DeserializationVisitorVisitor]
+        JsonVisitorVisitor, SerializationVisitorVisitor, DeserializationVisitorVisitor, DefaultLookupNameVisitor]
 
 
 def main(argv):

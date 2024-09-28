@@ -2130,12 +2130,14 @@ namespace LCompilers {
                         }
                         std::string mem_name = item.first;
                         int mem_idx = name2memidx[der_type_name][mem_name];
-                        llvm::Value* src_member = create_gep(src, mem_idx);
+                        llvm::Value* src_member = create_gep2(name2dertype[der_type_name], src, mem_idx);
+                        llvm::Type *mem_type = get_type_from_ttype_t_util(
+                            ASRUtils::symbol_type(item.second), module);
                         if( !LLVM::is_llvm_struct(ASRUtils::symbol_type(item.second)) &&
                             !ASRUtils::is_array(ASRUtils::symbol_type(item.second)) ) {
-                            src_member = LLVMUtils::CreateLoad(src_member);
+                            src_member = LLVMUtils::CreateLoad2(mem_type, src_member);
                         }
-                        llvm::Value* dest_member = create_gep(dest, mem_idx);
+                        llvm::Value* dest_member = create_gep2(name2dertype[der_type_name], dest, mem_idx);
                         deepcopy(src_member, dest_member,
                             ASRUtils::symbol_type(item.second),
                             module, name2memidx);

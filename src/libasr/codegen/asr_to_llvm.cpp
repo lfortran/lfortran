@@ -4192,24 +4192,29 @@ public:
     }
 
 
-    llvm::Value* GetPointerCPtrUtil(llvm::Value* llvm_tmp, ASR::ttype_t* asr_type) {
+    llvm::Value* GetPointerCPtrUtil(llvm::Value* llvm_tmp, ASR::expr_t* asr_expr) {
         // If the input is a simple variable and not a pointer
         // then this check will fail and load will not happen
         // (which is what we want for simple variables).
         // For pointers, the actual LLVM variable will be a
         // double pointer, so we need to load one time and then
         // use it later on.
-        if( is_nested_pointer(llvm_tmp) &&
-            !ASR::is_a<ASR::CPtr_t>(*asr_type)) {
+        ASR::ttype_t* asr_type = ASRUtils::expr_type(asr_expr);
+        if(ASR::is_a<ASR::Pointer_t>(*asr_type) && 
+            (LLVM::is_llvm_pointer(*ASRUtils::type_get_past_pointer(asr_type))
+             || ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_pointer(asr_type))
+             || llvm::isa<llvm::AllocaInst>(llvm_tmp))) {
             llvm_tmp = llvm_utils->CreateLoad(llvm_tmp);
         }
+        asr_type = ASRUtils::get_contained_type(asr_type);
 
         if( ASRUtils::is_array(asr_type) &&
             !ASR::is_a<ASR::CPtr_t>(*asr_type) ) {
             ASR::array_physical_typeType physical_type = ASRUtils::extract_physical_type(asr_type);
+            llvm::Type *el_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::extract_type(asr_type), module.get());
             switch( physical_type ) {
                 case ASR::array_physical_typeType::DescriptorArray: {
-                    llvm_tmp = llvm_utils->CreateLoad(arr_descr->get_pointer_to_data(llvm_tmp));
+                    llvm_tmp = llvm_utils->CreateLoad2(el_type->getPointerTo(), arr_descr->get_pointer_to_data(llvm_tmp));
                     break;
                 }
                 case ASR::array_physical_typeType::FixedSizeArray: {
@@ -4243,8 +4248,7 @@ public:
         ptr_loads = 0;
         this->visit_expr(*x.m_arg);
         ptr_loads = ptr_loads_copy;
-        ASR::ttype_t* arg_type = ASRUtils::get_contained_type(ASRUtils::expr_type(x.m_arg));
-        tmp = GetPointerCPtrUtil(tmp, arg_type);
+        tmp = GetPointerCPtrUtil(tmp, x.m_arg);
     }
 
     void visit_PointerToCPtr(const ASR::PointerToCPtr_t& x) {
@@ -4253,9 +4257,7 @@ public:
         this->visit_expr(*x.m_arg);
         ptr_loads = ptr_loads_copy;
         if( !ASR::is_a<ASR::GetPointer_t>(*x.m_arg) ) {
-            ASR::ttype_t* arg_type = ASRUtils::get_contained_type(
-                                         ASRUtils::expr_type(x.m_arg));
-            tmp = GetPointerCPtrUtil(tmp, arg_type);
+            tmp = GetPointerCPtrUtil(tmp, x.m_arg);
         }
         tmp = builder->CreateBitCast(tmp,
                     llvm::Type::getVoidTy(context)->getPointerTo());
@@ -4343,9 +4345,11 @@ public:
                 llvm::Value* new_ub = nullptr;
                 if( ASRUtils::extract_physical_type(asr_shape_type) == ASR::array_physical_typeType::DescriptorArray ||
                     ASRUtils::extract_physical_type(asr_shape_type) == ASR::array_physical_typeType::PointerToDataArray ) {
-                    new_ub = shape_data ? llvm_utils->CreateLoad(llvm_utils->create_ptr_gep(shape_data, i)) : i32_one;
+                    new_ub = shape_data ? llvm_utils->CreateLoad2(
+                        llvm::Type::getInt32Ty(context), llvm_utils->create_ptr_gep(shape_data, i)) : i32_one;
                 } else if( ASRUtils::extract_physical_type(asr_shape_type) == ASR::array_physical_typeType::FixedSizeArray ) {
-                    new_ub = shape_data ? llvm_utils->CreateLoad(llvm_utils->create_gep(shape_data, i)) : i32_one;
+                    new_ub = shape_data ? llvm_utils->CreateLoad2(
+                        llvm::Type::getInt32Ty(context), llvm_utils->create_gep(shape_data, i)) : i32_one;
                 }
                 builder->CreateStore(new_lb, desi_lb);
                 llvm::Value* new_size = builder->CreateAdd(builder->CreateSub(new_ub, new_lb), i32_one);
@@ -4502,7 +4506,11 @@ public:
             arr_physical_type == ASR::array_physical_typeType::CharacterArraySinglePointer) {
             if( arr_physical_type == ASR::array_physical_typeType::FixedSizeArray ||
                 arr_physical_type == ASR::array_physical_typeType::CharacterArraySinglePointer) {
-                value_desc = llvm_utils->create_gep(value_desc, 0);
+                llvm::Type *val_type = llvm_utils->get_type_from_ttype_t_util(
+                    ASRUtils::type_get_past_allocatable(
+                    ASRUtils::type_get_past_pointer(value_array_type)),
+                    module.get());
+                value_desc = llvm_utils->create_gep2(val_type, value_desc, 0);
             }
             ASR::dimension_t* m_dims = nullptr;
             // Fill in m_dims:
@@ -4692,10 +4700,10 @@ public:
             step = llvm::ConstantInt::get(context,
                 llvm::APInt(32, 0));
         }
-        bool flag = str->getType()->getContainedType(0)->isPointerTy();
+        bool flag = is_a<ASR::StructInstanceMember_t>(*ss->m_arg);
         llvm::Value *str2 = str;
-        if (flag) {
-            str2 = llvm_utils->CreateLoad(str2);
+        if (!flag) {
+            str2 = llvm_utils->CreateLoad2(character_type, str2);
         }
         tmp = builder->CreateCall(fn, {str2, str_val, idx1, idx2, step, lp, rp});
         if (ASR::is_a<ASR::Var_t>(*ss->m_arg)) {
@@ -4705,8 +4713,8 @@ public:
                 return;
             }
         }
-        if (!flag) {
-            tmp = llvm_utils->CreateLoad(tmp);
+        if (flag) {
+            tmp = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context), tmp);
         }
         builder->CreateStore(tmp, str);
         strings_to_be_deallocated.push_back(al, tmp);
