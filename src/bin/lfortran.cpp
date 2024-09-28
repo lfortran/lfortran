@@ -1061,6 +1061,104 @@ int get_errors(const std::string &infile, CompilerOptions &compiler_options)
     return 0;
 }
 
+int get_definitions(const std::string &infile, CompilerOptions &compiler_options)
+{
+    std::string input = read_file(infile);
+    LCompilers::FortranEvaluator fe(compiler_options);
+    std::vector<LCompilers::document_symbols> symbol_lists;
+
+    LCompilers::LocationManager lm;
+    {
+        LCompilers::LocationManager::FileLocations fl;
+        fl.in_filename = infile;
+        lm.files.push_back(fl);
+        lm.file_ends.push_back(input.size());
+    }
+    {
+        LCompilers::diag::Diagnostics diagnostics;
+        LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
+            x = fe.get_asr2(input, lm, diagnostics);
+        if (x.ok) {
+            // populate_symbol_lists(x.result, lm, symbol_lists);
+            uint16_t l = std::stoi(compiler_options.line);
+            uint16_t c = std::stoi(compiler_options.column);
+            uint64_t pos = lm.linecol_to_pos(l, c);
+            LCompilers::ASR::asr_t* asr = fe.handle_lookup_name(x.result, pos);
+            LCompilers::document_symbols loc;
+            // TODO: make sure it returns us the symbol name
+            std::string symbol_name = "a.first";
+            uint32_t first_line;
+            uint32_t last_line;
+            uint32_t first_column;
+            uint32_t last_column;
+            std::string filename;
+            lm.pos_to_linecol(asr->loc.first, first_line,
+                first_column, filename);
+            lm.pos_to_linecol(asr->loc.last, last_line,
+                last_column, filename);
+            loc.first_column = first_column;
+            loc.last_column = last_column;
+            loc.first_line = first_line-1;
+            loc.last_line = last_line-1;
+            loc.symbol_name = symbol_name;
+            loc.filename = filename;
+            symbol_lists.push_back(loc);
+        } else {
+            std::cout << "{}";
+            return 0;
+        }
+    }
+
+    rapidjson::Document test_output(rapidjson::kArrayType);
+    rapidjson::Document range_object(rapidjson::kObjectType);
+    rapidjson::Document start_detail(rapidjson::kObjectType);
+    rapidjson::Document end_detail(rapidjson::kObjectType);
+    rapidjson::Document location_object(rapidjson::kObjectType);
+    rapidjson::Document test_capture(rapidjson::kObjectType);
+
+    test_output.SetArray();
+
+    for (auto symbol : symbol_lists) {
+        uint32_t start_character = symbol.first_column;
+        uint32_t start_line = symbol.first_line;
+        uint32_t end_character = symbol.last_column;
+        uint32_t end_line = symbol.last_line;
+        std::string name = symbol.symbol_name;
+
+        range_object.SetObject();
+        rapidjson::Document::AllocatorType &allocator = range_object.GetAllocator();
+
+        start_detail.SetObject();
+        start_detail.AddMember("character", rapidjson::Value().SetInt(start_character), allocator);
+        start_detail.AddMember("line", rapidjson::Value().SetInt(start_line), allocator);
+        range_object.AddMember("start", start_detail, allocator);
+
+        end_detail.SetObject();
+        end_detail.AddMember("character", rapidjson::Value().SetInt(end_character), allocator);
+        end_detail.AddMember("line", rapidjson::Value().SetInt(end_line), allocator);
+        range_object.AddMember("end", end_detail, allocator);
+
+        location_object.SetObject();
+        location_object.AddMember("range", range_object, allocator);
+        location_object.AddMember("uri", rapidjson::Value().SetString("uri", allocator), allocator);
+
+        test_capture.SetObject();
+        test_capture.AddMember("kind", rapidjson::Value().SetInt(1), allocator);
+        test_capture.AddMember("location", location_object, allocator);
+        test_capture.AddMember("name", rapidjson::Value().SetString(name.c_str(), allocator), allocator);
+        test_output.PushBack(test_capture, test_output.GetAllocator());
+    }
+    rapidjson::StringBuffer buffer;
+    buffer.Clear();
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+    test_output.Accept(writer);
+    std::string resp_str( buffer.GetString() );
+
+    std::cout << resp_str;
+
+    return 0;
+}
+
 #endif
 
 #ifdef HAVE_LFORTRAN_MLIR
@@ -2698,8 +2796,12 @@ int main_app(int argc, char *argv[]) {
     }
     lfortran_pass_manager.parse_pass_arg(arg_pass, skip_pass);
     if (show_asr || compiler_options.lookup_name) {
+#ifdef HAVE_LFORTRAN_RAPIDJSON
+        return get_definitions(arg_file, compiler_options);
+#else
         return emit_asr(arg_file, lfortran_pass_manager,
                 compiler_options);
+#endif
     }
     if (show_document_symbols) {
 #ifdef HAVE_LFORTRAN_RAPIDJSON
