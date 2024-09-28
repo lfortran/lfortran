@@ -25,6 +25,7 @@ enum class IntrinsicImpureSubroutines : int64_t {
     GetCommand,
     GetEnvironmentVariable,
     ExecuteCommandLine,
+    GetCommandArgument,
     // ...
 };
 
@@ -284,6 +285,93 @@ namespace GetCommand {
     }
     
 } // namespace GetCommand
+
+namespace GetCommandArgument {
+
+    static inline void verify_args(const ASR::IntrinsicImpureSubroutine_t& x, diag::Diagnostics& diagnostics) {
+        if (x.n_args > 0) {
+            ASRUtils::require_impl(ASRUtils::is_integer(*ASRUtils::expr_type(x.m_args[0])), "First argument must be of integer type", x.base.base.loc, diagnostics);
+        } 
+        if(x.n_args > 1) {
+            ASRUtils::require_impl(ASRUtils::is_character(*ASRUtils::expr_type(x.m_args[1])), "Second argument must be of character type", x.base.base.loc, diagnostics);
+        }
+        if (x.n_args > 2) {
+            ASRUtils::require_impl(ASRUtils::is_integer(*ASRUtils::expr_type(x.m_args[2])), "Third argument must be of integer type", x.base.base.loc, diagnostics);
+        } 
+        if (x.n_args == 4) {
+            ASRUtils::require_impl(ASRUtils::is_integer(*ASRUtils::expr_type(x.m_args[3])), "Fourth argument must be of integer type", x.base.base.loc, diagnostics);
+        } else {
+            ASRUtils::require_impl(false, "Unexpected number of args, get_command_argument takes atmost 4 arguments, found " + std::to_string(x.n_args), x.base.base.loc, diagnostics);
+        }
+    }
+
+    static inline ASR::asr_t* create_GetCommandArgument(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
+        Vec<ASR::expr_t*> m_args; m_args.reserve(al, args.size());
+        m_args.push_back(al, args[0]);
+        for (int i = 1; i < int(args.size()); i++) {
+            if(args[i]) m_args.push_back(al, args[i]);
+        }
+        return ASR::make_IntrinsicImpureSubroutine_t(al, loc, static_cast<int64_t>(IntrinsicImpureSubroutines::GetCommandArgument), m_args.p, m_args.n, 0);
+    }
+
+    static inline ASR::stmt_t* instantiate_GetCommandArgument(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        
+        std::string c_func_name_1 = "_lfortran_get_command_argument_value";
+        std::string c_func_name_2 = "_lfortran_get_command_argument_length";
+        std::string c_func_name_3 = "_lfortran_get_command_argument_status";
+
+        std::string new_name = "_lcompilers_get_command_argument_";
+        declare_basic_variables(new_name);
+        Vec<ASR::expr_t*> call_args; call_args.reserve(al, 0);
+        fill_func_arg_sub("number", arg_types[0], In);
+        if (arg_types.size() > 1) {
+            fill_func_arg_sub("value", arg_types[1], InOut);
+            Vec<ASR::expr_t*> args_1; args_1.reserve(al, 0);
+            SymbolTable *fn_symtab_1 = al.make_new<SymbolTable>(fn_symtab);
+            ASR::expr_t *arg = b.Variable(fn_symtab_1, "n", arg_types[0],
+                ASR::intentType::In, ASR::abiType::BindC, true);
+            args_1.push_back(al, arg);
+            SetChar dep_1; dep_1.reserve(al, 1);
+            Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 1);
+            ASR::expr_t *return_var_1 = b.Variable(fn_symtab_1, c_func_name_1,
+            ASRUtils::type_get_past_array(ASRUtils::type_get_past_allocatable(arg_types[1])),
+            ASRUtils::intent_return_var, ASR::abiType::BindC, false);
+            ASR::symbol_t *s_1 = make_ASR_Function_t(c_func_name_1, fn_symtab_1, dep_1, args_1,
+            body_1, return_var_1, ASR::abiType::BindC, ASR::deftypeType::Interface, s2c(al, c_func_name_1));
+            
+            fn_symtab->add_symbol(c_func_name_1, s_1);
+            dep.push_back(al, s2c(al, c_func_name_1));
+            Vec<ASR::expr_t*> call_args1; call_args1.reserve(al, 1);
+            call_args1.push_back(al, args[0]);
+            body.push_back(al, b.Assignment(args[1], b.Call(s_1, call_args1, arg_types[1])));
+        }
+        if (arg_types.size() > 2) {
+            fill_func_arg_sub("length", arg_types[2], InOut);
+            
+            ASR::symbol_t *s_2 = b.create_c_func_subroutines(c_func_name_2, fn_symtab, 1, arg_types[2]);
+            fn_symtab->add_symbol(c_func_name_2, s_2);
+            dep.push_back(al, s2c(al, c_func_name_2));
+            Vec<ASR::expr_t*> call_args2; call_args2.reserve(al, 1);
+            call_args2.push_back(al, args[0]);
+            body.push_back(al, b.Assignment(args[2], b.Call(s_2, call_args2, arg_types[2])));
+        }
+        if (arg_types.size() == 4) {
+            fill_func_arg_sub("status", arg_types[3], InOut);
+            ASR::symbol_t *s_3 = b.create_c_func_subroutines(c_func_name_3, fn_symtab, 0, arg_types[3]);
+            fn_symtab->add_symbol(c_func_name_3, s_3);
+            dep.push_back(al, s2c(al, c_func_name_3));
+            body.push_back(al, b.Assignment(args[3], b.Call(s_3, call_args, arg_types[3])));
+        }
+
+        ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, nullptr, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, new_symbol);
+        return b.SubroutineCall(new_symbol, new_args);
+    }
+    
+} // namespace GetCommandArgument
 
 namespace GetEnvironmentVariable {
 
