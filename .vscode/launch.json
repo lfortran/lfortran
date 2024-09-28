@@ -10,7 +10,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/src/bin/lfortran",
-            "args": ["a.f90"],
+            "args": ["examples/expr2.f90"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],
