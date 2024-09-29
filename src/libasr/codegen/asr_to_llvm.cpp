@@ -4700,9 +4700,9 @@ public:
             step = llvm::ConstantInt::get(context,
                 llvm::APInt(32, 0));
         }
-        bool flag = is_a<ASR::StructInstanceMember_t>(*ss->m_arg);
+        bool is_struct_instance_member = is_a<ASR::StructInstanceMember_t>(*ss->m_arg);
         llvm::Value *str2 = str;
-        if (!flag) {
+        if (!is_struct_instance_member) {
             str2 = llvm_utils->CreateLoad2(character_type, str2);
         }
         tmp = builder->CreateCall(fn, {str2, str_val, idx1, idx2, step, lp, rp});
@@ -4713,7 +4713,7 @@ public:
                 return;
             }
         }
-        if (flag) {
+        if (is_struct_instance_member) {
             tmp = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context), tmp);
         }
         builder->CreateStore(tmp, str);
