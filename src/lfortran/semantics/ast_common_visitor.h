@@ -4897,7 +4897,7 @@ public:
                     std::string arg_str = ASRUtils::type_to_str(arg_type);
                     std::string orig_arg_str = ASRUtils::type_to_str(orig_arg_type);
                     throw SemanticError("Type mismatch in argument at argument (" + std::to_string(i+1) + 
-                                        "); passed `" + arg_str + "` to `" + orig_arg_str + "`.", loc);
+                                        "); passed `" + arg_str + "` to `" + orig_arg_str + "`.", args.p[i].loc);
                 }
             }
         }
