@@ -6801,6 +6801,24 @@ public:
             var_name = handle_templated(x.m_func, ASR::is_a<ASR::Template_t>(*ASRUtils::get_asr_owner(owner_sym)),
                 x.m_temp_args, x.n_temp_args, x.base.base.loc);
         }
+
+        if (x.m_args != nullptr && x.m_args->m_start != nullptr) {
+
+            if((x.m_args->m_start->type) == 4){
+                throw SemanticError("Substring `start` is less than one", x.base.base.loc);
+            }
+
+            if (x.m_args->m_start->type == AST::exprType::Num) {
+
+                AST::expr_t *first_expr_arg = x.m_args->m_start;
+                AST::Num_t *num_expr = (AST::Num_t *)first_expr_arg;
+
+                if((num_expr->m_n) == 0){
+                    throw SemanticError("Substring `start` is less than one", x.base.base.loc);
+                }
+            }
+        }
+
         SymbolTable *scope = current_scope;
         ASR::symbol_t *v = nullptr;
         ASR::expr_t *v_expr = nullptr;
