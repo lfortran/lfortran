@@ -474,7 +474,7 @@ class DefaultLookupNameVisitor(ASDLVisitor):
             self.emit("if (test_loc_and_set_span(x.loc)) {", 2)
         else:
             self.emit("if (test_loc_and_set_span(x.base.base.loc)) {", 2)
-        if ( have_symbol ):
+        if ( have_symbol and name != "Variable" ):
             self.emit(f"self().handle_symbol(self().symbol_get_past_external_(x.m_{sym_field_name}));", 3)
         else:
             self.emit("node_to_return = (ASR::asr_t*) &x;", 3)
