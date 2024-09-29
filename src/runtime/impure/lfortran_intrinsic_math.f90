@@ -7,10 +7,6 @@ interface system_clock
     module procedure i32sys_clock, i64sys_clock, i64r64sys_clock
 end interface
 
-interface srand
-    module procedure f_srand
-end interface
-
 contains
 
 ! system_clock------------------------------------------------------------------
@@ -50,19 +46,6 @@ interface
     end subroutine
 end interface
 call c_i64r64sys_clock(count, count_rate, count_max)
-end subroutine
-
-! srand ----------------------------------------------------------------
-
-pure subroutine f_srand(seed)
-integer(4), intent(in) :: seed
-interface
-    pure subroutine c_srand(seed) &
-        bind(c, name="_lfortran_init_random_seed")
-        integer(4), intent(in) :: seed
-    end subroutine
-end interface
-call c_srand(seed)
 end subroutine
 
 end module
