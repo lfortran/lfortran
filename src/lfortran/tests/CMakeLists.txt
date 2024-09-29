@@ -34,6 +34,13 @@ if (WITH_LLVM)
     set(SRC ${SRC}
         test_llvm.cpp
     )
+    # We need a working compiler to perform cmake integration testing
+    add_test(
+        NAME test_cmake_integration
+        COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/test_cmake_integration.sh
+                ${CMAKE_BINARY_DIR}/src/bin
+                ${CMAKE_CURRENT_SOURCE_DIR}
+    )
 endif()
 
 if (WITH_LSP)
