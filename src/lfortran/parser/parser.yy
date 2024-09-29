@@ -2379,6 +2379,9 @@ expr
             $$ = IMPLIED_DO_LOOP5($2, $4, $6, $8, $10, $12, @$); }
     | "(" expr "," expr "," expr_list "," id "=" expr "," expr "," expr ")" {
             $$ = IMPLIED_DO_LOOP6($2, $4, $6, $8, $10, $12, $14, @$); }
+    | "(" expr "," var_type "::" id "=" expr "," expr ")" {
+            $$ = VAR_DECL4($4,VAR_SYM_DIM_INIT($6, nullptr, 0, $8, Equal, @$),@$);
+            $$ = IMPLIED_DO_LOOP7($2, $6, $8, $10, $$, @$); }
 
 // ### level-1
     | TK_DEF_OP expr { $$ = UNARY_DEFOP($1, $2, @$); }

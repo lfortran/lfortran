@@ -309,6 +309,12 @@ static inline ast_t* VAR_DECL_PRAGMA2(Allocator &al, Location &loc,
         VEC_CAST(xattr, decl_attribute), xattr.n, \
         varsym.p, varsym.n, trivia_cast(trivia))
 
+#define VAR_DECL4(vartype, varsym, l) \
+        make_Declaration_t(p.m_a, l, \
+        down_cast<decl_attribute_t>(vartype), \
+        nullptr, 0, \
+        varsym, 1, nullptr)
+
 decl_attribute_t** VAR_DECL2b(Allocator &al,
             ast_t *xattr0) {
     decl_attribute_t** a = al.allocate<decl_attribute_t*>(1);
@@ -772,7 +778,22 @@ ast_t* implied_do_loop(Allocator &al, Location &loc,
             name2char(i),
             EXPR(low),
             EXPR(high),
-            EXPR_OPT(incr));
+            EXPR_OPT(incr),nullptr);
+}
+ast_t* implied_do_loop2(Allocator &al, Location &loc,
+        Vec<ast_t*> &ex_list,
+        ast_t* i,
+        ast_t* low,
+        ast_t* high,
+        ast_t* incr,
+        ast_t* var_decl_implied) {
+    return make_ImpliedDoLoop_t(al, loc,
+            EXPRS(ex_list), ex_list.size(),
+            name2char(i),
+            EXPR(low),
+            EXPR(high),
+            EXPR_OPT(incr),
+            down_cast<unit_decl2_t>(var_decl_implied));
 }
 
 ast_t* implied_do1(Allocator &al, Location &loc,
@@ -818,6 +839,18 @@ ast_t* implied_do3(Allocator &al, Location &loc,
     }
     return implied_do_loop(al, loc, v, i, low, high, incr);
 }
+ast_t* implied_do4(Allocator &al, Location &loc,
+        ast_t* ex,
+        ast_t* i,
+        ast_t* low,
+        ast_t* high,
+        ast_t* incr,
+        ast_t* var_decl_implied) {
+    Vec<ast_t*> v;
+    v.reserve(al, 1);
+    v.push_back(al, ex);
+    return implied_do_loop2(al, loc, v, i, low, high, incr,var_decl_implied);
+}
 
 #define IMPLIED_DO_LOOP1(ex, i, low, high, l) \
     implied_do1(p.m_a, l, ex, i, low, high, nullptr)
@@ -832,6 +865,8 @@ ast_t* implied_do3(Allocator &al, Location &loc,
     implied_do2(p.m_a, l, ex1, ex2, i, low, high, incr)
 #define IMPLIED_DO_LOOP6(ex1, ex2, ex_list, i, low, high, incr, l) \
     implied_do3(p.m_a, l, ex1, ex2, ex_list, i, low, high, incr)
+#define IMPLIED_DO_LOOP7(ex, i, low, high, var_decl_implied,l) \
+    implied_do4(p.m_a, l, ex, i, low, high, nullptr, var_decl_implied)
 
 char *str2str_null(Allocator &al, const LCompilers::Str &s) {
     if (s.p == nullptr) {
