@@ -5311,8 +5311,8 @@ public:
                     ASRUtils::type_get_past_pointer(m_type)), module.get());
             llvm::AllocaInst *target = llvm_utils->CreateAlloca(
                 target_type, nullptr, "array_descriptor");
-            builder->CreateStore(llvm_utils->create_ptr_gep(
-                llvm_utils->CreateLoad(arr_descr->get_pointer_to_data(tmp)),
+            builder->CreateStore(llvm_utils->create_ptr_gep2(target_type,
+                llvm_utils->CreateLoad2(target_type->getPointerTo(), arr_descr->get_pointer_to_data(tmp)),
                 arr_descr->get_offset(tmp)), arr_descr->get_pointer_to_data(target));
             int n_dims = ASRUtils::extract_n_dims_from_ttype(m_type_for_dimensions);
             arr_descr->reset_array_details(target, tmp, n_dims);

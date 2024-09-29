@@ -262,7 +262,8 @@ namespace LCompilers {
             if( !load ) {
                 return dim_size;
             }
-            return llvm_utils->CreateLoad(dim_size);
+            llvm::Type *i32 = llvm::Type::getInt32Ty(context);
+            return llvm_utils->CreateLoad2(i32, dim_size);
         }
 
         void SimpleCMODescriptor::fill_array_details(
@@ -419,17 +420,17 @@ namespace LCompilers {
                                                                llvm_utils->CreateLoad(llvm_ndims));
             builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, n_dims)), get_rank(arr, true));
             builder->CreateStore(dim_des_first, dim_des_val);
-            dim_des_val = llvm_utils->CreateLoad(dim_des_val);
+            dim_des_val = llvm_utils->CreateLoad2(dim_des->getPointerTo(), dim_des_val);
             llvm::Value* source_dim_des_arr = this->get_pointer_to_dimension_descriptor_array(source_arr);
             for( int r = 0; r < n_dims; r++ ) {
-                llvm::Value* dim_val = llvm_utils->create_ptr_gep(dim_des_val, r);
-                llvm::Value* s_val = llvm_utils->create_gep(dim_val, 0);
+                llvm::Value* dim_val = llvm_utils->create_ptr_gep2(dim_des, dim_des_val, r);
+                llvm::Value* s_val = llvm_utils->create_gep2(dim_des, dim_val, 0);
                 llvm::Value* stride = this->get_stride(
                     this->get_pointer_to_dimension_descriptor(source_dim_des_arr,
                     llvm::ConstantInt::get(context, llvm::APInt(32, r))));
                 builder->CreateStore(stride, s_val);
-                llvm::Value* l_val = llvm_utils->create_gep(dim_val, 1);
-                llvm::Value* dim_size_ptr = llvm_utils->create_gep(dim_val, 2);
+                llvm::Value* l_val = llvm_utils->create_gep2(dim_des, dim_val, 1);
+                llvm::Value* dim_size_ptr = llvm_utils->create_gep2(dim_des, dim_val, 2);
                 builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 1)), l_val);
                 llvm::Value* dim_size = this->get_dimension_size(
                    this->get_pointer_to_dimension_descriptor(source_dim_des_arr,
