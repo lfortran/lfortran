@@ -72,16 +72,12 @@ public:
         diag::Diagnostics &diagnostics);
     Result<std::string> get_asr(const std::string &code,
         LocationManager &lm, diag::Diagnostics &diagnostics);
+    ASR::asr_t* handle_lookup_name(LCompilers::ASR::TranslationUnit_t* tu, uint64_t pos);
     Result<ASR::TranslationUnit_t*> get_asr2(const std::string &code,
         LocationManager &lm, diag::Diagnostics &diagnostics);
-    Result<ASR::asr_t*> get_lookup_asr2(
-            const std::string &code_orig, LocationManager &lm,
-            diag::Diagnostics &diagnostics, std::string line, std::string column);
     Result<ASR::TranslationUnit_t*> get_asr3(
         LCompilers::LFortran::AST::TranslationUnit_t &ast,
         diag::Diagnostics &diagnostics);
-    Result<ASR::asr_t*> get_lookup_asr3(
-    LFortran::AST::TranslationUnit_t &ast, diag::Diagnostics &diagnostics, uint16_t pos = 0);
     Result<std::string> get_llvm(const std::string &code,
         LocationManager &lm, LCompilers::PassManager& pass_manager,
         diag::Diagnostics &diagnostics);
