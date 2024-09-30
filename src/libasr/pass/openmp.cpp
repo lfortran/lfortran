@@ -793,7 +793,7 @@ class DoConcurrentVisitor :
             v.current_expr = nullptr;
             v.visit_DoConcurrentLoop(do_loop);
 
-            ASR::do_loop_head_t loop_head = do_loop.m_head;
+            ASR::do_loop_head_t loop_head = do_loop.m_head[0];
             // always this shall be IntegerBinOp_t
             ASR::expr_t* loop_length = b.Add(b.Sub(loop_head.m_end, loop_head.m_start), b.i32(1));
             // calculate chunk size
