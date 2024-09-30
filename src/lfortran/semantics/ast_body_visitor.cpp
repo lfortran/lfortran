@@ -6,7 +6,6 @@
 #include <string>
 #include <cmath>
 #include <set>
-
 #include <lfortran/ast.h>
 #include <libasr/asr.h>
 #include <libasr/asr_utils.h>
@@ -3413,8 +3412,8 @@ public:
         if (head.m_v != nullptr) {
             head.loc = head.m_v->base.loc;
             if (loop_nesting - 1 == pragma_nesting_level && !omp_constructs.empty()) {
-                ASR::DoConcurrentLoop_t* do_concurrent = omp_constructs.back();
-                do_concurrent->m_head = head; do_concurrent->m_body = body.p; do_concurrent->n_body = body.size();
+                ASR::DoConcurrentLoop_t* do_concurrent = omp_constructs.back();do_concurrent->m_head.reserve(al,1);
+                do_concurrent->m_head.push_back(al,head); do_concurrent->m_body = body.p; do_concurrent->n_body = body.size();
                 tmp = (ASR::asr_t*) do_concurrent;
             } else {
                 tmp = ASR::make_DoLoop_t(al, x.base.base.loc, x.m_stmt_name,
@@ -3512,7 +3511,9 @@ public:
                 }
             }
         }
-        tmp = ASR::make_DoConcurrentLoop_t(al, x.base.base.loc, head, shared_expr.p, shared_expr.n, local_expr.p, local_expr.n, reductions.p, reductions.n, body.p,
+        Vec<ASR::do_loop_head_t> heads;  // Create a vector of loop heads
+        heads.push_back(al, head);
+        tmp = ASR::make_DoConcurrentLoop_t(al, x.base.base.loc, heads, 1, shared_expr.p, shared_expr.n, local_expr.p, local_expr.n, reductions.p, reductions.n, body.p,
                 body.size());
     }
 
@@ -3828,10 +3829,11 @@ public:
                         }
                     }
                 }
-                ASR::do_loop_head_t head{};
+                Vec<ASR::do_loop_head_t> head;
                 omp_constructs.push_back(ASR::down_cast2<ASR::DoConcurrentLoop_t>(
-                    ASR::make_DoConcurrentLoop_t(al,loc, head, m_shared.p,
-                    m_shared.n, m_local.p, m_local.n, m_reduction.p, m_reduction.n, nullptr, 0)));
+                ASR::make_DoConcurrentLoop_t(al,loc, head, 1, m_shared.p,
+                m_shared.n, m_local.p, m_local.n, m_reduction.p, m_reduction.n, nullptr, 0)));
+                
             } else if ( strcmp(x.m_construct_name, "do") == 0 ) {
                 // pass
             } else {
