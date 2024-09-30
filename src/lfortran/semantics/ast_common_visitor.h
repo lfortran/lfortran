@@ -2808,7 +2808,7 @@ public:
                         );
                         dims.n = 0;
                     }
-                    if (s.m_dim[0].m_end_star == AST::dimension_typeType::DimensionStar) {
+                    if (s.m_dim[s.n_dim - 1].m_end_star == AST::dimension_typeType::DimensionStar) {
                         is_dimension_star = true;
                     }
                     process_dims(al, dims, s.m_dim, s.n_dim, is_compile_time, is_char_type,

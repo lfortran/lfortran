@@ -2443,7 +2443,10 @@ inline ASR::ttype_t* make_Array_t_util(Allocator& al, const Location& loc,
                 }
             } else if( !ASRUtils::is_dimension_empty(m_dims, n_dims) ) {
                 physical_type = ASR::array_physical_typeType::PointerToDataArray;
-            } else if ( is_dimension_star && ASRUtils::is_only_upper_bound_empty(m_dims[n_dims-1]) ) {
+            } else if ( is_dimension_star && m_dims[n_dims-1].m_length == nullptr ) {
+                // e.g.; x(2:*) OR x(*) OR (1:3, 1:*)
+                // maybe the condition can be relaxed to just "is_dimension_star"?
+                // , I'll come back to this once I get the tests passing
                 physical_type = ASR::array_physical_typeType::UnboundedPointerToDataArray;
             }
         }
