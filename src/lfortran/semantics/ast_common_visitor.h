@@ -6802,15 +6802,15 @@ public:
                 x.m_temp_args, x.n_temp_args, x.base.base.loc);
         }
 
-        if (x.m_args != nullptr && x.m_args->m_start != nullptr) {
+        if (x.m_args != nullptr && x.m_args[0].m_start != nullptr) {
 
-            if((x.m_args->m_start->type) == 4){
+            if((x.m_args[0].m_start->type) == 4){
                 throw SemanticError("Substring `start` is less than one", x.base.base.loc);
             }
 
-            if (x.m_args->m_start->type == AST::exprType::Num) {
+            if (x.m_args[0].m_start->type == AST::exprType::Num) {
 
-                AST::expr_t *first_expr_arg = x.m_args->m_start;
+                AST::expr_t *first_expr_arg = x.m_args[0].m_start;
                 AST::Num_t *num_expr = (AST::Num_t *)first_expr_arg;
 
                 if((num_expr->m_n) == 0){
