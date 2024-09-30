@@ -237,40 +237,28 @@ class ASTNodeVisitor(ASDLVisitor):
         self.emit(    "%s_t base;" % base, 2);
         args = ["Allocator &al", "const Location &a_loc"]
         lines = []
-        if cons.name=="DoConcurrentLoop":
-            for f in cons.fields:
-                type_ = convert_type(f.type, f.seq, f.opt, self.mod.name.lower())
-                if f.seq:
-                    seq = " size_t n_%s; // Sequence" % f.name
-                else:
-                    seq = ""
+        for f in cons.fields:
+            type_ = convert_type(f.type, f.seq, f.opt, self.mod.name.lower())
+            if f.seq:
+                seq = " size_t n_%s; // Sequence" % f.name
+            else:
+                seq = ""
+            if cons.name=="DoConcurrentLoop":
                 if f.type == "do_loop_head":
                     self.emit("Vec<%s_t> m_%s;%s" % (f.type, f.name, seq), 2)
                     args.append("Vec<%s_t>& a_%s" % (f.type, f.name))
                 else:
                     self.emit("%s m_%s;%s" % (type_, f.name, seq), 2)
                     args.append("%s a_%s" % (type_, f.name))
-                lines.append("n->m_%s = a_%s;" % (f.name, f.name))
-                if f.name in ["global_scope", "symtab"]:
-                    lines.append("a_%s->asr_owner = (asr_t*)n;" % (f.name))
-                if f.seq:
-                    args.append("size_t n_%s" % (f.name))
-                    lines.append("n->n_%s = n_%s;" % (f.name, f.name))
-        else:
-            for f in cons.fields:
-                type_ = convert_type(f.type, f.seq, f.opt, self.mod.name.lower())
-                if f.seq:
-                    seq = " size_t n_%s; // Sequence" % f.name
-                else:
-                    seq = ""
+            else:
                 self.emit("%s m_%s;%s" % (type_, f.name, seq), 2)
                 args.append("%s a_%s" % (type_, f.name))
-                lines.append("n->m_%s = a_%s;" % (f.name, f.name))
-                if f.name in ["global_scope", "symtab"]:
-                    lines.append("a_%s->asr_owner = (asr_t*)n;" % (f.name))
-                if f.seq:
-                    args.append("size_t n_%s" % (f.name))
-                    lines.append("n->n_%s = n_%s;" % (f.name, f.name))
+            lines.append("n->m_%s = a_%s;" % (f.name, f.name))
+            if f.name in ["global_scope", "symtab"]:
+                lines.append("a_%s->asr_owner = (asr_t*)n;" % (f.name))
+            if f.seq:
+                args.append("size_t n_%s" % (f.name))
+                lines.append("n->n_%s = n_%s;" % (f.name, f.name))
         self.emit("};", 1)
         if ( cons.name == "IntegerConstant" ):
             args[-1] += " = ASR::integerbozType::Decimal"
