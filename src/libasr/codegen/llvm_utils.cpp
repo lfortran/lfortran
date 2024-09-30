@@ -1633,6 +1633,7 @@ namespace LCompilers {
         return builder->CreateLoad(t2, x);
 #else
         llvm::Type *type = nullptr, *type_copy = nullptr;
+        bool is_type_pointer = false;
         if (ptr_type.find(x) != ptr_type.end()) {
             type_copy = type = ptr_type[x];
         }
@@ -1642,10 +1643,12 @@ namespace LCompilers {
                 llvm::dyn_cast<llvm::AllocaInst>(x)->getAllocatedType()->isPointerTy())) {
             // AllocaInst
             type = type->getPointerTo();
+            is_type_pointer = true;
         } else if (llvm::StructType *arr_type = llvm::dyn_cast<llvm::StructType>(type)) {
             // Function arguments
             if (arr_type->getName() == "array") {
                 type = type->getPointerTo();
+                is_type_pointer = true;
             }
         }
 
@@ -1658,11 +1661,12 @@ namespace LCompilers {
                 gep->getSourceElementType())->getName());
             if ( name2dertype.find(s_name) != name2dertype.end() ) {
                 type = type->getPointerTo();
+                is_type_pointer = true;
             }
         }
 
         llvm::Value *load = builder->CreateLoad(type, x);
-        if (type != type_copy) {
+        if (is_type_pointer) {
             ptr_type[load] = type_copy;
         }
         return load;
@@ -2126,12 +2130,14 @@ namespace LCompilers {
                         }
                         std::string mem_name = item.first;
                         int mem_idx = name2memidx[der_type_name][mem_name];
-                        llvm::Value* src_member = create_gep(src, mem_idx);
+                        llvm::Value* src_member = create_gep2(name2dertype[der_type_name], src, mem_idx);
+                        llvm::Type *mem_type = get_type_from_ttype_t_util(
+                            ASRUtils::symbol_type(item.second), module);
                         if( !LLVM::is_llvm_struct(ASRUtils::symbol_type(item.second)) &&
                             !ASRUtils::is_array(ASRUtils::symbol_type(item.second)) ) {
-                            src_member = LLVMUtils::CreateLoad(src_member);
+                            src_member = LLVMUtils::CreateLoad2(mem_type, src_member);
                         }
-                        llvm::Value* dest_member = create_gep(dest, mem_idx);
+                        llvm::Value* dest_member = create_gep2(name2dertype[der_type_name], dest, mem_idx);
                         deepcopy(src_member, dest_member,
                             ASRUtils::symbol_type(item.second),
                             module, name2memidx);
