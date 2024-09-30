@@ -1,3 +1,7 @@
+1
+1
+1
+1
 function triad(a::Array{Float32, 1}, b::Array{Float32, 1}, scalar::Float32, c::Array{Float32, 1})
     local i::Int32
     local j::Int32

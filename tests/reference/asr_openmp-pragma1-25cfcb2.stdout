@@ -1,0 +1,359 @@
+1
+1
+1
+1
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            a1:
+                (Function
+                    (SymbolTable
+                        2
+                        {
+                            a:
+                                (Variable
+                                    2
+                                    a
+                                    [n]
+                                    In
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Real 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (Var 2 n))]
+                                        PointerToDataArray
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            b:
+                                (Variable
+                                    2
+                                    b
+                                    [n]
+                                    Out
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Real 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (Var 2 n))]
+                                        PointerToDataArray
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            i:
+                                (Variable
+                                    2
+                                    i
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            n:
+                                (Variable
+                                    2
+                                    n
+                                    []
+                                    In
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    a1
+                    (FunctionType
+                        [(Integer 4)
+                        (Array
+                            (Real 4)
+                            [((IntegerConstant 1 (Integer 4) Decimal)
+                            (FunctionParam
+                                0
+                                (Integer 4)
+                                ()
+                            ))]
+                            PointerToDataArray
+                        )
+                        (Array
+                            (Real 4)
+                            [((IntegerConstant 1 (Integer 4) Decimal)
+                            (FunctionParam
+                                0
+                                (Integer 4)
+                                ()
+                            ))]
+                            PointerToDataArray
+                        )]
+                        ()
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        .false.
+                    )
+                    []
+                    [(Var 2 n)
+                    (Var 2 a)
+                    (Var 2 b)]
+                    [(DoConcurrentLoop
+                        [((Var 2 i)
+                        (IntegerConstant 2 (Integer 4) Decimal)
+                        (Var 2 n)
+                        ())]
+                        []
+                        []
+                        []
+                        [(Assignment
+                            (ArrayItem
+                                (Var 2 b)
+                                [(()
+                                (Var 2 i)
+                                ())]
+                                (Real 4)
+                                ColMajor
+                                ()
+                            )
+                            (RealBinOp
+                                (RealBinOp
+                                    (ArrayItem
+                                        (Var 2 a)
+                                        [(()
+                                        (Var 2 i)
+                                        ())]
+                                        (Real 4)
+                                        ColMajor
+                                        ()
+                                    )
+                                    Add
+                                    (ArrayItem
+                                        (Var 2 a)
+                                        [(()
+                                        (IntegerBinOp
+                                            (Var 2 i)
+                                            Sub
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        ())]
+                                        (Real 4)
+                                        ColMajor
+                                        ()
+                                    )
+                                    (Real 4)
+                                    ()
+                                )
+                                Div
+                                (Cast
+                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                    IntegerToReal
+                                    (Real 4)
+                                    (RealConstant
+                                        2.000000
+                                        (Real 4)
+                                    )
+                                )
+                                (Real 4)
+                                ()
+                            )
+                            ()
+                        )]
+                    )]
+                    ()
+                    Public
+                    .false.
+                    .false.
+                    ()
+                ),
+            parallel_sum:
+                (Function
+                    (SymbolTable
+                        3
+                        {
+                            a:
+                                (Variable
+                                    3
+                                    a
+                                    []
+                                    In
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Integer 4)
+                                        [(()
+                                        ())]
+                                        DescriptorArray
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            i:
+                                (Variable
+                                    3
+                                    i
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            n:
+                                (Variable
+                                    3
+                                    n
+                                    []
+                                    In
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            partial_sum:
+                                (Variable
+                                    3
+                                    partial_sum
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            total_sum:
+                                (Variable
+                                    3
+                                    total_sum
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    parallel_sum
+                    (FunctionType
+                        [(Integer 4)
+                        (Array
+                            (Integer 4)
+                            [(()
+                            ())]
+                            DescriptorArray
+                        )]
+                        ()
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        .false.
+                    )
+                    []
+                    [(Var 3 n)
+                    (Var 3 a)]
+                    [(Assignment
+                        (Var 3 partial_sum)
+                        (IntegerConstant 0 (Integer 4) Decimal)
+                        ()
+                    )
+                    (Assignment
+                        (Var 3 total_sum)
+                        (IntegerConstant 0 (Integer 4) Decimal)
+                        ()
+                    )
+                    (DoConcurrentLoop
+                        [((Var 3 i)
+                        (IntegerConstant 1 (Integer 4) Decimal)
+                        (Var 3 n)
+                        ())]
+                        [(Var 3 total_sum)]
+                        [(Var 3 partial_sum)]
+                        []
+                        [(Assignment
+                            (Var 3 partial_sum)
+                            (IntegerBinOp
+                                (Var 3 partial_sum)
+                                Add
+                                (ArrayItem
+                                    (Var 3 a)
+                                    [(()
+                                    (Var 3 i)
+                                    ())]
+                                    (Integer 4)
+                                    ColMajor
+                                    ()
+                                )
+                                (Integer 4)
+                                ()
+                            )
+                            ()
+                        )]
+                    )]
+                    ()
+                    Public
+                    .false.
+                    .false.
+                    ()
+                )
+        })
+    []
+)
