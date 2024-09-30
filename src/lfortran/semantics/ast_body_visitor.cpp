@@ -3830,7 +3830,7 @@ public:
                         }
                     }
                 }
-                Vec<ASR::do_loop_head_t> heads;
+                Vec<ASR::do_loop_head_t> heads;heads.reserve(al,1);ASR::do_loop_head_t head{};heads.push_back(al, head);
                 omp_constructs.push_back(ASR::down_cast2<ASR::DoConcurrentLoop_t>(
                 ASR::make_DoConcurrentLoop_t(al,loc, heads, heads.n, m_shared.p,
                 m_shared.n, m_local.p, m_local.n, m_reduction.p, m_reduction.n, nullptr, 0)));
