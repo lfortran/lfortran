@@ -968,6 +968,7 @@ public:
             ASR::ttype_t* curr_arg_m_a_type = ASRUtils::type_get_past_pointer(
                 ASRUtils::type_get_past_allocatable(
                 ASRUtils::expr_type(tmp_expr)));
+            llvm::Type* llvm_arg_type = llvm_utils->get_type_from_ttype_t_util(curr_arg_m_a_type, module.get());
             size_t n_dims = ASRUtils::extract_n_dims_from_ttype(curr_arg_m_a_type);
             curr_arg_m_a_type = ASRUtils::type_get_past_array(curr_arg_m_a_type);
             if( n_dims == 0 ) {
@@ -985,7 +986,7 @@ public:
                     llvm::Value* alloc_size = builder->CreateAdd(m_len, const_one);
                     std::vector<llvm::Value*> args = {x_arr, alloc_size};
                     builder->CreateCall(fn, args);
-                    builder->CreateMemSet(llvm_utils->CreateLoad(x_arr),
+                    builder->CreateMemSet(llvm_utils->CreateLoad2(llvm_arg_type, x_arr),
                         llvm::ConstantInt::get(llvm::Type::getInt8Ty(context), llvm::APInt(8, 0)),
                         alloc_size, llvm::MaybeAlign());
                 } else if(ASR::is_a<ASR::StructType_t>(*curr_arg_m_a_type) ||
@@ -4555,7 +4556,7 @@ public:
             if (ASR::is_a<ASR::Character_t>(*type)) {
                 int dims = n_dims;
                 if (dims == 0) {
-                    builder->CreateStore(llvm_utils->CreateLoad(llvm_value),
+                    builder->CreateStore(llvm_utils->CreateLoad2(value_type, llvm_value),
                         llvm_target);
                     return;
                 }
@@ -4700,9 +4701,9 @@ public:
             step = llvm::ConstantInt::get(context,
                 llvm::APInt(32, 0));
         }
-        bool flag = is_a<ASR::StructInstanceMember_t>(*ss->m_arg);
+        bool is_struct_instance_member = is_a<ASR::StructInstanceMember_t>(*ss->m_arg);
         llvm::Value *str2 = str;
-        if (!flag) {
+        if (!is_struct_instance_member) {
             str2 = llvm_utils->CreateLoad2(character_type, str2);
         }
         tmp = builder->CreateCall(fn, {str2, str_val, idx1, idx2, step, lp, rp});
@@ -4713,7 +4714,7 @@ public:
                 return;
             }
         }
-        if (flag) {
+        if (is_struct_instance_member) {
             tmp = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context), tmp);
         }
         builder->CreateStore(tmp, str);
@@ -9931,7 +9932,7 @@ public:
         ASR::array_physical_typeType physical_type = ASRUtils::extract_physical_type(x_mv_type);
         switch( physical_type ) {
             case ASR::array_physical_typeType::DescriptorArray: {
-                llvm::Value* dim_des_val = arr_descr->get_pointer_to_dimension_descriptor_array(llvm_arg1);
+                llvm::Value* dim_des_val = arr_descr->get_pointer_to_dimension_descriptor_array(array_type, llvm_arg1);
                 llvm::Value* const_1 = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
                 dim_val = builder->CreateSub(dim_val, const_1);
                 llvm::Value* dim_struct = arr_descr->get_pointer_to_dimension_descriptor(dim_des_val, dim_val);
