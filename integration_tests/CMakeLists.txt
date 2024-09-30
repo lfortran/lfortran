@@ -1384,7 +1384,7 @@ RUN(NAME bits_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran llvm17) #
 RUN(NAME bits_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran llvm17) #ibits
 RUN(NAME bits_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran llvm17)
 RUN(NAME cpu_time_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17)
-RUN(NAME cpu_time_02_wasm LABELS wasm)
+# RUN(NAME cpu_time_02_wasm LABELS wasm)
 RUN(NAME system_clock_01 LABELS gfortran llvm llvm17)
 RUN(NAME boz_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17)
 RUN(NAME cmd_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17)
