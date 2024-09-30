@@ -3512,6 +3512,7 @@ public:
             }
         }
         Vec<ASR::do_loop_head_t> heads;  // Create a vector of loop heads
+        heads.reserve(al,1);
         heads.push_back(al, head);
         tmp = ASR::make_DoConcurrentLoop_t(al, x.base.base.loc, heads, 1, shared_expr.p, shared_expr.n, local_expr.p, local_expr.n, reductions.p, reductions.n, body.p,
                 body.size());
