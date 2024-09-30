@@ -1215,7 +1215,7 @@ namespace CommandArgumentCount {
     static inline ASR::expr_t* instantiate_CommandArgumentCount(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/){
-             std::string c_func_name;
+        std::string c_func_name;
         c_func_name = "_lfortran_command_argument_count";
         std::string new_name = "_lcompilers_command_argument_count_";
 
@@ -1227,7 +1227,7 @@ namespace CommandArgumentCount {
         }
         auto result = declare(new_name, return_type, ReturnVar);
         {
-            ASR::symbol_t *s = b.create_c_func(c_func_name, fn_symtab, return_type, 2, arg_types);
+            ASR::symbol_t *s = b.create_c_func(c_func_name, fn_symtab, return_type, 0, arg_types);
             fn_symtab->add_symbol(c_func_name, s);
             dep.push_back(al, s2c(al, c_func_name));
             body.push_back(al, b.Assignment(result, b.Call(s, args, return_type)));

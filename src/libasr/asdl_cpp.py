@@ -334,6 +334,190 @@ class ASTVisitorVisitor2(ASDLVisitor):
                 self.emit("""void visit_%s(const %s_t & /* x */) { throw LCompilersException("visit_%s() not implemented"); }""" \
                         % (type_.name, type_.name, type_.name), 2)
 
+class DefaultLookupNameVisitor(ASDLVisitor):
+
+    def visitModule(self, mod):
+        self.emit("/" + "*"*78 + "/")
+        self.emit("// Walk Visitor base class")
+        self.emit("")
+        self.emit("template <class StructType>")
+        self.emit("class DefaultLookupNameVisitor : public BaseVisitor<StructType>")
+        self.emit("{")
+        self.emit("private:")
+        self.emit("    StructType& self() { return static_cast<StructType&>(*this); }")
+        self.emit("public:")
+        self.emit("uint16_t pos;", 1)
+        self.emit("uint32_t min_span = UINT32_MAX;", 1)
+        self.emit("ASR::asr_t* node_to_return = nullptr;", 1)
+        self.emit("bool test_loc_and_set_span(Location loc) {", 1)
+        self.emit("uint32_t first = loc.first;", 2)
+        self.emit("uint32_t last = loc.last;", 2)
+        self.emit("if (first <= pos && pos <= last) {", 2)
+        self.emit("uint32_t span = last - first;", 3)
+        self.emit("if (span < min_span) {", 3)
+        self.emit("min_span = span;", 4)
+        self.emit("return true;", 4)
+        self.emit("}", 3)
+        self.emit("}", 2)
+        self.emit("return false;", 2)
+        self.emit("}", 1)
+        self.emit("void handle_symbol(const symbol_t* sym) {", 1)
+        self.emit("switch(sym->type) {", 2)
+        self.emit("case ASR::symbolType::Program: {", 3)
+        self.emit("node_to_return = ( ASR::asr_t* ) ((Program_t*)sym);", 4)
+        self.emit("return;", 4)
+        self.emit("}", 3)
+        self.emit("case ASR::symbolType::Module: {", 3)
+        self.emit("node_to_return = ( ASR::asr_t* ) ((Module_t*)sym);", 4)
+        self.emit("return;", 4)
+        self.emit("}", 3)
+        self.emit("case ASR::symbolType::Function: {", 3)
+        self.emit("node_to_return = ( ASR::asr_t* ) ((Function_t*)sym);", 4)
+        self.emit("return;", 4)
+        self.emit("}", 3)
+        self.emit("case ASR::symbolType::GenericProcedure: {", 3)
+        self.emit("node_to_return = ( ASR::asr_t* ) ((GenericProcedure_t*)sym);", 4)
+        self.emit("return;", 4)
+        self.emit("}", 3)
+        self.emit("case ASR::symbolType::CustomOperator: {", 3)
+        self.emit("node_to_return = ( ASR::asr_t* ) ((CustomOperator_t*)sym);", 4)
+        self.emit("return;", 4)
+        self.emit("}", 3)
+        self.emit("case ASR::symbolType::ExternalSymbol: {", 3)
+        self.emit("node_to_return = ( ASR::asr_t* ) ((ExternalSymbol_t*)sym);", 4)
+        self.emit("return;", 4)
+        self.emit("}", 3)
+        self.emit("case ASR::symbolType::Struct: {", 3)
+        self.emit("node_to_return = ( ASR::asr_t* ) ((Struct_t*)sym);", 4)
+        self.emit("return;", 4)
+        self.emit("}", 3)
+        self.emit("case ASR::symbolType::Enum: {", 3)
+        self.emit("node_to_return = ( ASR::asr_t* ) ((Enum_t*)sym);", 4)
+        self.emit("return;", 4)
+        self.emit("}", 3)
+        self.emit("case ASR::symbolType::UnionType: {", 3)
+        self.emit("node_to_return = ( ASR::asr_t* ) ((UnionType_t*)sym);", 4)
+        self.emit("return;", 4)
+        self.emit("}", 3)
+        self.emit("case ASR::symbolType::Variable: {", 3)
+        self.emit("node_to_return = ( ASR::asr_t* ) ((Variable_t*)sym);", 4)
+        self.emit("return;", 4)
+        self.emit("}", 3)
+        self.emit("case ASR::symbolType::Class: {", 3)
+        self.emit("node_to_return = ( ASR::asr_t* ) ((Class_t*)sym);", 4)
+        self.emit("return;", 4)
+        self.emit("}", 3)
+        self.emit("case ASR::symbolType::ClassProcedure: {", 3)
+        self.emit("node_to_return = ( ASR::asr_t* ) ((ClassProcedure_t*)sym);", 4)
+        self.emit("return;", 4)
+        self.emit("}", 3)
+        self.emit("case ASR::symbolType::AssociateBlock: {", 3)
+        self.emit("node_to_return = ( ASR::asr_t* ) ((AssociateBlock_t*)sym);", 4)
+        self.emit("return;", 4)
+        self.emit("}", 3)
+        self.emit("case ASR::symbolType::Block: {", 3)
+        self.emit("node_to_return = ( ASR::asr_t* ) ((Block_t*)sym);", 4)
+        self.emit("return;", 4)
+        self.emit("}", 3)
+        self.emit("case ASR::symbolType::Requirement: {", 3)
+        self.emit("node_to_return = ( ASR::asr_t* ) ((Requirement_t*)sym);", 4)
+        self.emit("return;", 4)
+        self.emit("}", 3)
+        self.emit("case ASR::symbolType::Template: {", 3)
+        self.emit("node_to_return = ( ASR::asr_t* ) ((Template_t*)sym);", 4)
+        self.emit("return;", 4)
+        self.emit("}", 3)
+        self.emit("}", 2)
+        self.emit("}", 1)
+        self.emit("static inline const ASR::symbol_t *symbol_get_past_external_(ASR::symbol_t *f) {", 1)
+        self.emit("if (f->type == ASR::symbolType::ExternalSymbol) {", 2)
+        self.emit("ASR::ExternalSymbol_t *e = ASR::down_cast<ASR::ExternalSymbol_t>(f);", 3)
+        self.emit("LCOMPILERS_ASSERT(!ASR::is_a<ASR::ExternalSymbol_t>(*e->m_external));", 3)
+        self.emit("return e->m_external;", 3)
+        self.emit("} else {", 2)
+        self.emit("return f;", 3)
+        self.emit("}", 2)
+        self.emit("}", 1)
+        super(DefaultLookupNameVisitor, self).visitModule(mod)
+        self.emit("};")
+
+    def visitType(self, tp):
+        if not (isinstance(tp.value, asdl.Sum) and
+                is_simple_sum(tp.value)):
+            super(DefaultLookupNameVisitor, self).visitType(tp, tp.name)
+
+    def visitProduct(self, prod, name):
+        self.make_visitor(name, prod.fields)
+
+    def visitConstructor(self, cons, _):
+        self.make_visitor(cons.name, cons.fields)
+
+    def make_visitor(self, name, fields):
+        # if (test_loc_and_set_span(x.base.base.loc)) {
+        #     node_to_return = (ASR::asr_t*) &x;
+        # }
+        self.emit("void visit_%s(const %s_t &x) {" % (name, name), 1)
+        self.used = False
+        have_body = False
+        have_symbol = False
+        sym_field_name = ""
+        for field in fields:
+            if ( not have_symbol and field.type == "symbol" and field.seq == False):
+                have_symbol = True
+                sym_field_name = field.name
+            self.visitField(field)
+        if not self.used:
+            # Note: a better solution would be to change `&x` to `& /* x */`
+            # above, but we would need to change emit to return a string.
+            self.emit("if ((bool&)x) { } // Suppress unused warning", 2)
+        if name in products:
+            self.emit("if (test_loc_and_set_span(x.loc)) {", 2)
+        else:
+            self.emit("if (test_loc_and_set_span(x.base.base.loc)) {", 2)
+        if ( have_symbol and name != "Variable" ):
+            self.emit(f"self().handle_symbol(self().symbol_get_past_external_(x.m_{sym_field_name}));", 3)
+        else:
+            self.emit("node_to_return = (ASR::asr_t*) &x;", 3)
+        self.emit("}", 2)
+        self.emit("}", 1)
+
+    def visitField(self, field):
+        if (field.type not in asdl.builtin_types and
+            field.type not in self.data.simple_types):
+            level = 2
+            if field.seq:
+                self.used = True
+                self.emit("for (size_t i=0; i<x.n_%s; i++) {" % field.name, level)
+                if field.type in products:
+                    self.emit("    self().visit_%s(x.m_%s[i]);" % (field.type, field.name), level)
+
+                else:
+                    if field.type != "symbol":
+                        self.emit("    self().visit_%s(*x.m_%s[i]);" % (field.type, field.name), level)
+                self.emit("}", level)
+            else:
+                if field.type in products:
+                    self.used = True
+                    if field.opt:
+                        self.emit("if (x.m_%s)" % field.name, 2)
+                        level = 3
+                    if field.opt:
+                        self.emit("self().visit_%s(*x.m_%s);" % (field.type, field.name), level)
+                    else:
+                        self.emit("self().visit_%s(x.m_%s);" % (field.type, field.name), level)
+                else:
+                    if field.type != "symbol":
+                        self.used = True
+                        if field.opt:
+                            self.emit("if (x.m_%s)" % field.name, 2)
+                            level = 3
+                        self.emit("self().visit_%s(*x.m_%s);" % (field.type, field.name), level)
+        elif field.type == "symbol_table" and field.name in["symtab",
+                "global_scope"]:
+            self.used = True
+            self.emit("for (auto &a : x.m_%s->get_scope()) {" % field.name, 2)
+            self.emit(  "this->visit_symbol(*a.second);", 3)
+            self.emit("}", 2)
 
 class ASTWalkVisitorVisitor(ASDLVisitor):
 
@@ -2750,6 +2934,8 @@ visitors = [ASTNodeVisitor0, ASTNodeVisitor1, ASTNodeVisitor,
         ASTWalkVisitorVisitor, TreeVisitorVisitor, PickleVisitorVisitor,
         JsonVisitorVisitor, SerializationVisitorVisitor, DeserializationVisitorVisitor]
 
+asr_visitors = [DefaultLookupNameVisitor]
+
 
 def main(argv):
     if len(argv) == 3:
@@ -2788,6 +2974,10 @@ def main(argv):
         for visitor in visitors:
             visitor(fp, data).visit(mod)
             fp.write("\n\n")
+        if is_asr:
+            for visitor in asr_visitors:
+                visitor(fp, data).visit(mod)
+                fp.write("\n\n")
         if not is_asr:
             fp.write(FOOT % subs)
     finally:

@@ -856,6 +856,7 @@ public:
         {"random_init", {IntrinsicSignature({"repeatable", "image"}, 2, 2)}},
         {"random_seed", {IntrinsicSignature({"size", "put", "get"}, 0, 3)}},
         {"get_command", {IntrinsicSignature({"command", "length", "status"}, 0, 3)}},
+        {"get_command_argument", {IntrinsicSignature({"number", "value", "length", "status"}, 1, 4)}},
         {"get_environment_variable", {IntrinsicSignature({"name", "value", "length", "status", "trim_name"}, 1, 5)}},
         {"execute_command_line", {IntrinsicSignature({"command", "wait", "exitstat", "cmdstat", "cmdmsg"}, 1, 5)}},
         {"move_alloc", {IntrinsicSignature({"from", "to"}, 2, 2)}},
@@ -2993,7 +2994,7 @@ public:
                     if (!is_compile_time && ASR::is_a<ASR::Array_t>(*type)
                         && (ASR::is_a<ASR::IntegerConstant_t>(*tmp_init) || ASR::is_a<ASR::RealConstant_t>(*tmp_init)
                             || ASR::is_a<ASR::RealUnaryMinus_t>(*tmp_init) || ASR::is_a<ASR::IntegerUnaryMinus_t>(*tmp_init)
-                            || ASR::is_a<ASR::StringConstant_t>(*tmp_init))) {
+                            || ASR::is_a<ASR::StringConstant_t>(*tmp_init) || ASR::is_a<ASR::LogicalConstant_t>(*tmp_init))) {
                         /*
                             Case: integer :: x(2) = 1
                             which is equivalent to x(2) = [1,1]
@@ -3002,11 +3003,21 @@ public:
                         Vec<ASR::expr_t*> args;
                         args.reserve(al, size);
                         LCOMPILERS_ASSERT(tmp_init != nullptr)
+                        // in case of declaration like:
+                        // REAL :: x(2) = 1, we need to cast `tmp_init`
+                        ImplicitCastRules::set_converted_value(
+                            al, x.base.base.loc, &tmp_init,
+                            ASRUtils::expr_type(tmp_init),
+                            ASRUtils::type_get_past_allocatable(type)
+                        );
                         for (int64_t i = 0; i < size; i++) {
                             args.push_back(al, tmp_init);
                         }
-                        init_expr = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, init_expr->base.loc,
-                                    args.p, args.n, type, ASR::arraystorageType::ColMajor));
+                        init_expr = ASRUtils::expr_value(
+                            ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, init_expr->base.loc,
+                                args.p, args.n, type, ASR::arraystorageType::ColMajor))
+                        );
+                        LCOMPILERS_ASSERT(ASR::is_a<ASR::ArrayConstant_t>(*init_expr));
                         value = init_expr;
                     }
                     ASR::ttype_t *init_type = ASRUtils::expr_type(init_expr);
@@ -3014,13 +3025,14 @@ public:
                     size_t rhs_rank = ASRUtils::extract_n_dims_from_ttype(init_type);
                     size_t lhs_rank = ASRUtils::extract_n_dims_from_ttype(type);
 
-                    if( lhs_rank != rhs_rank ){
+                    // when lhs_rank > rhs_rank it can broadcast
+                    if( lhs_rank != rhs_rank && lhs_rank < rhs_rank ){
                         throw SemanticError("Incompatible ranks `"+ std::to_string(lhs_rank) + "` and `" 
                                                                   + std::to_string(rhs_rank) + "` in assignment",
                                             x.base.base.loc);
                     }
 
-                     if ( ASR::is_a<ASR::Array_t>(*init_type) && !ASR::is_a<ASR::ImpliedDoLoop_t>(*init_expr)){
+                     if ( ASR::is_a<ASR::Array_t>(*init_type) && ASR::is_a<ASR::ArrayReshape_t>(*init_expr) ){
                         ASR::Array_t* arr_rhs = ASR::down_cast<ASR::Array_t>(init_type);
                         ASR::Array_t* arr_lhs = ASR::down_cast<ASR::Array_t>(type);
                         
@@ -8473,7 +8485,7 @@ public:
                 if( ASR::is_a<ASR::ArraySection_t>(*ASRUtils::EXPR(tmp)) ) {
                     if( is_tmp_array ) {
                         throw SemanticError(
-                            "Two or more part references with non-zero rank must not be specified.", loc);
+                            "The expression with derived types contains two or more arrays.", loc);
                     }
                     is_tmp_array = true;
                 }
@@ -8487,7 +8499,7 @@ public:
             if( is_tmp_array ) {
                 if( ASRUtils::is_array(tmp2_mem_type) ) {
                     throw SemanticError(
-                            "Two or more part references with non-zero rank must not be specified.", loc);
+                            "The expression with derived types contains two or more arrays.", loc);
                 }
                 ASR::dimension_t* m_dims = nullptr;
                 int n_dims = ASRUtils::extract_dimensions_from_ttype(
@@ -8520,7 +8532,7 @@ public:
                 if(ASR::is_a<ASR::Variable_t>(*(tmp2_m_m_ext->m_external)) &&
                     ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable(ASRUtils::symbol_type(tmp2_m_m_ext->m_external)))){
                     if(array_found){
-                        throw SemanticError("Two or more part references with non-zero rank must not be specified.", loc);
+                        throw SemanticError("The expression with derived types contains two or more arrays.", loc);
                     }
                     array_found = true;
                     array_type = ASRUtils::duplicate_type(al,ASRUtils::symbol_type(tmp2->m_m));
@@ -8530,7 +8542,7 @@ public:
                 ASR::ttype_t* var_type = ASRUtils::expr_type(tmp2->m_v);
                 if(ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable(var_type))){
                     if(array_found){
-                        throw SemanticError("Two or more part references with non-zero rank must not be specified.", loc);
+                        throw SemanticError("The expression with derived types contains two or more arrays.", loc);
                     }
                     array_found = true;
                     array_type = ASRUtils::duplicate_type(al,var_type);
