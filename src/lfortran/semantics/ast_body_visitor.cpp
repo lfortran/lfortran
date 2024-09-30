@@ -3514,7 +3514,7 @@ public:
         Vec<ASR::do_loop_head_t> heads;  // Create a vector of loop heads
         heads.reserve(al,1);
         heads.push_back(al, head);
-        tmp = ASR::make_DoConcurrentLoop_t(al, x.base.base.loc, heads, 1, shared_expr.p, shared_expr.n, local_expr.p, local_expr.n, reductions.p, reductions.n, body.p,
+        tmp = ASR::make_DoConcurrentLoop_t(al, x.base.base.loc, heads, heads.n, shared_expr.p, shared_expr.n, local_expr.p, local_expr.n, reductions.p, reductions.n, body.p,
                 body.size());
     }
 
@@ -3830,9 +3830,9 @@ public:
                         }
                     }
                 }
-                Vec<ASR::do_loop_head_t> head;
+                Vec<ASR::do_loop_head_t> heads;
                 omp_constructs.push_back(ASR::down_cast2<ASR::DoConcurrentLoop_t>(
-                ASR::make_DoConcurrentLoop_t(al,loc, head, 1, m_shared.p,
+                ASR::make_DoConcurrentLoop_t(al,loc, heads, heads.n, m_shared.p,
                 m_shared.n, m_local.p, m_local.n, m_reduction.p, m_reduction.n, nullptr, 0)));
                 
             } else if ( strcmp(x.m_construct_name, "do") == 0 ) {
