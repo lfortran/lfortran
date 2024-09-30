@@ -4507,7 +4507,11 @@ public:
             arr_physical_type == ASR::array_physical_typeType::CharacterArraySinglePointer) {
             if( arr_physical_type == ASR::array_physical_typeType::FixedSizeArray ||
                 arr_physical_type == ASR::array_physical_typeType::CharacterArraySinglePointer) {
-                value_desc = llvm_utils->create_gep(value_desc, 0);
+                llvm::Type *val_type = llvm_utils->get_type_from_ttype_t_util(
+                    ASRUtils::type_get_past_allocatable(
+                    ASRUtils::type_get_past_pointer(value_array_type)),
+                    module.get());
+                value_desc = llvm_utils->create_gep2(val_type, value_desc, 0);
             }
             ASR::dimension_t* m_dims = nullptr;
             // Fill in m_dims:
@@ -4697,10 +4701,10 @@ public:
             step = llvm::ConstantInt::get(context,
                 llvm::APInt(32, 0));
         }
-        bool flag = str->getType()->getContainedType(0)->isPointerTy();
+        bool is_struct_instance_member = is_a<ASR::StructInstanceMember_t>(*ss->m_arg);
         llvm::Value *str2 = str;
-        if (flag) {
-            str2 = llvm_utils->CreateLoad(str2);
+        if (!is_struct_instance_member) {
+            str2 = llvm_utils->CreateLoad2(character_type, str2);
         }
         tmp = builder->CreateCall(fn, {str2, str_val, idx1, idx2, step, lp, rp});
         if (ASR::is_a<ASR::Var_t>(*ss->m_arg)) {
@@ -4710,8 +4714,8 @@ public:
                 return;
             }
         }
-        if (!flag) {
-            tmp = llvm_utils->CreateLoad(tmp);
+        if (is_struct_instance_member) {
+            tmp = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context), tmp);
         }
         builder->CreateStore(tmp, str);
         strings_to_be_deallocated.push_back(al, tmp);
