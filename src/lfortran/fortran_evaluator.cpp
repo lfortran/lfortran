@@ -18,7 +18,7 @@
 #include <lfortran/pickle.h>
 #include <libasr/pickle.h>
 #include <libasr/utils.h>
-#include "lfortran/semantics/asr_lookup_name.cpp"
+#include "libasr/asr_lookup_name.cpp"
 
 
 #ifdef HAVE_LFORTRAN_LLVM
