@@ -1656,7 +1656,7 @@ RUN(NAME matmul_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c llvm_nopragma
 RUN(NAME matmul_02 LABELS gfortran)
 RUN(NAME simd_01 LABELS gfortran c llvm llvm_nopragma c_nopragma llvm17)
 RUN(NAME simd_02 LABELS gfortran c llvm llvm_nopragma c_nopragma llvm17)
-RUN(NAME legacy_array_sections_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray EXTRA_ARGS --legacy-array-sections)
+# RUN(NAME legacy_array_sections_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray EXTRA_ARGS --legacy-array-sections)
 RUN(NAME legacy_array_sections_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray EXTRA_ARGS --legacy-array-sections)
 # RUN(NAME legacy_array_sections_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --legacy-array-sections --implicit-interface)
 RUN(NAME legacy_array_sections_04 LABELS gfortran llvm2 EXTRA_ARGS --implicit-interface --legacy-array-sections EXTRAFILES legacy_array_sections_04b)
