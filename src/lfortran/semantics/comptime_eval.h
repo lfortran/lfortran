@@ -83,7 +83,6 @@ struct IntrinsicProcedures {
             {"len_trim", {m_string, &not_implemented, false}},
 
             // Subroutines
-            {"cpu_time", {m_math, &not_implemented, false}},
             {"present", {m_builtin, &not_implemented, false}},
             {"system_clock", {m_math, &not_implemented, false}},
             {"srand", {m_math, &not_implemented, false}},

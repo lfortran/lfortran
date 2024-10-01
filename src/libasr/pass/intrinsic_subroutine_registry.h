@@ -26,6 +26,7 @@ inline std::string get_intrinsic_subroutine_name(int x) {
         INTRINSIC_SUBROUTINE_NAME_CASE(GetCommandArgument)
         INTRINSIC_SUBROUTINE_NAME_CASE(GetEnvironmentVariable)
         INTRINSIC_SUBROUTINE_NAME_CASE(ExecuteCommandLine)
+        INTRINSIC_SUBROUTINE_NAME_CASE(CpuTime)
         default : {
             throw LCompilersException("pickle: intrinsic_id not implemented");
         }
@@ -53,6 +54,8 @@ namespace IntrinsicImpureSubroutineRegistry {
             {&GetEnvironmentVariable::instantiate_GetEnvironmentVariable, &GetEnvironmentVariable::verify_args}},
         {static_cast<int64_t>(IntrinsicImpureSubroutines::ExecuteCommandLine),
             {&ExecuteCommandLine::instantiate_ExecuteCommandLine, &ExecuteCommandLine::verify_args}},
+        {static_cast<int64_t>(IntrinsicImpureSubroutines::CpuTime),
+            {&CpuTime::instantiate_CpuTime, &CpuTime::verify_args}},
     };
 
     static const std::map<int64_t, std::string>& intrinsic_subroutine_id_to_name = {
@@ -70,6 +73,8 @@ namespace IntrinsicImpureSubroutineRegistry {
             "get_environment_variable"},
         {static_cast<int64_t>(IntrinsicImpureSubroutines::ExecuteCommandLine),
             "execute_command_line"},
+        {static_cast<int64_t>(IntrinsicImpureSubroutines::CpuTime),
+            "cpu_time"},
     };
 
 
@@ -82,6 +87,7 @@ namespace IntrinsicImpureSubroutineRegistry {
                 {"get_command_argument", &GetCommandArgument::create_GetCommandArgument},
                 {"get_environment_variable", &GetEnvironmentVariable::create_GetEnvironmentVariable},
                 {"execute_command_line", &ExecuteCommandLine::create_ExecuteCommandLine},
+                {"cpu_time", &CpuTime::create_CpuTime},
     };
 
     static inline bool is_intrinsic_subroutine(const std::string& name) {
