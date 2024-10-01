@@ -9119,12 +9119,14 @@ public:
 
                 int dt_idx = name2memidx[ASRUtils::symbol_name(struct_sym)]
                     [ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(struct_mem->m_m))];
-                llvm::Value* dt_1 = llvm_utils->create_gep(
-                    llvm_utils->CreateLoad(llvm_utils->create_gep(dt, 1)), dt_idx);
+                llvm::Type *dt_type = llvm_utils->getStructType(caller->m_type,
+                    module.get());
+                llvm::Value* dt_1 = llvm_utils->create_gep2(dt_type,
+                    llvm_utils->CreateLoad2(dt_type->getPointerTo(), llvm_utils->create_gep(dt, 1)), dt_idx);
                 llvm::Value* class_ptr = llvm_utils->create_gep(dt_polymorphic, 1);
-                if (is_nested_pointer(dt_1)) {
-                    dt_1 = llvm_utils->CreateLoad(dt_1);
-                }
+                // if (is_nested_pointer(dt_1)) {
+                //     dt_1 = llvm_utils->CreateLoad(dt_1);
+                // }
                 builder->CreateStore(dt_1, class_ptr);
                 if (self_argument == nullptr) {
                     args.push_back(dt_polymorphic);
