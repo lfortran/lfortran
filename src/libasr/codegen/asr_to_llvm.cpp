@@ -2837,9 +2837,14 @@ public:
                 m_dims, n_dims, a_kind, module.get());
             llvm::Constant *ptr = module->getOrInsertGlobal(x.m_name,
                 x_ptr);
+            llvm::Type* type_ = llvm_utils->get_type_from_ttype_t_util(
+                ASRUtils::type_get_past_pointer(
+                ASRUtils::type_get_past_allocatable(x.m_type)),
+                module.get(), x.m_abi);
+#if LLVM_VERSION_MAJOR > 16
+            ptr_type[ptr] = type_;
+#endif
             if (ASRUtils::is_array(x.m_type)) { //memorize arrays only.
-                llvm::Type* type_ = llvm_utils->get_type_from_ttype_t_util(
-                           ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(x.m_type)), module.get(), x.m_abi);
                 allocatable_array_details.push_back({ptr,
                         type_,
                         x.m_type,
