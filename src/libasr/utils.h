@@ -90,6 +90,7 @@ struct CompilerOptions {
     bool no_warnings = false;
     bool disable_style = false;
     bool logical_casting = false;
+    bool logical_integer_casting = false;
     bool no_error_banner = false;
     bool enable_bounds_checking = false;
     std::string error_format = "human";

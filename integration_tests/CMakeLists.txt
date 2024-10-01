@@ -1139,6 +1139,8 @@ RUN(NAME logical3 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm llvm17)
 RUN(NAME logical4 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran llvm17)
 RUN(NAME logical_casting_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran llvm17
     EXTRA_ARGS --logical-casting)
+RUN(NAME logical_to_integer_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran llvm17
+EXTRA_ARGS --logical-integer-casting)
 
 RUN(NAME tsunami LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17)
 

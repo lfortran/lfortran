@@ -2985,6 +2985,23 @@ public:
                     }
 
                     ASR::expr_t* tmp_init = init_expr;
+                    if( ( type->type == ASR::ttypeType::Integer || 
+                       ( type->type == ASR::ttypeType::Array && ASRUtils::is_integer(*ASR::down_cast<ASR::Array_t>(type)->m_type) ) ) &&
+                        ASRUtils::expr_type(init_expr)->type == ASR::ttypeType::Logical ){
+                        // Case 1 : integer :: x = .false. ==> integer :: x = 0
+                        // Case 2 : integer :: x(5) = .true. ==> integer :: x(5) = 1
+                        if( !compiler_options.logical_integer_casting ){
+                            throw SemanticError("Type mismatch in assignment.\n Enable logical to integer casting by using `--logical-integer-casting`",
+                                        x.base.base.loc);
+                        }
+                        else {
+                        ASR::LogicalConstant_t *log_const = ASR::down_cast<ASR::LogicalConstant_t>(value);
+                        bool val = log_const->m_value;
+                        ASR::expr_t *int_const = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, log_const->base.base.loc,val, type));
+                        init_expr = int_const;
+                        value = ASRUtils::expr_value(init_expr);
+                        }
+                    }
                     if (value != nullptr) {
                         tmp_init = value;
                     }
@@ -3042,6 +3059,73 @@ public:
                             }
                         }
                    }
+                    if( ASRUtils::is_array(init_type) && ASRUtils::is_array(type) ){
+
+                        ASR::Array_t* arr_lhs = ASR::down_cast<ASR::Array_t>(type);
+                        ASR::Array_t* arr_rhs = ASR::down_cast<ASR::Array_t>(init_type);
+
+                        if( ASRUtils::is_integer(*arr_lhs->m_type) && ASRUtils::is_logical(*arr_rhs->m_type)){
+                            if( !compiler_options.logical_integer_casting ){
+                                    throw SemanticError("Type mismatch in assignment.\n Enable logical to integer casting by using `--logical-integer-casting`",
+                                    x.base.base.loc);
+                            } else {
+                                // if( arr_lhs->n_dims == 1 ){
+                                //     // Case : integer :: x(3) = [.true.,.false.,.true.] 
+                                //     int64_t size = ASRUtils::get_fixed_size_of_array(type);
+                                //     Vec<ASR::expr_t*> args;
+                                //     args.reserve(al, size);
+                                //     for (int64_t i = 0; i < size; i++) {
+                                //         ASR::expr_t *e = ASRUtils::fetch_ArrayConstant_value(al, arr_rhs, i);
+                                //         std::cout<<ASRUtils::extract_dim_value(tmp_init)<<std::endl;
+                                //         LCOMPILERS_ASSERT(tmp_init != nullptr)
+                                //         ASR::LogicalConstant_t *log_const = ASR::down_cast<ASR::LogicalConstant_t>(tmp_init);
+                                //         bool val = log_const->m_value;
+                                //         ASR::expr_t *int_const = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, log_const->base.base.loc,val, type));
+                                //         args.push_back(al, int_const);
+                                //     }
+                                //     init_expr = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, init_expr->base.loc,
+                                //                 args.p, args.n, type, ASR::arraystorageType::ColMajor));
+                                //     value = init_expr;
+                                //     init_type = ASRUtils::expr_type(init_expr);
+                                // }
+                                // else {
+                                    // Case : integer :: x(3,2) = reshape([.true.,.false.,.true.,.true,.false.,.true.],[3,2]) 
+                                    // Here for any dimensions we can have implicit casting from logical to integer.
+                                    ASR::expr_t* tmp_expr = init_expr;
+                                    Vec<ASR::expr_t*> args_arr;
+                                    args_arr.reserve(al, arr_rhs->n_dims); 
+                                    for(size_t i = 0; i <  arr_rhs->n_dims; i++){
+                                        Vec<ASR::expr_t*> args;
+                                        if( !ASRUtils::is_integer(*ASRUtils::expr_type(arr_rhs->m_dims[i].m_length)) ) break;
+                                        ASR::IntegerConstant_t *size_int = ASR::down_cast<ASR::IntegerConstant_t>(arr_rhs->m_dims[i].m_length);
+                                        
+                                        // std::cout<<ASRUtils::type_to_str(ASRUtils::expr_type(arr_rhs->m_dims[i].m_start + 1))<<" "<<ASRUtils::extract_dim_value(arr_rhs->m_dims[i].m_start + 1)<<std::endl;
+                                        int64_t size = size_int->m_n;
+                                        // std::cout<<size<<std::endl;
+                                        args.reserve(al, size); 
+                                        for (int64_t j = 0; j < size; j++) {
+                                            // if( ASR::is_a<ASR::LogicalConstant_t>(*(arr_rhs[i].m_dims[j].m_start)) ) {
+                                                ASR::LogicalConstant_t *log_const = ASR::down_cast<ASR::LogicalConstant_t>(arr_rhs->m_dims[0].m_start);
+                                                bool val = false;
+                                                ASR::expr_t *int_const = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, log_const->base.base.loc, val, type));
+                                                args.push_back(al, int_const);   
+                                            // }  else {
+                                            //     break;
+                                            // }                                     
+                                        }
+                                        tmp_expr = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, tmp_expr->base.loc,
+                                                    args.p, args.n, type, ASR::arraystorageType::ColMajor));
+                                        args_arr.push_back(al, tmp_expr);
+                                    }
+                                    init_expr = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, init_expr->base.loc,
+                                                args_arr.p, args_arr.n, type, ASR::arraystorageType::ColMajor));
+                                    value = init_expr;
+                                    init_type = ASRUtils::expr_type(init_expr);
+                                    arr_rhs = ASR::down_cast<ASR::Array_t>(init_type);
+                                    // std::cout<<ASRUtils::extract_n_dims_from_ttype(init_type)<<" "<<ASRUtils::type_to_str(arr_rhs->m_type)<<std::endl;
+                                }
+                            }
+                    }
                     if (init_type->type == ASR::ttypeType::Integer
                         && ASRUtils::type_get_past_array(ASRUtils::type_get_past_pointer(type))->type == ASR::ttypeType::Character
                         && s.m_sym == AST::symbolType::Asterisk) {

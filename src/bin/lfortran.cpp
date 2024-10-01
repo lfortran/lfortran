@@ -2186,6 +2186,7 @@ int main_app(int argc, char *argv[]) {
     app.add_flag("--static", static_link, "Create a static executable");
     app.add_flag("--shared", shared_link, "Create a shared executable");
     app.add_flag("--logical-casting", compiler_options.logical_casting, "Allow logical casting");
+    app.add_flag("--logical-integer-casting", compiler_options.logical_integer_casting, "Allow logical to integer casting");
     app.add_flag("--no-warnings", compiler_options.no_warnings, "Turn off all warnings");
     app.add_flag("--no-style-warnings", compiler_options.disable_style, "Turn off style suggestions");
     app.add_flag("--no-error-banner", compiler_options.no_error_banner, "Turn off error banner");
@@ -2293,6 +2294,7 @@ int main_app(int argc, char *argv[]) {
         compiler_options.implicit_interface = true;
         compiler_options.print_leading_space = true;
         compiler_options.logical_casting = false;
+        compiler_options.logical_integer_casting = false;
     } else if (arg_standard == "legacy") {
         // f23
         compiler_options.disable_style = true;
@@ -2301,6 +2303,7 @@ int main_app(int argc, char *argv[]) {
         compiler_options.implicit_interface = true;
         compiler_options.print_leading_space = true;
         compiler_options.logical_casting = false;
+        compiler_options.logical_integer_casting = false;
 
         // legacy options
         compiler_options.fixed_form = true;
