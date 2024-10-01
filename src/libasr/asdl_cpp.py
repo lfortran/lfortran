@@ -243,16 +243,8 @@ class ASTNodeVisitor(ASDLVisitor):
                 seq = " size_t n_%s; // Sequence" % f.name
             else:
                 seq = ""
-            if cons.name=="DoConcurrentLoop":
-                if f.type == "do_loop_head":
-                    self.emit("Vec<%s_t> m_%s;%s" % (f.type, f.name, seq), 2)
-                    args.append("Vec<%s_t>& a_%s" % (f.type, f.name))
-                else:
-                    self.emit("%s m_%s;%s" % (type_, f.name, seq), 2)
-                    args.append("%s a_%s" % (type_, f.name))
-            else:
-                self.emit("%s m_%s;%s" % (type_, f.name, seq), 2)
-                args.append("%s a_%s" % (type_, f.name))
+            self.emit("%s m_%s;%s" % (type_, f.name, seq), 2)
+            args.append("%s a_%s" % (type_, f.name))
             lines.append("n->m_%s = a_%s;" % (f.name, f.name))
             if f.name in ["global_scope", "symtab"]:
                 lines.append("a_%s->asr_owner = (asr_t*)n;" % (f.name))
@@ -1340,10 +1332,7 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
                 else:
                     self.emit("    m_%s.push_back(al, self().duplicate_%s(x->m_%s[i]));" % (field.name, field.type, field.name), level)
                 self.emit("}", level)
-                if field.type == "do_loop_head":
-                    arguments = ("m_" + field.name, "x->n_" + field.name)
-                else:
-                    arguments = ("m_" + field.name + ".p", "x->n_" + field.name)
+                arguments = ("m_" + field.name + ".p", "x->n_" + field.name)
             else:
                 if field.type == "symbol":
                     self.emit("%s_t* m_%s = x->m_%s;" % (field.type, field.name, field.name), level)
@@ -2552,12 +2541,8 @@ class DeserializationVisitorVisitor(ASDLVisitor):
                     else:
                         print(f.type)
                         assert False
-                if f.name == "head" and name=="DoConcurrentLoop":
-                    args.append("v_%s" % (f.name))
-                    args.append("n_head")
-                else:
-                    args.append("v_%s.p" % (f.name))
-                    args.append("v_%s.n" % (f.name))
+                args.append("v_%s.p" % (f.name))
+                args.append("v_%s.n" % (f.name))
             else:
                 # if builtin or simple types, handle appropriately
                 if f.type in asdl.builtin_types:
