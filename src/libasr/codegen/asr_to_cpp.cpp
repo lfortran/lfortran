@@ -663,6 +663,7 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
         std::string indent(indentation_level*indentation_spaces, ' ');
         std::string out = indent + "Kokkos::parallel_for(";
         out += "Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace>(";
+        LCOMPILERS_ASSERT(x.n_head == 1);
         visit_expr(*x.m_head[0].m_start);
         out += src + ", ";
         visit_expr(*x.m_head[0].m_end);
