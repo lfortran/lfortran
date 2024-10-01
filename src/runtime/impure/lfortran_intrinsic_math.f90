@@ -11,35 +11,7 @@ interface srand
     module procedure f_srand
 end interface
 
-interface cpu_time
-    module procedure sp_cpu_time, dp_cpu_time
-end interface
-
 contains
-
-! cpu_time ---------------------------------------------------------------------
-
-pure subroutine sp_cpu_time(t)
-real(dp), intent(out) :: t
-interface
-    pure subroutine c_d_cpu_time(t) bind(c, name="_lfortran_d_cpu_time")
-    import :: c_double
-    real(c_double), intent(out) :: t
-    end subroutine
-end interface
-call c_d_cpu_time(t)
-end subroutine
-
-pure subroutine dp_cpu_time(t)
-real(sp), intent(out) :: t
-interface
-    pure subroutine c_s_cpu_time(t) bind(c, name="_lfortran_s_cpu_time")
-    import :: c_float
-    real(c_float), intent(out) :: t
-    end subroutine
-end interface
-call c_s_cpu_time(t)
-end subroutine
 
 ! system_clock------------------------------------------------------------------
 
