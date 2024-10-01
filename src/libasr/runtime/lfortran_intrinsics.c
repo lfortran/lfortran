@@ -114,9 +114,10 @@ LFORTRAN_API void _lfortran_random_number(int n, double *v)
     }
 }
 
-LFORTRAN_API void _lfortran_init_random_seed(unsigned seed)
+LFORTRAN_API int _lfortran_init_random_seed(unsigned seed)
 {
     srand(seed);
+    return seed;
 }
 
 LFORTRAN_API void _lfortran_init_random_clock()
