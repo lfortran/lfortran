@@ -1443,7 +1443,7 @@
                                                     Default
                                                     (Array
                                                         (Real 8)
-                                                        [(()
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
                                                         ())]
                                                         PointerToDataArray
                                                     )
@@ -1491,7 +1491,7 @@
                                         [(Integer 4)
                                         (Array
                                             (Real 8)
-                                            [(()
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
                                             ())]
                                             PointerToDataArray
                                         )]
@@ -2027,7 +2027,7 @@
                                                     Default
                                                     (Array
                                                         (Real 4)
-                                                        [(()
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
                                                         ())]
                                                         PointerToDataArray
                                                     )
@@ -2075,7 +2075,7 @@
                                         [(Integer 4)
                                         (Array
                                             (Real 4)
-                                            [(()
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
                                             ())]
                                             PointerToDataArray
                                         )]
@@ -2211,7 +2211,7 @@
                                                     Default
                                                     (Array
                                                         (Integer 4)
-                                                        [(()
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
                                                         ())]
                                                         PointerToDataArray
                                                     )
@@ -2259,7 +2259,7 @@
                                         [(Integer 4)
                                         (Array
                                             (Integer 4)
-                                            [(()
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
                                             ())]
                                             PointerToDataArray
                                         )]

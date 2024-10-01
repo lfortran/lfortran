@@ -1365,7 +1365,13 @@ public:
                 this->visit_expr(*m_dim[i].m_start);
                 dim.m_start = ASRUtils::EXPR(tmp);
             } else {
-                dim.m_start = nullptr;
+                if (m_dim[i].m_end_star == AST::dimension_typeType::DimensionStar && !is_char_type) {
+                    ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, dim.loc, compiler_options.po.default_integer_kind));
+                    ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, dim.loc, 1, int_type));
+                    dim.m_start = one;
+                } else {
+                    dim.m_start = nullptr;
+                }
             }
             if (m_dim[i].m_end) {
                 this->visit_expr(*m_dim[i].m_end);
@@ -2808,7 +2814,7 @@ public:
                         );
                         dims.n = 0;
                     }
-                    if (s.m_dim[0].m_end_star == AST::dimension_typeType::DimensionStar) {
+                    if (s.m_dim[s.n_dim - 1].m_end_star == AST::dimension_typeType::DimensionStar) {
                         is_dimension_star = true;
                     }
                     process_dims(al, dims, s.m_dim, s.n_dim, is_compile_time, is_char_type,

@@ -39,9 +39,9 @@
                                                     Default
                                                     (Array
                                                         (Real 8)
-                                                        [(()
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
                                                         ())]
-                                                        DescriptorArray
+                                                        UnboundedPointerToDataArray
                                                     )
                                                     ()
                                                     Source
@@ -54,9 +54,9 @@
                                     (FunctionType
                                         [(Array
                                             (Real 8)
-                                            [(()
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
                                             ())]
-                                            DescriptorArray
+                                            UnboundedPointerToDataArray
                                         )]
                                         (Real 8)
                                         Source
@@ -114,12 +114,12 @@
                                         [((ArrayPhysicalCast
                                             (Var 5 w)
                                             FixedSizeArray
-                                            DescriptorArray
+                                            UnboundedPointerToDataArray
                                             (Array
                                                 (Real 8)
                                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                                 (IntegerConstant 2 (Integer 4) Decimal))]
-                                                DescriptorArray
+                                                UnboundedPointerToDataArray
                                             )
                                             ()
                                         ))]
@@ -193,9 +193,9 @@
                                     Default
                                     (Array
                                         (Real 8)
-                                        [(()
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
                                         ())]
-                                        DescriptorArray
+                                        UnboundedPointerToDataArray
                                     )
                                     ()
                                     Source
@@ -208,9 +208,9 @@
                     (FunctionType
                         [(Array
                             (Real 8)
-                            [(()
+                            [((IntegerConstant 1 (Integer 4) Decimal)
                             ())]
-                            DescriptorArray
+                            UnboundedPointerToDataArray
                         )]
                         (Real 8)
                         Source
@@ -309,9 +309,9 @@
                                     Default
                                     (Array
                                         (Real 8)
-                                        [(()
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
                                         ())]
-                                        DescriptorArray
+                                        UnboundedPointerToDataArray
                                     )
                                     ()
                                     Source
@@ -325,9 +325,9 @@
                         [(Integer 4)
                         (Array
                             (Real 8)
-                            [(()
+                            [((IntegerConstant 1 (Integer 4) Decimal)
                             ())]
-                            DescriptorArray
+                            UnboundedPointerToDataArray
                         )]
                         (Real 8)
                         Source
