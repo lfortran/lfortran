@@ -986,6 +986,24 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                 call_arg.loc = array_var_temporary->base.loc;
                 call_arg.m_value = array_var_temporary;
                 x_m_args_vec.push_back(al, call_arg);
+            } else if( x_m_args[i].m_value &&
+                       ASRUtils::is_struct(*ASRUtils::expr_type(x_m_args[i].m_value)) &&
+                       !ASR::is_a<ASR::Var_t>(
+                            *ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value)) ) {
+                ASR::expr_t* struct_var_temporary = create_and_allocate_temporary_variable_for_struct(
+                    ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value), name_hint, al, current_body,
+                    current_scope, exprs_with_target);
+                if( ASR::is_a<ASR::ArrayPhysicalCast_t>(*x_m_args[i].m_value) ) {
+                    ASR::ArrayPhysicalCast_t* x_m_args_i = ASR::down_cast<ASR::ArrayPhysicalCast_t>(x_m_args[i].m_value);
+                    struct_var_temporary = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
+                        al, struct_var_temporary->base.loc, struct_var_temporary,
+                        ASRUtils::extract_physical_type(ASRUtils::expr_type(struct_var_temporary)),
+                        x_m_args_i->m_new, x_m_args_i->m_type, nullptr));
+                }
+                ASR::call_arg_t struct_var_temporary_arg;
+                struct_var_temporary_arg.loc = struct_var_temporary->base.loc;
+                struct_var_temporary_arg.m_value = struct_var_temporary;
+                x_m_args_vec.push_back(al, struct_var_temporary_arg);
             } else {
                 x_m_args_vec.push_back(al, x_m_args[i]);
             }
