@@ -561,7 +561,9 @@ namespace LCompilers {
         }
 
         llvm::Value* SimpleCMODescriptor::get_pointer_to_data(llvm::Value* arr) {
-            return llvm_utils->create_gep(arr, 0);
+            llvm::Type *i32 = llvm::Type::getInt32Ty(context);
+            llvm::Type *ty = arr->getType();
+            return llvm_utils->create_gep2(i32, arr, 0);
         }
 
         llvm::Value* SimpleCMODescriptor::get_offset(llvm::Value* arr, bool load) {
