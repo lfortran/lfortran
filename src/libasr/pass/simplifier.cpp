@@ -1763,11 +1763,24 @@ class TransformVariableInitialiser:
     }
 
     void visit_Variable(const ASR::Variable_t &x) {
-        if( (check_if_ASR_owner_is_module(x.m_parent_symtab->asr_owner)) ||
+        ASR::expr_t* value = x.m_value ? x.m_value : x.m_symbolic_value;
+        // TODO: StructType expressions aren't evaluated at compile time
+        // currently, see: https://github.com/lfortran/lfortran/issues/4909
+        if ((check_if_ASR_owner_is_module(x.m_parent_symtab->asr_owner)) ||
             (check_if_ASR_owner_is_enum(x.m_parent_symtab->asr_owner)) ||
             (check_if_ASR_owner_is_struct(x.m_parent_symtab->asr_owner)) ||
-            x.m_storage == ASR::storage_typeType::Parameter ) {
-            return ;
+            ( x.m_storage == ASR::storage_typeType::Parameter &&
+                // this condition ensures that currently constants
+                // not evaluated at compile time like
+                // real(4), parameter :: z(1) = [x % y]
+                // are converted to an assignment for now
+                ASRUtils::is_value_constant(value) &&
+                !ASR::is_a<ASR::StructType_t>(
+                    *ASRUtils::type_get_past_array_pointer_allocatable(ASRUtils::expr_type(value))
+                )
+            )
+        ) {
+            return;
         }
 
         const Location& loc = x.base.base.loc;
@@ -1777,7 +1790,7 @@ class TransformVariableInitialiser:
         }
 
         ASR::Variable_t& xx = const_cast<ASR::Variable_t&>(x);
-        if( x.m_symbolic_value) {
+        if (value) {
             if( symtab2decls.find(x.m_parent_symtab) == symtab2decls.end() ) {
                 Vec<ASR::stmt_t*> result_vec; result_vec.reserve(al, 1);
                 symtab2decls[x.m_parent_symtab] = result_vec;

@@ -1301,7 +1301,7 @@ RUN(NAME nested_vars1 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm c llvm1
 RUN(NAME nested_vars2 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm c llvm17)
 RUN(NAME nested_vars3 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm c llvm17)
 
-# RUN(NAME nbody LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17)
+RUN(NAME nbody LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17)
 
 RUN(NAME intent_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17)
 
