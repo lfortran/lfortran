@@ -361,7 +361,83 @@ class DefaultLookupNameVisitor(ASDLVisitor):
         self.emit("}", 2)
         self.emit("return false;", 2)
         self.emit("}", 1)
-
+        self.emit("void handle_symbol(const symbol_t* sym) {", 1)
+        self.emit("switch(sym->type) {", 2)
+        self.emit("case ASR::symbolType::Program: {", 3)
+        self.emit("node_to_return = ( ASR::asr_t* ) ((Program_t*)sym);", 4)
+        self.emit("return;", 4)
+        self.emit("}", 3)
+        self.emit("case ASR::symbolType::Module: {", 3)
+        self.emit("node_to_return = ( ASR::asr_t* ) ((Module_t*)sym);", 4)
+        self.emit("return;", 4)
+        self.emit("}", 3)
+        self.emit("case ASR::symbolType::Function: {", 3)
+        self.emit("node_to_return = ( ASR::asr_t* ) ((Function_t*)sym);", 4)
+        self.emit("return;", 4)
+        self.emit("}", 3)
+        self.emit("case ASR::symbolType::GenericProcedure: {", 3)
+        self.emit("node_to_return = ( ASR::asr_t* ) ((GenericProcedure_t*)sym);", 4)
+        self.emit("return;", 4)
+        self.emit("}", 3)
+        self.emit("case ASR::symbolType::CustomOperator: {", 3)
+        self.emit("node_to_return = ( ASR::asr_t* ) ((CustomOperator_t*)sym);", 4)
+        self.emit("return;", 4)
+        self.emit("}", 3)
+        self.emit("case ASR::symbolType::ExternalSymbol: {", 3)
+        self.emit("node_to_return = ( ASR::asr_t* ) ((ExternalSymbol_t*)sym);", 4)
+        self.emit("return;", 4)
+        self.emit("}", 3)
+        self.emit("case ASR::symbolType::Struct: {", 3)
+        self.emit("node_to_return = ( ASR::asr_t* ) ((Struct_t*)sym);", 4)
+        self.emit("return;", 4)
+        self.emit("}", 3)
+        self.emit("case ASR::symbolType::Enum: {", 3)
+        self.emit("node_to_return = ( ASR::asr_t* ) ((Enum_t*)sym);", 4)
+        self.emit("return;", 4)
+        self.emit("}", 3)
+        self.emit("case ASR::symbolType::UnionType: {", 3)
+        self.emit("node_to_return = ( ASR::asr_t* ) ((UnionType_t*)sym);", 4)
+        self.emit("return;", 4)
+        self.emit("}", 3)
+        self.emit("case ASR::symbolType::Variable: {", 3)
+        self.emit("node_to_return = ( ASR::asr_t* ) ((Variable_t*)sym);", 4)
+        self.emit("return;", 4)
+        self.emit("}", 3)
+        self.emit("case ASR::symbolType::Class: {", 3)
+        self.emit("node_to_return = ( ASR::asr_t* ) ((Class_t*)sym);", 4)
+        self.emit("return;", 4)
+        self.emit("}", 3)
+        self.emit("case ASR::symbolType::ClassProcedure: {", 3)
+        self.emit("node_to_return = ( ASR::asr_t* ) ((ClassProcedure_t*)sym);", 4)
+        self.emit("return;", 4)
+        self.emit("}", 3)
+        self.emit("case ASR::symbolType::AssociateBlock: {", 3)
+        self.emit("node_to_return = ( ASR::asr_t* ) ((AssociateBlock_t*)sym);", 4)
+        self.emit("return;", 4)
+        self.emit("}", 3)
+        self.emit("case ASR::symbolType::Block: {", 3)
+        self.emit("node_to_return = ( ASR::asr_t* ) ((Block_t*)sym);", 4)
+        self.emit("return;", 4)
+        self.emit("}", 3)
+        self.emit("case ASR::symbolType::Requirement: {", 3)
+        self.emit("node_to_return = ( ASR::asr_t* ) ((Requirement_t*)sym);", 4)
+        self.emit("return;", 4)
+        self.emit("}", 3)
+        self.emit("case ASR::symbolType::Template: {", 3)
+        self.emit("node_to_return = ( ASR::asr_t* ) ((Template_t*)sym);", 4)
+        self.emit("return;", 4)
+        self.emit("}", 3)
+        self.emit("}", 2)
+        self.emit("}", 1)
+        self.emit("static inline const ASR::symbol_t *symbol_get_past_external_(ASR::symbol_t *f) {", 1)
+        self.emit("if (f->type == ASR::symbolType::ExternalSymbol) {", 2)
+        self.emit("ASR::ExternalSymbol_t *e = ASR::down_cast<ASR::ExternalSymbol_t>(f);", 3)
+        self.emit("LCOMPILERS_ASSERT(!ASR::is_a<ASR::ExternalSymbol_t>(*e->m_external));", 3)
+        self.emit("return e->m_external;", 3)
+        self.emit("} else {", 2)
+        self.emit("return f;", 3)
+        self.emit("}", 2)
+        self.emit("}", 1)
         super(DefaultLookupNameVisitor, self).visitModule(mod)
         self.emit("};")
 
@@ -383,7 +459,12 @@ class DefaultLookupNameVisitor(ASDLVisitor):
         self.emit("void visit_%s(const %s_t &x) {" % (name, name), 1)
         self.used = False
         have_body = False
+        have_symbol = False
+        sym_field_name = ""
         for field in fields:
+            if ( not have_symbol and field.type == "symbol" and field.seq == False):
+                have_symbol = True
+                sym_field_name = field.name
             self.visitField(field)
         if not self.used:
             # Note: a better solution would be to change `&x` to `& /* x */`
@@ -393,7 +474,10 @@ class DefaultLookupNameVisitor(ASDLVisitor):
             self.emit("if (test_loc_and_set_span(x.loc)) {", 2)
         else:
             self.emit("if (test_loc_and_set_span(x.base.base.loc)) {", 2)
-        self.emit("node_to_return = (ASR::asr_t*) &x;", 3)
+        if ( have_symbol and name != "Variable" ):
+            self.emit(f"self().handle_symbol(self().symbol_get_past_external_(x.m_{sym_field_name}));", 3)
+        else:
+            self.emit("node_to_return = (ASR::asr_t*) &x;", 3)
         self.emit("}", 2)
         self.emit("}", 1)
 
@@ -1193,7 +1277,8 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
                 if (field.type != "call_arg" and
                     field.type != "array_index" and
                     field.type != "alloc_arg" and
-                    field.type != "dimension"):
+                    field.type != "dimension" and
+                    field.type != "do_loop_head"):
                     pointer_char = '*'
                 self.emit("Vec<%s_t%s> m_%s;" % (field.type, pointer_char, field.name), level)
                 self.emit("m_%s.reserve(al, x->n_%s);" % (field.name, field.name), level)
@@ -1236,6 +1321,14 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
                     self.emit("    dim_copy.m_start = self().duplicate_expr(x->m_%s[i].m_start);"%(field.name), level)
                     self.emit("    dim_copy.m_length = self().duplicate_expr(x->m_%s[i].m_length);"%(field.name), level)
                     self.emit("    m_%s.push_back(al, dim_copy);" % (field.name), level)
+                elif field.type == "do_loop_head":
+                    self.emit("    ASR::do_loop_head_t head;", level)
+                    self.emit("    head.loc = x->m_head[i].loc;", level)
+                    self.emit("    head.m_v = duplicate_expr(x->m_head[i].m_v);", level)
+                    self.emit("    head.m_start = duplicate_expr(x->m_head[i].m_start);", level)
+                    self.emit("    head.m_end = duplicate_expr(x->m_head[i].m_end);", level)
+                    self.emit("    head.m_increment = duplicate_expr(x->m_head[i].m_increment);", level) 
+                    self.emit("    m_%s.push_back(al, head);" % (field.name), level)
                 else:
                     self.emit("    m_%s.push_back(al, self().duplicate_%s(x->m_%s[i]));" % (field.name, field.type, field.name), level)
                 self.emit("}", level)
@@ -2828,7 +2921,9 @@ FOOT = r"""} // namespace LCompilers::%(MOD)s
 visitors = [ASTNodeVisitor0, ASTNodeVisitor1, ASTNodeVisitor,
         ASTVisitorVisitor1, ASTVisitorVisitor1b, ASTVisitorVisitor2,
         ASTWalkVisitorVisitor, TreeVisitorVisitor, PickleVisitorVisitor,
-        JsonVisitorVisitor, SerializationVisitorVisitor, DeserializationVisitorVisitor, DefaultLookupNameVisitor]
+        JsonVisitorVisitor, SerializationVisitorVisitor, DeserializationVisitorVisitor]
+
+asr_visitors = [DefaultLookupNameVisitor]
 
 
 def main(argv):
@@ -2868,6 +2963,10 @@ def main(argv):
         for visitor in visitors:
             visitor(fp, data).visit(mod)
             fp.write("\n\n")
+        if is_asr:
+            for visitor in asr_visitors:
+                visitor(fp, data).visit(mod)
+                fp.write("\n\n")
         if not is_asr:
             fp.write(FOOT % subs)
     finally:

@@ -1,0 +1,5 @@
+semantic error: Type mismatch in argument at argument (1); passed `real` to `integer`.
+ --> tests/errors/func_parameter_type.f90:2:14
+  |
+2 |   print *, f(42.9)
+  |              ^^^^ 
