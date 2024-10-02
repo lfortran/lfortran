@@ -28,6 +28,7 @@ enum class IntrinsicImpureSubroutines : int64_t {
     GetCommandArgument,
     CpuTime,
     Srand,
+    SystemClock,
     // ...
 };
 
@@ -427,6 +428,89 @@ namespace GetCommandArgument {
     }
     
 } // namespace GetCommandArgument
+
+namespace SystemClock {
+
+    static inline void verify_args(const ASR::IntrinsicImpureSubroutine_t& x, diag::Diagnostics& diagnostics) {
+        if (x.n_args > 0) {
+            ASRUtils::require_impl(ASRUtils::is_integer(*ASRUtils::expr_type(x.m_args[0])), "`count` argument must be of integer type", x.base.base.loc, diagnostics);
+        }
+        if (x.n_args > 1) {
+            ASRUtils::require_impl(ASRUtils::is_integer(*ASRUtils::expr_type(x.m_args[1])) || ASRUtils::is_real(*ASRUtils::expr_type(x.m_args[1])), "`count_rate` argument must be of integer or real type", x.base.base.loc, diagnostics);
+        }
+        if (x.n_args > 2) {
+            ASRUtils::require_impl(ASRUtils::is_integer(*ASRUtils::expr_type(x.m_args[2])), "`count_max` argument must be of integer type", x.base.base.loc, diagnostics);
+        } 
+        if (x.n_args > 3) {
+            ASRUtils::require_impl(false, "Unexpected number of args, system_clock takes atmost 3 arguments, found " + std::to_string(x.n_args), x.base.base.loc, diagnostics);
+        }
+    }
+
+    static inline ASR::asr_t* create_SystemClock(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
+        Vec<ASR::expr_t*> m_args; m_args.reserve(al, args.size());
+        m_args.push_back(al, args[0]);
+        for (int i = 1; i < int(args.size()); i++) {
+            if(args[i]) m_args.push_back(al, args[i]);
+        }
+        return ASR::make_IntrinsicImpureSubroutine_t(al, loc, static_cast<int64_t>(IntrinsicImpureSubroutines::SystemClock), m_args.p, m_args.n, 0);
+    }
+
+    static inline ASR::stmt_t* instantiate_SystemClock(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+
+        std::string c_func_name_1 = "_lfortran_i32sys_clock_count";
+        std::string c_func_name_2 = "_lfortran_i32sys_clock_count_rate";
+        std::string c_func_name_3 = "_lfortran_i32sys_clock_count_max";
+        std::string new_name = "_lcompilers_get_command_";
+        declare_basic_variables(new_name);
+        Vec<ASR::expr_t*> call_args; call_args.reserve(al, 0);
+
+        if (arg_types.size() > 0) {
+            if (ASRUtils::extract_kind_from_ttype_t(arg_types[0]) == 8) {
+                c_func_name_1 = "_lfortran_i64sys_clock_count";
+            }
+            fill_func_arg_sub("count", arg_types[0], InOut);
+            ASR::symbol_t *s_1 = b.create_c_func_subroutines(c_func_name_1, fn_symtab, 0, arg_types[0]);
+            fn_symtab->add_symbol(c_func_name_1, s_1);
+            dep.push_back(al, s2c(al, c_func_name_1));
+            body.push_back(al, b.Assignment(args[0], b.Call(s_1, call_args, arg_types[0])));
+
+        }
+        if (arg_types.size() > 1) {
+            if (ASRUtils::extract_kind_from_ttype_t(arg_types[1]) == 8) {
+                if (is_real(*arg_types[1])) {
+                    c_func_name_2 = "_lfortran_i64r64sys_clock_count_rate";
+                } else {
+                    c_func_name_2 = "_lfortran_i64sys_clock_count_rate";
+                }
+            } else if (is_real(*arg_types[1])) {
+                c_func_name_2 = "_lfortran_i32r32sys_clock_count_rate";
+            }
+            fill_func_arg_sub("count_rate", arg_types[1], InOut);
+            ASR::symbol_t *s_2 = b.create_c_func_subroutines(c_func_name_2, fn_symtab, 0, arg_types[1]);
+            fn_symtab->add_symbol(c_func_name_2, s_2);
+            dep.push_back(al, s2c(al, c_func_name_2));
+            body.push_back(al, b.Assignment(args[1], b.Call(s_2, call_args, arg_types[1])));
+        }
+        if (arg_types.size() > 2) {
+            if (ASRUtils::extract_kind_from_ttype_t(arg_types[2]) == 8) {
+                c_func_name_3 = "_lfortran_i64sys_clock_count_max";
+            }
+            fill_func_arg_sub("count_max", arg_types[2], InOut);
+            ASR::symbol_t *s_3 = b.create_c_func_subroutines(c_func_name_3, fn_symtab, 0, arg_types[2]);
+            fn_symtab->add_symbol(c_func_name_3, s_3);
+            dep.push_back(al, s2c(al, c_func_name_3));
+            body.push_back(al, b.Assignment(args[2], b.Call(s_3, call_args, arg_types[2])));
+        }
+
+        ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, nullptr, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, new_symbol);
+        return b.SubroutineCall(new_symbol, new_args);
+    }
+    
+} // namespace SystemClock
 
 namespace GetEnvironmentVariable {
 
