@@ -4916,24 +4916,30 @@ public:
                 }
 
                 if( is_compile_time ){
-                    // when lhs_rank > rhs_rank it can broadcast
-                    if( lhs_rank != rhs_rank && lhs_rank < rhs_rank ){
-                        throw SemanticError("Incompatible rank `"+ std::to_string(lhs_rank) + 
-                                    "` array passed in function which expects rank `" + std::to_string(rhs_rank) + "`." ,
-                                            args.p[i].loc);
-                    }
-
                     if ( ASR::is_a<ASR::Array_t>(*arg_type) && ASR::is_a<ASR::Array_t>(*orig_arg_type) ){
                         ASR::Array_t* arr_rhs = ASR::down_cast<ASR::Array_t>(orig_arg_type);
                         ASR::Array_t* arr_lhs = ASR::down_cast<ASR::Array_t>(arg_type);
-                            
+                        int lhs_ele = 1;
+                        int rhs_ele = 1;
                         for (size_t i = 0; i < arr_rhs->n_dims; i++) {
-                            std::string lhs_dim = ASRUtils::extract_dim_value(arr_lhs->m_dims[i].m_length);
                             std::string rhs_dim = ASRUtils::extract_dim_value(arr_rhs->m_dims[i].m_length);
-                            if(lhs_dim!=":" && rhs_dim!=":" && std::stoi(lhs_dim) < std::stoi(rhs_dim) ){
-                                throw SemanticError("Incompatible shape of array passed in argument " + std::to_string(i+1) +
-                                " (" + lhs_dim + " and " + rhs_dim + ")", args.p[i].loc);
+                            if(rhs_dim!=":"){
+                                rhs_ele*=std::stoi(rhs_dim);
                             }
+                        }
+                        for (size_t i = 0; i < arr_lhs->n_dims; i++) {
+                            std::string lhs_dim = ASRUtils::extract_dim_value(arr_lhs->m_dims[i].m_length);
+                            if(lhs_dim!=":"){
+                                lhs_ele*=std::stoi(lhs_dim);
+                            }
+                            else{
+                                lhs_ele = rhs_ele;
+                                break;
+                            }
+                        }
+                        if( lhs_ele < rhs_ele ){
+                            throw SemanticError("Array Passed in function Cannot be sliced into dimensions declared in the function.",
+                            args.p[i].loc);
                         }
                     }
                 }

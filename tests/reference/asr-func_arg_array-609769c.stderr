@@ -1,4 +1,4 @@
-semantic error: Incompatible rank `2` array passed in function which expects rank `3`.
+semantic error: Array Passed in function Cannot be sliced into dimensions declared in the function.
  --> tests/errors/func_arg_array.f90:4:14
   |
 4 |     i = temp(myArray)
