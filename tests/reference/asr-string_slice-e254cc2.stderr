@@ -1,4 +1,4 @@
-semantic error: Substring `start` is less than one
+semantic error: Substring `start` is negative
  --> tests/errors/string_slice.f90:4:13
   |
 4 |     print*, s(-2:6)
