@@ -2,12 +2,12 @@
     "basename": "asr-func_arg_array-609769c",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/errors/func_arg_array.f90",
-    "infile_hash": "f673ab43128424f50557ce06f2aa2424f8b1f119f84da7c07e8cd85d",
+    "infile_hash": "585115ceaab8814376b2532bf714e97b7bfe97787c158d257d79b778",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
     "stderr": "asr-func_arg_array-609769c.stderr",
-    "stderr_hash": "83deb3db6f5fffbc372738b46861eabe16baa6e50c0097b34103cdc7",
+    "stderr_hash": "15944c32a8efe94fb927d0cec1878c961004aa691452d1ecd6398a95",
     "returncode": 2
 }
