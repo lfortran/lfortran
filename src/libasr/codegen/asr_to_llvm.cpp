@@ -5296,7 +5296,7 @@ public:
         } else if(
             m_new == ASR::array_physical_typeType::FixedSizeArray &&
             m_old == ASR::array_physical_typeType::DescriptorArray) {
-            tmp = llvm_utils->CreateLoad(arr_descr->get_pointer_to_data(tmp));
+            tmp = llvm_utils->CreateLoad2(data_type->getPointerTo(), arr_descr->get_pointer_to_data(tmp));
             llvm::Type* target_type = llvm_utils->get_type_from_ttype_t_util(m_type, module.get())->getPointerTo();
             tmp = builder->CreateBitCast(tmp, target_type);
         } else if(
@@ -6263,7 +6263,7 @@ public:
             target = llvm_utils->CreateLoad2(type, target);
         }
         if (ASR::is_a<ASR::ArrayItem_t>(*(x.m_source))) {
-            source = llvm_utils->CreateLoad(source);
+            source = llvm_utils->CreateLoad2(type, source);
         }
         llvm::Value *ftarget = builder->CreateSIToFP(target,
                 type);
