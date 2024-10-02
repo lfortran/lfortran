@@ -154,7 +154,7 @@ namespace RandomSeed {
 
 namespace Srand {
 
-    static inline void verify_args(const ASR::IntrinsicImpureSubroutine_t& x, diag::Diagnostics& diagnostics) {
+    static inline void verify_args( ASR::IntrinsicImpureSubroutine_t& x, diag::Diagnostics& diagnostics) {
         ASRUtils::require_impl(x.n_args == 1, "srand takes 1 argument only", x.base.base.loc, diagnostics);
         if (x.n_args == 1) {
             ASRUtils::require_impl(ASRUtils::is_integer(*ASRUtils::expr_type(x.m_args[0])), "Arguments to srand must be of integer type", x.base.base.loc, diagnostics);
