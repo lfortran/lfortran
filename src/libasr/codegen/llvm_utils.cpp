@@ -2097,6 +2097,9 @@ namespace LCompilers {
                 if( ASR::is_a<ASR::Character_t>(*alloc_type->m_type) ) {
                     lfortran_str_copy(dest, src, true, *module, *builder, context);
                 } else {
+                    if( ASRUtils::is_array(alloc_type->m_type) ) {
+                        src = builder->CreateLoad(src);
+                    }
                     LLVM::CreateStore(*builder, src, dest);
                 }
                 break;
