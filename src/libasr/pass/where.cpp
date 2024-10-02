@@ -77,11 +77,11 @@ public:
     }
 
     #define BinOpReplacement(Constructor) ASR::expr_t** current_expr_copy = current_expr; \
-        current_expr = const_cast<ASR::expr_t**>(&(x->m_left)); \
+        current_expr = &(x->m_left); \
         this->replace_expr(x->m_left); \
         ASR::expr_t* left = *current_expr; \
         current_expr = current_expr_copy; \
-        current_expr = const_cast<ASR::expr_t**>(&(x->m_right)); \
+        current_expr = &(x->m_right); \
         this->replace_expr(x->m_right); \
         ASR::expr_t* right = *current_expr; \
         current_expr = current_expr_copy; \
@@ -101,7 +101,7 @@ public:
         args.reserve(al, x->n_args);
         for (size_t i=0; i<x->n_args; i++) {
             ASR::expr_t* arg = x->m_args[i];
-            current_expr = const_cast<ASR::expr_t**>(&(arg));
+            current_expr = &(arg);
             this->replace_expr(arg);
             args.push_back(al, *current_expr);
         }
@@ -165,12 +165,12 @@ public:
             return;
         }
         ASR::expr_t** current_expr_copy = current_expr;
-        current_expr = const_cast<ASR::expr_t**>(&(x.m_target));
+        current_expr = &(x.m_target);
         this->call_replacer_(assignment_hash[h]);
         ASR::expr_t* target = *replacer.current_expr;
         current_expr = current_expr_copy;
         this->visit_expr(*x.m_target);
-        current_expr = const_cast<ASR::expr_t**>(&(x.m_value));
+        current_expr = &(x.m_value);
         this->call_replacer_(assignment_hash[h]);
         ASR::expr_t* value = *replacer.current_expr;
         current_expr = current_expr_copy;
@@ -420,7 +420,6 @@ public:
         return ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr, head, do_loop_body.p, do_loop_body.size(), nullptr, 0));
     }
     void visit_Where( ASR::Where_t& x) {
-        ASR::Where_t& xx = const_cast<ASR::Where_t&>(x);
         Location loc = x.base.base.loc;
         ASR::expr_t* test = x.m_test;
         ASR::IntegerCompare_t* int_cmp = nullptr;
@@ -485,11 +484,11 @@ public:
         // create an if statement
         // TO DO : fix handle_if function to handle arraySections properly while doing looping on multiple dimensions.
         if (int_cmp) {
-            if_stmt = handle_If(xx, ASRUtils::EXPR((ASR::asr_t*)int_cmp), var, loc, idx_vars);
+            if_stmt = handle_If(x, ASRUtils::EXPR((ASR::asr_t*)int_cmp), var, loc, idx_vars);
         } else if (real_cmp) {
-            if_stmt = handle_If(xx, ASRUtils::EXPR((ASR::asr_t*)real_cmp), var, loc, idx_vars);
+            if_stmt = handle_If(x, ASRUtils::EXPR((ASR::asr_t*)real_cmp), var, loc, idx_vars);
         } else if (log_bin_op) {
-            if_stmt = handle_If(xx, ASRUtils::EXPR((ASR::asr_t*)log_bin_op), var, loc, idx_vars);
+            if_stmt = handle_If(x, ASRUtils::EXPR((ASR::asr_t*)log_bin_op), var, loc, idx_vars);
         }
         if (assign_stmt) {
             pass_result.push_back(al, assign_stmt);

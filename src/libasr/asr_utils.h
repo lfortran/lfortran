@@ -3520,7 +3520,7 @@ bool select_func_subrout(const ASR::symbol_t* proc, const Vec<ASR::call_arg_t>& 
     Location& loc, const std::function<void (const std::string &, const Location &)> err);
 
 template <typename T>
-int select_generic_procedure(const Vec<ASR::call_arg_t> &args,
+int select_generic_procedure(Vec<ASR::call_arg_t> &args,
     const T &p, Location loc,
     const std::function<void (const std::string &, const Location &)> err,
     bool raise_error=true) {

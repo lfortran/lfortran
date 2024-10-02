@@ -100,7 +100,7 @@ class StructConstructorVisitor : public ASR::CallReplacerOnExpressionsVisitor<St
 
             replacer.result_var = x.m_target;
             ASR::expr_t** current_expr_copy_9 = current_expr;
-            current_expr = const_cast<ASR::expr_t**>(&(x.m_value));
+            current_expr = &(x.m_value);
             this->call_replacer();
             current_expr = current_expr_copy_9;
             if( !remove_original_statement ) {

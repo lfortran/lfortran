@@ -205,7 +205,7 @@ class ArraySectionVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArraySe
 
         void visit_Assignment( ASR::Assignment_t &x) {
             ASR::expr_t** current_expr_copy_9 = current_expr;
-            current_expr = const_cast<ASR::expr_t**>(&(x.m_value));
+            current_expr = &(x.m_value);
             this->call_replacer();
             current_expr = current_expr_copy_9;
             this->visit_expr(*x.m_value);

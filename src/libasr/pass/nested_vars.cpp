@@ -353,20 +353,18 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
 
     void visit_Program( ASR::Program_t &x) {
         nesting_depth++;
-        ASR::Program_t& xx = const_cast<ASR::Program_t&>(x);
         SymbolTable* current_scope_copy = current_scope;
         current_scope = x.m_symtab;
         for (auto &a : x.m_symtab->get_scope()) {
             this->visit_symbol(*a.second);
         }
-        transform_stmts(xx.m_body, xx.n_body);
+        transform_stmts(x.m_body, x.n_body);
         current_scope = current_scope_copy;
         nesting_depth--;
     }
 
     void visit_Function( ASR::Function_t &x) {
         nesting_depth++;
-        ASR::Function_t& xx = const_cast<ASR::Function_t&>(x);
         SymbolTable* current_scope_copy = current_scope;
         current_scope = x.m_symtab;
         for (auto &a : x.m_symtab->get_scope()) {
@@ -375,16 +373,16 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
         visit_ttype(*x.m_function_signature);
         for (size_t i=0; i<x.n_args; i++) {
             ASR::expr_t** current_expr_copy_0 = current_expr;
-            current_expr = const_cast<ASR::expr_t**>(&(x.m_args[i]));
+            current_expr = &(x.m_args[i]);
             call_replacer();
             current_expr = current_expr_copy_0;
             if( x.m_args[i] )
             visit_expr(*x.m_args[i]);
         }
-        transform_stmts(xx.m_body, xx.n_body);
+        transform_stmts(x.m_body, x.n_body);
         if (x.m_return_var) {
             ASR::expr_t** current_expr_copy_1 = current_expr;
-            current_expr = const_cast<ASR::expr_t**>(&(x.m_return_var));
+            current_expr = &(x.m_return_var);
             call_replacer();
             current_expr = current_expr_copy_1;
             if( x.m_return_var )
@@ -404,7 +402,7 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
         visit_ttype(*x.m_type);
         if (x.m_value) {
             ASR::expr_t** current_expr_copy_118 = current_expr;
-            current_expr = const_cast<ASR::expr_t**>(&(x.m_value));
+            current_expr = &(x.m_value);
             call_replacer();
             current_expr = current_expr_copy_118;
             if( x.m_value )
@@ -412,14 +410,13 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
         }
         if (x.m_dt) {
             ASR::expr_t** current_expr_copy_119 = current_expr;
-            current_expr = const_cast<ASR::expr_t**>(&(x.m_dt));
+            current_expr = &(x.m_dt);
             call_replacer();
             current_expr = current_expr_copy_119;
             if( x.m_dt )
             visit_expr(*x.m_dt);
         }
-        ASR::FunctionCall_t& xx = const_cast<ASR::FunctionCall_t&>(x);
-        ASRUtils::Call_t_body(al, xx.m_name, xx.m_args, xx.n_args, x.m_dt,
+        ASRUtils::Call_t_body(al, x.m_name, x.m_args, x.n_args, x.m_dt,
             nullptr, false, ASRUtils::get_class_proc_nopass_val(x.m_name));
     }
 
@@ -432,15 +429,14 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
         is_in_call = is_in_call_copy;
         if (x.m_dt) {
             ASR::expr_t** current_expr_copy_83 = current_expr;
-            current_expr = const_cast<ASR::expr_t**>(&(x.m_dt));
+            current_expr = &(x.m_dt);
             call_replacer();
             current_expr = current_expr_copy_83;
             if( x.m_dt )
             visit_expr(*x.m_dt);
         }
 
-        ASR::SubroutineCall_t& xx = const_cast<ASR::SubroutineCall_t&>(x);
-        ASRUtils::Call_t_body(al, xx.m_name, xx.m_args, xx.n_args, x.m_dt,
+        ASRUtils::Call_t_body(al, x.m_name, x.m_args, x.n_args, x.m_dt,
             nullptr, false, ASRUtils::get_class_proc_nopass_val(x.m_name));
     }
 
@@ -450,7 +446,7 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
 
     void visit_ArrayBroadcast( ASR::ArrayBroadcast_t& x) {
         ASR::expr_t** current_expr_copy_269 = current_expr;
-        current_expr = const_cast<ASR::expr_t**>(&(x.m_array));
+        current_expr = &(x.m_array);
         call_replacer();
         current_expr = current_expr_copy_269;
         if( x.m_array ) {
@@ -559,12 +555,11 @@ public:
     }
 
     void visit_Function( ASR::Function_t &x) {
-        ASR::Function_t &xx = const_cast<ASR::Function_t&>(x);
         SymbolTable* current_scope_copy = current_scope;
         ASR::symbol_t *sym_copy = cur_func_sym;
-        cur_func_sym = (ASR::symbol_t*)&xx;
-        current_scope = xx.m_symtab;
-        transform_stmts(xx.m_body, xx.n_body);
+        cur_func_sym = (ASR::symbol_t*)&x;
+        current_scope = x.m_symtab;
+        transform_stmts(x.m_body, x.n_body);
 
         for (auto &item : x.m_symtab->get_scope()) {
             if (ASR::is_a<ASR::Function_t>(*item.second)) {
@@ -585,12 +580,11 @@ public:
     }
 
     void visit_Program( ASR::Program_t &x) {
-        ASR::Program_t &xx = const_cast<ASR::Program_t&>(x);
         SymbolTable* current_scope_copy = current_scope;
-        current_scope = xx.m_symtab;
+        current_scope = x.m_symtab;
         ASR::symbol_t *sym_copy = cur_func_sym;
-        cur_func_sym = (ASR::symbol_t*)&xx;
-        transform_stmts(xx.m_body, xx.n_body);
+        cur_func_sym = (ASR::symbol_t*)&x;
+        transform_stmts(x.m_body, x.n_body);
 
         // Transform nested functions and subroutines
         for (auto &item : x.m_symtab->get_scope()) {

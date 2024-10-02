@@ -206,10 +206,7 @@ class TransformFunctionsWithOptionalArguments: public PassUtils::PassVisitor<Tra
         }
 
         void visit_Program( ASR::Program_t &x) {
-            // FIXME: this is a hack, we need to pass in a non-const `x`,
-            // which requires to generate a TransformVisitor.
-            ASR::Program_t &xx = const_cast<ASR::Program_t&>(x);
-            current_scope = xx.m_symtab;
+            current_scope = x.m_symtab;
 
             for (auto &item : x.m_symtab->get_scope()) {
                 if (is_a<ASR::Function_t>(*item.second)) {
@@ -231,16 +228,13 @@ class TransformFunctionsWithOptionalArguments: public PassUtils::PassVisitor<Tra
                 }
             }
 
-            current_scope = xx.m_symtab;
-            transform_stmts(xx.m_body, xx.n_body);
+            current_scope = x.m_symtab;
+            transform_stmts(x.m_body, x.n_body);
 
         }
 
         void visit_Module( ASR::Module_t &x) {
-            // FIXME: this is a hack, we need to pass in a non-const `x`,
-            // which requires to generate a TransformVisitor.
-            ASR::Module_t &xx = const_cast<ASR::Module_t&>(x);
-            current_scope = xx.m_symtab;
+            current_scope = x.m_symtab;
 
             for (auto &item : x.m_symtab->get_scope()) {
                 if (is_a<ASR::Function_t>(*item.second)) {
@@ -265,10 +259,7 @@ class TransformFunctionsWithOptionalArguments: public PassUtils::PassVisitor<Tra
         }
 
         void visit_Function( ASR::Function_t &x) {
-            // FIXME: this is a hack, we need to pass in a non-const `x`,
-            // which requires to generate a TransformVisitor.
-            ASR::Function_t &xx = const_cast<ASR::Function_t&>(x);
-            current_scope = xx.m_symtab;
+            current_scope = x.m_symtab;
 
             for (auto &item : x.m_symtab->get_scope()) {
                 if (is_a<ASR::Function_t>(*item.second)) {

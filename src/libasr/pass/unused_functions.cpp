@@ -274,11 +274,8 @@ public:
             }
         }
         if (v.size() < x.n_procs) {
-            // FIXME: this is a hack, we need to pass in a non-const `x`,
-            // which requires to generate a TransformVisitor.
-            ASR::GenericProcedure_t &xx = const_cast<ASR::GenericProcedure_t&>(x);
-            xx.m_procs = v.p;
-            xx.n_procs = v.n;
+            x.m_procs = v.p;
+            x.n_procs = v.n;
         }
     }
 

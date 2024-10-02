@@ -331,9 +331,8 @@ class PrintListTupleVisitor
             for (auto &e: print_tmp) {
                 tmp_vec.push_back(al, e);
             }
-            ASR::StringFormat_t* x_casted = const_cast<ASR::StringFormat_t*>(&x);
-            x_casted->m_args = tmp_vec.p;
-            x_casted->n_args = tmp_vec.size();
+            x.m_args = tmp_vec.p;
+            x.n_args = tmp_vec.size();
             remove_original_stmt =false;
         }
     }

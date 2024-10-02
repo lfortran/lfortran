@@ -297,12 +297,9 @@ namespace LCompilers {
                 }
 
                 void visit_Program( ASR::Program_t &x) {
-                    // FIXME: this is a hack, we need to pass in a non-const `x`,
-                    // which requires to generate a TransformVisitor.
-                    ASR::Program_t &xx = const_cast<ASR::Program_t&>(x);
                     SymbolTable* current_scope_copy = this->current_scope;
-                    this->current_scope = xx.m_symtab;
-                    transform_stmts(xx.m_body, xx.n_body);
+                    this->current_scope = x.m_symtab;
+                    transform_stmts(x.m_body, x.n_body);
 
                     // Transform nested functions and subroutines
                     for (auto &item : x.m_symtab->get_scope()) {
@@ -323,16 +320,13 @@ namespace LCompilers {
                 }
 
                 void visit_Function( ASR::Function_t &x) {
-                    // FIXME: this is a hack, we need to pass in a non-const `x`,
-                    // which requires to generate a TransformVisitor.
-                    ASR::Function_t &xx = const_cast<ASR::Function_t&>(x);
                     SymbolTable* current_scope_copy = this->current_scope;
-                    this->current_scope = xx.m_symtab;
+                    this->current_scope = x.m_symtab;
                     self().visit_ttype(*x.m_function_signature);
                     for (size_t i=0; i<x.n_args; i++) {
                         self().visit_expr(*x.m_args[i]);
                     }
-                    transform_stmts(xx.m_body, xx.n_body);
+                    transform_stmts(x.m_body, x.n_body);
 
                     if (x.m_return_var) {
                         self().visit_expr(*x.m_return_var);
@@ -402,9 +396,8 @@ namespace LCompilers {
                 }
 
                 void visit_Function( ASR::Function_t& x) {
-                    ASR::Function_t& xx = const_cast<ASR::Function_t&>(x);
                     SymbolTable* current_scope_copy = current_scope;
-                    current_scope = xx.m_symtab;
+                    current_scope = x.m_symtab;
                     SetChar function_dependencies_copy;
                     function_dependencies_copy.from_pointer_n_copy(al, function_dependencies.p, function_dependencies.size());
                     function_dependencies.n = 0;
@@ -412,8 +405,8 @@ namespace LCompilers {
                     bool fill_function_dependencies_copy = fill_function_dependencies;
                     fill_function_dependencies = true;
                     BaseWalkVisitor<UpdateDependenciesVisitor>::visit_Function(x);
-                    xx.m_dependencies = function_dependencies.p;
-                    xx.n_dependencies = function_dependencies.size();
+                    x.m_dependencies = function_dependencies.p;
+                    x.n_dependencies = function_dependencies.size();
                     fill_function_dependencies = fill_function_dependencies_copy;
                     function_dependencies.from_pointer_n_copy(al,
                         function_dependencies_copy.p,
@@ -425,23 +418,21 @@ namespace LCompilers {
                 void visit_Module( ASR::Module_t& x) {
                     SymbolTable *parent_symtab = current_scope;
                     current_scope = x.m_symtab;
-                    ASR::Module_t& xx = const_cast<ASR::Module_t&>(x);
                     module_dependencies.n = 0;
                     module_dependencies.reserve(al, 1);
                     bool fill_module_dependencies_copy = fill_module_dependencies;
                     fill_module_dependencies = true;
                     BaseWalkVisitor<UpdateDependenciesVisitor>::visit_Module(x);
-                    for( size_t i = 0; i < xx.n_dependencies; i++ ) {
-                        module_dependencies.push_back(al, xx.m_dependencies[i]);
+                    for( size_t i = 0; i < x.n_dependencies; i++ ) {
+                        module_dependencies.push_back(al, x.m_dependencies[i]);
                     }
-                    xx.n_dependencies = module_dependencies.size();
-                    xx.m_dependencies = module_dependencies.p;
+                    x.n_dependencies = module_dependencies.size();
+                    x.m_dependencies = module_dependencies.p;
                     fill_module_dependencies = fill_module_dependencies_copy;
                     current_scope = parent_symtab;
                 }
 
                 void visit_Variable( ASR::Variable_t& x) {
-                    ASR::Variable_t& xx = const_cast<ASR::Variable_t&>(x);
                     variable_dependencies.n = 0;
                     variable_dependencies.reserve(al, 1);
                     bool fill_variable_dependencies_copy = fill_variable_dependencies;
@@ -451,8 +442,8 @@ namespace LCompilers {
                                                 x.m_intent == ASR::intentType::InOut);
                     BaseWalkVisitor<UpdateDependenciesVisitor>::visit_Variable(x);
                     _return_var_or_intent_out = false;
-                    xx.n_dependencies = variable_dependencies.size();
-                    xx.m_dependencies = variable_dependencies.p;
+                    x.n_dependencies = variable_dependencies.size();
+                    x.m_dependencies = variable_dependencies.p;
                     fill_variable_dependencies = fill_variable_dependencies_copy;
                 }
 
@@ -567,7 +558,6 @@ namespace LCompilers {
             /*
                 template <typename T>
                 void visit_UserDefinedType( T& x) {
-                    T& xx = const_cast<T&>(x);
                     SetChar vec; vec.reserve(al, 1);
                     for( auto itr: x.m_symtab->get_scope() ) {
                         ASR::ttype_t* type = ASRUtils::extract_type(
@@ -580,8 +570,8 @@ namespace LCompilers {
                             vec.push_back(al, ASRUtils::symbol_name(enum_t->m_enum_type));
                         }
                     }
-                    xx.m_dependencies = vec.p;
-                    xx.n_dependencies = vec.size();
+                    x.m_dependencies = vec.p;
+                    x.n_dependencies = vec.size();
                 }
 
                 void visit_Struct( ASR::Struct_t& x) {

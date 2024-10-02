@@ -94,13 +94,12 @@ public:
     }
 
     template <typename T>
-    void handle_BinOp( T& x_const) {
+    void handle_BinOp( T& x) {
         if( !from_sign_from_value ) {
             return ;
         }
 
         from_sign_from_value = true;
-        T& x = const_cast<T&>(x_const);
 
         sign_from_value_var = nullptr;
         visit_expr(*x.m_left);
@@ -139,11 +138,10 @@ public:
 
     void visit_Assignment( ASR::Assignment_t& x) {
         from_sign_from_value = true;
-        ASR::Assignment_t& xx = const_cast<ASR::Assignment_t&>(x);
         sign_from_value_var = nullptr;
         visit_expr(*x.m_value);
         if( sign_from_value_var ) {
-            xx.m_value = sign_from_value_var;
+            x.m_value = sign_from_value_var;
         }
         sign_from_value_var = nullptr;
         from_sign_from_value = false;

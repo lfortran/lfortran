@@ -98,7 +98,6 @@ class PromoteAllocatableToNonAllocatable:
             al(al_), remove_original_statement(false), scope2var(scope2var_) {}
 
         void visit_Allocate( ASR::Allocate_t& x) {
-            ASR::Allocate_t& xx = const_cast<ASR::Allocate_t&>(x);
             Vec<ASR::alloc_arg_t> x_args;
             x_args.reserve(al, x.n_args);
             for( size_t i = 0; i < x.n_args; i++ ) {
@@ -127,8 +126,8 @@ class PromoteAllocatableToNonAllocatable:
                 }
             }
             if( x_args.size() > 0 ) {
-                xx.m_args = x_args.p;
-                xx.n_args = x_args.size();
+                x.m_args = x_args.p;
+                x.n_args = x_args.size();
             } else {
                 remove_original_statement = true;
             }
@@ -136,7 +135,6 @@ class PromoteAllocatableToNonAllocatable:
 
         template <typename T>
         void visit_Deallocate( T& x) {
-            T& xx = const_cast<T&>(x);
             Vec<ASR::expr_t*> x_args;
             x_args.reserve(al, x.n_vars);
             for( size_t i = 0; i < x.n_vars; i++ ) {
@@ -148,8 +146,8 @@ class PromoteAllocatableToNonAllocatable:
                 }
             }
             if( x_args.size() > 0 ) {
-                xx.m_vars = x_args.p;
-                xx.n_vars = x_args.size();
+                x.m_vars = x_args.p;
+                x.n_vars = x_args.size();
             } else {
                 remove_original_statement = true;
             }
@@ -255,9 +253,8 @@ class FixArrayPhysicalCastVisitor: public ASR::CallReplacerOnExpressionsVisitor<
                 al, x.base.base.loc, x.m_name, x.m_original_name, x.m_args,
                 x.n_args, x.m_dt, nullptr, false, ASRUtils::get_class_proc_nopass_val(x.m_name)));
             ASR::SubroutineCall_t* subrout_call = ASR::down_cast<ASR::SubroutineCall_t>(call);
-            ASR::SubroutineCall_t& xx = const_cast<ASR::SubroutineCall_t&>(x);
-            xx.m_args = subrout_call->m_args;
-            xx.n_args = subrout_call->n_args;
+            x.m_args = subrout_call->m_args;
+            x.n_args = subrout_call->n_args;
         }
 };
 

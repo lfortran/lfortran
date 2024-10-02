@@ -126,9 +126,8 @@ class CheckIfAlreadyAllocatedVisitor: public ASR::BaseWalkVisitor<CheckIfAlready
             function_name(function_name_), array_variable_name(array_variable_name_) {}
 
         void visit_Program( ASR::Program_t &x) {
-            ASR::Program_t& xx = const_cast<ASR::Program_t&>(x);
             SymbolTable* current_scope_copy = current_scope;
-            current_scope = xx.m_symtab;
+            current_scope = x.m_symtab;
 
             BaseWalkVisitor::visit_Program(x);
 
@@ -136,9 +135,8 @@ class CheckIfAlreadyAllocatedVisitor: public ASR::BaseWalkVisitor<CheckIfAlready
         }
 
         void visit_Function( ASR::Function_t &x) {
-            ASR::Function_t& xx = const_cast<ASR::Function_t&>(x);
             SymbolTable* current_scope_copy = current_scope;
-            current_scope = xx.m_symtab;
+            current_scope = x.m_symtab;
 
             BaseWalkVisitor::visit_Function(x);
 
@@ -193,9 +191,8 @@ class FunctionSubroutineCallVisitor: public ASR::BaseWalkVisitor<FunctionSubrout
             scoped_array_variable_map(scoped_array_variable_map_) {}
         
         void visit_Program( ASR::Program_t &x) {
-            ASR::Program_t& xx = const_cast<ASR::Program_t&>(x);
             SymbolTable* current_scope_copy = current_scope;
-            current_scope = xx.m_symtab;
+            current_scope = x.m_symtab;
 
             BaseWalkVisitor::visit_Program(x);
 
@@ -203,9 +200,8 @@ class FunctionSubroutineCallVisitor: public ASR::BaseWalkVisitor<FunctionSubrout
         }
 
         void visit_Function( ASR::Function_t &x) {
-            ASR::Function_t& xx = const_cast<ASR::Function_t&>(x);
             SymbolTable* current_scope_copy = current_scope;
-            current_scope = xx.m_symtab;
+            current_scope = x.m_symtab;
 
             // handle interface
             if (x.m_name == function_name) {
@@ -347,7 +343,6 @@ class DoConcurrentStatementVisitor : public ASR::CallReplacerOnExpressionsVisito
     }
 
     void visit_FunctionCall( ASR::FunctionCall_t &x) {
-        ASR::FunctionCall_t* x_copy = const_cast<ASR::FunctionCall_t*>(&x);
         ASR::symbol_t* func_sym = current_scope->get_symbol(ASRUtils::symbol_name(x.m_name));
         if (func_sym == nullptr) {
             // this means we have a user defined function and need to create an interface for it
@@ -362,8 +357,8 @@ class DoConcurrentStatementVisitor : public ASR::CallReplacerOnExpressionsVisito
             ASR::down_cast<ASR::FunctionType_t>(new_func->m_function_signature)->m_deftype = ASR::deftypeType::Interface;
         }
         LCOMPILERS_ASSERT(func_sym != nullptr);
-        x_copy->m_name = func_sym;
-        x_copy->m_original_name = func_sym;
+        x.m_name = func_sym;
+        x.m_original_name = func_sym;
         CallReplacerOnExpressionsVisitor::visit_FunctionCall(x);
     }
 };
@@ -1359,40 +1354,34 @@ class DoConcurrentVisitor :
         }
 
         void visit_Function( ASR::Function_t &x) {
-            // FIXME: this is a hack, we need to pass in a non-const `x`,
-            // which requires to generate a TransformVisitor.
-            ASR::Function_t& xx = const_cast<ASR::Function_t&>(x);
             SymbolTable* current_scope_copy = current_scope;
-            current_scope = xx.m_symtab;
+            current_scope = x.m_symtab;
 
             for (auto &item : x.m_symtab->get_scope()) {
                 this->visit_symbol(*item.second);
             }
 
-            transform_stmts(xx.m_body, xx.n_body);
+            transform_stmts(x.m_body, x.n_body);
             current_scope = current_scope_copy;
         }
 
         void visit_Program( ASR::Program_t &x) {
-            ASR::Program_t& xx = const_cast<ASR::Program_t&>(x);
             SymbolTable* current_scope_copy = current_scope;
-            current_scope = xx.m_symtab;
+            current_scope = x.m_symtab;
 
-            for (auto &a : xx.m_symtab->get_scope()) {
+            for (auto &a : x.m_symtab->get_scope()) {
                 this->visit_symbol(*a.second);
             }
 
-            transform_stmts(xx.m_body, xx.n_body);
+            transform_stmts(x.m_body, x.n_body);
             current_scope = current_scope_copy;
         }
 
         void visit_DoLoop( ASR::DoLoop_t &x) {
-            ASR::DoLoop_t& xx = const_cast<ASR::DoLoop_t&>(x);
+            visit_do_loop_head(x.m_head);
 
-            visit_do_loop_head(xx.m_head);
-
-            transform_stmts_do_loop(xx.m_body, xx.n_body);
-            transform_stmts_do_loop(xx.m_orelse, xx.n_orelse);
+            transform_stmts_do_loop(x.m_body, x.n_body);
+            transform_stmts_do_loop(x.m_orelse, x.n_orelse);
         }
 
 };

@@ -1747,11 +1747,8 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
         }
 
         void visit_Program( ASR::Program_t &x) {
-            // FIXME: this is a hack, we need to pass in a non-const `x`,
-            // which requires to generate a TransformVisitor.
-            ASR::Program_t& xx = const_cast<ASR::Program_t&>(x);
             SymbolTable* current_scope_copy = current_scope;
-            current_scope = xx.m_symtab;
+            current_scope = x.m_symtab;
 
             for (auto &item : x.m_symtab->get_scope()) {
                 if (is_a<ASR::AssociateBlock_t>(*item.second)) {
@@ -1764,7 +1761,7 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
                 }
             }
 
-            transform_stmts(xx.m_body, xx.n_body);
+            transform_stmts(x.m_body, x.n_body);
             current_scope = current_scope_copy;
         }
 
@@ -1780,7 +1777,7 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
             } else {
                 resultvar2value[replacer.result_var] = original_value;
             }
-            current_expr = const_cast<ASR::expr_t**>(&(x.m_value));
+            current_expr = &(x.m_value);
             this->call_replacer();
             current_expr = current_expr_copy_9;
             if( x.m_value == original_value ) {
@@ -2133,7 +2130,7 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
 
         void visit_ArrayBroadcast( ASR::ArrayBroadcast_t& x) {
             ASR::expr_t** current_expr_copy_269 = current_expr;
-            current_expr = const_cast<ASR::expr_t**>(&(x.m_array));
+            current_expr = &(x.m_array);
             call_replacer();
             current_expr = current_expr_copy_269;
             if( x.m_array ) {

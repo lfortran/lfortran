@@ -105,9 +105,8 @@ public:
         }
         fmt->m_args = new_values.p;
         fmt->n_args = new_values.size();
-        // ASR::Print_t& xx = const_cast<ASR::Print_t&>(x);
-        // xx.m_values = new_values.p;
-        // xx.n_values = new_values.size();
+        // x.m_values = new_values.p;
+        // x.n_values = new_values.size();
     }
 
 };

@@ -66,9 +66,8 @@ public:
                             break;
                     }
                     if( is_feasible ) {
-                        ASR::RealBinOp_t& xx = const_cast<ASR::RealBinOp_t&>(x);
-                        xx.m_op = ASR::binopType::Mul;
-                        xx.m_right = right_inverse;
+                        x.m_op = ASR::binopType::Mul;
+                        x.m_right = right_inverse;
                     }
                 }
             }

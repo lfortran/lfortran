@@ -49,13 +49,13 @@ public:
                         instantiate_types, instantiate_symbols, entry_functions, entry_function_arguments_mapping, data_structure),
         asr{unit}, from_block{false} {}
 
-    void visit_Declaration(const AST::Declaration_t& x) {
+    void visit_Declaration( AST::Declaration_t& x) {
         if( from_block ) {
             visit_DeclarationUtil(x);
         }
     }
 
-    void visit_Block(const AST::Block_t &x) {
+    void visit_Block( AST::Block_t &x) {
         from_block = true;
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
@@ -136,7 +136,7 @@ public:
         current_body = current_body_copy;
     }
 
-    void visit_TranslationUnit(const AST::TranslationUnit_t &x) {
+    void visit_TranslationUnit( AST::TranslationUnit_t &x) {
         ASR::TranslationUnit_t *unit = ASR::down_cast2<ASR::TranslationUnit_t>(asr);
         current_scope = unit->m_symtab;
         Vec<ASR::asr_t*> items;
@@ -208,7 +208,7 @@ public:
         print_statements.clear();
     }
 
-    void visit_Open(const AST::Open_t& x) {
+    void visit_Open( AST::Open_t& x) {
         ASR::expr_t *a_newunit = nullptr, *a_filename = nullptr, *a_status = nullptr, *a_form = nullptr;
         if( x.n_args > 1 ) {
             throw SemanticError("Number of arguments cannot be more than 1 in Open statement.",
@@ -310,7 +310,7 @@ public:
         tmp = nullptr;
     }
 
-    void visit_Close(const AST::Close_t& x) {
+    void visit_Close( AST::Close_t& x) {
         ASR::expr_t *a_unit = nullptr, *a_iostat = nullptr, *a_iomsg = nullptr;
         ASR::expr_t *a_err = nullptr, *a_status = nullptr;
         if( x.n_args > 1 ) {
@@ -392,7 +392,7 @@ public:
         tmp = ASR::make_FileClose_t(al, x.base.base.loc, x.m_label, a_unit, a_iostat, a_iomsg, a_err, a_status);
     }
 
-    void visit_Backspace(const AST::Backspace_t& x) {
+    void visit_Backspace( AST::Backspace_t& x) {
         ASR::expr_t *a_unit = nullptr, *a_iostat = nullptr;
         ASR::expr_t *a_err = nullptr;
         if( x.n_args > 1 ) {
@@ -456,7 +456,7 @@ public:
         tmp = ASR::make_FileBackspace_t(al, x.base.base.loc, x.m_label, a_unit, a_iostat, a_err);
     }
 
-    void create_read_write_ASR_node(const AST::stmt_t& read_write_stmt, AST::stmtType _type) {
+    void create_read_write_ASR_node( AST::stmt_t& read_write_stmt, AST::stmtType _type) {
         int64_t m_label = -1;
         AST::argstar_t* m_args = nullptr; size_t n_args = 0;
         AST::kw_argstar_t* m_kwargs = nullptr; size_t n_kwargs = 0;
@@ -746,16 +746,16 @@ public:
         tmp = nullptr;
     }
 
-    void visit_Write(const AST::Write_t& x) {
+    void visit_Write( AST::Write_t& x) {
         create_read_write_ASR_node(x.base, x.class_type);
     }
 
-    void visit_Read(const AST::Read_t& x) {
+    void visit_Read( AST::Read_t& x) {
         create_read_write_ASR_node(x.base, x.class_type);
     }
 
     template <typename T>
-    void fill_args_for_rewind_inquire_flush(const T& x, const size_t max_args,
+    void fill_args_for_rewind_inquire_flush( T& x, const size_t max_args,
         std::vector<ASR::expr_t*>& args, const size_t args_size,
         std::map<std::string, size_t>& argname2idx, std::string& stmt_name) {
         if( x.n_args + x.n_kwargs > max_args ) {
@@ -786,7 +786,7 @@ public:
         }
     }
 
-    void visit_Rewind(const AST::Rewind_t& x) {
+    void visit_Rewind( AST::Rewind_t& x) {
         std::map<std::string, size_t> argname2idx = {{"unit", 0}, {"iostat", 1}, {"err", 2 }};
         std::vector<ASR::expr_t*> args;
         std::string node_name = "Rewind";
@@ -795,7 +795,7 @@ public:
         tmp = ASR::make_FileRewind_t(al, x.base.base.loc, x.m_label, unit, iostat, err);
     }
 
-    void visit_Instantiate(const AST::Instantiate_t &x) {
+    void visit_Instantiate( AST::Instantiate_t &x) {
         ASR::symbol_t *sym = current_scope->resolve_symbol(x.m_name);
         ASR::Template_t* temp = ASR::down_cast<ASR::Template_t>(ASRUtils::symbol_get_past_external(sym));
 
@@ -824,7 +824,7 @@ public:
 
     }
 
-    void visit_Inquire(const AST::Inquire_t& x) {
+    void visit_Inquire( AST::Inquire_t& x) {
         std::map<std::string, size_t> argname2idx = {
             {"unit", 0}, {"file", 1}, {"iostat", 2}, {"err", 3},
             {"exist", 4}, {"opened", 5}, {"number", 6}, {"named", 7},
@@ -863,7 +863,7 @@ public:
                                   carriagecontrol, iolength);
     }
 
-    void visit_Flush(const AST::Flush_t& x) {
+    void visit_Flush( AST::Flush_t& x) {
         std::map<std::string, size_t> argname2idx = {{"unit", 0}, {"err", 1}, {"iomsg", 2}, {"iostat", 3}};
         std::vector<ASR::expr_t*> args;
         std::string node_name = "Flush";
@@ -875,7 +875,7 @@ public:
         tmp = ASR::make_Flush_t(al, x.base.base.loc, x.m_label, unit, err, iomsg, iostat);
     }
 
-    void visit_Associate(const AST::Associate_t& x) {
+    void visit_Associate( AST::Associate_t& x) {
         this->visit_expr(*(x.m_target));
         ASR::expr_t* target = ASRUtils::EXPR(tmp);
         ASR::ttype_t* target_type = ASRUtils::expr_type(target);
@@ -893,7 +893,7 @@ public:
         }
     }
 
-    void visit_AssociateBlock(const AST::AssociateBlock_t& x) {
+    void visit_AssociateBlock( AST::AssociateBlock_t& x) {
         SymbolTable* new_scope = al.make_new<SymbolTable>(current_scope);
         std::string name = current_scope->get_unique_name("associate_block");
         ASR::asr_t* associate_block = ASR::make_AssociateBlock_t(al, x.base.base.loc,
@@ -966,7 +966,7 @@ public:
         tmp = ASR::make_AssociateBlockCall_t(al, x.base.base.loc, ASR::down_cast<ASR::symbol_t>(associate_block));
     }
 
-    void visit_Allocate(const AST::Allocate_t& x) {
+    void visit_Allocate( AST::Allocate_t& x) {
         Vec<ASR::alloc_arg_t> alloc_args_vec;
         alloc_args_vec.reserve(al, x.n_args);
         ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
@@ -1137,7 +1137,7 @@ public:
 // If there are allocatable variables in the local scope it inserts an ImplicitDeallocate node
 // with their list. The ImplicitDeallocate node will deallocate them if they are allocated,
 // otherwise does nothing.
-    ASR::stmt_t* create_implicit_deallocate(const Location& loc) {
+    ASR::stmt_t* create_implicit_deallocate( Location& loc) {
         Vec<ASR::expr_t*> del_syms;
         del_syms.reserve(al, 0);
         for( auto& item: current_scope->get_scope() ) {
@@ -1179,7 +1179,7 @@ public:
         }
     }
 
-    void visit_Deallocate(const AST::Deallocate_t& x) {
+    void visit_Deallocate( AST::Deallocate_t& x) {
         Vec<ASR::expr_t*> arg_vec;
         arg_vec.reserve(al, x.n_args);
         for( size_t i = 0; i < x.n_args; i++ ) {
@@ -1204,12 +1204,12 @@ public:
                                             arg_vec.p, arg_vec.size());
     }
 
-    void visit_Return(const AST::Return_t& x) {
+    void visit_Return( AST::Return_t& x) {
         // TODO
         tmp = ASR::make_Return_t(al, x.base.base.loc);
     }
 
-    void visit_case_stmt(const AST::case_stmt_t& x) {
+    void visit_case_stmt( AST::case_stmt_t& x) {
         switch(x.type) {
             case AST::case_stmtType::CaseStmt: {
                 AST::CaseStmt_t* Case_Stmt = (AST::CaseStmt_t*)(&(x.base));
@@ -1270,7 +1270,7 @@ public:
         }
     }
 
-    void visit_Select(const AST::Select_t& x) {
+    void visit_Select( AST::Select_t& x) {
         this->visit_expr(*(x.m_test));
         ASR::expr_t* a_test = ASRUtils::EXPR(tmp);
         Vec<ASR::case_stmt_t*> a_body_vec;
@@ -1296,7 +1296,7 @@ public:
                            a_body_vec.size(), def_body.p, def_body.size(), false);
     }
 
-    void visit_SelectType(const AST::SelectType_t& x) {
+    void visit_SelectType( AST::SelectType_t& x) {
         // TODO: We might need to re-order all ASR::TypeStmtName
         // before ASR::ClassStmt as per GFortran's semantics
         if( !x.m_selector ) {
@@ -1500,7 +1500,7 @@ public:
     }
 
     template <typename T>
-    void visit_SubmoduleModuleCommon(const T& x) {
+    void visit_SubmoduleModuleCommon( T& x) {
         SymbolTable *old_scope = current_scope;
         ASR::symbol_t *t = current_scope->get_symbol(to_lower(x.m_name));
         ASR::Module_t *v = ASR::down_cast<ASR::Module_t>(t);
@@ -1547,15 +1547,15 @@ public:
         tmp = nullptr;
     }
 
-    void visit_Submodule(const AST::Submodule_t &x) {
+    void visit_Submodule( AST::Submodule_t &x) {
         visit_SubmoduleModuleCommon(x);
     }
 
-    void visit_Module(const AST::Module_t &x) {
+    void visit_Module( AST::Module_t &x) {
         visit_SubmoduleModuleCommon(x);
     }
 
-    void visit_Use(const AST::Use_t& /* x */) {
+    void visit_Use( AST::Use_t& /* x */) {
         // handled in symbol table visitor
     }
     void remove_common_variable_declarations(SymbolTable* current_scope) {
@@ -1574,7 +1574,7 @@ public:
     }
 
 
-    void visit_Program(const AST::Program_t &x) {
+    void visit_Program( AST::Program_t &x) {
         SymbolTable *old_scope = current_scope;
         ASR::symbol_t *t = current_scope->get_symbol(to_lower(x.m_name));
         ASR::Program_t *v = ASR::down_cast<ASR::Program_t>(t);
@@ -1655,11 +1655,11 @@ public:
                     del_syms.p, del_syms.size()));
     }
 
-    void visit_Entry(const AST::Entry_t& /*x*/) {
+    void visit_Entry( AST::Entry_t& /*x*/) {
         tmp = nullptr;
     }
 
-    void add_subroutine_call(const Location& loc, std::string entry_function_name, std::string parent_function_name,
+    void add_subroutine_call( Location& loc, std::string entry_function_name, std::string parent_function_name,
                             int label, bool is_function = false) {
         ASR::symbol_t* entry_function_sym = current_scope->resolve_symbol(entry_function_name);
         if (entry_function_sym == nullptr) {
@@ -1865,7 +1865,7 @@ public:
     }
 
     template <typename T>
-    void populate_master_function(const T& x, const Location &loc, std::string master_function_name) {
+    void populate_master_function( T& x, const Location &loc, std::string master_function_name) {
         // populate master function
         std::string original_function_name = master_function_name.substr(0, master_function_name.find("_main__lcompilers"));
         ASR::symbol_t* master_function_sym = current_scope->resolve_symbol(master_function_name);
@@ -1937,7 +1937,7 @@ public:
         current_scope = old_scope;
     }
 
-    void visit_Subroutine(const AST::Subroutine_t &x) {
+    void visit_Subroutine( AST::Subroutine_t &x) {
     // TODO: add SymbolTable::lookup_symbol(), which will automatically return
     // an error
     // TODO: add SymbolTable::get_symbol(), which will only check in Debug mode
@@ -2025,7 +2025,7 @@ public:
         tmp = nullptr;
     }
 
-    void visit_Function(const AST::Function_t &x) {
+    void visit_Function( AST::Function_t &x) {
         starting_m_body = x.m_body;
         starting_n_body = x.n_body;
         SymbolTable *old_scope = current_scope;
@@ -2109,7 +2109,7 @@ public:
         tmp = nullptr;
     }
 
-    void visit_Assign(const AST::Assign_t &x) {
+    void visit_Assign( AST::Assign_t &x) {
         std::string var_name = to_lower(std::string{x.m_variable});
         ASR::symbol_t *sym = current_scope->resolve_symbol(var_name);
         ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
@@ -2209,7 +2209,7 @@ public:
         }
     }
 
-    void create_statement_function(const AST::Assignment_t &x) {
+    void create_statement_function( AST::Assignment_t &x) {
         current_function_dependencies.clear(al);
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
@@ -2379,7 +2379,7 @@ public:
         }
     }
 
-    void visit_Assignment(const AST::Assignment_t &x) {
+    void visit_Assignment( AST::Assignment_t &x) {
         if (is_statement_function(x)) {
             create_statement_function(x);
             tmp = nullptr;
@@ -2562,7 +2562,7 @@ public:
                             overloaded_stmt);
     }
 
-    ASR::asr_t* create_CFPointer(const AST::SubroutineCall_t& x) {
+    ASR::asr_t* create_CFPointer( AST::SubroutineCall_t& x) {
         Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"cptr", "fptr", "shape"};
         handle_intrinsic_node_args<AST::SubroutineCall_t>(
@@ -2639,7 +2639,7 @@ public:
         return ASR::make_CPtrToPointer_t(al, x.base.base.loc, cptr, fptr, shape, lower_bounds);
     }
 
-    ASR::asr_t* intrinsic_subroutine_as_node(const AST::SubroutineCall_t &x, std::string var_name) {
+    ASR::asr_t* intrinsic_subroutine_as_node( AST::SubroutineCall_t &x, std::string var_name) {
         if (is_intrinsic_registry_subroutine(var_name)) {
             if ( ASRUtils::IntrinsicImpureSubroutineRegistry::is_intrinsic_subroutine(var_name)) {
                 std::vector<IntrinsicSignature> signatures = get_intrinsic_signature(var_name);
@@ -2672,7 +2672,7 @@ public:
         return nullptr;
     }
 
-    ASR::asr_t* handle_Mvbits(const AST::SubroutineCall_t &x, std::string var_name) {
+    ASR::asr_t* handle_Mvbits( AST::SubroutineCall_t &x, std::string var_name) {
         if (to_lower(var_name) == "mvbits") {
             if (ASRUtils::IntrinsicElementalFunctionRegistry::is_intrinsic_function(var_name)) {
                 std::vector<IntrinsicSignature> signatures = get_intrinsic_signature(var_name);
@@ -2709,7 +2709,7 @@ public:
         return nullptr;
     }
 
-    ASR::asr_t* handle_MoveAlloc(const AST::SubroutineCall_t &x, std::string var_name) {
+    ASR::asr_t* handle_MoveAlloc( AST::SubroutineCall_t &x, std::string var_name) {
         if (to_lower(var_name) == "move_alloc") {
             if (ASRUtils::IntrinsicElementalFunctionRegistry::is_intrinsic_function(var_name)) {
                 std::vector<IntrinsicSignature> signatures = get_intrinsic_signature(var_name);
@@ -2746,7 +2746,7 @@ public:
         return nullptr;
     }
 
-    void visit_SubroutineCall(const AST::SubroutineCall_t &x) {
+    void visit_SubroutineCall( AST::SubroutineCall_t &x) {
         std::string sub_name = to_lower(x.m_name);
         ASR::asr_t* intrinsic_subroutine = intrinsic_subroutine_as_node(x, sub_name);
         if( intrinsic_subroutine ) {
@@ -2904,7 +2904,7 @@ public:
                         diags, x.n_member);
                     if( !diags.has_error() ) {
                         if( ASRUtils::select_generic_procedure(args_, *f3, x.base.base.loc,
-                            [&](const std::string &msg, const Location &loc) { throw SemanticError(msg, loc); },
+                            [&]( const std::string &msg, const Location &loc) { throw SemanticError(msg, loc); },
                             false) != -1 ) {
                             function_found = true;
                             args.n = 0;
@@ -3136,7 +3136,7 @@ public:
         throw LCompilersException("Argument not found");
     }
 
-    ASR::asr_t* construct_leading_space(const Location &loc) {
+    ASR::asr_t* construct_leading_space( const Location &loc) {
         ASR::ttype_t *str_type_len_0 = ASRUtils::TYPE(ASR::make_Character_t(
             al, loc, 1, 0, nullptr, ASR::string_physical_typeType::PointerString));
         ASR::expr_t *empty_string = ASRUtils::EXPR(ASR::make_StringConstant_t(
@@ -3152,7 +3152,7 @@ public:
             nullptr, nullptr, args.p, args.size(), nullptr, empty_string, nullptr);
     }
 
-    void visit_Print(const AST::Print_t &x) {
+    void visit_Print( AST::Print_t &x) {
         Vec<ASR::expr_t*> body;
         body.reserve(al, x.n_values);
         ASR::expr_t *fmt=nullptr;
@@ -3212,7 +3212,7 @@ public:
         }
     }
 
-    void visit_If(const AST::If_t &x) {
+    void visit_If( AST::If_t &x) {
         visit_expr(*x.m_test);
         ASR::expr_t *test = ASRUtils::EXPR(tmp);
         Vec<ASR::stmt_t*> body;
@@ -3225,7 +3225,7 @@ public:
                 body.size(), orelse.p, orelse.size());
     }
 
-    void visit_IfArithmetic(const AST::IfArithmetic_t &x) {
+    void visit_IfArithmetic( AST::IfArithmetic_t &x) {
         visit_expr(*x.m_test);
         ASR::expr_t *test_int = ASRUtils::EXPR(tmp);
         ASR::ttype_t *test_int_type = ASRUtils::expr_type(test_int);
@@ -3287,7 +3287,7 @@ public:
                 body.size(), orelse.p, orelse.size());
     }
 
-    void visit_Where(const AST::Where_t &x) {
+    void visit_Where( AST::Where_t &x) {
         visit_expr(*x.m_test);
         ASR::expr_t *test = ASRUtils::EXPR(tmp);
         Vec<ASR::stmt_t*> body;
@@ -3320,7 +3320,7 @@ public:
         tmp = ASR::make_Where_t(al, x.base.base.loc, test, body.p, body.size(), orelse.p, orelse.size());
     }
 
-    void visit_WhileLoop(const AST::WhileLoop_t &x) {
+    void visit_WhileLoop( AST::WhileLoop_t &x) {
         visit_expr(*x.m_test);
         ASR::expr_t *test = ASRUtils::EXPR(tmp);
         Vec<ASR::stmt_t*> body;
@@ -3335,7 +3335,7 @@ public:
         ASR::ttype_t *src_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(*conv_candidate)); \
         ImplicitCastRules::set_converted_value(al, x.base.base.loc, conv_candidate, src_type, des_type);
 
-    void visit_DoLoop(const AST::DoLoop_t &x) {
+    void visit_DoLoop( AST::DoLoop_t &x) {
         loop_nesting += 1;
         ASR::expr_t *var, *start, *end;
         ASR::ttype_t* type = nullptr;
@@ -3435,7 +3435,7 @@ public:
         loop_nesting -= 1;
     }
 
-    void visit_DoConcurrentLoop(const AST::DoConcurrentLoop_t &x) {
+    void visit_DoConcurrentLoop( AST::DoConcurrentLoop_t &x) {
         if (x.n_control != 1) {
             throw SemanticError("Do concurrent: exactly one control statement is required for now",
             x.base.base.loc);
@@ -3523,7 +3523,7 @@ public:
                 body.size());
     }
 
-    void visit_ForAllSingle(const AST::ForAllSingle_t &x) {
+    void visit_ForAllSingle( AST::ForAllSingle_t &x) {
         if (x.n_control != 1) {
             throw SemanticError("Forall statement: exactly one control statement is required for now",
             x.base.base.loc);
@@ -3569,21 +3569,21 @@ public:
         tmp = ASR::make_ForAllSingle_t(al, x.base.base.loc, head, assign_stmt);
     }
 
-    void visit_Exit(const AST::Exit_t &x) {
+    void visit_Exit( AST::Exit_t &x) {
         tmp = ASR::make_Exit_t(al, x.base.base.loc, x.m_stmt_name);
     }
 
-    void visit_Cycle(const AST::Cycle_t &x) {
+    void visit_Cycle( AST::Cycle_t &x) {
         tmp = ASR::make_Cycle_t(al, x.base.base.loc, x.m_stmt_name);
     }
 
-    void visit_Continue(const AST::Continue_t &/*x*/) {
+    void visit_Continue( AST::Continue_t &/*x*/) {
         // TODO: add a check here that we are inside a While loop
         // Nothing to generate, we return a null pointer
         tmp = nullptr;
     }
 
-    void visit_GoTo(const AST::GoTo_t &x) {
+    void visit_GoTo( AST::GoTo_t &x) {
         if (x.m_goto_label) {
             if (AST::is_a<AST::Num_t>(*x.m_goto_label)) {
                 int goto_label = AST::down_cast<AST::Num_t>(x.m_goto_label)->m_n;
@@ -3694,7 +3694,7 @@ public:
         }
     }
 
-    void visit_Stop(const AST::Stop_t &x) {
+    void visit_Stop( AST::Stop_t &x) {
         ASR::expr_t *code;
         if (x.m_code) {
             visit_expr(*x.m_code);
@@ -3705,7 +3705,7 @@ public:
         tmp = ASR::make_Stop_t(al, x.base.base.loc, code);
     }
 
-    void visit_ErrorStop(const AST::ErrorStop_t &x) {
+    void visit_ErrorStop( AST::ErrorStop_t &x) {
         ASR::expr_t *code;
         if (x.m_code) {
             visit_expr(*x.m_code);
@@ -3716,7 +3716,7 @@ public:
         tmp = ASR::make_ErrorStop_t(al, x.base.base.loc, code);
     }
 
-    void visit_Nullify(const AST::Nullify_t &x) {
+    void visit_Nullify( AST::Nullify_t &x) {
         Vec<ASR::symbol_t*> arg_vec;
         arg_vec.reserve(al, x.n_args);
         for( size_t i = 0; i < x.n_args; i++ ) {
@@ -3749,15 +3749,15 @@ public:
         tmp = ASR::make_Nullify_t(al, x.base.base.loc, arg_vec.p, arg_vec.size());
     }
 
-    void visit_Requirement(const AST::Requirement_t /*&x*/) {
+    void visit_Requirement( AST::Requirement_t /*&x*/) {
 
     }
 
-    void visit_Require(const AST::Require_t /*&x*/) {
+    void visit_Require( AST::Require_t /*&x*/) {
 
     }
 
-    void visit_Pragma(const AST::Pragma_t &x) {
+    void visit_Pragma( AST::Pragma_t &x) {
         if ( !compiler_options.openmp ) {
             return;
         }
@@ -3851,7 +3851,7 @@ public:
         }
     }
 
-    void visit_Template(const AST::Template_t &x){
+    void visit_Template( AST::Template_t &x){
         is_template = true;
 
         SymbolTable* old_scope = current_scope;

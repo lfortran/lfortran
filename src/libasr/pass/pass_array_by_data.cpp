@@ -224,9 +224,8 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
         template <typename T>
         bool visit_SymbolContainingFunctions( T& x,
             std::deque<ASR::Function_t*>& pass_array_by_data_functions) {
-            T& xx = const_cast<T&>(x);
-            current_scope = xx.m_symtab;
-            for( auto& item: xx.m_symtab->get_scope() ) {
+            current_scope = x.m_symtab;
+            for( auto& item: x.m_symtab->get_scope() ) {
                 if( ASR::is_a<ASR::Function_t>(*item.second) ) {
                     ASR::Function_t* subrout = ASR::down_cast<ASR::Function_t>(item.second);
                     pass_array_by_data_functions.push_back(subrout);
@@ -284,13 +283,13 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
         }
 };
 
-#define edit_symbol_reference(attr) ASR::symbol_t* x_sym = xx.m_##attr;    \
+#define edit_symbol_reference(attr) ASR::symbol_t* x_sym = x.m_##attr;    \
     SymbolTable* x_sym_symtab = ASRUtils::symbol_parent_symtab(x_sym);    \
     if( x_sym_symtab->get_counter() != current_scope->get_counter() &&    \
         !ASRUtils::is_parent(x_sym_symtab, current_scope) ) {    \
         std::string x_sym_name = std::string(ASRUtils::symbol_name(x_sym));    \
-        xx.m_##attr = current_scope->resolve_symbol(x_sym_name);    \
-        LCOMPILERS_ASSERT(xx.m_##attr != nullptr);    \
+        x.m_##attr = current_scope->resolve_symbol(x_sym_name);    \
+        LCOMPILERS_ASSERT(x.m_##attr != nullptr);    \
     }    \
 
 #define edit_symbol_pointer(attr) ASR::symbol_t* x_sym = x->m_##attr;    \
@@ -375,19 +374,16 @@ class EditProcedureVisitor: public ASR::CallReplacerOnExpressionsVisitor<EditPro
     }
 
     void visit_BlockCall( ASR::BlockCall_t& x) {
-        ASR::BlockCall_t& xx = const_cast<ASR::BlockCall_t&>(x);
         edit_symbol_reference(m)
         ASR::CallReplacerOnExpressionsVisitor<EditProcedureVisitor>::visit_BlockCall(x);
     }
 
     void visit_AssociateBlockCall( ASR::AssociateBlockCall_t& x) {
-        ASR::AssociateBlockCall_t& xx = const_cast<ASR::AssociateBlockCall_t&>(x);
         edit_symbol_reference(m)
         ASR::CallReplacerOnExpressionsVisitor<EditProcedureVisitor>::visit_AssociateBlockCall(x);
     }
 
     void visit_SubroutineCall( ASR::SubroutineCall_t& x) {
-        ASR::SubroutineCall_t& xx = const_cast<ASR::SubroutineCall_t&>(x);
         edit_symbol_reference(name)
         ASR::CallReplacerOnExpressionsVisitor<EditProcedureVisitor>::visit_SubroutineCall(x);
     }
@@ -451,9 +447,8 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                 new_args.push_back(al, arg);
             }
             if (args_updated) {
-                T&xx = const_cast<T&>(x);
-                xx.m_args = new_args.p;
-                xx.n_args = new_args.size();
+                x.m_args = new_args.p;
+                x.n_args = new_args.size();
             }
         }
 
@@ -596,11 +591,10 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                     new_func_sym_ = current_scope->resolve_symbol(new_func_sym_name);
                 }
             }
-            T& xx = const_cast<T&>(x);
-            xx.m_name = new_func_sym_;
-            xx.m_original_name = new_func_sym_;
-            xx.m_args = new_args.p;
-            xx.n_args = new_args.size();
+            x.m_name = new_func_sym_;
+            x.m_original_name = new_func_sym_;
+            x.m_args = new_args.p;
+            x.n_args = new_args.size();
         }
 
         void visit_SubroutineCall( ASR::SubroutineCall_t& x) {
@@ -642,8 +636,7 @@ class RemoveArrayByDescriptorProceduresVisitor : public PassUtils::PassVisitor<R
         // such cases for the following to be removed.
         template <typename T>
         void visit_Unit( T& x) {
-            T& xx = const_cast<T&>(x);
-            current_scope = xx.m_symtab;
+            current_scope = x.m_symtab;
 
             std::vector<std::string> to_be_erased;
 

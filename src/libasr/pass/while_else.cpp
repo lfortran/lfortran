@@ -25,8 +25,7 @@ public:
         ASR::stmt_t *while_stmt = (ASR::stmt_t*)(&x);
             
         loop_stack.push(while_stmt);
-        ASR::WhileLoop_t &xx = const_cast<ASR::WhileLoop_t&>(x);
-        transform_stmts(xx.m_body, xx.n_body);
+        transform_stmts(x.m_body, x.n_body);
 
         loop_stack.pop();
     }

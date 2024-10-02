@@ -73,18 +73,16 @@ public:
         }
 
     void visit_Var( ASR::Var_t& x) {
-        ASR::Var_t& xx = const_cast<ASR::Var_t&>(x);
-        ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(xx.m_v);
+        ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(x.m_v);
         if (ASR::is_a<ASR::Variable_t>(*sym)) {
-            replace_symbol(sym, ASR::Variable_t, xx.m_v);
+            replace_symbol(sym, ASR::Variable_t, x.m_v);
         } else {
             fixed_duplicated_expr_stmt = false;
         }
     }
 
     void visit_BlockCall( ASR::BlockCall_t& x) {
-        ASR::BlockCall_t& xx = const_cast<ASR::BlockCall_t&>(x);
-        replace_symbol(xx.m_m, ASR::Block_t, xx.m_m);
+        replace_symbol(x.m_m, ASR::Block_t, x.m_m);
     }
 
 };
@@ -488,8 +486,7 @@ public:
     void visit_Function( ASR::Function_t &x) {
         // FIXME: this is a hack, we need to pass in a non-const `x`,
         // which requires to generate a TransformVisitor.
-        ASR::Function_t &xx = const_cast<ASR::Function_t&>(x);
-        current_routine = std::string(xx.m_name);
+        current_routine = std::string(x.m_name);
         ASR::CallReplacerOnExpressionsVisitor<InlineFunctionCallVisitor>::visit_Function(x);
         current_routine.clear();
     }

@@ -145,12 +145,9 @@ class ReplaceIntrinsicSubroutines : public ASR::CallReplacerOnExpressionsVisitor
         }
 
         void visit_Program( ASR::Program_t &x) {
-            // FIXME: this is a hack, we need to pass in a non-const `x`,
-            // which requires to generate a TransformVisitor.
-            ASR::Program_t& xx = const_cast<ASR::Program_t&>(x);
             SymbolTable* current_scope_copy = current_scope;
-            current_scope = xx.m_symtab;
-            global_scope = xx.m_symtab;
+            current_scope = x.m_symtab;
+            global_scope = x.m_symtab;
 
             while( global_scope->parent ) {
                 global_scope = global_scope->parent;
@@ -167,7 +164,7 @@ class ReplaceIntrinsicSubroutines : public ASR::CallReplacerOnExpressionsVisitor
                 }
             }
 
-            transform_stmts(xx.m_body, xx.n_body);
+            transform_stmts(x.m_body, x.n_body);
             current_scope = current_scope_copy;
         }
 

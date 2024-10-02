@@ -35,13 +35,12 @@ class InsertDeallocate: public ASR::CallReplacerOnExpressionsVisitor<InsertDeall
                 }
             }
             if( to_be_deallocated.size() > 0 ) {
-                T& xx = const_cast<T&>(x);
                 Vec<ASR::stmt_t*> body;
-                body.from_pointer_n_copy(al, xx.m_body, xx.n_body);
+                body.from_pointer_n_copy(al, x.m_body, x.n_body);
                 body.push_back(al, ASRUtils::STMT(ASR::make_ImplicitDeallocate_t(
                     al, x.base.base.loc, to_be_deallocated.p, to_be_deallocated.size())));
-                xx.m_body = body.p;
-                xx.n_body = body.size();
+                x.m_body = body.p;
+                x.n_body = body.size();
             }
         }
 

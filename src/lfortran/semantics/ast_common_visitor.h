@@ -1415,12 +1415,12 @@ public:
         return access_type;
     }
 
-    void visit_Format(const AST::Format_t &x) {
+    void visit_Format( AST::Format_t &x) {
         format_statements[x.m_label] = x.m_fmt;
         tmp = nullptr;
     }
 
-    void visit_Include(const AST::Include_t &x) {
+    void visit_Include( AST::Include_t &x) {
         diag.semantic_error_label(
             "Include statement is not implemented at the AST level yet. You have to run LFortran with prescanning which can handle include statements.",
             {x.base.base.loc},
@@ -1524,7 +1524,7 @@ public:
         return true;
     }
 
-    void handle_array_data_stmt(const AST::DataStmt_t &x, AST::DataStmtSet_t* a, ASR::ttype_t* obj_type, ASR::expr_t* object, size_t &curr_value) {
+    void handle_array_data_stmt( AST::DataStmt_t &x, AST::DataStmtSet_t* a, ASR::ttype_t* obj_type, ASR::expr_t* object, size_t &curr_value) {
         ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(obj_type);
         if (check_equal_value(a->m_value, a->n_value)) {
             /*
@@ -1611,7 +1611,7 @@ public:
         }
     }
 
-    void handle_implied_do_loop_data_stmt(const AST::DataStmt_t &data_stmt,
+    void handle_implied_do_loop_data_stmt( AST::DataStmt_t &data_stmt,
                                           AST::DataStmtSet_t *data_stmt_set,
                                           ASR::expr_t* implied_do_loop_expr,
                                           size_t &value_index) {
@@ -1664,7 +1664,7 @@ public:
         }
     }
 
-    void handle_scalar_data_stmt(const AST::DataStmt_t &x, AST::DataStmtSet_t *a, size_t i, size_t &j) {
+    void handle_scalar_data_stmt( AST::DataStmt_t &x, AST::DataStmtSet_t *a, size_t i, size_t &j) {
         this->visit_expr(*a->m_object[i]);
         ASR::expr_t* object = ASRUtils::EXPR(tmp);
         this->visit_expr(*a->m_value[j++]);
@@ -1736,7 +1736,7 @@ public:
     }
 
 
-    void visit_DataStmt(const AST::DataStmt_t &x) {
+    void visit_DataStmt( AST::DataStmt_t &x) {
         // The DataStmt is a statement, so it occurs in the BodyVisitor.
         // We add its contents into the symbol table here. This visitor
         // could probably be in either the CommonVisitor or the BodyVisitor.
@@ -1936,7 +1936,7 @@ public:
         return var_;
     }
 
-    void populate_common_dictionary(const AST::Declaration_t &x, ASR::symbol_t* common_block_struct_sym, ASR::Struct_t* struct_type, std::string common_block_name, size_t &i) {
+    void populate_common_dictionary( AST::Declaration_t &x, ASR::symbol_t* common_block_struct_sym, ASR::Struct_t* struct_type, std::string common_block_name, size_t &i) {
         AST::var_sym_t& s = x.m_syms[i];
         if (common_block_dictionary.find(common_block_name) == common_block_dictionary.end()) {
             // create a new common_block pair
@@ -2151,7 +2151,7 @@ public:
             al, loc, adjusted_str, value_type));
     }
 
-    void visit_DeclarationUtil(const AST::Declaration_t &x) {
+    void visit_DeclarationUtil( AST::Declaration_t &x) {
         _declaring_variable = true;
         if (x.m_vartype == nullptr &&
                 x.n_attributes == 1 &&
@@ -3323,19 +3323,19 @@ public:
         _declaring_variable = false;
     }
 
-    void visit_Interface(const AST::Interface_t &/*x*/) {
+    void visit_Interface( AST::Interface_t &/*x*/) {
 
     }
 
-    void visit_DeclarationPragma(const AST::DeclarationPragma_t &/*x*/) {
+    void visit_DeclarationPragma( AST::DeclarationPragma_t &/*x*/) {
 
     }
 
-    void visit_DerivedType(const AST::DerivedType_t &/*x*/) {
+    void visit_DerivedType( AST::DerivedType_t &/*x*/) {
 
     }
 
-    void visit_Enum(const AST::Enum_t &/*x*/) {
+    void visit_Enum( AST::Enum_t &/*x*/) {
 
     }
 
@@ -3684,7 +3684,7 @@ public:
                     sem = -1;
                 }
 
-                void visit_Module(const ASR::Module_t &x) {
+                void visit_Module( ASR::Module_t &x) {
                     for (auto &a : x.m_symtab->get_scope()) {
                         if ( ASR::is_a<ASR::Function_t>(*a.second) ) {
                             ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(a.second);
@@ -3698,7 +3698,7 @@ public:
                     }
                 }
 
-                void visit_Program(const ASR::Program_t &x) {
+                void visit_Program( ASR::Program_t &x) {
                     for (auto &a : x.m_symtab->get_scope()) {
                         if ( ASR::is_a<ASR::Function_t>(*a.second) ) {
                             ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(a.second);
@@ -3715,7 +3715,7 @@ public:
                     }
                 }
 
-                void visit_Struct( const ASR::Struct_t& x ) {
+                void visit_Struct( ASR::Struct_t& x ) {
                     SymbolTable* local_current_scope_copy = local_current_scope;
                     local_current_scope = x.m_symtab;
                     for (auto &a : x.m_symtab->get_scope()) {
@@ -3730,7 +3730,7 @@ public:
                     local_current_scope = local_current_scope_copy;
                 }
 
-                void visit_Array( const ASR::Array_t& x ) {
+                void visit_Array( ASR::Array_t& x ) {
                     if ( ASR::is_a<ASR::StructType_t>(*x.m_type) ) {
                         sem += 1;
                         visit_StructType(*ASR::down_cast<ASR::StructType_t>(x.m_type));
@@ -3739,7 +3739,7 @@ public:
 
                 }
 
-                void visit_FunctionType( const ASR::FunctionType_t& x ) {
+                void visit_FunctionType( ASR::FunctionType_t& x ) {
                     for (size_t i=0; i<x.n_arg_types; i++) {
                         this->visit_ttype(*x.m_arg_types[i]);
                     }
@@ -3747,7 +3747,7 @@ public:
                         this->visit_ttype(*x.m_return_var_type);
                 }
 
-                void visit_ArrayItem(const ASR::ArrayItem_t& x) {
+                void visit_ArrayItem(ASR::ArrayItem_t& x) {
                     if ( ASR::is_a<ASR::StructType_t>(*x.m_type) ) {
                         sem += 1;
                         visit_StructType(*ASR::down_cast<ASR::StructType_t>(x.m_type));
@@ -3756,15 +3756,14 @@ public:
                     this->visit_expr(*x.m_v);
                 }
 
-                void visit_StructType( const ASR::StructType_t& x ) {
+                void visit_StructType( ASR::StructType_t& x ) {
                     if ( sem >= 0 ) {
-                        ASR::StructType_t& xx = const_cast<ASR::StructType_t&>(x);
-                        if ( ASRUtils::symbol_parent_symtab(xx.m_derived_type)->counter != local_current_scope->counter) {
-                            if ((local_current_scope->resolve_symbol(ASRUtils::symbol_name(xx.m_derived_type)) == nullptr)) {
+                        if ( ASRUtils::symbol_parent_symtab(x.m_derived_type)->counter != local_current_scope->counter) {
+                            if ((local_current_scope->resolve_symbol(ASRUtils::symbol_name(x.m_derived_type)) == nullptr)) {
                                 ASRUtils::SymbolDuplicator sd(al);
-                                sd.duplicate_symbol(xx.m_derived_type, local_current_scope);
+                                sd.duplicate_symbol(x.m_derived_type, local_current_scope);
                             }
-                            xx.m_derived_type = local_current_scope->resolve_symbol(ASRUtils::symbol_name(xx.m_derived_type));
+                            x.m_derived_type = local_current_scope->resolve_symbol(ASRUtils::symbol_name(x.m_derived_type));
                         }
                     }
                 }
@@ -4124,7 +4123,7 @@ public:
         }
     }
 
-    void visit_ArrayInitializer(const AST::ArrayInitializer_t &x) {
+    void visit_ArrayInitializer( AST::ArrayInitializer_t &x) {
         Vec<ASR::expr_t*> body;
         body.reserve(al, x.n_args);
         ASR::ttype_t *type = nullptr;
@@ -4422,7 +4421,7 @@ public:
     }
 
     ASR::asr_t* symbol_resolve_external_generic_procedure_with_ast_node(
-                const AST::FuncCallOrArray_t &x,
+                AST::FuncCallOrArray_t &x,
                 ASR::symbol_t *v, Vec<ASR::call_arg_t>& args) {
         const Location& loc = x.base.base.loc;
         ASR::ExternalSymbol_t *p = ASR::down_cast<ASR::ExternalSymbol_t>(v);
@@ -4527,7 +4526,7 @@ public:
         }
     }
 
-    ASR::asr_t* create_GenericProcedureWithASTNode(const AST::FuncCallOrArray_t& x,
+    ASR::asr_t* create_GenericProcedureWithASTNode( AST::FuncCallOrArray_t& x,
                 Vec<ASR::call_arg_t>& args, ASR::symbol_t *v) {
         const Location& loc = x.base.base.loc;
         if (ASR::is_a<ASR::ExternalSymbol_t>(*v)) {
@@ -4655,27 +4654,23 @@ public:
                 n_body = body.size();
             }
 
-            void visit_Function(const ASR::Function_t &x) {
-                ASR::Function_t& xx = const_cast<ASR::Function_t&>(x);
-
-                for (auto &a : xx.m_symtab->get_scope()) {
+            void visit_Function(ASR::Function_t &x) {
+                for (auto &a : x.m_symtab->get_scope()) {
                     this->visit_symbol(*a.second);
                 }
 
-                transform_stmts(xx.m_body, xx.n_body);
+                transform_stmts(x.m_body, x.n_body);
             }
 
-            void visit_Program(const ASR::Program_t &x) {
-                ASR::Program_t& xx = const_cast<ASR::Program_t&>(x);
-
-                for (auto &a : xx.m_symtab->get_scope()) {
+            void visit_Program(ASR::Program_t &x) {
+                for (auto &a : x.m_symtab->get_scope()) {
                     this->visit_symbol(*a.second);
                 }
 
-                transform_stmts(xx.m_body, xx.n_body);
+                transform_stmts(x.m_body, x.n_body);
             }
 
-            void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
+            void visit_SubroutineCall(ASR::SubroutineCall_t& x) {
                 if ( ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(x.m_name)) ) {
                     ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(x.m_name));
                     ASR::FunctionType_t* f_type = ASR::down_cast<ASR::FunctionType_t>(f->m_function_signature);
@@ -4690,7 +4685,7 @@ public:
                         ASR::expr_t* arg_expr = x.m_args[it.first].m_value;
                         if ( arg_expr != nullptr ) {
                             ASR::expr_t** current_expr_copy = current_expr;
-                            current_expr = const_cast<ASR::expr_t**>(&(arg_expr));;
+                            current_expr = &(arg_expr);
                             call_replacer_();
                             x.m_args[it.first].m_value = *current_expr;
                             current_expr = current_expr_copy;
@@ -4947,7 +4942,7 @@ public:
         }
     }
 
-    ASR::asr_t* create_FunctionCallWithASTNode(const AST::FuncCallOrArray_t& x,
+    ASR::asr_t* create_FunctionCallWithASTNode( AST::FuncCallOrArray_t& x,
                 ASR::symbol_t *v, Vec<ASR::call_arg_t>& args, bool is_dt_present=false) {
         ASR::symbol_t *f2 = ASRUtils::symbol_get_past_external(v);
         if (ASR::is_a<ASR::Function_t>(*f2)) {
@@ -5159,7 +5154,7 @@ public:
 
     // TODO: Use Vec<expr_t*> instead of std::vector<expr_t*> for performance
     template <typename T>
-    bool handle_intrinsic_node_args(const T& x,
+    bool handle_intrinsic_node_args( T& x,
         Vec<ASR::expr_t*>& args, std::vector<std::string>& kwarg_names,
         size_t min_args, size_t max_args, const std::string& intrinsic_name,
         bool raise_error=true) {
@@ -5240,7 +5235,7 @@ public:
         return ASR::down_cast<ASR::IntegerConstant_t>(kind_value)->m_n;
     }
 
-    ASR::asr_t* create_ArrayBound(const AST::FuncCallOrArray_t& x, std::string& bound_name) {
+    ASR::asr_t* create_ArrayBound( AST::FuncCallOrArray_t& x, std::string& bound_name) {
         Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"array", "dim", "kind"};
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 3, bound_name);
@@ -5315,7 +5310,7 @@ public:
                                       bound, bound_value);
     }
 
-    ASR::asr_t* create_ArraySize(const AST::FuncCallOrArray_t& x) {
+    ASR::asr_t* create_ArraySize( AST::FuncCallOrArray_t& x) {
         Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"array", "dim", "kind"};
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 3, std::string("size"));
@@ -5371,7 +5366,7 @@ public:
         return ASRUtils::make_ArraySize_t_util(al, x.base.base.loc, v_Var, dim, type, size_compiletime, false);
     }
 
-    ASR::asr_t* create_StringLen(const AST::FuncCallOrArray_t& x) {
+    ASR::asr_t* create_StringLen( AST::FuncCallOrArray_t& x) {
         Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"string", "kind"};
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 2, std::string("len"));
@@ -5405,7 +5400,7 @@ public:
         return ASR::make_StringLen_t(al, x.base.base.loc, v_Var, type, len_compiletime);
     }
 
-    ASR::asr_t* create_ArrayReshape(const AST::FuncCallOrArray_t& x) {
+    ASR::asr_t* create_ArrayReshape( AST::FuncCallOrArray_t& x) {
         if( x.n_args != 2 ) {
             throw SemanticError("reshape accepts only 2 arguments, got " +
                                 std::to_string(x.n_args) + " arguments instead.",
@@ -5471,7 +5466,7 @@ public:
         return ASR::make_ArrayReshape_t(al, x.base.base.loc, array, newshape, reshape_ttype, nullptr);
     }
 
-    ASR::asr_t* create_BitCast(const AST::FuncCallOrArray_t& x) {
+    ASR::asr_t* create_BitCast( AST::FuncCallOrArray_t& x) {
         Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"source", "mold", "size"};
         handle_intrinsic_node_args(x, args, kwarg_names, 2, 3, "transfer");
@@ -5517,7 +5512,7 @@ public:
                                      size, type, nullptr);
     }
 
-    ASR::asr_t* create_Cmplx(const AST::FuncCallOrArray_t& x) {
+    ASR::asr_t* create_Cmplx( AST::FuncCallOrArray_t& x) {
         Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"x", "y", "kind"};
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 3, "cmplx");
@@ -5573,7 +5568,7 @@ public:
         return ASR::make_ComplexConstructor_t(al, x.base.base.loc, x_, y_, type, cc_expr);
     }
 
-    ASR::asr_t* create_NullPointerConstant(const AST::FuncCallOrArray_t& x) {
+    ASR::asr_t* create_NullPointerConstant( AST::FuncCallOrArray_t& x) {
         Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"mold"};
         handle_intrinsic_node_args(x, args, kwarg_names, 0, 1, "null");
@@ -5588,7 +5583,7 @@ public:
         return ASR::make_PointerNullConstant_t(al, x.base.base.loc, null_ptr_type_);
     }
 
-    ASR::asr_t* create_Associated(const AST::FuncCallOrArray_t& x) {
+    ASR::asr_t* create_Associated( AST::FuncCallOrArray_t& x) {
         Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"pointer", "target"};
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 2, "associated");
@@ -5598,7 +5593,7 @@ public:
         return ASR::make_PointerAssociated_t(al, x.base.base.loc, ptr_, tgt_, associated_type_, nullptr);
     }
 
-    ASR::asr_t* create_Iachar(const AST::FuncCallOrArray_t& x) {
+    ASR::asr_t* create_Iachar( AST::FuncCallOrArray_t& x) {
         Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"C", "kind"};
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 2, "iachar");
@@ -5619,7 +5614,7 @@ public:
         return ASR::make_Iachar_t(al, x.base.base.loc, arg, type, iachar_value);
     }
 
-    ASR::asr_t* create_ScanVerify_util(const AST::FuncCallOrArray_t& x, std::string func_name) {
+    ASR::asr_t* create_ScanVerify_util( AST::FuncCallOrArray_t& x, std::string func_name) {
         ASR::expr_t *string, *set, *back, *kind;
         ASR::ttype_t *type;
         string = nullptr, set = nullptr, back = nullptr;
@@ -5674,7 +5669,7 @@ public:
             func_args.size(), type, nullptr, nullptr, false);
     }
 
-    ASR::asr_t* create_Complex(const AST::FuncCallOrArray_t& x) {
+    ASR::asr_t* create_Complex( AST::FuncCallOrArray_t& x) {
         const Location &loc = x.base.base.loc;
         Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"x", "y"};
@@ -6035,7 +6030,7 @@ public:
                 fetch_arrayconstant(ASRUtils::EXPR2VAR(var_value)->m_value) : nullptr;
     }
 
-    ASR::symbol_t* intrinsic_as_node(const AST::FuncCallOrArray_t &x,
+    ASR::symbol_t* intrinsic_as_node( AST::FuncCallOrArray_t &x,
                                      bool& is_function) {
         std::string var_name = to_lower(x.m_func);
         std::string specific_var_name = var_name;
@@ -6137,7 +6132,7 @@ public:
         return resolve_intrinsic_function(x.base.base.loc, var_name);
     }
 
-    ASR::asr_t* create_PointerToCptr(const AST::FuncCallOrArray_t& x) {
+    ASR::asr_t* create_PointerToCptr( AST::FuncCallOrArray_t& x) {
         Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"X"};
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 1, std::string("c_loc"));
@@ -6237,7 +6232,7 @@ public:
     }
 
     template <class Call>
-    void create_implicit_interface_function(const Call &x, std::string func_name, bool add_return, ASR::ttype_t* old_type) {
+    void create_implicit_interface_function( Call &x, std::string func_name, bool add_return, ASR::ttype_t* old_type) {
         is_implicit_interface = true;
         implicit_interface_parent_scope = current_scope;
         SymbolTable *parent_scope = current_scope;
@@ -6341,7 +6336,7 @@ public:
         implicit_interface_parent_scope = nullptr;
     }
 
-    void visit_DataImpliedDo(const AST::DataImpliedDo_t& x) {
+    void visit_DataImpliedDo( AST::DataImpliedDo_t& x) {
         Vec<ASR::expr_t*> a_values_vec;
         ASR::expr_t *a_start, *a_end, *a_increment;
         a_start = a_end = a_increment = nullptr;
@@ -6400,7 +6395,7 @@ public:
             ImpliedDoLoopValuesVisitor(std::vector<ASR::symbol_t*>& loop_vars, bool &contain_loop_vars) :
                 loop_vars(loop_vars), contain_loop_vars(contain_loop_vars) {}
 
-            void visit_Var(const ASR::Var_t &x) {
+            void visit_Var( ASR::Var_t &x) {
                 ASR::symbol_t* sym = x.m_v;
                 if (std::find(loop_vars.begin(), loop_vars.end(), sym) != loop_vars.end()) {
                     contain_loop_vars &= true;
@@ -6412,28 +6407,28 @@ public:
                 return;
             }
 
-            void visit_IntegerBinOp(const ASR::IntegerBinOp_t &x) {
+            void visit_IntegerBinOp( ASR::IntegerBinOp_t &x) {
                 this->visit_expr(*x.m_left);
                 if (!contain_loop_vars) return;
                 this->visit_expr(*x.m_right);
                 if (!contain_loop_vars) return;
             }
 
-            void visit_RealBinOp(const ASR::RealBinOp_t &x) {
+            void visit_RealBinOp( ASR::RealBinOp_t &x) {
                 this->visit_expr(*x.m_left);
                 if (!contain_loop_vars) return;
                 this->visit_expr(*x.m_right);
                 if (!contain_loop_vars) return;
             }
 
-            void visit_IntrinsicElementalFunction(const ASR::IntrinsicElementalFunction_t &x) {
+            void visit_IntrinsicElementalFunction( ASR::IntrinsicElementalFunction_t &x) {
                 for (size_t i = 0; i < x.n_args; i++) {
                     this->visit_expr(*x.m_args[i]);
                     if (!contain_loop_vars) return;
                 }
             }
 
-            void visit_IntrinsicArrayFunction(const ASR::IntrinsicArrayFunction_t &/*x*/) {
+            void visit_IntrinsicArrayFunction( ASR::IntrinsicArrayFunction_t &/*x*/) {
                 // TODO: will have to handle this
                 contain_loop_vars = false;
             }
@@ -6512,7 +6507,7 @@ public:
                 ASR::ttype_t* type, std::map<std::string, std::vector<IntrinsicSignature>> name2signature, diag::Diagnostics& diag) :
                 al(al), loop_vars(loop_vars), loop_indices(loop_indices), value(value), type(type), diag(diag), name2signature(name2signature) {}
 
-            void visit_Var(const ASR::Var_t &x) {
+            void visit_Var( ASR::Var_t &x) {
                 int loop_var_index = std::find(loop_vars.begin(), loop_vars.end(), x.m_v) - loop_vars.begin();
                 // check if loop_var_index is valid
                 if (loop_var_index >= (int) loop_vars.size()) {
@@ -6554,27 +6549,27 @@ public:
                 }
             }
 
-            void visit_IntegerConstant(const ASR::IntegerConstant_t &x) {
+            void visit_IntegerConstant( ASR::IntegerConstant_t &x) {
                 value = x.m_n;
             }
 
-            void visit_RealConstant(const ASR::RealConstant_t &x) {
+            void visit_RealConstant( ASR::RealConstant_t &x) {
                 value = x.m_r;
             }
 
-            void visit_LogicalConstant(const ASR::LogicalConstant_t &x) {
+            void visit_LogicalConstant( ASR::LogicalConstant_t &x) {
                 value = x.m_value;
             }
 
-            void visit_ComplexConstant(const ASR::ComplexConstant_t &x) {
+            void visit_ComplexConstant( ASR::ComplexConstant_t &x) {
                 throw SemanticError("Complex constant in compiletime evaluation implied do loop not supported", x.base.base.loc);
             }
 
-            void visit_StringConstant(const ASR::StringConstant_t &x) {
+            void visit_StringConstant( ASR::StringConstant_t &x) {
                 throw SemanticError("String constant in compiletime evaluation implied do loop not supported", x.base.base.loc);
             }
 
-            void visit_IntegerBinOp(const ASR::IntegerBinOp_t &x) {
+            void visit_IntegerBinOp( ASR::IntegerBinOp_t &x) {
                 T left_val, right_val;
                 this->visit_expr(*x.m_left);
                 left_val = value;
@@ -6601,7 +6596,7 @@ public:
                 }
             }
 
-            void visit_RealBinOp(const ASR::RealBinOp_t &x) {
+            void visit_RealBinOp( ASR::RealBinOp_t &x) {
                 T left_val, right_val;
                 this->visit_expr(*x.m_left);
                 left_val = value;
@@ -6635,7 +6630,7 @@ public:
                 return name2signature[var_name];
             }
             // handle intrinsic elemental function
-            void visit_IntrinsicElementalFunction(const ASR::IntrinsicElementalFunction_t &x) {
+            void visit_IntrinsicElementalFunction( ASR::IntrinsicElementalFunction_t &x) {
                 Vec<ASR::expr_t*> args; args.reserve(al, x.n_args);
                 for (size_t i = 0; i < x.n_args; i++) {
                     ASR::ttype_t* arg_type = ASRUtils::expr_type(x.m_args[i]);
@@ -6704,7 +6699,7 @@ public:
         curr_nesting_level--;
     }
 
-    void visit_ImpliedDoLoop(const AST::ImpliedDoLoop_t& x) {
+    void visit_ImpliedDoLoop( AST::ImpliedDoLoop_t& x) {
         idl_nesting_level++;
         Vec<ASR::expr_t*> a_values_vec;
         ASR::expr_t *a_start, *a_end, *a_increment;
@@ -6821,7 +6816,7 @@ public:
                             n, w, ASRUtils::expr_type(n));
     }
 
-    void visit_FuncCallOrArray(const AST::FuncCallOrArray_t &x) {
+    void visit_FuncCallOrArray( AST::FuncCallOrArray_t &x) {
         std::string var_name = to_lower(x.m_func);
         if (x.n_temp_args > 0) {
             ASR::symbol_t *owner_sym = ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner);
@@ -7797,7 +7792,7 @@ public:
         return new_func_name;
     }
 
-    void visit_BinOp(const AST::BinOp_t &x) {
+    void visit_BinOp( AST::BinOp_t &x) {
         this->visit_expr(*x.m_left);
         ASR::expr_t *left = ASRUtils::EXPR(tmp);
         this->visit_expr(*x.m_right);
@@ -7805,7 +7800,7 @@ public:
         visit_BinOp2(al, x, left, right, tmp, binop2str[x.m_op], current_scope);
     }
 
-    void visit_DefBinOp(const AST::DefBinOp_t &x) {
+    void visit_DefBinOp( AST::DefBinOp_t &x) {
         this->visit_expr(*x.m_left);
         ASR::expr_t *left = ASRUtils::EXPR(tmp);
         this->visit_expr(*x.m_right);
@@ -7922,7 +7917,7 @@ public:
         }
     }
 
-    void visit_BoolOp(const AST::BoolOp_t &x) {
+    void visit_BoolOp( AST::BoolOp_t &x) {
         this->visit_expr(*x.m_left);
         ASR::expr_t *left = ASRUtils::EXPR(tmp);
         this->visit_expr(*x.m_right);
@@ -7930,7 +7925,7 @@ public:
         CommonVisitorMethods::visit_BoolOp(al, x, left, right, tmp, diag);
     }
 
-    void visit_StrOp(const AST::StrOp_t &x) {
+    void visit_StrOp( AST::StrOp_t &x) {
         this->visit_expr(*x.m_left);
         ASR::expr_t *left = ASRUtils::EXPR(tmp);
         this->visit_expr(*x.m_right);
@@ -8016,7 +8011,7 @@ public:
         }
     }
 
-    void visit_UnaryOp(const AST::UnaryOp_t &x) {
+    void visit_UnaryOp( AST::UnaryOp_t &x) {
         this->visit_expr(*x.m_operand);
         ASR::expr_t *operand = ASRUtils::EXPR(tmp);
         CommonVisitorMethods::visit_UnaryOp(al, x, operand, tmp,
@@ -8024,7 +8019,7 @@ public:
             current_module_dependencies);
     }
 
-    void visit_Compare(const AST::Compare_t &x) {
+    void visit_Compare( AST::Compare_t &x) {
         this->visit_expr(*x.m_left);
         ASR::expr_t *left = ASRUtils::EXPR(tmp);
         this->visit_expr(*x.m_right);
@@ -8036,23 +8031,23 @@ public:
                                             compiler_options);
     }
 
-    void visit_Parenthesis(const AST::Parenthesis_t &x) {
+    void visit_Parenthesis( AST::Parenthesis_t &x) {
         this->visit_expr(*x.m_operand);
     }
 
-    void visit_Logical(const AST::Logical_t &x) {
+    void visit_Logical( AST::Logical_t &x) {
         ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
         tmp = ASR::make_LogicalConstant_t(al, x.base.base.loc, x.m_value, type);
     }
 
-    void visit_String(const AST::String_t &x) {
+    void visit_String( AST::String_t &x) {
         int s_len = strlen(x.m_s);
         ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Character_t(al, x.base.base.loc,
                 1, s_len, nullptr, ASR::string_physical_typeType::PointerString));
         tmp = ASR::make_StringConstant_t(al, x.base.base.loc, x.m_s, type);
     }
 
-    void visit_BOZ(const AST::BOZ_t& x) {
+    void visit_BOZ( AST::BOZ_t& x) {
         std::string s = std::string(x.m_s);
         int base = -1;
         ASR::integerbozType boz_type;
@@ -8078,7 +8073,7 @@ public:
                 int_type, boz_type);
     }
 
-    void visit_Num(const AST::Num_t &x) {
+    void visit_Num( AST::Num_t &x) {
         int ikind = compiler_options.po.default_integer_kind;
         if (x.m_kind) {
             ikind = std::atoi(x.m_kind);
@@ -8126,7 +8121,7 @@ public:
         }
     }
 
-    void visit_Real(const AST::Real_t &x) {
+    void visit_Real( AST::Real_t &x) {
         double r = ASRUtils::extract_real(x.m_n);
         char* s_kind;
         int r_kind = ASRUtils::extract_kind_str(x.m_n, s_kind);
@@ -8161,7 +8156,7 @@ public:
         tmp = ASR::make_RealConstant_t(al, x.base.base.loc, r, type);
     }
 
-    void visit_Complex(const AST::Complex_t &x) {
+    void visit_Complex( AST::Complex_t &x) {
         this->visit_expr(*x.m_re);
         ASR::expr_t *re = ASRUtils::EXPR(tmp);
         ASR::expr_t *re_value = ASRUtils::expr_value(re);
@@ -8197,7 +8192,7 @@ public:
                 re, im, type, value);
     }
 
-    void visit_Procedure(const AST::Procedure_t&) {
+    void visit_Procedure( AST::Procedure_t&) {
         // To Be Implemented
     }
 
@@ -8594,7 +8589,7 @@ public:
         }
     }
 
-    void visit_Name(const AST::Name_t &x) {
+    void visit_Name( AST::Name_t &x) {
         visit_NameUtil(x.m_member, x.n_member, x.m_id, x.base.base.loc);
     }
 

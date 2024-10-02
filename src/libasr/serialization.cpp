@@ -328,9 +328,7 @@ public:
             Module_t *m = down_cast<Module_t>(global_symtab->get_symbol(module_name));
             symbol_t *sym = m->m_symtab->find_scoped_symbol(original_name, x.n_scope_names, x.m_scope_names);
             if (sym) {
-                // FIXME: this is a hack, we need to pass in a non-const `x`.
-                ExternalSymbol_t &xx = const_cast<ExternalSymbol_t&>(x);
-                xx.m_external = sym;
+                x.m_external = sym;
             } else {
                 throw LCompilersException("ExternalSymbol cannot be resolved, the symbol '"
                     + original_name + "' was not found in the module '"
@@ -340,9 +338,7 @@ public:
             Module_t *m = down_cast<Module_t>(external_symtab->get_symbol(module_name));
             symbol_t *sym = m->m_symtab->find_scoped_symbol(original_name, x.n_scope_names, x.m_scope_names);
             if (sym) {
-                // FIXME: this is a hack, we need to pass in a non-const `x`.
-                ExternalSymbol_t &xx = const_cast<ExternalSymbol_t&>(x);
-                xx.m_external = sym;
+                x.m_external = sym;
             } else {
                 throw LCompilersException("ExternalSymbol cannot be resolved, the symbol '"
                     + original_name + "' was not found in the module '"
@@ -371,9 +367,7 @@ public:
                         x.n_scope_names, x.m_scope_names);
             }
             if (sym) {
-                // FIXME: this is a hack, we need to pass in a non-const `x`.
-                ExternalSymbol_t &xx = const_cast<ExternalSymbol_t&>(x);
-                xx.m_external = sym;
+                x.m_external = sym;
             } else {
                 throw LCompilersException("ExternalSymbol cannot be resolved, the symbol '"
                     + original_name + "' was not found in the module '"

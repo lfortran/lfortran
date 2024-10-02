@@ -65,14 +65,13 @@ public:
     void visit_ComplexBinOp( ASR::ComplexBinOp_t& /*x*/) { }
     void visit_LogicalBinOp( ASR::LogicalBinOp_t& /*x*/) { }
 
-    void visit_RealBinOp( ASR::RealBinOp_t& x_const) {
+    void visit_RealBinOp( ASR::RealBinOp_t& x) {
         if( !from_fma ) {
             return ;
         }
 
         from_fma = true;
-        LCOMPILERS_ASSERT(ASRUtils::is_real(*x_const.m_type))
-        ASR::RealBinOp_t& x = const_cast<ASR::RealBinOp_t&>(x_const);
+        LCOMPILERS_ASSERT(ASRUtils::is_real(*x.m_type))
 
         fma_var = nullptr;
         visit_expr(*x.m_left);
@@ -124,11 +123,10 @@ public:
 
     void visit_Assignment( ASR::Assignment_t& x) {
         from_fma = true;
-        ASR::Assignment_t& xx = const_cast<ASR::Assignment_t&>(x);
         fma_var = nullptr;
         visit_expr(*x.m_value);
         if( fma_var ) {
-            xx.m_value = fma_var;
+            x.m_value = fma_var;
         }
         fma_var = nullptr;
         from_fma = false;
@@ -153,11 +151,10 @@ public:
     template<typename T>
     void visit_UnaryOp( T& x) {
         from_fma = true;
-        T& xx = const_cast<T&>(x);
         fma_var = nullptr;
         visit_expr(*x.m_arg);
         if( fma_var ) {
-            xx.m_arg = fma_var;
+            x.m_arg = fma_var;
         }
         fma_var = nullptr;
         from_fma = false;

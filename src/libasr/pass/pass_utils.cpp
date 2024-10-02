@@ -301,12 +301,11 @@ namespace LCompilers {
     }
 
     void fix_dimension(ASR::Cast_t* x, ASR::expr_t* arg_expr) {
-        ASR::ttype_t* x_type = const_cast<ASR::ttype_t*>(x->m_type);
         ASR::ttype_t* arg_type = ASRUtils::expr_type(arg_expr);
         ASR::dimension_t* m_dims;
         int ndims;
         PassUtils::get_dim_rank(arg_type, m_dims, ndims);
-        PassUtils::set_dim_rank(x_type, m_dims, ndims);
+        PassUtils::set_dim_rank(x->m_type, m_dims, ndims);
     }
 
         void create_vars(Vec<ASR::expr_t*>& vars, int n_vars, const Location& loc,

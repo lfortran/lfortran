@@ -101,7 +101,7 @@ public:
       : CommonVisitor(al, symbol_table, diagnostics, compiler_options, implicit_mapping, common_variables_hash, external_procedures_mapping,
                       instantiate_types, instantiate_symbols, entry_functions, entry_function_arguments_mapping, data_structure) {}
 
-    void visit_TranslationUnit(const AST::TranslationUnit_t &x) {
+    void visit_TranslationUnit( AST::TranslationUnit_t &x) {
         if (!current_scope) {
             current_scope = al.make_new<SymbolTable>(nullptr);
         }
@@ -138,11 +138,11 @@ public:
         }
     }
 
-    void visit_Private(const AST::Private_t&) {
+    void visit_Private( AST::Private_t&) {
         // To Be Implemented
     }
 
-    void visit_FinalName(const AST::FinalName_t&) {
+    void visit_FinalName( AST::FinalName_t&) {
         // To Be Implemented
     }
 
@@ -291,7 +291,7 @@ public:
     }
 
     template <typename T>
-    void process_implicit_statements(const T &x, std::map<std::string, ASR::ttype_t*> &implicit_dictionary) {
+    void process_implicit_statements( T &x, std::map<std::string, ASR::ttype_t*> &implicit_dictionary) {
         if (implicit_stack.size() > 0 && x.n_implicit == 0) {
             // We are inside a module and visiting a function / subroutine with no implicit statement
             if (!is_interface) {
@@ -394,7 +394,7 @@ public:
     }
 
     template <typename T, typename R>
-    void visit_ModuleSubmoduleCommon(const T &x, std::string parent_name="") {
+    void visit_ModuleSubmoduleCommon( T &x, std::string parent_name="") {
         assgn_proc_names.clear();
         class_procedures.clear();
         SymbolTable *parent_scope = current_scope;
@@ -454,7 +454,7 @@ public:
         dflt_access = ASR::Public;
     }
 
-    void visit_Module(const AST::Module_t &x) {
+    void visit_Module( AST::Module_t &x) {
         if (compiler_options.implicit_typing) {
             Location a_loc = x.base.base.loc;
             populate_implicit_dictionary(a_loc, implicit_dictionary);
@@ -475,7 +475,7 @@ public:
         }
     }
 
-    void visit_Submodule(const AST::Submodule_t &x) {
+    void visit_Submodule( AST::Submodule_t &x) {
         in_submodule = true;
         visit_ModuleSubmoduleCommon<AST::Submodule_t, ASR::Module_t>(x, std::string(x.m_id));
         in_submodule = false;
@@ -498,7 +498,7 @@ public:
         }
     }
 
-    void visit_Program(const AST::Program_t &x) {
+    void visit_Program( AST::Program_t &x) {
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
         current_module_dependencies.reserve(al, 4);
@@ -594,7 +594,7 @@ public:
             SymbolTable* correct_scope = nullptr;
             UpdateDuplicatedNodes(Allocator &al) : PassVisitor(al, nullptr) {}
 
-            void visit_FunctionCall(const ASR::FunctionCall_t& x) {
+            void visit_FunctionCall( ASR::FunctionCall_t& x) {
                 ASR::FunctionCall_t* func_call = (ASR::FunctionCall_t*)(&x);
                 if (scope->counter == correct_scope->counter) {
                     std::string func_call_name = ASRUtils::symbol_name(func_call->m_name);
@@ -620,7 +620,7 @@ public:
                 }
             }
 
-            void visit_Var(const ASR::Var_t& x) {
+            void visit_Var( ASR::Var_t& x) {
                 if (scope && scope->counter == correct_scope->counter) {
                     ASR::Var_t* var = (ASR::Var_t*)(&x);
                     ASR::symbol_t* sym = var->m_v;
@@ -631,7 +631,7 @@ public:
                 }
             }
 
-            void visit_Function(const ASR::Function_t& x) {
+            void visit_Function( ASR::Function_t& x) {
                 ASR::Function_t* func = (ASR::Function_t*)(&x);
                 SymbolTable* parent_scope = scope;
                 scope = func->m_symtab;
@@ -816,7 +816,7 @@ public:
     }
 
     template <typename T>
-    std::vector<AST::arg_t> perform_argument_mapping(const T& x, std::string sym_name) {
+    std::vector<AST::arg_t> perform_argument_mapping( T& x, std::string sym_name) {
         // create master function
         std::vector<std::string> arg_names;
         for(size_t i = 0; i < x.n_args; i++) {
@@ -863,7 +863,7 @@ public:
         return master_args;
     }
 
-    void visit_Subroutine(const AST::Subroutine_t &x) {
+    void visit_Subroutine( AST::Subroutine_t &x) {
         in_Subroutine = true;
         SetChar current_function_dependencies_copy = current_function_dependencies;
         current_function_dependencies.clear(al);
@@ -1193,7 +1193,7 @@ public:
         return r;
     }
 
-    void visit_Function(const AST::Function_t &x) {
+    void visit_Function( AST::Function_t &x) {
         in_Subroutine = true;
         SetChar current_function_dependencies_copy = current_function_dependencies;
         current_function_dependencies.clear(al);
@@ -1562,11 +1562,11 @@ public:
         is_global_save_enabled = is_global_save_enabled_copy;
     }
 
-    void visit_Declaration(const AST::Declaration_t& x) {
+    void visit_Declaration( AST::Declaration_t& x) {
         visit_DeclarationUtil(x);
     }
 
-    void visit_DeclarationPragma(const AST::DeclarationPragma_t &x) {
+    void visit_DeclarationPragma( AST::DeclarationPragma_t &x) {
         if (compiler_options.ignore_pragma) {
             return;
         }
@@ -1620,7 +1620,7 @@ public:
         simd_variables.clear();
     }
 
-    void visit_DerivedType(const AST::DerivedType_t &x) {
+    void visit_DerivedType( AST::DerivedType_t &x) {
         dt_name = to_lower(x.m_name);
         bool is_abstract = false;
         bool is_deferred = false;
@@ -1708,7 +1708,7 @@ public:
         is_derived_type = false;
     }
 
-    void visit_InterfaceProc(const AST::InterfaceProc_t &x) {
+    void visit_InterfaceProc( AST::InterfaceProc_t &x) {
         bool old_is_interface = is_interface;
         is_interface = true;
         visit_program_unit(*x.m_proc);
@@ -1716,7 +1716,7 @@ public:
         return;
     }
 
-    void visit_DerivedTypeProc(const AST::DerivedTypeProc_t &x) {
+    void visit_DerivedTypeProc( AST::DerivedTypeProc_t &x) {
         for (size_t i = 0; i < x.n_symbols; i++) {
             AST::UseSymbol_t *use_sym = AST::down_cast<AST::UseSymbol_t>(
                 x.m_symbols[i]);
@@ -1763,7 +1763,7 @@ public:
         }
     }
 
-    void fill_interface_proc_names(const AST::Interface_t& x,
+    void fill_interface_proc_names( AST::Interface_t& x,
                                     std::vector<std::string>& proc_names) {
         for (size_t i = 0; i < x.n_items; i++) {
             AST::interface_item_t *item = x.m_items[i];
@@ -1806,7 +1806,7 @@ public:
         }
     }
 
-    void visit_Interface(const AST::Interface_t &x) {
+    void visit_Interface( AST::Interface_t &x) {
         if (AST::is_a<AST::InterfaceHeaderName_t>(*x.m_header)) {
             std::string generic_name = to_lower(AST::down_cast<AST::InterfaceHeaderName_t>(x.m_header)->m_name);
             interface_name = generic_name;
@@ -2149,7 +2149,7 @@ public:
         }
     }
 
-    std::string import_all(const ASR::Module_t* m, bool to_submodule=false) {
+    std::string import_all( ASR::Module_t* m, bool to_submodule=false) {
         // Import all symbols from the module, e.g.:
         //     use a
         for (auto &item : m->m_symtab->get_scope()) {
@@ -2589,7 +2589,7 @@ public:
         }
     }
 
-    void visit_Use(const AST::Use_t &x) {
+    void visit_Use( AST::Use_t &x) {
         std::string msym = to_lower(x.m_module);
         if (msym == "ieee_arithmetic") {
             msym = "lfortran_intrinsic_" + msym;
@@ -2694,7 +2694,7 @@ public:
         }
     }
 
-    void visit_GenericName(const AST::GenericName_t& x) {
+    void visit_GenericName( AST::GenericName_t& x) {
         std::string generic_name = to_lower(std::string(x.m_name));
         for( size_t i = 0; i < x.n_names; i++ ) {
             std::string x_m_name = std::string(x.m_names[i]);
@@ -2702,7 +2702,7 @@ public:
         }
     }
 
-    void visit_GenericAssignment(const AST::GenericAssignment_t& x) {
+    void visit_GenericAssignment( AST::GenericAssignment_t& x) {
         std::string generic_name = "~assign";
         for( size_t i = 0; i < x.n_names; i++ ) {
             std::string x_m_name = std::string(x.m_names[i]);
@@ -2710,7 +2710,7 @@ public:
         }
     }
 
-    void visit_GenericOperator(const AST::GenericOperator_t &x) {
+    void visit_GenericOperator( AST::GenericOperator_t &x) {
         std::string generic_name = intrinsic2str[x.m_op];
         for( size_t i = 0; i < x.n_names; i++ ) {
             std::string x_m_name = std::string(x.m_names[i]);
@@ -2719,7 +2719,7 @@ public:
         }
     }
 
-    void visit_GenericDefinedOperator(const AST::GenericDefinedOperator_t &x) {
+    void visit_GenericDefinedOperator( AST::GenericDefinedOperator_t &x) {
         std::string generic_name = "~def_op~" + std::string(x.m_optype);
         for( size_t i = 0; i < x.n_names; i++ ) {
             std::string x_m_name = std::string(x.m_names[i]);
@@ -2728,7 +2728,7 @@ public:
         }
     }
 
-    void visit_Requirement(const AST::Requirement_t &x) {
+    void visit_Requirement( AST::Requirement_t &x) {
         is_requirement = true;
 
         SymbolTable *parent_scope = current_scope;
@@ -2810,13 +2810,13 @@ public:
         is_requirement = false;
     }
 
-    void visit_Require(const AST::Require_t &x) {
+    void visit_Require( AST::Require_t &x) {
         for (size_t i=0; i<x.n_reqs; i++) {
             visit_unit_require(*x.m_reqs[i]);
         }
     }
 
-    void visit_UnitRequire(const AST::UnitRequire_t &x) {
+    void visit_UnitRequire( AST::UnitRequire_t &x) {
         std::string require_name = to_lower(x.m_name);
         ASR::symbol_t *req0 = ASRUtils::symbol_get_past_external(
             current_scope->resolve_symbol(require_name));
@@ -2900,7 +2900,7 @@ public:
         context_map.clear();
     }
 
-    void visit_Template(const AST::Template_t &x){
+    void visit_Template( AST::Template_t &x){
         is_template = true;
 
         SymbolTable *parent_scope = current_scope;
@@ -2967,7 +2967,7 @@ public:
         is_template = false;
     }
 
-    void visit_Instantiate(const AST::Instantiate_t &x) {
+    void visit_Instantiate( AST::Instantiate_t &x) {
         std::string template_name = x.m_name;
 
         // check if the template exists

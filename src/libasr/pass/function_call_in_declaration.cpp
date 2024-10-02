@@ -249,7 +249,7 @@ public:
         return false;
     }
 
-    void set_type_of_result_var( ASR::FunctionType_t &x, ASR::Function_t* func) {
+    void set_type_of_result_var(const ASR::FunctionType_t &x, ASR::Function_t* func) {
         if( !ASR::is_a<ASR::Array_t>(*x.m_return_var_type) ) {
             return ;
         }
@@ -266,7 +266,7 @@ public:
         ASRUtils::EXPR2VAR(func->m_return_var)->m_type = return_type_copy;
     }
 
-    void visit_FunctionType( ASR::FunctionType_t &x) {
+    void visit_FunctionType(const ASR::FunctionType_t &x) {
         if (!current_scope) return;
 
         ASR::ttype_t* return_var_type = x.m_return_var_type;
@@ -290,13 +290,13 @@ public:
                     ASR::IntegerBinOp_t* binop = ASR::down_cast<ASR::IntegerBinOp_t>(start);
                     if (is_function_call_or_intrinsic_array_function(binop->m_left)) {
                         ASR::expr_t** current_expr_copy = current_expr;
-                        current_expr = const_cast<ASR::expr_t**>(&(binop->m_left));
+                        current_expr = &(binop->m_left);
                         this->call_replacer_(binop->m_left);
                         current_expr = current_expr_copy;
                     }
                     if (is_function_call_or_intrinsic_array_function(binop->m_right)) {
                         ASR::expr_t** current_expr_copy = current_expr;
-                        current_expr = const_cast<ASR::expr_t**>(&(binop->m_right));
+                        current_expr = &(binop->m_right);
                         this->call_replacer_(binop->m_right);
                         current_expr = current_expr_copy;
                     }
@@ -306,13 +306,13 @@ public:
                     ASR::IntegerBinOp_t* binop = ASR::down_cast<ASR::IntegerBinOp_t>(end);
                     if (is_function_call_or_intrinsic_array_function(binop->m_left)) {
                         ASR::expr_t** current_expr_copy = current_expr;
-                        current_expr = const_cast<ASR::expr_t**>(&(binop->m_left));
+                        current_expr = &(binop->m_left);
                         this->call_replacer_(binop->m_left);
                         current_expr = current_expr_copy;
                     }
                     if (is_function_call_or_intrinsic_array_function(binop->m_right)) {
                         ASR::expr_t** current_expr_copy = current_expr;
-                        current_expr = const_cast<ASR::expr_t**>(&(binop->m_right));
+                        current_expr = &(binop->m_right);
                         this->call_replacer_(binop->m_right);
                         current_expr = current_expr_copy;
                     }
@@ -320,13 +320,13 @@ public:
                 }
                 if (is_function_call_or_intrinsic_array_function(start)) {
                     ASR::expr_t** current_expr_copy = current_expr;
-                    current_expr = const_cast<ASR::expr_t**>(&(ASR::down_cast<ASR::Array_t>(x.m_return_var_type)->m_dims[i].m_start));
+                    current_expr = &(ASR::down_cast<ASR::Array_t>(x.m_return_var_type)->m_dims[i].m_start);
                     this->call_replacer_(start);
                     current_expr = current_expr_copy;
                 }
                 if (is_function_call_or_intrinsic_array_function(end)) {
                     ASR::expr_t** current_expr_copy = current_expr;
-                    current_expr = const_cast<ASR::expr_t**>(&(ASR::down_cast<ASR::Array_t>(x.m_return_var_type)->m_dims[i].m_length));
+                    current_expr = &(ASR::down_cast<ASR::Array_t>(x.m_return_var_type)->m_dims[i].m_length);
                     this->call_replacer_(end);
                     current_expr = current_expr_copy;
                 }
@@ -336,7 +336,7 @@ public:
         }
     }
 
-    void visit_Function( ASR::Function_t &x) {
+    void visit_Function(const ASR::Function_t &x) {
         current_scope = x.m_symtab;
         this->visit_ttype(*x.m_function_signature);
         current_scope = nullptr;

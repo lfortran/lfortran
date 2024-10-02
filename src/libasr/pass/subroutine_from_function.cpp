@@ -70,10 +70,7 @@ class CreateFunctionFromSubroutine: public PassUtils::PassVisitor<CreateFunction
 
         void visit_Program( ASR::Program_t &x) {
             std::vector<std::pair<std::string, ASR::symbol_t*> > replace_vec;
-            // FIXME: this is a hack, we need to pass in a non-const `x`,
-            // which requires to generate a TransformVisitor.
-            ASR::Program_t &xx = const_cast<ASR::Program_t&>(x);
-            current_scope = xx.m_symtab;
+            current_scope = x.m_symtab;
 
             for (auto &item : x.m_symtab->get_scope()) {
                 if (is_a<ASR::Function_t>(*item.second)) {
@@ -93,8 +90,8 @@ class CreateFunctionFromSubroutine: public PassUtils::PassVisitor<CreateFunction
                 }
             }
 
-            current_scope = xx.m_symtab;
-            transform_stmts(xx.m_body, xx.n_body);
+            current_scope = x.m_symtab;
+            transform_stmts(x.m_body, x.n_body);
 
         }
 

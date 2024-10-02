@@ -639,8 +639,6 @@ class ASRPassWalkVisitorVisitor(ASDLVisitor):
                 symtab_field_name = field.name
             if is_stmt_present and is_symtab_present:
                 break
-        if is_stmt_present and name not in ("Assignment", "ForAllSingle", "FileRead", "FileWrite"):
-            self.emit("    %s_t& xx = const_cast<%s_t&>(x);" % (name, name), 1)
         self.used = False
 
         if is_symtab_present:
@@ -665,7 +663,7 @@ class ASRPassWalkVisitorVisitor(ASDLVisitor):
             level = 2
             if field.seq:
                 if field.type == "stmt":
-                    self.emit("self().transform_stmts(xx.m_%s, xx.n_%s);" % (field.name, field.name), level)
+                    self.emit("self().transform_stmts(x.m_%s, x.n_%s);" % (field.name, field.name), level)
                     return
                 self.used = True
                 self.emit("for (size_t i=0; i<x.n_%s; i++) {" % field.name, level)
@@ -751,8 +749,6 @@ class CallReplacerOnExpressionsVisitor(ASDLVisitor):
                 symtab_field_name = field.name
             if is_stmt_present and is_symtab_present:
                 break
-        if is_stmt_present and name not in ("Assignment", "ForAllSingle", "FileRead", "FileWrite"):
-            self.emit("    %s_t& xx = const_cast<%s_t&>(x);" % (name, name), 1)
         self.used = False
 
         if is_symtab_present:
@@ -772,7 +768,7 @@ class CallReplacerOnExpressionsVisitor(ASDLVisitor):
 
     def insert_call_replacer_code(self, name, level, index=""):
         self.emit("ASR::expr_t** current_expr_copy_%d = current_expr;" % (self.current_expr_copy_variable_count), level)
-        self.emit("current_expr = const_cast<ASR::expr_t**>(&(x.m_%s%s));" % (name, index), level)
+        self.emit("current_expr = &(x.m_%s%s);" % (name, index), level)
         self.emit("self().call_replacer();", level)
         self.emit("current_expr = current_expr_copy_%d;" % (self.current_expr_copy_variable_count), level)
         self.current_expr_copy_variable_count += 1
@@ -783,7 +779,7 @@ class CallReplacerOnExpressionsVisitor(ASDLVisitor):
             level = 2
             if field.seq:
                 if field.type == "stmt":
-                    self.emit("self().transform_stmts(xx.m_%s, xx.n_%s);" % (field.name, field.name), level)
+                    self.emit("self().transform_stmts(x.m_%s, x.n_%s);" % (field.name, field.name), level)
                     return
                 self.used = True
                 self.emit("for (size_t i=0; i<x.n_%s; i++) {" % field.name, level)
