@@ -6892,7 +6892,7 @@ public:
                 if (x.m_args != nullptr && x.m_args[0].m_start != nullptr) {
 
                     if((x.m_args[0].m_start->type) == 4){
-                        throw SemanticError("Substring start is less than one", x.base.base.loc);
+                        throw SemanticError("Substring `start` is less than one", x.base.base.loc);
                     }
 
                     if (x.m_args[0].m_start->type == AST::exprType::Num) {
@@ -6901,7 +6901,7 @@ public:
                         AST::Num_t *num_expr = (AST::Num_t *)first_expr_arg;
 
                         if((num_expr->m_n) == 0){
-                            throw SemanticError("Substring start is less than one", x.base.base.loc);
+                            throw SemanticError("Substring `start` is less than one", x.base.base.loc);
                         }
                     }
                 }
