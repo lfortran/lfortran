@@ -4204,3 +4204,7 @@ filename = "lookup_name1.f90"
 lookup_name = true
 line = 3
 column = 12
+
+[[test]]
+filename = "errors/string_negative_start_index.f90"
+asr = true
