@@ -161,7 +161,9 @@ namespace Srand {
         }
     }
 
-    static inline ASR::asr_t* create_Srand(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
+    static inline ASR::asr_t* create_Srand(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
+        diag.semantic_warning_label(
+                "`srand is an LFortran extension", { loc }, "Use `random_init` instead");
         Vec<ASR::expr_t*> m_args; m_args.reserve(al, 1); m_args.push_back(al, args[0]);
         return ASR::make_IntrinsicImpureSubroutine_t(al, loc, static_cast<int64_t>(IntrinsicImpureSubroutines::Srand), m_args.p, m_args.n, 0);
     }
