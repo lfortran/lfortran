@@ -6885,22 +6885,24 @@ public:
                 throw SemanticError("Subroutine `" + var_name + "` called as a function ", x.base.base.loc);
             }
         }
+        else{
 
-        if(ASRUtils::is_character(*ASRUtils::symbol_type(v))){
+            if((v->type == 9) && (ASRUtils::is_character(*ASRUtils::symbol_type(v)))){
             
-            if (x.m_args != nullptr && x.m_args[0].m_start != nullptr) {
+                if (x.m_args != nullptr && x.m_args[0].m_start != nullptr) {
 
-                if((x.m_args[0].m_start->type) == 4){
-                    throw SemanticError("Substring start is less than one", x.base.base.loc);
-                }
-
-                if (x.m_args[0].m_start->type == AST::exprType::Num) {
-
-                    AST::expr_t *first_expr_arg = x.m_args[0].m_start;
-                    AST::Num_t *num_expr = (AST::Num_t *)first_expr_arg;
-
-                    if((num_expr->m_n) == 0){
+                    if((x.m_args[0].m_start->type) == 4){
                         throw SemanticError("Substring start is less than one", x.base.base.loc);
+                    }
+
+                    if (x.m_args[0].m_start->type == AST::exprType::Num) {
+
+                        AST::expr_t *first_expr_arg = x.m_args[0].m_start;
+                        AST::Num_t *num_expr = (AST::Num_t *)first_expr_arg;
+
+                        if((num_expr->m_n) == 0){
+                            throw SemanticError("Substring start is less than one", x.base.base.loc);
+                        }
                     }
                 }
             }
