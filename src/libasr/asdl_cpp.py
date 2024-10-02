@@ -288,7 +288,7 @@ class ASTVisitorVisitor1(ASDLVisitor):
                     % (subs["mod"], base), 1)
             self.emit(    "switch (x.type) {", 1)
             for type_ in sum.types:
-                self.emit("        case %sType::%s: { v.visit_%s((const %s_t &)x);"
+                self.emit("        case %sType::%s: { v.visit_%s((%s_t &)x);"
                     " return; }" % (base, type_.name, type_.name, type_.name))
             self.emit("    }")
             self.emit("}")
@@ -301,7 +301,7 @@ class ASTVisitorVisitor1b(ASDLVisitor):
         self.emit("static void visit_%(mod)s_t(const %(mod)s_t &x, Visitor &v) {" % subs)
         self.emit("    switch (x.type) {")
         for type_ in sums:
-            self.emit("        case %sType::%s: { v.visit_%s((const %s_t &)x);"
+            self.emit("        case %sType::%s: { v.visit_%s(( %s_t &)x);"
                 " return; }" % (subs["mod"], type_, type_, type_))
         self.emit("    }")
         self.emit("}")
@@ -331,7 +331,7 @@ class ASTVisitorVisitor2(ASDLVisitor):
             self.emit("void visit_%s(const %s_t &b) { visit_%s_t(b, self()); }"\
                     % (base, base, base), 1)
             for type_ in sum.types:
-                self.emit("""void visit_%s(const %s_t & /* x */) { throw LCompilersException("visit_%s() not implemented"); }""" \
+                self.emit("""void visit_%s( %s_t & /* x */) { throw LCompilersException("visit_%s() not implemented"); }""" \
                         % (type_.name, type_.name, type_.name), 2)
 
 class DefaultLookupNameVisitor(ASDLVisitor):
@@ -361,7 +361,7 @@ class DefaultLookupNameVisitor(ASDLVisitor):
         self.emit("}", 2)
         self.emit("return false;", 2)
         self.emit("}", 1)
-        self.emit("void handle_symbol(const symbol_t* sym) {", 1)
+        self.emit("void handle_symbol( symbol_t* sym) {", 1)
         self.emit("switch(sym->type) {", 2)
         self.emit("case ASR::symbolType::Program: {", 3)
         self.emit("node_to_return = ( ASR::asr_t* ) ((Program_t*)sym);", 4)
@@ -429,7 +429,7 @@ class DefaultLookupNameVisitor(ASDLVisitor):
         self.emit("}", 3)
         self.emit("}", 2)
         self.emit("}", 1)
-        self.emit("static inline const ASR::symbol_t *symbol_get_past_external_(ASR::symbol_t *f) {", 1)
+        self.emit("static inline ASR::symbol_t *symbol_get_past_external_(ASR::symbol_t *f) {", 1)
         self.emit("if (f->type == ASR::symbolType::ExternalSymbol) {", 2)
         self.emit("ASR::ExternalSymbol_t *e = ASR::down_cast<ASR::ExternalSymbol_t>(f);", 3)
         self.emit("LCOMPILERS_ASSERT(!ASR::is_a<ASR::ExternalSymbol_t>(*e->m_external));", 3)
@@ -456,7 +456,7 @@ class DefaultLookupNameVisitor(ASDLVisitor):
         # if (test_loc_and_set_span(x.base.base.loc)) {
         #     node_to_return = (ASR::asr_t*) &x;
         # }
-        self.emit("void visit_%s(const %s_t &x) {" % (name, name), 1)
+        self.emit("void visit_%s( %s_t &x) {" % (name, name), 1)
         self.used = False
         have_body = False
         have_symbol = False
@@ -546,7 +546,7 @@ class ASTWalkVisitorVisitor(ASDLVisitor):
         self.make_visitor(cons.name, cons.fields)
 
     def make_visitor(self, name, fields):
-        self.emit("void visit_%s(const %s_t &x) {" % (name, name), 1)
+        self.emit("void visit_%s( %s_t &x) {" % (name, name), 1)
         self.used = False
         have_body = False
         for field in fields:
@@ -627,7 +627,7 @@ class ASRPassWalkVisitorVisitor(ASDLVisitor):
         self.make_visitor(cons.name, cons.fields)
 
     def make_visitor(self, name, fields):
-        self.emit("void visit_%s(const %s_t &x) {" % (name, name), 1)
+        self.emit("void visit_%s( %s_t &x) {" % (name, name), 1)
         is_symtab_present = False
         is_stmt_present = False
         symtab_field_name = ""
@@ -739,7 +739,7 @@ class CallReplacerOnExpressionsVisitor(ASDLVisitor):
         self.make_visitor(cons.name, cons.fields)
 
     def make_visitor(self, name, fields):
-        self.emit("void visit_%s(const %s_t &x) {" % (name, name), 1)
+        self.emit("void visit_%s( %s_t &x) {" % (name, name), 1)
         is_symtab_present = False
         is_stmt_present = False
         symtab_field_name = ""
@@ -888,7 +888,7 @@ class TreeVisitorVisitor(ASDLVisitor):
         self.make_visitor(cons.name, cons.fields, True)
 
     def make_visitor(self, name, fields, cons):
-        self.emit("void visit_%s(const %s_t &x) {" % (name, name), 1)
+        self.emit("void visit_%s( %s_t &x) {" % (name, name), 1)
         self.emit(          'if(!attached) {', 2)
         self.emit(              'if(start_line) {', 3)
         self.emit(                  'start_line = false;', 4)
@@ -922,7 +922,7 @@ class TreeVisitorVisitor(ASDLVisitor):
         self.emit("}", 1)
 
     def make_simple_sum_visitor(self, name, types):
-        self.emit("void visit_%s(const %s &x) {" % (name, name), 1)
+        self.emit("void visit_%s( %s &x) {" % (name, name), 1)
         self.emit(    'if (use_colors) {', 2)
         self.emit(        's.append(color(style::bold));', 3)
         self.emit(        's.append(color(fg::green));', 3)
@@ -1651,7 +1651,7 @@ class PickleVisitorVisitor(ASDLVisitor):
         self.make_visitor(cons.name, cons.fields, True)
 
     def make_visitor(self, name, fields, cons):
-        self.emit("void visit_%s(const %s_t &x) {" % (name, name), 1)
+        self.emit("void visit_%s( %s_t &x) {" % (name, name), 1)
         self.emit(      's.append("(");', 2)
 
         # For ASR
@@ -1706,7 +1706,7 @@ class PickleVisitorVisitor(ASDLVisitor):
         self.emit("}", 1)
 
     def make_simple_sum_visitor(self, name, types):
-        self.emit("void visit_%s(const %s &x) {" % (name, name), 1)
+        self.emit("void visit_%s( %s &x) {" % (name, name), 1)
         self.emit(    'if (use_colors) {', 2)
         self.emit(        's.append(color(style::bold));', 3)
         self.emit(        's.append(color(fg::green));', 3)
@@ -1989,7 +1989,7 @@ class JsonVisitorVisitor(ASDLVisitor):
         self.make_visitor(cons.name, cons.fields, True)
 
     def make_visitor(self, name, fields, cons):
-        self.emit("void visit_%s(const %s_t &x) {" % (name, name), 1)
+        self.emit("void visit_%s( %s_t &x) {" % (name, name), 1)
         self.emit(    's.append("{");', 2)
         self.emit(    'inc_indent(); s.append("\\n" + indtd);', 2)
         self.emit(    's.append("\\"node\\": \\"%s\\"");' % name, 2)
@@ -2014,7 +2014,7 @@ class JsonVisitorVisitor(ASDLVisitor):
         self.emit("}", 1)
 
     def make_simple_sum_visitor(self, name, types):
-        self.emit("void visit_%s(const %s &x) {" % (name, name), 1)
+        self.emit("void visit_%s( %s &x) {" % (name, name), 1)
         self.emit(    'switch (x) {', 2)
         for tp in types:
             self.emit(    'case (%s::%s) : {' % (name, tp.name), 3)
@@ -2203,7 +2203,7 @@ class SerializationVisitorVisitor(ASDLVisitor):
         self.make_visitor(cons.name, cons.fields, True)
 
     def make_visitor(self, name, fields, cons):
-        self.emit("void visit_%s(const %s_t &x) {" % (name, name), 1)
+        self.emit("void visit_%s( %s_t &x) {" % (name, name), 1)
         if cons:
             self.emit(    'self().write_int8(x.base.type);', 2)
             self.emit(    'self().write_int64(x.base.base.loc.first);', 2)
@@ -2218,7 +2218,7 @@ class SerializationVisitorVisitor(ASDLVisitor):
         self.emit("}", 1)
 
     def make_simple_sum_visitor(self, name, types):
-        self.emit("void visit_%s(const %s &x) {" % (name, name), 1)
+        self.emit("void visit_%s( %s &x) {" % (name, name), 1)
         self.emit(    'self().write_int8(x);', 2)
         self.emit("}", 1)
 
