@@ -40,7 +40,7 @@ public:
     VarVisitor(Allocator &al) : asr{nullptr}, al{al} {
     }
 
-    void visit_Program(const ASR::Program_t &x) {
+    void visit_Program( ASR::Program_t &x) {
         for (auto &item : x.m_symtab->get_scope()) {
             if (is_a<ASR::Variable_t>(*item.second)) {
                 ASR::Variable_t *v = down_cast<ASR::Variable_t>(item.second);
@@ -49,24 +49,24 @@ public:
         }
     }
 
-    void visit_IntegerUnaryMinus(const ASR::IntegerUnaryMinus_t &x) {
+    void visit_IntegerUnaryMinus( ASR::IntegerUnaryMinus_t &x) {
         visit_UnaryOp(x);
     }
-    void visit_RealUnaryMinus(const ASR::RealUnaryMinus_t &x) {
+    void visit_RealUnaryMinus( ASR::RealUnaryMinus_t &x) {
         visit_UnaryOp(x);
     }
-    void visit_ComplexUnaryMinus(const ASR::ComplexUnaryMinus_t &x) {
+    void visit_ComplexUnaryMinus( ASR::ComplexUnaryMinus_t &x) {
         visit_UnaryOp(x);
     }
-    void visit_IntegerBitNot(const ASR::IntegerBitNot_t &x) {
+    void visit_IntegerBitNot( ASR::IntegerBitNot_t &x) {
         visit_UnaryOp(x);
     }
-    void visit_LogicalNot(const ASR::LogicalNot_t &x) {
+    void visit_LogicalNot( ASR::LogicalNot_t &x) {
         visit_UnaryOp(x);
     }
 
     template<typename T>
-    void visit_UnaryOp(const T& x) {
+    void visit_UnaryOp( T& x) {
         T& x_unconst = const_cast<T&>(x);
         asr = nullptr;
         this->visit_expr(*x.m_arg);
@@ -76,28 +76,28 @@ public:
         asr = const_cast<ASR::expr_t*>(&(x.base));
     }
 
-    void visit_IntegerCompare(const ASR::IntegerCompare_t& x) {
+    void visit_IntegerCompare( ASR::IntegerCompare_t& x) {
         handle_Compare(x);
     }
 
-    void visit_RealCompare(const ASR::RealCompare_t &x) {
+    void visit_RealCompare( ASR::RealCompare_t &x) {
         handle_Compare(x);
     }
 
-    void visit_ComplexCompare(const ASR::ComplexCompare_t &x) {
+    void visit_ComplexCompare( ASR::ComplexCompare_t &x) {
         handle_Compare(x);
     }
 
-    void visit_LogicalCompare(const ASR::LogicalCompare_t &x) {
+    void visit_LogicalCompare( ASR::LogicalCompare_t &x) {
         handle_Compare(x);
     }
 
-    void visit_StringCompare(const ASR::StringCompare_t &x) {
+    void visit_StringCompare( ASR::StringCompare_t &x) {
         handle_Compare(x);
     }
 
     template <typename T>
-    void handle_Compare(const T& x) {
+    void handle_Compare( T& x) {
         T& x_unconst = const_cast<T&>(x);
         asr = nullptr;
         this->visit_expr(*x.m_left);
@@ -112,24 +112,24 @@ public:
         asr = const_cast<ASR::expr_t*>(&(x.base));
     }
 
-    void visit_IntegerBinOp(const ASR::IntegerBinOp_t& x) {
+    void visit_IntegerBinOp( ASR::IntegerBinOp_t& x) {
         handle_BinOp(x);
     }
 
-    void visit_RealBinOp(const ASR::RealBinOp_t& x) {
+    void visit_RealBinOp( ASR::RealBinOp_t& x) {
         handle_BinOp(x);
     }
 
-    void visit_ComplexBinOp(const ASR::ComplexBinOp_t& x) {
+    void visit_ComplexBinOp( ASR::ComplexBinOp_t& x) {
         handle_BinOp(x);
     }
 
-    void visit_LogicalBinOp(const ASR::LogicalBinOp_t& x) {
+    void visit_LogicalBinOp( ASR::LogicalBinOp_t& x) {
         handle_BinOp(x);
     }
 
     template <typename T>
-    void handle_BinOp(const T& x) {
+    void handle_BinOp( T& x) {
         T& x_unconst = const_cast<T&>(x);
         asr = nullptr;
         this->visit_expr(*x.m_left);
@@ -144,7 +144,7 @@ public:
         asr = const_cast<ASR::expr_t*>(&(x.base));
     }
 
-    void visit_Cast(const ASR::Cast_t& x) {
+    void visit_Cast( ASR::Cast_t& x) {
         /*
         asr = nullptr;
         this->visit_expr(*x.m_arg);
@@ -156,7 +156,7 @@ public:
         asr = const_cast<ASR::expr_t*>(&(x.base));
     }
 
-    void visit_Var(const ASR::Var_t& x) {
+    void visit_Var( ASR::Var_t& x) {
         if (is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(x.m_v))) {
             ASR::Variable_t *init_var = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(x.m_v));
             if( init_var->m_storage == ASR::storage_typeType::Parameter ) {
@@ -181,7 +181,7 @@ public:
         }
     }
 
-    void visit_Variable(const ASR::Variable_t& x) {
+    void visit_Variable( ASR::Variable_t& x) {
         ASR::Variable_t& x_unconst = const_cast<ASR::Variable_t&>(x);
         if( x.m_symbolic_value != nullptr ) {
             asr = nullptr;

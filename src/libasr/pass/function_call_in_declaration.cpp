@@ -249,7 +249,7 @@ public:
         return false;
     }
 
-    void set_type_of_result_var(const ASR::FunctionType_t &x, ASR::Function_t* func) {
+    void set_type_of_result_var( ASR::FunctionType_t &x, ASR::Function_t* func) {
         if( !ASR::is_a<ASR::Array_t>(*x.m_return_var_type) ) {
             return ;
         }
@@ -266,7 +266,7 @@ public:
         ASRUtils::EXPR2VAR(func->m_return_var)->m_type = return_type_copy;
     }
 
-    void visit_FunctionType(const ASR::FunctionType_t &x) {
+    void visit_FunctionType( ASR::FunctionType_t &x) {
         if (!current_scope) return;
 
         ASR::ttype_t* return_var_type = x.m_return_var_type;
@@ -336,7 +336,7 @@ public:
         }
     }
 
-    void visit_Function(const ASR::Function_t &x) {
+    void visit_Function( ASR::Function_t &x) {
         current_scope = x.m_symtab;
         this->visit_ttype(*x.m_function_signature);
         current_scope = nullptr;

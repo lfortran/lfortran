@@ -87,11 +87,11 @@ class StructConstructorVisitor : public ASR::CallReplacerOnExpressionsVisitor<St
             pass_result.reserve(al, 0);
         }
 
-        void visit_Variable(const ASR::Variable_t& /*x*/) {
+        void visit_Variable( ASR::Variable_t& /*x*/) {
             // Do nothing, already handled in init_expr pass
         }
 
-        void visit_Assignment(const ASR::Assignment_t &x) {
+        void visit_Assignment( ASR::Assignment_t &x) {
             if (x.m_overloaded) {
                 this->visit_stmt(*x.m_overloaded);
                 remove_original_statement = false;

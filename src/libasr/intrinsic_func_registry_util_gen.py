@@ -1047,7 +1047,7 @@ def add_create_func_return_src(func_name):
 
 def gen_verify_args(func_name):
     global src
-    src += indent + R"static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {" + "\n"
+    src += indent + R"static inline void verify_args( ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {" + "\n"
     add_verify_arg_type_src(func_name)
     if func_name in compile_time_only_fn:
         src += indent * 2 + 'ASRUtils::require_impl(x.m_value, '\

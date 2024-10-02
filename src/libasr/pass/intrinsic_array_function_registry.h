@@ -90,7 +90,7 @@ typedef void (*verify_array_func)(ASR::expr_t*, ASR::ttype_t*,
     ASRUtils::IntrinsicArrayFunctions);
 
 typedef void (*verify_array_function)(
-    const ASR::IntrinsicArrayFunction_t&,
+    ASR::IntrinsicArrayFunction_t&,
     diag::Diagnostics&);
 
 namespace ArrIntrinsic {
@@ -161,7 +161,7 @@ static inline void verify_array_dim(ASR::expr_t* array, ASR::expr_t* dim,
         loc, diagnostics);
 }
 
-static inline void verify_args(const ASR::IntrinsicArrayFunction_t& x, diag::Diagnostics& diagnostics,
+static inline void verify_args( ASR::IntrinsicArrayFunction_t& x, diag::Diagnostics& diagnostics,
     ASRUtils::IntrinsicArrayFunctions intrinsic_func_id, verify_array_func verify_array) {
     std::string intrinsic_func_name = ASRUtils::get_array_intrinsic_name(static_cast<int64_t>(intrinsic_func_id));
     ASRUtils::require_impl(x.n_args >= 1, intrinsic_func_name + " intrinsic must accept at least one argument",
@@ -942,7 +942,7 @@ static inline ASR::expr_t* instantiate_ArrIntrinsic(Allocator &al,
     return builder.Call(new_symbol, new_args, return_type, nullptr);
 }
 
-static inline void verify_MaxMinLoc_args(const ASR::IntrinsicArrayFunction_t& x,
+static inline void verify_MaxMinLoc_args( ASR::IntrinsicArrayFunction_t& x,
         diag::Diagnostics& diagnostics) {
     std::string intrinsic_name = get_array_intrinsic_name(
         static_cast<int64_t>(x.m_arr_intrinsic_id));
@@ -1350,7 +1350,7 @@ static inline ASR::expr_t *instantiate_MaxMinLoc(Allocator &al,
 } // namespace ArrIntrinsic
 
 namespace Shape {
-    static inline void verify_args(const ASR::IntrinsicArrayFunction_t &x,
+    static inline void verify_args( ASR::IntrinsicArrayFunction_t &x,
             diag::Diagnostics &diagnostics) {
         ASRUtils::require_impl(x.n_args == 1,
             "`shape` intrinsic accepts 1 argument",
@@ -1447,7 +1447,7 @@ namespace Shape {
 } // namespace Shape
 
 namespace Cshift {
-    static inline void verify_args(const ASR::IntrinsicArrayFunction_t &x,
+    static inline void verify_args( ASR::IntrinsicArrayFunction_t &x,
             diag::Diagnostics &diagnostics) {
         ASRUtils::require_impl(x.n_args == 2 || x.n_args == 3,
             "`cshift` intrinsic accepts 2 or 3 arguments",
@@ -1630,7 +1630,7 @@ namespace Cshift {
 } // namespace Cshift
 
 namespace Spread {
-    static inline void verify_args(const ASR::IntrinsicArrayFunction_t &x,
+    static inline void verify_args( ASR::IntrinsicArrayFunction_t &x,
             diag::Diagnostics &diagnostics) {
         ASRUtils::require_impl(x.n_args == 3,
             "`spread` intrinsic accepts 3 arguments",
@@ -1940,7 +1940,7 @@ namespace Spread {
 } // namespace Spread
 
 namespace Eoshift {
-    static inline void verify_args(const ASR::IntrinsicArrayFunction_t &x,
+    static inline void verify_args( ASR::IntrinsicArrayFunction_t &x,
             diag::Diagnostics &diagnostics) {
         ASRUtils::require_impl(x.n_args == 2 || x.n_args == 3 || x.n_args == 4,
             "`eoshift` intrinsic accepts atleast 2 and atmost 4 arguments",
@@ -2267,7 +2267,7 @@ namespace IanyIall {
             "only 1 less than that of input array", loc, diagnostics);
     }
 
-    static inline void verify_args(const ASR::IntrinsicArrayFunction_t& x, diag::Diagnostics& diagnostics, ASRUtils::IntrinsicArrayFunctions intrinsic_func_id) {
+    static inline void verify_args( ASR::IntrinsicArrayFunction_t& x, diag::Diagnostics& diagnostics, ASRUtils::IntrinsicArrayFunctions intrinsic_func_id) {
         std::string intrinsic_func_name = ASRUtils::get_array_intrinsic_name(static_cast<int64_t>(intrinsic_func_id));
         ASRUtils::require_impl(x.m_args[0] != nullptr, "`array` argument to `" + intrinsic_func_name + "` intrinsic cannot be nullptr",
             x.base.base.loc, diagnostics);
@@ -2553,7 +2553,7 @@ namespace IanyIall {
 
 namespace Iany {
 
-    static inline void verify_args(const ASR::IntrinsicArrayFunction_t& x, diag::Diagnostics& diagnostics) {
+    static inline void verify_args( ASR::IntrinsicArrayFunction_t& x, diag::Diagnostics& diagnostics) {
         IanyIall::verify_args(x, diagnostics, ASRUtils::IntrinsicArrayFunctions::Iany);
     }
 
@@ -2583,7 +2583,7 @@ namespace Iany {
 
 namespace Iall {
 
-    static inline void verify_args(const ASR::IntrinsicArrayFunction_t& x, diag::Diagnostics& diagnostics) {
+    static inline void verify_args( ASR::IntrinsicArrayFunction_t& x, diag::Diagnostics& diagnostics) {
         IanyIall::verify_args(x, diagnostics, ASRUtils::IntrinsicArrayFunctions::Iall);
     }
 
@@ -2640,7 +2640,7 @@ namespace AnyAll {
             "only 1 less than that of input array", loc, diagnostics);
     }
 
-    static inline void verify_args(const ASR::IntrinsicArrayFunction_t& x, diag::Diagnostics& diagnostics, ASRUtils::IntrinsicArrayFunctions intrinsic_func_id) {
+    static inline void verify_args( ASR::IntrinsicArrayFunction_t& x, diag::Diagnostics& diagnostics, ASRUtils::IntrinsicArrayFunctions intrinsic_func_id) {
         std::string intrinsic_func_name = ASRUtils::get_array_intrinsic_name(static_cast<int64_t>(intrinsic_func_id));
         ASRUtils::require_impl(x.m_args[0] != nullptr, "`mask` argument to `" + intrinsic_func_name + "` intrinsic cannot be nullptr",
             x.base.base.loc, diagnostics);
@@ -2886,7 +2886,7 @@ namespace AnyAll {
 
 namespace Any {
 
-    static inline void verify_args(const ASR::IntrinsicArrayFunction_t& x, diag::Diagnostics& diagnostics) {
+    static inline void verify_args( ASR::IntrinsicArrayFunction_t& x, diag::Diagnostics& diagnostics) {
         AnyAll::verify_args(x, diagnostics, ASRUtils::IntrinsicArrayFunctions::Any);
     }
 
@@ -2914,7 +2914,7 @@ namespace Any {
 
 namespace All {
 
-    static inline void verify_args(const ASR::IntrinsicArrayFunction_t& x, diag::Diagnostics& diagnostics) {
+    static inline void verify_args( ASR::IntrinsicArrayFunction_t& x, diag::Diagnostics& diagnostics) {
         AnyAll::verify_args(x, diagnostics, ASRUtils::IntrinsicArrayFunctions::All);
     }
 
@@ -2942,7 +2942,7 @@ namespace All {
 
 namespace Sum {
 
-    static inline void verify_args(const ASR::IntrinsicArrayFunction_t& x,
+    static inline void verify_args( ASR::IntrinsicArrayFunction_t& x,
             diag::Diagnostics& diagnostics) {
         ArrIntrinsic::verify_args(x, diagnostics, IntrinsicArrayFunctions::Sum,
             &ArrIntrinsic::verify_array_int_real_cmplx);
@@ -2974,7 +2974,7 @@ namespace Sum {
 
 namespace Product {
 
-    static inline void verify_args(const ASR::IntrinsicArrayFunction_t& x,
+    static inline void verify_args( ASR::IntrinsicArrayFunction_t& x,
             diag::Diagnostics& diagnostics) {
         ArrIntrinsic::verify_args(x, diagnostics, IntrinsicArrayFunctions::Product,
             &ArrIntrinsic::verify_array_int_real_cmplx);
@@ -3006,7 +3006,7 @@ namespace Product {
 
 namespace Iparity {
 
-    static inline void verify_args(const ASR::IntrinsicArrayFunction_t& x,
+    static inline void verify_args( ASR::IntrinsicArrayFunction_t& x,
             diag::Diagnostics& diagnostics) {
         ArrIntrinsic::verify_args(x, diagnostics, IntrinsicArrayFunctions::Iparity,
             &ArrIntrinsic::verify_array_int_real_cmplx);
@@ -3038,7 +3038,7 @@ namespace Iparity {
 
 namespace MaxVal {
 
-    static inline void verify_args(const ASR::IntrinsicArrayFunction_t& x,
+    static inline void verify_args( ASR::IntrinsicArrayFunction_t& x,
             diag::Diagnostics& diagnostics) {
         ArrIntrinsic::verify_args(x, diagnostics, IntrinsicArrayFunctions::MaxVal,
             &ArrIntrinsic::verify_array_int_real);
@@ -3071,7 +3071,7 @@ namespace MaxVal {
 
 namespace MaxLoc {
 
-    static inline void verify_args(const ASR::IntrinsicArrayFunction_t& x,
+    static inline void verify_args( ASR::IntrinsicArrayFunction_t& x,
             diag::Diagnostics& diagnostics) {
         ArrIntrinsic::verify_MaxMinLoc_args(x, diagnostics);
     }
@@ -3095,7 +3095,7 @@ namespace MaxLoc {
 
 namespace MinLoc {
 
-    static inline void verify_args(const ASR::IntrinsicArrayFunction_t& x,
+    static inline void verify_args( ASR::IntrinsicArrayFunction_t& x,
             diag::Diagnostics& diagnostics) {
         ArrIntrinsic::verify_MaxMinLoc_args(x, diagnostics);
     }
@@ -3119,7 +3119,7 @@ namespace MinLoc {
 
 namespace FindLoc {
 
-    static inline void verify_args(const ASR::IntrinsicArrayFunction_t& x,
+    static inline void verify_args( ASR::IntrinsicArrayFunction_t& x,
             diag::Diagnostics& diagnostics) {
         require_impl(x.n_args >= 2 && x.n_args <= 6, "`findloc` intrinsic "
             "takes at least two arguments", x.base.base.loc, diagnostics);
@@ -3386,7 +3386,7 @@ namespace FindLoc {
 
 namespace MinVal {
 
-    static inline void verify_args(const ASR::IntrinsicArrayFunction_t& x,
+    static inline void verify_args( ASR::IntrinsicArrayFunction_t& x,
             diag::Diagnostics& diagnostics) {
         ArrIntrinsic::verify_args(x, diagnostics, IntrinsicArrayFunctions::MinVal,
             &ArrIntrinsic::verify_array_int_real);
@@ -3419,7 +3419,7 @@ namespace MinVal {
 
 namespace MatMul {
 
-    static inline void verify_args(const ASR::IntrinsicArrayFunction_t &x,
+    static inline void verify_args( ASR::IntrinsicArrayFunction_t &x,
             diag::Diagnostics& diagnostics) {
         require_impl(x.n_args == 2, "`matmul` intrinsic accepts exactly "
             "two arguments", x.base.base.loc, diagnostics);
@@ -3688,7 +3688,7 @@ namespace MatMul {
 
 namespace Count {
 
-    static inline void verify_args(const ASR::IntrinsicArrayFunction_t &x,
+    static inline void verify_args( ASR::IntrinsicArrayFunction_t &x,
             diag::Diagnostics& diagnostics) {
         require_impl(x.n_args == 1 || x.n_args == 2 || x.n_args == 3, "`count` intrinsic accepts "
             "one, two or three arguments", x.base.base.loc, diagnostics);
@@ -3883,7 +3883,7 @@ namespace Count {
 
 namespace Parity {
 
-    static inline void verify_args(const ASR::IntrinsicArrayFunction_t &x,
+    static inline void verify_args( ASR::IntrinsicArrayFunction_t &x,
             diag::Diagnostics& diagnostics) {
         require_impl(x.n_args == 1 || x.n_args == 2, "`parity` intrinsic accepts "
             "atmost two arguments", x.base.base.loc, diagnostics);
@@ -4061,7 +4061,7 @@ namespace Parity {
 
 namespace Norm2 {
 
-    static inline void verify_args(const ASR::IntrinsicArrayFunction_t &x,
+    static inline void verify_args( ASR::IntrinsicArrayFunction_t &x,
             diag::Diagnostics& diagnostics) {
         require_impl(x.n_args == 1 || x.n_args == 2, "`norm2` intrinsic accepts "
             "atleast 1 and atmost 2 arguments", x.base.base.loc, diagnostics);
@@ -4253,7 +4253,7 @@ namespace Norm2 {
 
 namespace Pack {
 
-    static inline void verify_args(const ASR::IntrinsicArrayFunction_t &x,
+    static inline void verify_args( ASR::IntrinsicArrayFunction_t &x,
             diag::Diagnostics& diagnostics) {
         require_impl(x.n_args == 2 || x.n_args == 3, "`pack` intrinsic accepts "
             "two or three arguments", x.base.base.loc, diagnostics);
@@ -4678,7 +4678,7 @@ namespace Pack {
 
 namespace Unpack {
 
-    static inline void verify_args(const ASR::IntrinsicArrayFunction_t &x,
+    static inline void verify_args( ASR::IntrinsicArrayFunction_t &x,
             diag::Diagnostics& diagnostics) {
         require_impl(x.n_args == 3, "`unpack` intrinsic accepts "
             "three arguments", x.base.base.loc, diagnostics);
@@ -4995,7 +4995,7 @@ namespace Unpack {
 
 namespace DotProduct {
 
-    static inline void verify_args(const ASR::IntrinsicArrayFunction_t &x,
+    static inline void verify_args( ASR::IntrinsicArrayFunction_t &x,
             diag::Diagnostics& diagnostics) {
         require_impl(x.n_args == 2, "`dot_product` intrinsic accepts exactly"
             "two arguments", x.base.base.loc, diagnostics);
@@ -5275,7 +5275,7 @@ namespace DotProduct {
 
 namespace Transpose {
 
-    static inline void verify_args(const ASR::IntrinsicArrayFunction_t &x,
+    static inline void verify_args( ASR::IntrinsicArrayFunction_t &x,
             diag::Diagnostics& diagnostics) {
         require_impl(x.n_args == 1, "`transpose` intrinsic accepts exactly"
             "one arguments", x.base.base.loc, diagnostics);
@@ -5460,11 +5460,11 @@ namespace IntrinsicArrayFunctionRegistry {
         {"dot_product", {&DotProduct::create_DotProduct, &DotProduct::eval_DotProduct}},
     };
 
-    static inline bool is_intrinsic_function(const std::string& name) {
+    static inline bool is_intrinsic_function( std::string& name) {
         return function_by_name_db.find(name) != function_by_name_db.end();
     }
 
-    static inline create_intrinsic_function get_create_function(const std::string& name) {
+    static inline create_intrinsic_function get_create_function( std::string& name) {
         return  std::get<0>(function_by_name_db.at(name));
     }
 

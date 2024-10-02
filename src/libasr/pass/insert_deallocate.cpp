@@ -22,7 +22,7 @@ class InsertDeallocate: public ASR::CallReplacerOnExpressionsVisitor<InsertDeall
         InsertDeallocate(Allocator& al_) : al(al_) {}
 
         template <typename T>
-        void visit_Symbol(const T& x) {
+        void visit_Symbol( T& x) {
             Vec<ASR::expr_t*> to_be_deallocated;
             to_be_deallocated.reserve(al, 1);
             for( auto& itr: x.m_symtab->get_scope() ) {
@@ -45,12 +45,12 @@ class InsertDeallocate: public ASR::CallReplacerOnExpressionsVisitor<InsertDeall
             }
         }
 
-        void visit_Function(const ASR::Function_t& x) {
+        void visit_Function( ASR::Function_t& x) {
             visit_Symbol(x);
             ASR::CallReplacerOnExpressionsVisitor<InsertDeallocate>::visit_Function(x);
         }
 
-        void visit_Program(const ASR::Program_t& x) {
+        void visit_Program( ASR::Program_t& x) {
             visit_Symbol(x);
             ASR::CallReplacerOnExpressionsVisitor<InsertDeallocate>::visit_Program(x);
         }

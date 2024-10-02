@@ -159,7 +159,7 @@ public:
         n_body = body.size();
     }
 
-    void visit_Assignment(const ASR::Assignment_t &x) {
+    void visit_Assignment( ASR::Assignment_t &x) {
         uint64_t h = get_hash((ASR::asr_t*) &x);
         if (assignment_hash.find(h) == assignment_hash.end()) {
             return;
@@ -419,7 +419,7 @@ public:
 
         return ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr, head, do_loop_body.p, do_loop_body.size(), nullptr, 0));
     }
-    void visit_Where(const ASR::Where_t& x) {
+    void visit_Where( ASR::Where_t& x) {
         ASR::Where_t& xx = const_cast<ASR::Where_t&>(x);
         Location loc = x.base.base.loc;
         ASR::expr_t* test = x.m_test;

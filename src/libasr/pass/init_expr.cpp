@@ -148,7 +148,7 @@ class InitExprVisitor : public ASR::CallReplacerOnExpressionsVisitor<InitExprVis
             }
         }
 
-        void visit_Program(const ASR::Program_t& x) {
+        void visit_Program( ASR::Program_t& x) {
             ASR::Program_t& xx = const_cast<ASR::Program_t&>(x);
             SymbolTable* current_scope_copy = current_scope;
             current_scope = xx.m_symtab;
@@ -157,7 +157,7 @@ class InitExprVisitor : public ASR::CallReplacerOnExpressionsVisitor<InitExprVis
             current_scope = current_scope_copy;
         }
 
-        void visit_Function(const ASR::Function_t& x) {
+        void visit_Function( ASR::Function_t& x) {
             ASR::Function_t& xx = const_cast<ASR::Function_t&>(x);
             SymbolTable* current_scope_copy = current_scope;
             current_scope = xx.m_symtab;
@@ -166,7 +166,7 @@ class InitExprVisitor : public ASR::CallReplacerOnExpressionsVisitor<InitExprVis
             current_scope = current_scope_copy;
         }
 
-        void visit_Module(const ASR::Module_t& x) {
+        void visit_Module( ASR::Module_t& x) {
             ASR::Module_t& xx = const_cast<ASR::Module_t&>(x);
             SymbolTable* current_scope_copy = current_scope;
             current_scope = xx.m_symtab;
@@ -174,7 +174,7 @@ class InitExprVisitor : public ASR::CallReplacerOnExpressionsVisitor<InitExprVis
             current_scope = current_scope_copy;
         }
 
-        void visit_Variable(const ASR::Variable_t &x) {
+        void visit_Variable( ASR::Variable_t &x) {
             ASR::symbol_t* asr_owner = ASRUtils::get_asr_owner(&(x.base));
             ASR::expr_t* symbolic_value = x.m_symbolic_value;
             if( symbolic_value && ASR::is_a<ASR::Cast_t>(*symbolic_value) ) {

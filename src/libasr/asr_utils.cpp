@@ -114,7 +114,7 @@ std::vector<std::string> determine_variable_declaration_order(
     return ASRUtils::order_deps(var_dep_graph);
 }
 
-void extract_module_python(const ASR::TranslationUnit_t &m,
+void extract_module_python( ASR::TranslationUnit_t &m,
                 std::vector<std::pair<std::string, ASR::Module_t*>>& children_modules,
                 std::string module_name) {
     bool module_found = false;
@@ -208,7 +208,7 @@ void update_call_args(Allocator &al, SymbolTable *current_scope, bool implicit_i
         }
 
 
-        void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
+        void visit_SubroutineCall( ASR::SubroutineCall_t& x) {
             ASR::SubroutineCall_t* subrout_call = (ASR::SubroutineCall_t*)(&x);
             for (size_t j = 0; j < subrout_call->n_args; j++) {
                 ASR::call_arg_t arg = subrout_call->m_args[j];
@@ -217,7 +217,7 @@ void update_call_args(Allocator &al, SymbolTable *current_scope, bool implicit_i
             }
         }
 
-        void visit_FunctionCall(const ASR::FunctionCall_t& x) {
+        void visit_FunctionCall( ASR::FunctionCall_t& x) {
             ASR::FunctionCall_t* func_call = (ASR::FunctionCall_t*)(&x);
             for (size_t j = 0; j < func_call->n_args; j++) {
                 ASR::call_arg_t arg = func_call->m_args[j];
@@ -226,7 +226,7 @@ void update_call_args(Allocator &al, SymbolTable *current_scope, bool implicit_i
             }
         }
 
-        void visit_Function(const ASR::Function_t& x) {
+        void visit_Function( ASR::Function_t& x) {
             ASR::Function_t* func = (ASR::Function_t*)(&x);
             scope = func->m_symtab;
             ASRUtils::SymbolDuplicator symbol_duplicator(al);
@@ -280,7 +280,7 @@ void update_call_args(Allocator &al, SymbolTable *current_scope, bool implicit_i
     }
 }
 
-ASR::Module_t* extract_module(const ASR::TranslationUnit_t &m) {
+ASR::Module_t* extract_module( ASR::TranslationUnit_t &m) {
     LCOMPILERS_ASSERT(m.m_symtab->get_scope().size()== 1);
     for (auto &a : m.m_symtab->get_scope()) {
         LCOMPILERS_ASSERT(ASR::is_a<ASR::Module_t>(*a.second));

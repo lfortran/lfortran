@@ -80,7 +80,7 @@ public:
         pass_result.reserve(al, 1);
     }
 
-    void visit_If(const ASR::If_t& x) {
+    void visit_If( ASR::If_t& x) {
         is_if_present = true;
         is_compare_present = false;
         is_function_call_present = false;
@@ -118,7 +118,7 @@ public:
                                 is_operand_same_as_input);
     }
 
-    void visit_Assignment(const ASR::Assignment_t& x) {
+    void visit_Assignment( ASR::Assignment_t& x) {
         if( x.m_value->type == ASR::exprType::RealUnaryMinus ) {
             is_unary_op_present = true;
             ASR::symbol_t* sym = nullptr;
@@ -135,28 +135,28 @@ public:
         }
     }
 
-    void visit_IntegerCompare(const ASR::IntegerCompare_t& x) {
+    void visit_IntegerCompare( ASR::IntegerCompare_t& x) {
         handle_Compare(x);
     }
 
-    void visit_RealCompare(const ASR::RealCompare_t &x) {
+    void visit_RealCompare( ASR::RealCompare_t &x) {
         handle_Compare(x);
     }
 
-    void visit_ComplexCompare(const ASR::ComplexCompare_t &x) {
+    void visit_ComplexCompare( ASR::ComplexCompare_t &x) {
         handle_Compare(x);
     }
 
-    void visit_LogicalCompare(const ASR::LogicalCompare_t &x) {
+    void visit_LogicalCompare( ASR::LogicalCompare_t &x) {
         handle_Compare(x);
     }
 
-    void visit_StringCompare(const ASR::StringCompare_t &x) {
+    void visit_StringCompare( ASR::StringCompare_t &x) {
         handle_Compare(x);
     }
 
     template <typename T>
-    void handle_Compare(const T& x) {
+    void handle_Compare( T& x) {
         is_compare_present = true;
         ASR::expr_t* potential_one = nullptr;
         ASR::expr_t* potential_func_call = nullptr;
@@ -177,7 +177,7 @@ public:
         }
     }
 
-    void visit_FunctionCall(const ASR::FunctionCall_t& x) {
+    void visit_FunctionCall( ASR::FunctionCall_t& x) {
         is_function_call_present = true;
         ASR::symbol_t* func_name = nullptr;
         if( x.m_original_name ) {

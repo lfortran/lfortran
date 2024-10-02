@@ -21,7 +21,7 @@ public:
     ExitVisitor(Allocator &al)
         : StatementWalkVisitor(al) {}
 
-    void visit_WhileLoop(const ASR::WhileLoop_t &x) {
+    void visit_WhileLoop( ASR::WhileLoop_t &x) {
         ASR::stmt_t *while_stmt = (ASR::stmt_t*)(&x);
             
         loop_stack.push(while_stmt);
@@ -31,7 +31,7 @@ public:
         loop_stack.pop();
     }
 
-    void visit_Exit(const ASR::Exit_t &x) {
+    void visit_Exit( ASR::Exit_t &x) {
         if (loop_stack.empty() ||
             flag_map.find(loop_stack.top()) == flag_map.end())
             return;
@@ -65,7 +65,7 @@ public:
         flag_map = {};
     }
 
-    void visit_WhileLoop(const ASR::WhileLoop_t &x) {
+    void visit_WhileLoop( ASR::WhileLoop_t &x) {
         Location loc = x.base.base.loc;
         auto target_scope = current_scope;
 

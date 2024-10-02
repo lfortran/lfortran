@@ -158,7 +158,7 @@ public:
         return r;
     }
 
-    void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
+    void visit_TranslationUnit( ASR::TranslationUnit_t &x) {
         std::string r = "";
 
         for (auto &item : x.m_symtab->get_scope()) {
@@ -185,7 +185,7 @@ public:
         s = r;
     }
 
-    void visit_Module(const ASR::Module_t &x) {
+    void visit_Module( ASR::Module_t &x) {
         std::string r;
 
         for (auto &item : x.m_symtab->get_scope()) {
@@ -197,7 +197,7 @@ public:
         s = r;
     }
 
-    void visit_Function(const ASR::Function_t &x) {
+    void visit_Function( ASR::Function_t &x) {
         // Generate code for the lpython function
         std::string r;
         r = "def";
@@ -229,7 +229,7 @@ public:
         s = r;
     }
 
-    void visit_Program(const ASR::Program_t &x) {
+    void visit_Program( ASR::Program_t &x) {
         std::string r;
 
         for (auto &item : x.m_symtab->get_scope()) {
@@ -241,7 +241,7 @@ public:
         s = r;
     }
 
-    void visit_Variable(const ASR::Variable_t &x) {
+    void visit_Variable( ASR::Variable_t &x) {
         std::string r = indent;
         r += x.m_name;
         r += ": ";
@@ -250,7 +250,7 @@ public:
         s = r;
     }
 
-    void visit_Print(const ASR::Print_t &x) {
+    void visit_Print( ASR::Print_t &x) {
         std::string r = indent;
         r += "print(";
          if (ASR::is_a<ASR::StringFormat_t>(*x.m_text)) {
@@ -273,7 +273,7 @@ public:
         s = r;
     }
 
-    void visit_Assignment(const ASR::Assignment_t &x) {
+    void visit_Assignment( ASR::Assignment_t &x) {
         std::string r = indent;
         visit_expr(*x.m_target);
         r += s;
@@ -284,12 +284,12 @@ public:
         s = r;
     }
 
-    void visit_Return(const ASR::Return_t /*&x*/) {
+    void visit_Return( ASR::Return_t /*&x*/) {
         // TODO: Handle cases for returning an expression/value
         s = indent + "return" + "\n";
     }
 
-    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+    void visit_SubroutineCall( ASR::SubroutineCall_t &x) {
         std::string r = indent;
         r += ASRUtils::symbol_name(x.m_name);
         r += "(";
@@ -303,7 +303,7 @@ public:
         s = r;
     }
 
-    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+    void visit_FunctionCall( ASR::FunctionCall_t &x) {
         std::string r = "";
         if (x.m_original_name) {
             r += ASRUtils::symbol_name(x.m_original_name);
@@ -322,16 +322,16 @@ public:
         s = r;
     }
 
-    void visit_Cast(const ASR::Cast_t &x) {
+    void visit_Cast( ASR::Cast_t &x) {
         // TODO
         visit_expr(*x.m_arg);
     }
 
-    void visit_Var(const ASR::Var_t &x) {
+    void visit_Var( ASR::Var_t &x) {
         s = ASRUtils::symbol_name(x.m_v);
     }
 
-    void visit_If(const ASR::If_t &x) {
+    void visit_If( ASR::If_t &x) {
         std::string r = indent;
         r += "if ";
         visit_expr(*x.m_test);
@@ -357,7 +357,7 @@ public:
         s = r;
     }
 
-    void visit_WhileLoop(const ASR::WhileLoop_t &x) {
+    void visit_WhileLoop( ASR::WhileLoop_t &x) {
         std::string r = indent;
         r += "while ";
         visit_expr(*x.m_test);
@@ -367,7 +367,7 @@ public:
         s = r;
     }
 
-    void visit_NamedExpr(const ASR::NamedExpr_t &x) {
+    void visit_NamedExpr( ASR::NamedExpr_t &x) {
         this->visit_expr(*x.m_target);
         std::string t = std::move(s);
         this->visit_expr(*x.m_value);
@@ -375,7 +375,7 @@ public:
         s = "(" + t + " := " + v + ")";
     }
 
-    void visit_ExplicitDeallocate(const ASR::ExplicitDeallocate_t &x) {
+    void visit_ExplicitDeallocate( ASR::ExplicitDeallocate_t &x) {
         std::string r = indent;
         r += "del ";
         for (size_t i = 0; i < x.n_vars; i++) {
@@ -388,7 +388,7 @@ public:
         s = r;
     }
 
-    void visit_IntrinsicElementalFunction(const ASR::IntrinsicElementalFunction_t &x) {
+    void visit_IntrinsicElementalFunction( ASR::IntrinsicElementalFunction_t &x) {
         std::string out;
         switch (x.m_intrinsic_id) {
             SET_INTRINSIC_NAME(Abs, "abs");
@@ -404,7 +404,7 @@ public:
         s = out;
     }
 
-    void visit_StringCompare(const ASR::StringCompare_t &x) {
+    void visit_StringCompare( ASR::StringCompare_t &x) {
         std::string r;
         int current_precedence = last_expr_precedence;
         visit_expr_with_precedence(*x.m_left, current_precedence);
@@ -416,19 +416,19 @@ public:
         s = r;
     }
 
-    void visit_StringConstant(const ASR::StringConstant_t &x) {
+    void visit_StringConstant( ASR::StringConstant_t &x) {
         s = "\"";
         s.append(x.m_s);
         s += "\"";
         last_expr_precedence = Precedence::Constant;
     }
 
-    void visit_StringChr(const ASR::StringChr_t &x) {
+    void visit_StringChr( ASR::StringChr_t &x) {
         visit_expr(*x.m_arg);
         s = "chr(" + s + ")";
     }
 
-    void visit_IntegerBinOp(const ASR::IntegerBinOp_t &x) {
+    void visit_IntegerBinOp( ASR::IntegerBinOp_t &x) {
         std::string r;
         int current_precedence = last_expr_precedence;
         visit_expr_with_precedence(*x.m_left, current_precedence);
@@ -440,7 +440,7 @@ public:
         s = r;
     }
 
-    void visit_IntegerCompare(const ASR::IntegerCompare_t &x) {
+    void visit_IntegerCompare( ASR::IntegerCompare_t &x) {
         std::string r;
         int current_precedence = last_expr_precedence;
         visit_expr_with_precedence(*x.m_left, current_precedence);
@@ -452,29 +452,29 @@ public:
         s = r;
     }
 
-    void visit_IntegerConstant(const ASR::IntegerConstant_t &x) {
+    void visit_IntegerConstant( ASR::IntegerConstant_t &x) {
         s = std::to_string(x.m_n);
         last_expr_precedence = Precedence::Constant;
     }
 
-    void visit_IntegerUnaryMinus(const ASR::IntegerUnaryMinus_t &x) {
+    void visit_IntegerUnaryMinus( ASR::IntegerUnaryMinus_t &x) {
         visit_expr_with_precedence(*x.m_arg, 14);
         s =  "-" + s;
         last_expr_precedence = Precedence::UnaryMinus;
     }
 
-    void visit_IntegerBitNot(const ASR::IntegerBitNot_t &x) {
+    void visit_IntegerBitNot( ASR::IntegerBitNot_t &x) {
         visit_expr_with_precedence(*x.m_arg, 14);
         s = "~" + s;
         last_expr_precedence = Precedence::BitNot;
     }
 
-    void visit_RealConstant(const ASR::RealConstant_t &x) {
+    void visit_RealConstant( ASR::RealConstant_t &x) {
         s = std::to_string(x.m_r);
         last_expr_precedence = Precedence::Constant;
     }
 
-    void visit_RealCompare(const ASR::RealCompare_t &x) {
+    void visit_RealCompare( ASR::RealCompare_t &x) {
        std::string r;
        int current_precedence = last_expr_precedence;
        visit_expr_with_precedence(*x.m_left, current_precedence);
@@ -486,13 +486,13 @@ public:
        s = r;
     }
 
-    void visit_RealUnaryMinus(const ASR::RealUnaryMinus_t &x) {
+    void visit_RealUnaryMinus( ASR::RealUnaryMinus_t &x) {
         visit_expr_with_precedence(*x.m_arg, 14);
         s =  "-" + s;
         last_expr_precedence = Precedence::UnaryMinus;
     }
 
-    void visit_RealBinOp(const ASR::RealBinOp_t &x) {
+    void visit_RealBinOp( ASR::RealBinOp_t &x) {
         std::string r;
         std::string m_op = binop2str(x.m_op);
         int current_precedence = last_expr_precedence;
@@ -505,7 +505,7 @@ public:
         s = r;
     }
 
-    void visit_LogicalConstant(const ASR::LogicalConstant_t &x) {
+    void visit_LogicalConstant( ASR::LogicalConstant_t &x) {
         std::string r;
         if (x.m_value) {
             r += "True";
@@ -516,7 +516,7 @@ public:
         last_expr_precedence = Precedence::Constant;
     }
 
-    void visit_LogicalBinOp(const ASR::LogicalBinOp_t &x) {
+    void visit_LogicalBinOp( ASR::LogicalBinOp_t &x) {
         std::string r;
         std::string m_op = logicalbinop2str(x.m_op);
         int current_precedence = last_expr_precedence;
@@ -529,7 +529,7 @@ public:
         s = r;
     }
 
-    void visit_LogicalCompare(const ASR::LogicalCompare_t &x) {
+    void visit_LogicalCompare( ASR::LogicalCompare_t &x) {
        std::string r;
        int current_precedence = last_expr_precedence;
        visit_expr_with_precedence(*x.m_left, current_precedence);
@@ -541,13 +541,13 @@ public:
        s = r;
     }
 
-    void visit_LogicalNot(const ASR::LogicalNot_t &x) {
+    void visit_LogicalNot( ASR::LogicalNot_t &x) {
         visit_expr_with_precedence(*x.m_arg, 6);
         s = "not " + s;
         last_expr_precedence = Precedence::Not;
     }
 
-    void visit_StringConcat(const ASR::StringConcat_t &x) {
+    void visit_StringConcat( ASR::StringConcat_t &x) {
         this->visit_expr(*x.m_left);
         std::string left = std::move(s);
         this->visit_expr(*x.m_right);
@@ -555,7 +555,7 @@ public:
         s = left + " + " + right;
     }
 
-    void visit_StringRepeat(const ASR::StringRepeat_t &x) {
+    void visit_StringRepeat( ASR::StringRepeat_t &x) {
         this->visit_expr(*x.m_left);
         std::string left = std::move(s);
         this->visit_expr(*x.m_right);
@@ -563,7 +563,7 @@ public:
         s = left + " * " + right;
     }
 
-    void visit_StringOrd(const ASR::StringOrd_t &x) {
+    void visit_StringOrd( ASR::StringOrd_t &x) {
         std::string r;
         r = "ord(";
         visit_expr(*x.m_arg);
@@ -572,12 +572,12 @@ public:
         s = r;
     }
 
-    void visit_StringLen(const ASR::StringLen_t &x) {
+    void visit_StringLen( ASR::StringLen_t &x) {
         visit_expr(*x.m_arg);
         s += "len(" + s + ")";
     }
 
-    void visit_IfExp(const ASR::IfExp_t &x) {
+    void visit_IfExp( ASR::IfExp_t &x) {
         std::string r;
         visit_expr(*x.m_body);
         r += s;
@@ -590,19 +590,19 @@ public:
         s = r;
     }
 
-    void visit_ComplexConstant(const ASR::ComplexConstant_t &x) {
+    void visit_ComplexConstant( ASR::ComplexConstant_t &x) {
         std::string re = std::to_string(x.m_re);
         std::string im = std::to_string(x.m_im);
         s = "complex(" + re + ", " + im + ")";
     }
 
-    void visit_ComplexUnaryMinus(const ASR::ComplexUnaryMinus_t &x) {
+    void visit_ComplexUnaryMinus( ASR::ComplexUnaryMinus_t &x) {
         visit_expr_with_precedence(*x.m_arg, 14);
         s = "-" + s;
         last_expr_precedence = Precedence::UnaryMinus;
     }
 
-    void visit_ComplexCompare(const ASR::ComplexCompare_t &x) {
+    void visit_ComplexCompare( ASR::ComplexCompare_t &x) {
         std::string r;
         int current_precedence = last_expr_precedence;
         visit_expr_with_precedence(*x.m_left, current_precedence);
@@ -614,7 +614,7 @@ public:
         s = r;
     }
 
-    void visit_Assert(const ASR::Assert_t &x) {
+    void visit_Assert( ASR::Assert_t &x) {
         std::string r = indent;
         r += "assert ";
         visit_expr(*x.m_test);

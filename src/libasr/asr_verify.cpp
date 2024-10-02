@@ -21,7 +21,7 @@ bool valid_char(char c) {
     return false;
 }
 
-bool valid_name(const char *s) {
+bool valid_name(char *s) {
     if (s == nullptr) return false;
     std::string name = s;
     if (name.size() == 0) return false;
@@ -95,7 +95,7 @@ public:
         return false;
     }
 
-    void visit_TranslationUnit(const TranslationUnit_t &x) {
+    void visit_TranslationUnit(TranslationUnit_t &x) {
         current_symtab = x.m_symtab;
         require(x.m_symtab != nullptr,
             "The TranslationUnit::m_symtab cannot be nullptr");
@@ -124,7 +124,7 @@ public:
         current_symtab = nullptr;
     }
 
-    void visit_Select(const Select_t& x) {
+    void visit_Select(Select_t& x) {
         bool fall_through = false;
         for( size_t i = 0; i < x.n_body; i++ ) {
             if( ASR::is_a<ASR::CaseStmt_t>(*x.m_body[i]) ) {
@@ -141,7 +141,7 @@ public:
     // --------------------------------------------------------
     // symbol instances:
 
-    void visit_Program(const Program_t &x) {
+    void visit_Program(Program_t &x) {
         SymbolTable *parent_symtab = current_symtab;
         current_symtab = x.m_symtab;
         require(x.m_symtab != nullptr,
@@ -172,7 +172,7 @@ public:
         current_symtab = parent_symtab;
     }
 
-    void visit_AssociateBlock(const AssociateBlock_t& x) {
+    void visit_AssociateBlock(AssociateBlock_t& x) {
         SymbolTable *parent_symtab = current_symtab;
         current_symtab = x.m_symtab;
         require(x.m_symtab != nullptr,
@@ -195,7 +195,7 @@ public:
         current_symtab = parent_symtab;
     }
 
-    void visit_GenericProcedure(const GenericProcedure_t& x) {
+    void visit_GenericProcedure(GenericProcedure_t& x) {
         require(x.m_name != nullptr,
             "GenericProcedure::m_name cannot be nullptr");
         std::string gen_name = x.m_name;
@@ -207,7 +207,7 @@ public:
         }
     }
 
-    void visit_CustomOperator(const CustomOperator_t& x) {
+    void visit_CustomOperator(CustomOperator_t& x) {
         require(x.m_name != nullptr,
             "CustomOperator::m_name cannot be nullptr");
         std::string cus_name = x.m_name;
@@ -219,7 +219,7 @@ public:
         }
     }
 
-    void visit_Block(const Block_t& x) {
+    void visit_Block(Block_t& x) {
         SymbolTable *parent_symtab = current_symtab;
         current_symtab = x.m_symtab;
         require(x.m_symtab != nullptr,
@@ -242,7 +242,7 @@ public:
         current_symtab = parent_symtab;
     }
 
-    void visit_Requirement(const Requirement_t& x) {
+    void visit_Requirement(Requirement_t& x) {
         SymbolTable *parent_symtab = current_symtab;
         current_symtab = x.m_symtab;
         require(x.m_symtab != nullptr,
@@ -262,7 +262,7 @@ public:
         current_symtab = parent_symtab;
     }
 
-    void visit_Template(const Template_t& x) {
+    void visit_Template(Template_t& x) {
         SymbolTable *parent_symtab = current_symtab;
         current_symtab = x.m_symtab;
         require(x.m_symtab != nullptr,
@@ -282,7 +282,7 @@ public:
         current_symtab = parent_symtab;
     }
 
-    void visit_BlockCall(const BlockCall_t& x) {
+    void visit_BlockCall(BlockCall_t& x) {
         require(x.m_m != nullptr, "Block call made to inexisting block");
         require(symtab_in_scope(current_symtab, x.m_m),
             "Block " + std::string(ASRUtils::symbol_name(x.m_m)) +
@@ -311,7 +311,7 @@ public:
         }
     }
 
-    void visit_Module(const Module_t &x) {
+    void visit_Module(Module_t &x) {
         module_dependencies.clear();
         module_dependencies.reserve(x.n_dependencies);
         SymbolTable *parent_symtab = current_symtab;
@@ -357,7 +357,7 @@ public:
         current_symtab = parent_symtab;
     }
 
-    void visit_Assignment(const Assignment_t& x) {
+    void visit_Assignment(Assignment_t& x) {
         ASR::expr_t* target = x.m_target;
         if( ASR::is_a<ASR::Var_t>(*target) ) {
             ASR::Var_t* target_Var = ASR::down_cast<ASR::Var_t>(target);
@@ -383,7 +383,7 @@ public:
         BaseWalkVisitor<VerifyVisitor>::visit_Assignment(x);
     }
 
-    void visit_ClassProcedure(const ClassProcedure_t &x) {
+    void visit_ClassProcedure(ClassProcedure_t &x) {
         require(x.m_name != nullptr,
             "The ClassProcedure::m_name cannot be nullptr");
         require(x.m_proc != nullptr,
@@ -421,7 +421,7 @@ public:
         }
     }
 
-    void visit_Function(const Function_t &x) {
+    void visit_Function(Function_t &x) {
         if (ASRUtils::get_FunctionType(&x)->m_abi == abiType::Interactive) {
             require(x.n_body == 0,
             "The Function::n_body should be 0 if abi set to Interactive");
@@ -506,7 +506,7 @@ public:
     }
 
     template <typename T>
-    void visit_UserDefinedType(const T &x) {
+    void visit_UserDefinedType(T &x) {
         SymbolTable *parent_symtab = current_symtab;
         current_symtab = x.m_symtab;
         require(x.m_name != nullptr,
@@ -570,7 +570,7 @@ public:
         current_symtab = parent_symtab;
     }
 
-    void visit_Struct(const Struct_t& x) {
+    void visit_Struct(Struct_t& x) {
         visit_UserDefinedType(x);
         if( !x.m_alignment ) {
             return ;
@@ -585,7 +585,7 @@ public:
                 " is not a positive power of 2.");
     }
 
-    void visit_Enum(const Enum_t& x) {
+    void visit_Enum(Enum_t& x) {
         visit_UserDefinedType(x);
         require(x.m_type != nullptr,
             "The common type of EnumType cannot be nullptr. " +
@@ -638,11 +638,11 @@ public:
                                      "to Enum::m_enum_value_type");
     }
 
-    void visit_UnionType(const UnionType_t& x) {
+    void visit_UnionType(UnionType_t& x) {
         visit_UserDefinedType(x);
     }
 
-    void visit_Variable(const Variable_t &x) {
+    void visit_Variable(Variable_t &x) {
         variable_dependencies.clear();
         SymbolTable *symtab = x.m_parent_symtab;
         require(symtab != nullptr,
@@ -710,7 +710,7 @@ public:
         }
     }
 
-    void visit_ExternalSymbol(const ExternalSymbol_t &x) {
+    void visit_ExternalSymbol(ExternalSymbol_t &x) {
         if (check_external) {
             require(x.m_external != nullptr,
                 "ExternalSymbol::m_external cannot be nullptr");
@@ -787,7 +787,7 @@ public:
     // --------------------------------------------------------
     // nodes that have symbol in their fields:
 
-    void visit_Var(const Var_t &x) {
+    void visit_Var(Var_t &x) {
         symbol_visited = true;
         require(x.m_v != nullptr,
             "Var_t::m_v cannot be nullptr");
@@ -805,12 +805,12 @@ public:
         variable_dependencies.push_back(x_mv_name);
     }
 
-    void visit_ImplicitDeallocate(const ImplicitDeallocate_t &x) {
+    void visit_ImplicitDeallocate(ImplicitDeallocate_t &x) {
         // TODO: check that every allocated variable is deallocated.
         BaseWalkVisitor::visit_ImplicitDeallocate(x);
     }
 
-    void check_var_external(const ASR::expr_t &x) {
+    void check_var_external(ASR::expr_t &x) {
         if (ASR::is_a<ASR::Var_t>(x)) {
             ASR::symbol_t *s = ((ASR::Var_t*)&x)->m_v;
             if (ASR::is_a<ASR::ExternalSymbol_t>(*s)) {
@@ -822,7 +822,7 @@ public:
     }
 
     template <typename T>
-    void handle_ArrayItemSection(const T &x) {
+    void handle_ArrayItemSection(T &x) {
         visit_expr(*x.m_v);
         for (size_t i=0; i<x.n_args; i++) {
             if( x.m_args[i].m_step != nullptr ) {
@@ -851,11 +851,11 @@ public:
         }
     }
 
-    void visit_ArrayItem(const ArrayItem_t &x) {
+    void visit_ArrayItem(ArrayItem_t &x) {
         handle_ArrayItemSection(x);
     }
 
-    void visit_ArraySection(const ArraySection_t &x) {
+    void visit_ArraySection(ArraySection_t &x) {
         require(
             ASR::is_a<ASR::Array_t>(*x.m_type),
             "ArrayItemSection::m_type can only be an Array"
@@ -864,7 +864,7 @@ public:
     }
 
     template <typename T>
-    void verify_args(const T& x) {
+    void verify_args(T& x) {
         ASR::symbol_t* func_sym = ASRUtils::symbol_get_past_external(x.m_name);
         ASR::Function_t* func = nullptr;
         if( func_sym && ASR::is_a<ASR::Function_t>(*func_sym) ) {
@@ -894,7 +894,7 @@ public:
         }
     }
 
-    void visit_ArrayPhysicalCast(const ASR::ArrayPhysicalCast_t& x) {
+    void visit_ArrayPhysicalCast(ASR::ArrayPhysicalCast_t& x) {
         BaseWalkVisitor<VerifyVisitor>::visit_ArrayPhysicalCast(x);
         if( x.m_old != ASR::array_physical_typeType::DescriptorArray ) {
             require(x.m_new != x.m_old, "ArrayPhysicalCast is redundant, "
@@ -909,7 +909,7 @@ public:
         }
     }
 
-    void visit_SubroutineCall(const SubroutineCall_t &x) {
+    void visit_SubroutineCall(SubroutineCall_t &x) {
         require(symtab_in_scope(current_symtab, x.m_name),
             "SubroutineCall::m_name '" + std::string(symbol_name(x.m_name)) + "' cannot point outside of its symbol table");
         if (check_external) {
@@ -956,7 +956,7 @@ public:
         verify_args(x);
     }
 
-    void visit_AssociateBlockCall(const AssociateBlockCall_t &x) {
+    void visit_AssociateBlockCall(AssociateBlockCall_t &x) {
         require(symtab_in_scope(current_symtab, x.m_m),
             "AssociateBlockCall::m_name '" + std::string(symbol_name(x.m_m)) +
                 "' cannot point outside of its symbol table");
@@ -1037,11 +1037,11 @@ public:
         return parent;
     }
 
-    void visit_PointerNullConstant(const PointerNullConstant_t& x) {
+    void visit_PointerNullConstant(PointerNullConstant_t& x) {
         require(x.m_type != nullptr, "null() must have a type");
     }
 
-    void visit_FunctionType(const FunctionType_t& x) {
+    void visit_FunctionType(FunctionType_t& x) {
 
         #define verify_nonscoped_ttype(ttype) symbol_visited = false; \
             visit_ttype(*ttype); \
@@ -1057,7 +1057,7 @@ public:
         }
     }
 
-    void visit_IntrinsicElementalFunction(const ASR::IntrinsicElementalFunction_t& x) {
+    void visit_IntrinsicElementalFunction(ASR::IntrinsicElementalFunction_t& x) {
         if( !check_external ) {
             BaseWalkVisitor<VerifyVisitor>::visit_IntrinsicElementalFunction(x);
             return ;
@@ -1069,7 +1069,7 @@ public:
         BaseWalkVisitor<VerifyVisitor>::visit_IntrinsicElementalFunction(x);
     }
 
-    void visit_IntrinsicArrayFunction(const ASR::IntrinsicArrayFunction_t& x) {
+    void visit_IntrinsicArrayFunction(ASR::IntrinsicArrayFunction_t& x) {
         if( !check_external ) {
             BaseWalkVisitor<VerifyVisitor>::visit_IntrinsicArrayFunction(x);
             return ;
@@ -1081,7 +1081,7 @@ public:
         BaseWalkVisitor<VerifyVisitor>::visit_IntrinsicArrayFunction(x);
     }
 
-    void visit_FunctionCall(const FunctionCall_t &x) {
+    void visit_FunctionCall(FunctionCall_t &x) {
         require(x.m_name,
             "FunctionCall::m_name must be present");
         ASR::symbol_t* asr_owner_sym = nullptr;
@@ -1140,7 +1140,7 @@ public:
         visit_ttype(*x.m_type);
     }
 
-    void visit_StructType(const StructType_t &x) {
+    void visit_StructType(StructType_t &x) {
         std::string symbol_owner = "global scope";
         if( ASRUtils::get_asr_owner(x.m_derived_type) ) {
             symbol_owner = ASRUtils::symbol_name(ASRUtils::get_asr_owner(x.m_derived_type));
@@ -1152,13 +1152,13 @@ public:
             symbol_owner);
     }
 
-    void visit_ArrayConstructor(const ArrayConstructor_t& x) {
+    void visit_ArrayConstructor(ArrayConstructor_t& x) {
         require(ASRUtils::is_array(x.m_type),
             "Type of ArrayConstructor must be an array");
         BaseWalkVisitor<VerifyVisitor>::visit_ArrayConstructor(x);
     }
 
-    void visit_ArrayConstant(const ArrayConstant_t& x) {
+    void visit_ArrayConstant(ArrayConstant_t& x) {
         require(ASRUtils::is_array(x.m_type),
             "Type of ArrayConstant must be an array");
 
@@ -1171,7 +1171,7 @@ public:
         visit_ttype(*x.m_type);
     }
 
-    void visit_dimension(const dimension_t &x) {
+    void visit_dimension(dimension_t &x) {
         if (x.m_start) {
             if(check_external){
                 require_with_loc(ASRUtils::is_integer(
@@ -1191,7 +1191,7 @@ public:
         }
     }
 
-    void visit_Array(const Array_t& x) {
+    void visit_Array(Array_t& x) {
         require(!ASR::is_a<ASR::Allocatable_t>(*x.m_type),
             "Allocatable cannot be inside array");
         visit_ttype(*x.m_type);
@@ -1204,7 +1204,7 @@ public:
         _processing_dims = false;
     }
 
-    void visit_Pointer(const Pointer_t &x) {
+    void visit_Pointer(Pointer_t &x) {
         require(!ASR::is_a<ASR::Allocatable_t>(*x.m_type),
             "Pointer type conflicts with Allocatable type");
         if( ASR::is_a<ASR::Array_t>(*x.m_type) ) {
@@ -1218,13 +1218,13 @@ public:
         visit_ttype(*x.m_type);
     }
 
-    void visit_Allocatable(const Allocatable_t &x) {
+    void visit_Allocatable(Allocatable_t &x) {
         require(!ASR::is_a<ASR::Pointer_t>(*x.m_type),
             "Allocatable type conflicts with Pointer type");
         visit_ttype(*x.m_type);
     }
 
-    void visit_Allocate(const Allocate_t &x) {
+    void visit_Allocate(Allocate_t &x) {
         if(check_external){
             for( size_t i = 0; i < x.n_args; i++ ) {
                 require(ASR::is_a<ASR::Allocatable_t>(*ASRUtils::expr_type(x.m_args[i].m_a)) ||
@@ -1236,7 +1236,7 @@ public:
         BaseWalkVisitor<VerifyVisitor>::visit_Allocate(x);
     }
 
-    void visit_DoConcurrentLoop(const DoConcurrentLoop_t &x) {
+    void visit_DoConcurrentLoop(DoConcurrentLoop_t &x) {
         for ( size_t i = 0; i < x.n_local; i++ ) {
             require(ASR::is_a<ASR::Var_t>(*x.m_local[i]),
                 "DoConcurrentLoop::m_local must be a Var");
@@ -1253,7 +1253,7 @@ public:
 
 } // namespace ASR
 
-bool asr_verify(const ASR::TranslationUnit_t &unit, bool check_external,
+bool asr_verify(ASR::TranslationUnit_t &unit, bool check_external,
             diag::Diagnostics &diagnostics) {
     ASR::VerifyVisitor v(check_external, diagnostics);
     try {

@@ -6,9 +6,9 @@
 namespace LCompilers {
 
     // Save a module to a modfile
-    std::string save_modfile(const ASR::TranslationUnit_t &m);
+    std::string save_modfile(ASR::TranslationUnit_t &m);
 
-    std::string save_pycfile(const ASR::TranslationUnit_t &m);
+    std::string save_pycfile(ASR::TranslationUnit_t &m);
 
     // Load a module from a modfile
     ASR::TranslationUnit_t* load_modfile(Allocator &al, const std::string &s,

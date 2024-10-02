@@ -50,7 +50,7 @@ public:
         }
     }
 
-    void visit_Print(const ASR::Print_t& x) {
+    void visit_Print( ASR::Print_t& x) {
         #define is_struct_type(value) if( ASR::is_a<ASR::StructType_t>(    \
             *ASRUtils::expr_type(value)) )    \
 

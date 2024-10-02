@@ -41,7 +41,7 @@ class ReplaceIntrinsicSubroutines : public ASR::CallReplacerOnExpressionsVisitor
             pass_result.n = 0;
         }
 
-        void visit_IntrinsicImpureSubroutine(const ASR::IntrinsicImpureSubroutine_t &x) {
+        void visit_IntrinsicImpureSubroutine( ASR::IntrinsicImpureSubroutine_t &x) {
             Vec<ASR::call_arg_t> new_args; new_args.reserve(al, x.n_args);
             // Replace any IntrinsicImpureSubroutinesin the argument first:
             for( size_t i = 0; i < x.n_args; i++ ) {
@@ -100,7 +100,7 @@ class ReplaceIntrinsicSubroutines : public ASR::CallReplacerOnExpressionsVisitor
         // to visit_stmt().
         // TODO: Only TranslationUnit's and Program's symbol table is processed
         // for transforming function->subroutine if they return arrays
-        void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
+        void visit_TranslationUnit( ASR::TranslationUnit_t &x) {
             SymbolTable* current_scope_copy = current_scope;
             current_scope = x.m_symtab;
 
@@ -126,7 +126,7 @@ class ReplaceIntrinsicSubroutines : public ASR::CallReplacerOnExpressionsVisitor
             current_scope = current_scope_copy;
         }
 
-        void visit_Module(const ASR::Module_t &x) {
+        void visit_Module( ASR::Module_t &x) {
             // FIXME: this is a hack, we need to pass in a non-const `x`,
             // which requires to generate a TransformVisitor.
             SymbolTable* current_scope_copy = current_scope;
@@ -144,7 +144,7 @@ class ReplaceIntrinsicSubroutines : public ASR::CallReplacerOnExpressionsVisitor
             current_scope = current_scope_copy;
         }
 
-        void visit_Program(const ASR::Program_t &x) {
+        void visit_Program( ASR::Program_t &x) {
             // FIXME: this is a hack, we need to pass in a non-const `x`,
             // which requires to generate a TransformVisitor.
             ASR::Program_t& xx = const_cast<ASR::Program_t&>(x);

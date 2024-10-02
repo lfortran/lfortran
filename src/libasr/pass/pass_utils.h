@@ -296,7 +296,7 @@ namespace LCompilers {
                     n_body = body.size();
                 }
 
-                void visit_Program(const ASR::Program_t &x) {
+                void visit_Program( ASR::Program_t &x) {
                     // FIXME: this is a hack, we need to pass in a non-const `x`,
                     // which requires to generate a TransformVisitor.
                     ASR::Program_t &xx = const_cast<ASR::Program_t&>(x);
@@ -322,7 +322,7 @@ namespace LCompilers {
                     this->current_scope = current_scope_copy;
                 }
 
-                void visit_Function(const ASR::Function_t &x) {
+                void visit_Function( ASR::Function_t &x) {
                     // FIXME: this is a hack, we need to pass in a non-const `x`,
                     // which requires to generate a TransformVisitor.
                     ASR::Function_t &xx = const_cast<ASR::Function_t&>(x);
@@ -365,7 +365,7 @@ namespace LCompilers {
                 SkipOptimizationFunctionVisitor(Allocator& al_): PassVisitor<StructType>(al_, nullptr) {
                 }
 
-                void visit_Function(const ASR::Function_t &x) {
+                void visit_Function( ASR::Function_t &x) {
                     if( ASRUtils::is_intrinsic_optimization<ASR::Function_t>(&x) ) {
                         return ;
                     }
@@ -401,7 +401,7 @@ namespace LCompilers {
                     current_scope = nullptr;
                 }
 
-                void visit_Function(const ASR::Function_t& x) {
+                void visit_Function( ASR::Function_t& x) {
                     ASR::Function_t& xx = const_cast<ASR::Function_t&>(x);
                     SymbolTable* current_scope_copy = current_scope;
                     current_scope = xx.m_symtab;
@@ -422,7 +422,7 @@ namespace LCompilers {
                     current_scope = current_scope_copy;
                 }
 
-                void visit_Module(const ASR::Module_t& x) {
+                void visit_Module( ASR::Module_t& x) {
                     SymbolTable *parent_symtab = current_scope;
                     current_scope = x.m_symtab;
                     ASR::Module_t& xx = const_cast<ASR::Module_t&>(x);
@@ -440,7 +440,7 @@ namespace LCompilers {
                     current_scope = parent_symtab;
                 }
 
-                void visit_Variable(const ASR::Variable_t& x) {
+                void visit_Variable( ASR::Variable_t& x) {
                     ASR::Variable_t& xx = const_cast<ASR::Variable_t&>(x);
                     variable_dependencies.n = 0;
                     variable_dependencies.reserve(al, 1);
@@ -456,13 +456,13 @@ namespace LCompilers {
                     fill_variable_dependencies = fill_variable_dependencies_copy;
                 }
 
-                void visit_Var(const ASR::Var_t& x) {
+                void visit_Var( ASR::Var_t& x) {
                     if( fill_variable_dependencies ) {
                         variable_dependencies.push_back(al, ASRUtils::symbol_name(x.m_v));
                     }
                 }
 
-                void visit_FunctionCall(const ASR::FunctionCall_t& x) {
+                void visit_FunctionCall( ASR::FunctionCall_t& x) {
                     if (fill_function_dependencies) {
                         ASR::symbol_t* asr_owner_sym = nullptr;
                         if (current_scope->asr_owner && ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner)) {
@@ -498,7 +498,7 @@ namespace LCompilers {
                     BaseWalkVisitor<UpdateDependenciesVisitor>::visit_FunctionCall(x);
                 }
 
-                void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
+                void visit_SubroutineCall( ASR::SubroutineCall_t& x) {
                     if (fill_function_dependencies) {
                         ASR::symbol_t* asr_owner_sym = nullptr;
                         if (current_scope->asr_owner && ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner)) {
@@ -530,7 +530,7 @@ namespace LCompilers {
                     BaseWalkVisitor<UpdateDependenciesVisitor>::visit_SubroutineCall(x);
                 }
 
-                void visit_BlockCall(const ASR::BlockCall_t& x) {
+                void visit_BlockCall( ASR::BlockCall_t& x) {
                     SymbolTable *parent_symtab = current_scope;
                     ASR::Block_t* block = ASR::down_cast<ASR::Block_t>(x.m_m);
                     current_scope = block->m_symtab;
@@ -540,7 +540,7 @@ namespace LCompilers {
                     current_scope = parent_symtab;
                 }
 
-                void visit_AssociateBlock(const ASR::AssociateBlock_t& x) {
+                void visit_AssociateBlock( ASR::AssociateBlock_t& x) {
                     SymbolTable *parent_symtab = current_scope;
                     current_scope = x.m_symtab;
                     for (auto &a : x.m_symtab->get_scope()) {
@@ -552,7 +552,7 @@ namespace LCompilers {
                     current_scope = parent_symtab;
                 }
 
-                void visit_Block(const ASR::Block_t& x) {
+                void visit_Block( ASR::Block_t& x) {
                     SymbolTable *parent_symtab = current_scope;
                     current_scope = x.m_symtab;
                     for (auto &a : x.m_symtab->get_scope()) {
@@ -566,7 +566,7 @@ namespace LCompilers {
             // TODO: Uncomment the following in LFortran
             /*
                 template <typename T>
-                void visit_UserDefinedType(const T& x) {
+                void visit_UserDefinedType( T& x) {
                     T& xx = const_cast<T&>(x);
                     SetChar vec; vec.reserve(al, 1);
                     for( auto itr: x.m_symtab->get_scope() ) {
@@ -584,11 +584,11 @@ namespace LCompilers {
                     xx.n_dependencies = vec.size();
                 }
 
-                void visit_Struct(const ASR::Struct_t& x) {
+                void visit_Struct( ASR::Struct_t& x) {
                     visit_UserDefinedType(x);
                 }
 
-                void visit_UnionType(const ASR::UnionType_t& x) {
+                void visit_UnionType( ASR::UnionType_t& x) {
                     visit_UserDefinedType(x);
                 }
             */

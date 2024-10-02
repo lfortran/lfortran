@@ -289,7 +289,7 @@ public:
     }
     /********************************** Utils *********************************/
 
-    void visit_Function(const ASR::Function_t &x) {
+    void visit_Function( ASR::Function_t &x) {
         // FIXME: this is a hack, we need to pass in a non-const `x`,
         // which requires to generate a TransformVisitor.
         ASR::Function_t &xx = const_cast<ASR::Function_t&>(x);
@@ -345,7 +345,7 @@ public:
         this->current_scope = current_scope_copy;
     }
 
-    void visit_Variable(const ASR::Variable_t& x) {
+    void visit_Variable( ASR::Variable_t& x) {
         ASR::Variable_t& xx = const_cast<ASR::Variable_t&>(x);
         if (xx.m_type->type == ASR::ttypeType::SymbolicExpression) {
             std::string var_name = xx.m_name;
@@ -523,7 +523,7 @@ public:
         return expr;
     }
 
-    void visit_Assignment(const ASR::Assignment_t &x) {
+    void visit_Assignment( ASR::Assignment_t &x) {
         if (ASR::is_a<ASR::Var_t>(*x.m_value) && ASR::is_a<ASR::CPtr_t>(*ASRUtils::expr_type(x.m_value))) {
             ASR::symbol_t *v = ASR::down_cast<ASR::Var_t>(x.m_value)->m_v;
             if ((symbolic_vars_to_free.find(v) == symbolic_vars_to_free.end()) &&
@@ -693,7 +693,7 @@ public:
         }
     }
 
-    void visit_If(const ASR::If_t& x) {
+    void visit_If( ASR::If_t& x) {
         ASR::If_t& xx = const_cast<ASR::If_t&>(x);
         transform_stmts(xx.m_body, xx.n_body);
         transform_stmts(xx.m_orelse, xx.n_orelse);
@@ -732,7 +732,7 @@ public:
         }
     }
 
-    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+    void visit_SubroutineCall( ASR::SubroutineCall_t &x) {
         Vec<ASR::call_arg_t> call_args;
         call_args.reserve(al, 1);
 
@@ -783,7 +783,7 @@ public:
 
     //TODO :: Use the below implementation for stringFormat visitor.
 
-    // void visit_Print(const ASR::Print_t &x) {
+    // void visit_Print( ASR::Print_t &x) {
     //     std::vector<ASR::expr_t*> print_tmp;
     //     for (size_t i=0; i<x.n_values; i++) {
     //         ASR::expr_t* val = x.m_values[i];
@@ -870,7 +870,7 @@ public:
     //     }
     // }
 
-    void visit_IntrinsicFunction(const ASR::IntrinsicElementalFunction_t &x) {
+    void visit_IntrinsicFunction( ASR::IntrinsicElementalFunction_t &x) {
         if(x.m_type && x.m_type->type == ASR::ttypeType::SymbolicExpression) {
             ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_SymbolicExpression_t(al, x.base.base.loc));
             std::string symengine_var = symengine_stack.push();
@@ -892,7 +892,7 @@ public:
         }
     }
 
-    void visit_Cast(const ASR::Cast_t &x) {
+    void visit_Cast( ASR::Cast_t &x) {
         if(x.m_kind != ASR::cast_kindType::IntegerToSymbolicExpression) return;
 
         ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_SymbolicExpression_t(al, x.base.base.loc));
@@ -958,7 +958,7 @@ public:
             return basic_str(loc, target);
     }
 
-    void visit_Assert(const ASR::Assert_t &x) {
+    void visit_Assert( ASR::Assert_t &x) {
         ASR::expr_t* left_tmp = nullptr;
         ASR::expr_t* right_tmp = nullptr;
         if (ASR::is_a<ASR::LogicalCompare_t>(*x.m_test)) {
@@ -1016,7 +1016,7 @@ public:
         }
     }
 
-    void visit_WhileLoop(const ASR::WhileLoop_t &x) {
+    void visit_WhileLoop( ASR::WhileLoop_t &x) {
         ASR::WhileLoop_t &xx = const_cast<ASR::WhileLoop_t&>(x);
         transform_stmts(xx.m_body, xx.n_body);
         if (ASR::is_a<ASR::IntrinsicElementalFunction_t>(*xx.m_test)) {
@@ -1028,7 +1028,7 @@ public:
         }
     }
 
-    void visit_Return(const ASR::Return_t &x) {
+    void visit_Return( ASR::Return_t &x) {
         // freeing out variables
         if (!symbolic_vars_to_free.empty()){
             for (ASR::symbol_t* symbol : symbolic_vars_to_free) {

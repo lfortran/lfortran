@@ -332,7 +332,7 @@ public:
         return std::make_tuple(c, cyargs, fargs, pyxbody, return_statement);
     }
 
-    void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
+    void visit_TranslationUnit( ASR::TranslationUnit_t &x) {
         // All loose statements must be converted to a function, so the items
         // must be empty:
         LCOMPILERS_ASSERT(x.n_items == 0);
@@ -392,7 +392,7 @@ public:
         pxd  = pxd_tmp;
     }
 
-    void visit_Module(const ASR::Module_t &x) {
+    void visit_Module( ASR::Module_t &x) {
         cur_module = x.m_name;
 
         // Generate code for nested subroutines and functions first:
@@ -419,7 +419,7 @@ public:
         cur_module.clear();
     }
 
-    void visit_Function(const ASR::Function_t &x) {
+    void visit_Function( ASR::Function_t &x) {
 
         // Only process bind(c) subprograms for now
         if (ASRUtils::get_FunctionType(x)->m_abi != ASR::abiType::BindC) return;

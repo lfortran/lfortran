@@ -17,7 +17,7 @@ class IsAllocatedCalled: public ASR::CallReplacerOnExpressionsVisitor<IsAllocate
         IsAllocatedCalled(std::map<SymbolTable*, std::vector<ASR::symbol_t*>>& scope2var_):
             scope2var(scope2var_) {}
 
-        void visit_IntrinsicImpureFunction(const ASR::IntrinsicImpureFunction_t& x) {
+        void visit_IntrinsicImpureFunction( ASR::IntrinsicImpureFunction_t& x) {
             if( x.m_impure_intrinsic_id == static_cast<int64_t>(
                 ASRUtils::IntrinsicImpureFunctions::Allocated) ) {
                 LCOMPILERS_ASSERT(x.n_args == 1);
@@ -28,7 +28,7 @@ class IsAllocatedCalled: public ASR::CallReplacerOnExpressionsVisitor<IsAllocate
             }
         }
 
-        void visit_FunctionCall(const ASR::FunctionCall_t& x) {
+        void visit_FunctionCall( ASR::FunctionCall_t& x) {
             ASR::FunctionType_t* func_type = ASRUtils::get_FunctionType(x.m_name);
             for( size_t i = 0; i < x.n_args; i++ ) {
                 if( ASR::is_a<ASR::Allocatable_t>(*func_type->m_arg_types[i]) ||
@@ -41,7 +41,7 @@ class IsAllocatedCalled: public ASR::CallReplacerOnExpressionsVisitor<IsAllocate
             }
         }
 
-        void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
+        void visit_SubroutineCall( ASR::SubroutineCall_t& x) {
             ASR::FunctionType_t* func_type = ASRUtils::get_FunctionType(x.m_name);
             for( size_t i = 0; i < x.n_args; i++ ) {
                 if( ASR::is_a<ASR::Allocatable_t>(*func_type->m_arg_types[i]) ||
@@ -54,7 +54,7 @@ class IsAllocatedCalled: public ASR::CallReplacerOnExpressionsVisitor<IsAllocate
             }
         }
 
-        void visit_ReAlloc(const ASR::ReAlloc_t& x) {
+        void visit_ReAlloc( ASR::ReAlloc_t& x) {
             for( size_t i = 0; i < x.n_args; i++ ) {
                 if( ASR::is_a<ASR::Allocatable_t>(*ASRUtils::expr_type(x.m_args[i].m_a)) ||
                     ASR::is_a<ASR::Pointer_t>(*ASRUtils::expr_type(x.m_args[i].m_a)) ) {
@@ -66,7 +66,7 @@ class IsAllocatedCalled: public ASR::CallReplacerOnExpressionsVisitor<IsAllocate
             }
         }
 
-        void visit_Allocate(const ASR::Allocate_t& x) {
+        void visit_Allocate( ASR::Allocate_t& x) {
             for( size_t i = 0; i < x.n_args; i++ ) {
                 ASR::alloc_arg_t alloc_arg = x.m_args[i];
                 if( !ASRUtils::is_dimension_dependent_only_on_arguments(
@@ -97,7 +97,7 @@ class PromoteAllocatableToNonAllocatable:
             std::map<SymbolTable*, std::vector<ASR::symbol_t*>>& scope2var_):
             al(al_), remove_original_statement(false), scope2var(scope2var_) {}
 
-        void visit_Allocate(const ASR::Allocate_t& x) {
+        void visit_Allocate( ASR::Allocate_t& x) {
             ASR::Allocate_t& xx = const_cast<ASR::Allocate_t&>(x);
             Vec<ASR::alloc_arg_t> x_args;
             x_args.reserve(al, x.n_args);
@@ -135,7 +135,7 @@ class PromoteAllocatableToNonAllocatable:
         }
 
         template <typename T>
-        void visit_Deallocate(const T& x) {
+        void visit_Deallocate( T& x) {
             T& xx = const_cast<T&>(x);
             Vec<ASR::expr_t*> x_args;
             x_args.reserve(al, x.n_vars);
@@ -155,11 +155,11 @@ class PromoteAllocatableToNonAllocatable:
             }
         }
 
-        void visit_ExplicitDeallocate(const ASR::ExplicitDeallocate_t& x) {
+        void visit_ExplicitDeallocate( ASR::ExplicitDeallocate_t& x) {
             visit_Deallocate(x);
         }
 
-        void visit_ImplicitDeallocate(const ASR::ImplicitDeallocate_t& x) {
+        void visit_ImplicitDeallocate( ASR::ImplicitDeallocate_t& x) {
             visit_Deallocate(x);
         }
 
@@ -249,7 +249,7 @@ class FixArrayPhysicalCastVisitor: public ASR::CallReplacerOnExpressionsVisitor<
             replacer.replace_expr(*current_expr);
         }
 
-        void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
+        void visit_SubroutineCall( ASR::SubroutineCall_t& x) {
             ASR::CallReplacerOnExpressionsVisitor<FixArrayPhysicalCastVisitor>::visit_SubroutineCall(x);
             ASR::stmt_t* call = ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(
                 al, x.base.base.loc, x.m_name, x.m_original_name, x.m_args,

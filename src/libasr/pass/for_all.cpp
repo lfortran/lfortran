@@ -26,7 +26,7 @@ public:
     ForAllVisitor(Allocator &al) : StatementWalkVisitor(al) {
     }
 
-    void visit_ForAllSingle(const ASR::ForAllSingle_t &x) {
+    void visit_ForAllSingle( ASR::ForAllSingle_t &x) {
         Location loc = x.base.base.loc;
         ASR::stmt_t *assign_stmt = x.m_assign_stmt;
         Vec<ASR::stmt_t*> body;

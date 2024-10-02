@@ -189,7 +189,7 @@ class TransformFunctionsWithOptionalArguments: public PassUtils::PassVisitor<Tra
             return false;
         }
 
-        void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
+        void visit_TranslationUnit( ASR::TranslationUnit_t &x) {
             for (auto &item : x.m_symtab->get_scope()) {
                 if (is_a<ASR::Function_t>(*item.second)) {
                     ASR::Function_t *s = down_cast<ASR::Function_t>(item.second);
@@ -205,7 +205,7 @@ class TransformFunctionsWithOptionalArguments: public PassUtils::PassVisitor<Tra
             }
         }
 
-        void visit_Program(const ASR::Program_t &x) {
+        void visit_Program( ASR::Program_t &x) {
             // FIXME: this is a hack, we need to pass in a non-const `x`,
             // which requires to generate a TransformVisitor.
             ASR::Program_t &xx = const_cast<ASR::Program_t&>(x);
@@ -236,7 +236,7 @@ class TransformFunctionsWithOptionalArguments: public PassUtils::PassVisitor<Tra
 
         }
 
-        void visit_Module(const ASR::Module_t &x) {
+        void visit_Module( ASR::Module_t &x) {
             // FIXME: this is a hack, we need to pass in a non-const `x`,
             // which requires to generate a TransformVisitor.
             ASR::Module_t &xx = const_cast<ASR::Module_t&>(x);
@@ -264,7 +264,7 @@ class TransformFunctionsWithOptionalArguments: public PassUtils::PassVisitor<Tra
 
         }
 
-        void visit_Function(const ASR::Function_t &x) {
+        void visit_Function( ASR::Function_t &x) {
             // FIXME: this is a hack, we need to pass in a non-const `x`,
             // which requires to generate a TransformVisitor.
             ASR::Function_t &xx = const_cast<ASR::Function_t&>(x);
@@ -521,7 +521,7 @@ class ReplaceSubroutineCallsWithOptionalArgumentsVisitor : public PassUtils::Pas
             pass_result.reserve(al, 1);
         }
 
-        void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
+        void visit_SubroutineCall( ASR::SubroutineCall_t& x) {
             Vec<ASR::call_arg_t> new_args;
             if( !fill_new_args(new_args, al, x, current_scope, sym2optionalargidx) ) {
                 return ;

@@ -33,7 +33,7 @@ public:
         pass_result.reserve(al, 1);
     }
 
-    void visit_If(const ASR::If_t& x) {
+    void visit_If( ASR::If_t& x) {
         ASR::If_t& xx = const_cast<ASR::If_t&>(x);
         transform_stmts(xx.m_body, xx.n_body);
         transform_stmts(xx.m_orelse, xx.n_orelse);
@@ -56,7 +56,7 @@ public:
         }
     }
 
-    void visit_Select(const ASR::Select_t& x) {
+    void visit_Select( ASR::Select_t& x) {
         ASR::Select_t& xx = const_cast<ASR::Select_t&>(x);
         ASR::expr_t* m_test_value = ASRUtils::expr_value(x.m_test);
         if( !ASRUtils::is_value_constant(m_test_value) ) {

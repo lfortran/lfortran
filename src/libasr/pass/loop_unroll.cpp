@@ -34,7 +34,7 @@ public:
         pass_result.reserve(al, 1);
     }
 
-    void visit_DoLoop(const ASR::DoLoop_t& x) {
+    void visit_DoLoop( ASR::DoLoop_t& x) {
         ASR::DoLoop_t& xx = const_cast<ASR::DoLoop_t&>(x);
         ASR::do_loop_head_t x_head = x.m_head;
         ASR::expr_t* x_start = ASRUtils::expr_value(x_head.m_start);

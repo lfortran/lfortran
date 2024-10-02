@@ -266,7 +266,7 @@ public:
     }
 
     /********************************** Unit **********************************/
-    void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
+    void visit_TranslationUnit( ASR::TranslationUnit_t &x) {
         std::string r = "";
         for (auto &item : x.m_symtab->get_scope()) {
             if (is_a<ASR::Module_t>(*item.second)) {
@@ -296,7 +296,7 @@ public:
     }
 
     /********************************* Symbol *********************************/
-    void visit_Program(const ASR::Program_t &x) {
+    void visit_Program( ASR::Program_t &x) {
         std::string r;
         r = "program";
         r += " ";
@@ -371,7 +371,7 @@ public:
         src = r;
     }
 
-    void visit_Module(const ASR::Module_t &x) {
+    void visit_Module( ASR::Module_t &x) {
         std::string r;
         r = "module";
         r += " ";
@@ -466,7 +466,7 @@ public:
         src = r;
     }
 
-    void visit_Function(const ASR::Function_t &x) {
+    void visit_Function( ASR::Function_t &x) {
         std::string r = indent;
         ASR::FunctionType_t *type = ASR::down_cast<ASR::FunctionType_t>(x.m_function_signature);
         if (type->m_pure) {
@@ -584,7 +584,7 @@ public:
         src = r;
     }
 
-    void visit_GenericProcedure(const ASR::GenericProcedure_t &x) {
+    void visit_GenericProcedure( ASR::GenericProcedure_t &x) {
         std::string r = indent;
         r += "interface ";
         r.append(x.m_name);
@@ -606,9 +606,9 @@ public:
         src = r;
     }
 
-    // void visit_CustomOperator(const ASR::CustomOperator_t &x) {}
+    // void visit_CustomOperator( ASR::CustomOperator_t &x) {}
 
-    void visit_ExternalSymbol(const ASR::ExternalSymbol_t &x) {
+    void visit_ExternalSymbol( ASR::ExternalSymbol_t &x) {
         ASR::symbol_t *sym = down_cast<ASR::symbol_t>(
             ASRUtils::symbol_parent_symtab(x.m_external)->asr_owner);
         if (!is_a<ASR::Struct_t>(*sym)) {
@@ -621,7 +621,7 @@ public:
         }
     }
 
-    void visit_Struct(const ASR::Struct_t &x) {
+    void visit_Struct( ASR::Struct_t &x) {
         std::string r = indent;
         r += "type :: ";
         r.append(x.m_name);
@@ -643,11 +643,11 @@ public:
         src = r;
     }
 
-    // void visit_Enum(const ASR::Enum_t &x) {}
+    // void visit_Enum( ASR::Enum_t &x) {}
 
-    // void visit_UnionType(const ASR::UnionType_t &x) {}
+    // void visit_UnionType( ASR::UnionType_t &x) {}
 
-    void visit_Variable(const ASR::Variable_t &x) {
+    void visit_Variable( ASR::Variable_t &x) {
         std::string r = indent;
         std::string dims = "(";
         r += get_type(x.m_type);
@@ -705,20 +705,20 @@ public:
         src = r;
     }
 
-    // void visit_Class(const ASR::Class_t &x) {}
+    // void visit_Class( ASR::Class_t &x) {}
 
-    // void visit_ClassProcedure(const ASR::ClassProcedure_t &x) {}
+    // void visit_ClassProcedure( ASR::ClassProcedure_t &x) {}
 
-    // void visit_AssociateBlock(const ASR::AssociateBlock_t &x) {}
+    // void visit_AssociateBlock( ASR::AssociateBlock_t &x) {}
 
-    // void visit_Block(const ASR::Block_t &x) {}
+    // void visit_Block( ASR::Block_t &x) {}
 
-    // void visit_Requirement(const ASR::Requirement_t &x) {}
+    // void visit_Requirement( ASR::Requirement_t &x) {}
 
-    // void visit_Template(const ASR::Template_t &x) {}
+    // void visit_Template( ASR::Template_t &x) {}
 
     /********************************** Stmt **********************************/
-    void visit_Allocate(const ASR::Allocate_t &x) {
+    void visit_Allocate( ASR::Allocate_t &x) {
         std::string r = indent;
         r += "allocate(";
         for (size_t i = 0; i < x.n_args; i ++) {
@@ -741,9 +741,9 @@ public:
         src = r;
     }
 
-    // void visit_ReAlloc(const ASR::ReAlloc_t &x) {}
+    // void visit_ReAlloc( ASR::ReAlloc_t &x) {}
 
-    void visit_Assign(const ASR::Assign_t &x) {
+    void visit_Assign( ASR::Assign_t &x) {
         std::string r;
         r += "assign";
         r += " ";
@@ -757,7 +757,7 @@ public:
         src = r;
     }
 
-    void visit_Assignment(const ASR::Assignment_t &x) {
+    void visit_Assignment( ASR::Assignment_t &x) {
         std::string r = indent;
         visit_expr(*x.m_target);
         r += src;
@@ -769,7 +769,7 @@ public:
         src = r;
     }
 
-    void visit_Associate(const ASR::Associate_t &x) {
+    void visit_Associate( ASR::Associate_t &x) {
         visit_expr(*x.m_target);
         std::string t = std::move(src);
         visit_expr(*x.m_value);
@@ -777,7 +777,7 @@ public:
         src = t + " => " + v + "\n";
     }
 
-    void visit_Cycle(const ASR::Cycle_t &x) {
+    void visit_Cycle( ASR::Cycle_t &x) {
         src = indent + "cycle";
         if (x.m_stmt_name) {
             src += " " + std::string(x.m_stmt_name);
@@ -785,7 +785,7 @@ public:
         src += "\n";
     }
 
-    void visit_ExplicitDeallocate(const ASR::ExplicitDeallocate_t &x) {
+    void visit_ExplicitDeallocate( ASR::ExplicitDeallocate_t &x) {
         std::string r = indent;
         r += "deallocate(";
         for (size_t i = 0; i < x.n_vars; i ++) {
@@ -799,7 +799,7 @@ public:
         src = r;
     }
 
-    void visit_ImplicitDeallocate(const ASR::ImplicitDeallocate_t &x) {
+    void visit_ImplicitDeallocate( ASR::ImplicitDeallocate_t &x) {
         std::string r = indent;
         r += "deallocate(";
         for (size_t i = 0; i < x.n_vars; i ++) {
@@ -812,9 +812,9 @@ public:
         src = r;
     }
 
-    // void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {}
+    // void visit_DoConcurrentLoop( ASR::DoConcurrentLoop_t &x) {}
 
-    void visit_DoLoop(const ASR::DoLoop_t &x) {
+    void visit_DoLoop( ASR::DoLoop_t &x) {
         std::string r = indent;
         if (x.m_name) {
             r += std::string(x.m_name);
@@ -847,13 +847,13 @@ public:
         src = r;
     }
 
-    void visit_ErrorStop(const ASR::ErrorStop_t &/*x*/) {
+    void visit_ErrorStop( ASR::ErrorStop_t &/*x*/) {
         src = indent;
         src += "error stop";
         src += "\n";
     }
 
-    void visit_Exit(const ASR::Exit_t &x) {
+    void visit_Exit( ASR::Exit_t &x) {
         src = indent + "exit";
         if (x.m_stmt_name) {
             src += " " + std::string(x.m_stmt_name);
@@ -861,9 +861,9 @@ public:
         src += "\n";
     }
 
-    // void visit_ForAllSingle(const ASR::ForAllSingle_t &x) {}
+    // void visit_ForAllSingle( ASR::ForAllSingle_t &x) {}
 
-    void visit_GoTo(const ASR::GoTo_t &x) {
+    void visit_GoTo( ASR::GoTo_t &x) {
         std::string r = indent;
         r += "go to";
         r += " ";
@@ -873,7 +873,7 @@ public:
         src = r;
     }
 
-    void visit_GoToTarget(const ASR::GoToTarget_t &x) {
+    void visit_GoToTarget( ASR::GoToTarget_t &x) {
         std::string r = "";
         r += std::to_string(x.m_id);
         r += " ";
@@ -883,7 +883,7 @@ public:
         src = r;
     }
 
-    void visit_If(const ASR::If_t &x) {
+    void visit_If( ASR::If_t &x) {
         std::string r = indent;
         r += "if";
         r += " (";
@@ -911,9 +911,9 @@ public:
         src = r;
     }
 
-    // void visit_IfArithmetic(const ASR::IfArithmetic_t &x) {}
+    // void visit_IfArithmetic( ASR::IfArithmetic_t &x) {}
 
-    void visit_Print(const ASR::Print_t &x) {
+    void visit_Print( ASR::Print_t &x) {
         std::string r = indent;
         r += "print";
         r += " ";
@@ -943,7 +943,7 @@ public:
         src = r;
     }
 
-    void visit_FileOpen(const ASR::FileOpen_t &x) {
+    void visit_FileOpen( ASR::FileOpen_t &x) {
         std::string r;
         r = indent;
         r += "open";
@@ -978,7 +978,7 @@ public:
         src = r;
     }
 
-    void visit_FileClose(const ASR::FileClose_t &x) {
+    void visit_FileClose( ASR::FileClose_t &x) {
         std::string r;
         r = indent;
         r += "close";
@@ -995,7 +995,7 @@ public:
         src = r;
     }
 
-   void visit_FileRead(const ASR::FileRead_t &x) {
+   void visit_FileRead( ASR::FileRead_t &x) {
         std::string r;
         r = indent;
         r += "read";
@@ -1043,13 +1043,13 @@ public:
         src = r;
     }
 
-    // void visit_FileBackspace(const ASR::FileBackspace_t &x) {}
+    // void visit_FileBackspace( ASR::FileBackspace_t &x) {}
 
-    // void visit_FileRewind(const ASR::FileRewind_t &x) {}
+    // void visit_FileRewind( ASR::FileRewind_t &x) {}
 
-    // void visit_FileInquire(const ASR::FileInquire_t &x) {}
+    // void visit_FileInquire( ASR::FileInquire_t &x) {}
 
-    void visit_FileWrite(const ASR::FileWrite_t &x) {
+    void visit_FileWrite( ASR::FileWrite_t &x) {
         std::string r = indent;
         r += "write";
         r += "(";
@@ -1082,7 +1082,7 @@ public:
         src = r;
     }
 
-    void visit_Return(const ASR::Return_t &/*x*/) {
+    void visit_Return( ASR::Return_t &/*x*/) {
         std::string r = indent;
         r += "return";
         handle_line_truncation(r, 2);
@@ -1090,7 +1090,7 @@ public:
         src = r;
     }
 
-    void visit_Select(const ASR::Select_t &x) {
+    void visit_Select( ASR::Select_t &x) {
         std::string r = indent;
         r += "select case";
         r += " (";
@@ -1123,15 +1123,15 @@ public:
         src = r;
     }
 
-    void visit_Stop(const ASR::Stop_t /*x*/) {
+    void visit_Stop( ASR::Stop_t /*x*/) {
         src = indent;
         src += "stop";
         src += "\n";
     }
 
-    // void visit_Assert(const ASR::Assert_t &x) {}
+    // void visit_Assert( ASR::Assert_t &x) {}
 
-    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+    void visit_SubroutineCall( ASR::SubroutineCall_t &x) {
         std::string r = indent;
         r += "call ";
         r += ASRUtils::symbol_name(x.m_name);
@@ -1148,7 +1148,7 @@ public:
         src = r;
     }
 
-    void visit_Where(const ASR::Where_t &x) {
+    void visit_Where( ASR::Where_t &x) {
         std::string r;
         r = indent;
         r += "where";
@@ -1176,7 +1176,7 @@ public:
         src = r;
     }
 
-    void visit_WhileLoop(const ASR::WhileLoop_t &x) {
+    void visit_WhileLoop( ASR::WhileLoop_t &x) {
         std::string r = indent;
         if (x.m_name) {
             r += std::string(x.m_name);
@@ -1199,22 +1199,22 @@ public:
         src = r;
     }
 
-    // void visit_Nullify(const ASR::Nullify_t &x) {}
+    // void visit_Nullify( ASR::Nullify_t &x) {}
 
-    // void visit_Flush(const ASR::Flush_t &x) {}
+    // void visit_Flush( ASR::Flush_t &x) {}
 
-    // void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {}
+    // void visit_AssociateBlockCall( ASR::AssociateBlockCall_t &x) {}
 
-    // void visit_SelectType(const ASR::SelectType_t &x) {}
+    // void visit_SelectType( ASR::SelectType_t &x) {}
 
-    // void visit_CPtrToPointer(const ASR::CPtrToPointer_t &x) {}
+    // void visit_CPtrToPointer( ASR::CPtrToPointer_t &x) {}
 
-    // void visit_BlockCall(const ASR::BlockCall_t &x) {}
+    // void visit_BlockCall( ASR::BlockCall_t &x) {}
 
-    // void visit_Expr(const ASR::Expr_t &x) {}
+    // void visit_Expr( ASR::Expr_t &x) {}
 
     /********************************** Expr **********************************/
-    void visit_IfExp(const ASR::IfExp_t &x) {
+    void visit_IfExp( ASR::IfExp_t &x) {
         std::string r = "";
         visit_expr(*x.m_test);
         r += src;
@@ -1227,7 +1227,7 @@ public:
         src = r;
     }
 
-    void visit_ComplexConstructor(const ASR::ComplexConstructor_t &x) {
+    void visit_ComplexConstructor( ASR::ComplexConstructor_t &x) {
         visit_expr(*x.m_re);
         std::string re = src;
         visit_expr(*x.m_im);
@@ -1235,9 +1235,9 @@ public:
         src = "cmplx(" + re + ", " + im + ")";
     }
 
-    // void visit_NamedExpr(const ASR::NamedExpr_t &x) {}
+    // void visit_NamedExpr( ASR::NamedExpr_t &x) {}
 
-    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+    void visit_FunctionCall( ASR::FunctionCall_t &x) {
         std::string r = "";
         if (x.m_original_name) {
             r += ASRUtils::symbol_name(x.m_original_name);
@@ -1295,7 +1295,7 @@ public:
         src = out;
     }
 
-    void visit_IntrinsicElementalFunction(const ASR::IntrinsicElementalFunction_t &x) {
+    void visit_IntrinsicElementalFunction( ASR::IntrinsicElementalFunction_t &x) {
         std::string out;
         std::string intrinsic_func_name = ASRUtils::get_intrinsic_name(static_cast<int64_t>(x.m_intrinsic_id));
         if(intrinsic_func_name == "StringFindSet") intrinsic_func_name = "scan";
@@ -1317,7 +1317,7 @@ public:
         src = out;
     }
 
-    void visit_TypeInquiry(const ASR::TypeInquiry_t &x) {
+    void visit_TypeInquiry( ASR::TypeInquiry_t &x) {
         std::string out;
         std::string intrinsic_func_name = ASRUtils::get_intrinsic_name(static_cast<int64_t>(x.m_inquiry_id));
         if(intrinsic_func_name == "BitSize") intrinsic_func_name = "bit_size";
@@ -1338,16 +1338,16 @@ public:
         src = out;
     }
 
-    void visit_IntrinsicArrayFunction(const ASR::IntrinsicArrayFunction_t &x) {
+    void visit_IntrinsicArrayFunction( ASR::IntrinsicArrayFunction_t &x) {
         std::string out;
         std::string intrinsic_func_name = ASRUtils::get_array_intrinsic_name(static_cast<int64_t>(x.m_arr_intrinsic_id));
         if(intrinsic_func_name == "DotProduct") intrinsic_func_name = "dot_product";
         visit_IntrinsicArrayFunction_helper(out, intrinsic_func_name, x);
     }
 
-    // void visit_IntrinsicImpureFunction(const ASR::IntrinsicImpureFunction_t &x) {}
+    // void visit_IntrinsicImpureFunction( ASR::IntrinsicImpureFunction_t &x) {}
 
-    void visit_StructConstructor(const ASR::StructConstructor_t &x) {
+    void visit_StructConstructor( ASR::StructConstructor_t &x) {
         std::string r = indent;
         r += ASRUtils::symbol_name(x.m_dt_sym);
         r += "(";
@@ -1360,11 +1360,11 @@ public:
         src = r;
     }
 
-    // void visit_EnumConstructor(const ASR::EnumConstructor_t &x) {}
+    // void visit_EnumConstructor( ASR::EnumConstructor_t &x) {}
 
-    // void visit_UnionTypeConstructor(const ASR::UnionTypeConstructor_t &x) {}
+    // void visit_UnionTypeConstructor( ASR::UnionTypeConstructor_t &x) {}
 
-    void visit_ImpliedDoLoop(const ASR::ImpliedDoLoop_t &x) {
+    void visit_ImpliedDoLoop( ASR::ImpliedDoLoop_t &x) {
         if (x.m_value) {
             visit_expr(*x.m_value);
             return;
@@ -1372,7 +1372,7 @@ public:
         return;
     }
 
-    void visit_IntegerConstant(const ASR::IntegerConstant_t &x) {
+    void visit_IntegerConstant( ASR::IntegerConstant_t &x) {
         // TODO: handle IntegerBOZ
         src = std::to_string(x.m_n);
         int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
@@ -1384,19 +1384,19 @@ public:
         last_expr_precedence = Precedence::Ext;
     }
 
-    // void visit_IntegerBitNot(const ASR::IntegerBitNot_t &x) {}
+    // void visit_IntegerBitNot( ASR::IntegerBitNot_t &x) {}
 
-    void visit_IntegerUnaryMinus(const ASR::IntegerUnaryMinus_t &x) {
+    void visit_IntegerUnaryMinus( ASR::IntegerUnaryMinus_t &x) {
         visit_expr_with_precedence(*x.m_arg, 9);
         src = "-" + src;
         last_expr_precedence = Precedence::UnaryMinus;
     }
 
-    void visit_IntegerCompare(const ASR::IntegerCompare_t &x) {
+    void visit_IntegerCompare( ASR::IntegerCompare_t &x) {
         handle_compare(x);
     }
 
-    void visit_IntegerBinOp(const ASR::IntegerBinOp_t &x) {
+    void visit_IntegerBinOp( ASR::IntegerBinOp_t &x) {
         std::string r = "", m_op = binop2str(x.m_op);
         int current_precedence = last_expr_precedence;
         visit_expr_with_precedence(*x.m_left, current_precedence);
@@ -1412,17 +1412,17 @@ public:
         src = r;
     }
 
-    // void visit_UnsignedIntegerConstant(const ASR::UnsignedIntegerConstant_t &x) {}
+    // void visit_UnsignedIntegerConstant( ASR::UnsignedIntegerConstant_t &x) {}
 
-    // void visit_UnsignedIntegerUnaryMinus(const ASR::UnsignedIntegerUnaryMinus_t &x) {}
+    // void visit_UnsignedIntegerUnaryMinus( ASR::UnsignedIntegerUnaryMinus_t &x) {}
 
-    // void visit_UnsignedIntegerBitNot(const ASR::UnsignedIntegerBitNot_t &x) {}
+    // void visit_UnsignedIntegerBitNot( ASR::UnsignedIntegerBitNot_t &x) {}
 
-    // void visit_UnsignedIntegerCompare(const ASR::UnsignedIntegerCompare_t &x) {}
+    // void visit_UnsignedIntegerCompare( ASR::UnsignedIntegerCompare_t &x) {}
 
-    // void visit_UnsignedIntegerBinOp(const ASR::UnsignedIntegerBinOp_t &x) {}
+    // void visit_UnsignedIntegerBinOp( ASR::UnsignedIntegerBinOp_t &x) {}
 
-    void visit_RealConstant(const ASR::RealConstant_t &x) {
+    void visit_RealConstant( ASR::RealConstant_t &x) {
         int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
         if (kind >= 8) {
             src = ASRUtils::to_string_with_precision(x.m_r, 16) + "_8";
@@ -1432,17 +1432,17 @@ public:
         last_expr_precedence = Precedence::Ext;
     }
 
-    void visit_RealUnaryMinus(const ASR::RealUnaryMinus_t &x) {
+    void visit_RealUnaryMinus( ASR::RealUnaryMinus_t &x) {
         visit_expr_with_precedence(*x.m_arg, 9);
         src = "-" + src;
         last_expr_precedence = Precedence::UnaryMinus;
     }
 
-    void visit_RealCompare(const ASR::RealCompare_t &x) {
+    void visit_RealCompare( ASR::RealCompare_t &x) {
         handle_compare(x);
     }
 
-    void visit_RealBinOp(const ASR::RealBinOp_t &x) {
+    void visit_RealBinOp( ASR::RealBinOp_t &x) {
         std::string r = "", m_op = binop2str(x.m_op);
         int current_precedence = last_expr_precedence;
         visit_expr_with_precedence(*x.m_left, current_precedence);
@@ -1454,25 +1454,25 @@ public:
         src = r;
     }
 
-    // void visit_RealCopySign(const ASR::RealCopySign_t &x) {}
+    // void visit_RealCopySign( ASR::RealCopySign_t &x) {}
 
-    void visit_ComplexConstant(const ASR::ComplexConstant_t &x) {
+    void visit_ComplexConstant( ASR::ComplexConstant_t &x) {
         std::string re = std::to_string(x.m_re);
         std::string im = std::to_string(x.m_im);
         src = "(" + re + ", " + im + ")";
     }
 
-    void visit_ComplexUnaryMinus(const ASR::ComplexUnaryMinus_t &x) {
+    void visit_ComplexUnaryMinus( ASR::ComplexUnaryMinus_t &x) {
         visit_expr_with_precedence(*x.m_arg, 9);
         src = "-" + src;
         last_expr_precedence = Precedence::UnaryMinus;
     }
 
-    void visit_ComplexCompare(const ASR::ComplexCompare_t &x) {
+    void visit_ComplexCompare( ASR::ComplexCompare_t &x) {
         handle_compare(x);
     }
 
-    void visit_ComplexBinOp(const ASR::ComplexBinOp_t &x) {
+    void visit_ComplexBinOp( ASR::ComplexBinOp_t &x) {
         std::string r = "", m_op = binop2str(x.m_op);
         int current_precedence = last_expr_precedence;
         visit_expr_with_precedence(*x.m_left, current_precedence);
@@ -1484,7 +1484,7 @@ public:
         src = r;
     }
 
-    void visit_LogicalConstant(const ASR::LogicalConstant_t &x) {
+    void visit_LogicalConstant( ASR::LogicalConstant_t &x) {
         src = ".";
         if (x.m_value) {
             src += "true";
@@ -1495,17 +1495,17 @@ public:
         last_expr_precedence = Precedence::Ext;
     }
 
-    void visit_LogicalNot(const ASR::LogicalNot_t &x) {
+    void visit_LogicalNot( ASR::LogicalNot_t &x) {
         visit_expr_with_precedence(*x.m_arg, 5);
         src = ".not. " + src;
         last_expr_precedence = Precedence::Not;
     }
 
-    void visit_LogicalCompare(const ASR::LogicalCompare_t &x) {
+    void visit_LogicalCompare( ASR::LogicalCompare_t &x) {
         handle_compare(x);
     }
 
-    void visit_LogicalBinOp(const ASR::LogicalBinOp_t &x) {
+    void visit_LogicalBinOp( ASR::LogicalBinOp_t &x) {
         std::string r = "", m_op = logicalbinop2str(x.m_op);
         int current_precedence = last_expr_precedence;
         visit_expr_with_precedence(*x.m_left, current_precedence);
@@ -1517,14 +1517,14 @@ public:
         src = r;
     }
 
-    void visit_StringConstant(const ASR::StringConstant_t &x) {
+    void visit_StringConstant( ASR::StringConstant_t &x) {
         src = "\"";
         src.append(x.m_s);
         src += "\"";
         last_expr_precedence = Precedence::Ext;
     }
 
-    void visit_StringConcat(const ASR::StringConcat_t &x) {
+    void visit_StringConcat( ASR::StringConcat_t &x) {
         this->visit_expr(*x.m_left);
         std::string left = std::move(src);
         this->visit_expr(*x.m_right);
@@ -1532,7 +1532,7 @@ public:
         src = left + "//" + right;
     }
 
-    void visit_StringRepeat(const ASR::StringRepeat_t &x) {
+    void visit_StringRepeat( ASR::StringRepeat_t &x) {
         this->visit_expr(*x.m_left);
         std::string str = src;
         this->visit_expr(*x.m_right);
@@ -1540,12 +1540,12 @@ public:
         src = "repeat(" + str + ", " + n + ")";
     }
 
-    void visit_StringLen(const ASR::StringLen_t &x) {
+    void visit_StringLen( ASR::StringLen_t &x) {
         visit_expr(*x.m_arg);
         src = "len(" + src + ")";
     }
 
-    void visit_StringItem(const ASR::StringItem_t &x) {
+    void visit_StringItem( ASR::StringItem_t &x) {
         std::string r = "";
         this->visit_expr(*x.m_arg);
         r += src;
@@ -1558,20 +1558,20 @@ public:
         src = r;
     }
 
-    // void visit_StringSection(const ASR::StringSection_t &x) {}
+    // void visit_StringSection( ASR::StringSection_t &x) {}
 
-    void visit_StringCompare(const ASR::StringCompare_t &x) {
+    void visit_StringCompare( ASR::StringCompare_t &x) {
         handle_compare(x);
     }
 
-    // void visit_StringOrd(const ASR::StringOrd_t &x) {}
+    // void visit_StringOrd( ASR::StringOrd_t &x) {}
 
-    void visit_StringChr(const ASR::StringChr_t &x) {
+    void visit_StringChr( ASR::StringChr_t &x) {
         visit_expr(*x.m_arg);
         src = "char(" + src + ")";
     }
 
-    void visit_StringFormat(const ASR::StringFormat_t &x) {
+    void visit_StringFormat( ASR::StringFormat_t &x) {
         std::string r = "";
         if (format_string.size() > 0) {
             visit_expr(*x.m_fmt);
@@ -1585,18 +1585,18 @@ public:
         src = r;
     }
 
-    // void visit_CPtrCompare(const ASR::CPtrCompare_t &x) {}
+    // void visit_CPtrCompare( ASR::CPtrCompare_t &x) {}
 
-    // void visit_SymbolicCompare(const ASR::SymbolicCompare_t &x) {}
+    // void visit_SymbolicCompare( ASR::SymbolicCompare_t &x) {}
 
-    void visit_Var(const ASR::Var_t &x) {
+    void visit_Var( ASR::Var_t &x) {
         src = ASRUtils::symbol_name(x.m_v);
         last_expr_precedence = Precedence::Ext;
     }
 
-    // void visit_FunctionParam(const ASR::FunctionParam_t &x) {}
+    // void visit_FunctionParam( ASR::FunctionParam_t &x) {}
 
-    void visit_ArrayConstructor(const ASR::ArrayConstructor_t &x) {
+    void visit_ArrayConstructor( ASR::ArrayConstructor_t &x) {
         std::string r = "[";
         for(size_t i = 0; i < x.n_args; i++) {
             visit_expr(*x.m_args[i]);
@@ -1608,7 +1608,7 @@ public:
         last_expr_precedence = Precedence::Ext;
     }
 
-    void visit_ArrayConstant(const ASR::ArrayConstant_t &x) {
+    void visit_ArrayConstant( ASR::ArrayConstant_t &x) {
         std::string r = "[";
         for(size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(x.m_type); i++) {
             r += ASRUtils::fetch_ArrayConstant_value(x, i);
@@ -1619,7 +1619,7 @@ public:
         last_expr_precedence = Precedence::Ext;
     }
 
-    void visit_ArrayItem(const ASR::ArrayItem_t &x) {
+    void visit_ArrayItem( ASR::ArrayItem_t &x) {
         std::string r = "";
         visit_expr(*x.m_v);
         r += src;
@@ -1636,7 +1636,7 @@ public:
         last_expr_precedence = Precedence::Ext;
     }
 
-    void visit_ArraySection(const ASR::ArraySection_t &x) {
+    void visit_ArraySection( ASR::ArraySection_t &x) {
         std::string r = "";
         visit_expr(*x.m_v);
         r += src;
@@ -1669,7 +1669,7 @@ public:
         last_expr_precedence = Precedence::Ext;
     }
 
-    void visit_ArraySize(const ASR::ArraySize_t &x) {
+    void visit_ArraySize( ASR::ArraySize_t &x) {
         visit_expr(*x.m_v);
         std::string r = "size(" + src;
         if (x.m_dim) {
@@ -1681,7 +1681,7 @@ public:
         src = r;
     }
 
-    void visit_ArrayBound(const ASR::ArrayBound_t &x) {
+    void visit_ArrayBound( ASR::ArrayBound_t &x) {
         std::string r = "";
         if (x.m_bound == ASR::arrayboundType::UBound) {
             r += "ubound(";
@@ -1697,12 +1697,12 @@ public:
         src = r;
     }
 
-    void visit_ArrayTranspose(const ASR::ArrayTranspose_t &x) {
+    void visit_ArrayTranspose( ASR::ArrayTranspose_t &x) {
         visit_expr(*x.m_matrix);
         src = "transpose(" + src + ")";
     }
 
-    void visit_ArrayReshape(const ASR::ArrayReshape_t &x) {
+    void visit_ArrayReshape( ASR::ArrayReshape_t &x) {
         std::string r = "reshape(";
         visit_expr(*x.m_array);
         r += src;
@@ -1713,9 +1713,9 @@ public:
         src = r;
     }
 
-    // void visit_BitCast(const ASR::BitCast_t &x) {}
+    // void visit_BitCast( ASR::BitCast_t &x) {}
 
-    void visit_StructInstanceMember(const ASR::StructInstanceMember_t &x) {
+    void visit_StructInstanceMember( ASR::StructInstanceMember_t &x) {
         std::string r;
         visit_expr(*x.m_v);
         r += src;
@@ -1724,23 +1724,23 @@ public:
         src = r;
     }
 
-    // void visit_StructStaticMember(const ASR::StructStaticMember_t &x) {}
+    // void visit_StructStaticMember( ASR::StructStaticMember_t &x) {}
 
-    // void visit_EnumStaticMember(const ASR::EnumStaticMember_t &x) {}
+    // void visit_EnumStaticMember( ASR::EnumStaticMember_t &x) {}
 
-    // void visit_UnionInstanceMember(const ASR::UnionInstanceMember_t &x) {}
+    // void visit_UnionInstanceMember( ASR::UnionInstanceMember_t &x) {}
 
-    // void visit_EnumName(const ASR::EnumName_t &x) {}
+    // void visit_EnumName( ASR::EnumName_t &x) {}
 
-    // void visit_EnumValue(const ASR::EnumValue_t &x) {}
+    // void visit_EnumValue( ASR::EnumValue_t &x) {}
 
-    // void visit_OverloadedCompare(const ASR::OverloadedCompare_t &x) {}
+    // void visit_OverloadedCompare( ASR::OverloadedCompare_t &x) {}
 
-    // void visit_OverloadedBinOp(const ASR::OverloadedBinOp_t &x) {}
+    // void visit_OverloadedBinOp( ASR::OverloadedBinOp_t &x) {}
 
-    // void visit_OverloadedUnaryMinus(const ASR::OverloadedUnaryMinus_t &x) {}
+    // void visit_OverloadedUnaryMinus( ASR::OverloadedUnaryMinus_t &x) {}
 
-    void visit_Cast(const ASR::Cast_t &x) {
+    void visit_Cast( ASR::Cast_t &x) {
         visit_expr(*x.m_arg);
         int dest_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
         std::string type_str;
@@ -1783,59 +1783,59 @@ public:
         last_expr_precedence = Precedence::Ext;
     }
 
-    void visit_ArrayBroadcast(const ASR::ArrayBroadcast_t &x) {
+    void visit_ArrayBroadcast( ASR::ArrayBroadcast_t &x) {
         // TODO
         visit_expr(*x.m_array);
     }
 
-    void visit_ArrayPhysicalCast(const ASR::ArrayPhysicalCast_t &x) {
+    void visit_ArrayPhysicalCast( ASR::ArrayPhysicalCast_t &x) {
         this->visit_expr(*x.m_arg);
     }
 
-    void visit_ComplexRe(const ASR::ComplexRe_t &x) {
+    void visit_ComplexRe( ASR::ComplexRe_t &x) {
         visit_expr(*x.m_arg);
         src = "real(" + src + ")";
     }
 
-    void visit_ComplexIm(const ASR::ComplexIm_t &x) {
+    void visit_ComplexIm( ASR::ComplexIm_t &x) {
         visit_expr(*x.m_arg);
         src = "aimag(" + src + ")";
     }
 
-    // void visit_CLoc(const ASR::CLoc_t &x) {}
+    // void visit_CLoc( ASR::CLoc_t &x) {}
 
-    // void visit_PointerToCPtr(const ASR::PointerToCPtr_t &x) {}
+    // void visit_PointerToCPtr( ASR::PointerToCPtr_t &x) {}
 
-    // void visit_GetPointer(const ASR::GetPointer_t &x) {}
+    // void visit_GetPointer( ASR::GetPointer_t &x) {}
 
-    void visit_IntegerBitLen(const ASR::IntegerBitLen_t &x) {
+    void visit_IntegerBitLen( ASR::IntegerBitLen_t &x) {
         visit_expr(*x.m_a);
         src = "bit_size(" + src + ")";
     }
 
-    void visit_Ichar(const ASR::Ichar_t &x) {
+    void visit_Ichar( ASR::Ichar_t &x) {
         visit_expr(*x.m_arg);
         src = "ichar(" + src + ")";
     }
 
-    void visit_Iachar(const ASR::Iachar_t &x) {
+    void visit_Iachar( ASR::Iachar_t &x) {
         visit_expr(*x.m_arg);
         src = "iachar(" + src + ")";
     }
 
-    // void visit_SizeOfType(const ASR::SizeOfType_t &x) {}
+    // void visit_SizeOfType( ASR::SizeOfType_t &x) {}
 
-    // void visit_PointerNullConstant(const ASR::PointerNullConstant_t &x) {}
+    // void visit_PointerNullConstant( ASR::PointerNullConstant_t &x) {}
 
-    // void visit_PointerAssociated(const ASR::PointerAssociated_t &x) {}
+    // void visit_PointerAssociated( ASR::PointerAssociated_t &x) {}
 
-    void visit_RealSqrt(const ASR::RealSqrt_t &x) {
+    void visit_RealSqrt( ASR::RealSqrt_t &x) {
         visit_expr(*x.m_arg);
         src = "sqrt(" + src + ")";
     }
 
     /******************************* Case Stmt ********************************/
-    void visit_CaseStmt(const ASR::CaseStmt_t &x) {
+    void visit_CaseStmt( ASR::CaseStmt_t &x) {
         std::string r = indent;
         r += "case (";
         for(size_t i = 0; i < x.n_test; i ++) {
@@ -1855,7 +1855,7 @@ public:
         src = r;
     }
 
-    void visit_CaseStmt_Range(const ASR::CaseStmt_Range_t &x) {
+    void visit_CaseStmt_Range( ASR::CaseStmt_Range_t &x) {
         std::string r = indent;
         r += "case (";
         if (x.m_start) {

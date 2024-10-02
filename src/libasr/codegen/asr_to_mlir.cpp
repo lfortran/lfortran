@@ -64,7 +64,7 @@ public:
             llvmI8PtrTy = mlir::LLVM::LLVMPointerType::get(b->getI8Type());
         }
 
-    void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
+    void visit_TranslationUnit( ASR::TranslationUnit_t &x) {
         module = std::make_unique<mlir::ModuleOp>(b->create<mlir::ModuleOp>(loc,
             llvm::StringRef("LFortran")));
 
@@ -76,7 +76,7 @@ public:
         }
     }
 
-    void visit_Program(const ASR::Program_t &x) {
+    void visit_Program( ASR::Program_t &x) {
         // b->setInsertionPointToEnd(module->getBody());
         mlir::LLVM::LLVMFunctionType llvmFnType = mlir::LLVM::LLVMFunctionType::get(
             b->getI32Type(), llvmI8PtrTy, true);
@@ -102,7 +102,7 @@ public:
         b->create<mlir::LLVM::ReturnOp>(loc, zero.getResult());
     }
 
-    void visit_Variable(const ASR::Variable_t &x) {
+    void visit_Variable( ASR::Variable_t &x) {
         switch (x.m_type->type) {
             case ASR::ttypeType::Integer: {
                 int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
@@ -128,13 +128,13 @@ public:
         }
     }
 
-    void visit_Var(const ASR::Var_t &x) {
+    void visit_Var( ASR::Var_t &x) {
         ASR::Variable_t *v = ASRUtils::EXPR2VAR(&x.base);
         uint32_t h = get_hash((ASR::asr_t*) v);
         tmp = mlir_symtab[h];
     }
 
-    void visit_Assignment(const ASR::Assignment_t &x) {
+    void visit_Assignment( ASR::Assignment_t &x) {
         ASR::Variable_t *m_target = ASRUtils::EXPR2VAR(x.m_target);
         uint32_t h = get_hash((ASR::asr_t*) m_target);
         mlir::Value target = mlir_symtab[h];
@@ -143,7 +143,7 @@ public:
         b->create<mlir::LLVM::StoreOp>(loc, value, target);
     }
 
-    void visit_IntegerConstant(const ASR::IntegerConstant_t &x) {
+    void visit_IntegerConstant( ASR::IntegerConstant_t &x) {
         int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
         switch (kind) {
             case 4: {
@@ -159,7 +159,7 @@ public:
         }
     }
 
-    void visit_IntegerBinOp(const ASR::IntegerBinOp_t &x) {
+    void visit_IntegerBinOp( ASR::IntegerBinOp_t &x) {
         this->visit_expr(*x.m_left);
         mlir::Value left = tmp;
         this->visit_expr(*x.m_right);
@@ -179,7 +179,7 @@ public:
         }
     }
 
-    void visit_Print(const ASR::Print_t &x) {
+    void visit_Print( ASR::Print_t &x) {
         std::string fmt = "";
         Vec<mlir::Value> args; 
         LCOMPILERS_ASSERT(x.m_text != nullptr &&

@@ -27,7 +27,7 @@ class CreateFunctionFromSubroutine: public PassUtils::PassVisitor<CreateFunction
             pass_result.reserve(al, 1);
         }
 
-        void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
+        void visit_TranslationUnit( ASR::TranslationUnit_t &x) {
             // Transform functions returning arrays to subroutines
             for (auto &item : x.m_symtab->get_scope()) {
                 if (is_a<ASR::Function_t>(*item.second)) {
@@ -52,7 +52,7 @@ class CreateFunctionFromSubroutine: public PassUtils::PassVisitor<CreateFunction
             }
         }
 
-        void visit_Module(const ASR::Module_t &x) {
+        void visit_Module( ASR::Module_t &x) {
             current_scope = x.m_symtab;
             for (auto &item : x.m_symtab->get_scope()) {
                 if (is_a<ASR::Function_t>(*item.second)) {
@@ -68,7 +68,7 @@ class CreateFunctionFromSubroutine: public PassUtils::PassVisitor<CreateFunction
             }
         }
 
-        void visit_Program(const ASR::Program_t &x) {
+        void visit_Program( ASR::Program_t &x) {
             std::vector<std::pair<std::string, ASR::symbol_t*> > replace_vec;
             // FIXME: this is a hack, we need to pass in a non-const `x`,
             // which requires to generate a TransformVisitor.
@@ -376,7 +376,7 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
             pass_result.n = 0;
         }
 
-        void visit_Assignment(const ASR::Assignment_t &x) {
+        void visit_Assignment( ASR::Assignment_t &x) {
             if( (ASR::is_a<ASR::Pointer_t>(*ASRUtils::expr_type(x.m_target)) &&
                 ASR::is_a<ASR::GetPointer_t>(*x.m_value)) ||
                 (ASR::is_a<ASR::ArrayConstant_t>(*x.m_value) ||

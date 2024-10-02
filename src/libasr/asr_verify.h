@@ -35,7 +35,7 @@ namespace LCompilers {
     //
     //   LCOMPILERS_ASSERT(asr_verify(*asr));
     //
-    bool asr_verify(const ASR::TranslationUnit_t &unit,
+    bool asr_verify( ASR::TranslationUnit_t &unit,
         bool check_external, diag::Diagnostics &diagnostics);
 
 } // namespace LCompilers

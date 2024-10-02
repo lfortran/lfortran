@@ -56,7 +56,7 @@ public:
         pass_result.reserve(al, 1);
     }
 
-    bool is_loop(const ASR::stmt_t& x) {
+    bool is_loop( ASR::stmt_t& x) {
         return (ASR::is_a<ASR::DoLoop_t>(x) ||
                 ASR::is_a<ASR::WhileLoop_t>(x));
     }
@@ -124,7 +124,7 @@ public:
         }
     }
 
-    void vectorise_loop(const ASR::DoLoop_t& x) {
+    void vectorise_loop( ASR::DoLoop_t& x) {
         // Do Vectorisation of Loop inside this function
         ASR::expr_t* loop_start = x.m_head.m_start;
         ASR::expr_t* loop_end = x.m_head.m_end;
@@ -179,7 +179,7 @@ public:
         pass_result.push_back(al, vectorised_loop);
     }
 
-    void visit_DoLoop(const ASR::DoLoop_t& x) {
+    void visit_DoLoop( ASR::DoLoop_t& x) {
         from_loop_vectorise = true;
         if( x.n_body == 1 ) {
             // Vectorise

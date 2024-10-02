@@ -61,11 +61,11 @@ public:
         return false;
     }
 
-    void visit_IntegerBinOp(const ASR::IntegerBinOp_t& /*x*/) { }
-    void visit_ComplexBinOp(const ASR::ComplexBinOp_t& /*x*/) { }
-    void visit_LogicalBinOp(const ASR::LogicalBinOp_t& /*x*/) { }
+    void visit_IntegerBinOp( ASR::IntegerBinOp_t& /*x*/) { }
+    void visit_ComplexBinOp( ASR::ComplexBinOp_t& /*x*/) { }
+    void visit_LogicalBinOp( ASR::LogicalBinOp_t& /*x*/) { }
 
-    void visit_RealBinOp(const ASR::RealBinOp_t& x_const) {
+    void visit_RealBinOp( ASR::RealBinOp_t& x_const) {
         if( !from_fma ) {
             return ;
         }
@@ -122,7 +122,7 @@ public:
         from_fma = false;
     }
 
-    void visit_Assignment(const ASR::Assignment_t& x) {
+    void visit_Assignment( ASR::Assignment_t& x) {
         from_fma = true;
         ASR::Assignment_t& xx = const_cast<ASR::Assignment_t&>(x);
         fma_var = nullptr;
@@ -134,24 +134,24 @@ public:
         from_fma = false;
     }
 
-    void visit_IntegerUnaryMinus(const ASR::IntegerUnaryMinus_t &x) {
+    void visit_IntegerUnaryMinus( ASR::IntegerUnaryMinus_t &x) {
         visit_UnaryOp(x);
     }
-    void visit_RealUnaryMinus(const ASR::RealUnaryMinus_t &x) {
+    void visit_RealUnaryMinus( ASR::RealUnaryMinus_t &x) {
         visit_UnaryOp(x);
     }
-    void visit_ComplexUnaryMinus(const ASR::ComplexUnaryMinus_t &x) {
+    void visit_ComplexUnaryMinus( ASR::ComplexUnaryMinus_t &x) {
         visit_UnaryOp(x);
     }
-    void visit_IntegerBitNot(const ASR::IntegerBitNot_t &x) {
+    void visit_IntegerBitNot( ASR::IntegerBitNot_t &x) {
         visit_UnaryOp(x);
     }
-    void visit_LogicalNot(const ASR::LogicalNot_t &x) {
+    void visit_LogicalNot( ASR::LogicalNot_t &x) {
         visit_UnaryOp(x);
     }
 
     template<typename T>
-    void visit_UnaryOp(const T& x) {
+    void visit_UnaryOp( T& x) {
         from_fma = true;
         T& xx = const_cast<T&>(x);
         fma_var = nullptr;

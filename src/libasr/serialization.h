@@ -6,7 +6,7 @@
 namespace LCompilers {
 
     std::string serialize(const ASR::asr_t &asr);
-    std::string serialize(const ASR::TranslationUnit_t &unit);
+    std::string serialize(ASR::TranslationUnit_t &unit);
     ASR::asr_t* deserialize_asr(Allocator &al, const std::string &s,
             bool load_symtab_id, SymbolTable &symtab);
     ASR::asr_t* deserialize_asr(Allocator &al, const std::string &s,

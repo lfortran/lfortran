@@ -55,7 +55,7 @@ public:
 
     ASRToX86Visitor(Allocator &al) : m_al{al}, m_a{al, false} {}
 
-    void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
+    void visit_TranslationUnit( ASR::TranslationUnit_t &x) {
         // All loose statements must be converted to a function, so the items
         // must be empty:
         LCOMPILERS_ASSERT(x.n_items == 0);
@@ -95,7 +95,7 @@ public:
         emit_elf32_footer(m_a);
     }
 
-    void visit_Module(const ASR::Module_t &x) {
+    void visit_Module( ASR::Module_t &x) {
         std::vector<std::string> func_order
             = ASRUtils::determine_function_definition_order(x.m_symtab);
         for (size_t i = 0; i < func_order.size(); i++) {
@@ -108,7 +108,7 @@ public:
         }
     }
 
-    void visit_Program(const ASR::Program_t &x) {
+    void visit_Program( ASR::Program_t &x) {
 
 
 
@@ -164,7 +164,7 @@ public:
 
     }
 
-    void visit_Function(const ASR::Function_t &x) {
+    void visit_Function( ASR::Function_t &x) {
         uint32_t h = get_hash((ASR::asr_t*)&x);
         std::string id = std::to_string(h);
 
@@ -240,15 +240,15 @@ public:
         m_a.asm_ret();
     }
 
-    void visit_Return(const ASR::Return_t &/*x*/) { }
+    void visit_Return( ASR::Return_t &/*x*/) { }
 
     // Expressions leave integer values in eax
 
-    void visit_IntegerConstant(const ASR::IntegerConstant_t &x) {
+    void visit_IntegerConstant( ASR::IntegerConstant_t &x) {
         m_a.asm_mov_r32_imm32(X86Reg::eax, x.m_n);
     }
 
-    void visit_LogicalConstant(const ASR::LogicalConstant_t &x) {
+    void visit_LogicalConstant( ASR::LogicalConstant_t &x) {
         int val;
         if (x.m_value == true) {
             val = 1;
@@ -258,7 +258,7 @@ public:
         m_a.asm_mov_r32_imm32(X86Reg::eax, val);
     }
 
-    void visit_Var(const ASR::Var_t &x) {
+    void visit_Var( ASR::Var_t &x) {
         ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(x.m_v);
         uint32_t h = get_hash((ASR::asr_t*)v);
         LCOMPILERS_ASSERT(x86_symtab.find(h) != x86_symtab.end());
@@ -274,7 +274,7 @@ public:
         }
     }
 
-    void visit_IntegerBinOp(const ASR::IntegerBinOp_t &x) {
+    void visit_IntegerBinOp( ASR::IntegerBinOp_t &x) {
         this->visit_expr(*x.m_right);
         m_a.asm_push_r32(X86Reg::eax);
         this->visit_expr(*x.m_left);
@@ -306,12 +306,12 @@ public:
         }
     }
 
-    void visit_IntegerUnaryMinus(const ASR::IntegerUnaryMinus_t &x) {
+    void visit_IntegerUnaryMinus( ASR::IntegerUnaryMinus_t &x) {
         this->visit_expr(*x.m_arg);
         m_a.asm_neg_r32(X86Reg::eax);
     }
 
-    void visit_IntegerCompare(const ASR::IntegerCompare_t &x) {
+    void visit_IntegerCompare( ASR::IntegerCompare_t &x) {
         std::string id = std::to_string(get_hash((ASR::asr_t*)&x));
         this->visit_expr(*x.m_right);
         m_a.asm_push_r32(X86Reg::eax);
@@ -356,7 +356,7 @@ public:
         m_a.add_label(".compareend" + id);
     }
 
-    void visit_Assignment(const ASR::Assignment_t &x) {
+    void visit_Assignment( ASR::Assignment_t &x) {
         this->visit_expr(*x.m_value);
         // RHS is in eax
 
@@ -377,7 +377,7 @@ public:
         }
     }
 
-    void visit_Print(const ASR::Print_t &x) {
+    void visit_Print( ASR::Print_t &x) {
         LCOMPILERS_ASSERT(x.m_text != nullptr);
         ASR::expr_t *e = x.m_text;
         //HACKISH way to handle print refactoring (always using stringformat).
@@ -415,7 +415,7 @@ public:
         }
     }
 
-    void visit_ErrorStop(const ASR::ErrorStop_t &x) {
+    void visit_ErrorStop( ASR::ErrorStop_t &x) {
         std::string id = "err" + std::to_string(get_hash((ASR::asr_t*)&x));
         std::string msg = "ERROR STOP\n";
         emit_print(m_a, id, msg.size());
@@ -424,7 +424,7 @@ public:
         m_a.asm_call_label("exit_error_stop");
     }
 
-    void visit_If(const ASR::If_t &x) {
+    void visit_If( ASR::If_t &x) {
         std::string id = std::to_string(get_hash((ASR::asr_t*)&x));
         this->visit_expr(*x.m_test);
         // eax contains the logical value (true=1, false=0) of the if condition
@@ -443,7 +443,7 @@ public:
         m_a.add_label(".endif" + id);
     }
 
-    void visit_WhileLoop(const ASR::WhileLoop_t &x) {
+    void visit_WhileLoop( ASR::WhileLoop_t &x) {
         std::string id = std::to_string(get_hash((ASR::asr_t*)&x));
 
         // head
@@ -527,7 +527,7 @@ public:
         return x.n_args*4;
     }
 
-    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+    void visit_SubroutineCall( ASR::SubroutineCall_t &x) {
         ASR::Function_t *s = ASR::down_cast<ASR::Function_t>(
             ASRUtils::symbol_get_past_external(x.m_name));
 
@@ -545,7 +545,7 @@ public:
         m_a.asm_add_r32_imm8(X86Reg::esp, arg_offset);
     }
 
-    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+    void visit_FunctionCall( ASR::FunctionCall_t &x) {
         ASR::Function_t *s = ASR::down_cast<ASR::Function_t>(x.m_name);
 
         uint32_t h = get_hash((ASR::asr_t*)s);

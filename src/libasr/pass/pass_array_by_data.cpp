@@ -222,7 +222,7 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
 
 
         template <typename T>
-        bool visit_SymbolContainingFunctions(const T& x,
+        bool visit_SymbolContainingFunctions( T& x,
             std::deque<ASR::Function_t*>& pass_array_by_data_functions) {
             T& xx = const_cast<T&>(x);
             current_scope = xx.m_symtab;
@@ -251,7 +251,7 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
                 visit_SymbolContainingFunctions(*function, pass_array_by_data_functions);    \
             }    \
 
-        void visit_TranslationUnit(const ASR::TranslationUnit_t& x) {
+        void visit_TranslationUnit( ASR::TranslationUnit_t& x) {
             // Visit functions in global scope first
             bfs_visit_SymbolContainingFunctions();
 
@@ -270,11 +270,11 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
             }
         }
 
-        void visit_Program(const ASR::Program_t& x) {
+        void visit_Program( ASR::Program_t& x) {
             bfs_visit_SymbolContainingFunctions()
         }
 
-        void visit_Module(const ASR::Module_t& x) {
+        void visit_Module( ASR::Module_t& x) {
             // Do not visit intrinsic modules
             if( x.m_intrinsic ) {
                 return ;
@@ -374,19 +374,19 @@ class EditProcedureVisitor: public ASR::CallReplacerOnExpressionsVisitor<EditPro
         replacer.replace_expr(*current_expr);
     }
 
-    void visit_BlockCall(const ASR::BlockCall_t& x) {
+    void visit_BlockCall( ASR::BlockCall_t& x) {
         ASR::BlockCall_t& xx = const_cast<ASR::BlockCall_t&>(x);
         edit_symbol_reference(m)
         ASR::CallReplacerOnExpressionsVisitor<EditProcedureVisitor>::visit_BlockCall(x);
     }
 
-    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t& x) {
+    void visit_AssociateBlockCall( ASR::AssociateBlockCall_t& x) {
         ASR::AssociateBlockCall_t& xx = const_cast<ASR::AssociateBlockCall_t&>(x);
         edit_symbol_reference(m)
         ASR::CallReplacerOnExpressionsVisitor<EditProcedureVisitor>::visit_AssociateBlockCall(x);
     }
 
-    void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
+    void visit_SubroutineCall( ASR::SubroutineCall_t& x) {
         ASR::SubroutineCall_t& xx = const_cast<ASR::SubroutineCall_t&>(x);
         edit_symbol_reference(name)
         ASR::CallReplacerOnExpressionsVisitor<EditProcedureVisitor>::visit_SubroutineCall(x);
@@ -425,7 +425,7 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
         al(al_), v(v_), not_to_be_erased(not_to_be_erased_) {}
 
         template <typename T>
-        void update_args_for_pass_arr_by_data_funcs_passed_as_callback(const T& x) {
+        void update_args_for_pass_arr_by_data_funcs_passed_as_callback( T& x) {
             bool args_updated = false;
             Vec<ASR::call_arg_t> new_args;
             new_args.reserve(al, x.n_args);
@@ -537,7 +537,7 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
         }
 
         template <typename T>
-        void visit_Call(const T& x) {
+        void visit_Call( T& x) {
             ASR::symbol_t* subrout_sym = x.m_name;
             bool is_external = ASR::is_a<ASR::ExternalSymbol_t>(*subrout_sym);
             subrout_sym = ASRUtils::symbol_get_past_external(subrout_sym);
@@ -603,12 +603,12 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
             xx.n_args = new_args.size();
         }
 
-        void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
+        void visit_SubroutineCall( ASR::SubroutineCall_t& x) {
             visit_Call(x);
             ASR::ASRPassBaseWalkVisitor<EditProcedureCallsVisitor>::visit_SubroutineCall(x);
         }
 
-        void visit_FunctionCall(const ASR::FunctionCall_t& x) {
+        void visit_FunctionCall( ASR::FunctionCall_t& x) {
             visit_Call(x);
             ASR::ASRPassBaseWalkVisitor<EditProcedureCallsVisitor>::visit_FunctionCall(x);
         }
@@ -641,7 +641,7 @@ class RemoveArrayByDescriptorProceduresVisitor : public PassUtils::PassVisitor<R
         // and not the new one. WASM backend should be supporting
         // such cases for the following to be removed.
         template <typename T>
-        void visit_Unit(const T& x) {
+        void visit_Unit( T& x) {
             T& xx = const_cast<T&>(x);
             current_scope = xx.m_symtab;
 
@@ -679,19 +679,19 @@ class RemoveArrayByDescriptorProceduresVisitor : public PassUtils::PassVisitor<R
             }
         }
 
-        void visit_TranslationUnit(const ASR::TranslationUnit_t& x) {
+        void visit_TranslationUnit( ASR::TranslationUnit_t& x) {
             visit_Unit(x);
         }
 
-        void visit_Program(const ASR::Program_t& x) {
+        void visit_Program( ASR::Program_t& x) {
             visit_Unit(x);
         }
 
-        void visit_Function(const ASR::Function_t& x) {
+        void visit_Function( ASR::Function_t& x) {
             visit_Unit(x);
         }
 
-        void visit_Module(const ASR::Module_t& x) {
+        void visit_Module( ASR::Module_t& x) {
             if (x.m_intrinsic) {
                 return ;
             }
@@ -699,11 +699,11 @@ class RemoveArrayByDescriptorProceduresVisitor : public PassUtils::PassVisitor<R
             visit_Unit(x);
         }
 
-        void visit_Struct(const ASR::Struct_t& x) {
+        void visit_Struct( ASR::Struct_t& x) {
             visit_Unit(x);
         }
 
-        void visit_Block(const ASR::Block_t& x) {
+        void visit_Block( ASR::Block_t& x) {
             visit_Unit(x);
         }
 
