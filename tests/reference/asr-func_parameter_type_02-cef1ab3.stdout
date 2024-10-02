@@ -64,67 +64,6 @@
                     .false.
                     ()
                 ),
-            main:
-                (Program
-                    (SymbolTable
-                        5
-                        {
-                            f:
-                                (Function
-                                    (SymbolTable
-                                        6
-                                        {
-                                            f_return_var_name:
-                                                (Variable
-                                                    6
-                                                    f_return_var_name
-                                                    []
-                                                    ReturnVar
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 4)
-                                                    ()
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                )
-                                        })
-                                    f
-                                    (FunctionType
-                                        []
-                                        (Real 4)
-                                        BindC
-                                        Interface
-                                        ()
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        []
-                                        .false.
-                                    )
-                                    []
-                                    []
-                                    []
-                                    (Var 6 f_return_var_name)
-                                    Public
-                                    .false.
-                                    .false.
-                                    ()
-                                )
-                        })
-                    main
-                    []
-                    [(SubroutineCall
-                        1 sub
-                        ()
-                        [((Var 5 f))]
-                        ()
-                    )]
-                ),
             sub:
                 (Function
                     (SymbolTable

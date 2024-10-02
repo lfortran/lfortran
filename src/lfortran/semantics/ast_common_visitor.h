@@ -4892,7 +4892,52 @@ public:
                         ASRUtils::type_get_past_pointer(func_type->m_arg_types[i]));
                 
                 if( ASR::is_a<ASR::FunctionType_t>(*arg_type) ) continue;
+
+                bool is_compile_time = true;
+                size_t rhs_rank = ASRUtils::extract_n_dims_from_ttype(orig_arg_type);
+                size_t lhs_rank = ASRUtils::extract_n_dims_from_ttype(arg_type);
                 
+                if( ASRUtils::is_array(arg_type) ){
+                    ASR::Array_t* arr_lhs = ASR::down_cast<ASR::Array_t>(arg_type);
+                    for(size_t i = 0; i < lhs_rank; i++){
+                        if( !arr_lhs->m_dims[i].m_length || !(ASRUtils::expr_value(arr_lhs->m_dims[i].m_length)) ){
+                            is_compile_time = false;
+                        }
+                    }
+                }
+
+                if( ASRUtils::is_array(orig_arg_type) ){
+                    ASR::Array_t* arr_rhs = ASR::down_cast<ASR::Array_t>(orig_arg_type);
+                    for(size_t i = 0; i < rhs_rank; i++){
+                        if( !arr_rhs->m_dims[i].m_length || !(ASRUtils::expr_value(arr_rhs->m_dims[i].m_length)) ){
+                            is_compile_time = false;
+                        }
+                    }
+                }
+
+                if( is_compile_time ){
+                    // when lhs_rank > rhs_rank it can broadcast
+                    if( lhs_rank != rhs_rank && lhs_rank < rhs_rank ){
+                        throw SemanticError("Incompatible rank `"+ std::to_string(lhs_rank) + 
+                                    "` array passed in function which expects rank `" + std::to_string(rhs_rank) + "`." ,
+                                            args.p[i].loc);
+                    }
+
+                    if ( ASR::is_a<ASR::Array_t>(*arg_type) && ASR::is_a<ASR::Array_t>(*orig_arg_type) ){
+                        ASR::Array_t* arr_rhs = ASR::down_cast<ASR::Array_t>(orig_arg_type);
+                        ASR::Array_t* arr_lhs = ASR::down_cast<ASR::Array_t>(arg_type);
+                            
+                        for (size_t i = 0; i < arr_rhs->n_dims; i++) {
+                            std::string lhs_dim = ASRUtils::extract_dim_value(arr_lhs->m_dims[i].m_length);
+                            std::string rhs_dim = ASRUtils::extract_dim_value(arr_rhs->m_dims[i].m_length);
+                            if(lhs_dim!=":" && rhs_dim!=":" && std::stoi(lhs_dim) < std::stoi(rhs_dim) ){
+                                throw SemanticError("Incompatible shape of array passed in argument " + std::to_string(i+1) +
+                                " (" + lhs_dim + " and " + rhs_dim + ")", args.p[i].loc);
+                            }
+                        }
+                    }
+                }
+
                 if(!ASRUtils::check_equal_type(arg_type,orig_arg_type)){
                     std::string arg_str = ASRUtils::type_to_str(arg_type);
                     std::string orig_arg_str = ASRUtils::type_to_str(orig_arg_type);
