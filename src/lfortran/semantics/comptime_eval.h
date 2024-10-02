@@ -85,7 +85,6 @@ struct IntrinsicProcedures {
             // Subroutines
             {"present", {m_builtin, &not_implemented, false}},
             {"system_clock", {m_math, &not_implemented, false}},
-            {"srand", {m_math, &not_implemented, false}},
             {"date_and_time", {m_string, &not_implemented, false}},
 
             // IEEE Arithmetic

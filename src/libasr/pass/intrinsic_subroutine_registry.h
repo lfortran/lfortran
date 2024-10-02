@@ -27,6 +27,7 @@ inline std::string get_intrinsic_subroutine_name(int x) {
         INTRINSIC_SUBROUTINE_NAME_CASE(GetEnvironmentVariable)
         INTRINSIC_SUBROUTINE_NAME_CASE(ExecuteCommandLine)
         INTRINSIC_SUBROUTINE_NAME_CASE(CpuTime)
+        INTRINSIC_SUBROUTINE_NAME_CASE(Srand)
         default : {
             throw LCompilersException("pickle: intrinsic_id not implemented");
         }
@@ -46,6 +47,8 @@ namespace IntrinsicImpureSubroutineRegistry {
             {&RandomInit::instantiate_RandomInit, &RandomInit::verify_args}},
         {static_cast<int64_t>(IntrinsicImpureSubroutines::RandomSeed),
             {&RandomSeed::instantiate_RandomSeed, &RandomSeed::verify_args}},
+        {static_cast<int64_t>(IntrinsicImpureSubroutines::Srand),
+            {&Srand::instantiate_Srand, &Srand::verify_args}},
         {static_cast<int64_t>(IntrinsicImpureSubroutines::GetCommand),
             {&GetCommand::instantiate_GetCommand, &GetCommand::verify_args}},
         {static_cast<int64_t>(IntrinsicImpureSubroutines::GetCommandArgument),
@@ -65,6 +68,8 @@ namespace IntrinsicImpureSubroutineRegistry {
             "random_init"},
         {static_cast<int64_t>(IntrinsicImpureSubroutines::RandomSeed),
             "random_seed"},
+        {static_cast<int64_t>(IntrinsicImpureSubroutines::Srand),
+            "srand"},
         {static_cast<int64_t>(IntrinsicImpureSubroutines::GetCommand),
             "get_command"},
         {static_cast<int64_t>(IntrinsicImpureSubroutines::GetCommandArgument),
@@ -83,6 +88,7 @@ namespace IntrinsicImpureSubroutineRegistry {
                 {"random_number", &RandomNumber::create_RandomNumber},
                 {"random_init", &RandomInit::create_RandomInit},
                 {"random_seed", &RandomSeed::create_RandomSeed},
+                {"srand", &Srand::create_Srand},
                 {"get_command", &GetCommand::create_GetCommand},
                 {"get_command_argument", &GetCommandArgument::create_GetCommandArgument},
                 {"get_environment_variable", &GetEnvironmentVariable::create_GetEnvironmentVariable},
