@@ -3610,7 +3610,9 @@ public:
                 } else {
 #if LLVM_VERSION_MAJOR > 16
                     bool is_llvm_ptr = false;
-                    if (LLVM::is_llvm_pointer(*v->m_type) ) {
+                    if ( LLVM::is_llvm_pointer(*v->m_type) &&
+                            !ASR::is_a<ASR::ClassType_t>(*ASRUtils::type_get_past_pointer(
+                            ASRUtils::type_get_past_allocatable(v->m_type))) ) {
                         is_llvm_ptr = true;
                     }
                     ptr = llvm_utils->CreateAlloca(*builder, type_, array_size,
@@ -4573,6 +4575,7 @@ public:
             bool is_value_class = ASR::is_a<ASR::ClassType_t>(
                 *ASRUtils::type_get_past_pointer(
                     ASRUtils::type_get_past_allocatable(value_type)));
+            llvm::Type *i64 = llvm::Type::getInt64Ty(context);
             if( is_target_class && !is_value_class ) {
                 llvm::Value* vtab_address_ptr = llvm_utils->create_gep(llvm_target, 0);
                 llvm_target = llvm_utils->create_gep(llvm_target, 1);
@@ -4584,7 +4587,7 @@ public:
                     create_vtab_for_struct_type(struct_sym, current_scope);
                 }
                 llvm::Value* vtab_obj = type2vtab[struct_sym][current_scope];
-                llvm::Value* struct_type_hash = llvm_utils->CreateLoad(llvm_utils->create_gep(vtab_obj, 0));
+                llvm::Value* struct_type_hash = llvm_utils->CreateLoad2(i64, llvm_utils->create_gep(vtab_obj, 0));
                 builder->CreateStore(struct_type_hash, vtab_address_ptr);
 
                 ASR::ClassType_t* class_t = ASR::down_cast<ASR::ClassType_t>(
@@ -4599,8 +4602,10 @@ public:
                 [[maybe_unused]] ASR::ClassType_t* value_class_t = ASR::down_cast<ASR::ClassType_t>(
                     ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(value_type)));
                 LCOMPILERS_ASSERT(target_class_t->m_class_type == value_class_t->m_class_type);
-                llvm::Value* value_vtabid = llvm_utils->CreateLoad(llvm_utils->create_gep(llvm_value, 0));
-                llvm::Value* value_class = llvm_utils->CreateLoad(llvm_utils->create_gep(llvm_value, 1));
+                llvm::Type *value_llvm_type = llvm_utils->getStructType(
+                    ASRUtils::extract_type(value_type), module.get(), true);
+                llvm::Value* value_vtabid = llvm_utils->CreateLoad2(i64, llvm_utils->create_gep(llvm_value, 0));
+                llvm::Value* value_class = llvm_utils->CreateLoad2(value_llvm_type, llvm_utils->create_gep(llvm_value, 1));
                 builder->CreateStore(value_vtabid, llvm_utils->create_gep(llvm_target, 0));
                 builder->CreateStore(value_class, llvm_utils->create_gep(llvm_target, 1));
             } else {
@@ -5470,10 +5475,11 @@ public:
             llvm::Value* cond = nullptr;
             ASR::stmt_t** type_block = nullptr;
             size_t n_type_block = 0;
+            llvm::Type *i64 = llvm::Type::getInt64Ty(context);
             switch( select_type_stmts[i]->type ) {
                 case ASR::type_stmtType::TypeStmtName: {
                     ASR::ttype_t* selector_var_type = ASRUtils::expr_type(x.m_selector);
-                    llvm::Value* vptr_int_hash = llvm_utils->CreateLoad(llvm_utils->create_gep(llvm_selector, 0));
+                    llvm::Value* vptr_int_hash = llvm_utils->CreateLoad2(i64, llvm_utils->create_gep(llvm_selector, 0));
                     if( ASRUtils::is_array(selector_var_type) ) {
                         vptr_int_hash = llvm_utils->CreateLoad(llvm_utils->create_gep(vptr_int_hash, 0));
                     }
@@ -5493,13 +5499,13 @@ public:
                     llvm::Value* type_sym_vtab = type2vtab[type_sym][current_scope];
                     cond = builder->CreateICmpEQ(
                             vptr_int_hash,
-                            llvm_utils->CreateLoad( llvm_utils->create_gep(type_sym_vtab, 0) ) );
+                            llvm_utils->CreateLoad2( i64, llvm_utils->create_gep(type_sym_vtab, 0) ) );
                     type_block = type_stmt_name->m_body;
                     n_type_block = type_stmt_name->n_body;
                     break ;
                 }
                 case ASR::type_stmtType::ClassStmt: {
-                    llvm::Value* vptr_int_hash = llvm_utils->CreateLoad(llvm_utils->create_gep(llvm_selector, 0));
+                    llvm::Value* vptr_int_hash = llvm_utils->CreateLoad2(i64, llvm_utils->create_gep(llvm_selector, 0));
                     ASR::ClassStmt_t* class_stmt = ASR::down_cast<ASR::ClassStmt_t>(select_type_stmts[i]);
                     ASR::symbol_t* class_sym = ASRUtils::symbol_get_past_external(class_stmt->m_sym);
                     if( ASR::is_a<ASR::Struct_t>(*class_sym) ) {
@@ -5516,7 +5522,7 @@ public:
                     for( size_t i = 0; i < class_sym_vtabs.size(); i++ ) {
                         conds.push_back(builder->CreateICmpEQ(
                             vptr_int_hash,
-                            llvm_utils->CreateLoad(llvm_utils->create_gep(class_sym_vtabs[i], 0)) ));
+                            llvm_utils->CreateLoad2(i64, llvm_utils->create_gep(class_sym_vtabs[i], 0)) ));
                     }
                     cond = builder->CreateOr(conds);
                     type_block = class_stmt->m_body;
