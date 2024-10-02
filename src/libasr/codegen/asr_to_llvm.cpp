@@ -257,7 +257,9 @@ public:
         !ASRUtils::is_array(type) && \
         LLVM::is_llvm_pointer(*type) && \
         !ASRUtils::is_character(*type) ) { \
-        llvm_value = llvm_utils->CreateLoad(llvm_value); \
+        llvm::Type *llvm_type = llvm_utils->get_type_from_ttype_t_util( \
+            ASRUtils::extract_type(type), module.get()); \
+        llvm_value = llvm_utils->CreateLoad2(llvm_type, llvm_value); \
     } \
 
     // Inserts a new block `bb` using the current builder
