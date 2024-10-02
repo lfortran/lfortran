@@ -1,6 +1,6 @@
 program derived_types_37
     implicit none
-    
+
     TYPE test_type2
         integer :: num
     END TYPE test_type2
@@ -12,17 +12,17 @@ program derived_types_37
     END TYPE test_type1
 
     integer :: i
-    
+
     TYPE(test_type1), DIMENSION(5) :: main_arr
     TYPE(test_type1), allocatable :: main_arr_alloc(:)
-    
+
     main_arr%num = 44
     do i =1, 5
         print *, main_arr(i)%num
         if(main_arr(i)%num /= 44) error stop
     end do
-    
-    
+
+
     main_arr(1)%arr_1 = 33
     do i =1, 3
         print *,main_arr(1)%arr_1(i)
@@ -43,8 +43,8 @@ program derived_types_37
         print *, main_arr_alloc(i)%num
         if(main_arr_alloc(i)%num /= 44) error stop
     end do
-    
-    
+
+
     main_arr_alloc(1)%arr_1 = 33
     do i =1, 3
         print *,main_arr_alloc(1)%arr_1(i)

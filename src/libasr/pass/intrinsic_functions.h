@@ -647,7 +647,7 @@ namespace Aimag {
         declare_basic_variables("_lcompilers_aimag_" + type_to_str_python(arg_types[0]));
         fill_func_arg("x", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
-        body.push_back(al, b.Assignment(result, EXPR(ASR::make_ComplexIm_t(al, loc, 
+        body.push_back(al, b.Assignment(result, EXPR(ASR::make_ComplexIm_t(al, loc,
             args[0], return_type, nullptr))));
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -796,6 +796,7 @@ namespace Abs {
                 type = real_type;
             }
         }
+        // TODO: Calculate type according to input arguments
         return UnaryIntrinsicFunction::create_UnaryFunction(al, loc, args, eval_Abs,
             static_cast<int64_t>(IntrinsicElementalFunctions::Abs), 0,
             ASRUtils::type_get_past_allocatable(type), diag);
@@ -1136,21 +1137,21 @@ namespace OutOfRange
                 if (kind1 == 4) {
                     max_val = b.f32(3.4028235e+38f);
                     min_val = b.f32(-3.4028235e+38f);
-                    body.push_back(al, b.If(b.Or(b.Gt(args[0], max_val), b.Lt(args[0], min_val)), 
-                     { b.Assignment(result, b.bool_t(true, return_type)) }, 
+                    body.push_back(al, b.If(b.Or(b.Gt(args[0], max_val), b.Lt(args[0], min_val)),
+                     { b.Assignment(result, b.bool_t(true, return_type)) },
                      { b.Assignment(result, b.bool_t(false, return_type)) }));
                 } else if (kind1 == 8) {
                     max_val = b.f64(3.4028235e+38f);
                     min_val = b.f64(-3.4028235e+38f);
-                    body.push_back(al, b.If(b.Or(b.Gt(args[0], max_val), b.Lt(args[0], min_val)), 
-                    { b.Assignment(result, b.bool_t(true, return_type))}, 
+                    body.push_back(al, b.If(b.Or(b.Gt(args[0], max_val), b.Lt(args[0], min_val)),
+                    { b.Assignment(result, b.bool_t(true, return_type))},
                     { b.Assignment(result, b.bool_t(false, return_type))}));
                 }
             } else if (kind2 == 8) {
                 max_val = b.f64(1.7976931348623157e+308);
                 min_val = b.f64(-1.7976931348623157e+308);
-                body.push_back(al, b.If( b.Or(b.Gt(b.i2i_t(args[0], arg_types[1]), max_val), b.Lt(b.i2i_t(args[0], arg_types[1]), min_val)), 
-                { b.Assignment(result, b.bool_t(true, return_type)) }, 
+                body.push_back(al, b.If( b.Or(b.Gt(b.i2i_t(args[0], arg_types[1]), max_val), b.Lt(b.i2i_t(args[0], arg_types[1]), min_val)),
+                { b.Assignment(result, b.bool_t(true, return_type)) },
             { b.Assignment(result, b.bool_t(false, return_type)) }));
             }
         }
@@ -1488,17 +1489,17 @@ namespace Dshiftr {
         auto final_result = declare("x", int64, Local);
         auto result = declare(fn_name , return_type, ReturnVar);
 
-        body.push_back(al, b.Assignment(final_result, b.BitLshift(b.And(b.i2i_t(args[0], int64), 
+        body.push_back(al, b.Assignment(final_result, b.BitLshift(b.And(b.i2i_t(args[0], int64),
             b.Sub(b.BitLshift(b.i64(1), b.i2i_t(args[2], int64), int64), b.i64(1))),
             b.Sub(b.Mul(b.i64(extract_kind_from_ttype_t(arg_types[0])), b.i64(8)), b.i2i_t(args[2], int64)), int64)));
 
         body.push_back(al, b.If(b.Lt(b.i2i_t(args[1], int64), b.i64(0)), {
-            b.Assignment(final_result, b.Or(final_result, b.And(b.BitRshift(b.i2i_t(args[1], int64), 
+            b.Assignment(final_result, b.Or(final_result, b.And(b.BitRshift(b.i2i_t(args[1], int64),
             b.Sub(b.Mul((b.i64(extract_kind_from_ttype_t(arg_types[0]))), b.i64(8)), b.i2i_t(args[2], int64)), int64),
-            b.Sub(b.BitLshift(b.i64(1), b.Sub(b.Mul((b.i64(extract_kind_from_ttype_t(arg_types[0]))), b.i64(8)), 
+            b.Sub(b.BitLshift(b.i64(1), b.Sub(b.Mul((b.i64(extract_kind_from_ttype_t(arg_types[0]))), b.i64(8)),
             b.i2i_t(args[2], int64)), int64), b.i64(1)))))
         }, {
-            b.Assignment(final_result, b.Or(final_result, b.BitRshift(b.i2i_t(args[1], int64), 
+            b.Assignment(final_result, b.Or(final_result, b.BitRshift(b.i2i_t(args[1], int64),
             b.Sub(b.Mul((b.i64(extract_kind_from_ttype_t(arg_types[0]))), b.i64(8)), b.i2i_t(args[2], int64)), int64)))
         }));
         body.push_back(al, b.Assignment(result, b.i2i_t(final_result, return_type)));
@@ -1531,14 +1532,14 @@ namespace Dreal {
         }
     }
 
-    static inline ASR::expr_t* instantiate_Dreal(Allocator &al, const Location &loc, 
+    static inline ASR::expr_t* instantiate_Dreal(Allocator &al, const Location &loc,
             SymbolTable* scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t> &new_args,int64_t /*overload_id*/)  {
         declare_basic_variables("_lcompilers_dreal_" + type_to_str_python(arg_types[0]));
         fill_func_arg("x", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
         body.push_back(al, b.Assignment(result, b.c2r_t(args[0], real64)));
-        
+
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
@@ -2039,7 +2040,7 @@ namespace Ibclr {
         int64_t result;
         if ( val2 < 0 ) {
             diag.semantic_error_label("`pos` argument of `ibclr` intrinsic must be non-negative", {loc}, "");
-        } 
+        }
         result = val1 & ~(1 << val2);
         return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);
     }
@@ -3174,7 +3175,7 @@ namespace Maskl {
         int32_t kind = ASRUtils::extract_kind_from_ttype_t(t1);
         int64_t i = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         if ((kind == 4 && i > 32) || (kind == 8 && i > 64)) {
-            diag.semantic_error_label(" first argument of `maskl` must be less than or equal to the BIT_SIZE of INTEGER(KIND=" 
+            diag.semantic_error_label(" first argument of `maskl` must be less than or equal to the BIT_SIZE of INTEGER(KIND="
             + std::to_string(kind) + ")", {loc}, "");
             return nullptr;
         } else if (i < 0) {
@@ -3221,7 +3222,7 @@ namespace Maskr {
         int32_t kind = ASRUtils::extract_kind_from_ttype_t(t1);
         int64_t i = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         if (((kind == 4) && i > 32) || (kind == 8 && i > 64)) {
-            diag.semantic_error_label("first argument of `maskr` must be less than or equal to the BIT_SIZE of INTEGER(KIND=" 
+            diag.semantic_error_label("first argument of `maskr` must be less than or equal to the BIT_SIZE of INTEGER(KIND="
             + std::to_string(kind) + ")", {loc}, "");
             return nullptr;
         } else if (i < 0) {
@@ -3275,9 +3276,12 @@ namespace Merge {
             const Location &loc, SymbolTable *scope,
             Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        ASR::ttype_t *tsource_type = ASRUtils::duplicate_type(al, arg_types[0]);
-        ASR::ttype_t *fsource_type = ASRUtils::duplicate_type(al, arg_types[1]);
-        ASR::ttype_t *mask_type = ASRUtils::duplicate_type(al, arg_types[2]);
+        ASR::ttype_t *tsource_type = ASRUtils::duplicate_type(al,
+            ASRUtils::type_get_past_array_pointer_allocatable(arg_types[0]));
+        ASR::ttype_t *fsource_type = ASRUtils::duplicate_type(al,
+            ASRUtils::type_get_past_array_pointer_allocatable(arg_types[1]));
+        ASR::ttype_t *mask_type = ASRUtils::duplicate_type(al,
+            ASRUtils::type_get_past_array_pointer_allocatable(arg_types[2]));
         if( ASR::is_a<ASR::Character_t>(*tsource_type) ) {
             ASR::Character_t* tsource_char = ASR::down_cast<ASR::Character_t>(tsource_type);
             ASR::Character_t* fsource_char = ASR::down_cast<ASR::Character_t>(fsource_type);
@@ -3336,7 +3340,7 @@ namespace Spacing {
             double x = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
             double result = std::fabs(std::nextafter(x, std::numeric_limits<double>::infinity()) - x);
             return make_ConstantWithType(make_RealConstant_t, result, t1, loc);
-        }   
+        }
     }
 
     static inline ASR::expr_t* instantiate_Spacing(Allocator &al, const Location &loc,
@@ -3506,7 +3510,7 @@ namespace Modulo {
             d = a - p * floor(a/p)
         end function
         */
-        if (is_real(*arg_types[0])) {                
+        if (is_real(*arg_types[0])) {
             body.push_back(al, b.Assignment(result, b.Sub(args[0], b.Mul(b.r2r_t(args[1], arg_types[0]) , b.i2r_t(Floor::FLOOR(b, b.Div(args[0], b.r2r_t(args[1], arg_types[0])), int32, scope), arg_types[1])))));
         } else {
             body.push_back(al, b.Assignment(result, b.Sub(args[0], b.Mul(b.i2i_t(args[1], arg_types[0]), Floor::FLOOR(b, b.Div(b.i2r_t(args[0], real32), b.i2r_t(args[1], real32)), int32, scope)))));
@@ -3676,7 +3680,7 @@ namespace Real {
         } else if (is_real(*arg_types[0])) {
             body.push_back(al, b.Assignment(result, b.r2r_t(args[0], return_type)));
         } else if (is_complex(*arg_types[0])) {
-            body.push_back(al, b.Assignment(result, EXPR(ASR::make_ComplexRe_t(al, loc, 
+            body.push_back(al, b.Assignment(result, EXPR(ASR::make_ComplexRe_t(al, loc,
             args[0], return_type, nullptr))));
         }
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
@@ -3833,11 +3837,11 @@ namespace Mergebits {
         if(ASRUtils::extract_kind_from_ttype_t(arg_types[0]) != ASRUtils::extract_kind_from_ttype_t(arg_types[2])){
             throw LCompilersException("The third argument of 'merge_bits' intrinsic must be the same type and kind as first argument");
         }
-        
+
         body.push_back(al, b.Assignment(result, b.i_t(0, arg_types[0])));
         body.push_back(al, b.Assignment(itr, b.i_t(0, arg_types[0])));
         body.push_back(al, b.Assignment(mask, args[2]));
-        body.push_back(al, b.Assignment(numberofbits, b.Mul(b.i_t(8, arg_types[0]), 
+        body.push_back(al, b.Assignment(numberofbits, b.Mul(b.i_t(8, arg_types[0]),
                            b.i_t(ASRUtils::extract_kind_from_ttype_t(arg_types[0]), arg_types[0]))));
         body.push_back(al, b.While(b.Lt(itr, numberofbits), {
             b.If(b.NotEq(b.i_t(0, arg_types[0]), b.And(mask, b.BitLshift(b.i_t(1, arg_types[0]), itr, arg_types[0]))), {
@@ -5222,7 +5226,7 @@ namespace ErfcScaled {
         body.push_back(al, b.Assignment(result, b.Mul(
             b.CallIntrinsic(scope, {arg_types[0]}, {b.Pow(args[0], b.f_t(2, arg_types[0]))}, arg_types[0], 0, Exp::instantiate_Exp),
             b.CallIntrinsic(scope, {arg_types[0]}, {args[0]}, arg_types[0], 0, Erfc::instantiate_Erfc))));
-        
+
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args, body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
         return b.Call(f_sym, new_args, return_type, nullptr);
@@ -5652,7 +5656,7 @@ namespace Max {
         int kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
         for(size_t i=1; i<args.size(); i++) {
             if (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[i])) != kind) {
-                diag.semantic_warning_label("Different kinds of args in max0 is a non-standard extension", {loc}, 
+                diag.semantic_warning_label("Different kinds of args in max0 is a non-standard extension", {loc},
                 "help: ensure all arguments have the same kind to make it standard");
             }
             if (ASRUtils::type_get_past_array(arg_type)->type != ASRUtils::type_get_past_array(ASRUtils::expr_type(args[i]))->type) {
@@ -5672,11 +5676,11 @@ namespace Max {
         }
         if (is_compile_time) {
             ASR::expr_t *value = eval_Max(al, loc, expr_type(args[0]), arg_values, diag);
-            return ASR::make_IntrinsicElementalFunction_t(al, loc,
+            return ASRUtils::make_IntrinsicElementalFunction_t_util(al, loc,
                 static_cast<int64_t>(IntrinsicElementalFunctions::Max),
                 args.p, args.n, 0, ASRUtils::expr_type(args[0]), value);
         } else {
-            return ASR::make_IntrinsicElementalFunction_t(al, loc,
+            return ASRUtils::make_IntrinsicElementalFunction_t_util(al, loc,
                 static_cast<int64_t>(IntrinsicElementalFunctions::Max),
                 args.p, args.n, 0, ASRUtils::expr_type(args[0]), nullptr);
         }
@@ -5742,13 +5746,13 @@ namespace Min {
     static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
         ASRUtils::require_impl(x.n_args > 1, "Call to min0 must have at least two arguments",
             x.base.base.loc, diagnostics);
-        ASR::ttype_t* arg0_type = ASRUtils::type_get_past_array(ASRUtils::expr_type(x.m_args[0]));
+        ASR::ttype_t* arg0_type = ASRUtils::type_get_past_array_pointer_allocatable(ASRUtils::expr_type(x.m_args[0]));
         ASRUtils::require_impl(ASR::is_a<ASR::Real_t>(*arg0_type) ||
             ASR::is_a<ASR::Integer_t>(*arg0_type) || ASR::is_a<ASR::Character_t>(*arg0_type),
              "Arguments to min0 must be of real, integer or character type",
             x.base.base.loc, diagnostics);
         for(size_t i=0;i<x.n_args;i++){
-            ASR::ttype_t* arg_type = ASRUtils::type_get_past_array(ASRUtils::expr_type(x.m_args[i]));
+            ASR::ttype_t* arg_type = ASRUtils::type_get_past_array_pointer_allocatable(ASRUtils::expr_type(x.m_args[i]));
             ASRUtils::require_impl((ASR::is_a<ASR::Real_t>(*arg_type) && ASR::is_a<ASR::Real_t>(*arg0_type)) ||
                 (ASR::is_a<ASR::Integer_t>(*arg_type) && ASR::is_a<ASR::Integer_t>(*arg0_type)) ||
                 (ASR::is_a<ASR::Character_t>(*arg_type) && ASR::is_a<ASR::Character_t>(*arg0_type) ),
@@ -5803,7 +5807,7 @@ namespace Min {
         int kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
         for(size_t i=1; i<args.size(); i++){
             if (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[i])) != kind) {
-                diag.semantic_warning_label("Different kinds of args in max0 is a non-standard extension", {loc}, 
+                diag.semantic_warning_label("Different kinds of args in max0 is a non-standard extension", {loc},
                 "help: ensure all arguments have the same kind to make it standard");
             }
             if (ASRUtils::type_get_past_array(arg_type)->type != ASRUtils::type_get_past_array(ASRUtils::expr_type(args[i]))->type) {
@@ -5823,11 +5827,11 @@ namespace Min {
         }
         if (is_compile_time) {
             ASR::expr_t *value = eval_Min(al, loc, expr_type(args[0]), arg_values, diag);
-            return ASR::make_IntrinsicElementalFunction_t(al, loc,
+            return ASRUtils::make_IntrinsicElementalFunction_t_util(al, loc,
                 static_cast<int64_t>(IntrinsicElementalFunctions::Min),
                 args.p, args.n, 0, ASRUtils::expr_type(args[0]), value);
         } else {
-            return ASR::make_IntrinsicElementalFunction_t(al, loc,
+            return ASRUtils::make_IntrinsicElementalFunction_t_util(al, loc,
                 static_cast<int64_t>(IntrinsicElementalFunctions::Min),
                 args.p, args.n, 0, ASRUtils::expr_type(args[0]), nullptr);
         }
