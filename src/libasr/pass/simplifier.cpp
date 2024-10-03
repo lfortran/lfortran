@@ -1123,15 +1123,23 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
     }
 
     template <typename T>
-    std::pair<ASR::expr_t*, ASR::expr_t*> visit_BinOpUtil(T* binop, const std::string& name_hint) {
+    bool visit_BinOpUtil(T* binop, const std::string& name_hint,
+        std::pair<ASR::expr_t*, ASR::expr_t*>& left_right) {
+        if( ASRUtils::is_simd_array(binop->m_type) ) {
+            return false;
+        }
         ASR::expr_t* left = visit_BinOp_expr(binop->m_left, name_hint + "_left_");
         ASR::expr_t* right = visit_BinOp_expr(binop->m_right, name_hint + "_right_");
-        return std::make_pair(left, right);
+        left_right = std::make_pair(left, right);
+        return true;
     }
 
     void visit_IntegerBinOp(const ASR::IntegerBinOp_t& x) {
         ASR::IntegerBinOp_t& xx = const_cast<ASR::IntegerBinOp_t&>(x);
-        std::pair<ASR::expr_t*, ASR::expr_t*> binop = visit_BinOpUtil(&xx, "integer_binop");
+        std::pair<ASR::expr_t*, ASR::expr_t*> binop;
+        if( !visit_BinOpUtil(&xx, "integer_binop", binop) ) {
+            return ;
+        }
         xx.m_left = binop.first;
         xx.m_right = binop.second;
         CallReplacerOnExpressionsVisitor::visit_IntegerBinOp(x);
@@ -1139,7 +1147,10 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
 
     void visit_RealBinOp(const ASR::RealBinOp_t& x) {
         ASR::RealBinOp_t& xx = const_cast<ASR::RealBinOp_t&>(x);
-        std::pair<ASR::expr_t*, ASR::expr_t*> binop = visit_BinOpUtil(&xx, "real_binop");
+        std::pair<ASR::expr_t*, ASR::expr_t*> binop;
+        if( !visit_BinOpUtil(&xx, "real_binop", binop) ) {
+            return ;
+        }
         xx.m_left = binop.first;
         xx.m_right = binop.second;
         CallReplacerOnExpressionsVisitor::visit_RealBinOp(x);
@@ -1147,14 +1158,20 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
 
     void visit_ComplexBinOp(const ASR::ComplexBinOp_t& x) {
         ASR::ComplexBinOp_t& xx = const_cast<ASR::ComplexBinOp_t&>(x);
-        std::pair<ASR::expr_t*, ASR::expr_t*> binop = visit_BinOpUtil(&xx, "complex_binop");
+        std::pair<ASR::expr_t*, ASR::expr_t*> binop;
+        if( !visit_BinOpUtil(&xx, "complex_binop", binop) ) {
+            return ;
+        }
         xx.m_left = binop.first;
         xx.m_right = binop.second;
     }
 
     void visit_LogicalBinOp(const ASR::LogicalBinOp_t& x) {
         ASR::LogicalBinOp_t& xx = const_cast<ASR::LogicalBinOp_t&>(x);
-        std::pair<ASR::expr_t*, ASR::expr_t*> binop = visit_BinOpUtil(&xx, "logical_binop");
+        std::pair<ASR::expr_t*, ASR::expr_t*> binop;
+        if( !visit_BinOpUtil(&xx, "logical_binop", binop) ) {
+            return ;
+        }
         xx.m_left = binop.first;
         xx.m_right = binop.second;
         CallReplacerOnExpressionsVisitor::visit_LogicalBinOp(x);
@@ -1162,7 +1179,10 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
 
     void visit_RealCompare(const ASR::RealCompare_t& x) {
         ASR::RealCompare_t& xx = const_cast<ASR::RealCompare_t&>(x);
-        std::pair<ASR::expr_t*, ASR::expr_t*> binop = visit_BinOpUtil(&xx, "real_compare");
+        std::pair<ASR::expr_t*, ASR::expr_t*> binop;
+        if( !visit_BinOpUtil(&xx, "real_compare", binop) ) {
+            return ;
+        }
         xx.m_left = binop.first;
         xx.m_right = binop.second;
         CallReplacerOnExpressionsVisitor::visit_RealCompare(x);
@@ -1170,7 +1190,10 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
 
     void visit_IntegerCompare(const ASR::IntegerCompare_t& x) {
         ASR::IntegerCompare_t& xx = const_cast<ASR::IntegerCompare_t&>(x);
-        std::pair<ASR::expr_t*, ASR::expr_t*> binop = visit_BinOpUtil(&xx, "integer_compare");
+        std::pair<ASR::expr_t*, ASR::expr_t*> binop;
+        if( !visit_BinOpUtil(&xx, "integer_compare", binop) ) {
+            return ;
+        }
         xx.m_left = binop.first;
         xx.m_right = binop.second;
         CallReplacerOnExpressionsVisitor::visit_IntegerCompare(x);
@@ -1277,10 +1300,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
 
     void visit_ArrayReshape(const ASR::ArrayReshape_t& x) {
         ASR::ArrayReshape_t& xx = const_cast<ASR::ArrayReshape_t&>(x);
-
         replace_expr_with_temporary_variable(array, "_array_reshape_array")
-
-        // replace_expr_with_temporary_variable(shape, "_array_reshape_shape")
     }
 
     void visit_ComplexConstructor(const ASR::ComplexConstructor_t& x) {
@@ -1357,10 +1377,12 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     Vec<ASR::stmt_t*>* current_body;
     SymbolTable* current_scope;
     bool is_assignment_target_array_section;
+    bool is_simd_expression;
+    ASR::ttype_t* simd_type;
 
     ReplaceExprWithTemporary(Allocator& al_, ExprsWithTargetType& exprs_with_target_, bool realloc_lhs_) :
         al(al_), exprs_with_target(exprs_with_target_), realloc_lhs(realloc_lhs_), current_scope(nullptr),
-        is_assignment_target_array_section(false) {}
+        is_assignment_target_array_section(false), is_simd_expression(false), simd_type(nullptr) {}
 
     #define is_current_expr_linked_to_target exprs_with_target.find(*current_expr) != exprs_with_target.end()
 
@@ -1464,6 +1486,10 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     }
 
     void replace_RealBinOp(ASR::RealBinOp_t* x) {
+        if( ASRUtils::is_simd_array(x->m_type) ) {
+            ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_RealBinOp(x);
+            return ;
+        }
         replace_current_expr("_real_binop_")
     }
 
@@ -1498,19 +1524,35 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     }
 
     void replace_ArraySection(ASR::ArraySection_t* x) {
-        if( exprs_with_target.find(*current_expr) != exprs_with_target.end() &&
-            !ASRUtils::is_simd_array(x->m_v) ) {
-            const Location& loc = x->base.base.loc;
-            size_t value_n_dims = ASRUtils::extract_n_dims_from_ttype(
-                ASRUtils::expr_type(*current_expr));
-            ASR::ttype_t* tmp_type = create_array_type_with_empty_dims(
-                al, value_n_dims, ASRUtils::expr_type(*current_expr));
-            tmp_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, tmp_type));
-            ASR::expr_t* array_expr_ptr = create_temporary_variable_for_array(
-                al, loc, current_scope, "_array_section_pointer_", tmp_type);
-            current_body->push_back(al, ASRUtils::STMT(ASR::make_Associate_t(
-                al, loc, array_expr_ptr, *current_expr)));
+        #define generate_associate_for_array_section size_t value_n_dims = \
+            ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(*current_expr)); \
+            ASR::ttype_t* tmp_type = create_array_type_with_empty_dims( \
+                al, value_n_dims, ASRUtils::expr_type(*current_expr)); \
+            tmp_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, tmp_type)); \
+            ASR::expr_t* array_expr_ptr = create_temporary_variable_for_array( \
+                al, loc, current_scope, "_array_section_pointer_", tmp_type); \
+            current_body->push_back(al, ASRUtils::STMT(ASR::make_Associate_t( \
+                al, loc, array_expr_ptr, *current_expr))); \
             *current_expr = array_expr_ptr;
+
+        const Location& loc = x->base.base.loc;
+        if( is_simd_expression ) {
+            if( is_current_expr_linked_to_target ) {
+                return ;
+            }
+
+            generate_associate_for_array_section
+
+            array_expr_ptr = create_temporary_variable_for_array(
+                al, loc, current_scope, "_array_section_copy_", simd_type);
+            current_body->push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(
+                    al, loc, array_expr_ptr, *current_expr, nullptr)));
+            *current_expr = array_expr_ptr;
+            return ;
+        }
+
+        if( exprs_with_target.find(*current_expr) != exprs_with_target.end() ) {
+            generate_associate_for_array_section
             return ;
         }
 
@@ -1702,10 +1744,18 @@ class ReplaceExprWithTemporaryVisitor:
             replacer.is_assignment_target_array_section = is_assignment_target_array_section;
         }
         ASR::expr_t** current_expr_copy_9 = current_expr;
+        bool is_simd_expr_copy = replacer.is_simd_expression;
+        ASR::ttype_t* simd_type_copy = replacer.simd_type;
+        replacer.is_simd_expression = ASRUtils::is_simd_array(x.m_value);
+        replacer.simd_type = ASRUtils::expr_type(x.m_value);
         current_expr = const_cast<ASR::expr_t**>(&(x.m_value));
         call_replacer();
         current_expr = current_expr_copy_9;
-        visit_expr(*x.m_value);
+        replacer.is_simd_expression = is_simd_expr_copy;
+        replacer.simd_type = simd_type_copy;
+        if( !ASRUtils::is_simd_array(x.m_value) ) {
+            visit_expr(*x.m_value);
+        }
         if (x.m_overloaded) {
             visit_stmt(*x.m_overloaded);
         }
@@ -1968,7 +2018,8 @@ class VerifySimplifierASROutput:
             LCOMPILERS_ASSERT(ASR::is_a<ASR::Var_t>(*ASRUtils::get_past_array_physical_cast(expr))); \
         } \
 
-    #define check_if_linked_to_target(expr, type) if( ASRUtils::is_aggregate_type(type) ) { \
+    #define check_if_linked_to_target(expr, type) if( ASRUtils::is_aggregate_type(type) \
+        && ASRUtils::is_simd_array(type) ) { \
          LCOMPILERS_ASSERT( exprs_with_target.find(&(const_cast<ASR::expr_t&>(expr))) != \
                             exprs_with_target.end()); \
     }
