@@ -2852,7 +2852,13 @@ public:
                 ASRUtils::type_get_past_allocatable(x.m_type)),
                 module.get(), x.m_abi);
 #if LLVM_VERSION_MAJOR > 16
-            ptr_type[ptr] = type_;
+            if ( LLVM::is_llvm_pointer(*x.m_type) &&
+                    ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_pointer(
+                    ASRUtils::type_get_past_allocatable(x.m_type))) ) {
+                ptr_type[ptr] = type_->getPointerTo();
+            } else {
+                ptr_type[ptr] = type_;
+            }
 #endif
             if (ASRUtils::is_array(x.m_type)) { //memorize arrays only.
                 allocatable_array_details.push_back({ptr,
@@ -3884,7 +3890,9 @@ public:
                         ASRUtils::type_get_past_allocatable(
                         ASRUtils::type_get_past_pointer(arg->m_type)), module.get());
                     if ( !ASRUtils::is_array(arg->m_type) &&
-                        ASRUtils::is_allocatable(arg->m_type)) {
+                        LLVM::is_llvm_pointer(*arg->m_type) &&
+                        !is_a<ASR::ClassType_t>(*ASRUtils::type_get_past_allocatable(
+                            ASRUtils::type_get_past_pointer(arg->m_type))) ) {
                         arg_type = arg_type->getPointerTo();
                     }
                     ptr_type[llvm_sym] = arg_type;
