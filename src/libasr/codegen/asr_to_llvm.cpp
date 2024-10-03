@@ -1107,7 +1107,8 @@ public:
     }
 
     inline void call_lfortran_free(llvm::Function* fn, llvm::Type* llvm_data_type) {
-        llvm::Value* arr = llvm_utils->CreateLoad2(llvm_data_type->getPointerTo(), arr_descr->get_pointer_to_data(tmp));
+        llvm::Value* arr = llvm_utils->CreateLoad2(llvm_data_type->getPointerTo(), 
+        arr_descr->get_pointer_to_data(llvm_data_type->getPointerTo(), tmp));
         llvm::AllocaInst *arg_arr = llvm_utils->CreateAlloca(*builder, character_type);
         builder->CreateStore(builder->CreateBitCast(arr, character_type), arg_arr);
         std::vector<llvm::Value*> args = {llvm_utils->CreateLoad(arg_arr)};
