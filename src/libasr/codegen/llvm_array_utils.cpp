@@ -320,20 +320,24 @@ namespace LCompilers {
 
         void SimpleCMODescriptor::fill_array_details(
             llvm::Value* source, llvm::Value* destination,
-            ASR::ttype_t* /*asr_shape_type*/, bool ignore_data) {
+            ASR::ttype_t* source_type, ASR::ttype_t* destination_type, llvm::Module* module, bool ignore_data) {
             if( !ignore_data ) {
                 // TODO: Implement data filling to destination array
                 LCOMPILERS_ASSERT(false);
             }
 
+            llvm::Type *source_array_type = llvm_utils->get_type_from_ttype_t_util(source_type, module);
+            llvm::Type *dest_array_type = llvm_utils->get_type_from_ttype_t_util(destination_type, module);
 
-            llvm::Value* source_offset_val = llvm_utils->CreateLoad(llvm_utils->create_gep(source, 1));
-            llvm::Value* dest_offset = llvm_utils->create_gep(destination, 1);
+            llvm::Value* source_offset_val = llvm_utils->CreateLoad2(
+                llvm::Type::getInt32Ty(context), llvm_utils->create_gep2(source_array_type, source, 1));
+            llvm::Value* dest_offset = llvm_utils->create_gep2(dest_array_type, destination, 1);
             builder->CreateStore(source_offset_val, dest_offset);
 
 
-            llvm::Value* source_dim_des_val = llvm_utils->CreateLoad(llvm_utils->create_gep(source, 2));
-            llvm::Value* dest_dim_des_ptr = llvm_utils->create_gep(destination, 2);
+            llvm::Value* source_dim_des_val = llvm_utils->CreateLoad2(
+                dim_des->getPointerTo(), llvm_utils->create_gep2(source_array_type, source, 2));
+            llvm::Value* dest_dim_des_ptr = llvm_utils->create_gep2(dest_array_type, destination, 2);
             builder->CreateStore(source_dim_des_val, dest_dim_des_ptr);
 
 
@@ -673,9 +677,9 @@ namespace LCompilers {
                 idx = cmo_convertor_single_element(array, m_args, n_args, check_for_bounds);
                 llvm::Value* full_array = get_pointer_to_data(array);
                 if( polymorphic ) {
-                    full_array = llvm_utils->create_gep(llvm_utils->CreateLoad(full_array), 1);
-                    full_array = builder->CreateBitCast(llvm_utils->CreateLoad(full_array), polymorphic_type);
-                    tmp = llvm_utils->create_ptr_gep(full_array, idx);
+                    full_array = llvm_utils->create_gep2(type, llvm_utils->CreateLoad2(type->getPointerTo(), full_array), 1);
+                    full_array = builder->CreateBitCast(llvm_utils->CreateLoad2(llvm::Type::getVoidTy(context)->getPointerTo(), full_array), polymorphic_type->getPointerTo());
+                    tmp = llvm_utils->create_ptr_gep2(polymorphic_type, full_array, idx);
                 } else {
                     tmp = llvm_utils->create_ptr_gep2(type, llvm_utils->CreateLoad2(type->getPointerTo(), full_array), idx);
                 }
