@@ -1712,7 +1712,7 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
         // to visit_stmt().
         // TODO: Only TranslationUnit's and Program's symbol table is processed
         // for transforming function->subroutine if they return arrays
-        void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
+        void visit_TranslationUnit( ASR::TranslationUnit_t &x) {
             SymbolTable* current_scope_copy = current_scope;
             current_scope = x.m_symtab;
 
@@ -1733,7 +1733,7 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
             current_scope = current_scope_copy;
         }
 
-        void visit_Module(const ASR::Module_t &x) {
+        void visit_Module( ASR::Module_t &x) {
             // FIXME: this is a hack, we need to pass in a non-const `x`,
             // which requires to generate a TransformVisitor.
             SymbolTable* current_scope_copy = current_scope;
@@ -1746,12 +1746,9 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
             current_scope = current_scope_copy;
         }
 
-        void visit_Program(const ASR::Program_t &x) {
-            // FIXME: this is a hack, we need to pass in a non-const `x`,
-            // which requires to generate a TransformVisitor.
-            ASR::Program_t& xx = const_cast<ASR::Program_t&>(x);
+        void visit_Program( ASR::Program_t &x) {
             SymbolTable* current_scope_copy = current_scope;
-            current_scope = xx.m_symtab;
+            current_scope = x.m_symtab;
 
             for (auto &item : x.m_symtab->get_scope()) {
                 if (is_a<ASR::AssociateBlock_t>(*item.second)) {
@@ -1764,11 +1761,11 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
                 }
             }
 
-            transform_stmts(xx.m_body, xx.n_body);
+            transform_stmts(x.m_body, x.n_body);
             current_scope = current_scope_copy;
         }
 
-        inline void visit_AssignmentUtil(const ASR::Assignment_t& x) {
+        inline void visit_AssignmentUtil( ASR::Assignment_t& x) {
             ASR::expr_t** current_expr_copy_9 = current_expr;
             ASR::expr_t* original_value = x.m_value;
             if( ASR::is_a<ASR::ArrayBroadcast_t>(*x.m_value) ) {
@@ -1780,7 +1777,7 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
             } else {
                 resultvar2value[replacer.result_var] = original_value;
             }
-            current_expr = const_cast<ASR::expr_t**>(&(x.m_value));
+            current_expr = &(x.m_value);
             this->call_replacer();
             current_expr = current_expr_copy_9;
             if( x.m_value == original_value ) {
@@ -1801,7 +1798,7 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
             }
         }
 
-        void visit_Assignment(const ASR::Assignment_t &x) {
+        void visit_Assignment( ASR::Assignment_t &x) {
             const Location& loc = x.base.base.loc;
             if (ASRUtils::is_simd_array(x.m_target)) {
                 size_t n_dims = 1;
@@ -2057,7 +2054,7 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
         // Processes a user-defined elemental subroutine call. This function ensures that if any
         // of the subroutine call's arguments are arrays, a 'do loop' structure is generated to
         // individually apply the subroutine to each element of the array(s).
-        void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
+        void visit_SubroutineCall( ASR::SubroutineCall_t& x) {
             ASR::symbol_t* sym = x.m_name;
             if (sym && PassUtils::is_elemental(sym)) {
                 if (!x.n_args) {
@@ -2124,16 +2121,16 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
                 visit_expr(*x.m_dt);
         }
 
-        void visit_Associate(const ASR::Associate_t& /*x*/) {
+        void visit_Associate( ASR::Associate_t& /*x*/) {
         }
 
-        void visit_Array(const ASR::Array_t& /*x*/) {
+        void visit_Array( ASR::Array_t& /*x*/) {
 
         }
 
-        void visit_ArrayBroadcast(const ASR::ArrayBroadcast_t& x) {
+        void visit_ArrayBroadcast( ASR::ArrayBroadcast_t& x) {
             ASR::expr_t** current_expr_copy_269 = current_expr;
-            current_expr = const_cast<ASR::expr_t**>(&(x.m_array));
+            current_expr = &(x.m_array);
             call_replacer();
             current_expr = current_expr_copy_269;
             if( x.m_array ) {

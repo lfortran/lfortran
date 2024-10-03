@@ -11,7 +11,7 @@ namespace LCompilers {
 
 const std::string lfortran_modfile_type_string = "LCompilers Modfile";
 
-inline void save_asr(const ASR::TranslationUnit_t &m, std::string& asr_string) {
+inline void save_asr(ASR::TranslationUnit_t &m, std::string& asr_string) {
     #ifdef WITH_LFORTRAN_BINARY_MODFILES
     BinaryWriter b;
 #else
@@ -51,7 +51,7 @@ inline void save_asr(const ASR::TranslationUnit_t &m, std::string& asr_string) {
 
     Comments below show some possible future improvements to the mod format.
 */
-std::string save_modfile(const ASR::TranslationUnit_t &m) {
+std::string save_modfile( ASR::TranslationUnit_t &m) {
     LCOMPILERS_ASSERT(m.m_symtab->get_scope().size()== 1);
     for (auto &a : m.m_symtab->get_scope()) {
         LCOMPILERS_ASSERT(ASR::is_a<ASR::Module_t>(*a.second));
@@ -63,7 +63,7 @@ std::string save_modfile(const ASR::TranslationUnit_t &m) {
     return asr_string;
 }
 
-std::string save_pycfile(const ASR::TranslationUnit_t &m) {
+std::string save_pycfile( ASR::TranslationUnit_t &m) {
     std::string asr_string;
     save_asr(m, asr_string);
     return asr_string;

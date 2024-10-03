@@ -860,7 +860,7 @@ namespace LCompilers {
         set_api = set_api_lp;
     }
 
-    std::vector<llvm::Type*> LLVMUtils::convert_args(const ASR::Function_t& x, llvm::Module* module) {
+    std::vector<llvm::Type*> LLVMUtils::convert_args( ASR::Function_t& x, llvm::Module* module) {
         std::vector<llvm::Type*> args;
         for (size_t i=0; i<x.n_args; i++) {
             if (ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(
@@ -922,7 +922,7 @@ namespace LCompilers {
         return args;
     }
 
-    llvm::FunctionType* LLVMUtils::get_function_type(const ASR::Function_t &x, llvm::Module* module) {
+    llvm::FunctionType* LLVMUtils::get_function_type( ASR::Function_t &x, llvm::Module* module) {
         llvm::Type *return_type;
         if (x.m_return_var) {
             ASR::ttype_t *return_var_type0 = ASRUtils::EXPR2VAR(x.m_return_var)->m_type;

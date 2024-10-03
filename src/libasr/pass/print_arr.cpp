@@ -149,7 +149,7 @@ public:
         return statement;
     }
 
-    void visit_Print(const ASR::Print_t& x) {
+    void visit_Print( ASR::Print_t& x) {
         LCOMPILERS_ASSERT(ASR::is_a<ASR::Character_t>(*ASRUtils::expr_type(x.m_text)));
         if (ASR::is_a<ASR::StringFormat_t>(*x.m_text)) {
             std::vector<ASR::expr_t*> print_body;
@@ -252,7 +252,7 @@ public:
     // TODO :: CREATE write visitor to loop on arrays of type `structType` only,
     // otherwise arrays are handled by backend.
 
-    // void visit_FileWrite(const ASR::FileWrite_t& x) {
+    // void visit_FileWrite( ASR::FileWrite_t& x) {
     //     if (x.m_unit && ASRUtils::is_character(*ASRUtils::expr_type(x.m_unit))) {
     //         // Skip for character write
     //         return;

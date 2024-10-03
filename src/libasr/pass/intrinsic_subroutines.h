@@ -42,14 +42,14 @@ typedef ASR::asr_t* (*create_intrinsic_subroutine)(
     diag::Diagnostics&);
 
 typedef void (*verify_subroutine)(
-    const ASR::IntrinsicImpureSubroutine_t&,
+    ASR::IntrinsicImpureSubroutine_t&,
     diag::Diagnostics&);
 
 typedef ASR::expr_t* (*get_initial_value_sub)(Allocator&, ASR::ttype_t*);
 
 namespace RandomInit {
 
-    static inline void verify_args(const ASR::IntrinsicImpureSubroutine_t& x, diag::Diagnostics& diagnostics) {
+    static inline void verify_args( ASR::IntrinsicImpureSubroutine_t& x, diag::Diagnostics& diagnostics) {
         if (x.n_args == 2) {
             ASRUtils::require_impl(x.m_overload_id == 0, "Overload Id for random_init expected to be 0, found " + std::to_string(x.m_overload_id), x.base.base.loc, diagnostics);
             ASRUtils::require_impl(ASRUtils::is_logical(*ASRUtils::expr_type(x.m_args[0])), "First argument must be of logical type", x.base.base.loc, diagnostics);
@@ -99,7 +99,7 @@ namespace RandomInit {
 
 namespace RandomSeed {
 
-    static inline void verify_args(const ASR::IntrinsicImpureSubroutine_t& x, diag::Diagnostics& diagnostics) {
+    static inline void verify_args( ASR::IntrinsicImpureSubroutine_t& x, diag::Diagnostics& diagnostics) {
         ASRUtils::require_impl(x.n_args <= 3, "random_seed can have maximum 3 args", x.base.base.loc, diagnostics);
         if (x.n_args == 1) {
             ASRUtils::require_impl(ASRUtils::is_integer(*ASRUtils::expr_type(x.m_args[0])), "Arguments to random_seed must be of integer type", x.base.base.loc, diagnostics);
@@ -154,7 +154,7 @@ namespace RandomSeed {
 
 namespace Srand {
 
-    static inline void verify_args(const ASR::IntrinsicImpureSubroutine_t& x, diag::Diagnostics& diagnostics) {
+    static inline void verify_args( ASR::IntrinsicImpureSubroutine_t& x, diag::Diagnostics& diagnostics) {
         ASRUtils::require_impl(x.n_args == 1, "srand takes 1 argument only", x.base.base.loc, diagnostics);
         if (x.n_args == 1) {
             ASRUtils::require_impl(ASRUtils::is_integer(*ASRUtils::expr_type(x.m_args[0])), "Arguments to srand must be of integer type", x.base.base.loc, diagnostics);
@@ -207,7 +207,7 @@ namespace Srand {
 
 namespace RandomNumber {
 
-    static inline void verify_args(const ASR::IntrinsicImpureSubroutine_t& x, diag::Diagnostics& diagnostics) {
+    static inline void verify_args( ASR::IntrinsicImpureSubroutine_t& x, diag::Diagnostics& diagnostics) {
         if (x.n_args == 1)  {
             ASRUtils::require_impl(x.m_overload_id == 0, "Overload Id for random_number expected to be 0, found " + std::to_string(x.m_overload_id), x.base.base.loc, diagnostics);
         }
@@ -283,7 +283,7 @@ namespace RandomNumber {
 
 namespace GetCommand {
 
-    static inline void verify_args(const ASR::IntrinsicImpureSubroutine_t& x, diag::Diagnostics& diagnostics) {
+    static inline void verify_args( ASR::IntrinsicImpureSubroutine_t& x, diag::Diagnostics& diagnostics) {
         if (x.n_args == 3) {
             ASRUtils::require_impl(x.m_overload_id == 0, "Overload Id for get_command expected to be 0, found " + std::to_string(x.m_overload_id), x.base.base.loc, diagnostics);
             ASRUtils::require_impl(ASRUtils::is_character(*ASRUtils::expr_type(x.m_args[0])), "First argument must be of character type", x.base.base.loc, diagnostics);
@@ -343,7 +343,7 @@ namespace GetCommand {
 
 namespace GetCommandArgument {
 
-    static inline void verify_args(const ASR::IntrinsicImpureSubroutine_t& x, diag::Diagnostics& diagnostics) {
+    static inline void verify_args( ASR::IntrinsicImpureSubroutine_t& x, diag::Diagnostics& diagnostics) {
         if (x.n_args > 0) {
             ASRUtils::require_impl(ASRUtils::is_integer(*ASRUtils::expr_type(x.m_args[0])), "First argument must be of integer type", x.base.base.loc, diagnostics);
         } 
@@ -430,7 +430,7 @@ namespace GetCommandArgument {
 
 namespace GetEnvironmentVariable {
 
-    static inline void verify_args(const ASR::IntrinsicImpureSubroutine_t& x, diag::Diagnostics& diagnostics) {
+    static inline void verify_args( ASR::IntrinsicImpureSubroutine_t& x, diag::Diagnostics& diagnostics) {
         if (x.n_args == 1) {
             ASRUtils::require_impl(ASRUtils::is_character(*ASRUtils::expr_type(x.m_args[0])), "First argument must be of character type", x.base.base.loc, diagnostics);
         } else if (x.n_args == 2) {
@@ -496,7 +496,7 @@ namespace GetEnvironmentVariable {
 
 namespace ExecuteCommandLine {
 
-    static inline void verify_args(const ASR::IntrinsicImpureSubroutine_t& x, diag::Diagnostics& diagnostics) {
+    static inline void verify_args( ASR::IntrinsicImpureSubroutine_t& x, diag::Diagnostics& diagnostics) {
         if (x.n_args == 1) {
             ASRUtils::require_impl(ASRUtils::is_character(*ASRUtils::expr_type(x.m_args[0])), "First argument must be of character type", x.base.base.loc, diagnostics);
         }
@@ -559,7 +559,7 @@ namespace ExecuteCommandLine {
 
 namespace CpuTime {
 
-    static inline void verify_args(const ASR::IntrinsicImpureSubroutine_t& x, diag::Diagnostics& diagnostics) {
+    static inline void verify_args( ASR::IntrinsicImpureSubroutine_t& x, diag::Diagnostics& diagnostics) {
         if (x.n_args == 1) {
             ASRUtils::require_impl(ASRUtils::is_real(*ASRUtils::expr_type(x.m_args[0])), "First argument must be of real type", x.base.base.loc, diagnostics);
         }

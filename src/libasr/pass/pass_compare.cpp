@@ -249,7 +249,7 @@ public:
         b: tuple[i32, i32]
         assert _lcompilers_tuple_compare(a, b)
     */
-    void replace_TupleCompare(const ASR::TupleCompare_t* x) {
+    void replace_TupleCompare( ASR::TupleCompare_t* x) {
         Location loc = x->base.base.loc;
         ASR::ttype_t* bool_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4));
         Vec<ASR::call_arg_t> args;
@@ -434,7 +434,7 @@ public:
         b: list[i32]
         assert _lcompilers_list_compare(a, b)
     */
-    void replace_ListCompare(const ASR::ListCompare_t* x) {
+    void replace_ListCompare( ASR::ListCompare_t* x) {
         Location loc = x->base.base.loc;
         ASR::ttype_t* bool_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4));
         Vec<ASR::call_arg_t> args;

@@ -46,7 +46,7 @@ public:
         pass_result.reserve(al, 1);
     }
 
-    void visit_RealBinOp(const ASR::RealBinOp_t& x) {
+    void visit_RealBinOp( ASR::RealBinOp_t& x) {
         visit_expr(*x.m_left);
         visit_expr(*x.m_right);
         if( x.m_op == ASR::binopType::Div ) {
@@ -66,9 +66,8 @@ public:
                             break;
                     }
                     if( is_feasible ) {
-                        ASR::RealBinOp_t& xx = const_cast<ASR::RealBinOp_t&>(x);
-                        xx.m_op = ASR::binopType::Mul;
-                        xx.m_right = right_inverse;
+                        x.m_op = ASR::binopType::Mul;
+                        x.m_right = right_inverse;
                     }
                 }
             }

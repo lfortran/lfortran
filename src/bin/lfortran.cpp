@@ -801,7 +801,7 @@ int dump_all_passes(const std::string &infile, CompilerOptions &compiler_options
     return 0;
 }
 
-int save_mod_files(const LCompilers::ASR::TranslationUnit_t &u,
+int save_mod_files(LCompilers::ASR::TranslationUnit_t &u,
     const LCompilers::CompilerOptions &compiler_options)
 {
     for (auto &item : u.m_symtab->get_scope()) {

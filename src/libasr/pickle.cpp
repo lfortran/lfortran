@@ -17,7 +17,7 @@ public:
     std::string get_str() {
         return s;
     }
-    void visit_symbol(const ASR::symbol_t &x) {
+    void visit_symbol(ASR::symbol_t &x) {
         s.append(ASRUtils::symbol_parent_symtab(&x)->get_counter());
         s.append(" ");
         if (use_colors) {
@@ -28,7 +28,7 @@ public:
             s.append(color(fg::reset));
         }
     }
-    void visit_IntegerConstant(const ASR::IntegerConstant_t &x) {
+    void visit_IntegerConstant(ASR::IntegerConstant_t &x) {
         s.append("(");
         if (use_colors) {
             s.append(color(style::bold));
@@ -53,7 +53,7 @@ public:
         this->visit_integerbozType(x.m_intboz_type);
         s.append(")");
     }
-    void visit_Module(const ASR::Module_t &x) {
+    void visit_Module(ASR::Module_t &x) {
         if (!show_intrinsic_modules &&
             (x.m_intrinsic || startswith(x.m_name, "lfortran_intrinsic_") || startswith(x.m_name, "numpy"))) {
             s.append("(");
@@ -73,7 +73,7 @@ public:
             ASR::PickleBaseVisitor<ASRPickleVisitor>::visit_Module(x);
         };
     }
-    void visit_ArrayConstant(const ASR::ArrayConstant_t &x) {
+    void visit_ArrayConstant(ASR::ArrayConstant_t &x) {
         s.append("(");
         if (use_colors) {
             s.append(color(style::bold));
@@ -239,7 +239,7 @@ public:
         return s;
     }
 
-    void visit_symbol(const ASR::symbol_t &x) {
+    void visit_symbol(ASR::symbol_t &x) {
         s.append("\"");
         s.append(ASRUtils::symbol_name(&x));
         s.append(" (SymbolTable");
@@ -247,7 +247,7 @@ public:
         s.append(")\"");
     }
 
-    void visit_Module(const ASR::Module_t &x) {
+    void visit_Module(ASR::Module_t &x) {
         if (x.m_intrinsic && !show_intrinsic_modules) { // do not show intrinsic modules by default
             s.append("{");
             inc_indent(); s.append("\n" + indtd);

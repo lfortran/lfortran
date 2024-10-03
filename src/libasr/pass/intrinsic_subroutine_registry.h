@@ -96,7 +96,7 @@ namespace IntrinsicImpureSubroutineRegistry {
                 {"cpu_time", &CpuTime::create_CpuTime},
     };
 
-    static inline bool is_intrinsic_subroutine(const std::string& name) {
+    static inline bool is_intrinsic_subroutine( std::string& name) {
         return intrinsic_subroutine_by_name_db.find(name) != intrinsic_subroutine_by_name_db.end();
     }
 
@@ -104,7 +104,7 @@ namespace IntrinsicImpureSubroutineRegistry {
         return intrinsic_subroutine_by_id_db.find(id) != intrinsic_subroutine_by_id_db.end();
     }
 
-    static inline create_intrinsic_subroutine get_create_subroutine(const std::string& name) {
+    static inline create_intrinsic_subroutine get_create_subroutine( std::string& name) {
         return  intrinsic_subroutine_by_name_db.at(name);
     }
 

@@ -45,7 +45,7 @@ std::string serialize(const ASR::asr_t &asr) {
     return v.get_str();
 }
 
-std::string serialize(const ASR::TranslationUnit_t &unit) {
+std::string serialize(ASR::TranslationUnit_t &unit) {
     return serialize((ASR::asr_t&)(unit));
 }
 
@@ -158,7 +158,7 @@ class FixParentSymtabVisitor : public BaseWalkVisitor<FixParentSymtabVisitor>
 private:
     SymbolTable *current_symtab;
 public:
-    void visit_TranslationUnit(const TranslationUnit_t &x) {
+    void visit_TranslationUnit(TranslationUnit_t &x) {
         current_symtab = x.m_symtab;
         x.m_symtab->asr_owner = (asr_t*)&x;
         for (auto &a : x.m_symtab->get_scope()) {
@@ -166,7 +166,7 @@ public:
         }
     }
 
-    void visit_Program(const Program_t &x) {
+    void visit_Program(Program_t &x) {
         SymbolTable *parent_symtab = current_symtab;
         current_symtab = x.m_symtab;
         x.m_symtab->parent = parent_symtab;
@@ -177,7 +177,7 @@ public:
         current_symtab = parent_symtab;
     }
 
-    void visit_Module(const Module_t &x) {
+    void visit_Module(Module_t &x) {
         SymbolTable *parent_symtab = current_symtab;
         current_symtab = x.m_symtab;
         x.m_symtab->parent = parent_symtab;
@@ -188,7 +188,7 @@ public:
         current_symtab = parent_symtab;
     }
 
-    void visit_AssociateBlock(const AssociateBlock_t &x) {
+    void visit_AssociateBlock(AssociateBlock_t &x) {
         SymbolTable *parent_symtab = current_symtab;
         current_symtab = x.m_symtab;
         x.m_symtab->parent = parent_symtab;
@@ -199,7 +199,7 @@ public:
         current_symtab = parent_symtab;
     }
 
-    void visit_Block(const Block_t &x) {
+    void visit_Block(Block_t &x) {
         SymbolTable *parent_symtab = current_symtab;
         current_symtab = x.m_symtab;
         x.m_symtab->parent = parent_symtab;
@@ -210,7 +210,7 @@ public:
         current_symtab = parent_symtab;
     }
 
-    void visit_Function(const Function_t &x) {
+    void visit_Function(Function_t &x) {
         SymbolTable *parent_symtab = current_symtab;
         current_symtab = x.m_symtab;
         x.m_symtab->parent = parent_symtab;
@@ -221,7 +221,7 @@ public:
         current_symtab = parent_symtab;
     }
 
-    void visit_Struct(const Struct_t &x) {
+    void visit_Struct(Struct_t &x) {
         SymbolTable *parent_symtab = current_symtab;
         current_symtab = x.m_symtab;
         x.m_symtab->parent = parent_symtab;
@@ -232,7 +232,7 @@ public:
         current_symtab = parent_symtab;
     }
 
-    void visit_Enum(const Enum_t &x) {
+    void visit_Enum(Enum_t &x) {
         SymbolTable *parent_symtab = current_symtab;
         current_symtab = x.m_symtab;
         x.m_symtab->parent = parent_symtab;
@@ -243,7 +243,7 @@ public:
         current_symtab = parent_symtab;
     }
 
-    void visit_Requirement(const Requirement_t &x) {
+    void visit_Requirement(Requirement_t &x) {
         SymbolTable *parent_symtab = current_symtab;
         current_symtab = x.m_symtab;
         x.m_symtab->parent = parent_symtab;
@@ -254,7 +254,7 @@ public:
         current_symtab = parent_symtab;
     }
 
-    void visit_Template(const Template_t &x) {
+    void visit_Template(Template_t &x) {
         SymbolTable *parent_symtab = current_symtab;
         current_symtab = x.m_symtab;
         x.m_symtab->parent = parent_symtab;
@@ -281,35 +281,35 @@ public:
     FixExternalSymbolsVisitor(SymbolTable &symtab) : external_symtab{&symtab},
     attempt{0}, fixed_external_syms{true} {}
 
-    void visit_TranslationUnit(const TranslationUnit_t &x) {
+    void visit_TranslationUnit(TranslationUnit_t &x) {
         global_symtab = x.m_symtab;
         for (auto &a : x.m_symtab->get_scope()) {
             this->visit_symbol(*a.second);
         }
     }
 
-    void visit_Module(const Module_t& x) {
+    void visit_Module(Module_t& x) {
         SymbolTable* current_scope_copy = current_scope;
         current_scope = x.m_symtab;
         BaseWalkVisitor<FixExternalSymbolsVisitor>::visit_Module(x);
         current_scope = current_scope_copy;
     }
 
-    void visit_Function(const Function_t& x) {
+    void visit_Function(Function_t& x) {
         SymbolTable* current_scope_copy = current_scope;
         current_scope = x.m_symtab;
         BaseWalkVisitor<FixExternalSymbolsVisitor>::visit_Function(x);
         current_scope = current_scope_copy;
     }
 
-    void visit_AssociateBlock(const AssociateBlock_t& x) {
+    void visit_AssociateBlock(AssociateBlock_t& x) {
         SymbolTable* current_scope_copy = current_scope;
         current_scope = x.m_symtab;
         BaseWalkVisitor<FixExternalSymbolsVisitor>::visit_AssociateBlock(x);
         current_scope = current_scope_copy;
     }
 
-    void visit_ExternalSymbol(const ExternalSymbol_t &x) {
+    void visit_ExternalSymbol(ExternalSymbol_t &x) {
         if (x.m_external != nullptr) {
             // Nothing to do, the external symbol is already resolved
             return;
@@ -328,9 +328,7 @@ public:
             Module_t *m = down_cast<Module_t>(global_symtab->get_symbol(module_name));
             symbol_t *sym = m->m_symtab->find_scoped_symbol(original_name, x.n_scope_names, x.m_scope_names);
             if (sym) {
-                // FIXME: this is a hack, we need to pass in a non-const `x`.
-                ExternalSymbol_t &xx = const_cast<ExternalSymbol_t&>(x);
-                xx.m_external = sym;
+                x.m_external = sym;
             } else {
                 throw LCompilersException("ExternalSymbol cannot be resolved, the symbol '"
                     + original_name + "' was not found in the module '"
@@ -340,9 +338,7 @@ public:
             Module_t *m = down_cast<Module_t>(external_symtab->get_symbol(module_name));
             symbol_t *sym = m->m_symtab->find_scoped_symbol(original_name, x.n_scope_names, x.m_scope_names);
             if (sym) {
-                // FIXME: this is a hack, we need to pass in a non-const `x`.
-                ExternalSymbol_t &xx = const_cast<ExternalSymbol_t&>(x);
-                xx.m_external = sym;
+                x.m_external = sym;
             } else {
                 throw LCompilersException("ExternalSymbol cannot be resolved, the symbol '"
                     + original_name + "' was not found in the module '"
@@ -371,9 +367,7 @@ public:
                         x.n_scope_names, x.m_scope_names);
             }
             if (sym) {
-                // FIXME: this is a hack, we need to pass in a non-const `x`.
-                ExternalSymbol_t &xx = const_cast<ExternalSymbol_t&>(x);
-                xx.m_external = sym;
+                x.m_external = sym;
             } else {
                 throw LCompilersException("ExternalSymbol cannot be resolved, the symbol '"
                     + original_name + "' was not found in the module '"

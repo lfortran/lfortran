@@ -72,19 +72,17 @@ public:
             }                                                                   \
         }
 
-    void visit_Var(const ASR::Var_t& x) {
-        ASR::Var_t& xx = const_cast<ASR::Var_t&>(x);
-        ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(xx.m_v);
+    void visit_Var( ASR::Var_t& x) {
+        ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(x.m_v);
         if (ASR::is_a<ASR::Variable_t>(*sym)) {
-            replace_symbol(sym, ASR::Variable_t, xx.m_v);
+            replace_symbol(sym, ASR::Variable_t, x.m_v);
         } else {
             fixed_duplicated_expr_stmt = false;
         }
     }
 
-    void visit_BlockCall(const ASR::BlockCall_t& x) {
-        ASR::BlockCall_t& xx = const_cast<ASR::BlockCall_t&>(x);
-        replace_symbol(xx.m_m, ASR::Block_t, xx.m_m);
+    void visit_BlockCall( ASR::BlockCall_t& x) {
+        replace_symbol(x.m_m, ASR::Block_t, x.m_m);
     }
 
 };
@@ -485,16 +483,15 @@ public:
         replacer.replace_expr(*current_expr);
     }
 
-    void visit_Function(const ASR::Function_t &x) {
+    void visit_Function( ASR::Function_t &x) {
         // FIXME: this is a hack, we need to pass in a non-const `x`,
         // which requires to generate a TransformVisitor.
-        ASR::Function_t &xx = const_cast<ASR::Function_t&>(x);
-        current_routine = std::string(xx.m_name);
+        current_routine = std::string(x.m_name);
         ASR::CallReplacerOnExpressionsVisitor<InlineFunctionCallVisitor>::visit_Function(x);
         current_routine.clear();
     }
 
-    void visit_Assignment(const ASR::Assignment_t& x) {
+    void visit_Assignment( ASR::Assignment_t& x) {
         from_inline_function_call = true;
         ASR::CallReplacerOnExpressionsVisitor<InlineFunctionCallVisitor>::visit_Assignment(x);
         from_inline_function_call = false;
@@ -525,7 +522,7 @@ public:
         pass_result.n = 0;
     }
 
-    void visit_Character(const ASR::Character_t& /*x*/) {
+    void visit_Character( ASR::Character_t& /*x*/) {
 
     }
 

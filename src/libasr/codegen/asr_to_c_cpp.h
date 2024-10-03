@@ -219,7 +219,7 @@ public:
         return to_include + head + array_types_decls + forward_decl_functions + unit_src +
               ds_funcs_defined + util_funcs_defined;
     }
-    void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
+    void visit_TranslationUnit( ASR::TranslationUnit_t &x) {
         global_scope = x.m_symtab;
         // All loose statements must be converted to a function, so the items
         // must be empty:
@@ -294,7 +294,7 @@ R"(#include <stdio.h>
         return ret;
     }
 
-    void visit_Module(const ASR::Module_t &x) {
+    void visit_Module( ASR::Module_t &x) {
         if (startswith(x.m_name, "lfortran_intrinsic_")) {
             intrinsic_module = true;
         } else {
@@ -345,7 +345,7 @@ R"(#include <stdio.h>
         intrinsic_module = false;
     }
 
-    void visit_Program(const ASR::Program_t &x) {
+    void visit_Program( ASR::Program_t &x) {
         // Generate code for nested subroutines and functions first:
         SymbolTable* current_scope_copy = current_scope;
         current_scope = x.m_symtab;
@@ -388,7 +388,7 @@ R"(#include <stdio.h>
         current_scope = current_scope_copy;
     }
 
-    void visit_BlockCall(const ASR::BlockCall_t &x) {
+    void visit_BlockCall( ASR::BlockCall_t &x) {
         LCOMPILERS_ASSERT(ASR::is_a<ASR::Block_t>(*x.m_m));
         ASR::Block_t* block = ASR::down_cast<ASR::Block_t>(x.m_m);
         std::string decl, body;
@@ -516,7 +516,7 @@ R"(#include <stdio.h>
     }
 
     // Returns the declaration, no semi colon at the end
-    std::string get_function_declaration(const ASR::Function_t &x, bool &has_typevar, bool is_pointer=false) {
+    std::string get_function_declaration( ASR::Function_t &x, bool &has_typevar, bool is_pointer=false) {
         template_for_Kokkos.clear();
         template_number = 0;
         std::string sub, inl, static_attr;
@@ -599,7 +599,7 @@ R"(#include <stdio.h>
         return "\ntemplate <" + template_for_Kokkos + ">\n" + func;
     }
 
-    std::string get_arg_conv_bind_python(const ASR::Function_t &x) {
+    std::string get_arg_conv_bind_python( ASR::Function_t &x) {
         std::string arg_conv = R"(
     pArgs = PyTuple_New()" + std::to_string(x.n_args) + R"();
 )";
@@ -630,7 +630,7 @@ R"(#include <stdio.h>
         return arg_conv;
     }
 
-    std::string get_return_value_conv_bind_python(const ASR::Function_t &x) {
+    std::string get_return_value_conv_bind_python( ASR::Function_t &x) {
         if (!x.m_return_var) return "";
         ASR::Variable_t* r_v = ASRUtils::EXPR2VAR(x.m_return_var);
         std::string indent = "\n    ";
@@ -643,7 +643,7 @@ R"(#include <stdio.h>
         return ret_var_decl + ret_assign + clear_pValue + ret_stmt + "\n";
     }
 
-    std::string get_func_body_bind_python(const ASR::Function_t &x) {
+    std::string get_func_body_bind_python( ASR::Function_t &x) {
         std::string indent(indentation_level*indentation_spaces, ' ');
         std::string var_decls = "PyObject *pName, *pModule, *pFunc; PyObject *pArgs, *pValue;\n";
         std::string func_body = R"(
@@ -725,7 +725,7 @@ R"(#include <stdio.h>
         }
     }
 
-    void visit_Function(const ASR::Function_t &x) {
+    void visit_Function( ASR::Function_t &x) {
         std::string sub = "";
         for (auto &item : x.m_symtab->get_scope()) {
             if (ASR::is_a<ASR::Function_t>(*item.second)) {
@@ -1051,7 +1051,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         current_scope = current_scope_copy;
     }
 
-    void visit_ArrayPhysicalCast(const ASR::ArrayPhysicalCast_t& x) {
+    void visit_ArrayPhysicalCast( ASR::ArrayPhysicalCast_t& x) {
         src = "";
         this->visit_expr(*x.m_arg);
         if (x.m_old == ASR::array_physical_typeType::FixedSizeArray &&
@@ -1113,7 +1113,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         return args;
     }
 
-    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+    void visit_FunctionCall( ASR::FunctionCall_t &x) {
         CHECK_FAST_C_CPP(compiler_options, x)
         ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(
             ASRUtils::symbol_get_past_external(x.m_name));
@@ -1183,13 +1183,13 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         src = check_tmp_buffer() + src;
     }
 
-    void visit_SizeOfType(const ASR::SizeOfType_t& x) {
+    void visit_SizeOfType( ASR::SizeOfType_t& x) {
         CHECK_FAST_C_CPP(compiler_options, x)
         std::string c_type = CUtils::get_c_type_from_ttype_t(x.m_arg);
         src = "sizeof(" + c_type + ")";
     }
 
-    void visit_StringSection(const ASR::StringSection_t& x) {
+    void visit_StringSection( ASR::StringSection_t& x) {
         CHECK_FAST_C_CPP(compiler_options, x)
         self().visit_expr(*x.m_arg);
         std::string arg, left, right, step, left_present, rig_present;
@@ -1220,13 +1220,13 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                     step + ", " + left_present + ", " + rig_present + ")";
     }
 
-    void visit_StringChr(const ASR::StringChr_t& x) {
+    void visit_StringChr( ASR::StringChr_t& x) {
         CHECK_FAST_C_CPP(compiler_options, x)
         self().visit_expr(*x.m_arg);
         src = "_lfortran_str_chr(" + src + ")";
     }
 
-    void visit_StringOrd(const ASR::StringOrd_t& x) {
+    void visit_StringOrd( ASR::StringOrd_t& x) {
         CHECK_FAST_C_CPP(compiler_options, x)
         self().visit_expr(*x.m_arg);
         if (ASR::is_a<ASR::StringConstant_t>(*x.m_arg)) {
@@ -1236,7 +1236,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         }
     }
 
-    void visit_StringRepeat(const ASR::StringRepeat_t &x) {
+    void visit_StringRepeat( ASR::StringRepeat_t &x) {
         CHECK_FAST_C_CPP(compiler_options, x)
         self().visit_expr(*x.m_left);
         std::string s = src;
@@ -1245,7 +1245,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         src = "_lfortran_strrepeat_c(" + s + ", " + n + ")";
     }
 
-    void visit_Assignment(const ASR::Assignment_t &x) {
+    void visit_Assignment( ASR::Assignment_t &x) {
         std::string target;
         ASR::ttype_t* m_target_type = ASRUtils::expr_type(x.m_target);
         ASR::ttype_t* m_value_type = ASRUtils::expr_type(x.m_value);
@@ -1570,7 +1570,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             src = update_target_desc;
     }
 
-    void handle_array_section_association_to_pointer(const ASR::Associate_t& x) {
+    void handle_array_section_association_to_pointer( ASR::Associate_t& x) {
         ASR::ArraySection_t* array_section = ASR::down_cast<ASR::ArraySection_t>(x.m_value);
         self().visit_expr(*array_section->m_v);
         std::string value_desc = src;
@@ -1625,7 +1625,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         }
     }
 
-    void visit_Associate(const ASR::Associate_t &x) {
+    void visit_Associate( ASR::Associate_t &x) {
         if (ASR::is_a<ASR::ArraySection_t>(*x.m_value)) {
             handle_array_section_association_to_pointer(x);
         } else {
@@ -1633,29 +1633,29 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         }
     }
 
-    void visit_IntegerConstant(const ASR::IntegerConstant_t &x) {
+    void visit_IntegerConstant( ASR::IntegerConstant_t &x) {
         src = std::to_string(x.m_n);
         last_expr_precedence = 2;
     }
 
-    void visit_UnsignedIntegerConstant(const ASR::UnsignedIntegerConstant_t &x) {
+    void visit_UnsignedIntegerConstant( ASR::UnsignedIntegerConstant_t &x) {
         src = std::to_string(x.m_n);
         last_expr_precedence = 2;
     }
 
-    void visit_RealConstant(const ASR::RealConstant_t &x) {
+    void visit_RealConstant( ASR::RealConstant_t &x) {
         // TODO: remove extra spaces from the front of double_to_scientific result
         src = double_to_scientific(x.m_r);
         last_expr_precedence = 2;
     }
 
 
-    void visit_StringConstant(const ASR::StringConstant_t &x) {
+    void visit_StringConstant( ASR::StringConstant_t &x) {
         src = "\"" + str_escape_c(x.m_s) + "\"";
         last_expr_precedence = 2;
     }
 
-    void visit_StringConcat(const ASR::StringConcat_t& x) {
+    void visit_StringConcat( ASR::StringConcat_t& x) {
         is_string_concat_present = true;
         CHECK_FAST_C_CPP(compiler_options, x)
         self().visit_expr(*x.m_left);
@@ -1669,7 +1669,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         }
     }
 
-    void visit_ListConstant(const ASR::ListConstant_t& x) {
+    void visit_ListConstant( ASR::ListConstant_t& x) {
         std::string indent(indentation_level * indentation_spaces, ' ');
         std::string tab(indentation_spaces, ' ');
         const_name += std::to_string(const_vars_count);
@@ -1697,7 +1697,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         tmp_buffer_src.push_back(src_tmp);
     }
 
-    void visit_TupleConstant(const ASR::TupleConstant_t& x) {
+    void visit_TupleConstant( ASR::TupleConstant_t& x) {
         std::string indent(indentation_level * indentation_spaces, ' ');
         std::string tab(indentation_spaces, ' ');
         const_name += std::to_string(const_vars_count);
@@ -1722,7 +1722,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         tmp_buffer_src.push_back(src_tmp);
     }
 
-    void visit_DictConstant(const ASR::DictConstant_t& x) {
+    void visit_DictConstant( ASR::DictConstant_t& x) {
         std::string indent(indentation_level * indentation_spaces, ' ');
         std::string tab(indentation_spaces, ' ');
         const_name += std::to_string(const_vars_count);
@@ -1751,7 +1751,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         tmp_buffer_src.push_back(src_tmp);
     }
 
-    void visit_TupleCompare(const ASR::TupleCompare_t& x) {
+    void visit_TupleCompare( ASR::TupleCompare_t& x) {
         ASR::ttype_t* type = ASRUtils::expr_type(x.m_left);
         std::string tup_cmp_func = c_ds_api->get_compare_func(type);
         bracket_open++;
@@ -1768,7 +1768,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         src = check_tmp_buffer() + src;
     }
 
-    void visit_DictInsert(const ASR::DictInsert_t& x) {
+    void visit_DictInsert( ASR::DictInsert_t& x) {
         ASR::ttype_t* t_ttype = ASRUtils::expr_type(x.m_a);
         ASR::Dict_t* t = ASR::down_cast<ASR::Dict_t>(t_ttype);
         std::string dict_insert_fun = c_ds_api->get_dict_insert_func(t);
@@ -1782,7 +1782,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         src = indent + dict_insert_fun + "(&" + d_var + ", " + key + ", " + val + ");\n";
     }
 
-    void visit_DictItem(const ASR::DictItem_t& x) {
+    void visit_DictItem( ASR::DictItem_t& x) {
         ASR::Dict_t* dict_type = ASR::down_cast<ASR::Dict_t>(
                                     ASRUtils::expr_type(x.m_a));
         this->visit_expr(*x.m_a);
@@ -1803,7 +1803,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         }
     }
 
-    void visit_ListAppend(const ASR::ListAppend_t& x) {
+    void visit_ListAppend( ASR::ListAppend_t& x) {
         ASR::ttype_t* t_ttype = ASRUtils::expr_type(x.m_a);
         ASR::List_t* t = ASR::down_cast<ASR::List_t>(t_ttype);
         std::string list_append_func = c_ds_api->get_list_append_func(t);
@@ -1818,7 +1818,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         src += indent + list_append_func + "(&" + list_var + ", " + element + ");\n";
     }
 
-    void visit_ListConcat(const ASR::ListConcat_t& x) {
+    void visit_ListConcat( ASR::ListConcat_t& x) {
         CHECK_FAST_C_CPP(compiler_options, x)
         ASR::List_t* t = ASR::down_cast<ASR::List_t>(x.m_type);
         std::string list_concat_func = c_ds_api->get_list_concat_func(t);
@@ -1832,7 +1832,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         src = "(*" + list_concat_func + "(&" + left + ", &" + rig + "))";
     }
 
-    void visit_ListSection(const ASR::ListSection_t& x) {
+    void visit_ListSection( ASR::ListSection_t& x) {
         CHECK_FAST_C_CPP(compiler_options, x)
         std::string left, right, step, l_present, r_present;
         bracket_open++;
@@ -1878,7 +1878,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         src = "(* " + var_name + ")";
     }
 
-    void visit_ListClear(const ASR::ListClear_t& x) {
+    void visit_ListClear( ASR::ListClear_t& x) {
         ASR::ttype_t* t_ttype = ASRUtils::expr_type(x.m_a);
         ASR::List_t* t = ASR::down_cast<ASR::List_t>(t_ttype);
         std::string list_clear_func = c_ds_api->get_list_clear_func(t);
@@ -1890,7 +1890,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         src = check_tmp_buffer() + indent + list_clear_func + "(&" + list_var + ");\n";
     }
 
-    void visit_ListRepeat(const ASR::ListRepeat_t& x) {
+    void visit_ListRepeat( ASR::ListRepeat_t& x) {
         CHECK_FAST_C_CPP(compiler_options, x)
         ASR::List_t* t = ASR::down_cast<ASR::List_t>(x.m_type);
         std::string list_repeat_func = c_ds_api->get_list_repeat_func(t);
@@ -1904,7 +1904,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         src = "(*" + list_repeat_func + "(&" + list_var + ", " + freq + "))";
     }
 
-    void visit_ListCompare(const ASR::ListCompare_t& x) {
+    void visit_ListCompare( ASR::ListCompare_t& x) {
         CHECK_FAST_C_CPP(compiler_options, x)
         ASR::ttype_t* type = ASRUtils::expr_type(x.m_left);
         std::string list_cmp_func = c_ds_api->get_compare_func(type);
@@ -1922,7 +1922,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         src = check_tmp_buffer() + val;
     }
 
-    void visit_ListInsert(const ASR::ListInsert_t& x) {
+    void visit_ListInsert( ASR::ListInsert_t& x) {
         ASR::ttype_t* t_ttype = ASRUtils::expr_type(x.m_a);
         ASR::List_t* t = ASR::down_cast<ASR::List_t>(t_ttype);
         std::string list_insert_func = c_ds_api->get_list_insert_func(t);
@@ -1939,7 +1939,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         src += indent + list_insert_func + "(&" + list_var + ", " + pos + ", " + element + ");\n";
     }
 
-    void visit_ListRemove(const ASR::ListRemove_t& x) {
+    void visit_ListRemove( ASR::ListRemove_t& x) {
         ASR::ttype_t* t_ttype = ASRUtils::expr_type(x.m_a);
         ASR::List_t* t = ASR::down_cast<ASR::List_t>(t_ttype);
         std::string list_remove_func = c_ds_api->get_list_remove_func(t);
@@ -1954,19 +1954,19 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         src += indent + list_remove_func + "(&" + list_var + ", " + element + ");\n";
     }
 
-    void visit_ListLen(const ASR::ListLen_t& x) {
+    void visit_ListLen( ASR::ListLen_t& x) {
         CHECK_FAST_C_CPP(compiler_options, x)
         self().visit_expr(*x.m_arg);
         src = src + ".current_end_point";
     }
 
-    void visit_TupleLen(const ASR::TupleLen_t& x) {
+    void visit_TupleLen( ASR::TupleLen_t& x) {
         CHECK_FAST_C_CPP(compiler_options, x)
         self().visit_expr(*x.m_arg);
         src = src + ".length";
     }
 
-    void visit_DictLen(const ASR::DictLen_t& x) {
+    void visit_DictLen( ASR::DictLen_t& x) {
         CHECK_FAST_C_CPP(compiler_options, x)
         ASR::ttype_t* t_ttype = ASRUtils::expr_type(x.m_arg);
         ASR::Dict_t* t = ASR::down_cast<ASR::Dict_t>(t_ttype);
@@ -1977,7 +1977,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         bracket_open--;
     }
 
-    void visit_DictPop(const ASR::DictPop_t& x) {
+    void visit_DictPop( ASR::DictPop_t& x) {
         CHECK_FAST_C_CPP(compiler_options, x)
         ASR::ttype_t* t_ttype = ASRUtils::expr_type(x.m_a);
         ASR::Dict_t* t = ASR::down_cast<ASR::Dict_t>(t_ttype);
@@ -1991,7 +1991,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         bracket_open--;
     }
 
-    void visit_ListItem(const ASR::ListItem_t& x) {
+    void visit_ListItem( ASR::ListItem_t& x) {
         CHECK_FAST_C_CPP(compiler_options, x)
         self().visit_expr(*x.m_a);
         std::string list_var = std::move(src);
@@ -2001,7 +2001,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         src = list_var + ".data[" + pos + "]";
     }
 
-    void visit_TupleItem(const ASR::TupleItem_t& x) {
+    void visit_TupleItem( ASR::TupleItem_t& x) {
         CHECK_FAST_C_CPP(compiler_options, x)
         self().visit_expr(*x.m_a);
         std::string tup_var = std::move(src);
@@ -2015,7 +2015,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         src = tup_var + ".element_" + pos;
     }
 
-    void visit_LogicalConstant(const ASR::LogicalConstant_t &x) {
+    void visit_LogicalConstant( ASR::LogicalConstant_t &x) {
         if (x.m_value == true) {
             src = "true";
         } else {
@@ -2024,7 +2024,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         last_expr_precedence = 2;
     }
 
-    void visit_Var(const ASR::Var_t &x) {
+    void visit_Var( ASR::Var_t &x) {
         const ASR::symbol_t *s = ASRUtils::symbol_get_past_external(x.m_v);
         if (ASR::is_a<ASR::Function_t>(*s)) {
             src = ASRUtils::symbol_name(s);
@@ -2050,7 +2050,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         last_expr_precedence = 2;
     }
 
-    void visit_StructInstanceMember(const ASR::StructInstanceMember_t& x) {
+    void visit_StructInstanceMember( ASR::StructInstanceMember_t& x) {
         CHECK_FAST_C_CPP(compiler_options, x)
         std::string der_expr, member;
         this->visit_expr(*x.m_v);
@@ -2065,7 +2065,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         }
     }
 
-    void visit_UnionInstanceMember(const ASR::UnionInstanceMember_t& x) {
+    void visit_UnionInstanceMember( ASR::UnionInstanceMember_t& x) {
         CHECK_FAST_C_CPP(compiler_options, x)
         std::string der_expr, member;
         this->visit_expr(*x.m_v);
@@ -2074,7 +2074,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         src = der_expr + "." + member;
     }
 
-    void visit_Cast(const ASR::Cast_t &x) {
+    void visit_Cast( ASR::Cast_t &x) {
         CHECK_FAST_C_CPP(compiler_options, x)
         self().visit_expr(*x.m_arg);
         switch (x.m_kind) {
@@ -2267,7 +2267,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         }
     }
 
-    void visit_IntegerBitLen(const ASR::IntegerBitLen_t& x) {
+    void visit_IntegerBitLen( ASR::IntegerBitLen_t& x) {
         CHECK_FAST_C_CPP(compiler_options, x)
         self().visit_expr(*x.m_a);
         int arg_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
@@ -2281,31 +2281,31 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         }
     }
 
-    void visit_IntegerCompare(const ASR::IntegerCompare_t &x) {
+    void visit_IntegerCompare( ASR::IntegerCompare_t &x) {
         handle_Compare(x);
     }
 
-    void visit_UnsignedIntegerCompare(const ASR::UnsignedIntegerCompare_t &x) {
+    void visit_UnsignedIntegerCompare( ASR::UnsignedIntegerCompare_t &x) {
         handle_Compare(x);
     }
 
-    void visit_RealCompare(const ASR::RealCompare_t &x) {
+    void visit_RealCompare( ASR::RealCompare_t &x) {
         handle_Compare(x);
     }
 
-    void visit_ComplexCompare(const ASR::ComplexCompare_t &x) {
+    void visit_ComplexCompare( ASR::ComplexCompare_t &x) {
         handle_Compare(x);
     }
 
-    void visit_LogicalCompare(const ASR::LogicalCompare_t &x) {
+    void visit_LogicalCompare( ASR::LogicalCompare_t &x) {
         handle_Compare(x);
     }
 
-    void visit_StringCompare(const ASR::StringCompare_t &x) {
+    void visit_StringCompare( ASR::StringCompare_t &x) {
         handle_Compare(x);
     }
 
-    void visit_CPtrCompare(const ASR::CPtrCompare_t &x) {
+    void visit_CPtrCompare( ASR::CPtrCompare_t &x) {
         handle_Compare(x);
     }
 
@@ -2358,29 +2358,29 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         }
     }
 
-    void visit_IntegerBitNot(const ASR::IntegerBitNot_t& x) {
+    void visit_IntegerBitNot( ASR::IntegerBitNot_t& x) {
         handle_SU_IntegerBitNot(x);
     }
 
-    void visit_UnsignedIntegerBitNot(const ASR::UnsignedIntegerBitNot_t& x) {
+    void visit_UnsignedIntegerBitNot( ASR::UnsignedIntegerBitNot_t& x) {
         handle_SU_IntegerBitNot(x);
     }
 
-    void visit_IntegerUnaryMinus(const ASR::IntegerUnaryMinus_t &x) {
+    void visit_IntegerUnaryMinus( ASR::IntegerUnaryMinus_t &x) {
         handle_UnaryMinus(x);
     }
 
-    void visit_UnsignedIntegerUnaryMinus(const ASR::UnsignedIntegerUnaryMinus_t &x) {
+    void visit_UnsignedIntegerUnaryMinus( ASR::UnsignedIntegerUnaryMinus_t &x) {
         handle_UnaryMinus(x);
         int kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(x.m_arg));
         src = "(uint" + std::to_string(kind * 8) + "_t)" + src;
     }
 
-    void visit_RealUnaryMinus(const ASR::RealUnaryMinus_t &x) {
+    void visit_RealUnaryMinus( ASR::RealUnaryMinus_t &x) {
         handle_UnaryMinus(x);
     }
 
-    void visit_ComplexUnaryMinus(const ASR::ComplexUnaryMinus_t &x) {
+    void visit_ComplexUnaryMinus( ASR::ComplexUnaryMinus_t &x) {
         handle_UnaryMinus(x);
     }
 
@@ -2397,7 +2397,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         }
     }
 
-    void visit_ComplexRe(const ASR::ComplexRe_t &x) {
+    void visit_ComplexRe( ASR::ComplexRe_t &x) {
         headers.insert("complex.h");
         CHECK_FAST_C_CPP(compiler_options, x)
         self().visit_expr(*x.m_arg);
@@ -2408,7 +2408,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         }
     }
 
-    void visit_ComplexIm(const ASR::ComplexIm_t &x) {
+    void visit_ComplexIm( ASR::ComplexIm_t &x) {
         headers.insert("complex.h");
         CHECK_FAST_C_CPP(compiler_options, x)
         self().visit_expr(*x.m_arg);
@@ -2419,7 +2419,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         }
     }
 
-    void visit_LogicalNot(const ASR::LogicalNot_t &x) {
+    void visit_LogicalNot( ASR::LogicalNot_t &x) {
         CHECK_FAST_C_CPP(compiler_options, x)
         self().visit_expr(*x.m_arg);
         int expr_precedence = last_expr_precedence;
@@ -2431,11 +2431,11 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         }
     }
 
-    void visit_PointerNullConstant(const ASR::PointerNullConstant_t& /*x*/) {
+    void visit_PointerNullConstant( ASR::PointerNullConstant_t& /*x*/) {
         src = "NULL";
     }
 
-    void visit_GetPointer(const ASR::GetPointer_t& x) {
+    void visit_GetPointer( ASR::GetPointer_t& x) {
         CHECK_FAST_C_CPP(compiler_options, x)
         self().visit_expr(*x.m_arg);
         std::string arg_src = std::move(src);
@@ -2447,7 +2447,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         src = addr_prefix + arg_src;
     }
 
-    void visit_PointerToCPtr(const ASR::PointerToCPtr_t& x) {
+    void visit_PointerToCPtr( ASR::PointerToCPtr_t& x) {
         CHECK_FAST_C_CPP(compiler_options, x)
         self().visit_expr(*x.m_arg);
         std::string arg_src = std::move(src);
@@ -2458,25 +2458,25 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         src = "(" + type_src + ") " + arg_src;
     }
 
-    void visit_IntegerBinOp(const ASR::IntegerBinOp_t &x) {
+    void visit_IntegerBinOp( ASR::IntegerBinOp_t &x) {
         handle_BinOp(x);
     }
 
-    void visit_UnsignedIntegerBinOp(const ASR::UnsignedIntegerBinOp_t &x) {
+    void visit_UnsignedIntegerBinOp( ASR::UnsignedIntegerBinOp_t &x) {
         handle_BinOp(x);
         int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
         src = "(uint" + std::to_string(kind * 8) + "_t)(" + src + ")";
     }
 
-    void visit_RealBinOp(const ASR::RealBinOp_t &x) {
+    void visit_RealBinOp( ASR::RealBinOp_t &x) {
         handle_BinOp(x);
     }
 
-    void visit_ComplexBinOp(const ASR::ComplexBinOp_t &x) {
+    void visit_ComplexBinOp( ASR::ComplexBinOp_t &x) {
         handle_BinOp(x);
     }
 
-    void visit_ComplexConstructor(const ASR::ComplexConstructor_t &x) {
+    void visit_ComplexConstructor( ASR::ComplexConstructor_t &x) {
         self().visit_expr(*x.m_re);
         std::string re = std::move(src);
         self().visit_expr(*x.m_im);
@@ -2484,7 +2484,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         src = "CMPLX(" + re + "," + im + ")";
     }
 
-    void visit_StructConstructor(const ASR::StructConstructor_t &x) {
+    void visit_StructConstructor( ASR::StructConstructor_t &x) {
         std::string out = "{";
         ASR::Struct_t *st = ASR::down_cast<ASR::Struct_t>(x.m_dt_sym);
         for (size_t i = 0; i < x.n_args; i++) {
@@ -2555,7 +2555,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         }
     }
 
-    void visit_LogicalBinOp(const ASR::LogicalBinOp_t &x) {
+    void visit_LogicalBinOp( ASR::LogicalBinOp_t &x) {
         CHECK_FAST_C_CPP(compiler_options, x)
         self().visit_expr(*x.m_left);
         std::string left = std::move(src);
@@ -2658,16 +2658,16 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         src = out;
     }
 
-    void visit_Allocate(const ASR::Allocate_t &x) {
+    void visit_Allocate( ASR::Allocate_t &x) {
         handle_alloc_realloc(x);
     }
 
-    void visit_ReAlloc(const ASR::ReAlloc_t &x) {
+    void visit_ReAlloc( ASR::ReAlloc_t &x) {
         handle_alloc_realloc(x);
     }
 
 
-    void visit_Assert(const ASR::Assert_t &x) {
+    void visit_Assert( ASR::Assert_t &x) {
         std::string indent(indentation_level*indentation_spaces, ' ');
         std::string out = indent;
         if (x.m_msg) {
@@ -2684,7 +2684,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         src = out;
     }
 
-    void visit_ExplicitDeallocate(const ASR::ExplicitDeallocate_t &x) {
+    void visit_ExplicitDeallocate( ASR::ExplicitDeallocate_t &x) {
         std::string indent(indentation_level*indentation_spaces, ' ');
         std::string out = indent + "// FIXME: deallocate(";
         for (size_t i=0; i<x.n_vars; i++) {
@@ -2704,7 +2704,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         src = out;
     }
 
-    void visit_ImplicitDeallocate(const ASR::ImplicitDeallocate_t &x) {
+    void visit_ImplicitDeallocate( ASR::ImplicitDeallocate_t &x) {
         std::string indent(indentation_level*indentation_spaces, ' ');
         std::string out = indent + "// FIXME: implicit deallocate(";
         for (size_t i=0; i<x.n_vars; i++) {
@@ -2724,7 +2724,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         src = out;
     }
 
-    void visit_Select(const ASR::Select_t& x)
+    void visit_Select( ASR::Select_t& x)
     {
         std::string indent(indentation_level * indentation_spaces, ' ');
         this->visit_expr(*x.m_test);
@@ -2801,7 +2801,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         src = check_tmp_buffer() + out;
     }
 
-    void visit_WhileLoop(const ASR::WhileLoop_t &x) {
+    void visit_WhileLoop( ASR::WhileLoop_t &x) {
         std::string indent(indentation_level*indentation_spaces, ' ');
         bracket_open++;
         std::string out = indent + "while (";
@@ -2819,17 +2819,17 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         src = out;
     }
 
-    void visit_Exit(const ASR::Exit_t & /* x */) {
+    void visit_Exit( ASR::Exit_t & /* x */) {
         std::string indent(indentation_level*indentation_spaces, ' ');
         src = indent + "break;\n";
     }
 
-    void visit_Cycle(const ASR::Cycle_t & /* x */) {
+    void visit_Cycle( ASR::Cycle_t & /* x */) {
         std::string indent(indentation_level*indentation_spaces, ' ');
         src = indent + "continue;\n";
     }
 
-    void visit_Return(const ASR::Return_t & /* x */) {
+    void visit_Return( ASR::Return_t & /* x */) {
         std::string indent(indentation_level*indentation_spaces, ' ');
         if (current_function && current_function->m_return_var) {
             src = indent + "return "
@@ -2840,19 +2840,19 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         }
     }
 
-    void visit_GoTo(const ASR::GoTo_t &x) {
+    void visit_GoTo( ASR::GoTo_t &x) {
         std::string indent(indentation_level*indentation_spaces, ' ');
         std::string goto_c_name = "__c__goto__" + std::string(x.m_name);
         src =  indent + "goto " + goto_c_name + ";\n";
         gotoid2name[x.m_target_id] = goto_c_name;
     }
 
-    void visit_GoToTarget(const ASR::GoToTarget_t &x) {
+    void visit_GoToTarget( ASR::GoToTarget_t &x) {
         std::string goto_c_name = "__c__goto__" + std::string(x.m_name);
         src = goto_c_name + ":\n";
     }
 
-    void visit_Stop(const ASR::Stop_t &x) {
+    void visit_Stop( ASR::Stop_t &x) {
         if (x.m_code) {
             self().visit_expr(*x.m_code);
         } else {
@@ -2862,7 +2862,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         src = indent + "exit(" + src + ");\n";
     }
 
-    void visit_ErrorStop(const ASR::ErrorStop_t & /* x */) {
+    void visit_ErrorStop( ASR::ErrorStop_t & /* x */) {
         std::string indent(indentation_level*indentation_spaces, ' ');
         if (is_c) {
             src = indent + "fprintf(stderr, \"ERROR STOP\");\n";
@@ -2872,14 +2872,14 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         src += indent + "exit(1);\n";
     }
 
-    void visit_ImpliedDoLoop(const ASR::ImpliedDoLoop_t &/*x*/) {
+    void visit_ImpliedDoLoop( ASR::ImpliedDoLoop_t &/*x*/) {
         std::string indent(indentation_level*indentation_spaces, ' ');
         std::string out = indent + " /* FIXME: implied do loop */ ";
         src = out;
         last_expr_precedence = 2;
     }
 
-    void visit_DoLoop(const ASR::DoLoop_t &x) {
+    void visit_DoLoop( ASR::DoLoop_t &x) {
         std::string current_body_copy = current_body;
         current_body = "";
         std::string loop_end_decl = "";
@@ -2955,7 +2955,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         current_body = current_body_copy;
     }
 
-    void visit_If(const ASR::If_t &x) {
+    void visit_If( ASR::If_t &x) {
         std::string current_body_copy = current_body;
         current_body = "";
         std::string indent(indentation_level*indentation_spaces, ' ');
@@ -2989,7 +2989,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         current_body = current_body_copy;
     }
 
-    void visit_IfExp(const ASR::IfExp_t &x) {
+    void visit_IfExp( ASR::IfExp_t &x) {
         // IfExp is like a ternary operator in c++
         // test ? body : orelse;
         CHECK_FAST_C_CPP(compiler_options, x)
@@ -3004,7 +3004,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         last_expr_precedence = 16;
     }
 
-    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+    void visit_SubroutineCall( ASR::SubroutineCall_t &x) {
         std::string indent(indentation_level*indentation_spaces, ' ');
         ASR::Function_t *s = ASR::down_cast<ASR::Function_t>(
             ASRUtils::symbol_get_past_external(x.m_name));
@@ -3036,7 +3036,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             out += func_name; break;                                            \
         }
 
-    void visit_IntrinsicElementalFunction(const ASR::IntrinsicElementalFunction_t &x) {
+    void visit_IntrinsicElementalFunction( ASR::IntrinsicElementalFunction_t &x) {
         CHECK_FAST_C_CPP(compiler_options, x);
         std::string out;
         std::string indent(4, ' ');
@@ -3083,11 +3083,11 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         src = out;
     }
 
-    void visit_TypeInquiry(const ASR::TypeInquiry_t &x) {
+    void visit_TypeInquiry( ASR::TypeInquiry_t &x) {
         this->visit_expr(*x.m_value);
     }
 
-    void visit_RealSqrt(const ASR::RealSqrt_t &x) {
+    void visit_RealSqrt( ASR::RealSqrt_t &x) {
         std::string out = "sqrt";
         headers.insert("math.h");
         this->visit_expr(*x.m_arg);

@@ -318,9 +318,9 @@ namespace LCompilers {
 
             llvm::Type* get_set_type(ASR::ttype_t* asr_type, llvm::Module* module);
 
-            llvm::FunctionType* get_function_type(const ASR::Function_t &x, llvm::Module* module);
+            llvm::FunctionType* get_function_type( ASR::Function_t &x, llvm::Module* module);
 
-            std::vector<llvm::Type*> convert_args(const ASR::Function_t &x, llvm::Module* module);
+            std::vector<llvm::Type*> convert_args( ASR::Function_t &x, llvm::Module* module);
 
             llvm::FunctionType* get_function_type(ASR::FunctionType_t* x, llvm::Module* module);
 

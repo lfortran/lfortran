@@ -289,23 +289,20 @@ public:
     }
     /********************************** Utils *********************************/
 
-    void visit_Function(const ASR::Function_t &x) {
-        // FIXME: this is a hack, we need to pass in a non-const `x`,
-        // which requires to generate a TransformVisitor.
-        ASR::Function_t &xx = const_cast<ASR::Function_t&>(x);
+    void visit_Function( ASR::Function_t &x) {
         SymbolTable* current_scope_copy = this->current_scope;
-        this->current_scope = xx.m_symtab;
+        this->current_scope = x.m_symtab;
 
-        ASR::ttype_t* f_signature= xx.m_function_signature;
+        ASR::ttype_t* f_signature= x.m_function_signature;
         ASR::FunctionType_t *f_type = ASR::down_cast<ASR::FunctionType_t>(f_signature);
-        ASR::ttype_t *CPtr_type = ASRUtils::TYPE(ASR::make_CPtr_t(al, xx.base.base.loc));
+        ASR::ttype_t *CPtr_type = ASRUtils::TYPE(ASR::make_CPtr_t(al, x.base.base.loc));
         for (size_t i = 0; i < f_type->n_arg_types; ++i) {
             if (f_type->m_arg_types[i]->type == ASR::ttypeType::SymbolicExpression) {
                 f_type->m_arg_types[i] = CPtr_type;
             } else if (f_type->m_arg_types[i]->type == ASR::ttypeType::List) {
                 ASR::List_t* list = ASR::down_cast<ASR::List_t>(f_type->m_arg_types[i]);
                 if (list->m_type->type == ASR::ttypeType::SymbolicExpression){
-                    ASR::ttype_t* list_type = ASRUtils::TYPE(ASR::make_List_t(al, xx.base.base.loc, CPtr_type));
+                    ASR::ttype_t* list_type = ASRUtils::TYPE(ASR::make_List_t(al, x.base.base.loc, CPtr_type));
                     f_type->m_arg_types[i] = list_type;
                 }
             }
@@ -317,86 +314,85 @@ public:
                 this->visit_Variable(*s);
             }
         }
-        transform_stmts(xx.m_body, xx.n_body);
+        transform_stmts(x.m_body, x.n_body);
 
         // freeing out variables
         if (!symbolic_vars_to_free.empty()) {
             Vec<ASR::stmt_t*> func_body;
-            func_body.from_pointer_n_copy(al, xx.m_body, xx.n_body);
+            func_body.from_pointer_n_copy(al, x.m_body, x.n_body);
 
             for (ASR::symbol_t* symbol : symbolic_vars_to_free) {
                 func_body.push_back(al, basic_free_stack(x.base.base.loc,
                     ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, symbol))));
             }
 
-            xx.n_body = func_body.size();
-            xx.m_body = func_body.p;
+            x.n_body = func_body.size();
+            x.m_body = func_body.p;
             symbolic_vars_to_free.clear();
         }
 
         SetChar function_dependencies;
-        function_dependencies.from_pointer_n_copy(al, xx.m_dependencies, xx.n_dependencies);
+        function_dependencies.from_pointer_n_copy(al, x.m_dependencies, x.n_dependencies);
         for( size_t i = 0; i < symbolic_dependencies.size(); i++ ) {
             function_dependencies.push_back(al, s2c(al, symbolic_dependencies[i]));
         }
         symbolic_dependencies.clear();
-        xx.n_dependencies = function_dependencies.size();
-        xx.m_dependencies = function_dependencies.p;
+        x.n_dependencies = function_dependencies.size();
+        x.m_dependencies = function_dependencies.p;
         this->current_scope = current_scope_copy;
     }
 
-    void visit_Variable(const ASR::Variable_t& x) {
-        ASR::Variable_t& xx = const_cast<ASR::Variable_t&>(x);
-        if (xx.m_type->type == ASR::ttypeType::SymbolicExpression) {
-            std::string var_name = xx.m_name;
+    void visit_Variable( ASR::Variable_t& x) {
+        if (x.m_type->type == ASR::ttypeType::SymbolicExpression) {
+            std::string var_name = x.m_name;
             std::string placeholder = "_" + std::string(var_name);
 
-            ASR::ttype_t *CPtr_type = ASRUtils::TYPE(ASR::make_CPtr_t(al, xx.base.base.loc));
-            xx.m_type = CPtr_type;
-            if (xx.m_intent == ASR::intentType::Local) {
-                symbolic_vars_to_free.insert(ASR::down_cast<ASR::symbol_t>((ASR::asr_t*)&xx));
+            ASR::ttype_t *CPtr_type = ASRUtils::TYPE(ASR::make_CPtr_t(al, x.base.base.loc));
+            x.m_type = CPtr_type;
+            if (x.m_intent == ASR::intentType::Local) {
+                symbolic_vars_to_free.insert(ASR::down_cast<ASR::symbol_t>((ASR::asr_t*)&x));
             }
-            if(xx.m_intent == ASR::intentType::In){
-                symbolic_vars_to_omit.insert(ASR::down_cast<ASR::symbol_t>((ASR::asr_t*)&xx));
+            if(x.m_intent == ASR::intentType::In){
+                symbolic_vars_to_omit.insert(ASR::down_cast<ASR::symbol_t>((ASR::asr_t*)&x));
             }
 
-            if(xx.m_intent == ASR::intentType::Local){
-                ASR::ttype_t *type2 = ASRUtils::TYPE(ASR::make_Integer_t(al, xx.base.base.loc, 8));
+            if(x.m_intent == ASR::intentType::Local){
+                ASR::ttype_t *type2 = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 8));
                 ASR::symbol_t* sym2 = ASR::down_cast<ASR::symbol_t>(
-                    ASR::make_Variable_t(al, xx.base.base.loc, current_scope,
+                    ASR::make_Variable_t(al, x.base.base.loc, current_scope,
                                         s2c(al, placeholder), nullptr, 0,
-                                        xx.m_intent, nullptr,
-                                        nullptr, xx.m_storage,
-                                        type2, nullptr, xx.m_abi,
-                                        xx.m_access, xx.m_presence,
-                                        xx.m_value_attr));
+                                        x.m_intent, nullptr,
+                                        nullptr, x.m_storage,
+                                        type2, nullptr, x.m_abi,
+                                        x.m_access, x.m_presence,
+                                        x.m_value_attr));
 
                 current_scope->add_symbol(s2c(al, placeholder), sym2);
                 ASR::symbol_t* var_sym = current_scope->get_symbol(var_name);
                 ASR::symbol_t* placeholder_sym = current_scope->get_symbol(placeholder);
-                ASR::expr_t* target1 = ASRUtils::EXPR(ASR::make_Var_t(al, xx.base.base.loc, placeholder_sym));
-                ASR::expr_t* target2 = ASRUtils::EXPR(ASR::make_Var_t(al, xx.base.base.loc, var_sym));
+                ASR::expr_t* target1 = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, placeholder_sym));
+                ASR::expr_t* target2 = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, var_sym));
 
                 // statement 1
-                ASR::expr_t* value1 = ASRUtils::EXPR(ASR::make_Cast_t(al, xx.base.base.loc,
-                    ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, xx.base.base.loc, 0,
-                    ASRUtils::TYPE(ASR::make_Integer_t(al, xx.base.base.loc, 4)))),
+                ASR::expr_t* value1 = ASRUtils::EXPR(ASR::make_Cast_t(al, x.base.base.loc,
+                    ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 0,
+                    ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)))),
                     (ASR::cast_kindType)ASR::cast_kindType::IntegerToInteger, type2,
-                    ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, xx.base.base.loc, 0, type2))));
+                    ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 0, type2))));
 
                 // statement 2
-                ASR::expr_t* value2 = ASRUtils::EXPR(ASR::make_PointerNullConstant_t(al, xx.base.base.loc, CPtr_type));
+                ASR::expr_t* value2 = ASRUtils::EXPR(ASR::make_PointerNullConstant_t(al, x.base.base.loc, CPtr_type));
 
                 // statement 3
-                ASR::expr_t* get_pointer_node = ASRUtils::EXPR(ASR::make_GetPointer_t(al, xx.base.base.loc,
-                    target1, ASRUtils::TYPE(ASR::make_Pointer_t(al, xx.base.base.loc, type2)), nullptr));
-                ASR::expr_t* value3 = ASRUtils::EXPR(ASR::make_PointerToCPtr_t(al, xx.base.base.loc, get_pointer_node,
+                ASR::expr_t* get_pointer_node = ASRUtils::EXPR(ASR::make_GetPointer_t(al, x.base.base.loc,
+                    target1, ASRUtils::TYPE(ASR::make_Pointer_t(al, x.base.base.loc, type2)), nullptr));
+                ASR::expr_t* value3 = ASRUtils::EXPR(ASR::make_PointerToCPtr_t(al, x.base.base.loc, get_pointer_node,
                     CPtr_type, nullptr));
 
                 // defining the assignment statement
-                ASR::stmt_t* stmt1 = ASRUtils::STMT(ASR::make_Assignment_t(al, xx.base.base.loc, target1, value1, nullptr));
-                ASR::stmt_t* stmt2 = ASRUtils::STMT(ASR::make_Assignment_t(al, xx.base.base.loc, target2, value2, nullptr));
-                ASR::stmt_t* stmt3 = ASRUtils::STMT(ASR::make_Assignment_t(al, xx.base.base.loc, target2, value3, nullptr));
+                ASR::stmt_t* stmt1 = ASRUtils::STMT(ASR::make_Assignment_t(al, x.base.base.loc, target1, value1, nullptr));
+                ASR::stmt_t* stmt2 = ASRUtils::STMT(ASR::make_Assignment_t(al, x.base.base.loc, target2, value2, nullptr));
+                ASR::stmt_t* stmt3 = ASRUtils::STMT(ASR::make_Assignment_t(al, x.base.base.loc, target2, value3, nullptr));
                 // statement 4
                 ASR::stmt_t* stmt4 = basic_new_stack(x.base.base.loc, target2);
 
@@ -405,12 +401,12 @@ public:
                 pass_result.push_back(al, stmt3);
                 pass_result.push_back(al, stmt4);
             }
-        } else if (xx.m_type->type == ASR::ttypeType::List) {
-            ASR::List_t* list = ASR::down_cast<ASR::List_t>(xx.m_type);
+        } else if (x.m_type->type == ASR::ttypeType::List) {
+            ASR::List_t* list = ASR::down_cast<ASR::List_t>(x.m_type);
             if (list->m_type->type == ASR::ttypeType::SymbolicExpression){
-                ASR::ttype_t *CPtr_type = ASRUtils::TYPE(ASR::make_CPtr_t(al, xx.base.base.loc));
-                ASR::ttype_t* list_type = ASRUtils::TYPE(ASR::make_List_t(al, xx.base.base.loc, CPtr_type));
-                xx.m_type = list_type;
+                ASR::ttype_t *CPtr_type = ASRUtils::TYPE(ASR::make_CPtr_t(al, x.base.base.loc));
+                ASR::ttype_t* list_type = ASRUtils::TYPE(ASR::make_List_t(al, x.base.base.loc, CPtr_type));
+                x.m_type = list_type;
             }
         }
     }
@@ -523,7 +519,7 @@ public:
         return expr;
     }
 
-    void visit_Assignment(const ASR::Assignment_t &x) {
+    void visit_Assignment( ASR::Assignment_t &x) {
         if (ASR::is_a<ASR::Var_t>(*x.m_value) && ASR::is_a<ASR::CPtr_t>(*ASRUtils::expr_type(x.m_value))) {
             ASR::symbol_t *v = ASR::down_cast<ASR::Var_t>(x.m_value)->m_v;
             if ((symbolic_vars_to_free.find(v) == symbolic_vars_to_free.end()) &&
@@ -693,46 +689,45 @@ public:
         }
     }
 
-    void visit_If(const ASR::If_t& x) {
-        ASR::If_t& xx = const_cast<ASR::If_t&>(x);
-        transform_stmts(xx.m_body, xx.n_body);
-        transform_stmts(xx.m_orelse, xx.n_orelse);
-        if (ASR::is_a<ASR::IntrinsicElementalFunction_t>(*xx.m_test)) {
-            ASR::IntrinsicElementalFunction_t* intrinsic_func = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(xx.m_test);
+    void visit_If( ASR::If_t& x) {
+        transform_stmts(x.m_body, x.n_body);
+        transform_stmts(x.m_orelse, x.n_orelse);
+        if (ASR::is_a<ASR::IntrinsicElementalFunction_t>(*x.m_test)) {
+            ASR::IntrinsicElementalFunction_t* intrinsic_func = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(x.m_test);
             if (intrinsic_func->m_type->type == ASR::ttypeType::Logical) {
-                if (is_logical_intrinsic_symbolic(xx.m_test)) {
-                    ASR::expr_t* function_call = process_attributes(xx.base.base.loc, xx.m_test);
-                    xx.m_test = function_call;
+                if (is_logical_intrinsic_symbolic(x.m_test)) {
+                    ASR::expr_t* function_call = process_attributes(x.base.base.loc, x.m_test);
+                    x.m_test = function_call;
                 }
             }
-        } else if (ASR::is_a<ASR::LogicalNot_t>(*xx.m_test)) {
-            ASR::LogicalNot_t* logical_not = ASR::down_cast<ASR::LogicalNot_t>(xx.m_test);
+        } else if (ASR::is_a<ASR::LogicalNot_t>(*x.m_test)) {
+            ASR::LogicalNot_t* logical_not = ASR::down_cast<ASR::LogicalNot_t>(x.m_test);
             if (ASR::is_a<ASR::IntrinsicElementalFunction_t>(*logical_not->m_arg)) {
                 ASR::IntrinsicElementalFunction_t* intrinsic_func = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(logical_not->m_arg);
                 if (intrinsic_func->m_type->type == ASR::ttypeType::Logical) {
                     if (is_logical_intrinsic_symbolic(logical_not->m_arg)) {
-                        ASR::expr_t* function_call = process_attributes(xx.base.base.loc, logical_not->m_arg);
-                        ASR::expr_t* new_logical_not = ASRUtils::EXPR(ASR::make_LogicalNot_t(al, xx.base.base.loc, function_call,
+                        ASR::expr_t* function_call = process_attributes(x.base.base.loc, logical_not->m_arg);
+                        ASR::expr_t* new_logical_not = ASRUtils::EXPR(ASR::make_LogicalNot_t(al, x.base.base.loc, function_call,
                             logical_not->m_type, logical_not->m_value));
-                        xx.m_test = new_logical_not;
+                        x.m_test = new_logical_not;
                     }
                 }
             }
-        } else if (ASR::is_a<ASR::SymbolicCompare_t>(*xx.m_test)) {
-            ASR::SymbolicCompare_t *s = ASR::down_cast<ASR::SymbolicCompare_t>(xx.m_test);
+        } else if (ASR::is_a<ASR::SymbolicCompare_t>(*x.m_test)) {
+            ASR::SymbolicCompare_t *s = ASR::down_cast<ASR::SymbolicCompare_t>(x.m_test);
             ASR::expr_t* function_call = nullptr;
             if (s->m_op == ASR::cmpopType::Eq) {
-                function_call = basic_compare(xx.base.base.loc, "basic_eq", s->m_left, s->m_right);
+                function_call = basic_compare(x.base.base.loc, "basic_eq", s->m_left, s->m_right);
             } else {
-                function_call = basic_compare(xx.base.base.loc, "basic_neq", s->m_left, s->m_right);
+                function_call = basic_compare(x.base.base.loc, "basic_neq", s->m_left, s->m_right);
             }
-            ASR::stmt_t* stmt = ASRUtils::STMT(ASR::make_If_t(al, xx.base.base.loc, function_call,
-                xx.m_body, xx.n_body, xx.m_orelse, xx.n_orelse));
+            ASR::stmt_t* stmt = ASRUtils::STMT(ASR::make_If_t(al, x.base.base.loc, function_call,
+                x.m_body, x.n_body, x.m_orelse, x.n_orelse));
             pass_result.push_back(al, stmt);
         }
     }
 
-    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+    void visit_SubroutineCall( ASR::SubroutineCall_t &x) {
         Vec<ASR::call_arg_t> call_args;
         call_args.reserve(al, 1);
 
@@ -783,7 +778,7 @@ public:
 
     //TODO :: Use the below implementation for stringFormat visitor.
 
-    // void visit_Print(const ASR::Print_t &x) {
+    // void visit_Print( ASR::Print_t &x) {
     //     std::vector<ASR::expr_t*> print_tmp;
     //     for (size_t i=0; i<x.n_values; i++) {
     //         ASR::expr_t* val = x.m_values[i];
@@ -870,7 +865,7 @@ public:
     //     }
     // }
 
-    void visit_IntrinsicFunction(const ASR::IntrinsicElementalFunction_t &x) {
+    void visit_IntrinsicFunction( ASR::IntrinsicElementalFunction_t &x) {
         if(x.m_type && x.m_type->type == ASR::ttypeType::SymbolicExpression) {
             ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_SymbolicExpression_t(al, x.base.base.loc));
             std::string symengine_var = symengine_stack.push();
@@ -886,13 +881,12 @@ public:
                 }
             }
 
-            ASR::IntrinsicElementalFunction_t &xx = const_cast<ASR::IntrinsicElementalFunction_t&>(x);
             ASR::expr_t* target = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, arg));
-            process_intrinsic_function(x.base.base.loc, &xx, target);
+            process_intrinsic_function(x.base.base.loc, &x, target);
         }
     }
 
-    void visit_Cast(const ASR::Cast_t &x) {
+    void visit_Cast( ASR::Cast_t &x) {
         if(x.m_kind != ASR::cast_kindType::IntegerToSymbolicExpression) return;
 
         ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_SymbolicExpression_t(al, x.base.base.loc));
@@ -958,7 +952,7 @@ public:
             return basic_str(loc, target);
     }
 
-    void visit_Assert(const ASR::Assert_t &x) {
+    void visit_Assert( ASR::Assert_t &x) {
         ASR::expr_t* left_tmp = nullptr;
         ASR::expr_t* right_tmp = nullptr;
         if (ASR::is_a<ASR::LogicalCompare_t>(*x.m_test)) {
@@ -1016,19 +1010,18 @@ public:
         }
     }
 
-    void visit_WhileLoop(const ASR::WhileLoop_t &x) {
-        ASR::WhileLoop_t &xx = const_cast<ASR::WhileLoop_t&>(x);
-        transform_stmts(xx.m_body, xx.n_body);
-        if (ASR::is_a<ASR::IntrinsicElementalFunction_t>(*xx.m_test)) {
-            ASR::IntrinsicElementalFunction_t* intrinsic_func = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(xx.m_test);
+    void visit_WhileLoop( ASR::WhileLoop_t &x) {
+        transform_stmts(x.m_body, x.n_body);
+        if (ASR::is_a<ASR::IntrinsicElementalFunction_t>(*x.m_test)) {
+            ASR::IntrinsicElementalFunction_t* intrinsic_func = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(x.m_test);
             if (ASR::is_a<ASR::Logical_t>(*intrinsic_func->m_type)) {
-                ASR::expr_t* function_call = process_attributes(xx.base.base.loc, xx.m_test);
-                xx.m_test = function_call;
+                ASR::expr_t* function_call = process_attributes(x.base.base.loc, x.m_test);
+                x.m_test = function_call;
             }
         }
     }
 
-    void visit_Return(const ASR::Return_t &x) {
+    void visit_Return( ASR::Return_t &x) {
         // freeing out variables
         if (!symbolic_vars_to_free.empty()){
             for (ASR::symbol_t* symbol : symbolic_vars_to_free) {

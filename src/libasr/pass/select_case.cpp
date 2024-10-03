@@ -220,14 +220,11 @@ public:
     SelectCaseVisitor(Allocator &al) : PassVisitor(al, nullptr) {
     }
 
-    void visit_WhileLoop(const ASR::WhileLoop_t &x) {
-        // FIXME: this is a hack, we need to pass in a non-const `x`,
-        // which requires to generate a TransformVisitor.
-        ASR::WhileLoop_t &xx = const_cast<ASR::WhileLoop_t&>(x);
-        transform_stmts(xx.m_body, xx.n_body);
+    void visit_WhileLoop( ASR::WhileLoop_t &x) {
+        transform_stmts(x.m_body, x.n_body);
     }
 
-    void visit_Select(const ASR::Select_t &x) {
+    void visit_Select( ASR::Select_t &x) {
         if( x.m_enable_fall_through ) {
             pass_result = replace_selectcase_with_fall_through(al, x, current_scope);
         } else {

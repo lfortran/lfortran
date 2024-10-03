@@ -432,7 +432,7 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
             m_unit = nullptr;
         }
 
-        void visit_Variable(const ASR::Variable_t& /*x*/) {
+        void visit_Variable( ASR::Variable_t& /*x*/) {
             // Do nothing, already handled in init_expr pass
         }
 
@@ -475,7 +475,7 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
             pass_result.reserve(al, 0);
         }
 
-        void visit_Assignment(const ASR::Assignment_t &x) {
+        void visit_Assignment( ASR::Assignment_t &x) {
             if( (ASR::is_a<ASR::Pointer_t>(*ASRUtils::expr_type(x.m_target)) &&
                 ASR::is_a<ASR::GetPointer_t>(*x.m_value)) ||
                 ASR::is_a<ASR::ArrayReshape_t>(*x.m_value) ) {
@@ -495,7 +495,7 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
             replacer.result_var = x.m_target;
             resultvar2value[replacer.result_var] = x.m_value;
             ASR::expr_t** current_expr_copy_9 = current_expr;
-            current_expr = const_cast<ASR::expr_t**>(&(x.m_value));
+            current_expr = &(x.m_value);
             this->call_replacer();
             current_expr = current_expr_copy_9;
             if( !remove_original_statement ) {
@@ -504,7 +504,7 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
         }
 
         template <typename T>
-        ASR::asr_t* create_array_constant(const T& x, ASR::expr_t* value) {
+        ASR::asr_t* create_array_constant( T& x, ASR::expr_t* value) {
             // wrap the implied do loop in an array constant
             Vec<ASR::expr_t*> args;
             args.reserve(al, 1);
@@ -567,7 +567,7 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
             return do_loop;
         }
 
-        void visit_Print(const ASR::Print_t &x) {
+        void visit_Print( ASR::Print_t &x) {
             print = true;
             /*
                 integer :: i
@@ -579,13 +579,12 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                 print *, [(i, i=1, 10)]
             */
             if(ASR::is_a<ASR::Character_t>(*ASRUtils::expr_type(x.m_text))){
-                ASR::Print_t* print_stmt = const_cast<ASR::Print_t*>(&x);
                 ASR::expr_t** current_expr_copy_9 = current_expr;
-                current_expr = const_cast<ASR::expr_t**>(&(print_stmt->m_text));
+                current_expr = &(x.m_text);
                 this->call_replacer();
                 current_expr = current_expr_copy_9;
                 if( !remove_original_statement ) {
-                    this->visit_expr(*print_stmt->m_text);
+                    this->visit_expr(*x.m_text);
                 }
                 print = false;
             } else {
@@ -593,7 +592,7 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
             }
         }
 
-        void visit_StringFormat(const ASR::StringFormat_t &x) {
+        void visit_StringFormat( ASR::StringFormat_t &x) {
             /*
                 integer :: i
                 write(*, '(i)') (i, i=1, 10)
@@ -603,7 +602,6 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                 integer :: i
                 write(*, '(i)') [(i, i=1, 10)]
             */
-            ASR::StringFormat_t* string_format_stmt = const_cast<ASR::StringFormat_t*>(&x);
             for(size_t i = 0; i < x.n_args; i++) {
                 ASR::expr_t* value = x.m_args[i];
                 if (ASR::is_a<ASR::ImpliedDoLoop_t>(*value)) {
@@ -614,30 +612,30 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                         continue;
                     }
                     ASR::asr_t* array_constant = create_array_constant(x, value);
-                    string_format_stmt->m_args[i] = ASRUtils::EXPR(array_constant);
+                    x.m_args[i] = ASRUtils::EXPR(array_constant);
 
                     replacer.result_var = value;
                     resultvar2value[replacer.result_var] = ASRUtils::EXPR(array_constant);
                     ASR::expr_t** current_expr_copy_9 = current_expr;
-                    current_expr = const_cast<ASR::expr_t**>(&(string_format_stmt->m_args[i]));
+                    current_expr = &(x.m_args[i]);
                     this->call_replacer();
                     current_expr = current_expr_copy_9;
                     if( !remove_original_statement ) {
-                        this->visit_expr(*string_format_stmt->m_args[i]);
+                        this->visit_expr(*x.m_args[i]);
                     }
                 } else {
                     ASR::expr_t** current_expr_copy_9 = current_expr;
-                    current_expr = const_cast<ASR::expr_t**>(&(string_format_stmt->m_args[i]));
+                    current_expr = &(x.m_args[i]);
                     this->call_replacer();
                     current_expr = current_expr_copy_9;
                     if( !remove_original_statement ) {
-                        this->visit_expr(*string_format_stmt->m_args[i]);
+                        this->visit_expr(*x.m_args[i]);
                     }
                 }
             }
         }
 
-        void visit_FileRead(const ASR::FileRead_t &x) {
+        void visit_FileRead( ASR::FileRead_t &x) {
             if (x.m_overloaded) {
                 this->visit_stmt(*x.m_overloaded);
                 remove_original_statement = false;
@@ -645,7 +643,7 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
             }
         }
 
-        void visit_FileWrite(const ASR::FileWrite_t &x) {
+        void visit_FileWrite( ASR::FileWrite_t &x) {
             file_write = true;
             m_unit = x.m_unit;
             if (x.m_overloaded) {
@@ -664,40 +662,39 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                 integer :: i
                 write(*,*) [(i, i=1, 10)]
             */
-            ASR::FileWrite_t* write_stmt = const_cast<ASR::FileWrite_t*>(&x);
             for(size_t i = 0; i < x.n_values; i++) {
                 ASR::expr_t* value = x.m_values[i];
                 if (ASR::is_a<ASR::ImpliedDoLoop_t>(*value)) {
                     ASR::asr_t* array_constant = create_array_constant(x, value);
 
-                    write_stmt->m_values[i] = ASRUtils::EXPR(array_constant);
+                    x.m_values[i] = ASRUtils::EXPR(array_constant);
 
                     replacer.result_var = value;
                     resultvar2value[replacer.result_var] = ASRUtils::EXPR(array_constant);
                     ASR::expr_t** current_expr_copy_9 = current_expr;
-                    current_expr = const_cast<ASR::expr_t**>(&(write_stmt->m_values[i]));
+                    current_expr = &(x.m_values[i]);
                     this->call_replacer();
                     current_expr = current_expr_copy_9;
                     if( !remove_original_statement ) {
-                        this->visit_expr(*write_stmt->m_values[i]);
+                        this->visit_expr(*x.m_values[i]);
                     }
                 } else {
                     ASR::expr_t** current_expr_copy_9 = current_expr;
-                    current_expr = const_cast<ASR::expr_t**>(&(write_stmt->m_values[i]));
+                    current_expr = &(x.m_values[i]);
                     this->call_replacer();
                     current_expr = current_expr_copy_9;
                     if( !remove_original_statement ) {
-                        this->visit_expr(*write_stmt->m_values[i]);
+                        this->visit_expr(*x.m_values[i]);
                     }
                 }
             }
             file_write = false;
         }
 
-        void visit_CPtrToPointer(const ASR::CPtrToPointer_t& x) {
+        void visit_CPtrToPointer( ASR::CPtrToPointer_t& x) {
             if (x.m_shape) {
                 ASR::expr_t** current_expr_copy = current_expr;
-                current_expr = const_cast<ASR::expr_t**>(&(x.m_shape));
+                current_expr = &(x.m_shape);
                 this->call_replacer();
                 current_expr = current_expr_copy;
                 if( x.m_shape )
@@ -705,9 +702,9 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
             }
         }
 
-        void visit_ArrayBroadcast(const ASR::ArrayBroadcast_t& x) {
+        void visit_ArrayBroadcast( ASR::ArrayBroadcast_t& x) {
             ASR::expr_t** current_expr_copy_269 = current_expr;
-            current_expr = const_cast<ASR::expr_t**>(&(x.m_array));
+            current_expr = &(x.m_array);
             call_replacer();
             current_expr = current_expr_copy_269;
             if( x.m_array ) {

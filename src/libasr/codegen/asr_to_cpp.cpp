@@ -206,7 +206,7 @@ public:
         return typename_T + "* " + v_name;
     }
 
-    std::string convert_variable_decl(const ASR::Variable_t &v, DeclarationOptions* decl_options=nullptr)
+    std::string convert_variable_decl( ASR::Variable_t &v, DeclarationOptions* decl_options=nullptr)
     {
         bool use_static;
         bool use_templates_for_arrays;
@@ -324,7 +324,7 @@ public:
     }
 
 
-    void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
+    void visit_TranslationUnit( ASR::TranslationUnit_t &x) {
         global_scope = x.m_symtab;
         // All loose statements must be converted to a function, so the items
         // must be empty:
@@ -430,7 +430,7 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
         current_scope = current_scope_copy;
     }
 
-    void visit_Program(const ASR::Program_t &x) {
+    void visit_Program( ASR::Program_t &x) {
         // Generate code for nested subroutines and functions first:
         std::string contains;
         for (auto &item : x.m_symtab->get_scope()) {
@@ -473,7 +473,7 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
         indentation_level -= 2;
     }
 
-    void visit_ComplexConstructor(const ASR::ComplexConstructor_t &x) {
+    void visit_ComplexConstructor( ASR::ComplexConstructor_t &x) {
         this->visit_expr(*x.m_re);
         std::string re = src;
         this->visit_expr(*x.m_im);
@@ -485,7 +485,7 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
         last_expr_precedence = 2;
     }
 
-    void visit_ComplexConstant(const ASR::ComplexConstant_t &x) {
+    void visit_ComplexConstant( ASR::ComplexConstant_t &x) {
         std::string re = std::to_string(x.m_re);
         std::string im = std::to_string(x.m_im);
         src = "std::complex<float>(" + re + ", " + im + ")";
@@ -495,7 +495,7 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
         last_expr_precedence = 2;
     }
 
-    void visit_LogicalConstant(const ASR::LogicalConstant_t &x) {
+    void visit_LogicalConstant( ASR::LogicalConstant_t &x) {
         if (x.m_value == true) {
             src = "true";
         } else {
@@ -504,7 +504,7 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
         last_expr_precedence = 2;
     }
 
-    void visit_SetConstant(const ASR::SetConstant_t &x) {
+    void visit_SetConstant( ASR::SetConstant_t &x) {
         std::string out = "{";
         for (size_t i=0; i<x.n_elements; i++) {
             visit_expr(*x.m_elements[i]);
@@ -517,7 +517,7 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
         last_expr_precedence = 2;
     }
 
-    void visit_DictConstant(const ASR::DictConstant_t &x) {
+    void visit_DictConstant( ASR::DictConstant_t &x) {
         LCOMPILERS_ASSERT(x.n_keys == x.n_values);
         std::string out = "{";
         for(size_t i=0; i<x.n_keys; i++) {
@@ -533,7 +533,7 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
         last_expr_precedence = 2;
     }
 
-    void visit_ArrayConstant(const ASR::ArrayConstant_t &x) {
+    void visit_ArrayConstant( ASR::ArrayConstant_t &x) {
         std::string indent(indentation_level * indentation_spaces, ' ');
         from_std_vector_helper = indent + "Kokkos::View<float*> r;\n";
         std::string out = "from_std_vector<float>({";
@@ -547,7 +547,7 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
         last_expr_precedence = 2;
     }
 
-    void visit_ArraySize(const ASR::ArraySize_t& x) {
+    void visit_ArraySize( ASR::ArraySize_t& x) {
         visit_expr(*x.m_v);
         std::string var_name = src;
         std::string args = "";
@@ -565,7 +565,7 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
         src = var_name + "->data->extent(" + args + ")";
     }
 
-    void visit_StringConcat(const ASR::StringConcat_t &x) {
+    void visit_StringConcat( ASR::StringConcat_t &x) {
         this->visit_expr(*x.m_left);
         std::string left = std::move(src);
         int left_precedence = last_expr_precedence;
@@ -586,7 +586,7 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
         }
     }
 
-    void visit_StringItem(const ASR::StringItem_t& x) {
+    void visit_StringItem( ASR::StringItem_t& x) {
         this->visit_expr(*x.m_idx);
         std::string idx = std::move(src);
         this->visit_expr(*x.m_arg);
@@ -594,12 +594,12 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
         src = str + "[" + idx + " - 1]";
     }
 
-    void visit_StringLen(const ASR::StringLen_t &x) {
+    void visit_StringLen( ASR::StringLen_t &x) {
         this->visit_expr(*x.m_arg);
         src = src + ".length()";
     }
 
-    void visit_Print(const ASR::Print_t &x) {
+    void visit_Print( ASR::Print_t &x) {
         std::string indent(indentation_level*indentation_spaces, ' ');
         std::string out = indent + "std::cout ", sep;
         //HACKISH way to handle print refactoring (always using stringformat).
@@ -629,7 +629,7 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
         src = out;
     }
 
-    void visit_FileWrite(const ASR::FileWrite_t &x) {
+    void visit_FileWrite( ASR::FileWrite_t &x) {
         std::string indent(indentation_level*indentation_spaces, ' ');
         std::string out = indent + "std::cout ";
         //HACKISH way to handle print refactoring (always using stringformat).
@@ -648,7 +648,7 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
         src = out;
     }
 
-    void visit_FileRead(const ASR::FileRead_t &x) {
+    void visit_FileRead( ASR::FileRead_t &x) {
         std::string indent(indentation_level*indentation_spaces, ' ');
         std::string out = indent + "// FIXME: READ: std::cout ";
         for (size_t i=0; i<x.n_values; i++) {
@@ -659,7 +659,7 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
         src = out;
     }
 
-    void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
+    void visit_DoConcurrentLoop( ASR::DoConcurrentLoop_t &x) {
         std::string indent(indentation_level*indentation_spaces, ' ');
         std::string out = indent + "Kokkos::parallel_for(";
         out += "Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace>(";
@@ -682,7 +682,7 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
         src = out;
     }
 
-    void visit_ArrayItem(const ASR::ArrayItem_t &x) {
+    void visit_ArrayItem( ASR::ArrayItem_t &x) {
         this->visit_expr(*x.m_v);
         std::string array = src;
         std::string out = array;

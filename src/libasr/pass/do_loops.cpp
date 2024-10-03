@@ -40,14 +40,14 @@ public:
     DoLoopVisitor(Allocator &al) : StatementWalkVisitor(al) {
     }
 
-    void visit_DoLoop(const ASR::DoLoop_t &x) {
+    void visit_DoLoop( ASR::DoLoop_t &x) {
         pass_result = PassUtils::replace_doloop(al, x, -1, use_loop_variable_after_loop);
     }
 
-    void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
+    void visit_DoConcurrentLoop(ASR::DoConcurrentLoop_t &x) {
         LCOMPILERS_ASSERT(x.n_head == 1);
         ASR::asr_t* do_loop = ASR::make_DoLoop_t(al, x.base.base.loc, s2c(al, ""), x.m_head[0], x.m_body, x.n_body, nullptr, 0);
-        const ASR::DoLoop_t &do_loop_ref = (const ASR::DoLoop_t&)(*do_loop);
+        ASR::DoLoop_t &do_loop_ref = (ASR::DoLoop_t&)(*do_loop);
         pass_result = PassUtils::replace_doloop(al, do_loop_ref, -1, use_loop_variable_after_loop);
     }
 };

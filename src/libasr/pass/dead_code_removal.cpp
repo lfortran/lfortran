@@ -33,10 +33,9 @@ public:
         pass_result.reserve(al, 1);
     }
 
-    void visit_If(const ASR::If_t& x) {
-        ASR::If_t& xx = const_cast<ASR::If_t&>(x);
-        transform_stmts(xx.m_body, xx.n_body);
-        transform_stmts(xx.m_orelse, xx.n_orelse);
+    void visit_If( ASR::If_t& x) {
+        transform_stmts(x.m_body, x.n_body);
+        transform_stmts(x.m_orelse, x.n_orelse);
         ASR::expr_t* m_test_value = ASRUtils::expr_value(x.m_test);
         bool m_test_bool;
         if( ASRUtils::is_value_constant(m_test_value, m_test_bool) ) {
@@ -56,8 +55,7 @@ public:
         }
     }
 
-    void visit_Select(const ASR::Select_t& x) {
-        ASR::Select_t& xx = const_cast<ASR::Select_t&>(x);
+    void visit_Select( ASR::Select_t& x) {
         ASR::expr_t* m_test_value = ASRUtils::expr_value(x.m_test);
         if( !ASRUtils::is_value_constant(m_test_value) ) {
             return ;
@@ -69,7 +67,7 @@ public:
                 case ASR::case_stmtType::CaseStmt: {
                     ASR::CaseStmt_t* casestmt = ASR::down_cast<ASR::CaseStmt_t>(case_body);
                     transform_stmts(casestmt->m_body, casestmt->n_body);
-                    xx.m_body[i] = (ASR::case_stmt_t*)(&(casestmt->base));
+                    x.m_body[i] = (ASR::case_stmt_t*)(&(casestmt->base));
                     for( size_t j = 0; j < casestmt->n_test; j++ ) {
                         if( ASRUtils::is_value_equal(casestmt->m_test[j], x.m_test) ) {
                             for( size_t k = 0; k < casestmt->n_body; k++ ) {
@@ -83,7 +81,7 @@ public:
                 case ASR::case_stmtType::CaseStmt_Range: {
                     ASR::CaseStmt_Range_t* casestmt_range = ASR::down_cast<ASR::CaseStmt_Range_t>(case_body);
                     transform_stmts(casestmt_range->m_body, casestmt_range->n_body);
-                    xx.m_body[i] = (ASR::case_stmt_t*)(&(casestmt_range->base));
+                    x.m_body[i] = (ASR::case_stmt_t*)(&(casestmt_range->base));
                     if( ASRUtils::is_value_in_range(casestmt_range->m_start, casestmt_range->m_end, x.m_test) ) {
                         for( size_t k = 0; k < casestmt_range->n_body; k++ ) {
                             pass_result.push_back(al, casestmt_range->m_body[k]);

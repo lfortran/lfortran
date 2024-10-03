@@ -869,7 +869,7 @@ public:
         return llvm_utils->CreateLoad(presult);
     }
 
-    void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
+    void visit_TranslationUnit( ASR::TranslationUnit_t &x) {
         module = std::make_unique<llvm::Module>("LFortran", context);
         module->setDataLayout("");
         llvm_utils->set_module(module.get());
@@ -1062,11 +1062,11 @@ public:
         }
     }
 
-    void visit_Allocate(const ASR::Allocate_t& x) {
+    void visit_Allocate( ASR::Allocate_t& x) {
         visit_AllocateUtil(x, x.m_stat, false);
     }
 
-    void visit_ReAlloc(const ASR::ReAlloc_t& x) {
+    void visit_ReAlloc( ASR::ReAlloc_t& x) {
         LCOMPILERS_ASSERT(x.n_args == 1);
         handle_allocated(x.m_args[0].m_a);
         llvm::Value* is_allocated = tmp;
@@ -1091,7 +1091,7 @@ public:
         }, [](){});
     }
 
-    void visit_Nullify(const ASR::Nullify_t& x) {
+    void visit_Nullify( ASR::Nullify_t& x) {
         for( size_t i = 0; i < x.n_vars; i++ ) {
             std::uint32_t h = get_hash((ASR::asr_t*)x.m_vars[i]);
             llvm::Value *target = llvm_symtab[h];
@@ -1260,15 +1260,15 @@ public:
         }
     }
 
-    void visit_ImplicitDeallocate(const ASR::ImplicitDeallocate_t& x) {
+    void visit_ImplicitDeallocate( ASR::ImplicitDeallocate_t& x) {
         visit_Deallocate(x);
     }
 
-    void visit_ExplicitDeallocate(const ASR::ExplicitDeallocate_t& x) {
+    void visit_ExplicitDeallocate( ASR::ExplicitDeallocate_t& x) {
         visit_Deallocate(x);
     }
 
-    void visit_ListConstant(const ASR::ListConstant_t& x) {
+    void visit_ListConstant( ASR::ListConstant_t& x) {
         ASR::List_t* list_type = ASR::down_cast<ASR::List_t>(x.m_type);
         bool is_array_type_local = false, is_malloc_array_type_local = false;
         bool is_list_local = false;
@@ -1308,7 +1308,7 @@ public:
         tmp = const_list;
     }
 
-    void visit_DictConstant(const ASR::DictConstant_t& x) {
+    void visit_DictConstant( ASR::DictConstant_t& x) {
         llvm::Type* const_dict_type = llvm_utils->get_dict_type(x.m_type, module.get());
         llvm::Value* const_dict = llvm_utils->CreateAlloca(*builder, const_dict_type, nullptr, "const_dict");
         ASR::Dict_t* x_dict = ASR::down_cast<ASR::Dict_t>(x.m_type);
@@ -1333,7 +1333,7 @@ public:
         tmp = const_dict;
     }
 
-    void visit_SetConstant(const ASR::SetConstant_t& x) {
+    void visit_SetConstant( ASR::SetConstant_t& x) {
         llvm::Type* const_set_type = llvm_utils->get_set_type(x.m_type, module.get());
         llvm::Value* const_set = llvm_utils->CreateAlloca(*builder, const_set_type, nullptr, "const_set");
         ASR::Set_t* x_set = ASR::down_cast<ASR::Set_t>(x.m_type);
@@ -1353,7 +1353,7 @@ public:
         tmp = const_set;
     }
 
-    void visit_TupleConstant(const ASR::TupleConstant_t& x) {
+    void visit_TupleConstant( ASR::TupleConstant_t& x) {
         ASR::Tuple_t* tuple_type = ASR::down_cast<ASR::Tuple_t>(x.m_type);
         std::string type_code = ASRUtils::get_type_code(tuple_type->m_type,
                                                         tuple_type->n_type);
@@ -1388,7 +1388,7 @@ public:
         tmp = const_tuple;
     }
 
-    void visit_IntegerBitLen(const ASR::IntegerBitLen_t& x) {
+    void visit_IntegerBitLen( ASR::IntegerBitLen_t& x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
             return;
@@ -1409,7 +1409,7 @@ public:
         tmp = builder->CreateCall(fn, {int_val});
     }
 
-    void visit_Ichar(const ASR::Ichar_t &x) {
+    void visit_Ichar( ASR::Ichar_t &x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
             return;
@@ -1429,7 +1429,7 @@ public:
         tmp = builder->CreateCall(fn, {c});
     }
 
-    void visit_Iachar(const ASR::Iachar_t &x) {
+    void visit_Iachar( ASR::Iachar_t &x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
             return;
@@ -1455,7 +1455,7 @@ public:
         }
     }
 
-    void visit_RealSqrt(const ASR::RealSqrt_t &x) {
+    void visit_RealSqrt( ASR::RealSqrt_t &x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
             return;
@@ -1484,7 +1484,7 @@ public:
         tmp = builder->CreateCall(fn_sqrt, {c});
     }
 
-    void visit_ListAppend(const ASR::ListAppend_t& x) {
+    void visit_ListAppend( ASR::ListAppend_t& x) {
         ASR::List_t* asr_list = ASR::down_cast<ASR::List_t>(ASRUtils::expr_type(x.m_a));
         int64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 0;
@@ -1499,7 +1499,7 @@ public:
         list_api->append(plist, item, asr_list->m_type, module.get(), name2memidx);
     }
 
-    void visit_UnionInstanceMember(const ASR::UnionInstanceMember_t& x) {
+    void visit_UnionInstanceMember( ASR::UnionInstanceMember_t& x) {
         int64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 0;
         this->visit_expr(*x.m_v);
@@ -1523,7 +1523,7 @@ public:
         }
     }
 
-    void visit_ListItem(const ASR::ListItem_t& x) {
+    void visit_ListItem( ASR::ListItem_t& x) {
         ASR::ttype_t* el_type = ASRUtils::get_contained_type(
                                         ASRUtils::expr_type(x.m_a));
         int64_t ptr_loads_copy = ptr_loads;
@@ -1540,7 +1540,7 @@ public:
                 (LLVM::is_llvm_struct(el_type) || ptr_loads == 0));
     }
 
-    void visit_DictItem(const ASR::DictItem_t& x) {
+    void visit_DictItem( ASR::DictItem_t& x) {
         ASR::Dict_t* dict_type = ASR::down_cast<ASR::Dict_t>(
                                     ASRUtils::expr_type(x.m_a));
         int64_t ptr_loads_copy = ptr_loads;
@@ -1570,7 +1570,7 @@ public:
         }
     }
 
-    void visit_DictPop(const ASR::DictPop_t& x) {
+    void visit_DictPop( ASR::DictPop_t& x) {
         ASR::Dict_t* dict_type = ASR::down_cast<ASR::Dict_t>(
                                     ASRUtils::expr_type(x.m_a));
         int64_t ptr_loads_copy = ptr_loads;
@@ -1588,7 +1588,7 @@ public:
                                  LLVM::is_llvm_struct(dict_type->m_value_type));
     }
 
-    void visit_ListLen(const ASR::ListLen_t& x) {
+    void visit_ListLen( ASR::ListLen_t& x) {
         if (x.m_value) {
             this->visit_expr(*x.m_value);
         } else {
@@ -1601,7 +1601,7 @@ public:
         }
     }
 
-    void visit_ListCompare(const ASR::ListCompare_t x) {
+    void visit_ListCompare( ASR::ListCompare_t x) {
         int64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 0;
         this->visit_expr(*x.m_left);
@@ -1637,7 +1637,7 @@ public:
         }
     }
 
-    void visit_DictLen(const ASR::DictLen_t& x) {
+    void visit_DictLen( ASR::DictLen_t& x) {
         if (x.m_value) {
             this->visit_expr(*x.m_value);
             return ;
@@ -1653,7 +1653,7 @@ public:
         tmp = llvm_utils->dict_api->len(pdict);
     }
 
-    void visit_SetLen(const ASR::SetLen_t& x) {
+    void visit_SetLen( ASR::SetLen_t& x) {
         if (x.m_value) {
             this->visit_expr(*x.m_value);
             return ;
@@ -1669,7 +1669,7 @@ public:
         tmp = llvm_utils->set_api->len(pset);
     }
 
-    void visit_ListInsert(const ASR::ListInsert_t& x) {
+    void visit_ListInsert( ASR::ListInsert_t& x) {
         ASR::List_t* asr_list = ASR::down_cast<ASR::List_t>(
                                     ASRUtils::expr_type(x.m_a));
         int64_t ptr_loads_copy = ptr_loads;
@@ -1689,7 +1689,7 @@ public:
         list_api->insert_item(plist, pos, item, asr_list->m_type, module.get(), name2memidx);
     }
 
-    void visit_DictInsert(const ASR::DictInsert_t& x) {
+    void visit_DictInsert( ASR::DictInsert_t& x) {
         ASR::Dict_t* dict_type = ASR::down_cast<ASR::Dict_t>(
                                     ASRUtils::expr_type(x.m_a));
         int64_t ptr_loads_copy = ptr_loads;
@@ -1711,11 +1711,11 @@ public:
                              dict_type->m_value_type, name2memidx);
     }
 
-    void visit_Expr(const ASR::Expr_t& x) {
+    void visit_Expr( ASR::Expr_t& x) {
         this->visit_expr_wrapper(x.m_expression, false);
     }
 
-    void visit_ListRemove(const ASR::ListRemove_t& x) {
+    void visit_ListRemove( ASR::ListRemove_t& x) {
         ASR::ttype_t* asr_el_type = ASRUtils::get_contained_type(ASRUtils::expr_type(x.m_a));
         int64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 0;
@@ -1729,7 +1729,7 @@ public:
         list_api->remove(plist, item, asr_el_type, *module);
     }
 
-    void visit_ListCount(const ASR::ListCount_t& x) {
+    void visit_ListCount( ASR::ListCount_t& x) {
         ASR::ttype_t *asr_el_type = ASRUtils::get_contained_type(ASRUtils::expr_type(x.m_arg));
         int64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 0;
@@ -1922,7 +1922,7 @@ public:
         llvm_utils->set_api->remove_item(pset, el, *module, asr_el_type);
     }
 
-    void visit_IntrinsicElementalFunction(const ASR::IntrinsicElementalFunction_t& x) {
+    void visit_IntrinsicElementalFunction( ASR::IntrinsicElementalFunction_t& x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
             return;
@@ -2078,7 +2078,7 @@ public:
         }
     }
 
-    void visit_IntrinsicImpureFunction(const ASR::IntrinsicImpureFunction_t &x) {
+    void visit_IntrinsicImpureFunction( ASR::IntrinsicImpureFunction_t &x) {
         switch (static_cast<ASRUtils::IntrinsicImpureFunctions>(x.m_impure_intrinsic_id)) {
             case ASRUtils::IntrinsicImpureFunctions::IsIostatEnd : {
                 // TODO: Fix this once the iostat is implemented in file handling;
@@ -2100,11 +2100,11 @@ public:
         }
     }
 
-    void visit_TypeInquiry(const ASR::TypeInquiry_t &x) {
+    void visit_TypeInquiry( ASR::TypeInquiry_t &x) {
         this->visit_expr(*x.m_value);
     }
 
-    void visit_ListClear(const ASR::ListClear_t& x) {
+    void visit_ListClear( ASR::ListClear_t& x) {
         int64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 0;
         this->visit_expr(*x.m_a);
@@ -2114,7 +2114,7 @@ public:
         list_api->list_clear(plist);
     }
 
-    void visit_ListRepeat(const ASR::ListRepeat_t& x) {
+    void visit_ListRepeat( ASR::ListRepeat_t& x) {
         this->visit_expr_wrapper(x.m_left, true);
         llvm::Value *left = tmp;
         ptr_loads = 2;      // right is int always
@@ -2153,7 +2153,7 @@ public:
         tmp = repeat_list;
     }
 
-    void visit_TupleCompare(const ASR::TupleCompare_t& x) {
+    void visit_TupleCompare( ASR::TupleCompare_t& x) {
         int64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 0;
         this->visit_expr(*x.m_left);
@@ -2186,12 +2186,12 @@ public:
         }
     }
 
-    void visit_TupleLen(const ASR::TupleLen_t& x) {
+    void visit_TupleLen( ASR::TupleLen_t& x) {
         LCOMPILERS_ASSERT(x.m_value);
         this->visit_expr(*x.m_value);
     }
 
-    void visit_TupleItem(const ASR::TupleItem_t& x) {
+    void visit_TupleItem( ASR::TupleItem_t& x) {
         int64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 0;
         this->visit_expr(*x.m_a);
@@ -2204,7 +2204,7 @@ public:
         tmp = tuple_api->read_item(ptuple, pos, LLVM::is_llvm_struct(x.m_type));
     }
 
-    void visit_TupleConcat(const ASR::TupleConcat_t& x) {
+    void visit_TupleConcat( ASR::TupleConcat_t& x) {
         int64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 0;
         this->visit_expr(*x.m_left);
@@ -2253,7 +2253,7 @@ public:
         tmp = concat_tuple;
     }
 
-    void visit_ArrayItem(const ASR::ArrayItem_t& x) {
+    void visit_ArrayItem( ASR::ArrayItem_t& x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
             return;
@@ -2395,7 +2395,7 @@ public:
         }
     }
 
-    void visit_ArraySection(const ASR::ArraySection_t& x) {
+    void visit_ArraySection( ASR::ArraySection_t& x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
             return;
@@ -2437,7 +2437,7 @@ public:
         builder->CreateStore(p, tmp);
     }
 
-    void visit_ArrayReshape(const ASR::ArrayReshape_t& x) {
+    void visit_ArrayReshape( ASR::ArrayReshape_t& x) {
         this->visit_expr(*x.m_array);
         llvm::Value* array = tmp;
         this->visit_expr(*x.m_shape);
@@ -2478,7 +2478,7 @@ public:
         }
     }
 
-    void lookup_EnumValue(const ASR::EnumValue_t& x) {
+    void lookup_EnumValue( ASR::EnumValue_t& x) {
         ASR::EnumType_t* enum_t = ASR::down_cast<ASR::EnumType_t>(x.m_enum_type);
         ASR::Enum_t* enum_type = ASR::down_cast<ASR::Enum_t>(enum_t->m_enum_type);
         uint32_t h = get_hash((ASR::asr_t*) enum_type);
@@ -2487,7 +2487,7 @@ public:
         tmp = llvm_utils->CreateLoad(llvm_utils->create_gep(tmp, 1));
     }
 
-    void visit_EnumValue(const ASR::EnumValue_t& x) {
+    void visit_EnumValue( ASR::EnumValue_t& x) {
         if( x.m_value ) {
             if( ASR::is_a<ASR::Integer_t>(*x.m_type) ) {
                 this->visit_expr(*x.m_value);
@@ -2518,7 +2518,7 @@ public:
         }
     }
 
-    void visit_EnumName(const ASR::EnumName_t& x) {
+    void visit_EnumName( ASR::EnumName_t& x) {
         if( x.m_value ) {
             this->visit_expr(*x.m_value);
             return ;
@@ -2549,7 +2549,7 @@ public:
         }
     }
 
-    void visit_EnumConstructor(const ASR::EnumConstructor_t& x) {
+    void visit_EnumConstructor( ASR::EnumConstructor_t& x) {
         LCOMPILERS_ASSERT(x.n_args == 1);
         ASR::expr_t* m_arg = x.m_args[0];
         this->visit_expr(*m_arg);
@@ -2568,12 +2568,12 @@ public:
             ASRUtils::extract_kind_from_ttype_t(output_type_asr) * 8, type_size));
     }
 
-    void visit_SizeOfType(const ASR::SizeOfType_t& x) {
+    void visit_SizeOfType( ASR::SizeOfType_t& x) {
         llvm::Type* llvm_type_size = llvm_utils->get_type_from_ttype_t_util(x.m_type, module.get());
         tmp = SizeOfTypeUtil(x.m_arg, llvm_type_size, x.m_type);
     }
 
-    void visit_StructInstanceMember(const ASR::StructInstanceMember_t& x) {
+    void visit_StructInstanceMember( ASR::StructInstanceMember_t& x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
             return;
@@ -2642,7 +2642,7 @@ public:
         }
     }
 
-    void visit_Variable(const ASR::Variable_t &x) {
+    void visit_Variable( ASR::Variable_t &x) {
         if (x.m_value && x.m_storage == ASR::storage_typeType::Parameter) {
             this->visit_expr_wrapper(x.m_value, true);
             return;
@@ -2945,12 +2945,12 @@ public:
         }
     }
 
-    void visit_PointerNullConstant(const ASR::PointerNullConstant_t& x){
+    void visit_PointerNullConstant( ASR::PointerNullConstant_t& x){
         llvm::Type* value_type = llvm_utils->get_type_from_ttype_t_util(x.m_type, module.get());
         tmp = llvm::ConstantPointerNull::get(static_cast<llvm::PointerType*>(value_type));
     }
 
-    void visit_Enum(const ASR::Enum_t& x) {
+    void visit_Enum( ASR::Enum_t& x) {
         if( x.m_enum_value_type == ASR::enumtypeType::IntegerUnique &&
             x.m_abi == ASR::abiType::BindC ) {
             throw CodeGenError("C-interoperation support for non-consecutive but uniquely "
@@ -3065,7 +3065,7 @@ public:
         }
     }
 
-    void start_module_init_function_prototype(const ASR::Module_t &x) {
+    void start_module_init_function_prototype( ASR::Module_t &x) {
         uint32_t h = get_hash((ASR::asr_t*)&x);
         llvm::FunctionType *function_type = llvm::FunctionType::get(
                 llvm::Type::getVoidTy(context), {}, false);
@@ -3079,13 +3079,13 @@ public:
         llvm_symtab_fn[h] = F;
     }
 
-    void finish_module_init_function_prototype(const ASR::Module_t &x) {
+    void finish_module_init_function_prototype( ASR::Module_t &x) {
         uint32_t h = get_hash((ASR::asr_t*)&x);
         builder->CreateRetVoid();
         llvm_symtab_fn[h]->removeFromParent();
     }
 
-    void visit_Module(const ASR::Module_t &x) {
+    void visit_Module( ASR::Module_t &x) {
         SymbolTable* current_scope_copy = current_scope;
         current_scope = x.m_symtab;
         mangle_prefix = "__module_" + std::string(x.m_name) + "_";
@@ -3131,7 +3131,7 @@ public:
     }
 #endif
 
-    void visit_Program(const ASR::Program_t &x) {
+    void visit_Program( ASR::Program_t &x) {
         loop_head.clear();
         loop_head_names.clear();
         loop_or_block_end.clear();
@@ -3820,7 +3820,7 @@ public:
         }
     }
 
-    bool is_function_variable(const ASR::Variable_t &v) {
+    bool is_function_variable( ASR::Variable_t &v) {
         if (v.m_type_declaration) {
             return ASR::is_a<ASR::Function_t>(*v.m_type_declaration);
         } else {
@@ -3828,7 +3828,7 @@ public:
         }
     }
 
-    bool is_function_variable(const ASR::symbol_t *v) {
+    bool is_function_variable( ASR::symbol_t *v) {
         if( !ASR::is_a<ASR::Variable_t>(*v) ) {
             return false;
         }
@@ -3840,7 +3840,7 @@ public:
     //     * Variable (`integer :: x`)
     //     * Function (callback) Variable (`procedure(fn) :: x`)
     //     * Function (`fn`)
-    void declare_args(const ASR::Function_t &x, llvm::Function &F) {
+    void declare_args( ASR::Function_t &x, llvm::Function &F) {
         size_t i = 0;
         for (llvm::Argument &llvm_arg : F.args()) {
             ASR::symbol_t *s = symbol_get_past_external(
@@ -3909,7 +3909,7 @@ public:
         declare_vars(x);
     }
 
-    void visit_Function(const ASR::Function_t &x) {
+    void visit_Function( ASR::Function_t &x) {
         loop_head.clear();
         loop_head_names.clear();
         loop_or_block_end.clear();
@@ -3952,7 +3952,7 @@ public:
         strings_to_be_deallocated.reserve(al, 1);
     }
 
-    void instantiate_function(const ASR::Function_t &x){
+    void instantiate_function( ASR::Function_t &x){
         uint32_t h = get_hash((ASR::asr_t*)&x);
         llvm::Function *F = nullptr;
         llvm::DISubprogram *SP;
@@ -4036,7 +4036,7 @@ public:
         }
     }
 
-    inline void define_function_entry(const ASR::Function_t& x) {
+    inline void define_function_entry( ASR::Function_t& x) {
         uint32_t h = get_hash((ASR::asr_t*)&x);
         parent_function = &x;
         llvm::Function* F = llvm_symtab_fn[h];
@@ -4051,7 +4051,7 @@ public:
     }
 
 
-    inline void define_function_exit(const ASR::Function_t& x) {
+    inline void define_function_exit( ASR::Function_t& x) {
         if (x.m_return_var) {
             start_new_block(proc_return);
             ASR::Variable_t *asr_retval = EXPR2VAR(x.m_return_var);
@@ -4112,7 +4112,7 @@ public:
         }
     }
 
-    void generate_function(const ASR::Function_t &x) {
+    void generate_function( ASR::Function_t &x) {
         bool interactive = (ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::Interactive);
         if (ASRUtils::get_FunctionType(x)->m_deftype == ASR::deftypeType::Implementation ) {
 
@@ -4190,7 +4190,7 @@ public:
                val->getType()->getContainedType(0)->isPointerTy();
     }
 
-    void visit_CLoc(const ASR::CLoc_t& x) {
+    void visit_CLoc( ASR::CLoc_t& x) {
         int64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 0;
         this->visit_expr(*x.m_arg);
@@ -4258,7 +4258,7 @@ public:
         return llvm_tmp;
     }
 
-    void visit_GetPointer(const ASR::GetPointer_t& x) {
+    void visit_GetPointer( ASR::GetPointer_t& x) {
         int64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 0;
         this->visit_expr(*x.m_arg);
@@ -4266,7 +4266,7 @@ public:
         tmp = GetPointerCPtrUtil(tmp, x.m_arg);
     }
 
-    void visit_PointerToCPtr(const ASR::PointerToCPtr_t& x) {
+    void visit_PointerToCPtr( ASR::PointerToCPtr_t& x) {
         int64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 0;
         this->visit_expr(*x.m_arg);
@@ -4279,7 +4279,7 @@ public:
     }
 
 
-    void visit_CPtrToPointer(const ASR::CPtrToPointer_t& x) {
+    void visit_CPtrToPointer( ASR::CPtrToPointer_t& x) {
         ASR::expr_t *cptr = x.m_cptr, *fptr = x.m_ptr, *shape = x.m_shape;
         int reduce_loads = 0;
         if( ASR::is_a<ASR::Var_t>(*cptr) ) {
@@ -4387,7 +4387,7 @@ public:
         }
     }
 
-    void visit_PointerAssociated(const ASR::PointerAssociated_t& x) {
+    void visit_PointerAssociated( ASR::PointerAssociated_t& x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
             return;
@@ -4461,7 +4461,7 @@ public:
         tmp = llvm_utils->CreateLoad(res);
     }
 
-    void handle_array_section_association_to_pointer(const ASR::Associate_t& x) {
+    void handle_array_section_association_to_pointer( ASR::Associate_t& x) {
         ASR::ArraySection_t* array_section = ASR::down_cast<ASR::ArraySection_t>(x.m_value);
         ASR::ttype_t* value_array_type = ASRUtils::expr_type(array_section->m_v);
 
@@ -4550,7 +4550,7 @@ public:
         builder->CreateStore(target, target_desc);
     }
 
-    void visit_Associate(const ASR::Associate_t& x) {
+    void visit_Associate( ASR::Associate_t& x) {
         if( ASR::is_a<ASR::ArraySection_t>(*x.m_value) ) {
             handle_array_section_association_to_pointer(x);
         } else {
@@ -4738,12 +4738,12 @@ public:
         strings_to_be_deallocated.push_back(al, tmp);
     }
 
-    void visit_OverloadedStringConcat(const ASR::OverloadedStringConcat_t &x) {
+    void visit_OverloadedStringConcat( ASR::OverloadedStringConcat_t &x) {
         LCOMPILERS_ASSERT(x.m_overloaded != nullptr)
         this->visit_expr(*x.m_overloaded);
     }
 
-    void visit_Assignment(const ASR::Assignment_t &x) {
+    void visit_Assignment( ASR::Assignment_t &x) {
         if (compiler_options.emit_debug_info) debug_emit_loc(x);
         if( x.m_overloaded ) {
             this->visit_stmt(*x.m_overloaded);
@@ -5356,7 +5356,7 @@ public:
         }
     }
 
-    void visit_ArrayPhysicalCast(const ASR::ArrayPhysicalCast_t& x) {
+    void visit_ArrayPhysicalCast( ASR::ArrayPhysicalCast_t& x) {
         if( x.m_old != ASR::array_physical_typeType::DescriptorArray ) {
             LCOMPILERS_ASSERT(x.m_new != x.m_old);
         }
@@ -5367,7 +5367,7 @@ public:
         visit_ArrayPhysicalCastUtil(tmp, x.m_arg, x.m_type, x.m_type, x.m_old, x.m_new);
     }
 
-    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t& x) {
+    void visit_AssociateBlockCall( ASR::AssociateBlockCall_t& x) {
         LCOMPILERS_ASSERT(ASR::is_a<ASR::AssociateBlock_t>(*x.m_m));
         ASR::AssociateBlock_t* associate_block = ASR::down_cast<ASR::AssociateBlock_t>(x.m_m);
         declare_vars(*associate_block);
@@ -5376,7 +5376,7 @@ public:
         }
     }
 
-    void visit_BlockCall(const ASR::BlockCall_t& x) {
+    void visit_BlockCall( ASR::BlockCall_t& x) {
         std::vector<llvm::Value*> heap_arrays_copy;
         heap_arrays_copy = heap_arrays;
         heap_arrays.clear();
@@ -5446,7 +5446,7 @@ public:
         }
     }
 
-    void fill_type_stmt(const ASR::SelectType_t& x,
+    void fill_type_stmt( ASR::SelectType_t& x,
         std::vector<ASR::type_stmt_t*>& type_stmt_order,
         ASR::type_stmtType type_stmt_type) {
         for( size_t i = 0; i < x.n_body; i++ ) {
@@ -5456,7 +5456,7 @@ public:
         }
     }
 
-    void visit_SelectType(const ASR::SelectType_t& x) {
+    void visit_SelectType( ASR::SelectType_t& x) {
         LCOMPILERS_ASSERT(ASR::is_a<ASR::Var_t>(*x.m_selector));
         // Process TypeStmtName first, then ClassStmt
         std::vector<ASR::type_stmt_t*> select_type_stmts;
@@ -5587,7 +5587,7 @@ public:
         start_new_block(mergeBB);
     }
 
-    void visit_IntegerCompare(const ASR::IntegerCompare_t &x) {
+    void visit_IntegerCompare( ASR::IntegerCompare_t &x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
             return;
@@ -5630,7 +5630,7 @@ public:
         }
     }
 
-    void visit_UnsignedIntegerCompare(const ASR::UnsignedIntegerCompare_t &x) {
+    void visit_UnsignedIntegerCompare( ASR::UnsignedIntegerCompare_t &x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
             return;
@@ -5671,7 +5671,7 @@ public:
         }
     }
 
-    void visit_CPtrCompare(const ASR::CPtrCompare_t &x) {
+    void visit_CPtrCompare( ASR::CPtrCompare_t &x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
             return;
@@ -5714,7 +5714,7 @@ public:
         }
     }
 
-    void visit_RealCompare(const ASR::RealCompare_t &x) {
+    void visit_RealCompare( ASR::RealCompare_t &x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
             return;
@@ -5755,7 +5755,7 @@ public:
         }
     }
 
-    void visit_ComplexCompare(const ASR::ComplexCompare_t &x) {
+    void visit_ComplexCompare( ASR::ComplexCompare_t &x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
             return;
@@ -5789,7 +5789,7 @@ public:
         }
     }
 
-    void visit_StringCompare(const ASR::StringCompare_t &x) {
+    void visit_StringCompare( ASR::StringCompare_t &x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
             return;
@@ -5865,7 +5865,7 @@ public:
         tmp = lfortran_str_cmp(left, right, fn);
     }
 
-    void visit_LogicalCompare(const ASR::LogicalCompare_t &x) {
+    void visit_LogicalCompare( ASR::LogicalCompare_t &x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
             return;
@@ -5909,11 +5909,11 @@ public:
         }
     }
 
-    void visit_OverloadedCompare(const ASR::OverloadedCompare_t &x) {
+    void visit_OverloadedCompare( ASR::OverloadedCompare_t &x) {
         this->visit_expr(*x.m_overloaded);
     }
 
-    void visit_If(const ASR::If_t &x) {
+    void visit_If( ASR::If_t &x) {
         llvm::Value **strings_to_be_deallocated_copy = strings_to_be_deallocated.p;
         size_t n = strings_to_be_deallocated.n;
         strings_to_be_deallocated.reserve(al, 1);
@@ -5934,7 +5934,7 @@ public:
         strings_to_be_deallocated.p = strings_to_be_deallocated_copy;
     }
 
-    void visit_IfExp(const ASR::IfExp_t &x) {
+    void visit_IfExp( ASR::IfExp_t &x) {
         // IfExp(expr test, expr body, expr orelse, ttype type, expr? value)
         this->visit_expr_wrapper(x.m_test, true);
         llvm::Value *cond = tmp;
@@ -5951,10 +5951,10 @@ public:
     }
 
     // TODO: Implement visit_DooLoop
-    //void visit_DoLoop(const ASR::DoLoop_t &x) {
+    //void visit_DoLoop( ASR::DoLoop_t &x) {
     //}
 
-    void visit_WhileLoop(const ASR::WhileLoop_t &x) {
+    void visit_WhileLoop( ASR::WhileLoop_t &x) {
         llvm::Value **strings_to_be_deallocated_copy = strings_to_be_deallocated.p;
         size_t n = strings_to_be_deallocated.n;
         strings_to_be_deallocated.reserve(al, 1);
@@ -5985,7 +5985,7 @@ public:
         return true;
     }
 
-    void visit_Exit(const ASR::Exit_t &x) {
+    void visit_Exit( ASR::Exit_t &x) {
         if (x.m_stmt_name) {
             std::string stmt_name = std::string(x.m_stmt_name) + ".end";
             int nested_block_depth = loop_or_block_end_names.size();
@@ -6008,7 +6008,7 @@ public:
         start_new_block(bb);
     }
 
-    void visit_Cycle(const ASR::Cycle_t &x) {
+    void visit_Cycle( ASR::Cycle_t &x) {
         if (x.m_stmt_name) {
             std::string stmt_name = std::string(x.m_stmt_name) + ".head";
             int nested_block_depth = loop_head_names.size();
@@ -6031,13 +6031,13 @@ public:
         start_new_block(bb);
     }
 
-    void visit_Return(const ASR::Return_t & /* x */) {
+    void visit_Return( ASR::Return_t & /* x */) {
         builder->CreateBr(proc_return);
         llvm::BasicBlock *bb = llvm::BasicBlock::Create(context, "unreachable_after_return");
         start_new_block(bb);
     }
 
-    void visit_GoTo(const ASR::GoTo_t &x) {
+    void visit_GoTo( ASR::GoTo_t &x) {
         if (llvm_goto_targets.find(x.m_target_id) == llvm_goto_targets.end()) {
             // If the target does not exist yet, create it
             llvm::BasicBlock *new_target = llvm::BasicBlock::Create(context, "goto_target");
@@ -6049,7 +6049,7 @@ public:
         start_new_block(bb);
     }
 
-    void visit_GoToTarget(const ASR::GoToTarget_t &x) {
+    void visit_GoToTarget( ASR::GoToTarget_t &x) {
         if (llvm_goto_targets.find(x.m_id) == llvm_goto_targets.end()) {
             // If the target does not exist yet, create it
             llvm::BasicBlock *new_target = llvm::BasicBlock::Create(context, "goto_target");
@@ -6059,7 +6059,7 @@ public:
         start_new_block(target);
     }
 
-    void visit_LogicalBinOp(const ASR::LogicalBinOp_t &x) {
+    void visit_LogicalBinOp( ASR::LogicalBinOp_t &x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
             return;
@@ -6121,7 +6121,7 @@ public:
         }
     }
 
-    void visit_StringRepeat(const ASR::StringRepeat_t &x) {
+    void visit_StringRepeat( ASR::StringRepeat_t &x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
             return;
@@ -6133,7 +6133,7 @@ public:
         tmp = lfortran_strrepeat(left_val, right_val);
     }
 
-    void visit_StringConcat(const ASR::StringConcat_t &x) {
+    void visit_StringConcat( ASR::StringConcat_t &x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
             return;
@@ -6151,7 +6151,7 @@ public:
         tmp = lfortran_strop(left_val, right_val, "_lfortran_strcat");
     }
 
-    void visit_StringLen(const ASR::StringLen_t &x) {
+    void visit_StringLen( ASR::StringLen_t &x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
             return;
@@ -6168,7 +6168,7 @@ public:
             llvm_utils->get_type_from_ttype_t_util(x.m_type, module.get()));
     }
 
-    void visit_StringOrd(const ASR::StringOrd_t &x) {
+    void visit_StringOrd( ASR::StringOrd_t &x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
             return;
@@ -6179,7 +6179,7 @@ public:
         tmp = lfortran_str_ord(parg);
     }
 
-    void visit_StringChr(const ASR::StringChr_t &x) {
+    void visit_StringChr( ASR::StringChr_t &x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
             return;
@@ -6188,7 +6188,7 @@ public:
         tmp = lfortran_str_chr(tmp);
     }
 
-    void visit_StringItem(const ASR::StringItem_t& x) {
+    void visit_StringItem( ASR::StringItem_t& x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
             return;
@@ -6211,7 +6211,7 @@ public:
         }
     }
 
-    void visit_StringSection(const ASR::StringSection_t& x) {
+    void visit_StringSection( ASR::StringSection_t& x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
             return;
@@ -6258,7 +6258,7 @@ public:
         }
     }
 
-    void visit_RealCopySign(const ASR::RealCopySign_t& x) {
+    void visit_RealCopySign( ASR::RealCopySign_t& x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
             return;
@@ -6378,15 +6378,15 @@ public:
         }
     }
 
-    void visit_IntegerBinOp(const ASR::IntegerBinOp_t &x) {
+    void visit_IntegerBinOp( ASR::IntegerBinOp_t &x) {
         handle_SU_IntegerBinOp(x, true);
     }
 
-    void visit_UnsignedIntegerBinOp(const ASR::UnsignedIntegerBinOp_t &x) {
+    void visit_UnsignedIntegerBinOp( ASR::UnsignedIntegerBinOp_t &x) {
         handle_SU_IntegerBinOp(x, false);
     }
 
-    void visit_RealBinOp(const ASR::RealBinOp_t &x) {
+    void visit_RealBinOp( ASR::RealBinOp_t &x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
             return;
@@ -6445,7 +6445,7 @@ public:
         }
     }
 
-    void visit_ComplexBinOp(const ASR::ComplexBinOp_t &x) {
+    void visit_ComplexBinOp( ASR::ComplexBinOp_t &x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
             return;
@@ -6515,15 +6515,15 @@ public:
         tmp = lfortran_complex_bin_op(left_val, right_val, fn_name, type);
     }
 
-    void visit_OverloadedBinOp(const ASR::OverloadedBinOp_t &x) {
+    void visit_OverloadedBinOp( ASR::OverloadedBinOp_t &x) {
         this->visit_expr(*x.m_overloaded);
     }
 
-    void visit_OverloadedUnaryMinus(const ASR::OverloadedUnaryMinus_t &x) {
+    void visit_OverloadedUnaryMinus( ASR::OverloadedUnaryMinus_t &x) {
         this->visit_expr(*x.m_overloaded);
     }
 
-    void visit_IntegerBitNot(const ASR::IntegerBitNot_t &x) {
+    void visit_IntegerBitNot( ASR::IntegerBitNot_t &x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
             return;
@@ -6532,7 +6532,7 @@ public:
         tmp = builder->CreateNot(tmp);
     }
 
-    void visit_UnsignedIntegerBitNot(const ASR::UnsignedIntegerBitNot_t &x) {
+    void visit_UnsignedIntegerBitNot( ASR::UnsignedIntegerBitNot_t &x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
             return;
@@ -6553,15 +6553,15 @@ public:
         tmp = builder->CreateSub(zero, tmp);
     }
 
-    void visit_IntegerUnaryMinus(const ASR::IntegerUnaryMinus_t &x) {
+    void visit_IntegerUnaryMinus( ASR::IntegerUnaryMinus_t &x) {
         handle_SU_IntegerUnaryMinus(x);
     }
 
-    void visit_UnsignedIntegerUnaryMinus(const ASR::UnsignedIntegerUnaryMinus_t &x) {
+    void visit_UnsignedIntegerUnaryMinus( ASR::UnsignedIntegerUnaryMinus_t &x) {
         handle_SU_IntegerUnaryMinus(x);
     }
 
-    void visit_RealUnaryMinus(const ASR::RealUnaryMinus_t &x) {
+    void visit_RealUnaryMinus( ASR::RealUnaryMinus_t &x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
             return;
@@ -6570,7 +6570,7 @@ public:
         tmp = builder->CreateFNeg(tmp);
     }
 
-    void visit_ComplexUnaryMinus(const ASR::ComplexUnaryMinus_t &x) {
+    void visit_ComplexUnaryMinus( ASR::ComplexUnaryMinus_t &x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
             return;
@@ -6613,15 +6613,15 @@ public:
         }
     }
 
-    void visit_IntegerConstant(const ASR::IntegerConstant_t &x) {
+    void visit_IntegerConstant( ASR::IntegerConstant_t &x) {
         handle_SU_IntegerConstant(x);
     }
 
-    void visit_UnsignedIntegerConstant(const ASR::UnsignedIntegerConstant_t &x) {
+    void visit_UnsignedIntegerConstant( ASR::UnsignedIntegerConstant_t &x) {
         handle_SU_IntegerConstant(x);
     }
 
-    void visit_RealConstant(const ASR::RealConstant_t &x) {
+    void visit_RealConstant( ASR::RealConstant_t &x) {
         double val = x.m_r;
         int a_kind = ((ASR::Real_t*)(&(x.m_type->base)))->m_kind;
         switch( a_kind ) {
@@ -6691,7 +6691,7 @@ public:
         tmp = llvm_utils->create_gep(p_fxn, 0);
     }
 
-    void visit_ArrayConstantUtil(const ASR::ArrayConstant_t &x) {
+    void visit_ArrayConstantUtil( ASR::ArrayConstant_t &x) {
         llvm::Type* el_type = nullptr;
         ASR::ttype_t* x_m_type = ASRUtils::type_get_past_array(x.m_type);
         if (ASR::is_a<ASR::Integer_t>(*x_m_type)) {
@@ -6739,15 +6739,15 @@ public:
         tmp = llvm_utils->create_gep(p_fxn, 0);
     }
 
-    void visit_ArrayConstructor(const ASR::ArrayConstructor_t &x) {
+    void visit_ArrayConstructor( ASR::ArrayConstructor_t &x) {
         visit_ArrayConstructorUtil(x);
     }
 
-    void visit_ArrayConstant(const ASR::ArrayConstant_t &x) {
+    void visit_ArrayConstant( ASR::ArrayConstant_t &x) {
         visit_ArrayConstantUtil(x);
     }
 
-    void visit_Assert(const ASR::Assert_t &x) {
+    void visit_Assert( ASR::Assert_t &x) {
         if (compiler_options.emit_debug_info) debug_emit_loc(x);
         this->visit_expr_wrapper(x.m_test, true);
         llvm_utils->create_if_else(tmp, []() {}, [=]() {
@@ -6786,7 +6786,7 @@ public:
         });
     }
 
-    void visit_ComplexConstructor(const ASR::ComplexConstructor_t &x) {
+    void visit_ComplexConstructor( ASR::ComplexConstructor_t &x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
             return;
@@ -6821,7 +6821,7 @@ public:
         tmp = complex_from_floats(re2, im2, type);
     }
 
-    void visit_ComplexConstant(const ASR::ComplexConstant_t &x) {
+    void visit_ComplexConstant( ASR::ComplexConstant_t &x) {
         double re = x.m_re;
         double im = x.m_im;
         int a_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
@@ -6847,7 +6847,7 @@ public:
         tmp = complex_from_floats(re2, im2, type);
     }
 
-    void visit_LogicalConstant(const ASR::LogicalConstant_t &x) {
+    void visit_LogicalConstant( ASR::LogicalConstant_t &x) {
         int val;
         if (x.m_value == true) {
             val = 1;
@@ -6857,7 +6857,7 @@ public:
         tmp = llvm::ConstantInt::get(context, llvm::APInt(1, val));
     }
 
-    void visit_LogicalNot(const ASR::LogicalNot_t &x) {
+    void visit_LogicalNot( ASR::LogicalNot_t &x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
             return;
@@ -6867,7 +6867,7 @@ public:
         tmp = builder->CreateNot(arg);
     }
 
-    void visit_StringConstant(const ASR::StringConstant_t &x) {
+    void visit_StringConstant( ASR::StringConstant_t &x) {
         tmp = builder->CreateGlobalStringPtr(x.m_s);
     }
 
@@ -6983,7 +6983,7 @@ public:
         }
     }
 
-    void visit_Var(const ASR::Var_t &x) {
+    void visit_Var( ASR::Var_t &x) {
         ASR::symbol_t* x_m_v = ASRUtils::symbol_get_past_external(x.m_v);
         switch( x_m_v->type ) {
             case ASR::symbolType::Variable: {
@@ -7008,7 +7008,7 @@ public:
         return ASRUtils::expr_type(expr);
     }
 
-    void extract_kinds(const ASR::Cast_t& x,
+    void extract_kinds( ASR::Cast_t& x,
                        int& arg_kind, int& dest_kind)
     {
         dest_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
@@ -7060,7 +7060,7 @@ public:
         tmp = des_real_arr;
     }
 
-    void visit_ComplexRe(const ASR::ComplexRe_t &x) {
+    void visit_ComplexRe( ASR::ComplexRe_t &x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
             return;
@@ -7097,7 +7097,7 @@ public:
         }
     }
 
-    void visit_ComplexIm(const ASR::ComplexIm_t &x) {
+    void visit_ComplexIm( ASR::ComplexIm_t &x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
             return;
@@ -7142,7 +7142,7 @@ public:
         tmp = llvm_utils->CreateLoad2(ret_type, result);
     }
 
-    void visit_BitCast(const ASR::BitCast_t& x) {
+    void visit_BitCast( ASR::BitCast_t& x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
             return;
@@ -7158,7 +7158,7 @@ public:
         tmp = llvm_utils->CreateLoad2(target_base_type, builder->CreateBitCast(source_ptr, target_llvm_type));
     }
 
-    void visit_Cast(const ASR::Cast_t &x) {
+    void visit_Cast( ASR::Cast_t &x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
             return;
@@ -7649,7 +7649,7 @@ public:
         return fn;
     }
 
-    void visit_FileRead(const ASR::FileRead_t &x) {
+    void visit_FileRead( ASR::FileRead_t &x) {
         if( x.m_overloaded ) {
             this->visit_stmt(*x.m_overloaded);
             return ;
@@ -7791,7 +7791,7 @@ public:
         }
     }
 
-    void visit_FileOpen(const ASR::FileOpen_t &x) {
+    void visit_FileOpen( ASR::FileOpen_t &x) {
         llvm::Value *unit_val = nullptr, *f_name = nullptr;
         llvm::Value *status = nullptr, *form = nullptr;
         this->visit_expr_wrapper(x.m_newunit, true);
@@ -7833,7 +7833,7 @@ public:
         tmp = builder->CreateCall(fn, {unit_val, f_name, status, form});
     }
 
-    void visit_FileInquire(const ASR::FileInquire_t &x) {
+    void visit_FileInquire( ASR::FileInquire_t &x) {
         llvm::Value *exist_val = nullptr, *f_name = nullptr, *unit = nullptr, *opened_val = nullptr;
 
         if (x.m_file) {
@@ -7887,7 +7887,7 @@ public:
         tmp = builder->CreateCall(fn, {f_name, exist_val, unit, opened_val});
     }
 
-    void visit_Flush(const ASR::Flush_t& x) {
+    void visit_Flush( ASR::Flush_t& x) {
         std::string runtime_func_name = "_lfortran_flush";
         llvm::Function *fn = module->getFunction(runtime_func_name);
         if (!fn) {
@@ -7904,7 +7904,7 @@ public:
         builder->CreateCall(fn, {unit_val});
     }
 
-    void visit_FileRewind(const ASR::FileRewind_t &x) {
+    void visit_FileRewind( ASR::FileRewind_t &x) {
         std::string runtime_func_name = "_lfortran_rewind";
         llvm::Function *fn = module->getFunction(runtime_func_name);
         if (!fn) {
@@ -7919,7 +7919,7 @@ public:
         builder->CreateCall(fn, {tmp});
     }
 
-    void visit_FileBackspace(const ASR::FileBackspace_t &x) {
+    void visit_FileBackspace( ASR::FileBackspace_t &x) {
         std::string runtime_func_name = "_lfortran_backspace";
         llvm::Function *fn = module->getFunction(runtime_func_name);
         if (!fn) {
@@ -7934,7 +7934,7 @@ public:
         builder->CreateCall(fn, {tmp});
     }
 
-    void visit_FileClose(const ASR::FileClose_t &x) {
+    void visit_FileClose( ASR::FileClose_t &x) {
         llvm::Value *unit_val = nullptr;
         this->visit_expr_wrapper(x.m_unit, true);
         unit_val = tmp;
@@ -7951,11 +7951,11 @@ public:
         tmp = builder->CreateCall(fn, {unit_val});
     }
 
-    void visit_Print(const ASR::Print_t &x) {
+    void visit_Print( ASR::Print_t &x) {
         handle_print(x.m_text, nullptr);
     }
 
-    void visit_FileWrite(const ASR::FileWrite_t &x) {
+    void visit_FileWrite( ASR::FileWrite_t &x) {
         if( x.m_overloaded ) {
             this->visit_stmt(*x.m_overloaded);
             return ;
@@ -8421,7 +8421,7 @@ public:
         exit(context, *module, *builder, exit_code);
     }
 
-    void visit_Stop(const ASR::Stop_t &x) {
+    void visit_Stop( ASR::Stop_t &x) {
         if (compiler_options.emit_debug_info) {
             debug_emit_loc(x);
             if (x.m_code && is_a<ASR::Integer_t>(*ASRUtils::expr_type(x.m_code))) {
@@ -8443,7 +8443,7 @@ public:
         construct_stop(exit_code, "STOP", x.m_code, x.base.base.loc);
     }
 
-    void visit_ErrorStop(const ASR::ErrorStop_t &x) {
+    void visit_ErrorStop( ASR::ErrorStop_t &x) {
         if (compiler_options.emit_debug_info) {
             debug_emit_loc(x);
             llvm::Value *fmt_ptr = builder->CreateGlobalStringPtr(infile);
@@ -9008,7 +9008,7 @@ public:
         return dt;
     }
 
-    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+    void visit_SubroutineCall( ASR::SubroutineCall_t &x) {
         if (compiler_options.emit_debug_info) debug_emit_loc(x);
         if( ASRUtils::is_intrinsic_optimization(x.m_name) ) {
             ASR::Function_t* routine = ASR::down_cast<ASR::Function_t>(
@@ -9250,7 +9250,7 @@ public:
         }
     }
 
-    void handle_bitwise_args(const ASR::FunctionCall_t& x, llvm::Value*& arg1,
+    void handle_bitwise_args( ASR::FunctionCall_t& x, llvm::Value*& arg1,
                              llvm::Value*& arg2) {
         LCOMPILERS_ASSERT(x.n_args == 2);
         tmp = nullptr;
@@ -9261,19 +9261,19 @@ public:
         arg2 = tmp;
     }
 
-    void handle_bitwise_xor(const ASR::FunctionCall_t& x) {
+    void handle_bitwise_xor( ASR::FunctionCall_t& x) {
         llvm::Value *arg1 = nullptr, *arg2 = nullptr;
         handle_bitwise_args(x, arg1, arg2);
         tmp = builder->CreateXor(arg1, arg2);
     }
 
-    void handle_bitwise_and(const ASR::FunctionCall_t& x) {
+    void handle_bitwise_and( ASR::FunctionCall_t& x) {
         llvm::Value *arg1 = nullptr, *arg2 = nullptr;
         handle_bitwise_args(x, arg1, arg2);
         tmp = builder->CreateAnd(arg1, arg2);
     }
 
-    void handle_bitwise_or(const ASR::FunctionCall_t& x) {
+    void handle_bitwise_or( ASR::FunctionCall_t& x) {
         llvm::Value *arg1 = nullptr, *arg2 = nullptr;
         handle_bitwise_args(x, arg1, arg2);
         tmp = builder->CreateOr(arg1, arg2);
@@ -9324,7 +9324,7 @@ public:
         return CreateCallUtil(fn->getFunctionType(), fn, args, asr_return_type);
     }
 
-    void visit_RuntimePolymorphicSubroutineCall(const ASR::SubroutineCall_t& x, std::string proc_sym_name) {
+    void visit_RuntimePolymorphicSubroutineCall( ASR::SubroutineCall_t& x, std::string proc_sym_name) {
         std::vector<std::pair<llvm::Value*, ASR::symbol_t*>> vtabs;
         ASR::Struct_t* dt_sym_type = nullptr;
         ASR::ttype_t* dt_ttype_t = ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(
@@ -9413,7 +9413,7 @@ public:
         start_new_block(mergeBB);
     }
 
-    void visit_RuntimePolymorphicFunctionCall(const ASR::FunctionCall_t& x, std::string proc_sym_name) {
+    void visit_RuntimePolymorphicFunctionCall( ASR::FunctionCall_t& x, std::string proc_sym_name) {
         std::vector<std::pair<llvm::Value*, ASR::symbol_t*>> vtabs;
         ASR::Struct_t* dt_sym_type = nullptr;
         ASR::ttype_t* dt_ttype_t = ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(
@@ -9507,7 +9507,7 @@ public:
         tmp = llvm_utils->CreateLoad(tmp);
     }
 
-    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+    void visit_FunctionCall( ASR::FunctionCall_t &x) {
         if ( compiler_options.emit_debug_info ) debug_emit_loc(x);
         if( ASRUtils::is_intrinsic_optimization(x.m_name) ) {
             ASR::Function_t* routine = ASR::down_cast<ASR::Function_t>(
@@ -9920,11 +9920,11 @@ public:
         }
     }
 
-    void visit_ArraySize(const ASR::ArraySize_t& x) {
+    void visit_ArraySize( ASR::ArraySize_t& x) {
         visit_ArraySizeUtil(x.m_v, x.m_type, x.m_dim, x.m_value);
     }
 
-    void visit_ArrayBound(const ASR::ArrayBound_t& x) {
+    void visit_ArrayBound( ASR::ArrayBound_t& x) {
         ASR::expr_t* array_value = ASRUtils::expr_value(x.m_v);
         if( array_value && ASR::is_a<ASR::ArrayConstant_t>(*array_value) ) {
             ASR::ArrayConstant_t* array_const = ASR::down_cast<ASR::ArrayConstant_t>(array_value);
@@ -10099,7 +10099,7 @@ public:
         }
     }
 
-    void visit_StringFormat(const ASR::StringFormat_t& x) {
+    void visit_StringFormat( ASR::StringFormat_t& x) {
         // TODO: Handle some things at compile time if possible:
         //ASR::expr_t* fmt_value = ASRUtils::expr_value(x.m_fmt);
         // if (fmt_value) ...
@@ -10129,7 +10129,7 @@ public:
         }
     }
 
-    void visit_ArrayBroadcast(const ASR::ArrayBroadcast_t &x) {
+    void visit_ArrayBroadcast( ASR::ArrayBroadcast_t &x) {
         this->visit_expr_wrapper(x.m_array, true);
         llvm::Value *value = tmp;
         llvm::Type* ele_type = llvm_utils->get_type_from_ttype_t_util(

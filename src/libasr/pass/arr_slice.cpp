@@ -203,9 +203,9 @@ class ArraySectionVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArraySe
             n_body = body.size();
         }
 
-        void visit_Assignment(const ASR::Assignment_t &x) {
+        void visit_Assignment( ASR::Assignment_t &x) {
             ASR::expr_t** current_expr_copy_9 = current_expr;
-            current_expr = const_cast<ASR::expr_t**>(&(x.m_value));
+            current_expr = &(x.m_value);
             this->call_replacer();
             current_expr = current_expr_copy_9;
             this->visit_expr(*x.m_value);
@@ -214,7 +214,7 @@ class ArraySectionVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArraySe
             }
         }
 
-        void visit_Associate(const ASR::Associate_t& /*x*/) {
+        void visit_Associate( ASR::Associate_t& /*x*/) {
             // Associating a slice to a pointer array
             // should happen only in the backends.
         }

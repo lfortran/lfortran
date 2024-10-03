@@ -349,7 +349,7 @@ public:
         y = _lcompilers_list_section(x, 1, 3, 1)
 */
 
-    void replace_ListSection(const ASR::ListSection_t* x) {
+    void replace_ListSection( ASR::ListSection_t* x) {
         Location loc = x->base.base.loc;
         ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
         ASR::ttype_t* bool_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4));
@@ -515,7 +515,7 @@ public:
         x = _lcompilers_list_concat(i, j)
 */
 
-    void replace_ListConcat(const ASR::ListConcat_t* x) {
+    void replace_ListConcat( ASR::ListConcat_t* x) {
         Location loc = x->base.base.loc;
         Vec<ASR::call_arg_t> args;
         args.reserve(al, 2);

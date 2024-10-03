@@ -207,7 +207,7 @@ typedef ASR::asr_t* (*create_intrinsic_function)(
     diag::Diagnostics&);
 
 typedef void (*verify_function)(
-    const ASR::IntrinsicElementalFunction_t&,
+    ASR::IntrinsicElementalFunction_t&,
     diag::Diagnostics&);
 
 typedef ASR::expr_t* (*get_initial_value_func)(Allocator&, ASR::ttype_t*);
@@ -375,7 +375,7 @@ static inline ASR::symbol_t *create_KMP_function(Allocator &al,
     return fn_sym;
 }
 
-static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x,
+static inline void verify_args( ASR::IntrinsicElementalFunction_t& x,
         diag::Diagnostics& diagnostics) {
     const Location& loc = x.base.base.loc;
     ASRUtils::require_impl(x.n_args == 1,
@@ -425,7 +425,7 @@ create_unary_function(Isnan, isnan, is_nan)
 
 namespace ObjectType {
 
-     static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
+     static inline void verify_args( ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
         ASRUtils::require_impl(x.n_args == 1,
             "ASR Verify: type() takes only 1 argument `object`",
             x.base.base.loc, diagnostics);
@@ -719,7 +719,7 @@ namespace Atan2 {
 
 namespace Abs {
 
-    static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
+    static inline void verify_args( ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
         const Location& loc = x.base.base.loc;
         ASRUtils::require_impl(x.n_args == 1,
             "Elemental intrinsics must have only 1 input argument",
@@ -1166,7 +1166,7 @@ namespace OutOfRange
 
 namespace CompilerVersion {
 
-    static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
+    static inline void verify_args( ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
         ASRUtils::require_impl(x.n_args == 0,
             "ASR Verify: compiler_version() takes no argument",
             x.base.base.loc, diagnostics);
@@ -1193,7 +1193,7 @@ namespace CompilerVersion {
 
 namespace CommandArgumentCount {
 
-    static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
+    static inline void verify_args( ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
         ASRUtils::require_impl(x.n_args == 0,
             "ASR Verify: command_argument_count() takes no argument",
             x.base.base.loc, diagnostics);
@@ -5233,7 +5233,7 @@ namespace ErfcScaled {
 
 namespace ListIndex {
 
-static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
+static inline void verify_args( ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
     ASRUtils::require_impl(x.n_args <= 4, "Call to list.index must have at most four arguments",
         x.base.base.loc, diagnostics);
     ASR::ttype_t* arg0_type = ASRUtils::expr_type(x.m_args[0]);
@@ -5322,7 +5322,7 @@ static inline ASR::expr_t *eval_ListReverse(Allocator &/*al*/,
 
 namespace ListPop {
 
-static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
+static inline void verify_args( ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
     ASRUtils::require_impl(x.n_args <= 2, "Call to list.pop must have at most one argument",
         x.base.base.loc, diagnostics);
     ASRUtils::require_impl(ASR::is_a<ASR::List_t>(*ASRUtils::expr_type(x.m_args[0])),
@@ -5393,7 +5393,7 @@ static inline ASR::expr_t *eval_ListReserve(Allocator &/*al*/,
 
 namespace DictKeys {
 
-static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
+static inline void verify_args( ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
     ASRUtils::require_impl(x.n_args == 1, "Call to dict.keys must have no argument",
         x.base.base.loc, diagnostics);
     ASRUtils::require_impl(ASR::is_a<ASR::Dict_t>(*ASRUtils::expr_type(x.m_args[0])),
@@ -5440,7 +5440,7 @@ static inline ASR::asr_t* create_DictKeys(Allocator& al, const Location& loc,
 
 namespace DictValues {
 
-static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
+static inline void verify_args( ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
     ASRUtils::require_impl(x.n_args == 1, "Call to dict.values must have no argument",
         x.base.base.loc, diagnostics);
     ASRUtils::require_impl(ASR::is_a<ASR::Dict_t>(*ASRUtils::expr_type(x.m_args[0])),
@@ -5487,7 +5487,7 @@ static inline ASR::asr_t* create_DictValues(Allocator& al, const Location& loc,
 
 namespace SetAdd {
 
-static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
+static inline void verify_args( ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
     ASRUtils::require_impl(x.n_args == 2, "Call to set.add must have exactly one argument",
         x.base.base.loc, diagnostics);
     ASRUtils::require_impl(ASR::is_a<ASR::Set_t>(*ASRUtils::expr_type(x.m_args[0])),
@@ -5538,7 +5538,7 @@ static inline ASR::asr_t* create_SetAdd(Allocator& al, const Location& loc,
 
 namespace SetRemove {
 
-static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
+static inline void verify_args( ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
     ASRUtils::require_impl(x.n_args == 2, "Call to set.remove must have exactly one argument",
         x.base.base.loc, diagnostics);
     ASRUtils::require_impl(ASR::is_a<ASR::Set_t>(*ASRUtils::expr_type(x.m_args[0])),
@@ -5589,7 +5589,7 @@ static inline ASR::asr_t* create_SetRemove(Allocator& al, const Location& loc,
 
 namespace Max {
 
-    static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
+    static inline void verify_args( ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
         ASRUtils::require_impl(x.n_args > 1, "Call to max0 must have at least two arguments",
             x.base.base.loc, diagnostics);
         ASR::ttype_t* arg0_type = ASRUtils::type_get_past_array(ASRUtils::expr_type(x.m_args[0]));
@@ -5739,7 +5739,7 @@ namespace Max {
 
 namespace Min {
 
-    static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
+    static inline void verify_args( ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
         ASRUtils::require_impl(x.n_args > 1, "Call to min0 must have at least two arguments",
             x.base.base.loc, diagnostics);
         ASR::ttype_t* arg0_type = ASRUtils::type_get_past_array(ASRUtils::expr_type(x.m_args[0]));
@@ -6146,7 +6146,7 @@ namespace Huge {
 
 namespace SymbolicSymbol {
 
-    static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
+    static inline void verify_args( ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
         const Location& loc = x.base.base.loc;
         ASRUtils::require_impl(x.n_args == 1,
             "SymbolicSymbol intrinsic must have exactly 1 input argument",
@@ -6188,7 +6188,7 @@ namespace SymbolicSymbol {
 
 #define create_symbolic_binary_macro(X)                                                    \
 namespace X{                                                                               \
-    static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x,             \
+    static inline void verify_args( ASR::IntrinsicElementalFunction_t& x,             \
             diag::Diagnostics& diagnostics) {                                              \
         ASRUtils::require_impl(x.n_args == 2, "Intrinsic function `"#X"` accepts"          \
             "exactly 2 arguments", x.base.base.loc, diagnostics);                          \
@@ -6249,7 +6249,7 @@ create_symbolic_binary_macro(SymbolicDiff)
 
 #define create_symbolic_constants_macro(X)                                                \
 namespace X {                                                                             \
-    static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x,            \
+    static inline void verify_args( ASR::IntrinsicElementalFunction_t& x,            \
             diag::Diagnostics& diagnostics) {                                             \
         const Location& loc = x.base.base.loc;                                            \
         ASRUtils::require_impl(x.n_args == 0,                                             \
@@ -6278,7 +6278,7 @@ create_symbolic_constants_macro(SymbolicE)
 
 namespace SymbolicInteger {
 
-    static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
+    static inline void verify_args( ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
         ASRUtils::require_impl(x.n_args == 1,
             "SymbolicInteger intrinsic must have exactly 1 input argument",
             x.base.base.loc, diagnostics);
@@ -6306,7 +6306,7 @@ namespace SymbolicInteger {
 } // namespace SymbolicInteger
 
 namespace SymbolicHasSymbolQ {
-    static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x,
+    static inline void verify_args( ASR::IntrinsicElementalFunction_t& x,
         diag::Diagnostics& diagnostics) {
         ASRUtils::require_impl(x.n_args == 2, "Intrinsic function SymbolicHasSymbolQ"
             "accepts exactly 2 arguments", x.base.base.loc, diagnostics);
@@ -6358,7 +6358,7 @@ namespace SymbolicHasSymbolQ {
 } // namespace SymbolicHasSymbolQ
 
 namespace SymbolicGetArgument {
-    static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x,
+    static inline void verify_args( ASR::IntrinsicElementalFunction_t& x,
         diag::Diagnostics& diagnostics) {
         ASRUtils::require_impl(x.n_args == 2, "Intrinsic function SymbolicGetArgument"
             "accepts exactly 2 argument", x.base.base.loc, diagnostics);
@@ -6410,7 +6410,7 @@ namespace SymbolicGetArgument {
 
 #define create_symbolic_query_macro(X)                                                    \
 namespace X {                                                                             \
-    static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x,            \
+    static inline void verify_args( ASR::IntrinsicElementalFunction_t& x,            \
             diag::Diagnostics& diagnostics) {                                             \
         const Location& loc = x.base.base.loc;                                            \
         ASRUtils::require_impl(x.n_args == 1,                                             \
@@ -6457,7 +6457,7 @@ create_symbolic_query_macro(SymbolicSinQ)
 
 #define create_symbolic_unary_macro(X)                                                    \
 namespace X {                                                                             \
-    static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x,            \
+    static inline void verify_args( ASR::IntrinsicElementalFunction_t& x,            \
             diag::Diagnostics& diagnostics) {                                             \
         const Location& loc = x.base.base.loc;                                            \
         ASRUtils::require_impl(x.n_args == 1,                                             \

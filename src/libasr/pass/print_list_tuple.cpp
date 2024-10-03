@@ -280,14 +280,14 @@ class PrintListTupleVisitor
         print_pass_result_tmp.from_pointer_n_copy(al, tmp_vec.p, tmp_vec.size());
     }
 
-    void visit_Print(const ASR::Print_t &x) {
+    void visit_Print( ASR::Print_t &x) {
         if(ASR::is_a<ASR::StringFormat_t>(*x.m_text)){
             visit_StringFormat(*ASR::down_cast<ASR::StringFormat_t>(x.m_text));
         } else {
             remove_original_stmt = false;
         }
     }
-    void visit_StringFormat(const ASR::StringFormat_t &x) {
+    void visit_StringFormat( ASR::StringFormat_t &x) {
         std::vector<ASR::expr_t*> print_tmp;
         for (size_t i=0; i<x.n_args; i++) {
             if (ASR::is_a<ASR::List_t>(*ASRUtils::expr_type(x.m_args[i])) ||
@@ -331,9 +331,8 @@ class PrintListTupleVisitor
             for (auto &e: print_tmp) {
                 tmp_vec.push_back(al, e);
             }
-            ASR::StringFormat_t* x_casted = const_cast<ASR::StringFormat_t*>(&x);
-            x_casted->m_args = tmp_vec.p;
-            x_casted->n_args = tmp_vec.size();
+            x.m_args = tmp_vec.p;
+            x.n_args = tmp_vec.size();
             remove_original_stmt =false;
         }
     }

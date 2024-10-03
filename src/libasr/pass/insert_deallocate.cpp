@@ -22,7 +22,7 @@ class InsertDeallocate: public ASR::CallReplacerOnExpressionsVisitor<InsertDeall
         InsertDeallocate(Allocator& al_) : al(al_) {}
 
         template <typename T>
-        void visit_Symbol(const T& x) {
+        void visit_Symbol( T& x) {
             Vec<ASR::expr_t*> to_be_deallocated;
             to_be_deallocated.reserve(al, 1);
             for( auto& itr: x.m_symtab->get_scope() ) {
@@ -35,22 +35,21 @@ class InsertDeallocate: public ASR::CallReplacerOnExpressionsVisitor<InsertDeall
                 }
             }
             if( to_be_deallocated.size() > 0 ) {
-                T& xx = const_cast<T&>(x);
                 Vec<ASR::stmt_t*> body;
-                body.from_pointer_n_copy(al, xx.m_body, xx.n_body);
+                body.from_pointer_n_copy(al, x.m_body, x.n_body);
                 body.push_back(al, ASRUtils::STMT(ASR::make_ImplicitDeallocate_t(
                     al, x.base.base.loc, to_be_deallocated.p, to_be_deallocated.size())));
-                xx.m_body = body.p;
-                xx.n_body = body.size();
+                x.m_body = body.p;
+                x.n_body = body.size();
             }
         }
 
-        void visit_Function(const ASR::Function_t& x) {
+        void visit_Function( ASR::Function_t& x) {
             visit_Symbol(x);
             ASR::CallReplacerOnExpressionsVisitor<InsertDeallocate>::visit_Function(x);
         }
 
-        void visit_Program(const ASR::Program_t& x) {
+        void visit_Program( ASR::Program_t& x) {
             visit_Symbol(x);
             ASR::CallReplacerOnExpressionsVisitor<InsertDeallocate>::visit_Program(x);
         }
