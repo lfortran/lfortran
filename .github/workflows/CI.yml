@@ -780,24 +780,13 @@ jobs:
 
             cmake --build . -j16 --target install
 
-      # LLVM 10-16 all work in exactly the same way, so the test is identical
+      # LLVM 10-17 all work in exactly the same way, so the test is identical
       - name: Test Linux LLVM 10-16
-        if: contains(matrix.llvm-version, '17') == false
         shell: bash -e -l {0}
         run: |
             cd integration_tests
             ./run_tests.py -b llvm llvmImplicit
             ./run_tests.py -b llvm llvmImplicit -f
-
-      # In LLVM 17 we can only compile a subset for now, so we have a dedicated
-      # LLVM 17 test here:
-      - name: Test Linux LLVM 17
-        if: contains(matrix.llvm-version, '17') == true
-        shell: bash -e -l {0}
-        run: |
-            cd integration_tests
-            ./run_tests.py -b llvm17
-            ./run_tests.py -b llvm17 -f
 
   test_llvm_wasm:
     name: Test LLVM->WASM ${{ matrix.llvm-version }}
