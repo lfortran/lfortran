@@ -4210,5 +4210,9 @@ filename = "errors/func_parameter_type.f90"
 asr = true
 
 [[test]]
+filename = "errors/func_parameter_type_02.f90"
+asr_implicit_interface_and_typing = true
+
+[[test]]
 filename = "errors/func_arg_array.f90"
 asr = true
