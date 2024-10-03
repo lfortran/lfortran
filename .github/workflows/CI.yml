@@ -667,39 +667,39 @@ jobs:
 
       #       rm -rf fastGPT/
 
-      # - name: Test fastGPT ( macos-latest )
-      #   shell: bash -e -x -l {0}
-      #   if: contains(matrix.os, 'macos')
-      #   run: |
-      #       git clone https://github.com/certik/fastGPT.git
-      #       cd fastGPT
+      - name: Test fastGPT ( macos-latest )
+        shell: bash -e -x -l {0}
+        if: contains(matrix.os, 'macos')
+        run: |
+            git clone https://github.com/certik/fastGPT.git
+            cd fastGPT
 
-      #       git clean -dfx
-      #       git checkout -t origin/namelist
-      #       git checkout d3eef520c1be8e2db98a3c2189740af1ae7c3e06
-      #       curl -o model.dat -L https://huggingface.co/datasets/certik/fastGPT/resolve/main/model_fastgpt_124M_v1.dat
+            git clean -dfx
+            git checkout -t origin/namelist
+            git checkout d3eef520c1be8e2db98a3c2189740af1ae7c3e06
+            curl -o model.dat -L https://huggingface.co/datasets/certik/fastGPT/resolve/main/model_fastgpt_124M_v1.dat
 
-      #       mkdir lf
-      #       cd lf
-      #       FC=$(pwd)/../../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
-      #       make VERBOSE=1
-      #       ln -s ../model.dat .
+            mkdir lf
+            cd lf
+            FC=$(pwd)/../../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
+            make VERBOSE=1
+            ln -s ../model.dat .
       #       ./gpt2
       #       ./test_basic_input
       #       ./test_more_inputs
       #       cd ..
 
 
-      # - name: Test fpm
-      #   shell: bash -e -x -l {0}
-      #   if: contains(matrix.os, 'ubuntu')
-      #   run: |
-      #       git clone https://github.com/certik/fpm.git
-      #       cd fpm
-      #       git checkout lfortran_build_1
-      #       git checkout ab02e3a57bc286c6e75b23098c209db8c27157ea
-      #       export PATH="$(pwd)/../src/bin:$PATH"
-      #       ./build.sh
+      - name: Test fpm
+        shell: bash -e -x -l {0}
+        if: contains(matrix.os, 'ubuntu')
+        run: |
+            git clone https://github.com/certik/fpm.git
+            cd fpm
+            git checkout lfortran_build_1
+            git checkout ab02e3a57bc286c6e75b23098c209db8c27157ea
+            export PATH="$(pwd)/../src/bin:$PATH"
+            ./build.sh
 
       # - name: Test stdlib
       #   shell: bash -e -x -l {0}
