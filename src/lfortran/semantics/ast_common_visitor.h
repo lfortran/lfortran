@@ -4891,6 +4891,57 @@ public:
                         ASRUtils::type_get_past_pointer(func_type->m_arg_types[i]));
                 
                 if( ASR::is_a<ASR::FunctionType_t>(*arg_type) ) continue;
+
+                bool is_compile_time = true;
+                size_t rhs_rank = ASRUtils::extract_n_dims_from_ttype(orig_arg_type);
+                size_t lhs_rank = ASRUtils::extract_n_dims_from_ttype(arg_type);
+
+                if( ASRUtils::is_array(arg_type) ){
+                    ASR::Array_t* arr_lhs = ASR::down_cast<ASR::Array_t>(arg_type);
+                    for(size_t i = 0; i < lhs_rank; i++){
+                        if( !arr_lhs->m_dims[i].m_length || !(ASRUtils::expr_value(arr_lhs->m_dims[i].m_length)) ){
+                            is_compile_time = false;
+                        }
+                    }
+                }
+
+                if( ASRUtils::is_array(orig_arg_type) ){
+                    ASR::Array_t* arr_rhs = ASR::down_cast<ASR::Array_t>(orig_arg_type);
+                    for(size_t i = 0; i < rhs_rank; i++){
+                        if( !arr_rhs->m_dims[i].m_length || !(ASRUtils::expr_value(arr_rhs->m_dims[i].m_length)) ){
+                            is_compile_time = false;
+                        }
+                    }
+                }
+
+                if( is_compile_time ){
+                    if ( ASR::is_a<ASR::Array_t>(*arg_type) && ASR::is_a<ASR::Array_t>(*orig_arg_type) ){
+                        ASR::Array_t* arr_rhs = ASR::down_cast<ASR::Array_t>(orig_arg_type);
+                        ASR::Array_t* arr_lhs = ASR::down_cast<ASR::Array_t>(arg_type);
+                        int lhs_ele = 1;
+                        int rhs_ele = 1;
+                        for (size_t i = 0; i < arr_rhs->n_dims; i++) {
+                            std::int64_t rhs_dim = ASRUtils::extract_dim_value_int(arr_rhs->m_dims[i].m_length);
+                            if( rhs_dim != -1 ){
+                                rhs_ele *= rhs_dim;
+                            }
+                        }
+                        for (size_t i = 0; i < arr_lhs->n_dims; i++) {
+                            std::int64_t lhs_dim = ASRUtils::extract_dim_value_int(arr_lhs->m_dims[i].m_length);
+                            if( lhs_dim != -1 ){
+                                lhs_ele *= lhs_dim;
+                            }
+                            else{
+                                lhs_ele = rhs_ele;
+                                break;
+                            }
+                        }
+                        if( lhs_ele < rhs_ele ){
+                            throw SemanticError("Array Passed in function has less elements than function expects.",
+                            args.p[i].loc);
+                        }
+                    }
+                }
                 
                 if(!ASRUtils::check_equal_type(arg_type,orig_arg_type)){
                     std::string arg_str = ASRUtils::type_to_str(arg_type);
