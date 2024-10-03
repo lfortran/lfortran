@@ -1427,14 +1427,14 @@ RUN(NAME template_array_03 LABELS llvm llvm_wasm llvm_wasm_emcc llvmStackArray w
 RUN(NAME template_array_04 LABELS llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm llvm17)
 RUN(NAME template_array_04b LABELS llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm llvm17)
 RUN(NAME template_matrix_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
-# RUN(NAME template_matrix_test LABELS llvm llvm_wasm llvm_wasm_emcc llvm17 EXTRAFILES
-#     template_semigroup.f90
-#     template_semiring.f90
-#     template_monoid.f90
-#     template_unitring.f90
-#     template_field.f90
-#     template_matrix.f90
-#     )
+RUN(NAME template_matrix_test LABELS llvm llvm_wasm llvm_wasm_emcc llvm17 EXTRAFILES
+    template_semigroup.f90
+    template_semiring.f90
+    template_monoid.f90
+    template_unitring.f90
+    template_field.f90
+    template_matrix.f90
+    )
 RUN(NAME template_struct_01 LABELS llvm llvm_wasm llvm_wasm_emcc llvm17)
 RUN(NAME template_vector LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_simple_01 LABELS llvm llvm_wasm llvm_wasm_emcc wasm llvm17)
