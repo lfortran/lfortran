@@ -1,14 +1,17 @@
 SUBROUTINE sub(f)
-    IMPLICIT DOUBLE PRECISION (A-H)
     EXTERNAL f
     H=HINIT853(f)
     RETURN
 END
 
-FUNCTION HINIT853(f)
-    IMPLICIT DOUBLE PRECISION (A-H)
-    RETURN
+REAL FUNCTION HINIT853(f)
+    HINIT853 = f(3.0)
 END 
+
+Real function f(x)
+    real :: x
+    f = x
+end function
 
 program main 
     EXTERNAL f

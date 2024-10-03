@@ -2,26 +2,138 @@
     (SymbolTable
         1
         {
+            f:
+                (Function
+                    (SymbolTable
+                        5
+                        {
+                            f:
+                                (Variable
+                                    5
+                                    f
+                                    []
+                                    ReturnVar
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            x:
+                                (Variable
+                                    5
+                                    x
+                                    []
+                                    Unspecified
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    f
+                    (FunctionType
+                        [(Real 4)]
+                        (Real 4)
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        .false.
+                    )
+                    []
+                    [(Var 5 x)]
+                    [(Assignment
+                        (Var 5 f)
+                        (Var 5 x)
+                        ()
+                    )]
+                    (Var 5 f)
+                    Public
+                    .false.
+                    .false.
+                    ()
+                ),
             hinit853:
                 (Function
                     (SymbolTable
                         4
                         {
                             f:
-                                (Variable
-                                    4
+                                (Function
+                                    (SymbolTable
+                                        9
+                                        {
+                                            f_arg_0:
+                                                (Variable
+                                                    9
+                                                    f_arg_0
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            f_return_var_name:
+                                                (Variable
+                                                    9
+                                                    f_return_var_name
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
                                     f
+                                    (FunctionType
+                                        [(Real 4)]
+                                        (Real 4)
+                                        BindC
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
                                     []
-                                    Unspecified
-                                    ()
-                                    ()
-                                    Default
-                                    (Real 8)
-                                    ()
-                                    Source
+                                    [(Var 9 f_arg_0)]
+                                    []
+                                    (Var 9 f_return_var_name)
                                     Public
-                                    Required
                                     .false.
+                                    .false.
+                                    ()
                                 ),
                             hinit853:
                                 (Variable
@@ -32,7 +144,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 8)
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -42,8 +154,8 @@
                         })
                     hinit853
                     (FunctionType
-                        [(Real 8)]
-                        (Real 8)
+                        [(Real 4)]
+                        (Real 4)
                         Source
                         Implementation
                         ()
@@ -57,7 +169,21 @@
                     )
                     []
                     [(Var 4 f)]
-                    [(Return)]
+                    [(Assignment
+                        (Var 4 hinit853)
+                        (FunctionCall
+                            4 f
+                            ()
+                            [((RealConstant
+                                3.000000
+                                (Real 4)
+                            ))]
+                            (Real 4)
+                            ()
+                            ()
+                        )
+                        ()
+                    )]
                     (Var 4 hinit853)
                     Public
                     .false.
@@ -67,16 +193,16 @@
             main:
                 (Program
                     (SymbolTable
-                        5
+                        6
                         {
                             f:
                                 (Function
                                     (SymbolTable
-                                        6
+                                        7
                                         {
                                             f_return_var_name:
                                                 (Variable
-                                                    6
+                                                    7
                                                     f_return_var_name
                                                     []
                                                     ReturnVar
@@ -109,7 +235,7 @@
                                     []
                                     []
                                     []
-                                    (Var 6 f_return_var_name)
+                                    (Var 7 f_return_var_name)
                                     Public
                                     .false.
                                     .false.
@@ -121,7 +247,7 @@
                     [(SubroutineCall
                         1 sub
                         ()
-                        [((Var 5 f))]
+                        [((Var 6 f))]
                         ()
                     )]
                 ),
@@ -144,7 +270,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 8)
+                                                    (Real 4)
                                                     ()
                                                     BindC
                                                     Public
@@ -155,7 +281,7 @@
                                     f
                                     (FunctionType
                                         []
-                                        (Real 8)
+                                        (Real 4)
                                         BindC
                                         Interface
                                         ()
@@ -185,7 +311,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 8)
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -197,7 +323,7 @@
                     (FunctionType
                         [(FunctionType
                             []
-                            (Real 8)
+                            (Real 4)
                             BindC
                             Interface
                             ()
@@ -229,7 +355,7 @@
                             1 hinit853
                             ()
                             [((Var 2 f))]
-                            (Real 8)
+                            (Real 4)
                             ()
                             ()
                         )
