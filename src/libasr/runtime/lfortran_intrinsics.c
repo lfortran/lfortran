@@ -2421,42 +2421,61 @@ LFORTRAN_API float _lfortran_s_cpu_time() {
 // system_time -----------------------------------------------------------------
 
 LFORTRAN_API int32_t _lfortran_i32sys_clock_count() {
+#if defined(_WIN32)
+    return - INT_MAX;
+#else
     struct timespec ts;
     if(clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
         return (int32_t)(ts.tv_nsec / 1000000) + ((int32_t)ts.tv_sec * 1000);
     } else {
         return - INT_MAX;
     }
+#endif
 }
 
 LFORTRAN_API int32_t _lfortran_i32sys_clock_count_rate() {
+#if defined(_WIN32)
+    return - INT_MAX;
+#else
     struct timespec ts;
     if(clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
         return 1e3; // milliseconds
     } else {
         return 0;
     }
+#endif
 }
 
 LFORTRAN_API int32_t _lfortran_i32sys_clock_count_max() {
+#if defined(_WIN32)
+    return 0;
+#else
     struct timespec ts;
     if(clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
         return INT_MAX;
     } else {
         return 0;
     }
+#endif
 }
 
 LFORTRAN_API uint64_t _lfortran_i64sys_clock_count() {
+#if defined(_WIN32)
+    return 0;
+#else
     struct timespec ts;
     if(clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
         return (uint64_t)(ts.tv_nsec) + ((uint64_t)ts.tv_sec * 1000000000);
     } else {
         return - LLONG_MAX;
     }
+#endif
 }
 
 LFORTRAN_API int64_t _lfortran_i64sys_clock_count_rate() {
+#if defined(_WIN32)
+    return 0;
+#else
     struct timespec ts;
     if(clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
         // FIXME: Rate can be in microseconds or nanoseconds depending on
@@ -2465,33 +2484,46 @@ LFORTRAN_API int64_t _lfortran_i64sys_clock_count_rate() {
     } else {
         return 0;
     }
+#endif
 }
 
 LFORTRAN_API int64_t _lfortran_i64sys_clock_count_max() {
+#if defined(_WIN32)
+    return 0;
+#else
     struct timespec ts;
     if(clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
         return LLONG_MAX;
     } else {
         return 0;
     }
+#endif
 }
 
 LFORTRAN_API float _lfortran_i32r32sys_clock_count_rate() {
+#if defined(_WIN32)
+    return 0;
+#else
     struct timespec ts;
     if(clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
         return 1e3; // milliseconds
     } else {
         return 0;
     }
+#endif
 }
 
 LFORTRAN_API double _lfortran_i64r64sys_clock_count_rate() {
+#if defined(_WIN32)
+    return 0;
+#else
     struct timespec ts;
     if(clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
         return 1e9; // nanoseconds
     } else {
         return 0;
     }
+#endif
 }
 
 LFORTRAN_API double _lfortran_time()
