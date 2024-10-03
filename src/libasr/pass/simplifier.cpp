@@ -1457,23 +1457,12 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     }
 
     void replace_IntegerBinOp(ASR::IntegerBinOp_t* x) {
-        // if( ASRUtils::is_simd_array(x->m_type) ) {
-        //     std::cout<<"x.1: "<<std::endl;
-        //     ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_IntegerBinOp(x);
-        //     std::cout<<"x.2: "<<std::endl;
-        //     return ;
-        // }
         replace_current_expr("_integer_binop_")
     }
 
     void replace_RealBinOp(ASR::RealBinOp_t* x) {
-        std::cout<<"is_simd_array: ";
-        std::cout<<ASRUtils::is_simd_array(x->m_type)<<std::endl;
-        std::cout<<"."<<std::endl;
         if( ASRUtils::is_simd_array(x->m_type) ) {
-            std::cout<<"x.1: "<<std::endl;
             ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_RealBinOp(x);
-            std::cout<<"x.2: "<<std::endl;
             return ;
         }
         replace_current_expr("_real_binop_")
@@ -1510,14 +1499,27 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     }
 
     void replace_ArraySection(ASR::ArraySection_t* x) {
+        #define generate_associate_for_array_section size_t value_n_dims = \
+            ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(*current_expr)); \
+            ASR::ttype_t* tmp_type = create_array_type_with_empty_dims( \
+                al, value_n_dims, ASRUtils::expr_type(*current_expr)); \
+            tmp_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, tmp_type)); \
+            ASR::expr_t* array_expr_ptr = create_temporary_variable_for_array( \
+                al, loc, current_scope, "_array_section_pointer_", tmp_type); \
+            current_body->push_back(al, ASRUtils::STMT(ASR::make_Associate_t( \
+                al, loc, array_expr_ptr, *current_expr))); \
+            *current_expr = array_expr_ptr;
+
         const Location& loc = x->base.base.loc;
         if( is_simd_expression ) {
             if( is_current_expr_linked_to_target ) {
                 return ;
             }
-            ASR::ttype_t* tmp_type = simd_type;
-            ASR::expr_t* array_expr_ptr = create_temporary_variable_for_array(
-                al, loc, current_scope, "_array_section_copy_", tmp_type);
+
+            generate_associate_for_array_section
+
+            array_expr_ptr = create_temporary_variable_for_array(
+                al, loc, current_scope, "_array_section_copy_", simd_type);
             current_body->push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(
                     al, loc, array_expr_ptr, *current_expr, nullptr)));
             *current_expr = array_expr_ptr;
@@ -1525,16 +1527,7 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         }
 
         if( exprs_with_target.find(*current_expr) != exprs_with_target.end() ) {
-            size_t value_n_dims = ASRUtils::extract_n_dims_from_ttype(
-                ASRUtils::expr_type(*current_expr));
-            ASR::ttype_t* tmp_type = create_array_type_with_empty_dims(
-                al, value_n_dims, ASRUtils::expr_type(*current_expr));
-            tmp_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, tmp_type));
-            ASR::expr_t* array_expr_ptr = create_temporary_variable_for_array(
-                al, loc, current_scope, "_array_section_pointer_", tmp_type);
-            current_body->push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(
-                al, loc, array_expr_ptr, *current_expr, nullptr)));
-            *current_expr = array_expr_ptr;
+            generate_associate_for_array_section
             return ;
         }
 
@@ -1731,16 +1724,13 @@ class ReplaceExprWithTemporaryVisitor:
         replacer.is_simd_expression = ASRUtils::is_simd_array(x.m_value);
         replacer.simd_type = ASRUtils::expr_type(x.m_value);
         current_expr = const_cast<ASR::expr_t**>(&(x.m_value));
-        ASR::expr_t* m_value_original = *current_expr;
         call_replacer();
         current_expr = current_expr_copy_9;
         replacer.is_simd_expression = is_simd_expr_copy;
         replacer.simd_type = simd_type_copy;
-        std::cout<<"simd_array.1: "<<ASRUtils::is_simd_array(x.m_value)<<std::endl;
         if( !ASRUtils::is_simd_array(x.m_value) ) {
             visit_expr(*x.m_value);
         }
-        std::cout<<"simd_array.2: "<<std::endl;
         if (x.m_overloaded) {
             visit_stmt(*x.m_overloaded);
         }
