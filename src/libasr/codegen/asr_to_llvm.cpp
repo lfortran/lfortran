@@ -4588,13 +4588,9 @@ public:
                 *ASRUtils::type_get_past_pointer(
                     ASRUtils::type_get_past_allocatable(value_type)));
             llvm::Type *i64 = llvm::Type::getInt64Ty(context);
-<<<<<<< HEAD
-            if( is_target_class && !is_value_class ) {
-=======
             if (ASR::is_a<ASR::PointerNullConstant_t>(*x.m_value)) {
                 builder->CreateStore(llvm_value, llvm_target);
             } else if( is_target_class && !is_value_class ) {
->>>>>>> simplifier_pass
                 llvm::Value* vtab_address_ptr = llvm_utils->create_gep(llvm_target, 0);
                 llvm_target = llvm_utils->create_gep(llvm_target, 1);
                 ASR::StructType_t* struct_t = ASR::down_cast<ASR::StructType_t>(
