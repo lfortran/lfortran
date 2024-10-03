@@ -4922,15 +4922,15 @@ public:
                         int lhs_ele = 1;
                         int rhs_ele = 1;
                         for (size_t i = 0; i < arr_rhs->n_dims; i++) {
-                            std::string rhs_dim = ASRUtils::extract_dim_value(arr_rhs->m_dims[i].m_length);
-                            if(rhs_dim!=":"){
-                                rhs_ele*=std::stoi(rhs_dim);
+                            std::int64_t rhs_dim = ASRUtils::extract_dim_value_int(arr_rhs->m_dims[i].m_length);
+                            if( rhs_dim != -1 ){
+                                rhs_ele *= rhs_dim;
                             }
                         }
                         for (size_t i = 0; i < arr_lhs->n_dims; i++) {
-                            std::string lhs_dim = ASRUtils::extract_dim_value(arr_lhs->m_dims[i].m_length);
-                            if(lhs_dim!=":"){
-                                lhs_ele*=std::stoi(lhs_dim);
+                            std::int64_t lhs_dim = ASRUtils::extract_dim_value_int(arr_lhs->m_dims[i].m_length);
+                            if( lhs_dim != -1 ){
+                                lhs_ele *= lhs_dim;
                             }
                             else{
                                 lhs_ele = rhs_ele;
