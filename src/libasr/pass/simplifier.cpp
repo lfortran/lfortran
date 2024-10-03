@@ -1583,7 +1583,6 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
             replace_expr(x->m_value);
             current_expr = current_expr_copy_163;
         }
-        replace_current_expr("_array_broadcast_")
     }
 
     void replace_ArrayItem(ASR::ArrayItem_t* x) {
