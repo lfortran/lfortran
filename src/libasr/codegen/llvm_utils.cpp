@@ -1679,8 +1679,24 @@ namespace LCompilers {
     }
 
     llvm::Value* LLVMUtils::CreateLoad2(ASR::ttype_t *type, llvm::Value *x) {
+#if LLVM_VERSION_MAJOR <= 16
         llvm::Type* el_type = LLVMUtils::get_type_from_ttype_t_util(type, module);
         return builder->CreateLoad(el_type, x);
+#else
+        llvm::Type* el_type = LLVMUtils::get_type_from_ttype_t_util(
+            ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(
+            type)), module);
+        llvm::Type* el_type_copy = el_type;
+        bool is_llvm_ptr = LLVM::is_llvm_pointer(*type);
+        if (is_llvm_ptr) {
+            el_type_copy = el_type_copy->getPointerTo();
+        }
+        llvm::Value* load = builder->CreateLoad(el_type_copy, x);
+        if (is_llvm_ptr) {
+            ptr_type[load] = el_type;
+        }
+        return load;
+#endif
     }
 
     llvm::Value* LLVMUtils::CreateGEP(llvm::Value *x,
