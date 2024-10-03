@@ -568,6 +568,10 @@ namespace LCompilers {
             return llvm_utils->create_gep(arr, 0);
         }
 
+        llvm::Value* SimpleCMODescriptor::get_pointer_to_data(llvm::Type* data_type, llvm::Value* arr) {
+            return llvm_utils->create_gep2(data_type, arr, 0);
+        }
+
         llvm::Value* SimpleCMODescriptor::get_offset(llvm::Value* arr, bool load) {
             llvm::Value* offset = llvm_utils->create_gep(arr, 1);
             if( !load ) {
@@ -690,7 +694,8 @@ namespace LCompilers {
         llvm::Value* SimpleCMODescriptor::get_is_allocated_flag(llvm::Value* array,
             llvm::Type* llvm_data_type) {
             return builder->CreateICmpNE(
-                builder->CreatePtrToInt(llvm_utils->CreateLoad2(llvm_data_type->getPointerTo(), get_pointer_to_data(array)),
+                builder->CreatePtrToInt(llvm_utils->CreateLoad2(
+                    llvm_data_type->getPointerTo(), get_pointer_to_data(llvm_data_type, array)),
                     llvm::Type::getInt64Ty(context)),
                 builder->CreatePtrToInt(llvm::ConstantPointerNull::get(llvm_data_type->getPointerTo()),
                     llvm::Type::getInt64Ty(context))
@@ -701,7 +706,7 @@ namespace LCompilers {
             llvm::Type* llvm_data_type) {
             builder->CreateStore(
                 llvm::ConstantPointerNull::get(llvm_data_type->getPointerTo()),
-                get_pointer_to_data(array)
+                get_pointer_to_data(llvm_data_type, array)
             );
         }
 

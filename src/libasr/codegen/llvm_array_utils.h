@@ -190,6 +190,9 @@ namespace LCompilers {
                 virtual
                 llvm::Value* get_pointer_to_data(llvm::Value* arr) = 0;
 
+                virtual
+                llvm::Value* get_pointer_to_data(llvm::Type* data_type, llvm::Value* arr) = 0;
+
                 /*
                 * Returns offset in the input
                 * array descriptor according to the rules
@@ -400,6 +403,9 @@ namespace LCompilers {
 
                 virtual
                 llvm::Value* get_pointer_to_data(llvm::Value* arr);
+
+                virtual
+                llvm::Value* get_pointer_to_data(llvm::Type* data_type, llvm::Value* arr);
 
                 virtual
                 llvm::Value* get_rank(llvm::Value* arr, bool get_pointer=false);
