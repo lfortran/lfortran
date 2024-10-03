@@ -3873,9 +3873,14 @@ public:
                     llvm_arg.setName(arg_s);
                     llvm_symtab[h] = llvm_sym;
 #if LLVM_VERSION_MAJOR > 16
-                    ptr_type[llvm_sym] = llvm_utils->get_type_from_ttype_t_util(
+                    llvm::Type *arg_type = llvm_utils->get_type_from_ttype_t_util(
                         ASRUtils::type_get_past_allocatable(
                         ASRUtils::type_get_past_pointer(arg->m_type)), module.get());
+                    if ( !ASRUtils::is_array(arg->m_type) &&
+                        ASRUtils::is_allocatable(arg->m_type)) {
+                        arg_type = arg_type->getPointerTo();
+                    }
+                    ptr_type[llvm_sym] = arg_type;
 #endif
                 }
             }
