@@ -211,6 +211,7 @@ namespace LCompilers {
                 "nested_vars",
                 "transform_optional_argument_functions",
                 // "init_expr", This pass shouldn't be needed.
+                "forall",
                 "openmp",
                 // "implied_do_loops", Should be implemented when optimisations for ImpliedDoLoop are possible in LFortran, until then not needed.
                 "class_constructor",
