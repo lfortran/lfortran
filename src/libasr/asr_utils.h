@@ -5907,10 +5907,14 @@ int64_t compute_leading_zeros(int64_t number, int64_t kind);
 void append_error(diag::Diagnostics& diag, const std::string& msg,
                 const Location& loc);
 
-static inline bool is_simd_array(ASR::expr_t *v) {
-    return (ASR::is_a<ASR::Array_t>(*expr_type(v)) &&
-        ASR::down_cast<ASR::Array_t>(expr_type(v))->m_physical_type
+static inline bool is_simd_array(ASR::ttype_t* t) {
+    return (ASR::is_a<ASR::Array_t>(*t) &&
+        ASR::down_cast<ASR::Array_t>(t)->m_physical_type
             == ASR::array_physical_typeType::SIMDArray);
+}
+
+static inline bool is_simd_array(ASR::expr_t *v) {
+    return is_simd_array(expr_type(v));
 }
 
 static inline bool is_argument_of_type_CPtr(ASR::expr_t *var) {
