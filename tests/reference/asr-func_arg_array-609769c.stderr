@@ -1,4 +1,4 @@
-semantic error: Array Passed in function Cannot be sliced into dimensions declared in the function.
+semantic error: Array Passed in function has less elements than function expects.
  --> tests/errors/func_arg_array.f90:4:14
   |
 4 |     i = temp(myArray)
