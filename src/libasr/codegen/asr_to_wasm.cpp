@@ -2522,7 +2522,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                         int64_t val = ((int64_t*)data)[i];
                         m_wa.emit_i32_const(val); break;
                     }
-                    default: 
+                    default:
                         throw CodeGenError("process_ArrayConstant_value: Integer kind not supported");
                 }
                 break;
@@ -2537,7 +2537,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                         double val = ((double*)data)[i];
                         m_wa.emit_f32_const(val); break;
                     }
-                    default: 
+                    default:
                         throw CodeGenError("process_ArrayConstant_value: Real kind not supported");
                 }
                 break;
@@ -3118,7 +3118,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             int a_kind = ASRUtils::extract_kind_from_ttype_t(t);
             if(i > 0){
                 emit_call_fd_write(1, " ", 1, 0);
-            } 
+            }
             // TODO : Support array printing in backend.
             if (ASRUtils::is_integer(*t) || ASRUtils::is_logical(*t)) {
                 INCLUDE_RUNTIME_FUNC(print_i64);

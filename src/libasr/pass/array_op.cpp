@@ -641,7 +641,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         }
         if( !ASRUtils::is_array(ASRUtils::expr_type(xx.m_target)) ||
             std::find(skip_exprs.begin(), skip_exprs.end(), xx.m_value->type) != skip_exprs.end() ||
-            (ASRUtils::is_simd_array(xx.m_target) && ASRUtils::is_simd_array(xx.m_value)) ) {
+            (ASRUtils::is_simd_array(xx.m_target) || ASRUtils::is_simd_array(xx.m_value)) ) {
             return ;
         }
         xx.m_value = ASRUtils::get_past_array_broadcast(xx.m_value);
