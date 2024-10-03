@@ -4878,6 +4878,33 @@ public:
         }
         ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
         legacy_array_sections_helper(v, args, loc);
+
+        ASR::FunctionType_t* func_type = ASRUtils::get_FunctionType(v);
+
+        // Currently present function is supporting only integer arguments
+        // After implementing present below if condition should be removed 
+        if(to_lower(func->m_name) != "present"){
+            for( size_t i = 0; i < args.size(); i++ ) {
+                if( args.p[i].m_value == nullptr ) {
+                    continue;
+                }
+                ASR::expr_t* arg = args.p[i].m_value;
+                ASR::ttype_t* arg_type = ASRUtils::type_get_past_allocatable(
+                        ASRUtils::type_get_past_pointer(ASRUtils::expr_type(arg)));
+                ASR::ttype_t* orig_arg_type = ASRUtils::type_get_past_allocatable(
+                        ASRUtils::type_get_past_pointer(func_type->m_arg_types[i]));
+                
+                if( ASR::is_a<ASR::FunctionType_t>(*arg_type) ) continue;
+                
+                if(!ASRUtils::check_equal_type(arg_type,orig_arg_type)){
+                    std::string arg_str = ASRUtils::type_to_str(arg_type);
+                    std::string orig_arg_str = ASRUtils::type_to_str(orig_arg_type);
+                    throw SemanticError("Type mismatch in argument at argument (" + std::to_string(i+1) + 
+                                        "); passed `" + arg_str + "` to `" + orig_arg_str + "`.", args.p[i].loc);
+                }
+            }
+        }
+
         return ASRUtils::make_FunctionCall_t_util(al, loc, v, nullptr,
             args.p, args.size(), return_type, value, nullptr, false);
     }

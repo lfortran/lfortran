@@ -68,7 +68,7 @@ typedef double _Complex double_complex_t;
 LFORTRAN_API double _lfortran_sum(int n, double *v);
 LFORTRAN_API void _lfortran_random_number(int n, double *v);
 LFORTRAN_API void _lfortran_init_random_clock();
-LFORTRAN_API void _lfortran_init_random_seed(unsigned seed);
+LFORTRAN_API int _lfortran_init_random_seed(unsigned seed);
 LFORTRAN_API double _lfortran_random();
 LFORTRAN_API int _lfortran_randrange(int lower, int upper);
 LFORTRAN_API int _lfortran_random_int(int lower, int upper);
@@ -220,7 +220,8 @@ LFORTRAN_API int64_t _lfortran_mvbits64(int64_t from, int32_t frompos,
                                         int32_t len, int64_t to, int32_t topos);
 LFORTRAN_API int32_t _lfortran_ibits32(int32_t i, int32_t pos, int32_t len);
 LFORTRAN_API int64_t _lfortran_ibits64(int64_t i, int32_t pos, int32_t len);
-LFORTRAN_API void _lfortran_d_cpu_time(double *t);
+LFORTRAN_API double _lfortran_d_cpu_time();
+LFORTRAN_API float _lfortran_s_cpu_time();
 LFORTRAN_API void _lfortran_i32sys_clock(
         int32_t *count, int32_t *rate, int32_t *max);
 LFORTRAN_API void _lfortran_i64sys_clock(

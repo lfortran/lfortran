@@ -1,0 +1,13 @@
+{
+    "basename": "asr-func_parameter_type-a49e846",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/func_parameter_type.f90",
+    "infile_hash": "34a08bb396e7c713157f35ee281ae8abc109b6b7378aa438f2aaef2c",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-func_parameter_type-a49e846.stderr",
+    "stderr_hash": "1d37f0c75ccc583c0931e2cb171bae95eaac10fa17b399b082d05fd2",
+    "returncode": 2
+}
