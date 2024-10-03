@@ -1,5 +1,4 @@
 program test_hyperbolics
-use lfortran_intrinsic_math, only: sinh, cosh, tanh
 implicit none
 real :: x
 
