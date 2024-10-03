@@ -2598,7 +2598,7 @@ public:
                     name2dertype[current_der_type_name]->getPointerTo(), llvm_utils->create_gep(tmp, 1));
             }
             if( current_select_type_block_type ) {
-                tmp = builder->CreateBitCast(tmp, current_select_type_block_type);
+                tmp = builder->CreateBitCast(tmp, current_select_type_block_type->getPointerTo());
                 current_der_type_name = current_select_type_block_der_type;
             } else {
                 // TODO: Select type by comparing with vtab
@@ -5492,7 +5492,7 @@ public:
                     ASR::symbol_t* type_sym = ASRUtils::symbol_get_past_external(type_stmt_name->m_sym);
                     if( ASR::is_a<ASR::Struct_t>(*type_sym) ) {
                         current_select_type_block_type = llvm_utils->getStructType(
-                            ASR::down_cast<ASR::Struct_t>(type_sym), module.get(), true);
+                            ASR::down_cast<ASR::Struct_t>(type_sym), module.get(), false);
                         current_select_type_block_der_type = ASR::down_cast<ASR::Struct_t>(type_sym)->m_name;
                     } else {
                         LCOMPILERS_ASSERT(false);
@@ -5515,7 +5515,7 @@ public:
                     ASR::symbol_t* class_sym = ASRUtils::symbol_get_past_external(class_stmt->m_sym);
                     if( ASR::is_a<ASR::Struct_t>(*class_sym) ) {
                         current_select_type_block_type = llvm_utils->getStructType(
-                            ASR::down_cast<ASR::Struct_t>(class_sym), module.get(), true);
+                            ASR::down_cast<ASR::Struct_t>(class_sym), module.get(), false);
                         current_select_type_block_der_type = ASR::down_cast<ASR::Struct_t>(class_sym)->m_name;
                     } else {
                         LCOMPILERS_ASSERT(false);
@@ -5538,14 +5538,15 @@ public:
                     ASR::ttype_t* selector_var_type = ASRUtils::expr_type(x.m_selector);
                     ASR::TypeStmtType_t* type_stmt_type_t = ASR::down_cast<ASR::TypeStmtType_t>(select_type_stmts[i]);
                     ASR::ttype_t* type_stmt_type = type_stmt_type_t->m_type;
-                    current_select_type_block_type = llvm_utils->get_type_from_ttype_t_util(type_stmt_type, module.get())->getPointerTo();
+                    current_select_type_block_type = llvm_utils->get_type_from_ttype_t_util(type_stmt_type, module.get());
                     llvm::Value* intrinsic_type_id = llvm::ConstantInt::get(llvm_utils->getIntType(8),
                         llvm::APInt(64, -((int) type_stmt_type->type) -
                             ASRUtils::extract_kind_from_ttype_t(type_stmt_type), true));
                     llvm::Value* _type_id = nullptr;
                     if( ASRUtils::is_array(selector_var_type) ) {
-                        llvm::Value* data_ptr = llvm_utils->CreateLoad(arr_descr->get_pointer_to_data(llvm_selector));
-                        _type_id = llvm_utils->CreateLoad(llvm_utils->create_gep(data_ptr, 0));
+                        llvm::Type* el_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::extract_type(selector_var_type), module.get());
+                        llvm::Value* data_ptr = llvm_utils->CreateLoad2(el_type->getPointerTo(), arr_descr->get_pointer_to_data(llvm_selector));
+                        _type_id = llvm_utils->CreateLoad2(llvm::Type::getInt64Ty(context), llvm_utils->create_gep2(el_type, data_ptr, 0));
                     } else {
                         _type_id = llvm_utils->CreateLoad(llvm_utils->create_gep(llvm_selector, 0));
                     }
@@ -8950,18 +8951,20 @@ public:
                 llvm::Value* abstract_array = llvm_utils->CreateAlloca(*builder, array_type);
                 llvm::Type* array_data_type = llvm_utils->get_el_type(
                     ASRUtils::type_get_past_array(s_m_args0_type), module.get());
+                llvm::Type* dt_array_data_type = llvm_utils->get_el_type(
+                    ASRUtils::type_get_past_array(arg_type), module.get());
                 llvm::Value* array_data = llvm_utils->CreateAlloca(*builder, array_data_type);
                 builder->CreateStore(array_data,
                     arr_descr->get_pointer_to_data(abstract_array));
-                arr_descr->fill_array_details(dt, abstract_array, s_m_args0_type, true);
-                llvm::Value* polymorphic_data = llvm_utils->CreateLoad(
+                arr_descr->fill_array_details(dt, abstract_array, arg_type, s_m_args0_type, module.get(), true);
+                llvm::Value* polymorphic_data = llvm_utils->CreateLoad2(array_data_type->getPointerTo(),
                     arr_descr->get_pointer_to_data(abstract_array));
-                llvm::Value* polymorphic_data_addr = llvm_utils->create_gep(polymorphic_data, 1);
-                llvm::Value* dt_data = llvm_utils->CreateLoad(arr_descr->get_pointer_to_data(dt));
+                llvm::Value* polymorphic_data_addr = llvm_utils->create_gep2(array_data_type, polymorphic_data, 1);
+                llvm::Value* dt_data = llvm_utils->CreateLoad2(dt_array_data_type->getPointerTo(), arr_descr->get_pointer_to_data(dt));
                 builder->CreateStore(
                     builder->CreateBitCast(dt_data, llvm::Type::getVoidTy(context)->getPointerTo()),
                     polymorphic_data_addr);
-                llvm::Value* type_id_addr = llvm_utils->create_gep(polymorphic_data, 0);
+                llvm::Value* type_id_addr = llvm_utils->create_gep2(array_data_type, polymorphic_data, 0);
                 builder->CreateStore(
                     llvm::ConstantInt::get(llvm_utils->getIntType(8),
                         llvm::APInt(64, -((int) ASRUtils::type_get_past_array(arg_type)->type) -
