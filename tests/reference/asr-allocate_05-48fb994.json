@@ -5,9 +5,9 @@
     "infile_hash": "4aec5c0fcf89fa53670beb1afa8af66e589841696723e0f2f4d966ba",
     "outfile": null,
     "outfile_hash": null,
-    "stdout": "asr-allocate_05-48fb994.stdout",
-    "stdout_hash": "aafd1ce0729d10c6fff6ca1bb5576a620ca5a6938226d1d26e86c3d5",
-    "stderr": null,
-    "stderr_hash": null,
-    "returncode": 0
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-allocate_05-48fb994.stderr",
+    "stderr_hash": "68972589ddf90376d6a897d4cfea45c4ac7501be0cd558cd8129e193",
+    "returncode": 139
 }
