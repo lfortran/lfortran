@@ -231,7 +231,6 @@ namespace LCompilers {
                 "print_struct_type",
                 "array_dim_intrinsics_update",
                 "do_loops",
-                "forall",
                 "while_else",
                 "select_case",
                 "inline_function_calls",
