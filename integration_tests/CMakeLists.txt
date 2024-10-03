@@ -1788,3 +1788,5 @@ RUN(NAME exit_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17)
 RUN(NAME exit_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17)
 
 RUN(NAME struct_type_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17)
+
+RUN(NAME func_parameter_type_02 LABELS gfortran) # function passed in other argument of function
