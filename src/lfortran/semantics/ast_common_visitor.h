@@ -4938,7 +4938,7 @@ public:
                             }
                         }
                         if( lhs_ele < rhs_ele ){
-                            throw SemanticError("Array Passed in function Cannot be sliced into dimensions declared in the function.",
+                            throw SemanticError("Array Passed in function has less elements than function expects.",
                             args.p[i].loc);
                         }
                     }
