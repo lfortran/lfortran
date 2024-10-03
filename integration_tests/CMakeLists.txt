@@ -1026,7 +1026,7 @@ RUN(NAME select_type_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17)
 RUN(NAME select_type_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17)
 RUN(NAME select_type_04 LABELS gfortran
         EXTRAFILES select_type_03_module.f90 select_type_03.f90)
-RUN(NAME select_type_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME select_type_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17)
 
 RUN(NAME program_02 LABELS gfortran llvm llvm17)
 RUN(NAME program_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17)
