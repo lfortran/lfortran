@@ -1646,7 +1646,8 @@ namespace LCompilers {
             is_type_pointer = true;
         } else if (llvm::StructType *arr_type = llvm::dyn_cast<llvm::StructType>(type)) {
             // Function arguments
-            if (arr_type->getName() == "array") {
+            if (arr_type->getName() == "array" || LCompilers::startswith(
+                    std::string(arr_type->getName()), "array.")) {
                 type = type->getPointerTo();
                 is_type_pointer = true;
             }
