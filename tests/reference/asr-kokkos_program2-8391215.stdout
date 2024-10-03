@@ -284,10 +284,10 @@
                                         ()
                                     )
                                     (DoConcurrentLoop
-                                        ((Var 3 i)
+                                        [((Var 3 i)
                                         (IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 3 n)
-                                        ())
+                                        ())]
                                         []
                                         []
                                         []
@@ -366,10 +366,10 @@
                         ()
                     )
                     (DoConcurrentLoop
-                        ((Var 2 i)
+                        [((Var 2 i)
                         (IntegerConstant 1 (Integer 4) Decimal)
                         (Var 2 nsize)
-                        ())
+                        ())]
                         []
                         []
                         []

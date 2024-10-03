@@ -92,10 +92,10 @@
                     [(Var 2 n)
                     (Var 2 ctr)]
                     [(DoConcurrentLoop
-                        ((Var 2 i)
+                        [((Var 2 i)
                         (IntegerConstant 1 (Integer 4) Decimal)
                         (Var 2 n)
-                        ())
+                        ())]
                         []
                         [(Var 2 i)]
                         [(ReduceAdd

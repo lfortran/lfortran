@@ -114,9 +114,10 @@ LFORTRAN_API void _lfortran_random_number(int n, double *v)
     }
 }
 
-LFORTRAN_API void _lfortran_init_random_seed(unsigned seed)
+LFORTRAN_API int _lfortran_init_random_seed(unsigned seed)
 {
     srand(seed);
+    return seed;
 }
 
 LFORTRAN_API void _lfortran_init_random_clock()
@@ -2409,12 +2410,12 @@ LFORTRAN_API int64_t _lfortran_ibits64(int64_t i, int32_t pos, int32_t len) {
 
 // cpu_time  -------------------------------------------------------------------
 
-LFORTRAN_API void _lfortran_d_cpu_time(double *t) {
-    *t = ((double) clock()) / CLOCKS_PER_SEC;
+LFORTRAN_API double _lfortran_d_cpu_time() {
+    return ((double) clock()) / CLOCKS_PER_SEC;
 }
 
-LFORTRAN_API void _lfortran_s_cpu_time(float *t) {
-    *t = ((float) clock()) / CLOCKS_PER_SEC;
+LFORTRAN_API float _lfortran_s_cpu_time() {
+    return ((float) clock()) / CLOCKS_PER_SEC;
 }
 
 // system_time -----------------------------------------------------------------

@@ -141,7 +141,7 @@ namespace LCompilers {
                 virtual
                 void fill_array_details(
                     llvm::Value* source, llvm::Value* destination,
-                    ASR::ttype_t* asr_shape_type, bool ignore_data) = 0;
+                    ASR::ttype_t* source_array_type, ASR::ttype_t* dest_array_type, llvm::Module* module, bool ignore_data) = 0;
 
                 /*
                 * Fills the elements of the input array descriptor
@@ -365,7 +365,7 @@ namespace LCompilers {
                 virtual
                 void fill_array_details(
                     llvm::Value* source, llvm::Value* destination,
-                    ASR::ttype_t* asr_shape_type, bool ignore_data);
+                    ASR::ttype_t* source_array_type, ASR::ttype_t* dest_array_type, llvm::Module* module, bool ignore_data);
 
                 virtual
                 void fill_malloc_array_details(
