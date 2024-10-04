@@ -3623,6 +3623,9 @@ public:
                     gptr->setLinkage(llvm::GlobalValue::InternalLinkage);
                     llvm::Constant *init_value = llvm::Constant::getNullValue(type);
                     gptr->setInitializer(init_value);
+#if LLVM_VERSION_MAJOR > 16
+                    ptr_type[ptr] = type;
+#endif
                 } else {
 #if LLVM_VERSION_MAJOR > 16
                     bool is_llvm_ptr = false;
