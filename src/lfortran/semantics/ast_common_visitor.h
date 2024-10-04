@@ -4087,6 +4087,19 @@ public:
                                         1, a_len, a_len_expr, ASR::string_physical_typeType::PointerString));
                     }
 
+                    if (m_args != nullptr && m_args[0].m_start != nullptr) {
+
+                        if (m_args[0].m_start->type == AST::exprType::Num) {
+
+                            AST::expr_t *first_expr_arg = m_args[0].m_start;
+                            AST::Num_t *num_expr = (AST::Num_t *)first_expr_arg;
+
+                            if((num_expr->m_n) == 0){
+                                throw SemanticError("The first index in string section is less than 1",loc);
+                            }
+                        }
+                    }
+
                     return ASR::make_StringSection_t(al, loc, v_Var, l,
                             r, casted_step, char_type, arr_ref_val);
                 }
@@ -6913,6 +6926,19 @@ public:
                 throw SemanticError("Subroutine `" + var_name + "` called as a function ", x.base.base.loc);
             }
         }
+        else{
+
+            if((v->type == ASR::symbolType::Variable) && (ASRUtils::is_character(*ASRUtils::symbol_type(v)))){
+            
+                if (x.m_args != nullptr && x.m_args[0].m_start != nullptr) {
+
+                    if((x.m_args[0].m_start->type) == AST::exprType::UnaryOp){
+                        throw SemanticError("The first index in string section is less than 1", x.base.base.loc);
+                    }
+                }
+            }
+        }
+
         if (!is_common_variable
             && ( ASR::is_a<ASR::Variable_t>(*v) || is_external_procedure )
             && (!ASRUtils::is_array(ASRUtils::symbol_type(v)))

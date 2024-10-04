@@ -1,4 +1,4 @@
-semantic error: Substring `start` is less than one
+semantic error: The first index in string section is less than 1
  --> tests/errors/string_slice.f90:4:13
   |
 4 |     print*, s(-2:6)
