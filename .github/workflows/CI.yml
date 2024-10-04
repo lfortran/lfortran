@@ -746,7 +746,7 @@ jobs:
         # exactly the same manner, to ensure that users can just change the
         # `llvmdev` version in their conda environment and everything will just
         # work.
-        llvm-version: ["10", "11", "12", "13", "14", "15", "16", "17"]
+        llvm-version: ["10", "11", "12", "13", "14", "15", "16", "17", "18"]
     steps:
       - uses: actions/checkout@v4
         with:
