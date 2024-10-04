@@ -478,12 +478,13 @@ jobs:
             test -f inst/man/O/man/man1/lfortran.1
 
   third_party_code_compile:
-    name: Check Third Party Code Compilation
+    name: Check Third Party Code Compilation - OS (${{ matrix.llvm-version }}), LLVM (${{ matrix.llvm-version }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: ["macos-latest", "ubuntu-latest"]
+        llvm-version: ["11", "17"]
         python-version: ["3.10"]
     steps:
       - uses: actions/checkout@v4
@@ -493,9 +494,10 @@ jobs:
       - uses: mamba-org/setup-micromamba@v1.8.0
         with:
           micromamba-version: '1.5.10-0'
-          environment-file: ci/environment.yml
+          environment-file: ci/environment_linux_llvm.yml
           create-args: >-
             python=${{ matrix.python-version }}
+            llvmdev=${{ matrix.llvm-version }}
             bison=3.4
             openblas=0.3.21
             llvm-openmp=14.0.4
