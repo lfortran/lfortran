@@ -746,7 +746,7 @@ jobs:
         # exactly the same manner, to ensure that users can just change the
         # `llvmdev` version in their conda environment and everything will just
         # work.
-        llvm-version: ["10", "11", "12", "13", "14", "15", "16", "17", "18"]
+        llvm-version: ["10", "11", "12", "13", "14", "15", "16", "17", "18", "19"]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -780,8 +780,8 @@ jobs:
 
             cmake --build . -j16 --target install
 
-      # LLVM 10-17 all work in exactly the same way, so the test is identical
-      - name: Test Linux LLVM 10-16
+      # LLVM 10-19 all work in exactly the same way, so the test is identical
+      - name: Test Linux LLVM 10-19
         shell: bash -e -l {0}
         run: |
             cd integration_tests
