@@ -4100,18 +4100,26 @@ public:
                                         1, a_len, a_len_expr, ASR::string_physical_typeType::PointerString));
                     }
 
-                    if (m_args != nullptr && m_args[0].m_start != nullptr) {
+                    if(l != nullptr){
 
-                        if (m_args[0].m_start->type == AST::exprType::Num) {
+                        if (ASR::is_a<ASR::IntegerBinOp_t>(*l)) {
 
-                            AST::expr_t *first_expr_arg = m_args[0].m_start;
-                            AST::Num_t *num_expr = (AST::Num_t *)first_expr_arg;
+                            ASR::IntegerBinOp_t *num_expr = ASR::down_cast<ASR::IntegerBinOp_t>(l);
+                            
+                            if(num_expr != nullptr){
+                                ASR::expr_t *left_bound = num_expr->m_left;
 
-                            if((num_expr->m_n) == 0){
-                                throw SemanticError("The first index in string section is less than 1",loc);
+                                if(left_bound != nullptr && ASR::is_a<ASR::IntegerConstant_t>(*left_bound)){
+
+                                    ASR::IntegerConstant_t *left_bound_value = ASR::down_cast<ASR::IntegerConstant_t>(left_bound);
+                                
+                                    if(left_bound_value != nullptr && ((left_bound_value->m_n) == 0)){
+                                        throw SemanticError("The first index in string section is less than 1", loc);
+                                    }
+                                }
                             }
-                        }
-                    }
+                        } 
+                    }       
 
                     return ASR::make_StringSection_t(al, loc, v_Var, l,
                             r, casted_step, char_type, arr_ref_val);
