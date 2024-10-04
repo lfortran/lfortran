@@ -4715,7 +4715,7 @@ public:
         }
     }
     
-    void validate_function_arguments(Vec<ASR::call_arg_t>& args, ASR::symbol_t *v){
+    void validate_create_function_arguments(Vec<ASR::call_arg_t>& args, ASR::symbol_t *v){
         ASR::symbol_t *f2 = ASRUtils::symbol_get_past_external(v);
         ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(f2);
         ASR::FunctionType_t* func_type = ASRUtils::get_FunctionType(v);
@@ -4783,7 +4783,7 @@ public:
                         }
                         if( lhs_ele < rhs_ele ){
                             throw SemanticError("Array passed into function has `" + std::to_string(lhs_ele) + 
-                            "`elements but function expects `" + std::to_string(rhs_ele) + "`.",
+                            "` elements but function expects `" + std::to_string(rhs_ele) + "`.",
                             args.p[i].loc);
                         }
                     }
@@ -4958,7 +4958,7 @@ public:
         }
         ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
         legacy_array_sections_helper(v, args, loc);
-        validate_function_arguments(args,v);
+        validate_create_function_arguments(args,v);
 
         return ASRUtils::make_FunctionCall_t_util(al, loc, v, nullptr,
             args.p, args.size(), return_type, value, nullptr, false);
