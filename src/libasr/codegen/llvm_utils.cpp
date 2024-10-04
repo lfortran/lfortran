@@ -2098,6 +2098,10 @@ namespace LCompilers {
                 if( ASR::is_a<ASR::Character_t>(*alloc_type->m_type) ) {
                     lfortran_str_copy(dest, src, true, *module, *builder, context);
                 } else {
+                    if( ASRUtils::is_array(alloc_type->m_type) ) {
+                        llvm::Type *array_type = get_type_from_ttype_t_util(alloc_type->m_type, module);
+                        src = CreateLoad2(array_type->getPointerTo(), src);
+                    }
                     LLVM::CreateStore(*builder, src, dest);
                 }
                 break;

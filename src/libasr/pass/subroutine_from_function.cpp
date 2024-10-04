@@ -17,85 +17,20 @@ namespace LCompilers {
 using ASR::down_cast;
 using ASR::is_a;
 
-class CreateFunctionFromSubroutine: public PassUtils::PassVisitor<CreateFunctionFromSubroutine> {
+class CreateFunctionFromSubroutine: public ASR::BaseWalkVisitor<CreateFunctionFromSubroutine> {
 
     public:
 
-        CreateFunctionFromSubroutine(Allocator &al_) :
-        PassVisitor(al_, nullptr)
+        Allocator& al;
+
+        CreateFunctionFromSubroutine(Allocator &al_): al(al_)
         {
-            pass_result.reserve(al, 1);
         }
 
-        void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
-            // Transform functions returning arrays to subroutines
-            for (auto &item : x.m_symtab->get_scope()) {
-                if (is_a<ASR::Function_t>(*item.second)) {
-                    PassUtils::handle_fn_return_var(al,
-                        ASR::down_cast<ASR::Function_t>(item.second),
-                        PassUtils::is_aggregate_or_array_type);
-                }
-            }
-
-            std::vector<std::string> build_order
-                = ASRUtils::determine_module_dependencies(x);
-            for (auto &item : build_order) {
-                LCOMPILERS_ASSERT(x.m_symtab->get_symbol(item));
-                ASR::symbol_t *mod = x.m_symtab->get_symbol(item);
-                visit_symbol(*mod);
-            }
-            // Now visit everything else
-            for (auto &item : x.m_symtab->get_scope()) {
-                if (!ASR::is_a<ASR::Module_t>(*item.second)) {
-                    this->visit_symbol(*item.second);
-                }
-            }
-        }
-
-        void visit_Module(const ASR::Module_t &x) {
-            current_scope = x.m_symtab;
-            for (auto &item : x.m_symtab->get_scope()) {
-                if (is_a<ASR::Function_t>(*item.second)) {
-                    PassUtils::handle_fn_return_var(al,
-                        ASR::down_cast<ASR::Function_t>(item.second),
-                        PassUtils::is_aggregate_or_array_type);
-                }
-            }
-
-            // Now visit everything else
-            for (auto &item : x.m_symtab->get_scope()) {
-                this->visit_symbol(*item.second);
-            }
-        }
-
-        void visit_Program(const ASR::Program_t &x) {
-            std::vector<std::pair<std::string, ASR::symbol_t*> > replace_vec;
-            // FIXME: this is a hack, we need to pass in a non-const `x`,
-            // which requires to generate a TransformVisitor.
-            ASR::Program_t &xx = const_cast<ASR::Program_t&>(x);
-            current_scope = xx.m_symtab;
-
-            for (auto &item : x.m_symtab->get_scope()) {
-                if (is_a<ASR::Function_t>(*item.second)) {
-                    PassUtils::handle_fn_return_var(al,
-                        ASR::down_cast<ASR::Function_t>(item.second),
-                        PassUtils::is_aggregate_or_array_type);
-                }
-            }
-
-            for (auto &item : x.m_symtab->get_scope()) {
-                if (is_a<ASR::AssociateBlock_t>(*item.second)) {
-                    ASR::AssociateBlock_t *s = ASR::down_cast<ASR::AssociateBlock_t>(item.second);
-                    visit_AssociateBlock(*s);
-                }
-                if (is_a<ASR::Function_t>(*item.second)) {
-                    visit_Function(*ASR::down_cast<ASR::Function_t>(item.second));
-                }
-            }
-
-            current_scope = xx.m_symtab;
-            transform_stmts(xx.m_body, xx.n_body);
-
+        void visit_Function(const ASR::Function_t& x) {
+            ASR::Function_t& xx = const_cast<ASR::Function_t&>(x);
+            ASR::Function_t* x_ptr = ASR::down_cast<ASR::Function_t>(&(xx.base));
+            PassUtils::handle_fn_return_var(al, x_ptr, PassUtils::is_aggregate_or_array_type);
         }
 
 };
@@ -148,7 +83,7 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
             }
 
             ASR::FunctionCall_t* fc = ASR::down_cast<ASR::FunctionCall_t>(x.m_value);
-            if( PassUtils::is_elemental(fc->m_name) ) {
+            if( PassUtils::is_elemental(fc->m_name) && ASRUtils::is_array(fc->m_type) ) {
                 return ;
             }
             const Location& loc = x.base.base.loc;

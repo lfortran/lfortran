@@ -1410,7 +1410,7 @@ RUN(NAME conv_complex2real LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm ll
 
 RUN(NAME template_02 LABELS llvm llvm_wasm llvm_wasm_emcc llvm17)
 RUN(NAME template_03 LABELS llvm llvm_wasm llvm_wasm_emcc wasm llvm17)
-# RUN(NAME template_04 LABELS llvm llvm_wasm llvm_wasm_emcc llvm17)
+RUN(NAME template_04 LABELS llvm llvm_wasm llvm_wasm_emcc llvm17)
 RUN(NAME template_05 LABELS llvm llvm_wasm llvm_wasm_emcc wasm llvm17)
 RUN(NAME template_add_01 LABELS llvm llvm_wasm llvm_wasm_emcc wasm llvm17)
 RUN(NAME template_add_01b LABELS llvm llvm_wasm llvm_wasm_emcc wasm llvm17)
@@ -1429,14 +1429,14 @@ RUN(NAME template_array_03 LABELS llvm llvm_wasm llvm_wasm_emcc llvmStackArray w
 RUN(NAME template_array_04 LABELS llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm llvm17)
 RUN(NAME template_array_04b LABELS llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm llvm17)
 RUN(NAME template_matrix_01 LABELS llvm llvm_wasm llvm_wasm_emcc llvm17)
-# RUN(NAME template_matrix_test LABELS llvm llvm_wasm llvm_wasm_emcc llvm17 EXTRAFILES
-#     template_semigroup.f90
-#     template_semiring.f90
-#     template_monoid.f90
-#     template_unitring.f90
-#     template_field.f90
-#     template_matrix.f90
-#     )
+RUN(NAME template_matrix_test LABELS llvm llvm_wasm llvm_wasm_emcc llvm17 EXTRAFILES
+    template_semigroup.f90
+    template_semiring.f90
+    template_monoid.f90
+    template_unitring.f90
+    template_field.f90
+    template_matrix.f90
+    )
 RUN(NAME template_struct_01 LABELS llvm llvm_wasm llvm_wasm_emcc llvm17)
 RUN(NAME template_vector LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_simple_01 LABELS llvm llvm_wasm llvm_wasm_emcc wasm llvm17)
