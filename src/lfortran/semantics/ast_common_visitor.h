@@ -4937,7 +4937,7 @@ public:
                             }
                         }
                         if( lhs_ele < rhs_ele ){
-                            throw SemanticError("Array Passed in function has less elements than function expects.",
+                            throw SemanticError("Array passed into function has less elements than function expects.",
                             args.p[i].loc);
                         }
                     }
