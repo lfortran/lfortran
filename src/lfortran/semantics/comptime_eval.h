@@ -75,11 +75,6 @@ struct IntrinsicProcedures {
             {"is_iostat_end", {m_builtin, &not_implemented, false}},
             {"newunit", {m_custom, &not_implemented, false}},
 
-            // These will fail if used in symbol table visitor, but will be
-            // left unevaluated in body visitor
-            {"trim", {m_string, &not_implemented, false}},
-            {"len_trim", {m_string, &not_implemented, false}},
-
             // Subroutines
             {"present", {m_builtin, &not_implemented, false}},
             {"date_and_time", {m_string, &not_implemented, false}},
