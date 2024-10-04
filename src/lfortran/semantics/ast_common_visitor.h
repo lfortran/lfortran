@@ -4063,6 +4063,19 @@ public:
                             a_value = ASRUtils::EXPR((ASR::make_IntegerConstant_t(al, loc,
                                                     a, int_type)));
                         }
+                        else if ( ASR::is_a<ASR::IntegerUnaryMinus_t>(*args[0].m_left) ) {
+                            ASR::expr_t* value = ASRUtils::expr_value(args[0].m_left);
+                            if ( value ) {
+                                int64_t a = ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n - offset;
+                                if ( a < 0 ) {
+                                    throw SemanticError("The first index in string section is less than 1", loc);
+                                } else {
+                                    a_value = ASRUtils::EXPR((ASR::make_IntegerConstant_t(al, loc,
+                                                    a, int_type)));
+                                }
+                            }
+                        }
+
                         ASR::expr_t* casted_left = CastingUtil::perform_casting(args[0].m_left, int_type, al, loc);
                         l = b.Sub(casted_left, const_1, a_value);
                     }
@@ -6924,18 +6937,6 @@ public:
             ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(v);
             if (func->m_return_var == nullptr){
                 throw SemanticError("Subroutine `" + var_name + "` called as a function ", x.base.base.loc);
-            }
-        }
-        else{
-
-            if((v->type == ASR::symbolType::Variable) && (ASRUtils::is_character(*ASRUtils::symbol_type(v)))){
-            
-                if (x.m_args != nullptr && x.m_args[0].m_start != nullptr) {
-
-                    if((x.m_args[0].m_start->type) == AST::exprType::UnaryOp){
-                        throw SemanticError("The first index in string section is less than 1", x.base.base.loc);
-                    }
-                }
             }
         }
 
