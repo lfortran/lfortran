@@ -411,7 +411,7 @@ RUN(NAME arrays_01 LABELS gfortran cpp llvm llvmStackArray wasm llvm17)
 RUN(NAME arrays_01_size LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm fortran llvm17)
 RUN(NAME arrays_02_size LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm fortran llvm17)
 RUN(NAME arrays_03_size LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran llvm17)
-# RUN(NAME matrix_01_transpose LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17)
+RUN(NAME matrix_01_transpose LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17)
 RUN(NAME matrix_02_matmul LABELS gfortran fortran llvm17)
 RUN(NAME array_01_pack LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran llvm17)
 RUN(NAME array_01_transfer LABELS gfortran)
@@ -742,7 +742,7 @@ RUN(NAME intrinsics_155 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran ll
 RUN(NAME intrinsics_156 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran llvm17) # blt
 RUN(NAME intrinsics_157 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran llvm17) # ble
 RUN(NAME intrinsics_158 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran llvm17) # bge
-# RUN(NAME intrinsics_159 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17) # matmul
+RUN(NAME intrinsics_159 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17) # matmul
 RUN(NAME intrinsics_160 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran llvm17) # ior
 RUN(NAME intrinsics_161 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran llvm17) # ieor
 RUN(NAME intrinsics_162 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran llvm17) # Not
