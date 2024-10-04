@@ -478,12 +478,13 @@ jobs:
             test -f inst/man/O/man/man1/lfortran.1
 
   third_party_code_compile:
-    name: Check Third Party Code Compilation
+    name: Check Third Party Code Compilation - OS (${{ matrix.os }}), LLVM (${{ matrix.llvm-version }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: ["macos-latest", "ubuntu-latest"]
+        llvm-version: ["11", "19"]
         python-version: ["3.10"]
     steps:
       - uses: actions/checkout@v4
@@ -493,9 +494,10 @@ jobs:
       - uses: mamba-org/setup-micromamba@v1.8.0
         with:
           micromamba-version: '1.5.10-0'
-          environment-file: ci/environment.yml
+          environment-file: ci/environment_linux_llvm.yml
           create-args: >-
             python=${{ matrix.python-version }}
+            llvmdev=${{ matrix.llvm-version }}
             bison=3.4
             openblas=0.3.21
             llvm-openmp=14.0.4
@@ -595,7 +597,7 @@ jobs:
 
       - name: Test fastGPT ( ubuntu-latest )
         shell: bash -e -x -l {0}
-        if: contains(matrix.os, 'ubuntu')
+        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '19') == false
         run: |
             git clone https://github.com/certik/fastGPT.git
             cd fastGPT
@@ -695,13 +697,14 @@ jobs:
         run: |
             git clone https://github.com/certik/fpm.git
             cd fpm
-            git checkout lfortran_build_1
-            git checkout ab02e3a57bc286c6e75b23098c209db8c27157ea
+            git checkout lfortran_build_3
+            git checkout a63eb805747f717d420c12de1984e5e15cdb6984
             export PATH="$(pwd)/../src/bin:$PATH"
             ./build.sh
 
       - name: Test stdlib
         shell: bash -e -x -l {0}
+        if: contains(matrix.llvm-version, '19') == false
         run: |
             git clone https://github.com/czgdp1807/stdlib.git
             cd stdlib
@@ -746,7 +749,7 @@ jobs:
         # exactly the same manner, to ensure that users can just change the
         # `llvmdev` version in their conda environment and everything will just
         # work.
-        llvm-version: ["10", "11", "12", "13", "14", "15", "16", "17", "18"]
+        llvm-version: ["10", "11", "12", "13", "14", "15", "16", "17", "18", "19"]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -780,8 +783,8 @@ jobs:
 
             cmake --build . -j16 --target install
 
-      # LLVM 10-17 all work in exactly the same way, so the test is identical
-      - name: Test Linux LLVM 10-16
+      # LLVM 10-19 all work in exactly the same way, so the test is identical
+      - name: Test Linux LLVM 10-19
         shell: bash -e -l {0}
         run: |
             cd integration_tests
