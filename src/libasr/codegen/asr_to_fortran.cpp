@@ -1266,6 +1266,7 @@ public:
             SET_INTRINSIC_SUBROUTINE_NAME(GetEnvironmentVariable, "get_environment_variable");
             SET_INTRINSIC_SUBROUTINE_NAME(ExecuteCommandLine, "execute_command_line");
             SET_INTRINSIC_SUBROUTINE_NAME(Srand, "srand");
+            SET_INTRINSIC_SUBROUTINE_NAME(SystemClock, "system_clock");
             default : {
                 throw LCompilersException("IntrinsicImpureSubroutine: `"
                     + ASRUtils::get_intrinsic_name(x.m_sub_intrinsic_id)
