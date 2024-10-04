@@ -4775,8 +4775,7 @@ public:
                             std::int64_t lhs_dim = ASRUtils::extract_dim_value_int(arr_lhs->m_dims[i].m_length);
                             if( lhs_dim != -1 ){
                                 lhs_ele *= lhs_dim;
-                            }
-                            else{
+                            } else {
                                 lhs_ele = rhs_ele;
                                 break;
                             }
@@ -4799,6 +4798,7 @@ public:
         }
 
     }
+
     void legacy_array_sections_helper(ASR::symbol_t *v, Vec<ASR::call_arg_t>& args, const Location &loc) {
         ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(v));
         if (compiler_options.legacy_array_sections) {
@@ -4958,7 +4958,7 @@ public:
         }
         ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
         legacy_array_sections_helper(v, args, loc);
-        validate_create_function_arguments(args,v);
+        validate_create_function_arguments(args, v);
 
         return ASRUtils::make_FunctionCall_t_util(al, loc, v, nullptr,
             args.p, args.size(), return_type, value, nullptr, false);
