@@ -1,4 +1,4 @@
-semantic error: Array passed into function has less elements than function expects.
+semantic error: Array passed into function has `6`elements but function expects `8`.
  --> tests/errors/func_arg_array.f90:4:14
   |
 4 |     i = temp(myArray)
