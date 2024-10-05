@@ -398,11 +398,11 @@ void LLVMEvaluator::opt(llvm::Module &m) {
     llvm::legacy::FunctionPassManager fpm(&m);
     fpm.add(llvm::createTargetTransformInfoWrapperPass(TM->getTargetIRAnalysis()));
 
-    int optLevel = 3;
-    int sizeLevel = 0;
 #if LLVM_VERSION_MAJOR >= 17
     // TODO: https://llvm.org/docs/NewPassManager.html
 #else
+    int optLevel = 3;
+    int sizeLevel = 0;
     llvm::PassManagerBuilder builder;
     builder.OptLevel = optLevel;
     builder.SizeLevel = sizeLevel;
