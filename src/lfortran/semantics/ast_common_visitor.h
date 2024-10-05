@@ -4061,6 +4061,19 @@ public:
                             a_value = ASRUtils::EXPR((ASR::make_IntegerConstant_t(al, loc,
                                                     a, int_type)));
                         }
+                        else if ( ASR::is_a<ASR::IntegerUnaryMinus_t>(*args[0].m_left) ) {
+                            ASR::expr_t* value = ASRUtils::expr_value(args[0].m_left);
+                            if ( value ) {
+                                int64_t a = ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n;
+                                if ( a < 0 ) {
+                                    throw SemanticError("The first index in string section is less than 1", loc);
+                                } else {
+                                    a_value = ASRUtils::EXPR((ASR::make_IntegerConstant_t(al, loc,
+                                                    a, int_type)));
+                                }
+                            }
+                        }
+
                         ASR::expr_t* casted_left = CastingUtil::perform_casting(args[0].m_left, int_type, al, loc);
                         l = b.Sub(casted_left, const_1, a_value);
                     }
@@ -4084,6 +4097,27 @@ public:
                         char_type = ASRUtils::TYPE(ASR::make_Character_t(al, loc,
                                         1, a_len, a_len_expr, ASR::string_physical_typeType::PointerString));
                     }
+
+                    if(l != nullptr){
+
+                        if (ASR::is_a<ASR::IntegerBinOp_t>(*l)) {
+
+                            ASR::IntegerBinOp_t *num_expr = ASR::down_cast<ASR::IntegerBinOp_t>(l);
+                            
+                            if(num_expr != nullptr){
+                                ASR::expr_t *left_bound = num_expr->m_left;
+
+                                if(left_bound != nullptr && ASR::is_a<ASR::IntegerConstant_t>(*left_bound)){
+
+                                    ASR::IntegerConstant_t *left_bound_value = ASR::down_cast<ASR::IntegerConstant_t>(left_bound);
+                                
+                                    if(left_bound_value != nullptr && ((left_bound_value->m_n) == 0)){
+                                        throw SemanticError("The first index in string section is less than 1", loc);
+                                    }
+                                }
+                            }
+                        } 
+                    } 
 
                     return ASR::make_StringSection_t(al, loc, v_Var, l,
                             r, casted_step, char_type, arr_ref_val);

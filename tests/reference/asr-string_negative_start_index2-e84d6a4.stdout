@@ -1,0 +1,78 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            main:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            s:
+                                (Variable
+                                    2
+                                    s
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Character 1 8 () PointerString)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    main
+                    []
+                    [(Assignment
+                        (Var 2 s)
+                        (StringConstant
+                            "lfortran"
+                            (Character 1 8 () PointerString)
+                        )
+                        ()
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(StringConstant
+                                "s:"
+                                (Character 1 2 () PointerString)
+                            )
+                            (StringSection
+                                (Var 2 s)
+                                (IntegerBinOp
+                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                    Sub
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                )
+                                (IntegerConstant 4 (Integer 4) Decimal)
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                (Character 1 -3 (IntegerBinOp
+                                    (IntegerConstant 4 (Integer 4) Decimal)
+                                    Sub
+                                    (IntegerBinOp
+                                        (IntegerConstant 2 (Integer 4) Decimal)
+                                        Sub
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        (Integer 4)
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                    )
+                                    (Integer 4)
+                                    ()
+                                ) PointerString)
+                                ()
+                            )]
+                            FormatFortran
+                            (Character -1 0 () PointerString)
+                            ()
+                        )
+                    )]
+                )
+        })
+    []
+)
