@@ -2,8 +2,12 @@
     (SymbolTable
         1
         {
+            iso_fortran_env:
+                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
             lfortran_intrinsic_builtin:
                 (IntrinsicModule lfortran_intrinsic_builtin),
+            lfortran_intrinsic_string:
+                (IntrinsicModule lfortran_intrinsic_string),
             modules_48:
                 (Program
                     (SymbolTable
@@ -1062,6 +1066,16 @@
                                                     Required
                                                     .false.
                                                 ),
+                                            len_trim:
+                                                (ExternalSymbol
+                                                    6
+                                                    len_trim
+                                                    17 len_trim
+                                                    lfortran_intrinsic_string
+                                                    []
+                                                    len_trim
+                                                    Private
+                                                ),
                                             line:
                                                 (Variable
                                                     6
@@ -1134,6 +1148,16 @@
                                                     Required
                                                     .false.
                                                 ),
+                                            trim:
+                                                (ExternalSymbol
+                                                    6
+                                                    trim
+                                                    17 trim
+                                                    lfortran_intrinsic_string
+                                                    []
+                                                    trim
+                                                    Private
+                                                ),
                                             upper:
                                                 (Variable
                                                     6
@@ -1176,11 +1200,19 @@
                                     [(Var 6 line)]
                                     [(Assignment
                                         (Var 6 name)
-                                        (IntrinsicElementalFunction
-                                            StringTrim
-                                            [(Var 6 line)]
-                                            0
-                                            (Character 1 -1 () PointerString)
+                                        (FunctionCall
+                                            6 trim
+                                            ()
+                                            [((Var 6 line))]
+                                            (Character 1 -3 (FunctionCall
+                                                6 len_trim
+                                                ()
+                                                [((Var 6 line))]
+                                                (Integer 4)
+                                                ()
+                                                ()
+                                            ) PointerString)
+                                            ()
                                             ()
                                         )
                                         ()
@@ -1625,7 +1657,8 @@
                                 )
                         })
                     modules_48_fpm_strings
-                    [lfortran_intrinsic_builtin]
+                    [lfortran_intrinsic_builtin
+                    lfortran_intrinsic_string]
                     .false.
                     .false.
                 )

@@ -2,8 +2,12 @@
     (SymbolTable
         1
         {
+            iso_fortran_env:
+                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
             lfortran_intrinsic_builtin:
                 (IntrinsicModule lfortran_intrinsic_builtin),
+            lfortran_intrinsic_string:
+                (IntrinsicModule lfortran_intrinsic_string),
             tomlf_datetime:
                 (Module
                     (SymbolTable
@@ -510,7 +514,7 @@
                                                 (ExternalSymbol
                                                     13
                                                     present
-                                                    16 present
+                                                    21 present
                                                     lfortran_intrinsic_builtin
                                                     []
                                                     present
@@ -764,6 +768,16 @@
                                                     zone
                                                     Public
                                                 ),
+                                            len_trim:
+                                                (ExternalSymbol
+                                                    14
+                                                    len_trim
+                                                    16 len_trim
+                                                    lfortran_intrinsic_string
+                                                    []
+                                                    len_trim
+                                                    Private
+                                                ),
                                             lhs:
                                                 (Variable
                                                     14
@@ -799,6 +813,16 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                ),
+                                            trim:
+                                                (ExternalSymbol
+                                                    14
+                                                    trim
+                                                    16 trim
+                                                    lfortran_intrinsic_string
+                                                    []
+                                                    trim
+                                                    Private
                                                 )
                                         })
                                     time_to_string
@@ -959,20 +983,33 @@
                                             (Var 14 lhs)
                                             (StringConcat
                                                 (Var 14 lhs)
-                                                (IntrinsicElementalFunction
-                                                    StringTrim
-                                                    [(StructInstanceMember
+                                                (FunctionCall
+                                                    14 trim
+                                                    ()
+                                                    [((StructInstanceMember
                                                         (Var 14 rhs)
                                                         14 1_toml_time_zone
                                                         (Allocatable
                                                             (Character 1 -2 () PointerString)
                                                         )
                                                         ()
-                                                    )]
-                                                    0
-                                                    (Allocatable
-                                                        (Character 1 -2 () PointerString)
-                                                    )
+                                                    ))]
+                                                    (Character 1 -3 (FunctionCall
+                                                        14 len_trim
+                                                        ()
+                                                        [((StructInstanceMember
+                                                            (Var 14 rhs)
+                                                            14 1_toml_time_zone
+                                                            (Allocatable
+                                                                (Character 1 -2 () PointerString)
+                                                            )
+                                                            ()
+                                                        ))]
+                                                        (Integer 4)
+                                                        ()
+                                                        ()
+                                                    ) PointerString)
+                                                    ()
                                                     ()
                                                 )
                                                 (Character 1 -1 () PointerString)
@@ -1282,6 +1319,7 @@
                         })
                     tomlf_datetime
                     [lfortran_intrinsic_builtin
+                    lfortran_intrinsic_string
                     tomlf_datetime]
                     .true.
                     .false.

@@ -1,5 +1,6 @@
-semantic error: Array passed into function has `6` elements but function expects `8`.
- --> tests/errors/func_arg_array.f90:4:14
-  |
-4 |     i = temp(myArray)
-  |              ^^^^^^^ 
+LCOMPILERS_ASSERT failed: $DIR/src/libasr/asr_utils.h
+function Call_t_body(), line number 5631 at 
+dimensions_compatible(arg_array_t->m_dims, arg_array_t->n_dims, orig_arg_array_t->m_dims, orig_arg_array_t->n_dims, false)
+ERROR MESSAGE:
+Incompatible dimensions passed to temp(6/8)
+Aborted (core dumped)

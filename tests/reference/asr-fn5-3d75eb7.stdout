@@ -12,6 +12,16 @@
                                     (SymbolTable
                                         3
                                         {
+                                            len_trim:
+                                                (ExternalSymbol
+                                                    3
+                                                    len_trim
+                                                    6 len_trim
+                                                    lfortran_intrinsic_string
+                                                    []
+                                                    len_trim
+                                                    Private
+                                                ),
                                             length:
                                                 (Variable
                                                     3
@@ -64,7 +74,7 @@
                                                 (ExternalSymbol
                                                     3
                                                     present
-                                                    6 present
+                                                    13 present
                                                     lfortran_intrinsic_builtin
                                                     []
                                                     present
@@ -84,11 +94,19 @@
                                                         Max
                                                         [(Var 3 length)
                                                         (StringLen
-                                                            (IntrinsicElementalFunction
-                                                                StringTrim
-                                                                [(Var 3 line)]
-                                                                0
-                                                                (Character 1 -1 () PointerString)
+                                                            (FunctionCall
+                                                                3 trim
+                                                                ()
+                                                                [((Var 3 line))]
+                                                                (Character 1 -3 (FunctionCall
+                                                                    3 len_trim
+                                                                    ()
+                                                                    [((Var 3 line))]
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    ()
+                                                                ) PointerString)
+                                                                ()
                                                                 ()
                                                             )
                                                             (Integer 4)
@@ -103,6 +121,16 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                ),
+                                            trim:
+                                                (ExternalSymbol
+                                                    3
+                                                    trim
+                                                    6 trim
+                                                    lfortran_intrinsic_string
+                                                    []
+                                                    trim
+                                                    Private
                                                 )
                                         })
                                     atleast
@@ -244,6 +272,16 @@
                                                     Required
                                                     .false.
                                                 ),
+                                            len_trim:
+                                                (ExternalSymbol
+                                                    4
+                                                    len_trim
+                                                    6 len_trim
+                                                    lfortran_intrinsic_string
+                                                    []
+                                                    len_trim
+                                                    Private
+                                                ),
                                             present_in:
                                                 (Variable
                                                     4
@@ -305,6 +343,16 @@
                                                     Public
                                                     Optional
                                                     .false.
+                                                ),
+                                            trim:
+                                                (ExternalSymbol
+                                                    4
+                                                    trim
+                                                    6 trim
+                                                    lfortran_intrinsic_string
+                                                    []
+                                                    trim
+                                                    Private
                                                 ),
                                             values:
                                                 (Variable
@@ -423,14 +471,25 @@
                                                         ()
                                                     )
                                                     (StringLen
-                                                        (IntrinsicElementalFunction
-                                                            StringTrim
-                                                            [(StringConstant
+                                                        (FunctionCall
+                                                            4 trim
+                                                            ()
+                                                            [((StringConstant
                                                                 "KEYWORD"
                                                                 (Character 1 7 () PointerString)
-                                                            )]
-                                                            0
-                                                            (Character 1 -1 () PointerString)
+                                                            ))]
+                                                            (Character 1 -3 (FunctionCall
+                                                                4 len_trim
+                                                                ()
+                                                                [((StringConstant
+                                                                    "KEYWORD"
+                                                                    (Character 1 7 () PointerString)
+                                                                ))]
+                                                                (Integer 4)
+                                                                ()
+                                                                ()
+                                                            ) PointerString)
+                                                            ()
                                                             ()
                                                         )
                                                         (Integer 4)
@@ -543,9 +602,10 @@
                                                             ()
                                                         )
                                                         (StringLen
-                                                            (IntrinsicElementalFunction
-                                                                StringTrim
-                                                                [(ArrayItem
+                                                            (FunctionCall
+                                                                4 trim
+                                                                ()
+                                                                [((ArrayItem
                                                                     (Var 4 keywords)
                                                                     [(()
                                                                     (Var 4 i)
@@ -553,9 +613,24 @@
                                                                     (Character 1 -2 () PointerString)
                                                                     ColMajor
                                                                     ()
-                                                                )]
-                                                                0
-                                                                (Character 1 -1 () PointerString)
+                                                                ))]
+                                                                (Character 1 -3 (FunctionCall
+                                                                    4 len_trim
+                                                                    ()
+                                                                    [((ArrayItem
+                                                                        (Var 4 keywords)
+                                                                        [(()
+                                                                        (Var 4 i)
+                                                                        ())]
+                                                                        (Character 1 -2 () PointerString)
+                                                                        ColMajor
+                                                                        ()
+                                                                    ))]
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    ()
+                                                                ) PointerString)
+                                                                ()
                                                                 ()
                                                             )
                                                             (Integer 4)
@@ -641,9 +716,10 @@
                                                             ()
                                                         )
                                                         (StringLen
-                                                            (IntrinsicElementalFunction
-                                                                StringTrim
-                                                                [(ArrayItem
+                                                            (FunctionCall
+                                                                4 trim
+                                                                ()
+                                                                [((ArrayItem
                                                                     (Var 4 keywords)
                                                                     [(()
                                                                     (Var 4 i)
@@ -651,9 +727,24 @@
                                                                     (Character 1 -2 () PointerString)
                                                                     ColMajor
                                                                     ()
-                                                                )]
-                                                                0
-                                                                (Character 1 -1 () PointerString)
+                                                                ))]
+                                                                (Character 1 -3 (FunctionCall
+                                                                    4 len_trim
+                                                                    ()
+                                                                    [((ArrayItem
+                                                                        (Var 4 keywords)
+                                                                        [(()
+                                                                        (Var 4 i)
+                                                                        ())]
+                                                                        (Character 1 -2 () PointerString)
+                                                                        ColMajor
+                                                                        ()
+                                                                    ))]
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    ()
+                                                                ) PointerString)
+                                                                ()
                                                                 ()
                                                             )
                                                             (Integer 4)
@@ -691,13 +782,18 @@
                                 )
                         })
                     fn5
-                    [lfortran_intrinsic_builtin
+                    [lfortran_intrinsic_string
+                    lfortran_intrinsic_builtin
                     fn5]
                     .false.
                     .false.
                 ),
+            iso_fortran_env:
+                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
             lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin)
+                (IntrinsicModule lfortran_intrinsic_builtin),
+            lfortran_intrinsic_string:
+                (IntrinsicModule lfortran_intrinsic_string)
         })
     []
 )

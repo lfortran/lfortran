@@ -388,6 +388,16 @@
                                     (SymbolTable
                                         3
                                         {
+                                            len_trim:
+                                                (ExternalSymbol
+                                                    3
+                                                    len_trim
+                                                    8 len_trim
+                                                    lfortran_intrinsic_string
+                                                    []
+                                                    len_trim
+                                                    Private
+                                                ),
                                             r:
                                                 (Variable
                                                     3
@@ -423,6 +433,16 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                ),
+                                            trim:
+                                                (ExternalSymbol
+                                                    3
+                                                    trim
+                                                    8 trim
+                                                    lfortran_intrinsic_string
+                                                    []
+                                                    trim
+                                                    Private
                                                 )
                                         })
                                     trim_wrapper
@@ -444,11 +464,19 @@
                                     [(Var 3 s)]
                                     [(Assignment
                                         (Var 3 r)
-                                        (IntrinsicElementalFunction
-                                            StringTrim
-                                            [(Var 3 s)]
-                                            0
-                                            (Character 1 -1 () PointerString)
+                                        (FunctionCall
+                                            3 trim
+                                            ()
+                                            [((Var 3 s))]
+                                            (Character 1 -3 (FunctionCall
+                                                3 len_trim
+                                                ()
+                                                [((Var 3 s))]
+                                                (Integer 4)
+                                                ()
+                                                ()
+                                            ) PointerString)
+                                            ()
                                             ()
                                         )
                                         ()
@@ -461,10 +489,14 @@
                                 )
                         })
                     functions_06_m
-                    []
+                    [lfortran_intrinsic_string]
                     .false.
                     .false.
-                )
+                ),
+            iso_fortran_env:
+                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
+            lfortran_intrinsic_string:
+                (IntrinsicModule lfortran_intrinsic_string)
         })
     []
 )
