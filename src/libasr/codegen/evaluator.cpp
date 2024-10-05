@@ -298,7 +298,12 @@ void LLVMEvaluator::add_module(std::unique_ptr<LLVMModule> m) {
 }
 
 intptr_t LLVMEvaluator::get_symbol_address(const std::string &name) {
-    llvm::Expected<llvm::JITEvaluatedSymbol> s = jit->lookup(name);
+#if LLVM_VERSION_MAJOR < 17
+    llvm::Expected<llvm::JITEvaluatedSymbol>
+#else
+    llvm::Expected<llvm::orc::ExecutorSymbolDef>
+#endif
+        s = jit->lookup(name);
     if (!s) {
         llvm::Error e = s.takeError();
         llvm::SmallVector<char, 128> buf;
@@ -309,7 +314,11 @@ intptr_t LLVMEvaluator::get_symbol_address(const std::string &name) {
         throw LCompilersException("lookup() failed to find the symbol '"
             + name + "', error: " + msg);
     }
+#if LLVM_VERSION_MAJOR < 17
     llvm::Expected<uint64_t> addr0 = s->getAddress();
+#else
+    llvm::Expected<uint64_t> addr0 = s->getAddress().getValue();
+#endif
     if (!addr0) {
         llvm::Error e = addr0.takeError();
         llvm::SmallVector<char, 128> buf;
