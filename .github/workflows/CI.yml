@@ -717,19 +717,20 @@ jobs:
       #       ctest
       #       ./build_test_gf.sh
 
-      # - name: Test SNAP
-      #   shell: bash -e -x -l {0}
-      #   run: |
-      #       git clone https://github.com/certik/SNAP.git
-      #       cd SNAP
-      #       export PATH="$(pwd)/../src/bin:$PATH"
+      - name: Test SNAP
+        shell: bash -e -x -l {0}
+        run: |
+            git clone https://github.com/certik/SNAP.git
+            cd SNAP
+            export PATH="$(pwd)/../src/bin:$PATH"
 
-      #       git checkout lf11
-      #       git checkout 169a9216f2c922e94065a519efbb0a6c8b55149e
-      #       cd ./src
-      #       make -j8 FORTRAN=lfortran FFLAGS= MPI=no OPENMP=no
-      #       ./gsnap ../qasnap/sample/inp out
+            git checkout lf11
+            git checkout 169a9216f2c922e94065a519efbb0a6c8b55149e
+            cd ./src
+            make -j8 FORTRAN=lfortran FFLAGS= MPI=no OPENMP=no
+            ./gsnap ../qasnap/sample/inp out
 
+      #       check once #4984 is merged
       #       make clean
       #       make -j8 FORTRAN=lfortran FFLAGS="--fast --skip-pass=promote_allocatable_to_nonallocatable" MPI=no OPENMP=no
       #       ./gsnap ../qasnap/sample/inp out
