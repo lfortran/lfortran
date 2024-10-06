@@ -1789,3 +1789,5 @@ RUN(NAME exit_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17)
 RUN(NAME exit_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17)
 
 RUN(NAME struct_type_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17)
+
+RUN(NAME logical_not_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17)
