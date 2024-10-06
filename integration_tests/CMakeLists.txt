@@ -368,6 +368,7 @@ RUN(NAME subroutines_10 LABELS gfortran)
 RUN(NAME subroutines_11 LABELS gfortran llvm llvm17)
 RUN(NAME subroutines_12 LABELS gfortran llvm llvm17)
 RUN(NAME subroutines_13 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17)
+RUN(NAME subroutines_14 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17 EXTRA_ARGS --realloc-lhs)
 
 RUN(NAME functions_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc cpp x86 wasm llvm17)
 RUN(NAME functions_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm llvm17)
@@ -1286,6 +1287,8 @@ RUN(NAME string_38 LABELS gfortran llvm llvm17
     EXTRA_ARGS -fdefault-integer-8
     GFORTRAN_ARGS -fdefault-integer-8)
 RUN(NAME string_39 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran llvm17 EXTRA_ARGS --realloc-lhs)
+RUN(NAME string_40 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran llvm17 EXTRA_ARGS --realloc-lhs)
+
 
 RUN(NAME nested_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17)
 RUN(NAME nested_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm17)
