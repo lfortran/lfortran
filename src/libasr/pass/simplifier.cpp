@@ -2323,6 +2323,9 @@ class InitialiseExprWithTarget: public ASR::BaseWalkVisitor<InitialiseExprWithTa
         exprs_with_target(exprs_with_target_) {}
 
     void visit_Assignment(const ASR::Assignment_t& x) {
+        if ( ASR::is_a<ASR::StringSection_t>(*x.m_value) && !ASRUtils::is_array(ASRUtils::expr_type(x.m_value)) ) {
+            return;
+        }
         exprs_with_target[x.m_value] = std::make_pair(const_cast<ASR::expr_t*>(x.m_target), targetType::OriginalTarget);
     }
 
