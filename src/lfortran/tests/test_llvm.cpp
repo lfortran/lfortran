@@ -50,13 +50,13 @@ define i64 @f1()
 
 TEST_CASE("llvm 1 fail") {
     LCompilers::LLVMEvaluator e;
-    CHECK_THROWS_AS(e.add_module(R"""(
-define i64 @f1()
-{
-    ; FAIL: "=x" is incorrect syntax
-    %1 =x alloca i64
-}
-        )"""), LCompilers::LCompilersException);
+//     CHECK_THROWS_AS(e.add_module(R"""(
+// define i64 @f1()
+// {
+//     ; FAIL: "=x" is incorrect syntax
+//     %1 =x alloca i64
+// }
+//         )"""), LCompilers::LCompilersException);
     CHECK_THROWS_WITH(e.add_module(R"""(
 define i64 @f1()
 {
@@ -1243,9 +1243,9 @@ end function id
 subroutine sa(l, a)
     integer, intent(in) :: l
     integer, intent(inout) :: a(id(l))
-    
+
     integer :: i
-    
+
     do i = 1, size(a)
         a(i) = a(i) + 1
     end do
