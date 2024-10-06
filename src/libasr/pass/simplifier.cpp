@@ -390,7 +390,9 @@ bool set_allocation_size(
     Allocator& al, ASR::expr_t* value,
     Vec<ASR::dimension_t>& allocate_dims
 ) {
-    LCOMPILERS_ASSERT(ASRUtils::is_array(ASRUtils::expr_type(value)));
+    if ( !ASRUtils::is_array(ASRUtils::expr_type(value)) ) {
+        return false;
+    }
     const Location& loc = value->base.loc;
     ASR::expr_t* int32_one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
                 al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
@@ -1332,6 +1334,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
 
     void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
         visit_Call(x, "_subroutine_call_");
+        ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>::visit_SubroutineCall(x);
     }
 
     void visit_FunctionCall(const ASR::FunctionCall_t& x) {
