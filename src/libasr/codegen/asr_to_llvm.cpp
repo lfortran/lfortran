@@ -4014,10 +4014,6 @@ public:
                             // Then convert <2 x float>* -> <2 x float>
                             tmp = CreateLoad(tmp);
                         }
-                    } else {
-                        LCOMPILERS_ASSERT(c_kind == 8)
-                        if (compiler_options.platform == Platform::Windows) {
-                            // 128 bit aggregate type is passed by reference
                         } else {
                             // Pass by value
                             tmp = CreateLoad(tmp);
@@ -9587,6 +9583,7 @@ public:
                         tmp = builder->CreateBitCast(p_fx2, complex_type_4->getPointerTo());
                         // Convert {float,float}* to {float,float}
                         tmp = CreateLoad(tmp);
+#if LLVM_VERSION_MAJOR <= 11
                     } else if (compiler_options.platform == Platform::macOS_ARM) {
                         // pass
                     } else {
@@ -9601,6 +9598,7 @@ public:
                         tmp = builder->CreateBitCast(p_fx2, complex_type_4->getPointerTo());
                         // Convert {float,float}* to {float,float}
                         tmp = CreateLoad(tmp);
+#endif
                     }
                 }
             }

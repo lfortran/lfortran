@@ -991,7 +991,12 @@ namespace LCompilers {
                                 return_type = getComplexType(a_kind);
                             } else {
                                 // <2 x float>
+#if LLVM_VERSION_MAJOR <= 11
                                 return_type = FIXED_VECTOR_TYPE::get(llvm::Type::getFloatTy(context), 2);
+#else
+                                // {float, float}
+                                return_type = getComplexType(a_kind);
+#endif
                             }
                         } else {
                             return_type = getComplexType(a_kind);
@@ -1188,8 +1193,13 @@ namespace LCompilers {
                                 // {float, float}
                                 return_type = getComplexType(a_kind);
                             } else {
+#if LLVM_VERSION_MAJOR <= 11
                                 // <2 x float>
                                 return_type = FIXED_VECTOR_TYPE::get(llvm::Type::getFloatTy(context), 2);
+#else
+                                // {float, float}
+                                return_type = getComplexType(a_kind);
+#endif
                             }
                         } else {
                             return_type = getComplexType(a_kind);
