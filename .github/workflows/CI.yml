@@ -730,10 +730,9 @@ jobs:
             make -j8 FORTRAN=lfortran FFLAGS= MPI=no OPENMP=no
             ./gsnap ../qasnap/sample/inp out
 
-      #       check once #4984 is merged
-      #       make clean
-      #       make -j8 FORTRAN=lfortran FFLAGS="--fast --skip-pass=promote_allocatable_to_nonallocatable" MPI=no OPENMP=no
-      #       ./gsnap ../qasnap/sample/inp out
+            make clean
+            make -j8 FORTRAN=lfortran FFLAGS="--fast --skip-pass=promote_allocatable_to_nonallocatable" MPI=no OPENMP=no
+            ./gsnap ../qasnap/sample/inp out
 
   test_llvm:
     name: Test LLVM ${{ matrix.llvm-version }}
