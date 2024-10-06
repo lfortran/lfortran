@@ -390,7 +390,9 @@ bool set_allocation_size(
     Allocator& al, ASR::expr_t* value,
     Vec<ASR::dimension_t>& allocate_dims
 ) {
-    LCOMPILERS_ASSERT(ASRUtils::is_array(ASRUtils::expr_type(value)));
+    if ( !ASRUtils::is_array(ASRUtils::expr_type(value)) ) {
+        return false;
+    }
     const Location& loc = value->base.loc;
     ASR::expr_t* int32_one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
                 al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
@@ -521,6 +523,29 @@ bool set_allocation_size(
             }
             break;
         }
+        case ASR::exprType::Cast: {
+            ASR::Cast_t* cast = ASR::down_cast<ASR::Cast_t>(value);
+            if ( ASRUtils::is_array(ASRUtils::expr_type(cast->m_arg)) ) {
+                size_t rank = ASRUtils::extract_n_dims_from_ttype(
+                    ASRUtils::expr_type(cast->m_arg));
+                ASR::expr_t* selected_array = cast->m_arg;
+                allocate_dims.reserve(al, rank);
+                for( size_t i = 0; i < rank; i++ ) {
+                    ASR::dimension_t allocate_dim;
+                    allocate_dim.loc = loc;
+                    // Assume 1 for Fortran.
+                    allocate_dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                        al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
+                    ASR::expr_t* dim = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                        al, loc, i + 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
+                    allocate_dim.m_length = ASRUtils::EXPR(ASR::make_ArraySize_t(
+                        al, loc, selected_array, dim, ASRUtils::TYPE(
+                            ASR::make_Integer_t(al, loc, 4)), nullptr));
+                    allocate_dims.push_back(al, allocate_dim);
+                }
+            }
+            break;
+        }
         case ASR::exprType::ArraySection: {
             ASR::ArraySection_t* array_section_t = ASR::down_cast<ASR::ArraySection_t>(value);
             allocate_dims.reserve(al, array_section_t->n_args);
@@ -557,6 +582,7 @@ bool set_allocation_size(
                 case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Sin):
                 case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Exp):
                 case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Abs):
+                case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Aimag):
                 case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Merge): {
                     set_allocation_size_elemental_function(al, loc, intrinsic_elemental_function,
                         allocate_dims);
@@ -1129,6 +1155,12 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         CallReplacerOnExpressionsVisitor::visit_FileWrite(x);
     }
 
+    void visit_FileRead(const ASR::FileRead_t& x) {
+        ASR::FileRead_t& xx = const_cast<ASR::FileRead_t&>(x);
+        visit_IO(xx.m_values, xx.n_values, "file_read");
+        CallReplacerOnExpressionsVisitor::visit_FileRead(x);
+    }
+
     void visit_StringFormat(const ASR::StringFormat_t& x) {
         ASR::StringFormat_t& xx = const_cast<ASR::StringFormat_t&>(x);
         visit_IO(xx.m_args, xx.n_args, "string_format");
@@ -1332,6 +1364,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
 
     void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
         visit_Call(x, "_subroutine_call_");
+        ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>::visit_SubroutineCall(x);
     }
 
     void visit_FunctionCall(const ASR::FunctionCall_t& x) {
@@ -2323,6 +2356,9 @@ class InitialiseExprWithTarget: public ASR::BaseWalkVisitor<InitialiseExprWithTa
         exprs_with_target(exprs_with_target_) {}
 
     void visit_Assignment(const ASR::Assignment_t& x) {
+        if ( ASR::is_a<ASR::StringSection_t>(*x.m_value) && !ASRUtils::is_array(ASRUtils::expr_type(x.m_value)) ) {
+            return;
+        }
         exprs_with_target[x.m_value] = std::make_pair(const_cast<ASR::expr_t*>(x.m_target), targetType::OriginalTarget);
     }
 
