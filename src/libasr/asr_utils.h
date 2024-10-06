@@ -2671,6 +2671,18 @@ static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
         case ASR::ttypeType::SymbolicExpression: {
             return ASRUtils::TYPE(ASR::make_SymbolicExpression_t(al, t->base.loc));
         }
+        case ASR::ttypeType::Tuple: {
+            ASR::Tuple_t* tup = ASR::down_cast<ASR::Tuple_t>(t);
+            Vec<ASR::ttype_t*> types;
+            types.reserve(al, tup->n_type);
+            for( size_t i = 0; i < tup->n_type; i++ ) {
+                ASR::ttype_t *t = ASRUtils::duplicate_type(al, tup->m_type[i],
+                    nullptr, physical_type, override_physical_type);
+                types.push_back(al, t);
+            }
+            return ASRUtils::TYPE(ASR::make_Tuple_t(al, tup->base.base.loc,
+                types.p, types.size()));
+        }
         default : throw LCompilersException("Not implemented " + ASRUtils::type_to_str_python(t));
     }
     LCOMPILERS_ASSERT(t_ != nullptr);
