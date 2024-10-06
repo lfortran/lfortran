@@ -786,6 +786,7 @@ jobs:
       - name: Test Linux LLVM 10-19
         shell: bash -e -l {0}
         run: |
+            ctest
             cd integration_tests
             ./run_tests.py -b llvm llvmImplicit
             ./run_tests.py -b llvm llvmImplicit -f
