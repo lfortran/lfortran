@@ -4097,6 +4097,7 @@ public:
                         } else if (compiler_options.platform == Platform::macOS_ARM) {
                             // Pass by value
                             tmp = llvm_utils->CreateLoad(tmp);
+#if LLVM_VERSION_MAJOR <= 11
                         } else {
                             // tmp is {float, float}*
                             // type_fx2p is <2 x float>*
@@ -4104,6 +4105,7 @@ public:
                             // Convert {float,float}* to <2 x float>* using bitcast
                             tmp = builder->CreateBitCast(tmp, type_fx2p);
                             // Then convert <2 x float>* -> <2 x float>
+#endif
                             tmp = llvm_utils->CreateLoad(tmp);
                         }
                     } else {
@@ -9816,6 +9818,7 @@ public:
                         tmp = builder->CreateBitCast(p_fx2, complex_type_4->getPointerTo());
                         // Convert {float,float}* to {float,float}
                         tmp = llvm_utils->CreateLoad(tmp);
+#if LLVM_VERSION_MAJOR <= 11
                     } else if (compiler_options.platform == Platform::macOS_ARM) {
                         // pass
                     } else {
@@ -9830,6 +9833,7 @@ public:
                         tmp = builder->CreateBitCast(p_fx2, complex_type_4->getPointerTo());
                         // Convert {float,float}* to {float,float}
                         tmp = llvm_utils->CreateLoad(tmp);
+#endif
                     }
                 }
             }
