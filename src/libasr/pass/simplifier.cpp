@@ -498,6 +498,29 @@ bool set_allocation_size(
             }
             break;
         }
+        case ASR::exprType::LogicalNot: {
+            ASR::LogicalNot_t* logical_not = ASR::down_cast<ASR::LogicalNot_t>(value);
+            if ( ASRUtils::is_array(ASRUtils::expr_type(logical_not->m_arg)) ) {
+                size_t rank = ASRUtils::extract_n_dims_from_ttype(
+                    ASRUtils::expr_type(logical_not->m_arg));
+                ASR::expr_t* selected_array = logical_not->m_arg;
+                allocate_dims.reserve(al, rank);
+                for( size_t i = 0; i < rank; i++ ) {
+                    ASR::dimension_t allocate_dim;
+                    allocate_dim.loc = loc;
+                    // Assume 1 for Fortran.
+                    allocate_dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                        al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
+                    ASR::expr_t* dim = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                        al, loc, i + 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
+                    allocate_dim.m_length = ASRUtils::EXPR(ASR::make_ArraySize_t(
+                        al, loc, selected_array, dim, ASRUtils::TYPE(
+                            ASR::make_Integer_t(al, loc, 4)), nullptr));
+                    allocate_dims.push_back(al, allocate_dim);
+                }
+            }
+            break;
+        }
         case ASR::exprType::ArraySection: {
             ASR::ArraySection_t* array_section_t = ASR::down_cast<ASR::ArraySection_t>(value);
             allocate_dims.reserve(al, array_section_t->n_args);
@@ -1193,6 +1216,12 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         xx.m_left = binop.first;
         xx.m_right = binop.second;
         CallReplacerOnExpressionsVisitor::visit_LogicalBinOp(x);
+    }
+
+    void visit_LogicalNot(const ASR::LogicalNot_t& x) {
+        ASR::LogicalNot_t& xx = const_cast<ASR::LogicalNot_t&>(x);
+        xx.m_arg = visit_BinOp_expr(x.m_arg, "logical_not_");
+        CallReplacerOnExpressionsVisitor::visit_LogicalNot(x);
     }
 
     void visit_RealCompare(const ASR::RealCompare_t& x) {
