@@ -704,7 +704,6 @@ jobs:
 
       - name: Test stdlib
         shell: bash -e -x -l {0}
-        if: contains(matrix.llvm-version, '19') == false
         run: |
             git clone https://github.com/czgdp1807/stdlib.git
             cd stdlib
