@@ -12,7 +12,7 @@ namespace LCompilers {
             llvm::Function *fn = module.getFunction(func_name);
             if (!fn) {
                 llvm::FunctionType *function_type = llvm::FunctionType::get(
-                        llvm::Type::getInt8PtrTy(context), {
+                        llvm::Type::getInt8Ty(context)->getPointerTo(), {
                             llvm::Type::getInt32Ty(context)
                         }, false);
                 fn = llvm::Function::Create(function_type,
@@ -28,15 +28,15 @@ namespace LCompilers {
             llvm::Function *fn = module.getFunction(func_name);
             if (!fn) {
                 llvm::FunctionType *function_type = llvm::FunctionType::get(
-                        llvm::Type::getInt8PtrTy(context), {
-                            llvm::Type::getInt8PtrTy(context),
+                        llvm::Type::getInt8Ty(context)->getPointerTo(), {
+                            llvm::Type::getInt8Ty(context)->getPointerTo(),
                             llvm::Type::getInt32Ty(context)
                         }, false);
                 fn = llvm::Function::Create(function_type,
                         llvm::Function::ExternalLinkage, func_name, module);
             }
             std::vector<llvm::Value*> args = {
-                builder.CreateBitCast(ptr, llvm::Type::getInt8PtrTy(context)), arg_size};
+                builder.CreateBitCast(ptr, llvm::Type::getInt8Ty(context)->getPointerTo()), arg_size};
             return builder.CreateCall(fn, args);
         }
 

@@ -2420,74 +2420,108 @@ LFORTRAN_API float _lfortran_s_cpu_time() {
 
 // system_time -----------------------------------------------------------------
 
-LFORTRAN_API void _lfortran_i32sys_clock(
-        int32_t *count, int32_t *rate, int32_t *max) {
+LFORTRAN_API int32_t _lfortran_i32sys_clock_count() {
 #if defined(_WIN32)
-        *count = - INT_MAX;
-        *rate = 0;
-        *max = 0;
+    return - INT_MAX;
 #else
     struct timespec ts;
     if(clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
-        *count = (int32_t)(ts.tv_nsec / 1000000) + ((int32_t)ts.tv_sec * 1000);
-        *rate = 1e3; // milliseconds
-        *max = INT_MAX;
+        return (int32_t)(ts.tv_nsec / 1000000) + ((int32_t)ts.tv_sec * 1000);
     } else {
-        *count = - INT_MAX;
-        *rate = 0;
-        *max = 0;
+        return - INT_MAX;
     }
 #endif
 }
 
-LFORTRAN_API void _lfortran_i64sys_clock(
-        uint64_t *count, int64_t *rate, int64_t *max) {
+LFORTRAN_API int32_t _lfortran_i32sys_clock_count_rate() {
 #if defined(_WIN32)
-        *count = - INT_MAX;
-        *rate = 0;
-        *max = 0;
+    return - INT_MAX;
 #else
     struct timespec ts;
     if(clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
-        *count = (uint64_t)(ts.tv_nsec) + ((uint64_t)ts.tv_sec * 1000000000);
-        // FIXME: Rate can be in microseconds or nanoseconds depending on
-        //          resolution of the underlying platform clock.
-        *rate = 1e9; // nanoseconds
-        *max = LLONG_MAX;
+        return 1e3; // milliseconds
     } else {
-        *count = - LLONG_MAX;
-        *rate = 0;
-        *max = 0;
+        return 0;
     }
 #endif
 }
 
-LFORTRAN_API void _lfortran_i64r64sys_clock(
-        uint64_t *count, double *rate, int64_t *max) {
-double ratev;
-int64_t maxv;
-if( rate == NULL ) {
-    rate = &ratev;
-}
-if( max == NULL ) {
-    max = &maxv;
-}
+LFORTRAN_API int32_t _lfortran_i32sys_clock_count_max() {
 #if defined(_WIN32)
-        *count = - INT_MAX;
-        *rate = 0;
-        *max = 0;
+    return 0;
 #else
     struct timespec ts;
     if(clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
-        *count = (uint64_t)(ts.tv_nsec) + ((uint64_t)ts.tv_sec * 1000000000);
+        return INT_MAX;
+    } else {
+        return 0;
+    }
+#endif
+}
+
+LFORTRAN_API uint64_t _lfortran_i64sys_clock_count() {
+#if defined(_WIN32)
+    return 0;
+#else
+    struct timespec ts;
+    if(clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
+        return (uint64_t)(ts.tv_nsec) + ((uint64_t)ts.tv_sec * 1000000000);
+    } else {
+        return - LLONG_MAX;
+    }
+#endif
+}
+
+LFORTRAN_API int64_t _lfortran_i64sys_clock_count_rate() {
+#if defined(_WIN32)
+    return 0;
+#else
+    struct timespec ts;
+    if(clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
         // FIXME: Rate can be in microseconds or nanoseconds depending on
         //          resolution of the underlying platform clock.
-        *rate = 1e9; // nanoseconds
-        *max = LLONG_MAX;
+        return 1e9; // nanoseconds
     } else {
-        *count = - LLONG_MAX;
-        *rate = 0;
-        *max = 0;
+        return 0;
+    }
+#endif
+}
+
+LFORTRAN_API int64_t _lfortran_i64sys_clock_count_max() {
+#if defined(_WIN32)
+    return 0;
+#else
+    struct timespec ts;
+    if(clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
+        return LLONG_MAX;
+    } else {
+        return 0;
+    }
+#endif
+}
+
+LFORTRAN_API float _lfortran_i32r32sys_clock_count_rate() {
+#if defined(_WIN32)
+    return 0;
+#else
+    struct timespec ts;
+    if(clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
+        return 1e3; // milliseconds
+    } else {
+        return 0;
+    }
+#endif
+}
+
+LFORTRAN_API double _lfortran_i64r64sys_clock_count_rate() {
+#if defined(_WIN32)
+    return 0;
+#else
+    struct timespec ts;
+    if(clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
+        return 1e9; // nanoseconds
+    } else {
+        return 0;
     }
 #endif
 }

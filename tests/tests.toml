@@ -150,6 +150,10 @@ filename = "../integration_tests/test_backspace_01.f90"
 asr = true
 
 [[test]]
+filename = "../integration_tests/openmp_36.f90"
+asr = true
+
+[[test]]
 filename = "subroutine2.f90"
 ast = true
 
@@ -4210,5 +4214,9 @@ filename = "errors/func_parameter_type.f90"
 asr = true
 
 [[test]]
-filename = "errors/func_parameter_type_02.f90"
+filename = "../integration_tests/func_parameter_type_02.f90"
 asr_implicit_interface_and_typing = true
+
+[[test]]
+filename = "errors/func_arg_array.f90"
+asr = true

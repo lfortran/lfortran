@@ -4,6 +4,7 @@
 #include <memory>
 
 #include <llvm/IR/Value.h>
+#include <llvm/IR/Module.h>
 #include <llvm/IR/IRBuilder.h>
 #include <libasr/asr.h>
 
@@ -70,7 +71,7 @@ namespace LCompilers {
         llvm::Function *fn_printf = module.getFunction("_lfortran_printf");
         if (!fn_printf) {
             llvm::FunctionType *function_type = llvm::FunctionType::get(
-                    llvm::Type::getVoidTy(context), {llvm::Type::getInt8PtrTy(context)}, true);
+                    llvm::Type::getVoidTy(context), {llvm::Type::getInt8Ty(context)->getPointerTo()}, true);
             fn_printf = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, "_lfortran_printf", &module);
         }
@@ -83,9 +84,9 @@ namespace LCompilers {
         llvm::Function *fn_printf = module.getFunction("_lcompilers_string_format_fortran");
         if (!fn_printf) {
             llvm::FunctionType *function_type = llvm::FunctionType::get(
-                    llvm::Type::getInt8PtrTy(context),
+                    llvm::Type::getInt8Ty(context)->getPointerTo(),
                     {llvm::Type::getInt32Ty(context),
-                    llvm::Type::getInt8PtrTy(context)}, true);
+                    llvm::Type::getInt8Ty(context)->getPointerTo()}, true);
             fn_printf = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, "_lcompilers_string_format_fortran", &module);
         }
@@ -99,8 +100,8 @@ namespace LCompilers {
         if (!fn) {
             llvm::FunctionType *function_type = llvm::FunctionType::get(
                      llvm::Type::getVoidTy(context), {
-                        llvm::Type::getInt8PtrTy(context)->getPointerTo(),
-                        llvm::Type::getInt8PtrTy(context),
+                        llvm::Type::getInt8Ty(context)->getPointerTo()->getPointerTo(),
+                        llvm::Type::getInt8Ty(context)->getPointerTo(),
                         llvm::Type::getInt8Ty(context)
                     }, false);
             fn = llvm::Function::Create(function_type,
@@ -117,7 +118,7 @@ namespace LCompilers {
         llvm::Function *fn_printf = module.getFunction("_lcompilers_print_error");
         if (!fn_printf) {
             llvm::FunctionType *function_type = llvm::FunctionType::get(
-                    llvm::Type::getVoidTy(context), {llvm::Type::getInt8PtrTy(context)}, true);
+                    llvm::Type::getVoidTy(context), {llvm::Type::getInt8Ty(context)->getPointerTo()}, true);
             fn_printf = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, "_lcompilers_print_error", &module);
         }
@@ -149,7 +150,7 @@ namespace LCompilers {
         if (!fn) {
             llvm::FunctionType *function_type = llvm::FunctionType::get(
                 llvm::Type::getVoidTy(context), {
-                    llvm::Type::getInt8PtrTy(context),
+                    llvm::Type::getInt8Ty(context)->getPointerTo(),
                     llvm::Type::getInt1Ty(context)
                 }, true);
             fn = llvm::Function::Create(function_type,

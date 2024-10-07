@@ -33,11 +33,13 @@
 #include <llvm/Support/TargetSelect.h>
 #include <llvm/Target/TargetMachine.h>
 #include <llvm/Transforms/Scalar.h>
-#include <llvm/Transforms/Vectorize.h>
 #include <llvm/ExecutionEngine/ObjectCache.h>
 #include <llvm/Support/FileSystem.h>
 #include <llvm/Support/Path.h>
 #include <llvm/IR/DIBuilder.h>
+#if LLVM_VERSION_MAJOR < 18
+#   include <llvm/Transforms/Vectorize.h>
+#endif
 
 #include <libasr/asr.h>
 #include <libasr/containers.h>
@@ -73,7 +75,7 @@ void string_init(llvm::LLVMContext &context, llvm::Module &module,
         llvm::FunctionType *function_type = llvm::FunctionType::get(
                 llvm::Type::getVoidTy(context), {
                     llvm::Type::getInt32Ty(context),
-                    llvm::Type::getInt8PtrTy(context)
+                    llvm::Type::getInt8Ty(context)->getPointerTo()
                 }, false);
         fn = llvm::Function::Create(function_type,
                 llvm::Function::ExternalLinkage, func_name, module);
@@ -893,7 +895,7 @@ public:
         complex_type_4_ptr = llvm_utils->complex_type_4_ptr;
         complex_type_8_ptr = llvm_utils->complex_type_8_ptr;
         character_type = llvm_utils->character_type;
-        list_type = llvm::Type::getInt8PtrTy(context);
+        list_type = llvm::Type::getInt8Ty(context)->getPointerTo();
 
         llvm::Type* bound_arg = static_cast<llvm::Type*>(arr_descr->get_dimension_descriptor_type(true));
         fname2arg_type["lbound"] = std::make_pair(bound_arg, bound_arg->getPointerTo());
@@ -1181,20 +1183,28 @@ public:
                         ASRUtils::expr_type(sm->m_v));
                 llvm::Value* dt = tmp;
                 ASR::symbol_t *struct_sym = nullptr;
+                llvm::Type *dt_type = llvm_utils->getStructType(caller_type, module.get());
                 if (ASR::is_a<ASR::StructType_t>(*caller_type)) {
                     struct_sym = ASRUtils::symbol_get_past_external(
                         ASR::down_cast<ASR::StructType_t>(caller_type)->m_derived_type);
                 } else if (ASR::is_a<ASR::ClassType_t>(*caller_type)) {
                     struct_sym = ASRUtils::symbol_get_past_external(
                         ASR::down_cast<ASR::ClassType_t>(caller_type)->m_class_type);
-                    dt = llvm_utils->CreateLoad(llvm_utils->create_gep(dt, 1));
+                    dt = llvm_utils->CreateLoad2(dt_type->getPointerTo(), llvm_utils->create_gep(dt, 1));
                 } else {
                     LCOMPILERS_ASSERT(false);
                 }
 
                 int dt_idx = name2memidx[ASRUtils::symbol_name(struct_sym)]
                     [ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(sm->m_m))];
-                llvm::Value* dt_1 = llvm_utils->create_gep(dt, dt_idx);
+                llvm::Value* dt_1 = llvm_utils->create_gep2(dt_type, dt, dt_idx);
+#if LLVM_VERSION_MAJOR > 16
+                llvm::Type *dt_1_type = llvm_utils->get_type_from_ttype_t_util(
+                    ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(
+                    ASRUtils::symbol_type(ASRUtils::symbol_get_past_external(sm->m_m)))),
+                    module.get());
+                ptr_type[dt_1] = dt_1_type;
+#endif
                 tmp = dt_1;
             } else {
                 throw CodeGenError("Cannot deallocate variables in expression " +
@@ -1421,7 +1431,7 @@ public:
         if (!fn) {
             llvm::FunctionType *function_type = llvm::FunctionType::get(
                 llvm::Type::getInt32Ty(context), {
-                    llvm::Type::getInt8PtrTy(context)
+                    llvm::Type::getInt8Ty(context)->getPointerTo()
                 }, false);
             fn = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, runtime_func_name, *module);
@@ -1444,7 +1454,7 @@ public:
         if (!fn) {
             llvm::FunctionType *function_type = llvm::FunctionType::get(
                 llvm::Type::getInt32Ty(context), {
-                    llvm::Type::getInt8PtrTy(context)
+                    llvm::Type::getInt8Ty(context)->getPointerTo()
                 }, false);
             fn = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, runtime_func_name, *module);
@@ -2851,7 +2861,13 @@ public:
                 ASRUtils::type_get_past_allocatable(x.m_type)),
                 module.get(), x.m_abi);
 #if LLVM_VERSION_MAJOR > 16
-            ptr_type[ptr] = type_;
+            if ( LLVM::is_llvm_pointer(*x.m_type) &&
+                    ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_pointer(
+                    ASRUtils::type_get_past_allocatable(x.m_type))) ) {
+                ptr_type[ptr] = type_->getPointerTo();
+            } else {
+                ptr_type[ptr] = type_;
+            }
 #endif
             if (ASRUtils::is_array(x.m_type)) { //memorize arrays only.
                 allocatable_array_details.push_back({ptr,
@@ -3614,6 +3630,9 @@ public:
                     gptr->setLinkage(llvm::GlobalValue::InternalLinkage);
                     llvm::Constant *init_value = llvm::Constant::getNullValue(type);
                     gptr->setInitializer(init_value);
+#if LLVM_VERSION_MAJOR > 16
+                    ptr_type[ptr] = type;
+#endif
                 } else {
 #if LLVM_VERSION_MAJOR > 16
                     bool is_llvm_ptr = false;
@@ -3883,7 +3902,9 @@ public:
                         ASRUtils::type_get_past_allocatable(
                         ASRUtils::type_get_past_pointer(arg->m_type)), module.get());
                     if ( !ASRUtils::is_array(arg->m_type) &&
-                        ASRUtils::is_allocatable(arg->m_type)) {
+                        LLVM::is_llvm_pointer(*arg->m_type) &&
+                        !is_a<ASR::ClassType_t>(*ASRUtils::type_get_past_allocatable(
+                            ASRUtils::type_get_past_pointer(arg->m_type))) ) {
                         arg_type = arg_type->getPointerTo();
                     }
                     ptr_type[llvm_sym] = arg_type;
@@ -4075,7 +4096,7 @@ public:
                         if (compiler_options.platform == Platform::Windows) {
                             // tmp is {float, float}*
                             // type_fx2p is i64*
-                            llvm::Type* type_fx2p = llvm::Type::getInt64PtrTy(context);
+                            llvm::Type* type_fx2p = llvm::Type::getInt64Ty(context)->getPointerTo();
                             // Convert {float,float}* to i64* using bitcast
                             tmp = builder->CreateBitCast(tmp, type_fx2p);
                             // Then convert i64* -> i64
@@ -5813,8 +5834,8 @@ public:
         bool is_single_char = (ASR::is_a<ASR::StringItem_t>(*x.m_left) &&
                                ASR::is_a<ASR::StringItem_t>(*x.m_right));
         if( is_single_char ) {
-            left = llvm_utils->CreateLoad(left);
-            right = llvm_utils->CreateLoad(right);
+            left = llvm_utils->CreateLoad2(character_type, left);
+            right = llvm_utils->CreateLoad2(character_type, right);
         }
         std::string fn;
         switch (x.m_op) {
@@ -7039,9 +7060,9 @@ public:
         int kind = ASRUtils::extract_kind_from_ttype_t(t.m_type);
         llvm::Type* pointer_cast_type = nullptr;
         if (kind == 4) {
-            pointer_cast_type = llvm::Type::getFloatPtrTy(context);
+            pointer_cast_type = llvm::Type::getFloatTy(context)->getPointerTo();
         } else {
-            pointer_cast_type = llvm::Type::getDoublePtrTy(context);
+            pointer_cast_type = llvm::Type::getDoubleTy(context)->getPointerTo();
         }
         tmp = builder->CreateBitCast(tmp, pointer_cast_type);
         PointerToData_to_Descriptor(t.m_type, t.m_type);
@@ -8020,8 +8041,9 @@ public:
             iostat = tmp;
         } else {
             iostat = llvm_utils->CreateAlloca(*builder,
-                        llvm::Type::getInt32PtrTy(context));
-            builder->CreateStore(llvm::ConstantInt::getNullValue(llvm::Type::getInt32PtrTy(context)), iostat);
+                        llvm::Type::getInt32Ty(context)->getPointerTo());
+            builder->CreateStore(llvm::ConstantInt::getNullValue(
+                llvm::Type::getInt32Ty(context)->getPointerTo()), iostat);
             iostat = llvm_utils->CreateLoad(iostat);
         }
 
@@ -8063,8 +8085,8 @@ public:
         printf_args.insert(printf_args.end(), args.begin(), args.end());
         llvm::Function *fn = module->getFunction(runtime_func_name);
         if (!fn) {
-            args_type.push_back(llvm::Type::getInt32PtrTy(context));
-            args_type.push_back(llvm::Type::getInt8PtrTy(context));
+            args_type.push_back(llvm::Type::getInt32Ty(context)->getPointerTo());
+            args_type.push_back(llvm::Type::getInt8Ty(context)->getPointerTo());
             llvm::FunctionType *function_type = llvm::FunctionType::get(
                     llvm::Type::getVoidTy(context), args_type, true);
             fn = llvm::Function::Create(function_type,
