@@ -67,7 +67,7 @@ jobs:
         if: contains(matrix.os, 'windows')
         shell: powershell
         run: |
-          micromamba shell init --shell cmd.exe --root-prefix=C:\\Users\runneradmin\micromamba
+          micromamba shell init --shell cmd.exe --root-prefix=~/.local/share/mamba
 
       - name: Build (Windows)
         if: contains(matrix.os, 'windows')
