@@ -4220,3 +4220,7 @@ asr_implicit_interface_and_typing = true
 [[test]]
 filename = "errors/func_arg_array.f90"
 asr = true
+
+[[test]]
+filename = "errors/division_by_zero.f90"
+asr = true

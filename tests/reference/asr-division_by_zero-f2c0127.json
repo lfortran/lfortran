@@ -1,0 +1,13 @@
+{
+    "basename": "asr-division_by_zero-f2c0127",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/division_by_zero.f90",
+    "infile_hash": "7dbb41c0e1efccc63e393850d2d114b032e75a75f671f6b684c414df",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-division_by_zero-f2c0127.stderr",
+    "stderr_hash": "2c12be64a51c73ea3d9cdbfcd381c657549ad0ba34a8d0d64f8a4c46",
+    "returncode": 2
+}

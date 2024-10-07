@@ -1,0 +1,5 @@
+PROGRAM main
+   IMPLICIT NONE
+   PRINT *, 1/0
+
+END PROGRAM main
