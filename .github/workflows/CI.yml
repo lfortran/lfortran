@@ -27,7 +27,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1.8.0
+      - uses: mamba-org/setup-micromamba@v2.0.0
         with:
           micromamba-version: '1.5.10-0'
           environment-file: ci/environment.yml
@@ -112,7 +112,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1.8.0
+      - uses: mamba-org/setup-micromamba@v2.0.0
         with:
           micromamba-version: '1.5.10-0'
           environment-file: ci/environment_linux.yml
@@ -233,7 +233,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1.8.0
+      - uses: mamba-org/setup-micromamba@v2.0.0
         with:
           micromamba-version: '1.5.10-0'
           environment-file: ci/environment_linux.yml
@@ -313,7 +313,7 @@ jobs:
           fetch-depth: 0
           path: src
 
-      - uses: mamba-org/setup-micromamba@v1.8.0
+      - uses: mamba-org/setup-micromamba@v2.0.0
         with:
           micromamba-version: '1.5.10-0'
           environment-file: src/ci/environment_linux.yml
@@ -370,7 +370,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1.8.0
+      - uses: mamba-org/setup-micromamba@v2.0.0
         with:
           micromamba-version: '1.5.10-0'
           environment-file: ci/environment_linux.yml
@@ -421,7 +421,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1.8.0
+      - uses: mamba-org/setup-micromamba@v2.0.0
         with:
           micromamba-version: '1.5.10-0'
           environment-file: ci/environment_linux.yml
@@ -491,7 +491,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1.8.0
+      - uses: mamba-org/setup-micromamba@v2.0.0
         with:
           micromamba-version: '1.5.10-0'
           environment-file: ci/environment_linux_llvm.yml
@@ -754,7 +754,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1.8.0
+      - uses: mamba-org/setup-micromamba@v2.0.0
         with:
           micromamba-version: '1.5.10-0'
           environment-file: ci/environment_linux_llvm.yml
@@ -802,7 +802,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1.8.0
+      - uses: mamba-org/setup-micromamba@v2.0.0
         with:
           micromamba-version: '1.5.10-0'
           environment-file: ci/environment_linux_llvm.yml
@@ -899,7 +899,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1.8.0
+      - uses: mamba-org/setup-micromamba@v2.0.0
         with:
           micromamba-version: '1.5.10-0'
           environment-file: ci/environment_linux.yml
@@ -941,7 +941,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1.8.0
+      - uses: mamba-org/setup-micromamba@v2.0.0
         with:
           micromamba-version: '1.5.10-0'
           environment-file: ci/environment_linux.yml
@@ -961,7 +961,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1.8.0
+      - uses: mamba-org/setup-micromamba@v2.0.0
         with:
           micromamba-version: '1.5.10-0'
           environment-file: ci/environment_linux.yml
@@ -981,7 +981,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1.8.0
+      - uses: mamba-org/setup-micromamba@v2.0.0
         with:
           micromamba-version: '1.5.10-0'
           environment-file: ci/environment_linux.yml
@@ -1032,7 +1032,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1.8.0
+      - uses: mamba-org/setup-micromamba@v2.0.0
         with:
           micromamba-version: '1.5.10-0'
           environment-file: ci/environment_linux.yml
@@ -1075,7 +1075,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1.8.0
+      - uses: mamba-org/setup-micromamba@v2.0.0
         with:
           micromamba-version: '1.5.10-0'
           environment-file: ci/environment_linux_llvm.yml
@@ -1121,7 +1121,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1.8.0
+      - uses: mamba-org/setup-micromamba@v2.0.0
         with:
           micromamba-version: '1.5.10-0'
           environment-file: ci/environment_linux.yml
@@ -1177,7 +1177,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1.8.0
+      - uses: mamba-org/setup-micromamba@v2.0.0
         with:
           micromamba-version: '1.5.10-0'
           environment-file: ci/environment_linux.yml
@@ -1211,7 +1211,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1.8.0
+      - uses: mamba-org/setup-micromamba@v2.0.0
         with:
           micromamba-version: '1.5.10-0'
           environment-file: ci/environment_docs_linux.yml
