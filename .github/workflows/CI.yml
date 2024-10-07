@@ -63,6 +63,12 @@ jobs:
             export CFLAGS="-Werror"
             xonsh ci/build_tmp.xsh
 
+      - name: micromamba shell init
+        if: contains(matrix.os, 'windows')
+        shell: powershell
+        run: |
+          micromamba shell init --shell cmd.exe --root-prefix=C:\\Users\runneradmin\micromamba
+
       - name: Build (Windows)
         if: contains(matrix.os, 'windows')
         shell: cmd
