@@ -50,4 +50,31 @@ program intrinsics_288
 	if (result4(1, 1) /= (1, 2) .or. result4(1, 2) /= (1, 2) .or. result4(2, 1) /= (2, 3) .or. &
 		result4(2, 2) /= (2, 3) .or. result4(3, 1) /= (3, 4) .or. result4(3, 2) /= (3, 4)) error stop
 	print *, spread(source5, 1, 3) ! Wrong output with LFortran
+
+	! test for Scalar Sources
+    INTEGER :: a = 1
+    integer, dimension(2,1) :: result5
+	result5 = SPREAD(a, 1, 2)
+    WRITE(*,*) result5
+    if (result5(1, 1) /= 1 .or. result5(2, 1) /= 1 ) error stop
+
+	CHARACTER :: ch = 'b'
+    character, dimension(2,1) :: result6
+	result6 = SPREAD(ch, 1, 2)
+    WRITE(*,*) result6
+    !if (result6(1, 1) /= 'b' .or. result6(2, 1) /= 'b' ) error stop
+
+    
+	LOGICAL :: lo = .true.
+    logical, dimension(2,1) :: result7
+	result7 = SPREAD(lo, 1, 2)
+    WRITE(*,*) result7
+    if ( (result7(1, 1) .neqv. .true.) .or. (result7(2, 1) .neqv. .true.) )  error stop
+
+	REAL :: rl = 1.0
+    real, dimension(2,1) :: result8
+	result8 = SPREAD(rl, 1, 2)
+    WRITE(*,*) result8
+    if ( abs(result8(1, 1) - 1.0) > 1e-6 .or. abs(result8(2, 1) - 1.0) > 1e-6 ) error stop
+    
 end program
