@@ -479,12 +479,13 @@ jobs:
             test -f inst/man/O/man/man1/lfortran.1
 
   third_party_code_compile:
-    name: Check Third Party Code Compilation
+    name: Check Third Party Code Compilation - OS (${{ matrix.os }}), LLVM (${{ matrix.llvm-version }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: ["macos-latest", "ubuntu-latest"]
+        llvm-version: ["11", "19"]
         python-version: ["3.10"]
     steps:
       - uses: actions/checkout@v4
@@ -494,9 +495,10 @@ jobs:
       - uses: mamba-org/setup-micromamba@v1.8.0
         with:
           micromamba-version: '1.5.10-0'
-          environment-file: ci/environment.yml
+          environment-file: ci/environment_linux_llvm.yml
           create-args: >-
             python=${{ matrix.python-version }}
+            llvmdev=${{ matrix.llvm-version }}
             bison=3.4
             openblas=0.3.21
             llvm-openmp=14.0.4
@@ -696,8 +698,8 @@ jobs:
         run: |
             git clone https://github.com/certik/fpm.git
             cd fpm
-            git checkout lfortran_build_1
-            git checkout ab02e3a57bc286c6e75b23098c209db8c27157ea
+            git checkout lfortran_build_3
+            git checkout a63eb805747f717d420c12de1984e5e15cdb6984
             export PATH="$(pwd)/../src/bin:$PATH"
             ./build.sh
 
@@ -747,7 +749,7 @@ jobs:
         # exactly the same manner, to ensure that users can just change the
         # `llvmdev` version in their conda environment and everything will just
         # work.
-        llvm-version: ["10", "11", "12", "13", "14", "15", "16", "17"]
+        llvm-version: ["10", "11", "12", "13", "14", "15", "16", "17", "18", "19"]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -781,24 +783,13 @@ jobs:
 
             cmake --build . -j16 --target install
 
-      # LLVM 10-16 all work in exactly the same way, so the test is identical
-      - name: Test Linux LLVM 10-16
-        if: contains(matrix.llvm-version, '17') == false
+      # LLVM 10-19 all work in exactly the same way, so the test is identical
+      - name: Test Linux LLVM 10-19
         shell: bash -e -l {0}
         run: |
             cd integration_tests
             ./run_tests.py -b llvm llvmImplicit
             #./run_tests.py -b llvm llvmImplicit -f
-
-      # In LLVM 17 we can only compile a subset for now, so we have a dedicated
-      # LLVM 17 test here:
-      - name: Test Linux LLVM 17
-        if: contains(matrix.llvm-version, '17') == true
-        shell: bash -e -l {0}
-        run: |
-            cd integration_tests
-            ./run_tests.py -b llvm17
-            #./run_tests.py -b llvm17 -f
 
   test_llvm_wasm:
     name: Test LLVM->WASM ${{ matrix.llvm-version }}

@@ -833,6 +833,19 @@ intrinsic_funcs_args = {
            "kind_arg": True,
        },
    ],
+    "StringLenTrim": [
+        {
+            "args": [("char",)],
+            "return": "int32",
+            "kind_arg": True
+        }
+    ],
+    "StringTrim": [
+        {
+            "args": [("char",)],
+            "ret_type_arg_idx": 0
+        }
+    ],
 }
 
 skip_create_func = ["Partition"]

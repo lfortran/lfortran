@@ -28,6 +28,7 @@ inline std::string get_intrinsic_subroutine_name(int x) {
         INTRINSIC_SUBROUTINE_NAME_CASE(ExecuteCommandLine)
         INTRINSIC_SUBROUTINE_NAME_CASE(CpuTime)
         INTRINSIC_SUBROUTINE_NAME_CASE(Srand)
+        INTRINSIC_SUBROUTINE_NAME_CASE(SystemClock)
         default : {
             throw LCompilersException("pickle: intrinsic_id not implemented");
         }
@@ -53,6 +54,8 @@ namespace IntrinsicImpureSubroutineRegistry {
             {&GetCommand::instantiate_GetCommand, &GetCommand::verify_args}},
         {static_cast<int64_t>(IntrinsicImpureSubroutines::GetCommandArgument),
             {&GetCommandArgument::instantiate_GetCommandArgument, &GetCommandArgument::verify_args}},
+        {static_cast<int64_t>(IntrinsicImpureSubroutines::SystemClock),
+            {&SystemClock::instantiate_SystemClock, &SystemClock::verify_args}},
         {static_cast<int64_t>(IntrinsicImpureSubroutines::GetEnvironmentVariable),
             {&GetEnvironmentVariable::instantiate_GetEnvironmentVariable, &GetEnvironmentVariable::verify_args}},
         {static_cast<int64_t>(IntrinsicImpureSubroutines::ExecuteCommandLine),
@@ -74,6 +77,8 @@ namespace IntrinsicImpureSubroutineRegistry {
             "get_command"},
         {static_cast<int64_t>(IntrinsicImpureSubroutines::GetCommandArgument),
             "get_command_argument"},
+        {static_cast<int64_t>(IntrinsicImpureSubroutines::SystemClock),
+            "system_clock"},
         {static_cast<int64_t>(IntrinsicImpureSubroutines::GetEnvironmentVariable),
             "get_environment_variable"},
         {static_cast<int64_t>(IntrinsicImpureSubroutines::ExecuteCommandLine),
@@ -91,6 +96,7 @@ namespace IntrinsicImpureSubroutineRegistry {
                 {"srand", &Srand::create_Srand},
                 {"get_command", &GetCommand::create_GetCommand},
                 {"get_command_argument", &GetCommandArgument::create_GetCommandArgument},
+                {"system_clock", &SystemClock::create_SystemClock},
                 {"get_environment_variable", &GetEnvironmentVariable::create_GetEnvironmentVariable},
                 {"execute_command_line", &ExecuteCommandLine::create_ExecuteCommandLine},
                 {"cpu_time", &CpuTime::create_CpuTime},
