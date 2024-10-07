@@ -243,7 +243,9 @@ public:
         if( ASRUtils::is_intrinsic_function2(func) ||
                 std::string(func->m_name) == current_routine ||
                 // Never Inline BindC Function
-                ASRUtils::get_FunctionType(func)->m_abi == ASR::abiType::BindC) {
+                ASRUtils::get_FunctionType(func)->m_abi == ASR::abiType::BindC || 
+                // Never Inline Interface Function
+                ASRUtils::get_FunctionType(func)->m_deftype == ASR::deftypeType::Interface) {
             return ;
         }
 

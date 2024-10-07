@@ -4,6 +4,7 @@
 #include <memory>
 
 #include <llvm/IR/Value.h>
+#include <llvm/IR/Module.h>
 #include <llvm/IR/IRBuilder.h>
 #include <libasr/asr.h>
 

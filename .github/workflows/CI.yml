@@ -472,12 +472,13 @@ jobs:
             test -f inst/man/O/man/man1/lfortran.1
 
   third_party_code_compile:
-    name: Check Third Party Code Compilation
+    name: Check Third Party Code Compilation - OS (${{ matrix.os }}), LLVM (${{ matrix.llvm-version }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: ["macos-latest", "ubuntu-latest"]
+        llvm-version: ["11", "19"]
         python-version: ["3.10"]
     steps:
       - uses: actions/checkout@v4
@@ -486,9 +487,10 @@ jobs:
 
       - uses: mamba-org/setup-micromamba@v2
         with:
-          environment-file: ci/environment.yml
+          environment-file: ci/environment_linux_llvm.yml
           create-args: >-
             python=${{ matrix.python-version }}
+            llvmdev=${{ matrix.llvm-version }}
             bison=3.4
             openblas=0.3.21
             llvm-openmp=14.0.4
@@ -739,7 +741,7 @@ jobs:
         # exactly the same manner, to ensure that users can just change the
         # `llvmdev` version in their conda environment and everything will just
         # work.
-        llvm-version: ["10", "11", "12", "13", "14", "15", "16", "17", "18"]
+        llvm-version: ["10", "11", "12", "13", "14", "15", "16", "17", "18", "19"]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -772,8 +774,8 @@ jobs:
 
             cmake --build . -j16 --target install
 
-      # LLVM 10-17 all work in exactly the same way, so the test is identical
-      - name: Test Linux LLVM 10-16
+      # LLVM 10-19 all work in exactly the same way, so the test is identical
+      - name: Test Linux LLVM 10-19
         shell: bash -e -l {0}
         run: |
             cd integration_tests
