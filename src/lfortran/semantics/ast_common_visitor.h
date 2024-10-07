@@ -4061,15 +4061,12 @@ public:
                             a_value = ASRUtils::EXPR((ASR::make_IntegerConstant_t(al, loc,
                                                     a, int_type)));
                         }
-                        else if ( ASR::is_a<ASR::IntegerUnaryMinus_t>(*args[0].m_left) ) {
-                            ASR::expr_t* value = ASRUtils::expr_value(args[0].m_left);
-                            if ( value ) {
-                                int64_t a = ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n - offset;
-                                a_value = ASRUtils::EXPR((ASR::make_IntegerConstant_t(al, loc,
-                                                    a, int_type)));
-                            }
+                        ASR::expr_t* value = ASRUtils::expr_value(args[0].m_left);
+                        if ( value ) {
+                            int64_t a = ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n - offset;
+                            a_value = ASRUtils::EXPR((ASR::make_IntegerConstant_t(al, loc,
+                                                a, int_type)));
                         }
-
                         if ( a_value != nullptr ) {
                             int64_t a = ASR::down_cast<ASR::IntegerConstant_t>(a_value)->m_n;
                             if ( a < 0 ) throw SemanticError("The first index in string section is less than 1", loc);
