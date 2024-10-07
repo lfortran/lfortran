@@ -7805,6 +7805,23 @@ public:
         ASR::expr_t *left = ASRUtils::EXPR(tmp);
         this->visit_expr(*x.m_right);
         ASR::expr_t *right = ASRUtils::EXPR(tmp);
+   
+        ASR::expr_t *right_value = ASRUtils::expr_value(right); 
+
+        if(x.m_op == AST::operatorType::Div){
+            
+            if (right_value != nullptr) {
+
+                if (ASR::is_a<ASR::IntegerConstant_t>(*right_value)) {
+                    int64_t right_int = ASR::down_cast<ASR::IntegerConstant_t>(right_value)->m_n;
+                    
+                    if(right_int == 0){
+                        throw SemanticError("Division by zero", x.base.base.loc);
+                    }
+                }
+            }
+        }
+
         visit_BinOp2(al, x, left, right, tmp, binop2str[x.m_op], current_scope);
     }
 
