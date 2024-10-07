@@ -3436,46 +3436,45 @@ public:
     }
 
     void visit_DoConcurrentLoop(const AST::DoConcurrentLoop_t &x) {
-        if (x.n_control != 1) {
-            throw SemanticError("Do concurrent: exactly one control statement is required for now",
-            x.base.base.loc);
+        Vec<ASR::do_loop_head_t> heads;  // Create a vector of loop heads
+        heads.reserve(al,x.n_control);
+        for(size_t i=0;i<x.n_control;i++) {
+            AST::ConcurrentControl_t &h = *(AST::ConcurrentControl_t*) x.m_control[i];
+            if (! h.m_var) {
+                throw SemanticError("Do loop: loop variable is required for now",
+                    x.base.base.loc);
+            }
+            if (! h.m_start) {
+                throw SemanticError("Do loop: start condition required for now",
+                    x.base.base.loc);
+            }
+            if (! h.m_end) {
+                throw SemanticError("Do loop: end condition required for now",
+                    x.base.base.loc);
+            }
+            ASR::expr_t *var = ASRUtils::EXPR(resolve_variable(x.base.base.loc, to_lower(h.m_var)));
+            visit_expr(*h.m_start);
+            ASR::expr_t *start = ASRUtils::EXPR(tmp);
+            visit_expr(*h.m_end);
+            ASR::expr_t *end = ASRUtils::EXPR(tmp);
+            ASR::expr_t *increment;
+            if (h.m_increment) {
+                visit_expr(*h.m_increment);
+                increment = ASRUtils::EXPR(tmp);
+            } else {
+                increment = nullptr;
+            }
+            ASR::do_loop_head_t head;
+            head.m_v = var;
+            head.m_start = start;
+            head.m_end = end;
+            head.m_increment = increment;
+            head.loc = head.m_v->base.loc;
+            heads.push_back(al, head);
         }
-        AST::ConcurrentControl_t &h = *(AST::ConcurrentControl_t*) x.m_control[0];
-        if (! h.m_var) {
-            throw SemanticError("Do loop: loop variable is required for now",
-                x.base.base.loc);
-        }
-        if (! h.m_start) {
-            throw SemanticError("Do loop: start condition required for now",
-                x.base.base.loc);
-        }
-        if (! h.m_end) {
-            throw SemanticError("Do loop: end condition required for now",
-                x.base.base.loc);
-        }
-        ASR::expr_t *var = ASRUtils::EXPR(resolve_variable(x.base.base.loc, to_lower(h.m_var)));
-        visit_expr(*h.m_start);
-        ASR::expr_t *start = ASRUtils::EXPR(tmp);
-        visit_expr(*h.m_end);
-        ASR::expr_t *end = ASRUtils::EXPR(tmp);
-        ASR::expr_t *increment;
-        if (h.m_increment) {
-            visit_expr(*h.m_increment);
-            increment = ASRUtils::EXPR(tmp);
-        } else {
-            increment = nullptr;
-        }
-
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_body);
         transform_stmts(body, x.n_body, x.m_body);
-        ASR::do_loop_head_t head;
-        head.m_v = var;
-        head.m_start = start;
-        head.m_end = end;
-        head.m_increment = increment;
-        head.loc = head.m_v->base.loc;
-
         Vec<ASR::reduction_expr_t> reductions; reductions.reserve(al, 1);
         Vec<ASR::expr_t*> shared_expr; shared_expr.reserve(al, 1);
         Vec<ASR::expr_t*> local_expr; local_expr.reserve(al, 1);
@@ -3509,16 +3508,17 @@ public:
                 AST::ConcurrentLocal_t *private_ = AST::down_cast<AST::ConcurrentLocal_t>(locality);
                 for ( size_t j = 0; j < private_->n_vars; j++ ) {
                     // check if loop variable is part of local expr
-                    if (current_scope->resolve_symbol(to_lower(private_->m_vars[j])) == ASR::down_cast<ASR::Var_t>(var)->m_v ) {
-                        throw SemanticError("Do concurrent loop variable `" + std::string(private_->m_vars[j]) + "` cannot be part of local expression", private_->base.base.loc);
+                    for(size_t k=0;k<x.n_control;k++) {
+                        AST::ConcurrentControl_t &h = *(AST::ConcurrentControl_t*) x.m_control[k];
+                        ASR::expr_t *var = ASRUtils::EXPR(resolve_variable(x.base.base.loc, to_lower(h.m_var)));
+                        if (current_scope->resolve_symbol(to_lower(private_->m_vars[j])) == ASR::down_cast<ASR::Var_t>(var)->m_v ) {
+                            throw SemanticError("Do concurrent loop variable `" + std::string(private_->m_vars[j]) + "` cannot be part of local expression", private_->base.base.loc);
+                        }
                     }
                     local_expr.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, current_scope->resolve_symbol(to_lower(private_->m_vars[j])))));
                 }
             }
         }
-        Vec<ASR::do_loop_head_t> heads;  // Create a vector of loop heads
-        heads.reserve(al,1);
-        heads.push_back(al, head);
         tmp = ASR::make_DoConcurrentLoop_t(al, x.base.base.loc, heads.p, heads.n, shared_expr.p, shared_expr.n, local_expr.p, local_expr.n, reductions.p, reductions.n, body.p,
                 body.size());
     }

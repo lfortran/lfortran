@@ -2,10 +2,6 @@
     (SymbolTable
         1
         {
-            iso_fortran_env:
-                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
-            lfortran_intrinsic_string:
-                (IntrinsicModule lfortran_intrinsic_string),
             test_time_and_date:
                 (Program
                     (SymbolTable
@@ -26,16 +22,6 @@
                                     Public
                                     Required
                                     .false.
-                                ),
-                            date_and_time:
-                                (ExternalSymbol
-                                    2
-                                    date_and_time
-                                    4 date_and_time
-                                    lfortran_intrinsic_string
-                                    []
-                                    date_and_time
-                                    Private
                                 ),
                             time:
                                 (Variable
@@ -93,63 +79,13 @@
                         })
                     test_time_and_date
                     []
-                    [(SubroutineCall
-                        2 date_and_time
-                        ()
-                        [((Var 2 date))
-                        ((Var 2 time))
-                        ((Var 2 zone))
-                        ((ArrayPhysicalCast
-                            (Var 2 values)
-                            FixedSizeArray
-                            PointerToDataArray
-                            (Array
-                                (Integer 4)
-                                [((IntegerConstant 1 (Integer 4) Decimal)
-                                (IntegerConstant 8 (Integer 4) Decimal))]
-                                PointerToDataArray
-                            )
-                            ()
-                        ))]
-                        ()
-                    )
-                    (SubroutineCall
-                        2 date_and_time
-                        ()
-                        [((Var 2 date))
-                        (())
-                        ((Var 2 zone))
-                        (())]
-                        ()
-                    )
-                    (SubroutineCall
-                        2 date_and_time
-                        ()
-                        [(())
-                        ((Var 2 time))
-                        (())
-                        (())]
-                        ()
-                    )
-                    (SubroutineCall
-                        2 date_and_time
-                        ()
-                        [(())
-                        (())
-                        (())
-                        ((ArrayPhysicalCast
-                            (Var 2 values)
-                            FixedSizeArray
-                            PointerToDataArray
-                            (Array
-                                (Integer 4)
-                                [((IntegerConstant 1 (Integer 4) Decimal)
-                                (IntegerConstant 8 (Integer 4) Decimal))]
-                                PointerToDataArray
-                            )
-                            ()
-                        ))]
-                        ()
+                    [(IntrinsicImpureSubroutine
+                        DateAndTime
+                        [(Var 2 date)
+                        (Var 2 time)
+                        (Var 2 zone)
+                        (Var 2 values)]
+                        0
                     )
                     (Print
                         (StringFormat

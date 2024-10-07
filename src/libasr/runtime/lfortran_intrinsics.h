@@ -228,7 +228,10 @@ LFORTRAN_API void _lfortran_i64sys_clock(
         uint64_t *count, int64_t *rate, int64_t *max);
 LFORTRAN_API void _lfortran_i64r64sys_clock(
         uint64_t *count, double *rate, int64_t *max);
-LFORTRAN_API double _lfortran_time();
+LFORTRAN_API char* _lfortran_date();
+LFORTRAN_API char* _lfortran_time();
+LFORTRAN_API char* _lfortran_zone();
+LFORTRAN_API int32_t _lfortran_values();
 LFORTRAN_API float _lfortran_sp_rand_num();
 LFORTRAN_API double _lfortran_dp_rand_num();
 LFORTRAN_API int64_t _lpython_open(char *path, char *flags);

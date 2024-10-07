@@ -2526,22 +2526,112 @@ LFORTRAN_API double _lfortran_i64r64sys_clock_count_rate() {
 #endif
 }
 
-LFORTRAN_API double _lfortran_time()
-{
+LFORTRAN_API char* _lfortran_zone() {
+    char* result = (char*)malloc(12 * sizeof(char)); // "(+|-)hhmm\0" = 5 + 1
+
+    if (result == NULL) {
+        return NULL;
+    }
+
 #if defined(_WIN32)
-    FILETIME ft;
-    ULARGE_INTEGER uli;
-    GetSystemTimeAsFileTime(&ft);
-    uli.LowPart = ft.dwLowDateTime;
-    uli.HighPart = ft.dwHighDateTime;
-    return (double)uli.QuadPart / 10000000.0 - 11644473600.0;
+    // Windows doesn't provide timezone offset directly, so we calculate it
+    TIME_ZONE_INFORMATION tzinfo;
+    DWORD retval = GetTimeZoneInformation(&tzinfo);
+    
+    // Calculate the total offset in minutes
+    int offset_minutes = -tzinfo.Bias; // Bias is in minutes; negative for UTC+
+    
+    if (retval == TIME_ZONE_ID_DAYLIGHT) {
+        offset_minutes -= tzinfo.DaylightBias; // Apply daylight saving if applicable
+    } else if (retval == TIME_ZONE_ID_STANDARD) {
+        offset_minutes -= tzinfo.StandardBias; // Apply standard bias if applicable
+    }
+
 #elif defined(__APPLE__) && !defined(__aarch64__)
-    return 0.0;
+    // For non-ARM-based Apple platforms
+    time_t t = time(NULL);
+    struct tm* ptm = localtime(&t);
+
+    // The tm_gmtoff field holds the time zone offset in seconds
+    long offset_seconds = ptm->tm_gmtoff;
+    int offset_minutes = offset_seconds / 60;
+
 #else
+    // For Linux and other platforms
+    time_t t = time(NULL);
+    struct tm* ptm = localtime(&t);
+
+    // The tm_gmtoff field holds the time zone offset in seconds
+    long offset_seconds = ptm->tm_gmtoff;
+    int offset_minutes = offset_seconds / 60;
+#endif
+    char sign = offset_minutes >= 0 ? '+' : '-';
+    int offset_hours = abs(offset_minutes / 60);
+    int remaining_minutes = abs(offset_minutes % 60);
+    snprintf(result, 12, "%c%02d%02d", sign, offset_hours, remaining_minutes);
+    return result;
+}
+
+LFORTRAN_API int32_t _lfortran_values()
+{   
+    //TODO: correct this according to the definition
+    return 1;
+}
+
+LFORTRAN_API char* _lfortran_time() {
+    char* result = (char*)malloc(13 * sizeof(char)); // "hhmmss.sss\0" = 12 + 1
+
+    if (result == NULL) {
+        return NULL;
+    }
+
+#if defined(_WIN32)
+    SYSTEMTIME st;
+    GetLocalTime(&st); // Gets the current local time
+    sprintf(result, "%02d%02d%02d.%03d", st.wHour, st.wMinute, st.wSecond, st.wMilliseconds);
+#elif defined(__APPLE__) && !defined(__aarch64__)
+    // For non-ARM-based Apple platforms, use current time functions
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    struct tm* ptm = localtime(&tv.tv_sec);
+    int milliseconds = tv.tv_usec / 1000;
+    sprintf(result, "%02d%02d%02d.%03d", ptm->tm_hour, ptm->tm_min, ptm->tm_sec, milliseconds);
+#else
+    // For Linux and other platforms
     struct timespec ts;
     clock_gettime(CLOCK_REALTIME, &ts);
-    return (double)ts.tv_sec + (double)ts.tv_nsec / 1000000000.0;
+    struct tm* ptm = localtime(&ts.tv_sec);
+    int milliseconds = ts.tv_nsec / 1000000;
+    sprintf(result, "%02d%02d%02d.%03d", ptm->tm_hour, ptm->tm_min, ptm->tm_sec, milliseconds);
 #endif
+    return result;
+}
+
+LFORTRAN_API char* _lfortran_date() {
+    // Allocate memory for the output string (8 characters minimum)
+    char* result = (char*)malloc(32 * sizeof(char)); // "ccyymmdd\0" = 8 + 1
+
+    if (result == NULL) {
+        return NULL; // Handle memory allocation failure
+    }
+
+#if defined(_WIN32)
+    SYSTEMTIME st;
+    GetLocalTime(&st); // Get the current local date
+    sprintf(result, "%04d%02d%02d", st.wYear, st.wMonth, st.wDay);
+#elif defined(__APPLE__) && !defined(__aarch64__)
+    // For non-ARM-based Apple platforms
+    time_t t = time(NULL);
+    struct tm* ptm = localtime(&t);
+    sprintf(result, "%04d%02d%02d", ptm->tm_year + 1900, ptm->tm_mon + 1, ptm->tm_mday);
+#else
+    // For Linux and other platforms
+    time_t t = time(NULL);
+    struct tm* ptm = localtime(&t);
+    snprintf(result, 32, "%04d%02d%02d", ptm->tm_year + 1900, ptm->tm_mon + 1, ptm->tm_mday);
+#endif
+
+    return result; // Return the formatted date string
 }
 
 LFORTRAN_API float _lfortran_sp_rand_num() {

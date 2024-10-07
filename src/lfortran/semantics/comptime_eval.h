@@ -44,7 +44,6 @@ struct IntrinsicProceduresAsASRNodes {
 
 struct IntrinsicProcedures {
     const std::string m_builtin = "lfortran_intrinsic_builtin";
-    const std::string m_string = "lfortran_intrinsic_string";
     const std::string m_ieee_arithmetic = "lfortran_intrinsic_ieee_arithmetic";
     const std::string m_iso_c_binding = "lfortran_intrinsic_iso_c_binding";
     const std::string m_custom = "lfortran_intrinsic_custom";
@@ -77,7 +76,6 @@ struct IntrinsicProcedures {
 
             // Subroutines
             {"present", {m_builtin, &not_implemented, false}},
-            {"date_and_time", {m_string, &not_implemented, false}},
 
             // IEEE Arithmetic
             {"ieee_value", {m_ieee_arithmetic, &not_implemented, false}},
