@@ -761,6 +761,7 @@ jobs:
           environment-file: ci/environment_linux_llvm.yml
           create-args: >-
             llvmdev=${{ matrix.llvm-version }}
+            lldb
 
       - uses: hendrikmuhs/ccache-action@main
         with:
@@ -788,6 +789,7 @@ jobs:
         shell: bash -e -l {0}
         run: |
             # ./src/bin/lfortran x.ll
+            lldb ./src/lfortran/tests/test_lfortran -o "r"
             ctest --output-on-failure
             cd integration_tests
             ./run_tests.py -b llvm llvmImplicit
