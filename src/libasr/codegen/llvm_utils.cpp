@@ -113,11 +113,17 @@ namespace LCompilers {
             std::vector<llvm::Type*> els_8_ptr = {
                 llvm::Type::getDoubleTy(context)->getPointerTo(),
                 llvm::Type::getDoubleTy(context)->getPointerTo()};
+            std::vector<llvm::Type*> string_descriptor_members {
+                llvm::Type::getInt8Ty(context)->getPointerTo(), // char_pointer
+                llvm::Type::getInt64Ty(context),  // size
+                llvm::Type::getInt64Ty(context)  // capacity
+            };
             complex_type_4 = llvm::StructType::create(context, els_4, "complex_4");
             complex_type_8 = llvm::StructType::create(context, els_8, "complex_8");
             complex_type_4_ptr = llvm::StructType::create(context, els_4_ptr, "complex_4_ptr");
             complex_type_8_ptr = llvm::StructType::create(context, els_8_ptr, "complex_8_ptr");
             character_type = llvm::Type::getInt8Ty(context)->getPointerTo();
+            string_descriptor = llvm::StructType::create(context,string_descriptor_members, "string_descriptor");
         }
 
     void LLVMUtils::set_module(llvm::Module* module_) {
@@ -726,6 +732,8 @@ namespace LCompilers {
                 a_kind = v_type->m_kind;
                 if (arg_m_abi == ASR::abiType::BindC) {
                     type = character_type;
+                } else if (v_type->m_physical_type == ASR::string_physical_typeType::DescriptorString) {
+                    type = string_descriptor->getPointerTo();
                 } else {
                     type = character_type->getPointerTo();
                 }
@@ -1307,7 +1315,11 @@ namespace LCompilers {
 
         #define handle_llvm_pointers1()                                         \
             if (n_dims == 0 && ASR::is_a<ASR::Character_t>(*t2)) {              \
-                llvm_type = character_type;                                     \
+                if(ASRUtils::is_physical_descriptorString(t2)) {          \
+                    llvm_type = string_descriptor;              \
+                } else {                                                        \
+                    llvm_type = character_type;                                 \
+                }                                                               \
             } else {                                                            \
                 llvm_type = get_type_from_ttype_t(t2, nullptr, m_storage,       \
                     is_array_type, is_malloc_array_type, is_list, m_dims,       \
@@ -1398,7 +1410,11 @@ namespace LCompilers {
             case (ASR::ttypeType::Character) : {
                 ASR::Character_t* v_type = ASR::down_cast<ASR::Character_t>(asr_type);
                 a_kind = v_type->m_kind;
-                llvm_type = character_type;
+                if(v_type->m_physical_type == ASR::string_physical_typeType::DescriptorString){
+                    llvm_type = string_descriptor;
+                } else {
+                    llvm_type = character_type;
+                }
                 break;
             }
             case (ASR::ttypeType::Logical) : {
@@ -1688,7 +1704,7 @@ namespace LCompilers {
             type)), module);
         llvm::Type* el_type_copy = el_type;
         bool is_llvm_ptr = LLVM::is_llvm_pointer(*type);
-        if (is_llvm_ptr) {
+        if (is_llvm_ptr && !ASRUtils::is_physical_descriptorString(type)) {
             el_type_copy = el_type_copy->getPointerTo();
         }
         llvm::Value* load = builder->CreateLoad(el_type_copy, x);
@@ -2112,7 +2128,7 @@ namespace LCompilers {
             case ASR::ttypeType::Allocatable: {
                 ASR::Allocatable_t* alloc_type = ASR::down_cast<ASR::Allocatable_t>(asr_type);
                 if( ASR::is_a<ASR::Character_t>(*alloc_type->m_type) ) {
-                    lfortran_str_copy(dest, src, true, *module, *builder, context);
+                    lfortran_str_copy(dest, src, true, *module, *builder, context, string_descriptor);
                 } else {
                     if( ASRUtils::is_array(alloc_type->m_type) ) {
                         llvm::Type *array_type = get_type_from_ttype_t_util(alloc_type->m_type, module);
@@ -2154,8 +2170,10 @@ namespace LCompilers {
                         llvm::Value* src_member = create_gep2(name2dertype[der_type_name], src, mem_idx);
                         llvm::Type *mem_type = get_type_from_ttype_t_util(
                             ASRUtils::symbol_type(item.second), module);
-                        if( !LLVM::is_llvm_struct(ASRUtils::symbol_type(item.second)) &&
-                            !ASRUtils::is_array(ASRUtils::symbol_type(item.second)) ) {
+                        ASR::ttype_t* member_type = ASRUtils::symbol_type(item.second);
+                        if( !LLVM::is_llvm_struct(member_type) &&
+                            !ASRUtils::is_array(member_type) && 
+                            !ASRUtils::is_physical_descriptorString(member_type)) {
                             src_member = LLVMUtils::CreateLoad2(mem_type, src_member);
                         }
                         llvm::Value* dest_member = create_gep2(name2dertype[der_type_name], dest, mem_idx);
