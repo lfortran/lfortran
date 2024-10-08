@@ -3802,9 +3802,15 @@ public:
                     std::string clause = AST::down_cast<AST::String_t>(
                         x.m_clauses[i])->m_s;
                     std::string clause_name = clause.substr(0, clause.find('('));
-                    if (clause_name != "private" && clause_name != "shared" && clause_name != "reduction") {
+                    if (clause_name != "private" && clause_name != "shared" && clause_name != "reduction" && clause_name != "collapse") {
                         throw SemanticError("The clause "+ clause_name
                             +" is not supported yet", loc);
+                    }
+                    if (clause_name == "collapse")
+                    {
+                        std::string collapse_value_str = clause.substr(
+                            clause.find('(') + 1, clause.size() - clause_name.size() - 2);
+                        size_t collapse_level = std::stoi(collapse_value_str); // Get the value of N
                     }
                     std::string list = clause.substr(clause.find('(')+1,
                         clause.size()-clause_name.size()-2);
@@ -3844,7 +3850,7 @@ public:
                             } else {
                                 m_shared.push_back(al, v);
                             }
-                        } else {
+                        } else if (clause_name != "collapse") {
                             throw SemanticError("The clause variable `"+ s
                                 +"` is not declared", loc);
                         }
