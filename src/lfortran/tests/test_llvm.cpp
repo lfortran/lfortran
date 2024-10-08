@@ -50,20 +50,20 @@ define i64 @f1()
 
 TEST_CASE("llvm 1 fail") {
     LCompilers::LLVMEvaluator e;
-    CHECK_THROWS_AS(e.add_module(R"""(
-define i64 @f1()
-{
-    ; FAIL: "=x" is incorrect syntax
-    %1 =x alloca i64
-}
-        )"""), std::runtime_error);
-//     CHECK_THROWS_WITH(e.add_module(R"""(
+//     CHECK_THROWS_AS(e.add_module(R"""(
 // define i64 @f1()
 // {
 //     ; FAIL: "=x" is incorrect syntax
 //     %1 =x alloca i64
 // }
-//         )"""), "parse_module(): Invalid LLVM IR");
+//         )"""), std::runtime_error);
+    CHECK_THROWS_WITH(e.add_module(R"""(
+define i64 @f1()
+{
+    ; FAIL: "=x" is incorrect syntax
+    %1 =x alloca i64
+}
+        )"""), "parse_module(): Invalid LLVM IR");
 }
 
 
