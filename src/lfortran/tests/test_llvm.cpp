@@ -50,20 +50,20 @@ define i64 @f1()
 
 TEST_CASE("llvm 1 fail") {
     LCompilers::LLVMEvaluator e;
-//     CHECK_THROWS_AS(e.add_module(R"""(
-// define i64 @f1()
-// {
-//     ; FAIL: "=x" is incorrect syntax
-//     %1 =x alloca i64
-// }
-//         )"""), LCompilers::LCompilersException);
-//     CHECK_THROWS_WITH(e.add_module(R"""(
-// define i64 @f1()
-// {
-//     ; FAIL: "=x" is incorrect syntax
-//     %1 =x alloca i64
-// }
-//         )"""), "parse_module(): Invalid LLVM IR");
+    CHECK_THROWS_AS(e.add_module(R"""(
+define i64 @f1()
+{
+    ; FAIL: "=x" is incorrect syntax
+    %1 =x alloca i64
+}
+        )"""), LCompilers::LCompilersException);
+    CHECK_THROWS_WITH(e.add_module(R"""(
+define i64 @f1()
+{
+    ; FAIL: "=x" is incorrect syntax
+    %1 =x alloca i64
+}
+        )"""), "parse_module(): Invalid LLVM IR");
 }
 
 
@@ -92,14 +92,14 @@ define i64 @f2()
     )""");
     CHECK(e.execfn<int64_t>("f2") == 4);
 
-//     CHECK_THROWS_AS(e.add_module(R"""(
-// define i64 @f3()
-// {
-//     ; FAIL: @count is not defined
-//     %1 = load i64, i64* @count
-//     ret i64 %1
-// }
-//         )"""), LCompilers::LCompilersException);
+    CHECK_THROWS_AS(e.add_module(R"""(
+define i64 @f3()
+{
+    ; FAIL: @count is not defined
+    %1 = load i64, i64* @count
+    ret i64 %1
+}
+        )"""), LCompilers::LCompilersException);
 }
 
 TEST_CASE("llvm 3") {
