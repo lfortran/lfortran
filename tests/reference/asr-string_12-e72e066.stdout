@@ -221,7 +221,9 @@
                                     Local
                                     (IntrinsicElementalFunction
                                         Char
-                                        [(StringLen
+                                        [(TypeInquiry
+                                            StringLen
+                                            (Character 1 52 () PointerString)
                                             (Var 2 letters)
                                             (Integer 4)
                                             (IntegerConstant 52 (Integer 4) Decimal)
@@ -314,7 +316,9 @@
                                 "char("
                                 (Character 1 5 () PointerString)
                             )
-                            (StringLen
+                            (TypeInquiry
+                                StringLen
+                                (Character 1 52 () PointerString)
                                 (Var 2 letters)
                                 (Integer 4)
                                 (IntegerConstant 52 (Integer 4) Decimal)

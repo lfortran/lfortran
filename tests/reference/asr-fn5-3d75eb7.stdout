@@ -83,7 +83,9 @@
                                                     (Character 1 -3 (IntrinsicElementalFunction
                                                         Max
                                                         [(Var 3 length)
-                                                        (StringLen
+                                                        (TypeInquiry
+                                                            StringLen
+                                                            (Character 1 -1 () PointerString)
                                                             (IntrinsicElementalFunction
                                                                 StringTrim
                                                                 [(Var 3 line)]
@@ -92,7 +94,7 @@
                                                                 ()
                                                             )
                                                             (Integer 4)
-                                                            ()
+                                                            (IntegerConstant -1 (Integer 4) Decimal)
                                                         )]
                                                         0
                                                         (Integer 4)
@@ -144,24 +146,47 @@
                                                     [(Var 3 pattern)
                                                     (IntegerBinOp
                                                         (IntegerBinOp
-                                                            (StringLen
+                                                            (TypeInquiry
+                                                                StringLen
+                                                                (Character 1 -3 (IntrinsicElementalFunction
+                                                                    Max
+                                                                    [(Var 3 length)
+                                                                    (TypeInquiry
+                                                                        StringLen
+                                                                        (Character 1 -1 () PointerString)
+                                                                        (IntrinsicElementalFunction
+                                                                            StringTrim
+                                                                            [(Var 3 line)]
+                                                                            0
+                                                                            (Character 1 -1 () PointerString)
+                                                                            ()
+                                                                        )
+                                                                        (Integer 4)
+                                                                        (IntegerConstant -1 (Integer 4) Decimal)
+                                                                    )]
+                                                                    0
+                                                                    (Integer 4)
+                                                                    ()
+                                                                ) PointerString)
                                                                 (Var 3 strout)
                                                                 (Integer 4)
-                                                                ()
+                                                                (IntegerConstant -3 (Integer 4) Decimal)
                                                             )
                                                             Div
-                                                            (StringLen
+                                                            (TypeInquiry
+                                                                StringLen
+                                                                (Character 1 -1 () PointerString)
                                                                 (Var 3 pattern)
                                                                 (Integer 4)
-                                                                ()
+                                                                (IntegerConstant -1 (Integer 4) Decimal)
                                                             )
                                                             (Integer 4)
-                                                            ()
+                                                            (IntegerConstant 3 (Integer 4) Decimal)
                                                         )
                                                         Add
                                                         (IntegerConstant 1 (Integer 4) Decimal)
                                                         (Integer 4)
-                                                        ()
+                                                        (IntegerConstant 4 (Integer 4) Decimal)
                                                     )]
                                                     0
                                                     (Character 1 -1 () PointerString)
@@ -369,60 +394,52 @@
                                                 ))
                                                 ((IntrinsicElementalFunction
                                                     Max
-                                                    [(StringLen
-                                                        (ArrayItem
-                                                            (Var 4 keywords)
-                                                            [(()
-                                                            (ArrayBound
-                                                                (Var 4 keywords)
-                                                                (IntegerConstant 1 (Integer 4) Decimal)
-                                                                (Integer 4)
-                                                                LBound
-                                                                ()
+                                                    [(TypeInquiry
+                                                        StringLen
+                                                        (Allocatable
+                                                            (Array
+                                                                (Character 1 -2 () PointerString)
+                                                                [(()
+                                                                ())]
+                                                                DescriptorArray
                                                             )
-                                                            ())]
-                                                            (Character 1 -2 () PointerString)
-                                                            ColMajor
-                                                            ()
                                                         )
+                                                        (Var 4 keywords)
                                                         (Integer 4)
-                                                        ()
+                                                        (IntegerConstant -2 (Integer 4) Decimal)
                                                     )
                                                     (IntegerConstant 8 (Integer 4) Decimal)]
                                                     0
                                                     (Integer 4)
-                                                    ()
+                                                    (IntegerConstant 8 (Integer 4) Decimal)
                                                 ))
                                                 (())]
                                                 (Character 1 -3 (IntrinsicElementalFunction
                                                     Max
                                                     [(IntrinsicElementalFunction
                                                         Max
-                                                        [(StringLen
-                                                            (ArrayItem
-                                                                (Var 4 keywords)
-                                                                [(()
-                                                                (ArrayBound
-                                                                    (Var 4 keywords)
-                                                                    (IntegerConstant 1 (Integer 4) Decimal)
-                                                                    (Integer 4)
-                                                                    LBound
-                                                                    ()
+                                                        [(TypeInquiry
+                                                            StringLen
+                                                            (Allocatable
+                                                                (Array
+                                                                    (Character 1 -2 () PointerString)
+                                                                    [(()
+                                                                    ())]
+                                                                    DescriptorArray
                                                                 )
-                                                                ())]
-                                                                (Character 1 -2 () PointerString)
-                                                                ColMajor
-                                                                ()
                                                             )
+                                                            (Var 4 keywords)
                                                             (Integer 4)
-                                                            ()
+                                                            (IntegerConstant -2 (Integer 4) Decimal)
                                                         )
                                                         (IntegerConstant 8 (Integer 4) Decimal)]
                                                         0
                                                         (Integer 4)
-                                                        ()
+                                                        (IntegerConstant 8 (Integer 4) Decimal)
                                                     )
-                                                    (StringLen
+                                                    (TypeInquiry
+                                                        StringLen
+                                                        (Character 1 -1 () PointerString)
                                                         (IntrinsicElementalFunction
                                                             StringTrim
                                                             [(StringConstant
@@ -434,7 +451,7 @@
                                                             ()
                                                         )
                                                         (Integer 4)
-                                                        ()
+                                                        (IntegerConstant -1 (Integer 4) Decimal)
                                                     )]
                                                     0
                                                     (Integer 4)
@@ -489,60 +506,52 @@
                                                     ))
                                                     ((IntrinsicElementalFunction
                                                         Max
-                                                        [(StringLen
-                                                            (ArrayItem
-                                                                (Var 4 keywords)
-                                                                [(()
-                                                                (ArrayBound
-                                                                    (Var 4 keywords)
-                                                                    (IntegerConstant 1 (Integer 4) Decimal)
-                                                                    (Integer 4)
-                                                                    LBound
-                                                                    ()
+                                                        [(TypeInquiry
+                                                            StringLen
+                                                            (Allocatable
+                                                                (Array
+                                                                    (Character 1 -2 () PointerString)
+                                                                    [(()
+                                                                    ())]
+                                                                    DescriptorArray
                                                                 )
-                                                                ())]
-                                                                (Character 1 -2 () PointerString)
-                                                                ColMajor
-                                                                ()
                                                             )
+                                                            (Var 4 keywords)
                                                             (Integer 4)
-                                                            ()
+                                                            (IntegerConstant -2 (Integer 4) Decimal)
                                                         )
                                                         (IntegerConstant 8 (Integer 4) Decimal)]
                                                         0
                                                         (Integer 4)
-                                                        ()
+                                                        (IntegerConstant 8 (Integer 4) Decimal)
                                                     ))
                                                     (())]
                                                     (Character 1 -3 (IntrinsicElementalFunction
                                                         Max
                                                         [(IntrinsicElementalFunction
                                                             Max
-                                                            [(StringLen
-                                                                (ArrayItem
-                                                                    (Var 4 keywords)
-                                                                    [(()
-                                                                    (ArrayBound
-                                                                        (Var 4 keywords)
-                                                                        (IntegerConstant 1 (Integer 4) Decimal)
-                                                                        (Integer 4)
-                                                                        LBound
-                                                                        ()
+                                                            [(TypeInquiry
+                                                                StringLen
+                                                                (Allocatable
+                                                                    (Array
+                                                                        (Character 1 -2 () PointerString)
+                                                                        [(()
+                                                                        ())]
+                                                                        DescriptorArray
                                                                     )
-                                                                    ())]
-                                                                    (Character 1 -2 () PointerString)
-                                                                    ColMajor
-                                                                    ()
                                                                 )
+                                                                (Var 4 keywords)
                                                                 (Integer 4)
-                                                                ()
+                                                                (IntegerConstant -2 (Integer 4) Decimal)
                                                             )
                                                             (IntegerConstant 8 (Integer 4) Decimal)]
                                                             0
                                                             (Integer 4)
-                                                            ()
+                                                            (IntegerConstant 8 (Integer 4) Decimal)
                                                         )
-                                                        (StringLen
+                                                        (TypeInquiry
+                                                            StringLen
+                                                            (Character 1 -1 () PointerString)
                                                             (IntrinsicElementalFunction
                                                                 StringTrim
                                                                 [(ArrayItem
@@ -559,7 +568,7 @@
                                                                 ()
                                                             )
                                                             (Integer 4)
-                                                            ()
+                                                            (IntegerConstant -1 (Integer 4) Decimal)
                                                         )]
                                                         0
                                                         (Integer 4)
@@ -616,31 +625,28 @@
                                                         Max
                                                         [(IntrinsicElementalFunction
                                                             Max
-                                                            [(StringLen
-                                                                (ArrayItem
-                                                                    (Var 4 keywords)
-                                                                    [(()
-                                                                    (ArrayBound
-                                                                        (Var 4 keywords)
-                                                                        (IntegerConstant 1 (Integer 4) Decimal)
-                                                                        (Integer 4)
-                                                                        LBound
-                                                                        ()
+                                                            [(TypeInquiry
+                                                                StringLen
+                                                                (Allocatable
+                                                                    (Array
+                                                                        (Character 1 -2 () PointerString)
+                                                                        [(()
+                                                                        ())]
+                                                                        DescriptorArray
                                                                     )
-                                                                    ())]
-                                                                    (Character 1 -2 () PointerString)
-                                                                    ColMajor
-                                                                    ()
                                                                 )
+                                                                (Var 4 keywords)
                                                                 (Integer 4)
-                                                                ()
+                                                                (IntegerConstant -2 (Integer 4) Decimal)
                                                             )
                                                             (IntegerConstant 8 (Integer 4) Decimal)]
                                                             0
                                                             (Integer 4)
-                                                            ()
+                                                            (IntegerConstant 8 (Integer 4) Decimal)
                                                         )
-                                                        (StringLen
+                                                        (TypeInquiry
+                                                            StringLen
+                                                            (Character 1 -1 () PointerString)
                                                             (IntrinsicElementalFunction
                                                                 StringTrim
                                                                 [(ArrayItem
@@ -657,7 +663,7 @@
                                                                 ()
                                                             )
                                                             (Integer 4)
-                                                            ()
+                                                            (IntegerConstant -1 (Integer 4) Decimal)
                                                         )]
                                                         0
                                                         (Integer 4)

@@ -165,47 +165,40 @@
                                         )
                                         [(If
                                             (IntegerCompare
-                                                (StringLen
-                                                    (ArrayItem
-                                                        (Var 3 strings_a)
-                                                        [(()
-                                                        (ArrayBound
-                                                            (Var 3 strings_a)
-                                                            (IntegerConstant 1 (Integer 4) Decimal)
-                                                            (Integer 4)
-                                                            LBound
-                                                            ()
+                                                (TypeInquiry
+                                                    StringLen
+                                                    (Allocatable
+                                                        (Array
+                                                            (Character 1 -2 () PointerString)
+                                                            [(()
+                                                            ())]
+                                                            DescriptorArray
                                                         )
-                                                        ())]
-                                                        (Character 1 -2 () PointerString)
-                                                        ColMajor
-                                                        ()
                                                     )
+                                                    (Var 3 strings_a)
                                                     (Integer 4)
-                                                    ()
+                                                    (IntegerConstant -2 (Integer 4) Decimal)
                                                 )
                                                 LtE
-                                                (StringLen
-                                                    (ArrayItem
-                                                        (Var 3 strings)
-                                                        [(()
-                                                        (ArrayBound
-                                                            (Var 3 strings)
-                                                            (IntegerConstant 1 (Integer 4) Decimal)
-                                                            (Integer 4)
-                                                            LBound
-                                                            ()
+                                                (TypeInquiry
+                                                    StringLen
+                                                    (Allocatable
+                                                        (Array
+                                                            (Character 1 -1 () PointerString)
+                                                            [(()
+                                                            ())]
+                                                            DescriptorArray
                                                         )
-                                                        ())]
-                                                        (Character 1 -1 () PointerString)
-                                                        ColMajor
-                                                        ()
                                                     )
+                                                    (Var 3 strings)
                                                     (Integer 4)
-                                                    ()
+                                                    (IntegerConstant -1 (Integer 4) Decimal)
                                                 )
                                                 (Logical 4)
-                                                ()
+                                                (LogicalConstant
+                                                    .true.
+                                                    (Logical 4)
+                                                )
                                             )
                                             [(Assignment
                                                 (Var 3 strings)

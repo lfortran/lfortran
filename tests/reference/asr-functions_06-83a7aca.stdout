@@ -67,10 +67,12 @@
                             6 trim_wrapper
                             ()
                             [((Var 6 string))]
-                            (Character 1 -3 (StringLen
+                            (Character 1 -3 (TypeInquiry
+                                StringLen
+                                (Character 1 -1 () PointerString)
                                 (Var 6 string)
                                 (Integer 4)
-                                ()
+                                (IntegerConstant -1 (Integer 4) Decimal)
                             ) PointerString)
                             ()
                             ()
@@ -86,12 +88,8 @@
                                 (Array
                                     (Integer 4)
                                     [((IntegerConstant 1 (Integer 4) Decimal)
-                                    (StringLen
-                                        (Var 6 string)
-                                        (Integer 4)
-                                        ()
-                                    ))]
-                                    PointerToDataArray
+                                    (IntegerConstant -1 (Integer 4) Decimal))]
+                                    FixedSizeArray
                                 )
                                 ()
                                 ()
@@ -111,12 +109,8 @@
                                 (Array
                                     (Real 4)
                                     [((IntegerConstant 1 (Integer 4) Decimal)
-                                    (StringLen
-                                        (Var 6 string)
-                                        (Integer 4)
-                                        ()
-                                    ))]
-                                    PointerToDataArray
+                                    (IntegerConstant -1 (Integer 4) Decimal))]
+                                    FixedSizeArray
                                 )
                                 ()
                                 ()
@@ -157,7 +151,7 @@
                                                 (Variable
                                                     4
                                                     r
-                                                    [s]
+                                                    []
                                                     ReturnVar
                                                     ()
                                                     ()
@@ -165,12 +159,8 @@
                                                     (Array
                                                         (Integer 4)
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
-                                                        (StringLen
-                                                            (Var 4 s)
-                                                            (Integer 4)
-                                                            ()
-                                                        ))]
-                                                        PointerToDataArray
+                                                        (IntegerConstant -1 (Integer 4) Decimal))]
+                                                        FixedSizeArray
                                                     )
                                                     ()
                                                     Source
@@ -201,16 +191,8 @@
                                         (Array
                                             (Integer 4)
                                             [((IntegerConstant 1 (Integer 4) Decimal)
-                                            (StringLen
-                                                (FunctionParam
-                                                    0
-                                                    (Character 1 -1 () PointerString)
-                                                    ()
-                                                )
-                                                (Integer 4)
-                                                ()
-                                            ))]
-                                            PointerToDataArray
+                                            (IntegerConstant -1 (Integer 4) Decimal))]
+                                            FixedSizeArray
                                         )
                                         Source
                                         Implementation
@@ -229,10 +211,12 @@
                                         ()
                                         ((Var 4 i)
                                         (IntegerConstant 1 (Integer 4) Decimal)
-                                        (StringLen
+                                        (TypeInquiry
+                                            StringLen
+                                            (Character 1 -1 () PointerString)
                                             (Var 4 s)
                                             (Integer 4)
-                                            ()
+                                            (IntegerConstant -1 (Integer 4) Decimal)
                                         )
                                         ())
                                         [(Assignment
@@ -281,7 +265,7 @@
                                                 (Variable
                                                     5
                                                     r
-                                                    [s]
+                                                    []
                                                     ReturnVar
                                                     ()
                                                     ()
@@ -289,12 +273,8 @@
                                                     (Array
                                                         (Real 4)
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
-                                                        (StringLen
-                                                            (Var 5 s)
-                                                            (Integer 4)
-                                                            ()
-                                                        ))]
-                                                        PointerToDataArray
+                                                        (IntegerConstant -1 (Integer 4) Decimal))]
+                                                        FixedSizeArray
                                                     )
                                                     ()
                                                     Source
@@ -325,16 +305,8 @@
                                         (Array
                                             (Real 4)
                                             [((IntegerConstant 1 (Integer 4) Decimal)
-                                            (StringLen
-                                                (FunctionParam
-                                                    0
-                                                    (Character 1 -1 () PointerString)
-                                                    ()
-                                                )
-                                                (Integer 4)
-                                                ()
-                                            ))]
-                                            PointerToDataArray
+                                            (IntegerConstant -1 (Integer 4) Decimal))]
+                                            FixedSizeArray
                                         )
                                         Source
                                         Implementation
@@ -353,10 +325,12 @@
                                         ()
                                         ((Var 5 i)
                                         (IntegerConstant 1 (Integer 4) Decimal)
-                                        (StringLen
+                                        (TypeInquiry
+                                            StringLen
+                                            (Character 1 -1 () PointerString)
                                             (Var 5 s)
                                             (Integer 4)
-                                            ()
+                                            (IntegerConstant -1 (Integer 4) Decimal)
                                         )
                                         ())
                                         [(Assignment
@@ -397,10 +371,12 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -3 (StringLen
+                                                    (Character 1 -3 (TypeInquiry
+                                                        StringLen
+                                                        (Character 1 -1 () PointerString)
                                                         (Var 3 s)
                                                         (Integer 4)
-                                                        ()
+                                                        (IntegerConstant -1 (Integer 4) Decimal)
                                                     ) PointerString)
                                                     ()
                                                     Source

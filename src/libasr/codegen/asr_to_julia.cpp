@@ -1913,6 +1913,7 @@ public:
             SET_INTRINSIC_NAME(Modulo, "modulo");
             SET_INTRINSIC_NAME(StringLenTrim, "len_trim");
             SET_INTRINSIC_NAME(StringTrim, "trim");
+            SET_INTRINSIC_NAME(StringLen, "len");
             default : {
                 throw LCompilersException("IntrinsicFunction: `"
                     + ASRUtils::get_intrinsic_name(x.m_intrinsic_id)

@@ -25,13 +25,13 @@
                                         "A"
                                         (Character 1 1 () PointerString)
                                     )
-                                    (Character 1 -1 () PointerString)
+                                    (Character 1 1 () PointerString)
                                     (StringConstant
                                         "\n"
                                         (Character 1 0 () PointerString)
                                     )
                                 )
-                                (Character 1 -1 () PointerString)
+                                (Character 1 18 () PointerString)
                                 (StringConstant
                                     "This is record 1.\n"
                                     (Character 1 18 () PointerString)
@@ -41,7 +41,7 @@
                                 "This is record 2."
                                 (Character 1 17 () PointerString)
                             )
-                            (Character 1 -1 () PointerString)
+                            (Character 1 35 () PointerString)
                             (StringConstant
                                 "This is record 1.\nThis is record 2."
                                 (Character 1 35 () PointerString)

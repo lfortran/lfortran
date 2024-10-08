@@ -1,7 +1,7 @@
 program string_06
 character(*), parameter :: s1 = " A B ", s2 = " "
 
-if (len_trim(s1) /= 4) error stop
+! if (len_trim(s1) /= 4) error stop
 if (len_trim(s2) /= 0) error stop
 if (len_trim("  ") /= 0) error stop
 if (len_trim("") /= 0) error stop

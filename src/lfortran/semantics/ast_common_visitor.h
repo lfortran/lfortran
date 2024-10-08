@@ -869,7 +869,8 @@ public:
         {"spread", {IntrinsicSignature({"source", "dim", "ncopies"}, 3, 3)}},
         {"out_of_range", {IntrinsicSignature({"value", "mold", "round"}, 2, 3)}},
         {"same_type_as", {IntrinsicSignature({"a", "b"}, 2, 2)}},
-        {"len_trim", {IntrinsicSignature({"String", "Kind"}, 1, 2)}},
+        {"len_trim", {IntrinsicSignature({"string", "kind"}, 1, 2)}},
+        {"len", {IntrinsicSignature({"string", "kind"}, 1, 2)}},
     };
 
     std::map<std::string, std::pair<std::string, std::vector<std::string>>> intrinsic_mapping = {
@@ -6079,7 +6080,7 @@ public:
 
                     std::vector<int> array_indices_in_args = find_array_indices_in_args(args);
                     std::vector<std::string> inquiry_functions = {"epsilon", "radix", "range", "precision", "rank", "tiny", "huge", "bit_size", "new_line", "digits",
-                        "maxexponent", "minexponent", "storage_size", "kind", "is_contiguous"};
+                        "maxexponent", "minexponent", "storage_size", "kind", "is_contiguous", "len"};
                     if (are_all_args_evaluated &&
                         (std::find(inquiry_functions.begin(), inquiry_functions.end(), var_name) == inquiry_functions.end()) &&
                         !array_indices_in_args.empty())

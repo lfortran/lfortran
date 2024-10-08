@@ -53,10 +53,12 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -3 (StringLen
+                                                    (Character 1 -3 (TypeInquiry
+                                                        StringLen
+                                                        (Character 1 -1 () PointerString)
                                                         (Var 3 string)
                                                         (Integer 4)
-                                                        ()
+                                                        (IntegerConstant -1 (Integer 4) Decimal)
                                                     ) PointerString)
                                                     ()
                                                     Source

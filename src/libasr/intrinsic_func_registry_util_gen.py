@@ -666,7 +666,7 @@ intrinsic_funcs_args = {
     "NewLine": [
         {
             "args": [("char",)],
-            "return": "character(-1)"
+            "return": "character(1)"
         }
     ],
     "Range": [
@@ -846,6 +846,13 @@ intrinsic_funcs_args = {
             "ret_type_arg_idx": 0
         }
     ],
+    "StringLen": [
+        {
+            "args": [("char",)],
+            "return": "int32",
+            "kind_arg": True
+        }
+    ],
 }
 
 skip_create_func = ["Partition"]
@@ -866,6 +873,7 @@ compile_time_only_fn = [
     "MinExponent",
     "SameTypeAs",
     "Digits",
+    "StringLen",
 ]
 
 type_to_asr_type_check = {

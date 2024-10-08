@@ -117,6 +117,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     Adjustr,
     StringLenTrim,
     StringTrim,
+    StringLen,
     Ichar,
     Char,
     Achar,
@@ -4543,6 +4544,22 @@ namespace StringTrim {
     }
 
 } // namespace StringTrim
+
+namespace StringLen {
+
+    static ASR::expr_t *eval_StringLen(Allocator &al, const Location &loc,
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+        size_t len = 0;
+        if (ASR::is_a<ASR::StringConstant_t>(*args[0]) ) {
+            char* str = ASR::down_cast<ASR::StringConstant_t>(args[0])->m_s;
+            len = std::strlen(str);
+        } else {
+            len = ASR::down_cast<ASR::Character_t>(ASRUtils::type_get_past_array(ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(args[0]))))->m_len;
+        }
+        return make_ConstantWithType(make_IntegerConstant_t, len, t1, loc);
+    }
+
+} // namespace StringLen
 
 namespace Ichar {
 

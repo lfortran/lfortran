@@ -100,7 +100,11 @@
                                         )
                                         [(Assignment
                                             (Var 4 length)
-                                            (StringLen
+                                            (TypeInquiry
+                                                StringLen
+                                                (Allocatable
+                                                    (Character 1 -2 () PointerString)
+                                                )
                                                 (StructInstanceMember
                                                     (Var 4 string)
                                                     4 1_string_type_raw
@@ -110,7 +114,7 @@
                                                     ()
                                                 )
                                                 (Integer 4)
-                                                ()
+                                                (IntegerConstant -2 (Integer 4) Decimal)
                                             )
                                             ()
                                         )]

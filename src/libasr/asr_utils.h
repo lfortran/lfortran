@@ -2927,6 +2927,10 @@ inline int extract_len(ASR::expr_t* len_expr, const Location& loc) {
             a_len = -3;
             break;
         }
+        case ASR::exprType::TypeInquiry: {
+            a_len = -3;
+            break;
+        }
         default: {
             throw SemanticError("Only Integers or variables implemented so far for `len` expressions, found: " + ASRUtils::type_to_str_python(ASRUtils::expr_type(len_expr)),
                                 loc);

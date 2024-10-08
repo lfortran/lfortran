@@ -388,7 +388,7 @@
                                                 (Variable
                                                     7
                                                     lps_array
-                                                    [string]
+                                                    []
                                                     ReturnVar
                                                     ()
                                                     ()
@@ -396,12 +396,8 @@
                                                     (Array
                                                         (Integer 4)
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
-                                                        (StringLen
-                                                            (Var 7 string)
-                                                            (Integer 4)
-                                                            ()
-                                                        ))]
-                                                        PointerToDataArray
+                                                        (IntegerConstant -1 (Integer 4) Decimal))]
+                                                        FixedSizeArray
                                                     )
                                                     ()
                                                     Source
@@ -432,16 +428,8 @@
                                         (Array
                                             (Integer 4)
                                             [((IntegerConstant 1 (Integer 4) Decimal)
-                                            (StringLen
-                                                (FunctionParam
-                                                    0
-                                                    (Character 1 -1 () PointerString)
-                                                    ()
-                                                )
-                                                (Integer 4)
-                                                ()
-                                            ))]
-                                            PointerToDataArray
+                                            (IntegerConstant -1 (Integer 4) Decimal))]
+                                            FixedSizeArray
                                         )
                                         Source
                                         Implementation
@@ -528,12 +516,8 @@
                                                 (Array
                                                     (Integer 4)
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
-                                                    (StringLen
-                                                        (Var 8 string)
-                                                        (Integer 4)
-                                                        ()
-                                                    ))]
-                                                    PointerToDataArray
+                                                    (IntegerConstant -1 (Integer 4) Decimal))]
+                                                    FixedSizeArray
                                                 )
                                                 ()
                                                 ()
@@ -709,10 +693,12 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -3 (StringLen
+                                                    (Character 1 -3 (TypeInquiry
+                                                        StringLen
+                                                        (Character 1 -1 () PointerString)
                                                         (Var 12 string)
                                                         (Integer 4)
-                                                        ()
+                                                        (IntegerConstant -1 (Integer 4) Decimal)
                                                     ) PointerString)
                                                     ()
                                                     Source
@@ -769,10 +755,12 @@
                                             ))]
                                             (Character 1 -3 (IntrinsicElementalFunction
                                                 Max
-                                                [(StringLen
+                                                [(TypeInquiry
+                                                    StringLen
+                                                    (Character 1 -1 () PointerString)
                                                     (Var 12 string)
                                                     (Integer 4)
-                                                    ()
+                                                    (IntegerConstant -1 (Integer 4) Decimal)
                                                 )
                                                 (Var 12 output_length)]
                                                 0
@@ -839,10 +827,12 @@
                                                     Default
                                                     (Character 1 -3 (IntrinsicElementalFunction
                                                         Max
-                                                        [(StringLen
+                                                        [(TypeInquiry
+                                                            StringLen
+                                                            (Character 1 -1 () PointerString)
                                                             (Var 13 string)
                                                             (Integer 4)
-                                                            ()
+                                                            (IntegerConstant -1 (Integer 4) Decimal)
                                                         )
                                                         (Var 13 output_length)]
                                                         0
@@ -1046,7 +1036,9 @@
                                                 ))]
                                                 (Character 1 -3 (IntrinsicElementalFunction
                                                     Max
-                                                    [(StringLen
+                                                    [(TypeInquiry
+                                                        StringLen
+                                                        (Character 1 -1 () PointerString)
                                                         (FunctionCall
                                                             10 char@char_string
                                                             6 char
@@ -1063,7 +1055,7 @@
                                                             ()
                                                         )
                                                         (Integer 4)
-                                                        ()
+                                                        (IntegerConstant -1 (Integer 4) Decimal)
                                                     )
                                                     (Var 10 output_length)]
                                                     0
@@ -1231,7 +1223,9 @@
                                                 ((Var 11 pad_with))]
                                                 (Character 1 -3 (IntrinsicElementalFunction
                                                     Max
-                                                    [(StringLen
+                                                    [(TypeInquiry
+                                                        StringLen
+                                                        (Character 1 -1 () PointerString)
                                                         (FunctionCall
                                                             11 char@char_string
                                                             6 char
@@ -1248,7 +1242,7 @@
                                                             ()
                                                         )
                                                         (Integer 4)
-                                                        ()
+                                                        (IntegerConstant -1 (Integer 4) Decimal)
                                                     )
                                                     (Var 11 output_length)]
                                                     0

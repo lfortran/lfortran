@@ -1311,6 +1311,7 @@ public:
         else if(intrinsic_func_name == "Mergebits") intrinsic_func_name = "merge_bits";
         else if(intrinsic_func_name == "StringLenTrim") intrinsic_func_name = "len_trim";
         else if(intrinsic_func_name == "StringTrim") intrinsic_func_name = "trim";
+        else if(intrinsic_func_name == "StringLen") intrinsic_func_name = "len";
         visit_IntrinsicElementalFunction_helper(out, intrinsic_func_name, x);
     }
 

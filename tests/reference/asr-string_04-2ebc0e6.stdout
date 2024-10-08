@@ -289,7 +289,9 @@
                     )
                     (If
                         (IntegerCompare
-                            (StringLen
+                            (TypeInquiry
+                                StringLen
+                                (Character 1 -1 () PointerString)
                                 (StringSection
                                     (Var 2 str)
                                     (IntegerBinOp
@@ -305,12 +307,15 @@
                                     ()
                                 )
                                 (Integer 4)
-                                ()
+                                (IntegerConstant -1 (Integer 4) Decimal)
                             )
                             NotEq
                             (IntegerConstant 3 (Integer 4) Decimal)
                             (Logical 4)
-                            ()
+                            (LogicalConstant
+                                .true.
+                                (Logical 4)
+                            )
                         )
                         [(ErrorStop
                             ()

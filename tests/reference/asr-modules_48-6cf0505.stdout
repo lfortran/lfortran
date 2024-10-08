@@ -754,10 +754,12 @@
                                         ()
                                         ((Var 4 i)
                                         (IntegerConstant 1 (Integer 4) Decimal)
-                                        (StringLen
+                                        (TypeInquiry
+                                            StringLen
+                                            (Character 1 -1 () PointerString)
                                             (Var 4 input)
                                             (Integer 4)
-                                            ()
+                                            (IntegerConstant -1 (Integer 4) Decimal)
                                         )
                                         ())
                                         [(Assignment
@@ -1187,15 +1189,22 @@
                                     )
                                     (If
                                         (IntegerCompare
-                                            (StringLen
+                                            (TypeInquiry
+                                                StringLen
+                                                (Allocatable
+                                                    (Character 1 -2 () PointerString)
+                                                )
                                                 (Var 6 name)
                                                 (Integer 4)
-                                                ()
+                                                (IntegerConstant -2 (Integer 4) Decimal)
                                             )
                                             NotEq
                                             (IntegerConstant 0 (Integer 4) Decimal)
                                             (Logical 4)
-                                            ()
+                                            (LogicalConstant
+                                                .true.
+                                                (Logical 4)
+                                            )
                                         )
                                         [(Assignment
                                             (Var 6 lout)
@@ -1287,15 +1296,22 @@
                                                 )
                                                 And
                                                 (IntegerCompare
-                                                    (StringLen
+                                                    (TypeInquiry
+                                                        StringLen
+                                                        (Allocatable
+                                                            (Character 1 -2 () PointerString)
+                                                        )
                                                         (Var 6 name)
                                                         (Integer 4)
-                                                        ()
+                                                        (IntegerConstant -2 (Integer 4) Decimal)
                                                     )
                                                     LtE
                                                     (IntegerConstant 63 (Integer 4) Decimal)
                                                     (Logical 4)
-                                                    ()
+                                                    (LogicalConstant
+                                                        .true.
+                                                        (Logical 4)
+                                                    )
                                                 )
                                                 (Logical 4)
                                                 ()
