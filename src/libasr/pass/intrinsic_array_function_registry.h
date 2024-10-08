@@ -3364,9 +3364,16 @@ namespace FindLoc {
     ASR::expr_t *mask = args[3];
     ASR::expr_t *back = args[5];
     if (overload_id == 1) {
+        ASR::expr_t *mask_new = nullptr;
+        if( ASRUtils::is_array(ASRUtils::expr_type(mask)) ){
+            mask_new = ArrayItem_02(mask, i);
+        }
+        else{
+            mask_new = mask;
+        }
         body.push_back(al, b.Assignment(result, b.i_t(0, return_type)));
         body.push_back(al, b.DoLoop(i, b.i_t(1, type), UBound(array, 1), {
-            b.If(b.And(b.Eq(ArrayItem_02(array, i), value), b.Eq(ArrayItem_02(mask, i), b.bool_t(1, logical))), {
+            b.If(b.And(b.Eq(ArrayItem_02(array, i), value), b.Eq(mask_new, b.bool_t(1, logical))), {
                 b.Assignment(result, i),
                 b.If(b.NotEq(back, b.bool_t(1, logical)), {
                     b.Return()
