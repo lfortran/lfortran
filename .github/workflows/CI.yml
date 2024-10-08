@@ -485,7 +485,6 @@ jobs:
       fail-fast: false
       matrix:
         os: ["macos-latest", "ubuntu-latest"]
-        llvm-version: ["11", "19"]
         python-version: ["3.10"]
     steps:
       - uses: actions/checkout@v4
