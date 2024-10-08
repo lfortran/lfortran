@@ -45,7 +45,6 @@ end function
 
 ```fortran
 program intrinsics_len_trim
-    use lfortran_intrinsic_string, only: len_trim
     implicit none
     character(*), parameter :: s1 = " A B "
     integer:: retval
