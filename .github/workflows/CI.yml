@@ -27,9 +27,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1.8.0
+      - uses: mamba-org/setup-micromamba@v2.0.0
         with:
-          micromamba-version: '1.5.10-0'
           environment-file: ci/environment.yml
           create-args: >-
             python=${{ matrix.python-version }}
@@ -112,9 +111,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1.8.0
+      - uses: mamba-org/setup-micromamba@v2.0.0
         with:
-          micromamba-version: '1.5.10-0'
           environment-file: ci/environment_linux.yml
           create-args: >-
             python=3.10
@@ -233,9 +231,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1.8.0
+      - uses: mamba-org/setup-micromamba@v2.0.0
         with:
-          micromamba-version: '1.5.10-0'
           environment-file: ci/environment_linux.yml
           create-args: >-
             python=3.10
@@ -313,9 +310,8 @@ jobs:
           fetch-depth: 0
           path: src
 
-      - uses: mamba-org/setup-micromamba@v1.8.0
+      - uses: mamba-org/setup-micromamba@v2.0.0
         with:
-          micromamba-version: '1.5.10-0'
           environment-file: src/ci/environment_linux.yml
           create-args: >-
             python=3.10
@@ -370,9 +366,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1.8.0
+      - uses: mamba-org/setup-micromamba@v2.0.0
         with:
-          micromamba-version: '1.5.10-0'
           environment-file: ci/environment_linux.yml
           create-args: >-
             python=3.10
@@ -421,9 +416,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1.8.0
+      - uses: mamba-org/setup-micromamba@v2.0.0
         with:
-          micromamba-version: '1.5.10-0'
           environment-file: ci/environment_linux.yml
           create-args: >-
             python=3.10
@@ -491,9 +485,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1.8.0
+      - uses: mamba-org/setup-micromamba@v2.0.0
         with:
-          micromamba-version: '1.5.10-0'
           environment-file: ci/environment_linux_llvm.yml
           create-args: >-
             python=${{ matrix.python-version }}
@@ -754,9 +747,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1.8.0
+      - uses: mamba-org/setup-micromamba@v2.0.0
         with:
-          micromamba-version: '1.5.10-0'
           environment-file: ci/environment_linux_llvm.yml
           create-args: >-
             llvmdev=${{ matrix.llvm-version }}
@@ -1004,9 +996,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1.8.0
+      - uses: mamba-org/setup-micromamba@v2.0.0
         with:
-          micromamba-version: '1.5.10-0'
           environment-file: ci/environment_linux_llvm.yml
           create-args: >-
             llvmdev=${{ matrix.llvm-version }}
@@ -1101,9 +1092,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1.8.0
+      - uses: mamba-org/setup-micromamba@v2.0.0
         with:
-          micromamba-version: '1.5.10-0'
           environment-file: ci/environment_linux.yml
           create-args: >-
             llvm-openmp
@@ -1143,9 +1133,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1.8.0
+      - uses: mamba-org/setup-micromamba@v2.0.0
         with:
-          micromamba-version: '1.5.10-0'
           environment-file: ci/environment_linux.yml
           create-args: >-
             python=3.10
@@ -1163,9 +1152,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1.8.0
+      - uses: mamba-org/setup-micromamba@v2.0.0
         with:
-          micromamba-version: '1.5.10-0'
           environment-file: ci/environment_linux.yml
           create-args: >-
             python=3.10
@@ -1183,9 +1171,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1.8.0
+      - uses: mamba-org/setup-micromamba@v2.0.0
         with:
-          micromamba-version: '1.5.10-0'
           environment-file: ci/environment_linux.yml
           create-args: >-
             python=3.10
@@ -1234,9 +1221,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1.8.0
+      - uses: mamba-org/setup-micromamba@v2.0.0
         with:
-          micromamba-version: '1.5.10-0'
           environment-file: ci/environment_linux.yml
           create-args: >-
             python=3.10
@@ -1277,9 +1263,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1.8.0
+      - uses: mamba-org/setup-micromamba@v2.0.0
         with:
-          micromamba-version: '1.5.10-0'
           environment-file: ci/environment_linux_llvm.yml
           create-args: >-
             python=3.10
@@ -1323,9 +1308,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1.8.0
+      - uses: mamba-org/setup-micromamba@v2.0.0
         with:
-          micromamba-version: '1.5.10-0'
           environment-file: ci/environment_linux.yml
           create-args: >-
             python=3.10
@@ -1379,9 +1363,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1.8.0
+      - uses: mamba-org/setup-micromamba@v2.0.0
         with:
-          micromamba-version: '1.5.10-0'
           environment-file: ci/environment_linux.yml
           create-args: >-
             python=3.10
@@ -1413,9 +1396,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1.8.0
+      - uses: mamba-org/setup-micromamba@v2.0.0
         with:
-          micromamba-version: '1.5.10-0'
           environment-file: ci/environment_docs_linux.yml
 
       - uses: hendrikmuhs/ccache-action@main
