@@ -133,6 +133,7 @@ expr
     | StringOrd(expr arg, ttype type, expr? value)
     | StringChr(expr arg, ttype type, expr? value)
     | StringFormat(expr? fmt, expr* args, string_format_kind kind, ttype type, expr? value)
+    | StringPhysicalCast(expr arg, string_physical_type old, string_physical_type new, ttype type, expr? value)
     | CPtrCompare(expr left, cmpop op, expr right, ttype type, expr? value)
     | SymbolicCompare(expr left, cmpop op, expr right, ttype type, expr? value)
     | DictConstant(expr* keys, expr* values, ttype type)
