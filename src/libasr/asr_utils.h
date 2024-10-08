@@ -2608,7 +2608,7 @@ static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
         case ASR::ttypeType::Character: {
             ASR::Character_t* tnew = ASR::down_cast<ASR::Character_t>(t);
             t_ = ASRUtils::TYPE(ASR::make_Character_t(al, t->base.loc,
-                    tnew->m_kind, tnew->m_len, tnew->m_len_expr, ASR::string_physical_typeType::PointerString));
+                    tnew->m_kind, tnew->m_len, tnew->m_len_expr, tnew->m_physical_type));
             break;
         }
         case ASR::ttypeType::StructType: {
