@@ -477,6 +477,20 @@ jobs:
             test -f inst/oh/my/sweet/lib/liblfortran_runtime.so
             test -f inst/incl/O/Matic/lfortran/impure/lfortran_intrinsics.h
             test -f inst/man/O/man/man1/lfortran.1
+  
+  third_party_code_compile_dummy:
+    name: Check Third Party Code Compilation
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ["macos-latest", "ubuntu-latest"]
+        python-version: ["3.10"]
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          echo "Skipping test"
+          exit 0
 
   third_party_code_compile:
     name: Check Third Party Code Compilation - OS (${{ matrix.os }}), LLVM (${{ matrix.llvm-version }})
