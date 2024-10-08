@@ -6324,11 +6324,47 @@ public:
                 llvm::APInt(32, 1));
         }
         int x_step_kind = (ASRUtils::extract_kind_from_ttype_t(down_cast<ASR::IntegerConstant_t>(x.m_step)->m_type));
-        if (x_step_kind == 8) {
-            tmp = lfortran_str_slice8(str, left, right, step, left_present, right_present);
+        if(!x.m_start && !x.m_end && !x.m_step){ 
+            tmp = str; // no need for slicing
         } else {
-            tmp = lfortran_str_slice(str, left, right, step, left_present, right_present);
+            if (x_step_kind == 8) {
+                tmp = lfortran_str_slice8(str, left, right, step, left_present, right_present);
+            } else {
+                tmp = lfortran_str_slice(str, left, right, step, left_present, right_present);
+            }
         }
+    }
+
+    void visit_StringPhysicalCast(const ASR::StringPhysicalCast_t &x){
+        int64_t ptr_loads_copy = ptr_loads;
+        if( x.m_old == ASR::string_physical_typeType::DescriptorString && 
+            x.m_new == ASR::string_physical_typeType::PointerString){
+            ptr_loads = 0;
+            this->visit_expr(*x.m_arg);
+            llvm::Value* fetched_ptr = llvm_utils->create_gep2(string_descriptor, tmp, 0);
+            if(ptr_loads_copy > 0){
+                tmp = llvm_utils->CreateLoad2(character_type, fetched_ptr);
+            } else {
+                tmp = fetched_ptr;
+            }
+        } else if ( x.m_old == ASR::string_physical_typeType::PointerString && 
+            x.m_new == ASR::string_physical_typeType::DescriptorString){
+            // Create string descriptor and fetch its char*, size, capacity
+            llvm::Value* string_desc = llvm_utils->CreateAlloca(*builder, string_descriptor, nullptr,"casted_string_ptr_to_desc");
+            llvm::Value* char_ptr = llvm_utils->create_gep2(string_descriptor, string_desc, 0);
+            llvm::Value* string_size_ptr = llvm_utils->create_gep2(string_descriptor, string_desc, 1);
+            llvm::Value* string_capacity_ptr = llvm_utils->create_gep2(string_descriptor, string_desc, 2);
+
+            ptr_loads = 1; // load char**
+            this->visit_expr_wrapper(x.m_arg, true);
+
+            // Store char*, size, capacity
+            builder->CreateStore(tmp, char_ptr);
+            builder->CreateStore(llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), -1), string_size_ptr);
+            builder->CreateStore(llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), -1), string_capacity_ptr);            
+            tmp = string_desc; 
+        }
+        ptr_loads = ptr_loads_copy;
     }
 
     void visit_RealCopySign(const ASR::RealCopySign_t& x) {
