@@ -9913,6 +9913,12 @@ public:
             } else {
                 tmp = CreateCallUtil(fn, args, return_var_type0);
             }
+            // always use string_descriptor* in the codebase.
+            if(fn->getReturnType() == string_descriptor){
+                llvm::Value* string_descriptor_ptr = llvm_utils->CreateAlloca(*builder, string_descriptor);
+                builder->CreateStore(tmp, string_descriptor_ptr);
+                tmp = string_descriptor_ptr;
+            }
         }
         if (ASRUtils::get_FunctionType(s)->m_abi == ASR::abiType::BindC) {
             ASR::ttype_t *return_var_type0 = EXPR2VAR(s->m_return_var)->m_type;
