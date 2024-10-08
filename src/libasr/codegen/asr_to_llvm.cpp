@@ -1252,19 +1252,15 @@ public:
             int dims = ASRUtils::extract_n_dims_from_ttype(cur_type);
             if (dims == 0) {
                 if (ASRUtils::is_character(*cur_type)) {
-                    llvm::Value* tmp_ = tmp;
-                    if( LLVM::is_llvm_pointer(*cur_type) ) {
-                        tmp = llvm_utils->CreateLoad(tmp);
-                    }
-                    llvm::Value *cond = builder->CreateICmpNE(
-                        builder->CreatePtrToInt(tmp, llvm::Type::getInt64Ty(context)),
-                        builder->CreatePtrToInt(llvm::ConstantPointerNull::get(character_type),
-                            llvm::Type::getInt64Ty(context)) );
-                    llvm_utils->create_if_else(cond, [=]() {
-                        builder->CreateCall(free_fn, {tmp});
-                        builder->CreateStore(
-                            llvm::ConstantPointerNull::get(character_type), tmp_);
-                    }, [](){});
+                    llvm::Value* char_ptr, *size, *capacity;
+                    char_ptr = llvm_utils->create_gep2(string_descriptor, tmp, 0);
+                    size = llvm_utils->create_gep2(string_descriptor, tmp, 1);
+                    capacity = llvm_utils->create_gep2(string_descriptor, tmp, 2);
+
+                    builder->CreateCall(_Deallocate(),{llvm_utils->CreateLoad2(character_type, char_ptr)});
+                    builder->CreateStore(llvm::ConstantPointerNull::getNullValue(llvm::Type::getInt8Ty(context)->getPointerTo()), char_ptr);
+                    builder->CreateStore(llvm::ConstantInt::get(llvm::Type::getInt64Ty(context),0), size);
+                    builder->CreateStore(llvm::ConstantInt::get(llvm::Type::getInt64Ty(context),0), capacity);
                     continue;
                 } else {
                     llvm::Value* tmp_ = tmp;
