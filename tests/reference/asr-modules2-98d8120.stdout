@@ -231,9 +231,17 @@
                                     [(If
                                         (IntrinsicImpureFunction
                                             Allocated
-                                            [(StructInstanceMember
-                                                (Var 15 self)
-                                                15 1_toml_value_key
+                                            [(StringPhysicalCast
+                                                (StructInstanceMember
+                                                    (Var 15 self)
+                                                    15 1_toml_value_key
+                                                    (Allocatable
+                                                        (Character 1 -2 () DescriptorString)
+                                                    )
+                                                    ()
+                                                )
+                                                DescriptorString
+                                                PointerString
                                                 (Allocatable
                                                     (Character 1 -2 () PointerString)
                                                 )
@@ -248,7 +256,7 @@
                                                 (Var 15 self)
                                                 15 1_toml_value_key
                                                 (Allocatable
-                                                    (Character 1 -2 () PointerString)
+                                                    (Character 1 -2 () DescriptorString)
                                                 )
                                                 ()
                                             )]
@@ -521,7 +529,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (Character 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source

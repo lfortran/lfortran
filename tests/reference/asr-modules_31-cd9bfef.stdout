@@ -167,33 +167,41 @@
                                     [(SubroutineCall
                                         7 1_update_dependency
                                         7 1_update
-                                        [((StructInstanceMember
-                                            (ArrayItem
-                                                (StructInstanceMember
-                                                    (Var 7 deps)
-                                                    7 1_dependency_tree_t_dep
-                                                    (Allocatable
-                                                        (Array
-                                                            (StructType
-                                                                7 fpm_dependency_modules_31_dependency_node_t
+                                        [((StringPhysicalCast
+                                            (StructInstanceMember
+                                                (ArrayItem
+                                                    (StructInstanceMember
+                                                        (Var 7 deps)
+                                                        7 1_dependency_tree_t_dep
+                                                        (Allocatable
+                                                            (Array
+                                                                (StructType
+                                                                    7 fpm_dependency_modules_31_dependency_node_t
+                                                                )
+                                                                [(()
+                                                                ())]
+                                                                DescriptorArray
                                                             )
-                                                            [(()
-                                                            ())]
-                                                            DescriptorArray
                                                         )
+                                                        ()
                                                     )
+                                                    [(()
+                                                    (Var 7 ii)
+                                                    ())]
+                                                    (StructType
+                                                        7 fpm_dependency_modules_31_dependency_node_t
+                                                    )
+                                                    ColMajor
                                                     ()
                                                 )
-                                                [(()
-                                                (Var 7 ii)
-                                                ())]
-                                                (StructType
-                                                    7 fpm_dependency_modules_31_dependency_node_t
+                                                7 1_dependency_config_t_name
+                                                (Allocatable
+                                                    (Character 1 -2 () DescriptorString)
                                                 )
-                                                ColMajor
                                                 ()
                                             )
-                                            7 1_dependency_config_t_name
+                                            DescriptorString
+                                            PointerString
                                             (Allocatable
                                                 (Character 1 -2 () PointerString)
                                             )
@@ -268,7 +276,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (Character 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -389,7 +397,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (Character 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -407,7 +415,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (Character 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -465,7 +473,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (Character 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -483,7 +491,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (Character 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -543,7 +551,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (Character 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -586,7 +594,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (Character 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -692,7 +700,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (Character 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source

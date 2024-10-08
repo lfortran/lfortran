@@ -146,7 +146,7 @@
                                                             (Var 13 temp)
                                                             12 1_string_t_s
                                                             (Allocatable
-                                                                (Character 1 -2 () PointerString)
+                                                                (Character 1 -2 () DescriptorString)
                                                             )
                                                             ()
                                                         )
@@ -154,7 +154,7 @@
                                                             (Var 14 target)
                                                             12 1_build_target_t_output_dir
                                                             (Allocatable
-                                                                (Character 1 -2 () PointerString)
+                                                                (Character 1 -2 () DescriptorString)
                                                             )
                                                             ()
                                                         )
@@ -456,7 +456,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (Character 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -712,7 +712,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (Character 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
