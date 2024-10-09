@@ -65,7 +65,7 @@ jobs:
 
       - name: Build (Windows)
         if: contains(matrix.os, 'windows')
-        shell: cmd
+        shell: cmd /C call {0}
         run: |
             set MAMBA_INSTALL_LOCN=C:\\Users\runneradmin\micromamba
             call %MAMBA_INSTALL_LOCN%\Scripts\activate.bat
