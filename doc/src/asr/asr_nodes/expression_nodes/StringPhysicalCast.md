@@ -37,7 +37,7 @@ The return value is a message to the back end to know which physical type to use
 **The intention behind casting from [`PointerString`](../type_nodes/StringPhysicalType.md) to [`DescriptorString`](../type_nodes/StringPhysicalType.md):**\
 - The intention is to tell the back end to operate on the whole descriptorString llvm struct`{char* data, int64 size, int64 capacity}` instead of pointerString `char*` 
 - This happens by creating an LLVM struct (which represents the descriptorString) called `casted_string_ptr_to_desc` then we just make its internal `char*` point to the passed pointerString arg, and then we fill `size` and `capacity` with `-1` value to be an indication later for any function that utilizes these 2 values - telling it that this string is casted and it's originally a pointer (fixed memory location) and don't extend it.  
-- **NOTE** : This isn't widely used in the code base unless we're dealing with some lhs-rhs kinda of operations on strings, that's where we make the two sides have equal physical string types *like function-argument passing*. apart from that, it makes our life easier when implementing lhs-rhs string expression visitors just be knowing a small fact that the internals of this lhs-rhs string expression are of descriptorString physical type.
+- **NOTE** : This isn't widely used in the code base unless we're dealing with some LHS-RHS kinda of operations on strings, that's where we make the two sides have equal physical string types *like function-argument passing*. apart from that, it makes our life easier when implementing LHS-RHS string expression visitors just be knowing a small fact that the internals of this LHS-RHS string expression are of descriptorString physical type.
 ## Types
 
 Only accepts strings.
