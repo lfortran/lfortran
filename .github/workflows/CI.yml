@@ -326,22 +326,22 @@ jobs:
           variant: sccache
           key: ${{ github.job }}-${{ matrix.os }}
 
-      # - name: Build Linux
-      #   shell: bash -e -l {0}
-      #   run: |
-      #       ( cd src && ./build0.sh )
-      #       export CXXFLAGS="-Werror"
-      #       cmake -S src -B builddir -GNinja \
-      #         -DCMAKE_BUILD_TYPE=RelWithDebInfo \
-      #         -DWITH_LLVM=yes \
-      #         -DWITH_KOKKOS=yes \
-      #         -DLFORTRAN_BUILD_ALL=yes \
-      #         -DWITH_STACKTRACE=no \
-      #         -DWITH_RUNTIME_STACKTRACE=yes \
-      #         -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
-      #         -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
-      #         -DCMAKE_C_COMPILER_LAUNCHER=sccache \
-      #         -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+      - name: Build Linux
+        shell: bash -e -l {0}
+        run: |
+            ( cd src && ./build0.sh )
+            export CXXFLAGS="-Werror"
+            cmake -S src -B builddir -GNinja \
+              -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+              -DWITH_LLVM=yes \
+              -DWITH_KOKKOS=yes \
+              -DLFORTRAN_BUILD_ALL=yes \
+              -DWITH_STACKTRACE=no \
+              -DWITH_RUNTIME_STACKTRACE=yes \
+              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
+              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
+              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 
       #       cmake --build builddir  -j16 --target install
 
@@ -596,19 +596,19 @@ jobs:
       #       # $(pwd)/../src/bin/lfortran --fast ./examples/example_lmdif1.f90 --legacy-array-sections
       #       # $(pwd)/../src/bin/lfortran --fast ./examples/example_lmder1.f90 --legacy-array-sections
 
-      # - name: Test dftatom
-      #   shell: bash -e -x -l {0}
-      #   run: |
-      #       git clone https://github.com/czgdp1807/dftatom.git
-      #       cd dftatom
-      #       git checkout -t origin/lf40
-      #       git checkout 6e0f6e7506440b042aae93e57b10444ee6c36f7a
-      #       export PATH="$(pwd)/../src/bin:$PATH"
-      #       make -f Makefile.manual
-      #       make -f Makefile.manual test
-      #       git clean -dfx
-      #       make -f Makefile.manual F90="lfortran --skip-pass=inline_function_calls,fma --fast"
-      #       make -f Makefile.manual test
+      - name: Test dftatom
+        shell: bash -e -x -l {0}
+        run: |
+            git clone https://github.com/czgdp1807/dftatom.git
+            cd dftatom
+            git checkout -t origin/lf40
+            git checkout 6e0f6e7506440b042aae93e57b10444ee6c36f7a
+            export PATH="$(pwd)/../src/bin:$PATH"
+            make -f Makefile.manual
+            #make -f Makefile.manual test
+            #git clean -dfx
+            #make -f Makefile.manual F90="lfortran --skip-pass=inline_function_calls,fma --fast"
+            #make -f Makefile.manual test
 
       # - name: Test fastGPT ( ubuntu-latest )
       #   shell: bash -e -x -l {0}
