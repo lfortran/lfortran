@@ -249,7 +249,9 @@
                             )
                             PointerString
                             DescriptorString
-                            (Character 1 19 () DescriptorString)
+                            (Allocatable
+                                (Character 1 19 () DescriptorString)
+                            )
                             ()
                         )
                         ()
@@ -307,7 +309,9 @@
                             (Var 8 char_str)
                             PointerString
                             DescriptorString
-                            (Character 1 40 () DescriptorString)
+                            (Allocatable
+                                (Character 1 40 () DescriptorString)
+                            )
                             ()
                         )
                         ()
@@ -1278,7 +1282,9 @@
                                             )
                                             PointerString
                                             DescriptorString
-                                            (Character 1 -1 () DescriptorString)
+                                            (Allocatable
+                                                (Character 1 -1 () DescriptorString)
+                                            )
                                             ()
                                         )
                                         ()
@@ -1617,7 +1623,9 @@
                                                 )
                                                 PointerString
                                                 DescriptorString
-                                                (Character 1 0 () DescriptorString)
+                                                (Allocatable
+                                                    (Character 1 0 () DescriptorString)
+                                                )
                                                 ()
                                             )
                                             ()
@@ -1640,7 +1648,9 @@
                                                 (Var 7 delim)
                                                 PointerString
                                                 DescriptorString
-                                                (Character 1 -1 () DescriptorString)
+                                                (Allocatable
+                                                    (Character 1 -1 () DescriptorString)
+                                                )
                                                 ()
                                             )
                                             ()
@@ -1654,7 +1664,9 @@
                                                 )
                                                 PointerString
                                                 DescriptorString
-                                                (Character 1 0 () DescriptorString)
+                                                (Allocatable
+                                                    (Character 1 0 () DescriptorString)
+                                                )
                                                 ()
                                             )
                                             ()
@@ -1750,7 +1762,9 @@
                                                 )
                                                 PointerString
                                                 DescriptorString
-                                                (Character 1 -1 () DescriptorString)
+                                                (Allocatable
+                                                    (Character 1 -1 () DescriptorString)
+                                                )
                                                 ()
                                             )
                                             ()

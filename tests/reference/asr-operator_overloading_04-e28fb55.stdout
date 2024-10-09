@@ -91,7 +91,9 @@
                                             (Var 4 rhs)
                                             PointerString
                                             DescriptorString
-                                            (Character 1 -1 () DescriptorString)
+                                            (Allocatable
+                                                (Character 1 -1 () DescriptorString)
+                                            )
                                             ()
                                         )
                                         ()

@@ -117,7 +117,9 @@
                                             (Var 13 url)
                                             PointerString
                                             DescriptorString
-                                            (Character 1 -1 () DescriptorString)
+                                            (Allocatable
+                                                (Character 1 -1 () DescriptorString)
+                                            )
                                             ()
                                         )
                                         ()
@@ -135,7 +137,9 @@
                                             (Var 13 branch)
                                             PointerString
                                             DescriptorString
-                                            (Character 1 -1 () DescriptorString)
+                                            (Allocatable
+                                                (Character 1 -1 () DescriptorString)
+                                            )
                                             ()
                                         )
                                         ()

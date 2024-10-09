@@ -360,7 +360,9 @@
                                                     )
                                                     PointerString
                                                     DescriptorString
-                                                    (Character 1 -1 () DescriptorString)
+                                                    (Allocatable
+                                                        (Character 1 -1 () DescriptorString)
+                                                    )
                                                     ()
                                                 )
                                                 ()
@@ -724,7 +726,9 @@
                                                 (Var 13 zone)
                                                 PointerString
                                                 DescriptorString
-                                                (Character 1 -1 () DescriptorString)
+                                                (Allocatable
+                                                    (Character 1 -1 () DescriptorString)
+                                                )
                                                 ()
                                             )
                                             ()
@@ -1033,7 +1037,9 @@
                                                 )
                                                 PointerString
                                                 DescriptorString
-                                                (Character 1 -1 () DescriptorString)
+                                                (Allocatable
+                                                    (Character 1 -1 () DescriptorString)
+                                                )
                                                 ()
                                             )
                                             ()

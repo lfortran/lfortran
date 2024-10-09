@@ -1076,32 +1076,34 @@
                                                 )
                                                 PointerString
                                                 DescriptorString
-                                                (Character 1 -3 (IntrinsicElementalFunction
-                                                    Max
-                                                    [(StringLen
-                                                        (FunctionCall
-                                                            10 char@char_string
-                                                            6 char
-                                                            [((Var 10 string))]
-                                                            (Character 1 -3 (FunctionCall
-                                                                10 len_string
-                                                                6 len
+                                                (Allocatable
+                                                    (Character 1 -3 (IntrinsicElementalFunction
+                                                        Max
+                                                        [(StringLen
+                                                            (FunctionCall
+                                                                10 char@char_string
+                                                                6 char
                                                                 [((Var 10 string))]
-                                                                (Integer 4)
+                                                                (Character 1 -3 (FunctionCall
+                                                                    10 len_string
+                                                                    6 len
+                                                                    [((Var 10 string))]
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    ()
+                                                                ) PointerString)
                                                                 ()
                                                                 ()
-                                                            ) PointerString)
-                                                            ()
+                                                            )
+                                                            (Integer 4)
                                                             ()
                                                         )
+                                                        (Var 10 output_length)]
+                                                        0
                                                         (Integer 4)
                                                         ()
-                                                    )
-                                                    (Var 10 output_length)]
-                                                    0
-                                                    (Integer 4)
-                                                    ()
-                                                ) DescriptorString)
+                                                    ) DescriptorString)
+                                                )
                                                 ()
                                             ))]
                                             (StructType
@@ -1292,32 +1294,34 @@
                                                 )
                                                 PointerString
                                                 DescriptorString
-                                                (Character 1 -3 (IntrinsicElementalFunction
-                                                    Max
-                                                    [(StringLen
-                                                        (FunctionCall
-                                                            11 char@char_string
-                                                            6 char
-                                                            [((Var 11 string))]
-                                                            (Character 1 -3 (FunctionCall
-                                                                11 len_string
-                                                                6 len
+                                                (Allocatable
+                                                    (Character 1 -3 (IntrinsicElementalFunction
+                                                        Max
+                                                        [(StringLen
+                                                            (FunctionCall
+                                                                11 char@char_string
+                                                                6 char
                                                                 [((Var 11 string))]
-                                                                (Integer 4)
+                                                                (Character 1 -3 (FunctionCall
+                                                                    11 len_string
+                                                                    6 len
+                                                                    [((Var 11 string))]
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    ()
+                                                                ) PointerString)
                                                                 ()
                                                                 ()
-                                                            ) PointerString)
-                                                            ()
+                                                            )
+                                                            (Integer 4)
                                                             ()
                                                         )
+                                                        (Var 11 output_length)]
+                                                        0
                                                         (Integer 4)
                                                         ()
-                                                    )
-                                                    (Var 11 output_length)]
-                                                    0
-                                                    (Integer 4)
-                                                    ()
-                                                ) DescriptorString)
+                                                    ) DescriptorString)
+                                                )
                                                 ()
                                             ))]
                                             (StructType

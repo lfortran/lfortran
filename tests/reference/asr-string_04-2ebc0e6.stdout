@@ -288,7 +288,9 @@
                             )
                             PointerString
                             DescriptorString
-                            (Character 1 4 () DescriptorString)
+                            (Allocatable
+                                (Character 1 4 () DescriptorString)
+                            )
                             ()
                         )
                         ()

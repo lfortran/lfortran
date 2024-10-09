@@ -2692,14 +2692,15 @@ static inline ASR::expr_t* check_and_cast_string_pointer_to_descriptor(Allocator
     if( ASRUtils::is_character(*string_type) && 
         !ASRUtils::is_physical_descriptorString(string_type)){ // check if cast is needed.
         // Create string node with `descriptor` physical type
-        ASR::ttype_t* stringDescriptor_type = ASRUtils::duplicate_type(al, 
-            ASRUtils::type_get_past_allocatable(string_type));
+        ASR::ttype_t* stringDescriptor_type = ASRUtils::duplicate_type(al, string_type);
         ASR::down_cast<ASR::Character_t>(stringDescriptor_type)->m_physical_type = ASR::string_physical_typeType::DescriptorString;
+        ASR::ttype_t* alloctable_stringDescriptor_type = ASRUtils::TYPE(
+            ASR::make_Allocatable_t(al, string->base.loc, stringDescriptor_type));
         // Create pointerString to descriptorString cast node
         ASR::expr_t* ptr_to_desc_string_cast = ASRUtils::EXPR(
             ASR::make_StringPhysicalCast_t(al, string->base.loc , string,
             ASR::string_physical_typeType::PointerString, ASR::string_physical_typeType::DescriptorString,
-            stringDescriptor_type, nullptr));
+            alloctable_stringDescriptor_type, nullptr));
         return ptr_to_desc_string_cast;
     } else {
         return string;
