@@ -887,7 +887,7 @@ public:
         ASR::ttype_t* target_type = ASRUtils::expr_type(target);
         current_variable_type_ = target_type;
         this->visit_expr(*(x.m_value));
-        ASR::expr_t* value = ASRUtils::EXPR(tmp);
+        ASR::expr_t* value = ASRUtils::check_and_cast_string_descriptor_to_pointer(al, ASRUtils::EXPR(tmp));
         ASR::ttype_t* value_type = ASRUtils::expr_type(value);
         bool is_target_pointer = ASRUtils::is_pointer(target_type);
         if ( !is_target_pointer && !ASR::is_a<ASR::FunctionType_t>(*target_type) ) {
