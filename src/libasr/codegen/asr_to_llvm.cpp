@@ -4804,7 +4804,6 @@ public:
         }
         tmp = builder->CreateCall(fn, {str2, str_val, idx1, idx2, step, lp, rp});
         strings_to_be_deallocated.push_back(al, tmp); // char* returing from this call is dead after making the next str_copy call.
-        // Use lfortran_str_copy to free lhs (if not nullptr) whether string is physically descriptor or pointer. 
         tmp = lfortran_str_copy(str, tmp, ASRUtils::is_physical_descriptorString(expr_type(ss->m_arg)));
     }
 
