@@ -10,7 +10,7 @@ string_physical_type = PointerString | DescriptorString
 
 - **PointerString :** 
 	- It's the normal C `char*`. The memory for it gets allocated by the runtime `lfortran_str_copy()`.
-	- PointerString can't be an `allocatable` unless it's [casted](../expression_nodes/StringPhysicalCast.md) from `descriptorString` to `pointerString` so it remains to be identified as an allocatable variable in the whole code base, like avoiding some semantic errors when you use the string with some intrinsic function that requires the string to be an allocatable.
+	- PointerString can't be an `allocatable` unless it's an allocatable-array or string [casted](../expression_nodes/StringPhysicalCast.md) from `descriptorString` to `pointerString` so it remains to be identified as an allocatable variable in the whole code base, like avoiding some semantic errors when you use the string with some intrinsic function that requires the string to be an allocatable.
 	
 - **DescriptorString :** 
 	- It's an LLVM struct to hold information about data, size and capacity.
