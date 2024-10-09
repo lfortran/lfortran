@@ -477,20 +477,6 @@ jobs:
             test -f inst/oh/my/sweet/lib/liblfortran_runtime.so
             test -f inst/incl/O/Matic/lfortran/impure/lfortran_intrinsics.h
             test -f inst/man/O/man/man1/lfortran.1
-  
-  third_party_code_compile_dummy:
-    name: Check Third Party Code Compilation
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: ["macos-latest", "ubuntu-latest"]
-        python-version: ["3.10"]
-    steps:
-      - uses: actions/checkout@v4
-      - run: |
-          echo "Skipping test"
-          exit 0
 
   third_party_code_compile:
     name: Check Third Party Code Compilation - OS (${{ matrix.os }}), LLVM (${{ matrix.llvm-version }})
@@ -853,15 +839,15 @@ jobs:
       #       # $(pwd)/../src/bin/lfortran --fast ./examples/example_lmdif1.f90 --legacy-array-sections
       #       # $(pwd)/../src/bin/lfortran --fast ./examples/example_lmder1.f90 --legacy-array-sections
 
-      # - name: Test dftatom
-      #   shell: bash -e -x -l {0}
-      #   run: |
-      #       git clone https://github.com/czgdp1807/dftatom.git
-      #       cd dftatom
-      #       git checkout -t origin/lf40
-      #       git checkout 6e0f6e7506440b042aae93e57b10444ee6c36f7a
-      #       export PATH="$(pwd)/../src/bin:$PATH"
-      #       make -f Makefile.manual
+      - name: Test dftatom
+        shell: bash -e -x -l {0}
+        run: |
+            git clone https://github.com/czgdp1807/dftatom.git
+            cd dftatom
+            git checkout -t origin/lf40
+            git checkout 6e0f6e7506440b042aae93e57b10444ee6c36f7a
+            export PATH="$(pwd)/../src/bin:$PATH"
+            make -f Makefile.manual
       #       make -f Makefile.manual test
       #       git clean -dfx
       #       make -f Makefile.manual F90="lfortran --skip-pass=inline_function_calls,fma --fast"
