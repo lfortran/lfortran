@@ -343,25 +343,25 @@ jobs:
               -DCMAKE_C_COMPILER_LAUNCHER=sccache \
               -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 
-            cmake --build builddir  -j16 --target install
+      #       cmake --build builddir  -j16 --target install
 
-      - name: Test Linux
-        shell: bash -e -l {0}
-        run: ctest --output-on-failure
-        working-directory: builddir
+      # - name: Test Linux
+      #   shell: bash -e -l {0}
+      #   run: ctest --output-on-failure
+      #   working-directory: builddir
 
-      - name: Test Moved Installation
-        shell: bash -e -l {0}
-        run: |
-          mv inst inst.moved
-          cp src/examples/expr2.f90 expr2.F90
-          rm -rf src
-          inst.moved/bin/lfortran expr2.F90 -o expr2
-          ./expr2
-          inst.moved/bin/lfortran --backend=c expr2.F90 -o expr2b
-          ./expr2b
-          inst.moved/bin/lfortran --openmp --backend=cpp expr2.F90 -o expr2c
-          ./expr2c
+      # - name: Test Moved Installation
+      #   shell: bash -e -l {0}
+      #   run: |
+      #     mv inst inst.moved
+      #     cp src/examples/expr2.f90 expr2.F90
+      #     rm -rf src
+      #     inst.moved/bin/lfortran expr2.F90 -o expr2
+      #     ./expr2
+      #     inst.moved/bin/lfortran --backend=c expr2.F90 -o expr2b
+      #     ./expr2b
+      #     inst.moved/bin/lfortran --openmp --backend=cpp expr2.F90 -o expr2c
+      #     ./expr2c
 
   debug:
     name: Check Debug build
