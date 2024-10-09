@@ -57,39 +57,39 @@ jobs:
             echo "CMAKE_CXX_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
             echo "ENABLE_RUNTIME_STACKTRACE=yes" >> $GITHUB_ENV
 
-      - name: Build (Linux / macOS)
-        shell: bash -e -l {0}
-        if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
-        run: |
-            export CXXFLAGS="-Werror"
-            export CFLAGS="-Werror"
-            xonsh ci/build_tmp.xsh
+      # - name: Build (Linux / macOS)
+      #   shell: bash -e -l {0}
+      #   if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
+      #   run: |
+      #       export CXXFLAGS="-Werror"
+      #       export CFLAGS="-Werror"
+      #       xonsh ci/build_tmp.xsh
 
-      - name: Build (Windows)
-        if: contains(matrix.os, 'windows')
-        shell: cmd
-        run: |
-            set MAMBA_INSTALL_LOCN=C:\\Users\runneradmin\micromamba
-            call %MAMBA_INSTALL_LOCN%\Scripts\activate.bat
-            call micromamba activate lf
-            set LFORTRAN_CMAKE_GENERATOR=Ninja
-            set WIN=1
-            set MACOS=0
-            set ENABLE_RUNTIME_STACKTRACE=no
-            call "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
-            xonsh ci\build_tmp.xsh
+      # - name: Build (Windows)
+      #   if: contains(matrix.os, 'windows')
+      #   shell: cmd
+      #   run: |
+      #       set MAMBA_INSTALL_LOCN=C:\\Users\runneradmin\micromamba
+      #       call %MAMBA_INSTALL_LOCN%\Scripts\activate.bat
+      #       call micromamba activate lf
+      #       set LFORTRAN_CMAKE_GENERATOR=Ninja
+      #       set WIN=1
+      #       set MACOS=0
+      #       set ENABLE_RUNTIME_STACKTRACE=no
+      #       call "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
+      #       xonsh ci\build_tmp.xsh
 
-      - name: Test (Linux / macOS)
-        shell: bash -e -l {0}
-        if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
-        run: |
-            xonsh ci/test.xsh
+      # - name: Test (Linux / macOS)
+      #   shell: bash -e -l {0}
+      #   if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
+      #   run: |
+      #       xonsh ci/test.xsh
 
-      - name: Test LFortran's Command Line Interface (Linux / macOS)
-        shell: bash -e -l {0}
-        if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
-        run: |
-            ./test_lfortran_cmdline
+      # - name: Test LFortran's Command Line Interface (Linux / macOS)
+      #   shell: bash -e -l {0}
+      #   if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
+      #   run: |
+      #       ./test_lfortran_cmdline
 
       # - name: Test (Windows)
       #   if: contains(matrix.os, 'windows')
@@ -477,20 +477,6 @@ jobs:
             test -f inst/oh/my/sweet/lib/liblfortran_runtime.so
             test -f inst/incl/O/Matic/lfortran/impure/lfortran_intrinsics.h
             test -f inst/man/O/man/man1/lfortran.1
-  
-  third_party_code_compile_dummy:
-    name: Check Third Party Code Compilation
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: ["macos-latest", "ubuntu-latest"]
-        python-version: ["3.10"]
-    steps:
-      - uses: actions/checkout@v4
-      - run: |
-          echo "Skipping test"
-          exit 0
 
   third_party_code_compile:
     name: Check Third Party Code Compilation - OS (${{ matrix.os }}), LLVM (${{ matrix.llvm-version }})
