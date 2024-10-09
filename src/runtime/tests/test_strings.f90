@@ -1,5 +1,4 @@
 program test_strings
-use lfortran_intrinsic_string, only: len_trim, trim
 implicit none
 character(*), parameter :: s1 = " A B ", s2 = " "
 
