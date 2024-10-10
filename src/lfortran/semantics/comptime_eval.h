@@ -25,9 +25,8 @@ struct IntrinsicProceduresAsASRNodes {
 
         IntrinsicProceduresAsASRNodes() {
             intrinsics_present_in_ASR = {"size", "lbound", "ubound",
-                "transpose", "matmul", "pack", "transfer", "cmplx",
-                "dcmplx", "reshape", "ichar", "iachar", "char", "maxloc",
-                "null", "associated", "len", "complex"};
+                "transpose", "transfer", "cmplx", "dcmplx", "reshape",
+                "iachar", "null", "associated", "len", "complex"};
 
             kind_based_intrinsics = {};
         }
@@ -70,11 +69,7 @@ struct IntrinsicProcedures {
             // in intrinsic_function_transformation()
             // So we shouldn't even encounter them here
             {"int", {m_builtin, &eval_int, false}},
-            {"is_iostat_eor", {m_builtin, &not_implemented, false}},
-            {"is_iostat_end", {m_builtin, &not_implemented, false}},
             {"newunit", {m_custom, &not_implemented, false}},
-
-            // Subroutines
             {"present", {m_builtin, &not_implemented, false}},
 
             // IEEE Arithmetic
