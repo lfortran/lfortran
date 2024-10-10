@@ -6035,6 +6035,30 @@ public:
                     const bool are_all_args_evaluated { ASRUtils::all_args_evaluated(args, true) };
                     fill_optional_kind_arg(var_name, args);
                     scalar_kind_arg(var_name, args);
+
+                    if(specific_var_name == "mod"){
+
+                        ASR::expr_t* arg0 = args[0];  // j
+                        ASR::expr_t* arg1 = args[1];  // i
+
+                        ASR::ttype_t* arg_type0 = ASRUtils::expr_type(arg0);
+                        ASR::ttype_t* arg_type1 = ASRUtils::expr_type(arg1);
+
+                        if((is_integer(*arg_type0) && is_integer(*arg_type1))){
+
+                            int kind0 = ASRUtils::extract_kind_from_ttype_t(arg_type0);
+                            int kind1 = ASRUtils::extract_kind_from_ttype_t(arg_type1);
+
+                            if(kind0 != kind1){
+
+                                int upper_kind = std::max(kind0, kind1);
+
+                                ASRUtils::set_kind_to_ttype_t(arg_type0, upper_kind);  
+                                ASRUtils::set_kind_to_ttype_t(arg_type1, upper_kind); 
+                            }
+                        }
+                    }
+
                     ASRUtils::create_intrinsic_function create_func =
                         ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function(var_name);
 
