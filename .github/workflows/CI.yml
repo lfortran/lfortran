@@ -1424,34 +1424,35 @@ jobs:
           variant: sccache
           key: ${{ github.job }}-${{ matrix.os }}
 
-      # - name: Build Kernel
-      #   shell: bash -e -l {0}
-      #   run: |
-      #     ./build0.sh
-      #     export CXXFLAGS="-Werror"
-      #     cmake . -GNinja \
-      #       -DCMAKE_BUILD_TYPE=Debug \
-      #       -DWITH_LLVM=yes \
-      #       -DWITH_XEUS=yes \
-      #       -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
-      #       -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
-      #       -DCMAKE_C_COMPILER_LAUNCHER=sccache \
-      #       -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+      - name: Build Kernel
+        shell: bash -e -l {0}
+        run: |
+          ./build0.sh
+          export CXXFLAGS="-Werror"
+          cmake . -GNinja \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DWITH_LLVM=yes \
+            -DWITH_XEUS=yes \
+            -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
+            -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
+            -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 
-      #     ninja install
-      #     ctest --output-on-failure
-      #     jupyter kernelspec list --json
+          ninja install
+          ctest --output-on-failure
+          jupyter kernelspec list --json
 
-      # - name: Build Docs
-      #   shell: bash -e -l {0}
-      #   working-directory: doc
-      #   run: |
-      #     $(command -v python) build.py
+      - name: Build Docs
+        shell: bash -e -l {0}
+        working-directory: doc
+        run: |
+          $(command -v python) build.py
 
-      # - name: Upload Docs
-      #   shell: bash -e -l {0}
-      #   working-directory: doc
-      #   run: |
-      #     ../ci/upload_docs.sh
-      #   env:
-      #     SSH_PRIVATE_KEY_DOCS: ${{ secrets.SSH_PRIVATE_KEY_DOCS }}
+      - name: Upload Docs
+        shell: bash -e -l {0}
+        working-directory: doc
+        run: |
+          ../ci/upload_docs.sh
+        env:
+          SSH_PRIVATE_KEY_DOCS: ${{ secrets.SSH_PRIVATE_KEY_DOCS }}
+
