@@ -126,7 +126,7 @@ Result<AST::TranslationUnit_t*> parse(Allocator &al, const std::string &s,
         };
     } catch (const parser_local::TokenizerError &e) {
         Error error;
-        diagnostics.diagnostics.push_back(e.d);
+        // diagnostics.diagnostics.push_back(e.d);
         return error;
     } catch (const parser_local::ParserError &e) {
         Error error;
