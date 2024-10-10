@@ -1718,7 +1718,7 @@ namespace BindPyUtils {
                 util_func_decls += indent + signature + ";\n";
                 std::string body = indent + signature + " {\n";
                 body += indent + tab + "char *s = (char*)PyUnicode_AsUTF8(pValue);\n";
-                body += indent + tab + "return _lfortran_str_copy(s, 1, 0);\n";
+                body += indent + tab + "return _lfortran_str_copy(s, 1, 0, -1, -1);\n";
                 body += indent + "}\n\n";
                 util_funcs += body;
             }

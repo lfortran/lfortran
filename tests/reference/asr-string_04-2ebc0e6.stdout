@@ -40,7 +40,7 @@
                                     ()
                                     Default
                                     (Allocatable
-                                        (Character 1 -2 () PointerString)
+                                        (Character 1 -2 () DescriptorString)
                                     )
                                     ()
                                     Source
@@ -281,9 +281,17 @@
                     )
                     (Assignment
                         (Var 2 str)
-                        (StringConstant
-                            "abcd"
-                            (Character 1 4 () PointerString)
+                        (StringPhysicalCast
+                            (StringConstant
+                                "abcd"
+                                (Character 1 4 () PointerString)
+                            )
+                            PointerString
+                            DescriptorString
+                            (Allocatable
+                                (Character 1 4 () DescriptorString)
+                            )
+                            ()
                         )
                         ()
                     )
@@ -291,7 +299,15 @@
                         (IntegerCompare
                             (StringLen
                                 (StringSection
-                                    (Var 2 str)
+                                    (StringPhysicalCast
+                                        (Var 2 str)
+                                        DescriptorString
+                                        PointerString
+                                        (Allocatable
+                                            (Character 1 -2 () PointerString)
+                                        )
+                                        ()
+                                    )
                                     (IntegerBinOp
                                         (IntegerConstant 2 (Integer 4) Decimal)
                                         Sub

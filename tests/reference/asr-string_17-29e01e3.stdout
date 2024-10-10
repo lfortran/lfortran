@@ -86,9 +86,17 @@
                                     [(If
                                         (IntrinsicImpureFunction
                                             Allocated
-                                            [(StructInstanceMember
-                                                (Var 4 string)
-                                                4 1_string_type_raw
+                                            [(StringPhysicalCast
+                                                (StructInstanceMember
+                                                    (Var 4 string)
+                                                    4 1_string_type_raw
+                                                    (Allocatable
+                                                        (Character 1 -2 () DescriptorString)
+                                                    )
+                                                    ()
+                                                )
+                                                DescriptorString
+                                                PointerString
                                                 (Allocatable
                                                     (Character 1 -2 () PointerString)
                                                 )
@@ -101,9 +109,17 @@
                                         [(Assignment
                                             (Var 4 length)
                                             (StringLen
-                                                (StructInstanceMember
-                                                    (Var 4 string)
-                                                    4 1_string_type_raw
+                                                (StringPhysicalCast
+                                                    (StructInstanceMember
+                                                        (Var 4 string)
+                                                        4 1_string_type_raw
+                                                        (Allocatable
+                                                            (Character 1 -2 () DescriptorString)
+                                                        )
+                                                        ()
+                                                    )
+                                                    DescriptorString
+                                                    PointerString
                                                     (Allocatable
                                                         (Character 1 -2 () PointerString)
                                                     )
@@ -218,9 +234,17 @@
                                     [(If
                                         (IntrinsicImpureFunction
                                             Allocated
-                                            [(StructInstanceMember
-                                                (Var 5 string)
-                                                5 1_string_type_raw
+                                            [(StringPhysicalCast
+                                                (StructInstanceMember
+                                                    (Var 5 string)
+                                                    5 1_string_type_raw
+                                                    (Allocatable
+                                                        (Character 1 -2 () DescriptorString)
+                                                    )
+                                                    ()
+                                                )
+                                                DescriptorString
+                                                PointerString
                                                 (Allocatable
                                                     (Character 1 -2 () PointerString)
                                                 )
@@ -232,9 +256,17 @@
                                         )
                                         [(Assignment
                                             (Var 5 maybe_string)
-                                            (StructInstanceMember
-                                                (Var 5 string)
-                                                5 1_string_type_raw
+                                            (StringPhysicalCast
+                                                (StructInstanceMember
+                                                    (Var 5 string)
+                                                    5 1_string_type_raw
+                                                    (Allocatable
+                                                        (Character 1 -2 () DescriptorString)
+                                                    )
+                                                    ()
+                                                )
+                                                DescriptorString
+                                                PointerString
                                                 (Allocatable
                                                     (Character 1 -2 () PointerString)
                                                 )
@@ -272,7 +304,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (Character 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
