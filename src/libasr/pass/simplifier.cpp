@@ -1934,6 +1934,11 @@ class TransformVariableInitialiser:
                 !ASR::is_a<ASR::StructType_t>(
                     *ASRUtils::type_get_past_array_pointer_allocatable(ASRUtils::expr_type(value))
                 )
+            ) || (
+                x.m_storage == ASR::storage_typeType::Save &&
+                value &&
+                ASRUtils::is_value_constant(value) &&
+                !ASRUtils::is_array(ASRUtils::expr_type(value))
             )
         ) {
             return;
