@@ -1288,6 +1288,7 @@ RUN(NAME string_37 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME string_38 LABELS gfortran llvm
     EXTRA_ARGS -fdefault-integer-8
     GFORTRAN_ARGS -fdefault-integer-8)
+RUN(NAME string_39 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME nested_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME nested_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)

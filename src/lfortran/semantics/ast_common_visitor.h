@@ -4035,6 +4035,17 @@ public:
                             a_value = ASRUtils::EXPR((ASR::make_IntegerConstant_t(al, loc,
                                                     a, int_type)));
                         }
+                        ASR::expr_t* value = ASRUtils::expr_value(args[0].m_left);
+                        if ( value ) {
+                            int64_t a = ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n - offset;
+                            a_value = ASRUtils::EXPR((ASR::make_IntegerConstant_t(al, loc,
+                                                a, int_type)));
+                        }
+                        if ( a_value != nullptr ) {
+                            int64_t a = ASR::down_cast<ASR::IntegerConstant_t>(a_value)->m_n;
+                            if ( a < 0 ) throw SemanticError("The first index in string section is less than 1", loc);
+                        }
+
                         ASR::expr_t* casted_left = CastingUtil::perform_casting(args[0].m_left, int_type, al, loc);
                         l = b.Sub(casted_left, const_1, a_value);
                     }
