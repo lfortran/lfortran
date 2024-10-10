@@ -196,53 +196,7 @@
                                                     ()
                                                 )
                                                 (RealBinOp
-                                                    (ArrayBroadcast
-                                                        (Var 3 absdiff)
-                                                        (IntrinsicArrayFunction
-                                                            Shape
-                                                            [(IntrinsicElementalFunction
-                                                                Abs
-                                                                [(FunctionCall
-                                                                    2 solution
-                                                                    ()
-                                                                    []
-                                                                    (Allocatable
-                                                                        (Array
-                                                                            (Real 4)
-                                                                            [(()
-                                                                            ())]
-                                                                            DescriptorArray
-                                                                        )
-                                                                    )
-                                                                    ()
-                                                                    ()
-                                                                )]
-                                                                0
-                                                                (Array
-                                                                    (Real 4)
-                                                                    [(()
-                                                                    ())]
-                                                                    DescriptorArray
-                                                                )
-                                                                ()
-                                                            )]
-                                                            0
-                                                            (Array
-                                                                (Integer 4)
-                                                                [((IntegerConstant 1 (Integer 4) Decimal)
-                                                                (IntegerConstant 1 (Integer 4) Decimal))]
-                                                                FixedSizeArray
-                                                            )
-                                                            ()
-                                                        )
-                                                        (Array
-                                                            (Real 4)
-                                                            [(()
-                                                            ())]
-                                                            DescriptorArray
-                                                        )
-                                                        ()
-                                                    )
+                                                    (Var 3 absdiff)
                                                     Div
                                                     (IntrinsicElementalFunction
                                                         Abs
