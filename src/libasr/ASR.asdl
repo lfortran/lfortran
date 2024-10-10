@@ -35,7 +35,7 @@ stmt
     | Cycle(identifier? stmt_name)
     | ExplicitDeallocate(expr* vars)
     | ImplicitDeallocate(expr* vars)
-    | DoConcurrentLoop(do_loop_head head, expr* shared, expr* local, reduction_expr* reduction, stmt* body)
+    | DoConcurrentLoop(do_loop_head* head, expr* shared, expr* local, reduction_expr* reduction, stmt* body)
     | DoLoop(identifier? name, do_loop_head head, stmt* body, stmt* orelse)
     | ErrorStop(expr? code)
     | Exit(identifier? stmt_name)

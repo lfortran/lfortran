@@ -11,7 +11,6 @@
 #include <libasr/asr_verify.h>
 #include <lfortran/semantics/asr_implicit_cast_rules.h>
 #include <lfortran/semantics/ast_common_visitor.h>
-#include "lfortran/semantics/asr_lookup_name.cpp"
 #include <lfortran/semantics/ast_to_asr.h>
 #include <lfortran/semantics/comptime_eval.h>
 #include <lfortran/parser/parser_stype.h>
@@ -52,9 +51,6 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
 
 void load_rtlib() {
     const std::string m_builtin = "lfortran_intrinsic_builtin";
-    const std::string m_math = "lfortran_intrinsic_math";
-    const std::string m_math3 = "lfortran_intrinsic_math3";
-    const std::string m_string = "lfortran_intrinsic_string";
     const std::string m_ieee_arithmetic = "lfortran_intrinsic_ieee_arithmetic";
 }
 
@@ -133,21 +129,6 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
 #endif
     }
     return tu;
-}
-
-Result<ASR::asr_t*> ast_to_asr2(Allocator &al,
-    AST::TranslationUnit_t &ast, diag::Diagnostics &diagnostics,
-    SymbolTable *symbol_table, bool symtab_only,
-    CompilerOptions &compiler_options, uint16_t pos) {
-    ASR::TranslationUnit_t* tu = ast_to_asr(al, ast, diagnostics, symbol_table, symtab_only, compiler_options).result;
-    LookupNameVisitor lnv(pos);
-    lnv.visit_TranslationUnit(*tu);
-    if (lnv.node_to_return != nullptr) {
-        return lnv.node_to_return;
-    } else {
-        return (ASR::asr_t*) tu;
-    }
-    // return (ASR::asr_t*) ast_to_asr(al, ast, diagnostics, symbol_table, symtab_only, compiler_options, pos).result;
 }
 
 } // namespace LCompilers::LFortran

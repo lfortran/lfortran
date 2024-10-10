@@ -22,7 +22,10 @@ program intrinsics_301
     logical :: mask2(3) = [.true., .false., .true.]
     logical :: back1 = .false.
     logical :: back2 = .true.
-    
+
+    ! findloc(Array, value, mask)
+    logical :: x4(3) = [.true., .false., .true.], y4 = .true., mask3 = .true.
+
     print *, findloc(x1, y1)
     if (any(findloc(x1, y1) /= 3)) error stop
     print *, findloc(x2, y2)
@@ -43,7 +46,9 @@ program intrinsics_301
     if (any(findloc(x2, y2, mask = mask1, back = back2) /= 5)) error stop
     print *, findloc(x1, y1, mask = mask1, back = back2, kind = 8)
     if (any(findloc(x1, y1, mask = mask1, back = back2, kind = 8) /= 5)) error stop
-    
+    print *, findloc(x4, y4, mask3)
+    if (any(findloc(x4, y4, mask3) /= 1)) error stop
+
     print *, i1
     if (i1(1) /= 2) error stop
     print *, i2

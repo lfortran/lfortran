@@ -1,0 +1,13 @@
+{
+    "basename": "asr-func_parameter_type_02-cef1ab3",
+    "cmd": "lfortran --show-asr --implicit-typing --implicit-interface --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/func_parameter_type_02.f90",
+    "infile_hash": "ed02fab8e69756cf65ecfb2f1861cf6fb9628838d09b3ce6875e0ffd",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-func_parameter_type_02-cef1ab3.stdout",
+    "stdout_hash": "6590c532e8793f175fd15c7244992c922d49512900f28f91a26f0b1c",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

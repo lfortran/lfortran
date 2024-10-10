@@ -8,33 +8,8 @@ interface
     integer, optional, intent(in) :: kind
     end function
 
-    integer function len(x, kind)
-    character(len=*), intent(in) :: x
-    integer, optional, intent(in) :: kind
-    end function
-
     logical function present(x)
     integer, optional, intent(in) :: x
-    end function
-
-    logical function is_iostat_eor(i) result(r)
-    integer, intent(in) :: i
-    end function
-
-    logical function is_iostat_end(i) result(r)
-    integer, intent(in) :: i
-    end function
-
-    subroutine get_command_argument(number, value, length, status)
-    integer, intent(in) :: number
-    character(len=*), optional, intent(out) :: value
-    integer, optional, intent(out) :: length
-    integer, optional, intent(out) :: status
-        error stop "Not implemented yet"
-    end subroutine
-
-    integer function command_argument_count() result(r)
-        error stop "Not implemented yet"
     end function
 
 end interface

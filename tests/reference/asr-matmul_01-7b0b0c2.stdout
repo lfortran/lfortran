@@ -2,12 +2,6 @@
     (SymbolTable
         1
         {
-            iso_c_binding:
-                (IntrinsicModule lfortran_intrinsic_iso_c_binding),
-            iso_fortran_env:
-                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
-            lfortran_intrinsic_math:
-                (IntrinsicModule lfortran_intrinsic_math),
             matmul_01:
                 (Program
                     (SymbolTable
@@ -112,26 +106,6 @@
                                     Public
                                     Required
                                     .false.
-                                ),
-                            cpu_time:
-                                (ExternalSymbol
-                                    6
-                                    cpu_time
-                                    8 cpu_time
-                                    lfortran_intrinsic_math
-                                    []
-                                    cpu_time
-                                    Private
-                                ),
-                            cpu_time@sp_cpu_time:
-                                (ExternalSymbol
-                                    6
-                                    cpu_time@sp_cpu_time
-                                    8 sp_cpu_time
-                                    lfortran_intrinsic_math
-                                    []
-                                    sp_cpu_time
-                                    Private
                                 ),
                             dp:
                                 (Variable
@@ -516,11 +490,10 @@
                             (Character 1 25 () PointerString)
                         )
                     )
-                    (SubroutineCall
-                        6 cpu_time@sp_cpu_time
-                        6 cpu_time
-                        [((Var 6 t1))]
-                        ()
+                    (IntrinsicImpureSubroutine
+                        CpuTime
+                        [(Var 6 t1)]
+                        0
                     )
                     (DoLoop
                         ()
@@ -551,11 +524,10 @@
                         )]
                         []
                     )
-                    (SubroutineCall
-                        6 cpu_time@sp_cpu_time
-                        6 cpu_time
-                        [((Var 6 t2))]
-                        ()
+                    (IntrinsicImpureSubroutine
+                        CpuTime
+                        [(Var 6 t2)]
+                        0
                     )
                     (Assignment
                         (Var 6 t)
@@ -747,11 +719,10 @@
                             (Character 1 8 () PointerString)
                         )
                     )
-                    (SubroutineCall
-                        6 cpu_time@sp_cpu_time
-                        6 cpu_time
-                        [((Var 6 t1))]
-                        ()
+                    (IntrinsicImpureSubroutine
+                        CpuTime
+                        [(Var 6 t1)]
+                        0
                     )
                     (DoLoop
                         ()
@@ -769,11 +740,10 @@
                         )]
                         []
                     )
-                    (SubroutineCall
-                        6 cpu_time@sp_cpu_time
-                        6 cpu_time
-                        [((Var 6 t2))]
-                        ()
+                    (IntrinsicImpureSubroutine
+                        CpuTime
+                        [(Var 6 t2)]
+                        0
                     )
                     (Assignment
                         (Var 6 err)
@@ -1031,11 +1001,10 @@
                             (Character 1 8 () PointerString)
                         )
                     )
-                    (SubroutineCall
-                        6 cpu_time@sp_cpu_time
-                        6 cpu_time
-                        [((Var 6 t1))]
-                        ()
+                    (IntrinsicImpureSubroutine
+                        CpuTime
+                        [(Var 6 t1)]
+                        0
                     )
                     (DoLoop
                         ()
@@ -1053,11 +1022,10 @@
                         )]
                         []
                     )
-                    (SubroutineCall
-                        6 cpu_time@sp_cpu_time
-                        6 cpu_time
-                        [((Var 6 t2))]
-                        ()
+                    (IntrinsicImpureSubroutine
+                        CpuTime
+                        [(Var 6 t2)]
+                        0
                     )
                     (Assignment
                         (Var 6 err)

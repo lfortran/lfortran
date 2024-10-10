@@ -33,7 +33,6 @@
 #include <llvm/Transforms/Scalar.h>
 #include <llvm/Transforms/Scalar/GVN.h>
 #include <llvm/Transforms/Scalar/InstSimplifyPass.h>
-#include <llvm/Transforms/Vectorize.h>
 #include <llvm/Transforms/IPO.h>
 #include <llvm/Transforms/IPO/AlwaysInliner.h>
 #include <llvm/Transforms/Instrumentation/AddressSanitizer.h>
@@ -47,7 +46,6 @@
 #include <llvm/Support/SourceMgr.h>
 #include <llvm/ADT/StringRef.h>
 #include <llvm/Target/TargetOptions.h>
-#include <llvm/Support/Host.h>
 #if LLVM_VERSION_MAJOR >= 14
 #    include <llvm/MC/TargetRegistry.h>
 #else
@@ -57,6 +55,11 @@
     // TODO: removed from LLVM 17
 #else
 #    include <llvm/Transforms/IPO/PassManagerBuilder.h>
+#endif
+
+#if LLVM_VERSION_MAJOR < 18
+#    include <llvm/Transforms/Vectorize.h>
+#    include <llvm/Support/Host.h>
 #endif
 
 #include <libasr/codegen/KaleidoscopeJIT.h>
@@ -295,7 +298,12 @@ void LLVMEvaluator::add_module(std::unique_ptr<LLVMModule> m) {
 }
 
 intptr_t LLVMEvaluator::get_symbol_address(const std::string &name) {
-    llvm::Expected<llvm::JITEvaluatedSymbol> s = jit->lookup(name);
+#if LLVM_VERSION_MAJOR < 17
+    llvm::Expected<llvm::JITEvaluatedSymbol>
+#else
+    llvm::Expected<llvm::orc::ExecutorSymbolDef>
+#endif
+        s = jit->lookup(name);
     if (!s) {
         llvm::Error e = s.takeError();
         llvm::SmallVector<char, 128> buf;
@@ -306,7 +314,11 @@ intptr_t LLVMEvaluator::get_symbol_address(const std::string &name) {
         throw LCompilersException("lookup() failed to find the symbol '"
             + name + "', error: " + msg);
     }
+#if LLVM_VERSION_MAJOR < 17
     llvm::Expected<uint64_t> addr0 = s->getAddress();
+#else
+    llvm::Expected<uint64_t> addr0 = s->getAddress().getValue();
+#endif
     if (!addr0) {
         llvm::Error e = addr0.takeError();
         llvm::SmallVector<char, 128> buf;
@@ -329,7 +341,11 @@ void write_file(const std::string &filename, const std::string &contents)
 std::string LLVMEvaluator::get_asm(llvm::Module &m)
 {
     llvm::legacy::PassManager pass;
+#if LLVM_VERSION_MAJOR < 18
     llvm::CodeGenFileType ft = llvm::CGFT_AssemblyFile;
+#else
+    llvm::CodeGenFileType ft = llvm::CodeGenFileType::AssemblyFile;
+#endif
     llvm::SmallVector<char, 128> buf;
     llvm::raw_svector_ostream dest(buf);
     if (TM->addPassesToEmitFile(pass, dest, nullptr, ft)) {
@@ -349,7 +365,11 @@ void LLVMEvaluator::save_object_file(llvm::Module &m, const std::string &filenam
     m.setDataLayout(TM->createDataLayout());
 
     llvm::legacy::PassManager pass;
+#if LLVM_VERSION_MAJOR < 18
     llvm::CodeGenFileType ft = llvm::CGFT_ObjectFile;
+#else
+    llvm::CodeGenFileType ft = llvm::CodeGenFileType::ObjectFile;
+#endif
     std::error_code EC;
     llvm::raw_fd_ostream dest(filename, EC, llvm::sys::fs::OF_None);
     if (EC) {
@@ -378,11 +398,11 @@ void LLVMEvaluator::opt(llvm::Module &m) {
     llvm::legacy::FunctionPassManager fpm(&m);
     fpm.add(llvm::createTargetTransformInfoWrapperPass(TM->getTargetIRAnalysis()));
 
-    int optLevel = 3;
-    int sizeLevel = 0;
 #if LLVM_VERSION_MAJOR >= 17
     // TODO: https://llvm.org/docs/NewPassManager.html
 #else
+    int optLevel = 3;
+    int sizeLevel = 0;
     llvm::PassManagerBuilder builder;
     builder.OptLevel = optLevel;
     builder.SizeLevel = sizeLevel;
@@ -441,7 +461,7 @@ void LLVMEvaluator::print_targets()
 
 std::string LLVMEvaluator::get_default_target_triple()
 {
-    return llvm::sys::getDefaultTargetTriple();
+    return LLVMGetDefaultTargetTriple();
 }
 
 } // namespace LCompilers

@@ -1,5 +1,4 @@
 program test_inverse_trig
-use lfortran_intrinsic_math, only: asin, acos, atan, asinh, acosh, atanh
 implicit none
 real :: x
 

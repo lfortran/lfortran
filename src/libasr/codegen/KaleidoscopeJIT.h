@@ -108,13 +108,14 @@ public:
     return res;
   }
 
+#if LLVM_VERSION_MAJOR < 17
   Expected<JITEvaluatedSymbol> lookup(StringRef Name) {
-#if LLVM_VERSION_MAJOR >= 17
-    // TODO
 #else
-    return ES->lookup({&JITDL}, Mangle(Name.str()));
+  Expected<ExecutorSymbolDef> lookup(StringRef Name) {
 #endif
+    return ES->lookup({&JITDL}, Mangle(Name.str()));
   }
+
 };
 
 } // end namespace orc

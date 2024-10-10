@@ -25,9 +25,8 @@ struct IntrinsicProceduresAsASRNodes {
 
         IntrinsicProceduresAsASRNodes() {
             intrinsics_present_in_ASR = {"size", "lbound", "ubound",
-                "transpose", "matmul", "pack", "transfer", "cmplx",
-                "dcmplx", "reshape", "ichar", "iachar", "char", "maxloc",
-                "null", "associated", "len", "complex"};
+                "transpose", "transfer", "cmplx", "dcmplx", "reshape",
+                "iachar", "null", "associated", "len", "complex"};
 
             kind_based_intrinsics = {};
         }
@@ -44,9 +43,6 @@ struct IntrinsicProceduresAsASRNodes {
 
 struct IntrinsicProcedures {
     const std::string m_builtin = "lfortran_intrinsic_builtin";
-    const std::string m_math = "lfortran_intrinsic_math";
-    const std::string m_math3 = "lfortran_intrinsic_math3";
-    const std::string m_string = "lfortran_intrinsic_string";
     const std::string m_ieee_arithmetic = "lfortran_intrinsic_ieee_arithmetic";
     const std::string m_iso_c_binding = "lfortran_intrinsic_iso_c_binding";
     const std::string m_custom = "lfortran_intrinsic_custom";
@@ -73,23 +69,8 @@ struct IntrinsicProcedures {
             // in intrinsic_function_transformation()
             // So we shouldn't even encounter them here
             {"int", {m_builtin, &eval_int, false}},
-            {"is_iostat_eor", {m_builtin, &not_implemented, false}},
-            {"is_iostat_end", {m_builtin, &not_implemented, false}},
-            {"get_command_argument", {m_builtin, &not_implemented, false}},
-            {"command_argument_count", {m_builtin, &not_implemented, false}},
             {"newunit", {m_custom, &not_implemented, false}},
-
-            // These will fail if used in symbol table visitor, but will be
-            // left unevaluated in body visitor
-            {"trim", {m_string, &not_implemented, false}},
-            {"len_trim", {m_string, &not_implemented, false}},
-
-            // Subroutines
-            {"cpu_time", {m_math, &not_implemented, false}},
             {"present", {m_builtin, &not_implemented, false}},
-            {"system_clock", {m_math, &not_implemented, false}},
-            {"srand", {m_math, &not_implemented, false}},
-            {"date_and_time", {m_string, &not_implemented, false}},
 
             // IEEE Arithmetic
             {"ieee_value", {m_ieee_arithmetic, &not_implemented, false}},

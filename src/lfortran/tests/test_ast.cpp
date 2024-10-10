@@ -131,9 +131,9 @@ end program
         lm.files.push_back(fl);
     }
     FortranEvaluator e(compiler_options);
-    LCompilers::Result<LCompilers::ASR::asr_t*>
-        r = e.get_lookup_asr2(src, lm, diagnostics, "2", "12");
-    ASR::asr_t* asr2 = r.result;
+    LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
+        r = e.get_asr2(src, lm, diagnostics);
+    ASR::asr_t* asr2 = e.handle_lookup_name(r.result, lm.linecol_to_pos(2, 12));
     std::vector<diag::Span> spans2 = diag::Label("", {asr2->loc}).spans;
     for( auto it: spans2 ) {
         populate_span(it, lm);

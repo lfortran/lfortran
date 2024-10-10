@@ -23,8 +23,13 @@ inline std::string get_intrinsic_subroutine_name(int x) {
         INTRINSIC_SUBROUTINE_NAME_CASE(RandomInit)
         INTRINSIC_SUBROUTINE_NAME_CASE(RandomSeed)
         INTRINSIC_SUBROUTINE_NAME_CASE(GetCommand)
+        INTRINSIC_SUBROUTINE_NAME_CASE(GetCommandArgument)
         INTRINSIC_SUBROUTINE_NAME_CASE(GetEnvironmentVariable)
         INTRINSIC_SUBROUTINE_NAME_CASE(ExecuteCommandLine)
+        INTRINSIC_SUBROUTINE_NAME_CASE(CpuTime)
+        INTRINSIC_SUBROUTINE_NAME_CASE(Srand)
+        INTRINSIC_SUBROUTINE_NAME_CASE(SystemClock)
+        INTRINSIC_SUBROUTINE_NAME_CASE(DateAndTime)
         default : {
             throw LCompilersException("pickle: intrinsic_id not implemented");
         }
@@ -44,12 +49,22 @@ namespace IntrinsicImpureSubroutineRegistry {
             {&RandomInit::instantiate_RandomInit, &RandomInit::verify_args}},
         {static_cast<int64_t>(IntrinsicImpureSubroutines::RandomSeed),
             {&RandomSeed::instantiate_RandomSeed, &RandomSeed::verify_args}},
+        {static_cast<int64_t>(IntrinsicImpureSubroutines::Srand),
+            {&Srand::instantiate_Srand, &Srand::verify_args}},
         {static_cast<int64_t>(IntrinsicImpureSubroutines::GetCommand),
             {&GetCommand::instantiate_GetCommand, &GetCommand::verify_args}},
+        {static_cast<int64_t>(IntrinsicImpureSubroutines::GetCommandArgument),
+            {&GetCommandArgument::instantiate_GetCommandArgument, &GetCommandArgument::verify_args}},
+        {static_cast<int64_t>(IntrinsicImpureSubroutines::SystemClock),
+            {&SystemClock::instantiate_SystemClock, &SystemClock::verify_args}},
+        {static_cast<int64_t>(IntrinsicImpureSubroutines::DateAndTime),
+            {&DateAndTime::instantiate_DateAndTime, &DateAndTime::verify_args}},
         {static_cast<int64_t>(IntrinsicImpureSubroutines::GetEnvironmentVariable),
             {&GetEnvironmentVariable::instantiate_GetEnvironmentVariable, &GetEnvironmentVariable::verify_args}},
         {static_cast<int64_t>(IntrinsicImpureSubroutines::ExecuteCommandLine),
             {&ExecuteCommandLine::instantiate_ExecuteCommandLine, &ExecuteCommandLine::verify_args}},
+        {static_cast<int64_t>(IntrinsicImpureSubroutines::CpuTime),
+            {&CpuTime::instantiate_CpuTime, &CpuTime::verify_args}},
     };
 
     static const std::map<int64_t, std::string>& intrinsic_subroutine_id_to_name = {
@@ -59,12 +74,22 @@ namespace IntrinsicImpureSubroutineRegistry {
             "random_init"},
         {static_cast<int64_t>(IntrinsicImpureSubroutines::RandomSeed),
             "random_seed"},
+        {static_cast<int64_t>(IntrinsicImpureSubroutines::Srand),
+            "srand"},
         {static_cast<int64_t>(IntrinsicImpureSubroutines::GetCommand),
             "get_command"},
+        {static_cast<int64_t>(IntrinsicImpureSubroutines::GetCommandArgument),
+            "get_command_argument"},
+        {static_cast<int64_t>(IntrinsicImpureSubroutines::SystemClock),
+            "system_clock"},
+        {static_cast<int64_t>(IntrinsicImpureSubroutines::DateAndTime),
+            "date_and_time"},
         {static_cast<int64_t>(IntrinsicImpureSubroutines::GetEnvironmentVariable),
             "get_environment_variable"},
         {static_cast<int64_t>(IntrinsicImpureSubroutines::ExecuteCommandLine),
             "execute_command_line"},
+        {static_cast<int64_t>(IntrinsicImpureSubroutines::CpuTime),
+            "cpu_time"},
     };
 
 
@@ -73,9 +98,14 @@ namespace IntrinsicImpureSubroutineRegistry {
                 {"random_number", &RandomNumber::create_RandomNumber},
                 {"random_init", &RandomInit::create_RandomInit},
                 {"random_seed", &RandomSeed::create_RandomSeed},
+                {"srand", &Srand::create_Srand},
                 {"get_command", &GetCommand::create_GetCommand},
+                {"get_command_argument", &GetCommandArgument::create_GetCommandArgument},
+                {"system_clock", &SystemClock::create_SystemClock},
                 {"get_environment_variable", &GetEnvironmentVariable::create_GetEnvironmentVariable},
                 {"execute_command_line", &ExecuteCommandLine::create_ExecuteCommandLine},
+                {"cpu_time", &CpuTime::create_CpuTime},
+                {"date_and_time", &DateAndTime::create_DateAndTime},
     };
 
     static inline bool is_intrinsic_subroutine(const std::string& name) {

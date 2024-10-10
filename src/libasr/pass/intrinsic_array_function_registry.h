@@ -3236,18 +3236,29 @@ namespace FindLoc {
         int dim = 0, kind = 4; // default kind
         ASR::expr_t *dim_expr = nullptr;
         ASR::expr_t *mask_expr = nullptr;
-        if (args[2]) {
-            dim_expr = args[2];
-            if ( !ASR::is_a<ASR::Integer_t>(*expr_type(args[2])) ) {
-                append_error(diag, "`dim` should be a scalar integer type", loc);
+        
+        // Checking for type findLoc(Array, value, mask)
+        if( args[2] && !args[3] && is_logical(*expr_type(args[2])) ){
+            dim_expr = nullptr;
+            mask_expr = args[2]; 
+        }
+        else { 
+            dim_expr = args[2]; 
+            mask_expr = args[3]; 
+        }
+       
+        if (dim_expr) {
+            if ( !ASR::is_a<ASR::Integer_t>(*expr_type(dim_expr)) ) {
+                dim = ASR::down_cast<ASR::IntegerConstant_t>(dim_expr) -> m_n;
+                append_error(diag, "`dim` should be a scalar integer type", dim_expr->base.loc);
                 return nullptr;
-            } else if (!extract_value(expr_value(args[2]), dim)) {
-                append_error(diag, "Runtime values for `dim` argument is not supported yet", loc);
+            } else if (!extract_value(expr_value(dim_expr), dim)) {
+                append_error(diag, "Runtime values for `dim` argument is not supported yet", dim_expr->base.loc);
                 return nullptr;
             }
             if ( dim < 1 || dim > n_dims ) {
                 append_error(diag, "`dim` argument of `findloc` is out of "
-                    "array index range", loc);
+                    "array index range", dim_expr->base.loc);
                 return nullptr;
             }
             if ( n_dims == 1 ) {
@@ -3264,7 +3275,7 @@ namespace FindLoc {
                     result_dims.push_back(al, tmp_dim);
                 }
             }
-            m_args.push_back(al, args[2]);
+            m_args.push_back(al, dim_expr);
         } else {
             ASR::dimension_t tmp_dim;
             tmp_dim.loc = args[0]->base.loc;
@@ -3273,19 +3284,18 @@ namespace FindLoc {
             result_dims.push_back(al, tmp_dim);
             m_args.push_back(al, b.i32(-1));
         }
-        if (args[3]) {
-            mask_expr = args[3];
-            if (!is_logical(*expr_type(args[3]))) {
-                append_error(diag, "`mask` argument of `findloc` must be logical", loc);
+        if (mask_expr) {
+            if (!is_logical(*expr_type(mask_expr))) {
+                append_error(diag, "`mask` argument of `findloc` must be logical", mask_expr->base.loc);
                 return nullptr;
             }
-            m_args.push_back(al, args[3]);
+            m_args.push_back(al, mask_expr);
         } else {
             m_args.push_back(al, b.ArrayConstant({b.bool_t(1, logical)}, logical, true));
         }
         if (args[4]) {
             if (!extract_value(expr_value(args[4]), kind)) {
-                append_error(diag, "Runtime value for `kind` argument is not supported yet", loc);
+                append_error(diag, "Runtime value for `kind` argument is not supported yet", args[4]->base.loc);
                 return nullptr;
             }
             int kind = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(args[4]))->m_n;
@@ -3296,7 +3306,7 @@ namespace FindLoc {
         }
         if (args[5]) {
             if (!ASR::is_a<ASR::Logical_t>(*expr_type(args[5]))) {
-                append_error(diag, "`back` argument of `findloc` must be a logical scalar", loc);
+                append_error(diag, "`back` argument of `findloc` must be a logical scalar", args[5]->base.loc);
                 return nullptr;
             }
             m_args.push_back(al, args[5]);
@@ -3354,9 +3364,16 @@ namespace FindLoc {
     ASR::expr_t *mask = args[3];
     ASR::expr_t *back = args[5];
     if (overload_id == 1) {
+        ASR::expr_t *mask_new = nullptr;
+        if( ASRUtils::is_array(ASRUtils::expr_type(mask)) ){
+            mask_new = ArrayItem_02(mask, i);
+        }
+        else{
+            mask_new = mask;
+        }
         body.push_back(al, b.Assignment(result, b.i_t(0, return_type)));
         body.push_back(al, b.DoLoop(i, b.i_t(1, type), UBound(array, 1), {
-            b.If(b.And(b.Eq(ArrayItem_02(array, i), value), b.Eq(ArrayItem_02(mask, i), b.bool_t(1, logical))), {
+            b.If(b.And(b.Eq(ArrayItem_02(array, i), value), b.Eq(mask_new, b.bool_t(1, logical))), {
                 b.Assignment(result, i),
                 b.If(b.NotEq(back, b.bool_t(1, logical)), {
                     b.Return()

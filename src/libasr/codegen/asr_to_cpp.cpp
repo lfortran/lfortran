@@ -663,11 +663,12 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
         std::string indent(indentation_level*indentation_spaces, ' ');
         std::string out = indent + "Kokkos::parallel_for(";
         out += "Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace>(";
-        visit_expr(*x.m_head.m_start);
+        LCOMPILERS_ASSERT(x.n_head == 1);
+        visit_expr(*x.m_head[0].m_start);
         out += src + ", ";
-        visit_expr(*x.m_head.m_end);
+        visit_expr(*x.m_head[0].m_end);
         out += src + "+1)";
-        ASR::Variable_t *loop_var = ASRUtils::EXPR2VAR(x.m_head.m_v);
+        ASR::Variable_t *loop_var = ASRUtils::EXPR2VAR(x.m_head[0].m_v);
         sym_info[get_hash((ASR::asr_t*) loop_var)].needs_declaration = false;
         out += ", KOKKOS_LAMBDA(const long " + std::string(loop_var->m_name)
                 + ") {\n";

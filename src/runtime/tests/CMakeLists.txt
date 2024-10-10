@@ -22,8 +22,6 @@ message("Installation prefix: ${CMAKE_INSTALL_PREFIX}")
 
 set(SRC
     ../../../src/libasr/runtime/lfortran_intrinsics.c
-    ../impure/lfortran_intrinsic_math.f90
-    ../pure/lfortran_intrinsic_string.f90
     ../impure/lfortran_intrinsic_sin_c.c
     ../builtin/lfortran_intrinsic_builtin.f90
     ../pure/lfortran_intrinsic_iso_fortran_env.f90

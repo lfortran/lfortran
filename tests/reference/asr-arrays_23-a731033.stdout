@@ -50,16 +50,6 @@
                                                     Required
                                                     .false.
                                                 ),
-                                            len_trim:
-                                                (ExternalSymbol
-                                                    4
-                                                    len_trim
-                                                    7 len_trim
-                                                    lfortran_intrinsic_string
-                                                    []
-                                                    len_trim
-                                                    Private
-                                                ),
                                             line_break:
                                                 (Variable
                                                     4
@@ -185,12 +175,11 @@
                                                         (IntegerConstant 0 (Integer 4) Decimal)
                                                     )
                                                     (IntegerBinOp
-                                                        (FunctionCall
-                                                            4 len_trim
-                                                            ()
-                                                            [((Var 4 num))]
+                                                        (IntrinsicElementalFunction
+                                                            StringLenTrim
+                                                            [(Var 4 num)]
+                                                            0
                                                             (Integer 4)
-                                                            ()
                                                             ()
                                                         )
                                                         Add
@@ -201,12 +190,11 @@
                                                     (IntegerConstant 1 (Integer 4) Decimal)
                                                     (Character 1 -3 (IntegerBinOp
                                                         (IntegerBinOp
-                                                            (FunctionCall
-                                                                4 len_trim
-                                                                ()
-                                                                [((Var 4 num))]
+                                                            (IntrinsicElementalFunction
+                                                                StringLenTrim
+                                                                [(Var 4 num)]
+                                                                0
                                                                 (Integer 4)
-                                                                ()
                                                                 ()
                                                             )
                                                             Add
@@ -370,14 +358,10 @@
                                 )
                         })
                     arrays_23
-                    [lfortran_intrinsic_string]
+                    []
                     .false.
                     .false.
                 ),
-            iso_fortran_env:
-                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
-            lfortran_intrinsic_string:
-                (IntrinsicModule lfortran_intrinsic_string),
             main:
                 (Program
                     (SymbolTable
