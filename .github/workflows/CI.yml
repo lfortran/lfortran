@@ -34,6 +34,12 @@ jobs:
           create-args: >-
             python=${{ matrix.python-version }}
 
+      - name: Check Any Added Binary File
+        if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
+        run: | 
+          python3 Check_binary_file_in_git_history.py
+            
+
       - name: Install Windows Packages
         if: contains(matrix.os, 'windows')
         shell: bash -e -l {0}
