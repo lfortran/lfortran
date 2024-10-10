@@ -14,6 +14,17 @@ env:
   MACOSX_DEPLOYMENT_TARGET: 14.0
 
 jobs:
+  Check_for_Added_Binary_Files:
+    name: Check for Added Binary Files
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          
+      - name: Check for Added Binary Files
+        run: python3 check_binary_file_in_git_history.py
+
   Build:
     name: LFortran CI (${{ matrix.python-version }}, ${{ matrix.os }})
     runs-on: ${{ matrix.os }}
@@ -33,12 +44,6 @@ jobs:
           environment-file: ci/environment.yml
           create-args: >-
             python=${{ matrix.python-version }}
-
-      - name: Check Any Added Binary File
-        if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
-        run: | 
-          python3 check_binary_file_in_git_history.py
-            
 
       - name: Install Windows Packages
         if: contains(matrix.os, 'windows')
