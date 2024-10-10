@@ -689,34 +689,6 @@ inline static void visit_BoolOp(Allocator &al, const AST::BoolOp_t &x,
     }
   }
 
-
-static ASR::asr_t* comptime_intrinsic_int(ASR::expr_t *A,
-        ASR::expr_t * kind,
-        Allocator &al, const Location &loc,
-        const CompilerOptions &compiler_options) {
-    int kind_int = compiler_options.po.default_integer_kind;
-    if (kind) {
-        ASR::expr_t* kind_value = ASRUtils::expr_value(kind);
-        if (kind_value) {
-            if (ASR::is_a<ASR::IntegerConstant_t>(*kind_value)) {
-                kind_int = ASR::down_cast<ASR::IntegerConstant_t>(kind_value)->m_n;
-            } else {
-                throw SemanticError("kind argument to int(a, kind) is not a constant integer", loc);
-            }
-        } else {
-            throw SemanticError("kind argument to int(a, kind) is not constant", loc);
-        }
-    }
-    ASR::expr_t *result = A;
-    ASR::ttype_t *dest_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, kind_int));
-    ASR::ttype_t *source_type = ASRUtils::expr_type(A);
-
-    // TODO: this is implicit cast, use ExplicitCast
-    ImplicitCastRules::set_converted_value(al, loc, &result,
-                                           source_type, dest_type);
-    return (ASR::asr_t*)result;
-}
-
 }; // class CommonVisitorMethods
 
 
@@ -870,6 +842,7 @@ public:
         {"out_of_range", {IntrinsicSignature({"value", "mold", "round"}, 2, 3)}},
         {"same_type_as", {IntrinsicSignature({"a", "b"}, 2, 2)}},
         {"len_trim", {IntrinsicSignature({"String", "Kind"}, 1, 2)}},
+        {"int", {IntrinsicSignature({"i", "kind"}, 1, 2)}},
     };
 
     std::map<std::string, std::pair<std::string, std::vector<std::string>>> intrinsic_mapping = {
@@ -4316,26 +4289,6 @@ public:
         return nullptr;
     }
 
-
-    // Transforms intrinsics real(),int() to ImplicitCast. Return true if `f` is
-    // real/int (result in `tmp`), false otherwise (`tmp` unchanged)
-    ASR::asr_t* intrinsic_function_transformation(Allocator &al, const Location &loc,
-            const std::string &fn_name, Vec<ASR::call_arg_t>& args) {
-        if (fn_name == "int") {
-            ASR::expr_t *arg1;
-            if (args.size() == 1) {
-                arg1 = nullptr;
-            } else if (args.size() == 2) {
-                arg1 = args[1].m_value;
-            } else {
-                throw SemanticError("int(...) must have 1 or 2 arguments", loc);
-            }
-            return LFortran::CommonVisitorMethods::comptime_intrinsic_int(args[0].m_value, arg1, al, loc, compiler_options);
-        } else {
-            return nullptr;
-        }
-    }
-
     ASR::asr_t* symbol_resolve_external_generic_procedure_util(const Location &loc,
         int idx, ASR::symbol_t *v, Vec<ASR::call_arg_t>& args,
         ASR::GenericProcedure_t *g, ASR::ExternalSymbol_t *p) {
@@ -4392,10 +4345,7 @@ public:
                 ASR::symbol_t* v2 = ASRUtils::symbol_get_past_external(v);
                 ASR::GenericProcedure_t *gp = ASR::down_cast<ASR::GenericProcedure_t>(v2);
 
-                ASR::asr_t *result = intrinsic_function_transformation(al, loc, gp->m_name, args);
-                if (result) {
-                    return result;
-                } else if (args.size() <= 2) {
+                if (args.size() <= 2) {
                     value = intrinsic_procedures.comptime_eval(gp->m_name, al, loc, args, compiler_options);
                 }
             }
@@ -4929,15 +4879,10 @@ public:
             // Populate value
             ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(f2);
             if (ASRUtils::is_intrinsic_procedure(f)) {
-                ASR::asr_t* result = intrinsic_function_transformation(al, loc, f->m_name, args);
-                if (result) {
-                    return result;
-                } else {
-                    value = intrinsic_procedures.comptime_eval(f->m_name, al, loc, args, compiler_options);
-                    char *mod = ASR::down_cast<ASR::ExternalSymbol_t>(
-                        current_scope->resolve_symbol(f->m_name))->m_module_name;
-                    current_module_dependencies.push_back(al, mod);
-                }
+                value = intrinsic_procedures.comptime_eval(f->m_name, al, loc, args, compiler_options);
+                char *mod = ASR::down_cast<ASR::ExternalSymbol_t>(
+                    current_scope->resolve_symbol(f->m_name))->m_module_name;
+                current_module_dependencies.push_back(al, mod);
             }
         }
         if (ASRUtils::symbol_parent_symtab(v)->get_counter() != current_scope->get_counter()) {
@@ -6014,8 +5959,13 @@ public:
                                     array_type, result_arr_type->m_dims,
                                     result_arr_type->n_dims, ASR::abiType::Source, false,
                                     result_arr_type->m_physical_type);
-        (*result_array) = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, (*result_array)->base.base.loc,
-                                    new_expr.p, new_expr.n, (*result_array)->m_type, (*result_array)->m_storage_format)));
+        ASR::expr_t* new_expr_ = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, (*result_array)->base.base.loc,
+                                    new_expr.p, new_expr.n, (*result_array)->m_type, (*result_array)->m_storage_format));
+        if (ASR::is_a<ASR::ArrayConstant_t>(*new_expr_)) {
+            (*result_array) = ASR::down_cast<ASR::ArrayConstant_t>(new_expr_);
+        } else {
+            (*result_array) = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(new_expr_));
+        }
     }
 
     std::vector<int> find_array_indices_in_args(const Vec<ASR::expr_t*>& args) {
