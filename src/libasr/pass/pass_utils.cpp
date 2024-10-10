@@ -149,7 +149,38 @@ namespace LCompilers {
                 ai.m_step = nullptr;
                 args.push_back(al, ai);
             }
+            ASR::expr_t* arr_expr_copy = arr_expr;
+            ASR::expr_t** original_arr_expr =&arr_expr_copy;
+            ASR::expr_t** array_ref_container_node = nullptr; // If we have a structInstanceMember hierarch, It'd be used to emplace the resulting array_ref in the correct node.
             ASR::expr_t* array_ref = nullptr;
+            ASR::StructInstanceMember_t* tmp = nullptr;
+
+            // if first depth of hierarchy contains array, don't set array_ref_container_node and return array_ref directly.
+            if (ASR::is_a<ASR::StructInstanceMember_t>(*arr_expr) &&
+                ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable(
+                    ASRUtils::symbol_type(ASR::down_cast<ASR::StructInstanceMember_t>(arr_expr)->m_m)))){
+                original_arr_expr = &array_ref;
+            }
+            // This while loop is used to fetch the only single array from a structInstanceMember hierarchy.
+            // We assume there's a single array in the hierarachy, as multiple arrays should throw semantic error while building ASR.
+            bool check_m_m = true;
+            while(ASR::is_a<ASR::StructInstanceMember_t>(*arr_expr) && !array_ref_container_node ){
+                tmp = ASR::down_cast<ASR::StructInstanceMember_t>(arr_expr);
+                if(ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(tmp->m_v)))){
+                    arr_expr = tmp->m_v;
+                    array_ref_container_node = &(tmp->m_v);
+                } else if (ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable(ASRUtils::symbol_type(tmp->m_m))) && check_m_m){
+                    array_ref_container_node = &arr_expr;
+                } else if(ASR::is_a<ASR::StructInstanceMember_t>(*tmp->m_v)){
+                    arr_expr = tmp->m_v;
+                    check_m_m =true;
+                } else if (ASR::is_a<ASR::ArrayItem_t>(*tmp->m_v)){
+                    arr_expr = ASR::down_cast<ASR::ArrayItem_t>(tmp->m_v)->m_v;
+                    check_m_m = false;
+                } else {
+                    break;
+                }
+            }
             ASR::ttype_t* array_ref_type = ASRUtils::duplicate_type_without_dims(
                 al, ASRUtils::expr_type(arr_expr), arr_expr->base.loc);
             fix_struct_type_scope()
@@ -160,6 +191,15 @@ namespace LCompilers {
                                             ASRUtils::type_get_past_pointer(
                                                 ASRUtils::type_get_past_allocatable(array_ref_type))),
                                         ASR::arraystorageType::RowMajor, nullptr));
+            // Emplace the resulting array_ref in the correct node.
+            if(array_ref_container_node){
+                *array_ref_container_node = array_ref;
+                array_ref = *original_arr_expr;
+                if(ASR::is_a<ASR::StructInstanceMember_t>(*array_ref)){
+                    ASR::StructInstanceMember_t* tmp = ASR::down_cast<ASR::StructInstanceMember_t>(array_ref);
+                    tmp->m_type = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_allocatable(tmp->m_type))->m_type; // Using type of the returing array to avoid creating array ref again by array_op pass.
+                }
+            }
             if( perform_cast ) {
                 LCOMPILERS_ASSERT(casted_type != nullptr);
                 array_ref = ASRUtils::EXPR(ASR::make_Cast_t(al, array_ref->base.loc,
@@ -239,7 +279,7 @@ namespace LCompilers {
             PassUtils::get_dim_rank(sibling_type, m_dims, ndims);
             if( !ASRUtils::is_fixed_size_array(m_dims, ndims) &&
                 !ASRUtils::is_dimension_dependent_only_on_arguments(m_dims, ndims) ) {
-                return ASRUtils::TYPE(ASR::make_Allocatable_t(al, sibling_type->base.loc,
+                return ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, sibling_type->base.loc,
                     ASRUtils::type_get_past_allocatable(
                         ASRUtils::duplicate_type_with_empty_dims(al, sibling_type))));
             }
@@ -270,7 +310,7 @@ namespace LCompilers {
         if( !ASRUtils::is_fixed_size_array(m_dims, ndims) &&
             !ASRUtils::is_dimension_dependent_only_on_arguments(m_dims, ndims) &&
             !(ASR::is_a<ASR::Allocatable_t>(*var_type) || ASR::is_a<ASR::Pointer_t>(*var_type)) ) {
-            var_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, var_type->base.loc,
+            var_type = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, var_type->base.loc,
                 ASRUtils::type_get_past_allocatable(
                     ASRUtils::duplicate_type_with_empty_dims(al, var_type))));
         }
@@ -279,7 +319,7 @@ namespace LCompilers {
         char* idx_var_name = s2c(al, str_name);
 
         if( current_scope->get_symbol(std::string(idx_var_name)) == nullptr ) {
-            ASR::asr_t* idx_sym = ASR::make_Variable_t(al, loc, current_scope, idx_var_name, nullptr, 0,
+            ASR::asr_t* idx_sym = ASRUtils::make_Variable_t_util(al, loc, current_scope, idx_var_name, nullptr, 0,
                                                     ASR::intentType::Local, nullptr, nullptr, ASR::storage_typeType::Default,
                                                     var_type, nullptr, ASR::abiType::Source, ASR::accessType::Public,
                                                     ASR::presenceType::Required, false);
@@ -331,7 +371,7 @@ namespace LCompilers {
                 char* var_name = s2c(al, idx_var_name);;
                 ASR::expr_t* var = nullptr;
                 if( current_scope->get_symbol(idx_var_name) == nullptr ) {
-                    ASR::asr_t* idx_sym = ASR::make_Variable_t(al, loc, current_scope, var_name, nullptr, 0,
+                    ASR::asr_t* idx_sym = ASRUtils::make_Variable_t_util(al, loc, current_scope, var_name, nullptr, 0,
                                                             intent, nullptr, nullptr, ASR::storage_typeType::Default,
                                                             int32_type, nullptr, ASR::abiType::Source, ASR::accessType::Public,
                                                             presence, false);
@@ -376,7 +416,7 @@ namespace LCompilers {
                 char* var_name = s2c(al, idx_var_name);;
                 ASR::expr_t* var = nullptr;
                 if( current_scope->get_symbol(idx_var_name) == nullptr ) {
-                    ASR::asr_t* idx_sym = ASR::make_Variable_t(al, loc, current_scope, var_name, nullptr, 0,
+                    ASR::asr_t* idx_sym = ASRUtils::make_Variable_t_util(al, loc, current_scope, var_name, nullptr, 0,
                                             ASR::intentType::Local, nullptr, nullptr, ASR::storage_typeType::Default,
                                             int32_type, nullptr, ASR::abiType::Source, ASR::accessType::Public,
                                             ASR::presenceType::Required, false);
@@ -420,7 +460,7 @@ namespace LCompilers {
                 char* var_name = s2c(al, idx_var_name);;
                 ASR::expr_t* var = nullptr;
                 if( current_scope->get_symbol(idx_var_name) == nullptr ) {
-                    ASR::asr_t* idx_sym = ASR::make_Variable_t(al, loc, current_scope, var_name, nullptr, 0,
+                    ASR::asr_t* idx_sym = ASRUtils::make_Variable_t_util(al, loc, current_scope, var_name, nullptr, 0,
                                             ASR::intentType::Local, nullptr, nullptr, ASR::storage_typeType::Default,
                                             int32_type, nullptr, ASR::abiType::Source, ASR::accessType::Public,
                                             ASR::presenceType::Required, false);
@@ -855,7 +895,7 @@ namespace LCompilers {
 
         ASR::expr_t* create_auxiliary_variable_for_expr(ASR::expr_t* expr, std::string& name,
             Allocator& al, SymbolTable*& current_scope, ASR::stmt_t*& assign_stmt) {
-            ASR::asr_t* expr_sym = ASR::make_Variable_t(al, expr->base.loc, current_scope, s2c(al, name), nullptr, 0,
+            ASR::asr_t* expr_sym = ASRUtils::make_Variable_t_util(al, expr->base.loc, current_scope, s2c(al, name), nullptr, 0,
                                                     ASR::intentType::Local, nullptr, nullptr, ASR::storage_typeType::Default,
                                                     ASRUtils::duplicate_type(al, ASRUtils::extract_type(ASRUtils::expr_type(expr))),
                                                     nullptr, ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required, false);
@@ -873,7 +913,7 @@ namespace LCompilers {
             Allocator& al, SymbolTable*& current_scope, ASR::ttype_t* var_type,
             ASR::intentType var_intent) {
             ASRUtils::import_struct_t(al, loc, var_type, var_intent, current_scope);
-            ASR::asr_t* expr_sym = ASR::make_Variable_t(al, loc, current_scope, s2c(al, name), nullptr, 0,
+            ASR::asr_t* expr_sym = ASRUtils::make_Variable_t_util(al, loc, current_scope, s2c(al, name), nullptr, 0,
                                                     var_intent, nullptr, nullptr, ASR::storage_typeType::Default,
                                                     var_type, nullptr, ASR::abiType::Source, ASR::accessType::Public,
                                                     ASR::presenceType::Required, false);
@@ -939,7 +979,7 @@ namespace LCompilers {
             SymbolTable* vector_copy_symtab = al.make_new<SymbolTable>(global_scope);
             for( int i = 0; i < num_args; i++ ) {
                 std::string arg_name = "arg" + std::to_string(i);
-                ASR::symbol_t* arg = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(al, unit.base.base.loc, vector_copy_symtab,
+                ASR::symbol_t* arg = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(al, unit.base.base.loc, vector_copy_symtab,
                                         s2c(al, arg_name), nullptr, 0, ASR::intentType::In, nullptr, nullptr, ASR::storage_typeType::Default,
                                         types[std::min(i, (int) types.size() - 1)], nullptr, ASR::abiType::Source, ASR::accessType::Public,
                                         ASR::presenceType::Required, false));
