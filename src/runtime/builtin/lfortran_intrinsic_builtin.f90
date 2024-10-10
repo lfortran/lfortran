@@ -12,14 +12,6 @@ interface
     integer, optional, intent(in) :: x
     end function
 
-    logical function is_iostat_eor(i) result(r)
-    integer, intent(in) :: i
-    end function
-
-    logical function is_iostat_end(i) result(r)
-    integer, intent(in) :: i
-    end function
-
 end interface
 
 end module
