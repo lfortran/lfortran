@@ -6056,6 +6056,24 @@ public:
                         tmp = create_func(al, x.base.base.loc, args, diag);
                     }
                 } else if ( ASRUtils::IntrinsicArrayFunctionRegistry::is_intrinsic_function(var_name) ) {
+                    if(var_name == "dot_product"){
+                        ASR::expr_t *matrix_a = args[0], *matrix_b = args[1];
+                        ASR::ttype_t *type_a = ASRUtils::expr_type(matrix_a);
+                        ASR::ttype_t *type_b = ASRUtils::expr_type(matrix_b);
+                        if((ASRUtils::is_real(*type_b) && ASRUtils::is_integer(*type_a)) || 
+                            (ASRUtils::is_complex(*type_b) && ASRUtils::is_integer(*type_a)) || 
+                            (ASRUtils::is_complex(*type_b) && ASRUtils::is_real(*type_a)) ){
+                            ImplicitCastRules::set_converted_value(al, x.base.base.loc, &matrix_a,
+                                            type_a, ASRUtils::type_get_past_allocatable(type_b));
+                        } else if((ASRUtils::is_real(*type_a) && ASRUtils::is_integer(*type_b)) || 
+                                   (ASRUtils::is_complex(*type_a) && ASRUtils::is_integer(*type_b)) || 
+                                    (ASRUtils::is_complex(*type_a) && ASRUtils::is_real(*type_b)) ){
+                            ImplicitCastRules::set_converted_value(al, x.base.base.loc, &matrix_b,
+                                            type_b, ASRUtils::type_get_past_allocatable(type_a));
+                        }
+                        args.p[0] = matrix_a;
+                        args.p[1] = matrix_b;
+                    }
                     ASRUtils::create_intrinsic_function create_func =
                         ASRUtils::IntrinsicArrayFunctionRegistry::get_create_function(var_name);
                     tmp = create_func(al, x.base.base.loc, args, diag);
