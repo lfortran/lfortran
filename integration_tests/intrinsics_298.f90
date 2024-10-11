@@ -59,8 +59,8 @@ program intrinsics_298
     print *, dot_product(i1, c2) 
     if (abs(abs(dot_product(i1, c2)) - 197.699265) > 1e-6) error stop
     print *, dot_product(c4, r3)
-    if (abs(abs(dot_product(c4, r3)) - 197.699266564142818) > 1e-12) error stop
+    if (abs(abs(dot_product(c4, r3)) - 197.6992665641428_8) > 1e-12) error stop
     print *, dot_product(r4, c3)
-    if (abs(abs(dot_product(r4, c3)) - 197.699266564142818) > 1e-12) error stop
+    if (abs(abs(dot_product(r4, c3)) - 197.6992665641428_8) > 1e-12) error stop
 
 end program
