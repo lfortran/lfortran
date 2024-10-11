@@ -43,5 +43,6 @@ in mkShellNewEnv {
     # git
     xonsh
     rapidjson
+    libunwind
   ];
 }
