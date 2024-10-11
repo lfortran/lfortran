@@ -64,6 +64,9 @@ define i32 @main(i32 %0, i8** %1) {
   %__libasr_index_2_7 = alloca i32, align 4
   %__libasr_index_2_8 = alloca i32, align 4
   %__libasr_index_2_9 = alloca i32, align 4
+  store i32 10, i32* @array_op_3.dim1, align 4
+  store i32 100, i32* @array_op_3.dim2, align 4
+  store i32 1, i32* @array_op_3.dim3, align 4
   %i = alloca i32, align 4
   %j = alloca i32, align 4
   %k = alloca i32, align 4
@@ -146,12 +149,12 @@ define i32 @main(i32 %0, i8** %1) {
   %19 = getelementptr %array, %array* %arr_desc49, i32 0, i32 0
   store i1* null, i1** %19, align 8
   store %array* %arr_desc49, %array** %c, align 8
-  %i50 = alloca i32, align 4
-  %j51 = alloca i32, align 4
-  %k52 = alloca i32, align 4
   store i32 10, i32* @array_op_3.dim1, align 4
   store i32 100, i32* @array_op_3.dim2, align 4
   store i32 1, i32* @array_op_3.dim3, align 4
+  %i50 = alloca i32, align 4
+  %j51 = alloca i32, align 4
+  %k52 = alloca i32, align 4
   %20 = load %array*, %array** %a, align 8
   %21 = ptrtoint %array* %20 to i32
   %22 = icmp eq i32 %21, 0
