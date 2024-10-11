@@ -19,6 +19,5 @@ dependencies:
   - rapidjson
   - zstd-static=1.5.5
   - pandoc
-  - libunwind
 #  - bison=3.4  [not win]
 #  - m2-bison=3.4  [win]
