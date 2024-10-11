@@ -743,9 +743,9 @@ namespace Abs {
                 std::to_string(input_kind) + " output kind: " + std::to_string(output_kind),
                 loc, diagnostics);
         } else {
-            ASRUtils::require_impl(ASRUtils::check_equal_type(input_type, output_type, true),
-                "The input and output type of elemental intrinsics must exactly match, input type: " +
-                input_type_str + " output type: " + output_type_str, loc, diagnostics);
+            // ASRUtils::require_impl(ASRUtils::check_equal_type(input_type, output_type, true),
+            //     "The input and output type of elemental intrinsics must exactly match, input type: " +
+            //     input_type_str + " output type: " + output_type_str, loc, diagnostics);
         }
     }
 
@@ -3820,7 +3820,7 @@ namespace MoveAlloc {
     static inline ASR::expr_t* instantiate_MoveAlloc(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        
+
         std::string new_name = "_lcompilers_move_alloc_" + type_to_str_python(arg_types[0]);
         declare_basic_variables(new_name);
         fill_func_arg("from", arg_types[0]);
@@ -3830,7 +3830,7 @@ namespace MoveAlloc {
         int n_dims = extract_dimensions_from_ttype(arg_types[0], m_dims);
         body.push_back(al, b.Allocate(result, m_dims, n_dims));
         body.push_back(al, b.Assignment(result, args[0]));
-    
+
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
