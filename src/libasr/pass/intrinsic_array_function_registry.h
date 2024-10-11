@@ -6,14 +6,11 @@
 #include <libasr/asr_utils.h>
 #include <libasr/pass/pass_utils.h>
 #include <libasr/pass/intrinsic_function_registry.h>
-#include <lfortran/semantics/asr_implicit_cast_rules.h>
 
 #include <cmath>
 #include <string>
 #include <numeric>
 #include <tuple>
-
-using LCompilers::LFortran::ImplicitCastRules;
 
 namespace LCompilers {
 
