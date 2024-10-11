@@ -61,6 +61,8 @@ class TransformWhereVisitor: public ASR::CallReplacerOnExpressionsVisitor<Transf
                 for (size_t j=0; j < pass_result.size(); j++) {
                     body.push_back(al, pass_result[j]);
                 }
+            } else {
+                body.push_back(al, m_body[i]);
             }
         }
         m_body = body.p;

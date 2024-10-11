@@ -109,6 +109,22 @@ class ArrayVarAddressCollector: public ASR::CallReplacerOnExpressionsVisitor<Arr
 
     ArrayVarAddressCollector(Allocator& al_, Vec<ASR::expr_t**>& vars_):
         replacer(al_, vars_) {
+        visit_expr_after_replacement = false;
+    }
+
+    void visit_Allocate(const ASR::Allocate_t& /*x*/) {
+    }
+
+    void visit_ExplicitDeallocate(const ASR::ExplicitDeallocate_t& /*x*/) {
+    }
+
+    void visit_ImplicitDeallocate(const ASR::ImplicitDeallocate_t& /*x*/) {
+    }
+
+    void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
+        if( !PassUtils::is_elemental(x.m_name) ) {
+            return ;
+        }
     }
 
 };
@@ -704,6 +720,31 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         fix_type_args.reserve(al, 1);
 
         generate_loop(x, vars, fix_type_args, loc);
+    }
+
+    void visit_If(const ASR::If_t& x) {
+        const Location loc = x.base.base.loc;
+
+        Vec<ASR::expr_t**> vars;
+        vars.reserve(al, 1);
+        ArrayVarAddressCollector var_collector_target(al, vars);
+        var_collector_target.visit_If(x);
+
+        if( vars.size() == 0 ) {
+            return ;
+        }
+
+        Vec<ASR::expr_t**> fix_type_args;
+        fix_type_args.reserve(al, 1);
+
+        generate_loop(x, vars, fix_type_args, loc);
+
+        RemoveArrayProcessingNodeVisitor v(al);
+        v.visit_If(x);
+
+        FixTypeVisitor fix_type_visitor(al);
+        fix_type_visitor.current_scope = current_scope;
+        fix_type_visitor.visit_If(x);
     }
 
 };
