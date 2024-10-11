@@ -50,7 +50,7 @@ endif()
 
 target_include_directories(lfortran_lib BEFORE PUBLIC ${lfortran_SOURCE_DIR}/src)
 target_include_directories(lfortran_lib BEFORE PUBLIC ${lfortran_BINARY_DIR}/src)
-if (WITH_UNWIND)
+if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND WITH_UNWIND)
     target_link_libraries(lfortran_lib ${LIBUNWIND_LIBRARY})
     target_link_options(lfortran_lib PRIVATE -lunwind)
 endif()
