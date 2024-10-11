@@ -6,11 +6,14 @@
 #include <libasr/asr_utils.h>
 #include <libasr/pass/pass_utils.h>
 #include <libasr/pass/intrinsic_function_registry.h>
+#include <lfortran/semantics/asr_implicit_cast_rules.h>
 
 #include <cmath>
 #include <string>
 #include <numeric>
 #include <tuple>
+
+using LCompilers::LFortran::ImplicitCastRules;
 
 namespace LCompilers {
 
@@ -5201,7 +5204,6 @@ namespace DotProduct {
                 return nullptr;
             }
         }
-        ret_type = extract_type(type_a);
         ASR::dimension_t* matrix_a_dims = nullptr;
         ASR::dimension_t* matrix_b_dims = nullptr;
         int matrix_a_rank = extract_dimensions_from_ttype(type_a, matrix_a_dims);
@@ -5225,14 +5227,35 @@ namespace DotProduct {
                 " in `matrix_b('n')`", matrix_b->base.loc);
             return nullptr;
         }
-
+        
+        if((is_real(*type_b) && is_integer(*type_a)) || (is_complex(*type_b) && is_integer(*type_a)) 
+            || (is_complex(*type_b) && is_real(*type_a)) ){
+            ImplicitCastRules::set_converted_value(
+                            al, loc, &matrix_a,
+                            ASRUtils::expr_type(matrix_a),
+                            ASRUtils::type_get_past_allocatable(type_b)
+                        );
+            type_a = ASRUtils::expr_type(matrix_a);
+        } else if((is_real(*type_a) && is_integer(*type_b)) || (is_complex(*type_a) && is_integer(*type_b)) 
+            || (is_complex(*type_a) && is_real(*type_b)) ){
+            ImplicitCastRules::set_converted_value(
+                            al, loc, &matrix_b,
+                            ASRUtils::expr_type(matrix_b),
+                            ASRUtils::type_get_past_allocatable(type_a)
+                        );
+            type_b = ASRUtils::expr_type(matrix_b);
+        }
+        Vec<ASR::expr_t*> m_args; m_args.reserve(al, 2);
+        m_args.push_back(al, matrix_a);
+        m_args.push_back(al, matrix_b);
+        ret_type = extract_type(type_a);
         ASR::expr_t *value = nullptr;
         if (all_args_evaluated(args)) {
-            value = eval_DotProduct(al, loc, ret_type, args, diag);
+            value = eval_DotProduct(al, loc, ret_type, m_args, diag);
         }
         return make_IntrinsicArrayFunction_t_util(al, loc,
             static_cast<int64_t>(IntrinsicArrayFunctions::DotProduct),
-            args.p, args.n, overload_id, ret_type, value);
+            m_args.p, m_args.n, overload_id, ret_type, value);
     }
 
     static inline ASR::expr_t *instantiate_DotProduct(Allocator &al,
