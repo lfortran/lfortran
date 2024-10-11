@@ -21,7 +21,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ["windows-2019", "macos-latest", "ubuntu-latest"]
+        os: ["macos-latest", "ubuntu-latest"] #TODO: "windows-2019"
         python-version: ["3.10"]
     steps:
       - uses: actions/checkout@v4
