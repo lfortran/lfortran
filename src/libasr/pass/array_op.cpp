@@ -723,6 +723,11 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
     }
 
     void visit_If(const ASR::If_t& x) {
+        if( !ASRUtils::is_array(ASRUtils::expr_type(x.m_test)) ) {
+            ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisitor>::visit_If(x);
+            return ;
+        }
+
         const Location loc = x.base.base.loc;
 
         Vec<ASR::expr_t**> vars;
