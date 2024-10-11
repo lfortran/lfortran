@@ -43,12 +43,17 @@ target_include_directories(lfortran_lib PRIVATE $<BUILD_INTERFACE:${CMAKE_CURREN
 configure_file(config.h.cmakein config.h @ONLY)
 target_link_libraries(lfortran_lib asr lfortran_runtime_static)
 
+
 if (WITH_ZLIB)
     target_link_libraries(lfortran_lib ZLIB::ZLIB)
 endif()
 
 target_include_directories(lfortran_lib BEFORE PUBLIC ${lfortran_SOURCE_DIR}/src)
 target_include_directories(lfortran_lib BEFORE PUBLIC ${lfortran_BINARY_DIR}/src)
+if (WITH_UNWIND)
+    target_link_libraries(lfortran_lib ${LIBUNWIND_LIBRARY})
+    target_link_options(lfortran_lib PRIVATE -lunwind)
+endif()
 if (WITH_XEUS)
     target_link_libraries(lfortran_lib xeus xeus-zmq)
 endif()

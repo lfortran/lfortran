@@ -330,6 +330,7 @@ if (WITH_MACHO)
     set(HAVE_LFORTRAN_MACHO yes)
 endif()
 if (WITH_UNWIND)
+    find_library(LIBUNWIND_LIBRARY unwind)
     set(HAVE_LFORTRAN_UNWIND yes)
 endif()
 
