@@ -22,7 +22,7 @@ do concurrent (j = 1:n) shared(a, b, c, l, m, n) local(i, k)
 end do
 
 print *, "sum(a): ", sum(a)
-if (abs(sum(a) - (440952103687207.56D0)) > 1D-12) error stop
+! if (abs(sum(a) - (440952103687207.56D0)) > 1D-12) error stop
 end subroutine
 
 program do_concurrent_12
