@@ -7,7 +7,7 @@ program main
     nx=4
     nz=5
 
-!$omp parallel do collpase(3) private(iy, ix, iz)
+!$omp parallel do collapse(3) private(iy, ix, iz)
 do iy = 1, ny
     do ix = 1, nx
         do iz = 1, nz
