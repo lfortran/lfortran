@@ -280,6 +280,8 @@ if (WITH_FMT)
 endif()
 
 # Stacktrace
+set(WITH_UNWIND no
+    CACHE BOOL "Build with unwind support")
 set(WITH_BFD no
     CACHE BOOL "Build with BFD support")
 set(WITH_DWARFDUMP no
@@ -290,6 +292,8 @@ set(WITH_MACHO no
     CACHE BOOL "Build with mach-o support")
 set(WITH_STACKTRACE no
     CACHE BOOL "Build with stacktrace support (requires binutils-dev)")
+set(WITH_LIBUNWIND no
+    CACHE BOOL "Build with libunwind (required libunwind-dev)")
 if (WITH_STACKTRACE)
     set(WITH_UNWIND yes)
     if (APPLE)
@@ -364,6 +368,7 @@ message("LFORTRAN_BUILD_TO_WASM: ${LFORTRAN_BUILD_TO_WASM}")
 message("WITH_STACKTRACE: ${WITH_STACKTRACE}")
 message("WITH_RUNTIME_STACKTRACE: ${WITH_RUNTIME_STACKTRACE}")
 message("WITH_UNWIND: ${WITH_UNWIND}")
+message("WITH_LIBUNWIND: ${WITH_LIBUNWIND}")
 message("WITH_BFD: ${WITH_BFD}")
 message("WITH_DWARFDUMP: ${WITH_DWARFDUMP}")
 message("WITH_LINKH: ${WITH_LINKH}")
