@@ -21,7 +21,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ["macos-latest", "ubuntu-latest"] #TODO: "windows-2019"
+        os: ["windows-2019", "macos-latest", "ubuntu-latest"]
         python-version: ["3.10"]
     steps:
       - uses: actions/checkout@v4
@@ -65,19 +65,19 @@ jobs:
             export CFLAGS="-Werror"
             xonsh ci/build_tmp.xsh
 
-      - name: Build (Windows)
-        if: contains(matrix.os, 'windows')
-        shell: cmd
-        run: |
-            set MAMBA_INSTALL_LOCN=C:\\Users\runneradmin\micromamba
-            call %MAMBA_INSTALL_LOCN%\Scripts\activate.bat
-            call micromamba activate lf
-            set LFORTRAN_CMAKE_GENERATOR=Ninja
-            set WIN=1
-            set MACOS=0
-            set ENABLE_RUNTIME_STACKTRACE=no
-            call "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
-            xonsh ci\build_tmp.xsh
+      # - name: Build (Windows)
+      #   if: contains(matrix.os, 'windows')
+      #   shell: cmd
+      #   run: |
+      #       set MAMBA_INSTALL_LOCN=C:\\Users\runneradmin\micromamba
+      #       call %MAMBA_INSTALL_LOCN%\Scripts\activate.bat
+      #       call micromamba activate lf
+      #       set LFORTRAN_CMAKE_GENERATOR=Ninja
+      #       set WIN=1
+      #       set MACOS=0
+      #       set ENABLE_RUNTIME_STACKTRACE=no
+      #       call "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
+      #       xonsh ci\build_tmp.xsh
 
       - name: Test (Linux / macOS)
         shell: bash -e -l {0}
@@ -91,19 +91,19 @@ jobs:
         run: |
             ./test_lfortran_cmdline
 
-      - name: Test (Windows)
-        if: contains(matrix.os, 'windows')
-        shell: cmd
-        run: |
-            set MAMBA_INSTALL_LOCN=C:\\Users\runneradmin\micromamba
-            call %MAMBA_INSTALL_LOCN%\Scripts\activate.bat
-            call micromamba activate lf
-            set LFORTRAN_CMAKE_GENERATOR=Ninja
-            set WIN=1
-            set MACOS=0
-            set ENABLE_RUNTIME_STACKTRACE=no
-            call "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
-            xonsh ci\test.xsh
+      # - name: Test (Windows)
+      #   if: contains(matrix.os, 'windows')
+      #   shell: cmd
+      #   run: |
+      #       set MAMBA_INSTALL_LOCN=C:\\Users\runneradmin\micromamba
+      #       call %MAMBA_INSTALL_LOCN%\Scripts\activate.bat
+      #       call micromamba activate lf
+      #       set LFORTRAN_CMAKE_GENERATOR=Ninja
+      #       set WIN=1
+      #       set MACOS=0
+      #       set ENABLE_RUNTIME_STACKTRACE=no
+      #       call "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
+      #       xonsh ci\test.xsh
 
   scipy:
     name: Check SciPy Build and Test Run
