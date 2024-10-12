@@ -52,7 +52,7 @@ def run_test() :
         for file_path in file_paths:
             if (is_file_binary(file_path)):
                 print("FAIL --- binary file detected")
-                print("Binary File Name :", file_path, "In Commit : ", commit_hash)
+                print(f"Binary File Name : ({file_path}) In Commit : ({commit_hash})")
                 raise SystemExit()
 
         print("OK --- no binary file found")
