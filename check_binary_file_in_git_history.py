@@ -53,7 +53,7 @@ def run_test() :
             if (is_file_binary(file_path)):
                 print("FAIL --- binary file detected")
                 print(f"Binary File Name : ({file_path}) In Commit : ({commit_hash})")
-                raise SystemExit()
+                raise SystemExit(1)
 
         print("OK --- no binary file found")
         print("\n--------------------------------------------------\n")
