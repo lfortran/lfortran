@@ -23,8 +23,7 @@ def get_commit_hash_differences() -> list :
     commit_hashes_listed  : list  = completedProcess_object.stdout.split("\n")
     if(commit_hashes_listed[-1] == ""):
         commit_hashes_listed.remove("") # Remove trailing empty string.
-    print("number of commits from \
-            current PR branch against origin/main is :", len(commit_hashes_listed))
+    print("number of commits from current PR branch against origin/main is :", len(commit_hashes_listed))
     print (completedProcess_object.stdout) # print the whole string of commit hashes.
     return commit_hashes_listed
 
@@ -52,11 +51,14 @@ def run_test() :
         file_paths : list = get_changed_files() # fetch changed files from current-checkout-to commit.
         for file_path in file_paths:
             if (is_file_binary(file_path)):
-                raise SystemExit(f"ERROR : FOUND PUSHED BINARY FILE --> ({file_path}) IN COMMIT ({commit_hash})")
+                print("FAIL --- binary file detected")
+                print("Binary File Name :", file_path, "In Commit : ", commit_hash)
+                raise SystemExit()
 
+        print("OK --- no binary file found")
         print("\n--------------------------------------------------\n")
     
-    print("CLEAN : No binary file found")
+    print("CLEAN : No binary file found in any commit in this PR")
     print("DONE")
 
 
