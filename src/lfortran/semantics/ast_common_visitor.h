@@ -6055,6 +6055,18 @@ public:
                     } else {
                         tmp = create_func(al, x.base.base.loc, args, diag);
                     }
+                    if(var_name == "isnan" && are_all_args_evaluated){
+                        ASR::IntrinsicElementalFunction_t* intr_func = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(ASRUtils::EXPR(tmp));
+                        ASR::expr_t * m_value = intr_func->m_value;
+                        double rv = ASR::down_cast<ASR::RealConstant_t>(m_value)->m_r;
+                        if(rv == 0){
+                            m_value = ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, x.base.base.loc, 0, intr_func->m_type));
+                        } else{
+                            m_value = ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, x.base.base.loc, 1, intr_func->m_type));
+                        }
+                        intr_func->m_value = m_value;
+                        tmp = (ASR::asr_t*)intr_func;
+                    }
                 } else if ( ASRUtils::IntrinsicArrayFunctionRegistry::is_intrinsic_function(var_name) ) {
                     if(var_name == "dot_product"){
                         ASR::expr_t *matrix_a = args[0], *matrix_b = args[1];
