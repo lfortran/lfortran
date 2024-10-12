@@ -12,8 +12,7 @@
 int main(int argc, char* argv[])
 {
     _lpython_set_argv(argc, argv);
-    char * grade = NULL;
-    _lfortran_strcpy(&grade, "B", 1);
+    static char * grade = "B";
     if (grade == "A") {
         printf("%s\n","Excellent!");
     }

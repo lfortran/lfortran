@@ -13,21 +13,17 @@
 int main(int argc, char* argv[])
 {
     _lpython_set_argv(argc, argv);
-    static int32_t a;
+    static int32_t a = 1;
     const int32_t ap = 1;
-    static int32_t b;
+    static int32_t b = 2;
     const int32_t bp = 2;
-    static float c;
+    static float c =   1.00000000000000000e+00;
     const float cp =   1.00000000000000000e+00;
-    static float d;
+    static float d =   2.00000000000000000e+00;
     const float dp =   2.00000000000000000e+00;
     const char* grade_fixed = "B";
     int32_t marks;
     const int32_t marks_fixed = 94;
-    a = 1;
-    b = 2;
-    c =   1.00000000000000000e+00;
-    d =   2.00000000000000000e+00;
     if (grade_fixed == "A") {
         printf("%s\n","Excellent!");
     }

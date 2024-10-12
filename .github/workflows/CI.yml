@@ -57,13 +57,13 @@ jobs:
             echo "CMAKE_CXX_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
             echo "ENABLE_RUNTIME_STACKTRACE=yes" >> $GITHUB_ENV
 
-      # - name: Build (Linux / macOS)
-      #   shell: bash -e -l {0}
-      #   if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
-      #   run: |
-      #       export CXXFLAGS="-Werror"
-      #       export CFLAGS="-Werror"
-      #       xonsh ci/build_tmp.xsh
+      - name: Build (Linux / macOS)
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
+        run: |
+            export CXXFLAGS="-Werror"
+            export CFLAGS="-Werror"
+            xonsh ci/build_tmp.xsh
 
       # - name: Build (Windows)
       #   if: contains(matrix.os, 'windows')
@@ -79,17 +79,17 @@ jobs:
       #       call "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
       #       xonsh ci\build_tmp.xsh
 
-      # - name: Test (Linux / macOS)
-      #   shell: bash -e -l {0}
-      #   if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
-      #   run: |
-      #       xonsh ci/test.xsh
+      - name: Test (Linux / macOS)
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
+        run: |
+            xonsh ci/test.xsh
 
-      # - name: Test LFortran's Command Line Interface (Linux / macOS)
-      #   shell: bash -e -l {0}
-      #   if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
-      #   run: |
-      #       ./test_lfortran_cmdline
+      - name: Test LFortran's Command Line Interface (Linux / macOS)
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
+        run: |
+            ./test_lfortran_cmdline
 
       # - name: Test (Windows)
       #   if: contains(matrix.os, 'windows')
@@ -343,25 +343,25 @@ jobs:
               -DCMAKE_C_COMPILER_LAUNCHER=sccache \
               -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 
-      #       cmake --build builddir  -j16 --target install
+            cmake --build builddir  -j16 --target install
 
-      # - name: Test Linux
-      #   shell: bash -e -l {0}
-      #   run: ctest --output-on-failure
-      #   working-directory: builddir
+      - name: Test Linux
+        shell: bash -e -l {0}
+        run: ctest --output-on-failure
+        working-directory: builddir
 
-      # - name: Test Moved Installation
-      #   shell: bash -e -l {0}
-      #   run: |
-      #     mv inst inst.moved
-      #     cp src/examples/expr2.f90 expr2.F90
-      #     rm -rf src
-      #     inst.moved/bin/lfortran expr2.F90 -o expr2
-      #     ./expr2
-      #     inst.moved/bin/lfortran --backend=c expr2.F90 -o expr2b
-      #     ./expr2b
-      #     inst.moved/bin/lfortran --openmp --backend=cpp expr2.F90 -o expr2c
-      #     ./expr2c
+      - name: Test Moved Installation
+        shell: bash -e -l {0}
+        run: |
+          mv inst inst.moved
+          cp src/examples/expr2.f90 expr2.F90
+          rm -rf src
+          inst.moved/bin/lfortran expr2.F90 -o expr2
+          ./expr2
+          inst.moved/bin/lfortran --backend=c expr2.F90 -o expr2b
+          ./expr2b
+          inst.moved/bin/lfortran --openmp --backend=cpp expr2.F90 -o expr2c
+          ./expr2c
 
   debug:
     name: Check Debug build
@@ -1114,27 +1114,27 @@ jobs:
           variant: sccache
           key: ${{ github.job }}-${{ matrix.os }}
 
-      # - name: Build Linux
-      #   shell: bash -e -l {0}
-      #   run: |
-      #       ./build0.sh
-      #       cmake . -GNinja \
-      #         -DCMAKE_BUILD_TYPE=Debug \
-      #         -DWITH_LLVM=yes \
-      #         -DLFORTRAN_BUILD_ALL=yes \
-      #         -DWITH_STACKTRACE=no \
-      #         -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
-      #         -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
-      #         -DCMAKE_C_COMPILER_LAUNCHER=sccache \
-      #         -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+      - name: Build Linux
+        shell: bash -e -l {0}
+        run: |
+            ./build0.sh
+            cmake . -GNinja \
+              -DCMAKE_BUILD_TYPE=Debug \
+              -DWITH_LLVM=yes \
+              -DLFORTRAN_BUILD_ALL=yes \
+              -DWITH_STACKTRACE=no \
+              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
+              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
+              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 
-      #       cmake --build . -j16 --target install
+            cmake --build . -j16 --target install
 
-      # - name: Test Linux
-      #   shell: bash -e -l {0}
-      #   run: |
-      #       cd integration_tests
-      #       ./run_tests.py -b llvm_omp
+      - name: Test Linux
+        shell: bash -e -l {0}
+        run: |
+            cd integration_tests
+            ./run_tests.py -b llvm_omp
 
   test_without_llvm:
     name: Test without LLVM Backend
