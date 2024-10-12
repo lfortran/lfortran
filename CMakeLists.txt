@@ -280,8 +280,6 @@ if (WITH_FMT)
 endif()
 
 # Stacktrace
-set(WITH_UNWIND no
-    CACHE BOOL "Build with unwind support")
 set(WITH_BFD no
     CACHE BOOL "Build with BFD support")
 set(WITH_DWARFDUMP no

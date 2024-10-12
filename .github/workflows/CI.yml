@@ -786,6 +786,7 @@ jobs:
               -DWITH_LLVM=yes \
               -DLFORTRAN_BUILD_ALL=yes \
               -DWITH_STACKTRACE=no \
+              -DWITH_UNWIND=yes \
               -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
               -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
               -DCMAKE_C_COMPILER_LAUNCHER=sccache \
