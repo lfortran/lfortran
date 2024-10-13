@@ -8564,7 +8564,7 @@ public:
             }
             ASR::expr_t* array_size_expr = ASRUtils::EXPR(
                     ASR::make_ArraySize_t(al, v->base.loc, v,
-                    nullptr, ASRUtils::TYPE(ASR::make_Integer_t(al, v->base.loc, 8)),
+                    nullptr, ASRUtils::TYPE(ASR::make_Integer_t(al, v->base.loc, 4)),
                     compile_time_size));
 
             //Push type_as_int, size, arr_ptr
