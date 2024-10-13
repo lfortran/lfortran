@@ -43,7 +43,11 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
         message(FATAL_ERROR "Must specify the NAME argument")
     endif()
 
-    if (LFORTRAN_BACKEND)
+    if ("nollvm17orhigher" IN_LIST labels AND LLVM_VERSION_MAJOR GREATER_EQUAL 17)
+        # Skip the test for LLVM version 17 or higher
+        message(STATUS "Skipping test ${name} for LLVM version 17 or higher")
+        set(ADD_TEST OFF)
+    elseif (LFORTRAN_BACKEND)
         if (${LFORTRAN_BACKEND} IN_LIST labels)
             # Test is supported by the given LFortran backend
             set(ADD_TEST ON)
@@ -176,7 +180,7 @@ macro(RUN)
                         "${multiValueArgs}" ${ARGN} )
 
     foreach(b ${RUN_LABELS})
-        if (NOT (b MATCHES "^(llvm|llvm2|llvm_rtlib|c|cpp|x86|wasm|gfortran|llvmImplicit|llvmStackArray|fortran|c_nopragma|llvm_nopragma|llvm_wasm|llvm_wasm_emcc|llvm_omp|mlir)$"))
+        if (NOT (b MATCHES "^(llvm|llvm2|llvm_rtlib|c|cpp|x86|wasm|gfortran|llvmImplicit|llvmStackArray|fortran|c_nopragma|llvm_nopragma|llvm_wasm|llvm_wasm_emcc|llvm_omp|mlir|nollvm17orhigher)$"))
             message(FATAL_ERROR "Unsupported backend: ${b}")
         endif()
     endforeach()
