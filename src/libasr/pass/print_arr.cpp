@@ -153,27 +153,21 @@ public:
         LCOMPILERS_ASSERT(ASR::is_a<ASR::String_t>(*ASRUtils::expr_type(x.m_text)));
         if (ASR::is_a<ASR::StringFormat_t>(*x.m_text)) {
             std::vector<ASR::expr_t*> print_body;
-            ASR::stmt_t* empty_print_endl;
             ASR::stmt_t* print_stmt;
-            ASR::ttype_t *str_type_len_2 = ASRUtils::TYPE(ASR::make_String_t(
-            al, x.base.base.loc, 1, 0, nullptr, ASR::string_physical_typeType::PointerString));
-            ASR::expr_t *empty_space = ASRUtils::EXPR(ASR::make_StringConstant_t(
-            al, x.base.base.loc, s2c(al, ""), str_type_len_2));
-            empty_print_endl = ASRUtils::STMT(ASR::make_Print_t(al, x.base.base.loc, empty_space));
             ASR::StringFormat_t* format = ASR::down_cast<ASR::StringFormat_t>(x.m_text);
             for (size_t i=0; i<format->n_args; i++) {
-                if (PassUtils::is_array(format->m_args[i])) {
-                    if (ASRUtils::is_fixed_size_array(ASRUtils::expr_type(format->m_args[i]))) {
-                        print_fixed_sized_array(format->m_args[i], print_body, x.base.base.loc);
-                    } else {
+                // Only arrays of type `struct_type` are the ones.
+                // that will get printed by creating do loop in the ASR;
+                // otherwise, any array printing will be handled by the backend.
+                if (PassUtils::is_array(format->m_args[i]) &&
+                    ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_array_pointer_allocatable(
+                        ASRUtils::expr_type(format->m_args[i])))) {
                         if (print_body.size() > 0) {
                             print_stmt = create_formatstmt(print_body, format, x.base.base.loc, ASR::stmtType::Print);
                             pass_result.push_back(al, print_stmt);
                         }
                         print_stmt = print_array_using_doloop(format->m_args[i],format, x.base.base.loc);
                         pass_result.push_back(al, print_stmt);
-                        pass_result.push_back(al, empty_print_endl);
-                    }
                 } else {
                     print_body.push_back(format->m_args[i]);
                 }
