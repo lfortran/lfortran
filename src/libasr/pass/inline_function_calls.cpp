@@ -207,6 +207,7 @@ public:
         // Avoid inlining if function call accepts a callback argument
         for( size_t i = 0; i < x->n_args; i++ ) {
             if( x->m_args[i].m_value &&
+                ASRUtils::expr_type(x->m_args[i].m_value) &&
                 ASR::is_a<ASR::FunctionType_t>(
                     *ASRUtils::type_get_past_pointer(
                         ASRUtils::expr_type(x->m_args[i].m_value))) ) {
@@ -337,7 +338,7 @@ public:
                     break;
                 }
                 ASR::ttype_t* local_var_type = func_var->m_type;
-                ASR::symbol_t* local_var = (ASR::symbol_t*) ASR::make_Variable_t(
+                ASR::symbol_t* local_var = (ASR::symbol_t*) ASRUtils::make_Variable_t_util(
                         al, func_var->base.base.loc, current_scope,
                         s2c(al, local_var_name), nullptr, 0, ASR::intentType::Local,
                         nullptr, nullptr, ASR::storage_typeType::Default,

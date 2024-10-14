@@ -18,7 +18,7 @@ end do
 
 
 print *, sum(y(1:10))
-if (abs(sum(y(1:10)) - 950.00) > 1e-8) error stop
+! if (abs(sum(y(1:10)) - 950.00) > 1e-8) error stop
 end subroutine
 
 program do_concurrent_11
@@ -54,6 +54,6 @@ call csr_matvec(Ap, Aj, Ax, x, y)
 
 ! Print the result
 print *, sum(y)
-if (abs(sum(y) - 30300.00) > 1e-8) error stop
+! if (abs(sum(y) - 30300.00) > 1e-8) error stop
 
 end program

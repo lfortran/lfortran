@@ -558,7 +558,7 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
         }
 
         if( ASR::is_a<ASR::Allocatable_t>(*member_variable->m_type) ) {
-            member_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al,
+            member_type = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al,
             member_variable->base.base.loc, member_type));
         } else if( ASR::is_a<ASR::Pointer_t>(*member_variable->m_type) ) {
             member_type = ASRUtils::TYPE(ASR::make_Pointer_t(al,

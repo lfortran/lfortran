@@ -1,4 +1,5 @@
 passes = [
+        "simplifier",
         "replace_arr_slice",
         "replace_openmp",
         "replace_function_call_in_declaration",

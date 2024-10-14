@@ -13,4 +13,4 @@ print*, sum(abs(x), dim)
 res = sum(abs(x), dim)
 if (any(res /= [4, 4])) error stop
 end function func
-end program   
+end program

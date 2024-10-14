@@ -30,6 +30,7 @@ set(SRC
     codegen/wasm_utils.cpp
 
     pass/nested_vars.cpp
+    pass/simplifier.cpp
     pass/where.cpp
     pass/function_call_in_declaration.cpp
     pass/openmp.cpp
@@ -39,7 +40,7 @@ set(SRC
     pass/while_else.cpp
     pass/global_stmts.cpp
     pass/select_case.cpp
-    pass/init_expr.cpp
+    # pass/init_expr.cpp
     pass/implied_do_loops.cpp
     pass/array_op.cpp
     pass/subroutine_from_function.cpp

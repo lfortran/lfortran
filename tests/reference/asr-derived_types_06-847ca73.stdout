@@ -970,9 +970,7 @@
                                                         ()
                                                     )]
                                                     0
-                                                    (Allocatable
-                                                        (Character 1 -2 () PointerString)
-                                                    )
+                                                    (Character 1 -2 () PointerString)
                                                     ()
                                                 )
                                                 (Character 1 -1 () PointerString)
