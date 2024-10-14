@@ -1012,7 +1012,7 @@ public:
                     std::vector<llvm::Value*> args;
                     llvm::Value* ptr_to_init;
                     //pass size and capactiy if stringPhysicalType is DescriptorString.
-                    if(ASRUtils::is_physical_descriptorString(expr_type(tmp_expr))) {
+                    if(ASRUtils::is_descriptorString(expr_type(tmp_expr))) {
                         llvm::Value* char_ptr_ptr = llvm_utils->create_gep2(string_descriptor, x_arr, 0); // fetch char pointer
                         llvm::Value* size_ptr = llvm_utils->create_gep2(string_descriptor, x_arr, 1); // fetch size
                         llvm::Value* capacity_ptr = llvm_utils->create_gep2(string_descriptor, x_arr, 2); // fetch capacity
@@ -3369,7 +3369,7 @@ public:
             !ASR::is_a<ASR::ClassType_t>( \
                 *ASRUtils::type_get_past_allocatable( \
                     ASRUtils::type_get_past_pointer(v->m_type)))) { \
-            if(ASRUtils::is_physical_descriptorString(v->m_type)){ \
+            if(ASRUtils::is_descriptorString(v->m_type)){ \
                 /*set string descriptor to {char* null, int64 0, int 64 0} */ \
                 builder->CreateStore(llvm::ConstantPointerNull::getNullValue(llvm::Type::getInt8Ty(context)->getPointerTo()),\
                 llvm_utils->create_gep2(string_descriptor, ptr, 0));\
@@ -3686,7 +3686,7 @@ public:
                     if ( LLVM::is_llvm_pointer(*v->m_type) &&
                             !ASR::is_a<ASR::ClassType_t>(*ASRUtils::type_get_past_pointer(
                             ASRUtils::type_get_past_allocatable(v->m_type))) && 
-                            !ASRUtils::is_physical_descriptorString(v->m_type) ) {
+                            !ASRUtils::is_descriptorString(v->m_type) ) {
                         is_llvm_ptr = true;
                     }
                     ptr = llvm_utils->CreateAlloca(*builder, type_, array_size,
@@ -3806,7 +3806,7 @@ public:
                     string_init(context, *module, *builder, arg_size, s_malloc);
                     builder->CreateStore(s_malloc, target_var);
                     // target decides if the str_copy is performed on string descriptor or pointer.
-                    tmp = lfortran_str_copy(target_var, init_value, ASRUtils::is_physical_descriptorString(v->m_type)); 
+                    tmp = lfortran_str_copy(target_var, init_value, ASRUtils::is_descriptorString(v->m_type)); 
                     if (v->m_intent == intent_local) {
                         strings_to_be_deallocated.push_back(al, llvm_utils->CreateLoad2(v->m_type, target_var));
                     }
@@ -4804,7 +4804,7 @@ public:
         }
         tmp = builder->CreateCall(fn, {str2, str_val, idx1, idx2, step, lp, rp});
         strings_to_be_deallocated.push_back(al, tmp); // char* returing from this call is dead after making the next str_copy call.
-        tmp = lfortran_str_copy(str, tmp, ASRUtils::is_physical_descriptorString(expr_type(ss->m_arg)));
+        tmp = lfortran_str_copy(str, tmp, ASRUtils::is_descriptorString(expr_type(ss->m_arg)));
     }
 
     void visit_OverloadedStringConcat(const ASR::OverloadedStringConcat_t &x) {
@@ -5134,7 +5134,7 @@ public:
                 } else if (ASR::is_a<ASR::Var_t>(*x.m_target)) {
                     ASR::Variable_t *asr_target = EXPR2VAR(x.m_target);
                     tmp = lfortran_str_copy(target, value,
-                        ASRUtils::is_physical_descriptorString(asr_target->m_type));
+                        ASRUtils::is_descriptorString(asr_target->m_type));
                     return;
                 }
             }
@@ -5512,7 +5512,7 @@ public:
             x->type == ASR::exprType::StructInstanceMember ) {
             if( load_ref &&
                 !ASRUtils::is_value_constant(ASRUtils::expr_value(x)) &&
-                !ASRUtils::is_physical_descriptorString(expr_type(x)) ) {
+                !ASRUtils::is_descriptorString(expr_type(x)) ) {
                 tmp = llvm_utils->CreateLoad2(ASRUtils::expr_type(x), tmp);
             }
         }
@@ -6987,7 +6987,7 @@ public:
         llvm::Value* x_v = llvm_symtab[x_h];
         int64_t ptr_loads_copy = ptr_loads;
         tmp = x_v;
-        while( ptr_loads_copy-- && !ASRUtils::is_physical_descriptorString(x->m_type)) {
+        while( ptr_loads_copy-- && !ASRUtils::is_descriptorString(x->m_type)) {
             tmp = llvm_utils->CreateLoad(tmp);
         }
     }
@@ -8119,7 +8119,7 @@ public:
         if(!is_string){
             unit = tmp;
         } else {
-            if (ASRUtils::is_physical_descriptorString(expr_type(x.m_unit))){
+            if (ASRUtils::is_descriptorString(expr_type(x.m_unit))){
                 unit = llvm_utils->create_gep2(string_descriptor, tmp, 0); //fetch char*
                 string_size = llvm_utils->CreateLoad2(llvm::Type::getInt64Ty(context),
                     llvm_utils->create_gep2(string_descriptor, tmp, 1));
@@ -8967,7 +8967,7 @@ public:
                                     !(orig_arg && !LLVM::is_llvm_pointer(*orig_arg->m_type) &&
                                     LLVM::is_llvm_pointer(*arg_type) &&
                                     !ASRUtils::is_character(*orig_arg->m_type) && 
-                                    ASRUtils::is_physical_descriptorString(arg_type)) && !ASR::is_a<ASR::StructInstanceMember_t>(*x.m_args[i].m_value) ) {
+                                    ASRUtils::is_descriptorString(arg_type)) && !ASR::is_a<ASR::StructInstanceMember_t>(*x.m_args[i].m_value) ) {
                                     llvm::AllocaInst *target = llvm_utils->CreateAlloca(
                                         target_type, nullptr, "call_arg_value");
                                     if( ASR::is_a<ASR::Tuple_t>(*arg_type) ||

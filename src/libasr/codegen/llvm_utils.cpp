@@ -1315,7 +1315,7 @@ namespace LCompilers {
 
         #define handle_llvm_pointers1()                                         \
             if (n_dims == 0 && ASR::is_a<ASR::Character_t>(*t2)) {              \
-                if(ASRUtils::is_physical_descriptorString(t2)) {          \
+                if(ASRUtils::is_descriptorString(t2)) {          \
                     llvm_type = string_descriptor;              \
                 } else {                                                        \
                     llvm_type = character_type;                                 \
@@ -1704,7 +1704,7 @@ namespace LCompilers {
             type)), module);
         llvm::Type* el_type_copy = el_type;
         bool is_llvm_ptr = LLVM::is_llvm_pointer(*type);
-        if (is_llvm_ptr && !ASRUtils::is_physical_descriptorString(type)) {
+        if (is_llvm_ptr && !ASRUtils::is_descriptorString(type)) {
             el_type_copy = el_type_copy->getPointerTo();
         }
         llvm::Value* load = builder->CreateLoad(el_type_copy, x);
@@ -2173,7 +2173,7 @@ namespace LCompilers {
                         ASR::ttype_t* member_type = ASRUtils::symbol_type(item.second);
                         if( !LLVM::is_llvm_struct(member_type) &&
                             !ASRUtils::is_array(member_type) && 
-                            !ASRUtils::is_physical_descriptorString(member_type)) {
+                            !ASRUtils::is_descriptorString(member_type)) {
                             src_member = LLVMUtils::CreateLoad2(mem_type, src_member);
                         }
                         llvm::Value* dest_member = create_gep2(name2dertype[der_type_name], dest, mem_idx);
