@@ -264,7 +264,9 @@ public:
                 if (!ASRUtils::is_character(*a_filename_type)) {
                         throw SemanticError("`file` must be of type, Character or CharacterPointer", x.base.base.loc);
                 }
-                a_filename = ASRUtils::check_and_cast_string_descriptor_to_pointer(al, a_filename);
+                if(ASRUtils::is_descriptorString(ASRUtils::expr_type(a_filename))){
+                    a_filename = ASRUtils::cast_string_descriptor_to_pointer(al, a_filename);
+                }
             } else if( m_arg_str == std::string("status") ) {
                 if( a_status != nullptr ) {
                     throw SemanticError(R"""(Duplicate value of `status` found, unit has already been specified via arguments or keyword arguments)""",
@@ -276,7 +278,9 @@ public:
                 if (!ASRUtils::is_character(*a_status_type)) {
                         throw SemanticError("`status` must be of type, Character or CharacterPointer", x.base.base.loc);
                 }
-                a_status = ASRUtils::check_and_cast_string_descriptor_to_pointer(al, a_status);
+                if(ASRUtils::is_descriptorString(ASRUtils::expr_type(a_status))){
+                    a_status = ASRUtils::cast_string_descriptor_to_pointer(al, a_status);
+                }
             } else if( m_arg_str == std::string("form") ) {
                 if ( a_form != nullptr ) {
                     throw SemanticError(R"""(Duplicate value of `form` found, unit has already been specified via arguments or keyword arguments)""",
@@ -288,7 +292,9 @@ public:
                 if (!ASRUtils::is_character(*a_form_type)) {
                         throw SemanticError("`form` must be of type, Character or CharacterPointer", x.base.base.loc);
                 }
-                a_form = ASRUtils::check_and_cast_string_descriptor_to_pointer(al, a_form);
+                if(ASRUtils::is_descriptorString(ASRUtils::expr_type(a_form))){
+                    a_form = ASRUtils::cast_string_descriptor_to_pointer(al, a_form);
+                }
 
             } else {
                 const std::unordered_set<std::string> unsupported_args {"iostat", "iomsg", "err", "blank", "access", \
@@ -656,7 +662,9 @@ public:
         for( std::uint32_t i = 0; i < n_values; i++ ) {
             this->visit_expr(*m_values[i]);
             ASR::expr_t* expr = ASRUtils::EXPR(tmp);
-            expr = ASRUtils::check_and_cast_string_descriptor_to_pointer(al, expr);
+            if(ASRUtils::is_descriptorString(ASRUtils::expr_type(expr))){
+                expr = ASRUtils::cast_string_descriptor_to_pointer(al, expr);
+            }
             a_values_vec.push_back(al, expr);
         }
 
@@ -887,7 +895,10 @@ public:
         ASR::ttype_t* target_type = ASRUtils::expr_type(target);
         current_variable_type_ = target_type;
         this->visit_expr(*(x.m_value));
-        ASR::expr_t* value = ASRUtils::check_and_cast_string_descriptor_to_pointer(al, ASRUtils::EXPR(tmp));
+        ASR::expr_t* value = ASRUtils::EXPR(tmp);
+        if(ASRUtils::is_descriptorString(ASRUtils::expr_type(value))){
+            value = ASRUtils::cast_string_descriptor_to_pointer(al, ASRUtils::EXPR(tmp));
+        }
         ASR::ttype_t* value_type = ASRUtils::expr_type(value);
         bool is_target_pointer = ASRUtils::is_pointer(target_type);
         if ( !is_target_pointer && !ASR::is_a<ASR::FunctionType_t>(*target_type) ) {
@@ -2396,11 +2407,13 @@ public:
         this->visit_expr(*x.m_value);
         ASR::expr_t *value = ASRUtils::EXPR(tmp);
         if( ASRUtils::is_character(*ASRUtils::expr_type(target)) && 
-            ASRUtils::is_character(*ASRUtils::expr_type(value))){
-            if(ASRUtils::is_physical_descriptorString(ASRUtils::expr_type(target))){
-                value = ASRUtils::check_and_cast_string_pointer_to_descriptor(al ,value);
-            } else {
-                value = ASRUtils::check_and_cast_string_descriptor_to_pointer(al, value);
+            ASRUtils::is_character(*ASRUtils::expr_type(value))){ // string assignment.
+            if( ASRUtils::is_descriptorString(ASRUtils::expr_type(target)) &&  
+                !ASRUtils::is_descriptorString(ASRUtils::expr_type(value))){
+                value = ASRUtils::cast_string_pointer_to_descriptor(al ,value);
+            } else if ( !ASRUtils::is_descriptorString(ASRUtils::expr_type(target)) &&  
+                        ASRUtils::is_descriptorString(ASRUtils::expr_type(value))) {
+                value = ASRUtils::cast_string_descriptor_to_pointer(al, value);
             }
         }
         ASR::stmt_t *overloaded_stmt = nullptr;
@@ -3182,7 +3195,9 @@ public:
         for (size_t i=0; i<x.n_values; i++) {
             visit_expr(*x.m_values[i]);
             ASR::expr_t *expr = ASRUtils::EXPR(tmp);
-            expr = ASRUtils::check_and_cast_string_descriptor_to_pointer(al, expr);
+            if(ASRUtils::is_descriptorString(ASRUtils::expr_type(expr))){
+                expr = ASRUtils::cast_string_descriptor_to_pointer(al, expr);
+            }
             body.push_back(al, expr);
         }
         if (fmt && ASR::is_a<ASR::IntegerConstant_t>(*fmt)) {
