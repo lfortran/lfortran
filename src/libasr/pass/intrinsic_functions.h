@@ -115,6 +115,8 @@ enum class IntrinsicElementalFunctions : int64_t {
     SelectedCharKind,
     Adjustl,
     Adjustr,
+    StringLenTrim,
+    StringTrim,
     Ichar,
     Char,
     Achar,
@@ -189,6 +191,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     SymbolicLogQ,
     SymbolicSinQ,
     SymbolicGetArgument,
+    Int,
     // ...
 };
 
@@ -1893,6 +1896,50 @@ namespace Lle {
     }
 
 } // namespace Lle
+
+namespace Int {
+
+    static ASR::expr_t *eval_Int(Allocator &al, const Location &loc,
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
+        int64_t i = -1;
+        if (ASR::is_a<ASR::IntegerConstant_t>(*args[0])) {
+            i = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(args[0]))->m_n;
+            return make_ConstantWithType(make_IntegerConstant_t, i, t1, loc);
+        } else if (ASR::is_a<ASR::RealConstant_t>(*args[0])) {
+            i = ASR::down_cast<ASR::RealConstant_t>(ASRUtils::expr_value(args[0]))->m_r;
+            return make_ConstantWithType(make_IntegerConstant_t, i, t1, loc);
+        } else if (ASR::is_a<ASR::ComplexConstant_t>(*args[0])) {
+            i = ASR::down_cast<ASR::ComplexConstant_t>(ASRUtils::expr_value(args[0]))->m_re;
+            return make_ConstantWithType(make_IntegerConstant_t, i, t1, loc);
+        } else {
+            append_error(diag, "Invalid argument to `int` intrinsic", loc);
+            return nullptr;
+        }
+    }
+
+    static inline ASR::expr_t* instantiate_Int(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("_lcompilers_int_" + type_to_str_python(arg_types[0]));
+        fill_func_arg("a", arg_types[0]);
+        auto result = declare(fn_name, return_type, ReturnVar);
+        if (is_integer(*arg_types[0])) {
+            body.push_back(al,b.Assignment(result, b.i2i_t(args[0], return_type)));
+        } else if (is_real(*arg_types[0])) {
+            body.push_back(al,b.Assignment(result, b.r2i_t(args[0], return_type)));
+        } else if (is_complex(*arg_types[0])) {
+            body.push_back(al,b.Assignment(result, b.c2i_t(args[0], return_type)));
+        } else {
+            return nullptr;
+        }
+
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, nullptr);
+    }
+
+}  // namespace Int
 
 namespace Not {
 
@@ -4446,6 +4493,105 @@ namespace Adjustr {
     }
 
 } // namespace Adjustr
+
+namespace StringLenTrim {
+
+    static ASR::expr_t *eval_StringLenTrim(Allocator &al, const Location &loc,
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+        char* str = ASR::down_cast<ASR::StringConstant_t>(args[0])->m_s;
+        size_t len = std::strlen(str);
+        for (int i = len - 1; i >= 0; i--) {
+            if (!std::isspace(str[i])) {
+                return make_ConstantWithType(make_IntegerConstant_t, i + 1, t1, loc);
+            }
+        }
+        return make_ConstantWithType(make_IntegerConstant_t, 0, t1, loc);
+    }
+
+    static inline ASR::expr_t* instantiate_StringLenTrim(Allocator &al, const Location &loc,
+        SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+        Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("_lcompilers_len_trim_" + type_to_str_python(arg_types[0]));
+        fill_func_arg("str", ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -1, nullptr, ASR::string_physical_typeType::PointerString)));
+        auto result = declare("result", return_type, ReturnVar);
+
+        /*
+            function len_trim(string) result(r)
+                character(len=*), intent(in) :: string
+                r = len(string)
+                if (r/= 0) then
+                    do while(string(r:r) == " ")
+                        r = r - 1
+                        if (r == 0) exit
+                    end do
+                end if
+            end function
+        */
+
+        body.push_back(al, b.Assignment(result, b.StringLen(args[0])));
+        body.push_back(al, b.If(b.NotEq(result, b.i32(0)), {
+            b.While(b.Eq(b.StringItem(args[0], result), b.StringConstant(" ", arg_types[0])), {
+                b.Assignment(result, b.Sub(result, b.i32(1))),
+                b.If(b.Eq(result, b.i32(0)), {
+                    b.Exit()
+                }, {})
+            })
+        }, {}));
+
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, nullptr);
+    }
+    static inline ASR::expr_t* StringLenTrim(ASRBuilder &b, ASR::expr_t* a, ASR::ttype_t *return_type, SymbolTable* scope) {
+        return b.CallIntrinsic(scope, {expr_type(a)}, {a}, return_type, 0, StringLenTrim::instantiate_StringLenTrim);
+    }
+
+} // namespace StringLenTrim
+
+namespace StringTrim {
+
+    static ASR::expr_t *eval_StringTrim(Allocator &al, const Location &loc,
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+        char* str = ASR::down_cast<ASR::StringConstant_t>(args[0])->m_s;
+        size_t len = strlen(str);
+        if (len > 0) {
+            char* endptr = str + len - 1;
+            while (endptr >= str && std::isspace(*endptr)) {
+                *endptr = '\0';
+                --endptr;
+            }
+        }
+        return make_ConstantWithType(make_StringConstant_t, str, t1, loc);
+    }
+
+    static inline ASR::expr_t* instantiate_StringTrim(Allocator &al, const Location &loc,
+        SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+        Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("_lcompilers_trim_" + type_to_str_python(arg_types[0]));
+        fill_func_arg("str", ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -1, nullptr, ASR::string_physical_typeType::PointerString)));
+        ASR::expr_t* func_call_lentrim = StringLenTrim::StringLenTrim(b, args[0], int32, scope);
+        return_type = TYPE(ASR::make_Character_t(al, loc, 1, -3, func_call_lentrim, ASR::string_physical_typeType::PointerString));
+        auto result = declare("result", return_type, ReturnVar);
+
+        /*
+            function trim(string) result(r)
+                character(len=*), intent(in) :: string
+                l = len_trim(string)
+                r = x(1:l)
+            end function
+        */
+
+        body.push_back(al, b.Assignment(result, b.StringSection(args[0], b.i32(0), func_call_lentrim)));
+
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        return_type = TYPE(ASR::make_Character_t(al, loc, 1, -3, EXPR(ASR::make_StringLen_t(al, loc, new_args[0].m_value, int32, nullptr)), ASR::string_physical_typeType::PointerString));
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, nullptr);
+    }
+
+} // namespace StringTrim
 
 namespace Ichar {
 

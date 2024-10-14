@@ -51,7 +51,6 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
 
 void load_rtlib() {
     const std::string m_builtin = "lfortran_intrinsic_builtin";
-    const std::string m_string = "lfortran_intrinsic_string";
     const std::string m_ieee_arithmetic = "lfortran_intrinsic_ieee_arithmetic";
 }
 

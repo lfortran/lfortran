@@ -29,6 +29,7 @@ inline std::string get_intrinsic_subroutine_name(int x) {
         INTRINSIC_SUBROUTINE_NAME_CASE(CpuTime)
         INTRINSIC_SUBROUTINE_NAME_CASE(Srand)
         INTRINSIC_SUBROUTINE_NAME_CASE(SystemClock)
+        INTRINSIC_SUBROUTINE_NAME_CASE(DateAndTime)
         default : {
             throw LCompilersException("pickle: intrinsic_id not implemented");
         }
@@ -56,6 +57,8 @@ namespace IntrinsicImpureSubroutineRegistry {
             {&GetCommandArgument::instantiate_GetCommandArgument, &GetCommandArgument::verify_args}},
         {static_cast<int64_t>(IntrinsicImpureSubroutines::SystemClock),
             {&SystemClock::instantiate_SystemClock, &SystemClock::verify_args}},
+        {static_cast<int64_t>(IntrinsicImpureSubroutines::DateAndTime),
+            {&DateAndTime::instantiate_DateAndTime, &DateAndTime::verify_args}},
         {static_cast<int64_t>(IntrinsicImpureSubroutines::GetEnvironmentVariable),
             {&GetEnvironmentVariable::instantiate_GetEnvironmentVariable, &GetEnvironmentVariable::verify_args}},
         {static_cast<int64_t>(IntrinsicImpureSubroutines::ExecuteCommandLine),
@@ -79,6 +82,8 @@ namespace IntrinsicImpureSubroutineRegistry {
             "get_command_argument"},
         {static_cast<int64_t>(IntrinsicImpureSubroutines::SystemClock),
             "system_clock"},
+        {static_cast<int64_t>(IntrinsicImpureSubroutines::DateAndTime),
+            "date_and_time"},
         {static_cast<int64_t>(IntrinsicImpureSubroutines::GetEnvironmentVariable),
             "get_environment_variable"},
         {static_cast<int64_t>(IntrinsicImpureSubroutines::ExecuteCommandLine),
@@ -100,6 +105,7 @@ namespace IntrinsicImpureSubroutineRegistry {
                 {"get_environment_variable", &GetEnvironmentVariable::create_GetEnvironmentVariable},
                 {"execute_command_line", &ExecuteCommandLine::create_ExecuteCommandLine},
                 {"cpu_time", &CpuTime::create_CpuTime},
+                {"date_and_time", &DateAndTime::create_DateAndTime},
     };
 
     static inline bool is_intrinsic_subroutine(const std::string& name) {

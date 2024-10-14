@@ -1445,6 +1445,16 @@ static inline std::string extract_dim_value(ASR::expr_t* dim) {
     return std::to_string(length_dim);
 }
 
+static inline std::int64_t extract_dim_value_int(ASR::expr_t* dim) {
+    int64_t length_dim = 0;
+    if( dim == nullptr ||
+        !ASRUtils::extract_value(ASRUtils::expr_value(dim), length_dim)) {
+        return -1;
+    }
+
+    return length_dim;
+}
+
 static inline std::string type_encode_dims(size_t n_dims, ASR::dimension_t* m_dims )
 {
     std::string dims_str = "[";

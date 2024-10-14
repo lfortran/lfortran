@@ -3,7 +3,7 @@ FROM ubuntu:22.04 AS build
 USER root
 
 RUN apt update
-RUN apt install curl git build-essential binutils-dev zlib1g-dev clang -y
+RUN apt install curl git build-essential binutils-dev zlib1g-dev clang libunwind-dev -y
 
 RUN curl -L -O "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-$(uname -m).sh"
 RUN bash Miniforge3-$(uname)-$(uname -m).sh -b

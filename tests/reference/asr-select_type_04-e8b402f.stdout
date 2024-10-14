@@ -602,7 +602,7 @@
             select_type4:
                 (Program
                     (SymbolTable
-                        20
+                        16
                         {
                             
                         })

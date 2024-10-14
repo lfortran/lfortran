@@ -1237,9 +1237,11 @@ public:
 
     void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t& x)
     {
-        LCOMPILERS_ASSERT(x.n_head == 1);
-        const ASR::DoLoop_t do_loop = ASR::DoLoop_t{ x.base, nullptr, x.m_head[0], x.m_body, x.n_body, nullptr, 0 };
+        // LCOMPILERS_ASSERT(x.n_head == 1);
+        for (size_t i = 0; i < x.n_head; i++) {
+        const ASR::DoLoop_t do_loop = ASR::DoLoop_t{ x.base, nullptr, x.m_head[i], x.m_body, x.n_body, nullptr, 0 };
         visit_DoLoop(do_loop, true);
+        }
     }
 
     void visit_If(const ASR::If_t& x)
@@ -1909,6 +1911,8 @@ public:
             SET_INTRINSIC_NAME(StringFindSet, "scan");
             SET_INTRINSIC_NAME(SubstrIndex, "index");
             SET_INTRINSIC_NAME(Modulo, "modulo");
+            SET_INTRINSIC_NAME(StringLenTrim, "len_trim");
+            SET_INTRINSIC_NAME(StringTrim, "trim");
             default : {
                 throw LCompilersException("IntrinsicFunction: `"
                     + ASRUtils::get_intrinsic_name(x.m_intrinsic_id)

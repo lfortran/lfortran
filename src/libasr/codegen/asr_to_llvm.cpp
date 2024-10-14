@@ -3630,6 +3630,9 @@ public:
                     gptr->setLinkage(llvm::GlobalValue::InternalLinkage);
                     llvm::Constant *init_value = llvm::Constant::getNullValue(type);
                     gptr->setInitializer(init_value);
+#if LLVM_VERSION_MAJOR > 16
+                    ptr_type[ptr] = type;
+#endif
                 } else {
 #if LLVM_VERSION_MAJOR > 16
                     bool is_llvm_ptr = false;
@@ -4103,12 +4106,12 @@ public:
                             tmp = llvm_utils->CreateLoad(tmp);
                         } else {
                             // tmp is {float, float}*
-                            // type_fx2p is <2 x float>*
-                            llvm::Type* type_fx2p = FIXED_VECTOR_TYPE::get(llvm::Type::getFloatTy(context), 2)->getPointerTo();
+                            // type_fx2 is <2 x float>
+                            llvm::Type* type_fx2 = FIXED_VECTOR_TYPE::get(llvm::Type::getFloatTy(context), 2);
                             // Convert {float,float}* to <2 x float>* using bitcast
-                            tmp = builder->CreateBitCast(tmp, type_fx2p);
+                            tmp = builder->CreateBitCast(tmp, type_fx2->getPointerTo());
                             // Then convert <2 x float>* -> <2 x float>
-                            tmp = llvm_utils->CreateLoad(tmp);
+                            tmp = llvm_utils->CreateLoad2(type_fx2, tmp);
                         }
                     } else {
                         LCOMPILERS_ASSERT(c_kind == 8)
@@ -5831,8 +5834,8 @@ public:
         bool is_single_char = (ASR::is_a<ASR::StringItem_t>(*x.m_left) &&
                                ASR::is_a<ASR::StringItem_t>(*x.m_right));
         if( is_single_char ) {
-            left = llvm_utils->CreateLoad(left);
-            right = llvm_utils->CreateLoad(right);
+            left = llvm_utils->CreateLoad2(character_type, left);
+            right = llvm_utils->CreateLoad2(character_type, right);
         }
         std::string fn;
         switch (x.m_op) {

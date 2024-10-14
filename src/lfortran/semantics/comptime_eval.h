@@ -25,9 +25,8 @@ struct IntrinsicProceduresAsASRNodes {
 
         IntrinsicProceduresAsASRNodes() {
             intrinsics_present_in_ASR = {"size", "lbound", "ubound",
-                "transpose", "matmul", "pack", "transfer", "cmplx",
-                "dcmplx", "reshape", "ichar", "iachar", "char", "maxloc",
-                "null", "associated", "len", "complex"};
+                "transpose", "transfer", "cmplx", "dcmplx", "reshape",
+                "iachar", "null", "associated", "len", "complex"};
 
             kind_based_intrinsics = {};
         }
@@ -44,7 +43,6 @@ struct IntrinsicProceduresAsASRNodes {
 
 struct IntrinsicProcedures {
     const std::string m_builtin = "lfortran_intrinsic_builtin";
-    const std::string m_string = "lfortran_intrinsic_string";
     const std::string m_ieee_arithmetic = "lfortran_intrinsic_ieee_arithmetic";
     const std::string m_iso_c_binding = "lfortran_intrinsic_iso_c_binding";
     const std::string m_custom = "lfortran_intrinsic_custom";
@@ -70,19 +68,8 @@ struct IntrinsicProcedures {
             // real and int get transformed into ExplicitCast
             // in intrinsic_function_transformation()
             // So we shouldn't even encounter them here
-            {"int", {m_builtin, &eval_int, false}},
-            {"is_iostat_eor", {m_builtin, &not_implemented, false}},
-            {"is_iostat_end", {m_builtin, &not_implemented, false}},
             {"newunit", {m_custom, &not_implemented, false}},
-
-            // These will fail if used in symbol table visitor, but will be
-            // left unevaluated in body visitor
-            {"trim", {m_string, &not_implemented, false}},
-            {"len_trim", {m_string, &not_implemented, false}},
-
-            // Subroutines
             {"present", {m_builtin, &not_implemented, false}},
-            {"date_and_time", {m_string, &not_implemented, false}},
 
             // IEEE Arithmetic
             {"ieee_value", {m_ieee_arithmetic, &not_implemented, false}},
@@ -230,34 +217,6 @@ struct IntrinsicProcedures {
             return ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(al, loc, val, type));
         } else {
             throw SemanticError("Arguments for this intrinsic function must be Real or Integer", loc);
-        }
-    }
-
-    static ASR::expr_t *eval_int(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &/*compiler_options*/) {
-        ASR::expr_t* int_expr = args[0];
-        ASR::ttype_t* int_type = ASRUtils::expr_type(int_expr);
-        int int_kind = ASRUtils::extract_kind_from_ttype_t(int_type);
-        if (ASR::is_a<ASR::Integer_t>(*int_type)) {
-            if (int_kind == 4){
-                int64_t ival = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(int_expr))->m_n;
-                return ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(al, loc, ival, int_type));
-            } else {
-                int64_t ival = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(int_expr))->m_n;
-                return ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(al, loc, ival, int_type));
-            }
-        } else if (ASR::is_a<ASR::Real_t>(*int_type)) {
-            if (int_kind == 4){
-                float rv = ASR::down_cast<ASR::RealConstant_t>(
-                    ASRUtils::expr_value(int_expr))->m_r;
-                int64_t ival = static_cast<int64_t>(rv);
-                return ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(al, loc, ival, int_type));
-            } else {
-                double rv = ASR::down_cast<ASR::RealConstant_t>(ASRUtils::expr_value(int_expr))->m_r;
-                int64_t ival = static_cast<int64_t>(rv);
-                return ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(al, loc, ival, int_type));
-            }
-        } else {
-            throw SemanticError("int must have only one argument", loc);
         }
     }
 
