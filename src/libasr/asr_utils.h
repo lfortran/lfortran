@@ -2737,7 +2737,8 @@ static inline bool is_descriptorString(ASR::ttype_t* t){
 
 // Create `StringPhysicalCast` node from  `PointerString` --> `DescriptorString`.
 static inline ASR::expr_t* cast_string_pointer_to_descriptor(Allocator& al, ASR::expr_t* string){
-    LCOMPILERS_ASSERT(ASRUtils::is_character(*ASRUtils::expr_type(string)));
+    LCOMPILERS_ASSERT(is_character(*ASRUtils::expr_type(string)) &&
+        !is_descriptorString(expr_type(string)));
     ASR::ttype_t* string_type = ASRUtils::expr_type(string);
     ASR::ttype_t* stringDescriptor_type = ASRUtils::duplicate_type(al,
         ASRUtils::type_get_past_array_pointer_allocatable(string_type));
@@ -2754,7 +2755,8 @@ static inline ASR::expr_t* cast_string_pointer_to_descriptor(Allocator& al, ASR:
 
 // Create `StringPhysicalCast` node from `DescriptorString` --> `PointerString`.
 static inline ASR::expr_t* cast_string_descriptor_to_pointer(Allocator& al, ASR::expr_t* string){
-    LCOMPILERS_ASSERT(ASRUtils::is_character(*ASRUtils::expr_type(string)));
+    LCOMPILERS_ASSERT(is_character(*ASRUtils::expr_type(string)) &&
+        is_descriptorString(expr_type(string)));
     if(ASRUtils::is_descriptorString(ASRUtils::expr_type(string))){
         // Create string node with `PointerString` physical type
         ASR::ttype_t* stringPointer_type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(string));
