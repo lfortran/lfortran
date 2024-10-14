@@ -1062,34 +1062,34 @@ jobs:
           ./emsdk install latest
           ./emsdk activate latest
 
-      # - name: Build Linux
-      #   shell: bash -e -l {0}
-      #   run: |
-      #       export WASI_SDK_PATH=$HOME/wasi-sdk-21.0
-      #       export EMSDK_PATH=$HOME/emsdk-3.1.59
-      #       ./build0.sh
-      #       cmake . -GNinja \
-      #         -DCMAKE_BUILD_TYPE=Debug \
-      #         -DWITH_LLVM=yes \
-      #         -DWITH_TARGET_WASM=yes \
-      #         -DLFORTRAN_BUILD_ALL=yes \
-      #         -DWITH_STACKTRACE=no \
-      #         -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
-      #         -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
-      #         -DCMAKE_C_COMPILER_LAUNCHER=sccache \
-      #         -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+      - name: Build Linux
+        shell: bash -e -l {0}
+        run: |
+            export WASI_SDK_PATH=$HOME/wasi-sdk-21.0
+            export EMSDK_PATH=$HOME/emsdk-3.1.59
+            ./build0.sh
+            cmake . -GNinja \
+              -DCMAKE_BUILD_TYPE=Debug \
+              -DWITH_LLVM=yes \
+              -DWITH_TARGET_WASM=yes \
+              -DLFORTRAN_BUILD_ALL=yes \
+              -DWITH_STACKTRACE=no \
+              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
+              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
+              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 
-      #       cmake --build . -j16 --target install
+            cmake --build . -j16 --target install
 
-      # - name: Test Linux
-      #   shell: bash -e -l {0}
-      #   run: |
-      #       export WASI_SDK_PATH=$HOME/wasi-sdk-21.0
-      #       export EMSDK_PATH=$HOME/emsdk-3.1.59
-      #       export PATH=$HOME/wasmtime-v19.0.2-x86_64-linux:$PATH
-      #       export WASMTIME_NEW_CLI=0
-      #       cd integration_tests
-      #       ./run_tests.py -b llvm_wasm llvm_wasm_emcc
+      - name: Test Linux
+        shell: bash -e -l {0}
+        run: |
+            export WASI_SDK_PATH=$HOME/wasi-sdk-21.0
+            export EMSDK_PATH=$HOME/emsdk-3.1.59
+            export PATH=$HOME/wasmtime-v19.0.2-x86_64-linux:$PATH
+            export WASMTIME_NEW_CLI=0
+            cd integration_tests
+            ./run_tests.py -b llvm_wasm llvm_wasm_emcc
 
   gfortran:
     name: Test integration_tests with GFortran
