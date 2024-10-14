@@ -2414,7 +2414,7 @@ static inline ASR::asr_t* make_ArraySize_t_util(
             ASR::expr_t* start = array_section_t->m_args[dim - 1].m_left;
             ASR::expr_t* end = array_section_t->m_args[dim - 1].m_right;
             ASR::expr_t* d = array_section_t->m_args[dim - 1].m_step;
-            if( start == nullptr and d == nullptr ) {
+            if( start == nullptr && d == nullptr ) {
                 return const1;
             }
             start = CastingUtil::perform_casting(start, a_type, al, a_loc);
@@ -2680,6 +2680,18 @@ static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
         }
         case ASR::ttypeType::SymbolicExpression: {
             return ASRUtils::TYPE(ASR::make_SymbolicExpression_t(al, t->base.loc));
+        }
+        case ASR::ttypeType::Tuple: {
+            ASR::Tuple_t* tup = ASR::down_cast<ASR::Tuple_t>(t);
+            Vec<ASR::ttype_t*> types;
+            types.reserve(al, tup->n_type);
+            for( size_t i = 0; i < tup->n_type; i++ ) {
+                ASR::ttype_t *t = ASRUtils::duplicate_type(al, tup->m_type[i],
+                    nullptr, physical_type, override_physical_type);
+                types.push_back(al, t);
+            }
+            return ASRUtils::TYPE(ASR::make_Tuple_t(al, tup->base.base.loc,
+                types.p, types.size()));
         }
         default : throw LCompilersException("Not implemented " + ASRUtils::type_to_str_python(t));
     }

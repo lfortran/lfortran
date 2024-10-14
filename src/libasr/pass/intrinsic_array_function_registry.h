@@ -3400,7 +3400,7 @@ namespace FindLoc {
         else{
             mask_new = mask;
         }
-        body.push_back(al, b.Assignment(result, b.i_t(0, return_type)));
+        body.push_back(al, b.Assignment(result, b.i_t(0, ASRUtils::type_get_past_array(return_type))));
         body.push_back(al, b.DoLoop(i, b.i_t(1, type), UBound(array, 1), {
             b.If(b.And(b.Eq(ArrayItem_02(array, i), value), b.Eq(mask_new, b.bool_t(1, logical))), {
                 b.Assignment(result, i),
