@@ -807,32 +807,39 @@ intrinsic_funcs_args = {
            "ret_type_arg_idx": 0,
            "same_kind_arg": 2
        },
-   ],
-   "Dshiftr": [
-       {
-           "args": [("int", "int", "int",)],
-           "ret_type_arg_idx": 0
-       },
-   ],
-   "Popcnt": [
-       {
-           "args": [("int",)],
-           "return": "int32",
-       },
-   ],
-   "Poppar": [
-       {
-           "args": [("int",)],
-           "return": "int32",
-       },
-   ],
+    ],
+    "Dshiftr": [
+        {
+            "args": [("int", "int", "int",)],
+            "ret_type_arg_idx": 0
+        },
+    ],
+    "Popcnt": [
+        {
+            "args": [("int",)],
+            "return": "int32",
+        },
+    ],
+    "Poppar": [
+        {
+            "args": [("int",)],
+            "return": "int32",
+        },
+    ],
     "Real": [
-       {
-           "args": [("int",), ("real",), ("complex",)],
-           "return": "real32",
-           "kind_arg": True,
-       },
-   ],
+        {
+            "args": [("int",), ("real",), ("complex",)],
+            "return": "real32",
+            "kind_arg": True,
+        },
+    ],
+    "Int": [
+        {
+            "args": [("int",), ("real",), ("complex",)],
+            "return": "int32",
+            "kind_arg": True
+        }
+    ],
     "StringLenTrim": [
         {
             "args": [("char",)],

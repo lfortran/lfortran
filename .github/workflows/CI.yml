@@ -15,6 +15,17 @@ env:
   MACOSX_DEPLOYMENT_TARGET: 14.0
 
 jobs:
+  Check_for_Added_Binary_Files:
+    name: Check for Added Binary Files
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          
+      - name: Check for Added Binary Files
+        run: python3 check_binary_file_in_git_history.py
+
   Build:
     name: LFortran CI (${{ matrix.python-version }}, ${{ matrix.os }})
     runs-on: ${{ matrix.os }}
@@ -776,6 +787,7 @@ jobs:
               -DWITH_LLVM=yes \
               -DLFORTRAN_BUILD_ALL=yes \
               -DWITH_STACKTRACE=no \
+              -DWITH_LIBUNWIND=yes \
               -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
               -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
               -DCMAKE_C_COMPILER_LAUNCHER=sccache \
@@ -787,6 +799,7 @@ jobs:
       - name: Test Linux LLVM 10-19
         shell: bash -e -l {0}
         run: |
+            ctest --output-on-failure
             cd integration_tests
             ./run_tests.py -b llvm llvmImplicit
             #./run_tests.py -b llvm llvmImplicit -f
