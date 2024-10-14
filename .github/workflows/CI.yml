@@ -694,14 +694,13 @@ jobs:
 
             mkdir lf
             cd lf
-            FC=$(pwd)/../../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
+            FC=$(pwd)/../../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug -DCMAKE_Fortran_FLAGS="--realloc-lhs" ..
             make VERBOSE=1
             ln -s ../model.dat .
-      #       ./gpt2
-      #       ./test_basic_input
-      #       ./test_more_inputs
-      #       cd ..
-
+            ./gpt2
+            ./test_basic_input
+            ./test_more_inputs
+            cd ..
 
       - name: Test fpm
         shell: bash -e -x -l {0}
@@ -953,13 +952,13 @@ jobs:
 
             mkdir lf
             cd lf
-            FC=$(pwd)/../../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
+            FC=$(pwd)/../../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug -DCMAKE_Fortran_FLAGS="--realloc-lhs" ..
             make VERBOSE=1
             ln -s ../model.dat .
-      #       ./gpt2
-      #       ./test_basic_input
-      #       ./test_more_inputs
-      #       cd ..
+            ./gpt2
+            ./test_basic_input
+            ./test_more_inputs
+            cd ..
 
 
       - name: Test fpm
