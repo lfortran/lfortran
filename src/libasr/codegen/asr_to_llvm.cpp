@@ -4106,12 +4106,12 @@ public:
                             tmp = llvm_utils->CreateLoad(tmp);
                         } else {
                             // tmp is {float, float}*
-                            // type_fx2p is <2 x float>*
-                            llvm::Type* type_fx2p = FIXED_VECTOR_TYPE::get(llvm::Type::getFloatTy(context), 2)->getPointerTo();
+                            // type_fx2 is <2 x float>
+                            llvm::Type* type_fx2 = FIXED_VECTOR_TYPE::get(llvm::Type::getFloatTy(context), 2);
                             // Convert {float,float}* to <2 x float>* using bitcast
-                            tmp = builder->CreateBitCast(tmp, type_fx2p);
+                            tmp = builder->CreateBitCast(tmp, type_fx2->getPointerTo());
                             // Then convert <2 x float>* -> <2 x float>
-                            tmp = llvm_utils->CreateLoad(tmp);
+                            tmp = llvm_utils->CreateLoad2(type_fx2, tmp);
                         }
                     } else {
                         LCOMPILERS_ASSERT(c_kind == 8)

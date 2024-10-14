@@ -191,6 +191,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     SymbolicLogQ,
     SymbolicSinQ,
     SymbolicGetArgument,
+    Int,
     // ...
 };
 
@@ -1895,6 +1896,50 @@ namespace Lle {
     }
 
 } // namespace Lle
+
+namespace Int {
+
+    static ASR::expr_t *eval_Int(Allocator &al, const Location &loc,
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
+        int64_t i = -1;
+        if (ASR::is_a<ASR::IntegerConstant_t>(*args[0])) {
+            i = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(args[0]))->m_n;
+            return make_ConstantWithType(make_IntegerConstant_t, i, t1, loc);
+        } else if (ASR::is_a<ASR::RealConstant_t>(*args[0])) {
+            i = ASR::down_cast<ASR::RealConstant_t>(ASRUtils::expr_value(args[0]))->m_r;
+            return make_ConstantWithType(make_IntegerConstant_t, i, t1, loc);
+        } else if (ASR::is_a<ASR::ComplexConstant_t>(*args[0])) {
+            i = ASR::down_cast<ASR::ComplexConstant_t>(ASRUtils::expr_value(args[0]))->m_re;
+            return make_ConstantWithType(make_IntegerConstant_t, i, t1, loc);
+        } else {
+            append_error(diag, "Invalid argument to `int` intrinsic", loc);
+            return nullptr;
+        }
+    }
+
+    static inline ASR::expr_t* instantiate_Int(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("_lcompilers_int_" + type_to_str_python(arg_types[0]));
+        fill_func_arg("a", arg_types[0]);
+        auto result = declare(fn_name, return_type, ReturnVar);
+        if (is_integer(*arg_types[0])) {
+            body.push_back(al,b.Assignment(result, b.i2i_t(args[0], return_type)));
+        } else if (is_real(*arg_types[0])) {
+            body.push_back(al,b.Assignment(result, b.r2i_t(args[0], return_type)));
+        } else if (is_complex(*arg_types[0])) {
+            body.push_back(al,b.Assignment(result, b.c2i_t(args[0], return_type)));
+        } else {
+            return nullptr;
+        }
+
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, nullptr);
+    }
+
+}  // namespace Int
 
 namespace Not {
 

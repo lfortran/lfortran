@@ -310,6 +310,10 @@ class ASRBuilder {
         return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::RealToInteger, t, nullptr));
     }
 
+    inline ASR::expr_t* c2i_t(ASR::expr_t* x, ASR::ttype_t* t) {
+        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::ComplexToInteger, t, nullptr));
+    }
+
     inline ASR::expr_t* i2r_t(ASR::expr_t* x, ASR::ttype_t* t) {
         return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::IntegerToReal, t, nullptr));
     }
