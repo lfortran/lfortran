@@ -20,7 +20,7 @@ StringPhysicalCast(expr arg,
 | `old`         | Current physical string type of string expression `arg`                                             |
 | `new`         | Physical string type to cast the current string to                                                  |
 | `type`        | Type of expression (It's always a string with physical type equivalent to `new` StringPhysicalType) |
-| `value`       |                                                                                                     |
+| `value`       | An optional expression providing value for the cast operation.									  |
 ### Return values
 
 The return value is a message to the back end to know which physical type to use on this string expression.
