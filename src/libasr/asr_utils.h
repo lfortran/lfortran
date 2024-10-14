@@ -2414,7 +2414,7 @@ static inline ASR::asr_t* make_ArraySize_t_util(
             ASR::expr_t* start = array_section_t->m_args[dim - 1].m_left;
             ASR::expr_t* end = array_section_t->m_args[dim - 1].m_right;
             ASR::expr_t* d = array_section_t->m_args[dim - 1].m_step;
-            if( start == nullptr and d == nullptr ) {
+            if( start == nullptr && d == nullptr ) {
                 return const1;
             }
             start = CastingUtil::perform_casting(start, a_type, al, a_loc);
