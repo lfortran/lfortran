@@ -1163,10 +1163,10 @@ jobs:
           create-args: >-
             python=3.10
 
-      # - name: Test
-      #   shell: bash -e -l {0}
-      #   run: |
-      #     xonsh ci/test_without_llvm_backend.xsh
+      - name: Test
+        shell: bash -e -l {0}
+        run: |
+          xonsh ci/test_without_llvm_backend.xsh
 
   test_cpp_build:
     name: Test CPP
