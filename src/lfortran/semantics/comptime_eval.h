@@ -69,7 +69,6 @@ struct IntrinsicProcedures {
             // in intrinsic_function_transformation()
             // So we shouldn't even encounter them here
             {"newunit", {m_custom, &not_implemented, false}},
-            {"present", {m_builtin, &not_implemented, false}},
 
             // IEEE Arithmetic
             {"ieee_value", {m_ieee_arithmetic, &not_implemented, false}},
