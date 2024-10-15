@@ -49,19 +49,19 @@ define i32 @main(i32 %0, i8** %1) {
   %6 = call i8* @_lfortran_malloc(i32 2)
   call void @_lfortran_string_init(i32 2, i8* %6)
   store i8* %6, i8** %s1, align 8
-  call void @_lfortran_strcpy(i8** %s1, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i8 0)
+  call void @_lfortran_strcpy(i8** %s1, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i8 0, i64 -1, i64 -1)
   %7 = load i8*, i8** %s1, align 8
   %s2 = alloca i8*, align 8
   %8 = call i8* @_lfortran_malloc(i32 4)
   call void @_lfortran_string_init(i32 4, i8* %8)
   store i8* %8, i8** %s2, align 8
-  call void @_lfortran_strcpy(i8** %s2, i8* getelementptr inbounds ([4 x i8], [4 x i8]* @1, i32 0, i32 0), i8 0)
+  call void @_lfortran_strcpy(i8** %s2, i8* getelementptr inbounds ([4 x i8], [4 x i8]* @1, i32 0, i32 0), i8 0, i64 -1, i64 -1)
   %9 = load i8*, i8** %s2, align 8
   %s = alloca i8*, align 8
   %10 = call i8* @_lfortran_malloc(i32 5)
   call void @_lfortran_string_init(i32 5, i8* %10)
   store i8* %10, i8** %s, align 8
-  call void @_lfortran_strcpy(i8** %s, i8* getelementptr inbounds ([5 x i8], [5 x i8]* @2, i32 0, i32 0), i8 0)
+  call void @_lfortran_strcpy(i8** %s, i8* getelementptr inbounds ([5 x i8], [5 x i8]* @2, i32 0, i32 0), i8 0, i64 -1, i64 -1)
   %11 = load i8*, i8** %s, align 8
   %12 = alloca %complex_4, align 8
   %13 = getelementptr %complex_4, %complex_4* %12, i32 0, i32 0
@@ -93,7 +93,7 @@ declare i8* @_lfortran_malloc(i32)
 
 declare void @_lfortran_string_init(i32, i8*)
 
-declare void @_lfortran_strcpy(i8**, i8*, i8)
+declare void @_lfortran_strcpy(i8**, i8*, i8, i64, i64)
 
 declare i8* @_lcompilers_string_format_fortran(i32, i8*, ...)
 

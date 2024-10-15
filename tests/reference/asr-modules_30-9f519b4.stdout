@@ -103,11 +103,19 @@
                                             (Var 9 self)
                                             9 1_executable_config_name
                                             (Allocatable
-                                                (Character 1 -2 () PointerString)
+                                                (Character 1 -2 () DescriptorString)
                                             )
                                             ()
                                         )
-                                        (Var 9 name)
+                                        (StringPhysicalCast
+                                            (Var 9 name)
+                                            PointerString
+                                            DescriptorString
+                                            (Allocatable
+                                                (Character 1 -1 () DescriptorString)
+                                            )
+                                            ()
+                                        )
                                         ()
                                     )
                                     (Assignment
@@ -115,13 +123,21 @@
                                             (Var 9 self)
                                             9 1_executable_config_source_dir
                                             (Allocatable
-                                                (Character 1 -2 () PointerString)
+                                                (Character 1 -2 () DescriptorString)
                                             )
                                             ()
                                         )
-                                        (StringConstant
-                                            "app"
-                                            (Character 1 3 () PointerString)
+                                        (StringPhysicalCast
+                                            (StringConstant
+                                                "app"
+                                                (Character 1 3 () PointerString)
+                                            )
+                                            PointerString
+                                            DescriptorString
+                                            (Allocatable
+                                                (Character 1 3 () DescriptorString)
+                                            )
+                                            ()
                                         )
                                         ()
                                     )
@@ -130,13 +146,21 @@
                                             (Var 9 self)
                                             9 1_executable_config_main
                                             (Allocatable
-                                                (Character 1 -2 () PointerString)
+                                                (Character 1 -2 () DescriptorString)
                                             )
                                             ()
                                         )
-                                        (StringConstant
-                                            "main.f90"
-                                            (Character 1 8 () PointerString)
+                                        (StringPhysicalCast
+                                            (StringConstant
+                                                "main.f90"
+                                                (Character 1 8 () PointerString)
+                                            )
+                                            PointerString
+                                            DescriptorString
+                                            (Allocatable
+                                                (Character 1 8 () DescriptorString)
+                                            )
+                                            ()
                                         )
                                         ()
                                     )]
@@ -161,7 +185,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (Character 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -179,7 +203,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (Character 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -197,7 +221,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (Character 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -393,9 +417,17 @@
                                             ColMajor
                                             ()
                                         ))
-                                        ((StructInstanceMember
-                                            (Var 10 package)
-                                            10 1_package_config_t_name
+                                        ((StringPhysicalCast
+                                            (StructInstanceMember
+                                                (Var 10 package)
+                                                10 1_package_config_t_name
+                                                (Allocatable
+                                                    (Character 1 -2 () DescriptorString)
+                                                )
+                                                ()
+                                            )
+                                            DescriptorString
+                                            PointerString
                                             (Allocatable
                                                 (Character 1 -2 () PointerString)
                                             )
@@ -471,7 +503,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (Character 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
