@@ -127,6 +127,9 @@ class ArrayVarAddressCollector: public ASR::CallReplacerOnExpressionsVisitor<Arr
         }
     }
 
+    void visit_Associate(const ASR::Associate_t& /*x*/) {
+    }
+
 };
 
 class FixTypeVisitor: public ASR::CallReplacerOnExpressionsVisitor<FixTypeVisitor> {
