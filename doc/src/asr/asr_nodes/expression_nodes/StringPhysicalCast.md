@@ -14,20 +14,20 @@ StringPhysicalCast(expr arg,
 
 ### Arguments
 
-| Argument Name | Argument Description                                                                                |
-| ------------- | --------------------------------------------------------------------------------------------------- |
-| `arg`         | String expression argument                                                                          |
-| `old`         | Current physical string type of string expression `arg`                                             |
-| `new`         | Physical string type to cast the current string to                                                  |
-| `type`        | Type of expression (It's always a string with physical type equivalent to `new` StringPhysicalType) |
-| `value`       | An optional expression providing value for the cast operation.									  |
+| Argument Name | Argument Description                                                                                                        |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `arg`         | String expression argument                                                                                                  |
+| `old`         | Current physical string type of the string expression `arg`. <br>**Possible values** : `DescriptorString`, `PointerString`. |
+| `new`         | The target physical string type to cast to.<br>**Possible values** : `DescriptorString`, `PointerString`.                   |
+| `type`        | Type of expression (It's always a string with physical type equivalent to `new` StringPhysicalType)                         |
+| `value`       | The type of the expression. It is always a string type corresponding to the new StringPhysicalType.                         |
+
 ### Return values
 
-The return value is a message to the back end to know which physical type to use on this string expression.
+The return value is a string expression in the _new_ physical type. It's a message to the back end to know which physical type to use on this string expression.
 ## Description
 
-**StringPhysicalCast** casts the physical type from [`DescriptorString`](../type_nodes/StringPhysicalType.md) to [`PointerString`](../type_nodes/StringPhysicalType.md) and vice versa. It dispatch a message to the back end to cast the physical type of the passed string expression from one type to another, so we can do some runtime string operations like **assignment**, **slicing**, **printing** and **comparing** with no issues when using the descriptorString
-`{char* data, int64 size, int64 capacity}` and also to keep using it and utilizing the size and capacity members when needed.
+**StringPhysicalCast** casts the physical type from [`DescriptorString`](../type_nodes/StringPhysicalType.md) to [`PointerString`](../type_nodes/StringPhysicalType.md) and vice versa. It dispatches a message to the backend to cast the physical type of the passed string expression from one type to another, so we can do some runtime string operations like **assignment**, **slicing**, **printing** and **comparing** with no issues when using the *DescriptorString* `{char* data, int64 size, int64 capacity}` and also to keep using it and utilizing the size and capacity members when needed.
 
 **The intention behind casting from [`DescriptorString`](../type_nodes/StringPhysicalType.md) to [`PointerString`](../type_nodes/StringPhysicalType.md) :**
 - The intention is to tell the back end to operate on pointerString `char*`instead of the whole descriptorString llvm struct`{char* data, int64 size, int64 capacity}` 
@@ -57,9 +57,9 @@ end program main
 ASR:  
 ```Clojure
 (Assignment
-	 ;; here we store char_fixed content into char_dynamic
-	 ;; To create a clean assignment in the back end we had to convert
-	 ;; the RHS side to the physical type of the LHS
+	 ; here we store char_fixed content into char_dynamic
+	 ; So We convert the physical type of rhs to the physical type of lhs by          ; creating a StringPhysicalCast node.
+
 		(Var 2 char_dynamic)
 		(StringPhysicalCast  
 			(Var 2 char_fixed)
