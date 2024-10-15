@@ -27,7 +27,6 @@ macro(lfortran_compile_runtime name dir)
   endif()
 endmacro(lfortran_compile_runtime)
 
-lfortran_compile_runtime(lfortran_intrinsic_builtin builtin)
 lfortran_compile_runtime(lfortran_intrinsic_iso_fortran_env pure)
 
 lfortran_compile_runtime(lfortran_intrinsic_custom custom)
@@ -36,7 +35,6 @@ lfortran_compile_runtime(lfortran_intrinsic_ieee_arithmetic pure)
 add_dependencies(lfortran_intrinsic_ieee_arithmetic lfortran_intrinsic_iso_fortran_env)
 
 lfortran_compile_runtime(lfortran_intrinsic_iso_c_binding pure)
-add_dependencies(lfortran_intrinsic_iso_c_binding lfortran_intrinsic_builtin)
 
 lfortran_compile_runtime(omp_lib openmp)
 add_dependencies(omp_lib lfortran_intrinsic_iso_c_binding)
@@ -48,7 +46,6 @@ add_dependencies(omp_lib lfortran_intrinsic_iso_c_binding)
 # TODO: Change get_runtime_library_dir() to "/../../modfiles" for tests
 install(
   FILES
-  ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_builtin.mod
   ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_custom.mod
   ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_iso_fortran_env.mod
   ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_ieee_arithmetic.mod

@@ -2,8 +2,6 @@
     (SymbolTable
         1
         {
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin),
             optmod:
                 (Module
                     (SymbolTable
@@ -29,16 +27,6 @@
                                                     Public
                                                     Optional
                                                     .false.
-                                                ),
-                                            present:
-                                                (ExternalSymbol
-                                                    3
-                                                    present
-                                                    5 present
-                                                    lfortran_intrinsic_builtin
-                                                    []
-                                                    present
-                                                    Private
                                                 )
                                         })
                                     optional_argument
@@ -59,12 +47,11 @@
                                     []
                                     [(Var 3 name)]
                                     [(If
-                                        (FunctionCall
-                                            3 present
-                                            ()
-                                            [((Var 3 name))]
+                                        (IntrinsicElementalFunction
+                                            Present
+                                            [(Var 3 name)]
+                                            0
                                             (Logical 4)
-                                            ()
                                             ()
                                         )
                                         [(Print
@@ -93,7 +80,7 @@
                                 )
                         })
                     optmod
-                    [lfortran_intrinsic_builtin]
+                    []
                     .false.
                     .false.
                 )
