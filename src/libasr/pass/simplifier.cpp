@@ -583,6 +583,7 @@ bool set_allocation_size(
                 case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Exp):
                 case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Abs):
                 case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Aimag):
+                case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Int):
                 case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Merge): {
                     set_allocation_size_elemental_function(al, loc, intrinsic_elemental_function,
                         allocate_dims);
