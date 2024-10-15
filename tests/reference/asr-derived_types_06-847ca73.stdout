@@ -52,7 +52,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (Character 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -82,7 +82,7 @@
                                     date_to_string
                                     (FunctionType
                                         [(Allocatable
-                                            (Character 1 -2 () PointerString)
+                                            (Character 1 -2 () DescriptorString)
                                         )
                                         (ClassType
                                             7 toml_date
@@ -199,7 +199,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (Character 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -235,7 +235,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (Character 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -247,7 +247,7 @@
                                     datetime_to_string
                                     (FunctionType
                                         [(Allocatable
-                                            (Character 1 -2 () PointerString)
+                                            (Character 1 -2 () DescriptorString)
                                         )
                                         (ClassType
                                             7 toml_datetime
@@ -333,10 +333,34 @@
                                             )
                                             (Assignment
                                                 (Var 12 lhs)
-                                                (StringConcat
-                                                    (Var 12 lhs)
-                                                    (Var 12 temporary)
-                                                    (Character 1 -1 () PointerString)
+                                                (StringPhysicalCast
+                                                    (StringConcat
+                                                        (StringPhysicalCast
+                                                            (Var 12 lhs)
+                                                            DescriptorString
+                                                            PointerString
+                                                            (Allocatable
+                                                                (Character 1 -2 () PointerString)
+                                                            )
+                                                            ()
+                                                        )
+                                                        (StringPhysicalCast
+                                                            (Var 12 temporary)
+                                                            DescriptorString
+                                                            PointerString
+                                                            (Allocatable
+                                                                (Character 1 -2 () PointerString)
+                                                            )
+                                                            ()
+                                                        )
+                                                        (Character 1 -1 () PointerString)
+                                                        ()
+                                                    )
+                                                    PointerString
+                                                    DescriptorString
+                                                    (Allocatable
+                                                        (Character 1 -1 () DescriptorString)
+                                                    )
                                                     ()
                                                 )
                                                 ()
@@ -677,11 +701,19 @@
                                                 (Var 13 self)
                                                 13 1_toml_time_zone
                                                 (Allocatable
-                                                    (Character 1 -2 () PointerString)
+                                                    (Character 1 -2 () DescriptorString)
                                                 )
                                                 ()
                                             )
-                                            (Var 13 zone)
+                                            (StringPhysicalCast
+                                                (Var 13 zone)
+                                                PointerString
+                                                DescriptorString
+                                                (Allocatable
+                                                    (Character 1 -1 () DescriptorString)
+                                                )
+                                                ()
+                                            )
                                             ()
                                         )]
                                         []
@@ -757,7 +789,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (Character 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -787,7 +819,7 @@
                                     time_to_string
                                     (FunctionType
                                         [(Allocatable
-                                            (Character 1 -2 () PointerString)
+                                            (Character 1 -2 () DescriptorString)
                                         )
                                         (ClassType
                                             7 toml_time
@@ -926,9 +958,17 @@
                                     (If
                                         (IntrinsicImpureFunction
                                             Allocated
-                                            [(StructInstanceMember
-                                                (Var 14 rhs)
-                                                14 1_toml_time_zone
+                                            [(StringPhysicalCast
+                                                (StructInstanceMember
+                                                    (Var 14 rhs)
+                                                    14 1_toml_time_zone
+                                                    (Allocatable
+                                                        (Character 1 -2 () DescriptorString)
+                                                    )
+                                                    ()
+                                                )
+                                                DescriptorString
+                                                PointerString
                                                 (Allocatable
                                                     (Character 1 -2 () PointerString)
                                                 )
@@ -940,25 +980,49 @@
                                         )
                                         [(Assignment
                                             (Var 14 lhs)
-                                            (StringConcat
-                                                (Var 14 lhs)
-                                                (IntrinsicElementalFunction
-                                                    StringTrim
-                                                    [(StructInstanceMember
-                                                        (Var 14 rhs)
-                                                        14 1_toml_time_zone
+                                            (StringPhysicalCast
+                                                (StringConcat
+                                                    (StringPhysicalCast
+                                                        (Var 14 lhs)
+                                                        DescriptorString
+                                                        PointerString
                                                         (Allocatable
                                                             (Character 1 -2 () PointerString)
                                                         )
                                                         ()
-                                                    )]
-                                                    0
-                                                    (Allocatable
-                                                        (Character 1 -2 () PointerString)
                                                     )
+                                                    (IntrinsicElementalFunction
+                                                        StringTrim
+                                                        [(StringPhysicalCast
+                                                            (StructInstanceMember
+                                                                (Var 14 rhs)
+                                                                14 1_toml_time_zone
+                                                                (Allocatable
+                                                                    (Character 1 -2 () DescriptorString)
+                                                                )
+                                                                ()
+                                                            )
+                                                            DescriptorString
+                                                            PointerString
+                                                            (Allocatable
+                                                                (Character 1 -2 () PointerString)
+                                                            )
+                                                            ()
+                                                        )]
+                                                        0
+                                                        (Allocatable
+                                                            (Character 1 -2 () PointerString)
+                                                        )
+                                                        ()
+                                                    )
+                                                    (Character 1 -1 () PointerString)
                                                     ()
                                                 )
-                                                (Character 1 -1 () PointerString)
+                                                PointerString
+                                                DescriptorString
+                                                (Allocatable
+                                                    (Character 1 -1 () DescriptorString)
+                                                )
                                                 ()
                                             )
                                             ()
@@ -1224,7 +1288,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (Character 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source

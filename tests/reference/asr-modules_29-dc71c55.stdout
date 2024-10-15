@@ -109,11 +109,19 @@
                                             (Var 17 self)
                                             17 1_git_target_t_url
                                             (Allocatable
-                                                (Character 1 -2 () PointerString)
+                                                (Character 1 -2 () DescriptorString)
                                             )
                                             ()
                                         )
-                                        (Var 17 url)
+                                        (StringPhysicalCast
+                                            (Var 17 url)
+                                            PointerString
+                                            DescriptorString
+                                            (Allocatable
+                                                (Character 1 -1 () DescriptorString)
+                                            )
+                                            ()
+                                        )
                                         ()
                                     )
                                     (Assignment
@@ -121,11 +129,19 @@
                                             (Var 17 self)
                                             17 1_git_target_t_object
                                             (Allocatable
-                                                (Character 1 -2 () PointerString)
+                                                (Character 1 -2 () DescriptorString)
                                             )
                                             ()
                                         )
-                                        (Var 17 branch)
+                                        (StringPhysicalCast
+                                            (Var 17 branch)
+                                            PointerString
+                                            DescriptorString
+                                            (Allocatable
+                                                (Character 1 -1 () DescriptorString)
+                                            )
+                                            ()
+                                        )
                                         ()
                                     )]
                                     (Var 17 self)
@@ -149,7 +165,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (Character 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -167,7 +183,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (Character 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -234,7 +250,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (Character 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -252,7 +268,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (Character 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -289,7 +305,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (Character 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -484,7 +500,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (Character 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -520,7 +536,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (Character 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -562,8 +578,24 @@
                                         (FunctionCall
                                             8 git_target_branch
                                             ()
-                                            [((Var 13 url))
-                                            ((Var 13 obj))]
+                                            [((StringPhysicalCast
+                                                (Var 13 url)
+                                                DescriptorString
+                                                PointerString
+                                                (Allocatable
+                                                    (Character 1 -2 () PointerString)
+                                                )
+                                                ()
+                                            ))
+                                            ((StringPhysicalCast
+                                                (Var 13 obj)
+                                                DescriptorString
+                                                PointerString
+                                                (Allocatable
+                                                    (Character 1 -2 () PointerString)
+                                                )
+                                                ()
+                                            ))]
                                             (StructType
                                                 8 git_target_t
                                             )
@@ -692,7 +724,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (Character 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -710,7 +742,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (Character 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -728,7 +760,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (Character 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
