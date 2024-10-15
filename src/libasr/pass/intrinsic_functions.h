@@ -192,6 +192,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     SymbolicSinQ,
     SymbolicGetArgument,
     Int,
+    Present,
     // ...
 };
 
@@ -1730,6 +1731,33 @@ namespace Bge {
     }
 
 } // namespace Bge
+
+namespace Present {
+
+    static ASR::expr_t *eval_Present(Allocator &/*al*/, const Location &/*loc*/,
+        ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& /*diag*/) { return nullptr; }
+
+    static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
+        if (x.n_args != 1)  {
+            ASRUtils::require_impl(false, "Unexpected number of args, Present takes 1 arguments, found " + std::to_string(x.n_args), x.base.base.loc, diagnostics);
+        }
+    }
+
+    static inline ASR::asr_t* create_Present(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
+        ASRUtils::ExprStmtDuplicator expr_duplicator(al);
+        expr_duplicator.allow_procedure_calls = true;
+        ASR::ttype_t* type_ = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4));
+        ASR::ttype_t *return_type = type_;
+        ASR::expr_t *m_value = nullptr;
+        Vec<ASR::expr_t*> m_args; m_args.reserve(al, 1);
+        m_args.push_back(al, args[0]);
+        return ASR::make_IntrinsicElementalFunction_t(al, loc, static_cast<int64_t>(IntrinsicElementalFunctions::Present), m_args.p, m_args.n, 0, return_type, m_value);
+    }
+
+    static inline ASR::expr_t* instantiate_Present(Allocator &/*al*/, const Location &/*loc*/,
+            SymbolTable */*scope*/, Vec<ASR::ttype_t*>& /*arg_types*/, ASR::ttype_t */*return_type*/,
+            Vec<ASR::call_arg_t>& /*new_args*/, int64_t /*overload_id*/) { return nullptr;}
+}
 
 namespace Ble {
 
