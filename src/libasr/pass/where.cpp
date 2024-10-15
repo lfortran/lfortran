@@ -41,22 +41,26 @@ class TransformWhereVisitor: public ASR::CallReplacerOnExpressionsVisitor<Transf
 
     Allocator& al;
     Vec<ASR::stmt_t*> pass_result;
+    Vec<ASR::stmt_t*>* parent_body;
 
     public:
 
     TransformWhereVisitor(Allocator& al_):
-        al(al_) {
+        al(al_), parent_body(nullptr) {
         pass_result.n = 0;
         pass_result.reserve(al, 0);
     }
 
     void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
         Vec<ASR::stmt_t*> body;
-        body.reserve(al, n_body);
+        body.reserve(al, 1);
         for (size_t i = 0; i < n_body; i++) {
             pass_result.n = 0;
             pass_result.reserve(al, 1);
+            Vec<ASR::stmt_t*>* parent_body_copy = parent_body;
+            parent_body = &body;
             visit_stmt(*m_body[i]);
+            parent_body = parent_body_copy;
             if( pass_result.size() > 0 ) {
                 for (size_t j=0; j < pass_result.size(); j++) {
                     body.push_back(al, pass_result[j]);
@@ -74,7 +78,10 @@ class TransformWhereVisitor: public ASR::CallReplacerOnExpressionsVisitor<Transf
         Vec<ASR::stmt_t*> or_else_vec; or_else_vec.reserve(al, x.n_orelse);
         Vec<ASR::stmt_t*> body_vec; body_vec.reserve(al, x.n_body);
         for( size_t i = 0; i < x.n_body; i++ ) {
-            if( ASR::is_a<ASR::Where_t>(*x.m_body[i]) ) {
+            if( ASR::is_a<ASR::Associate_t>(*x.m_body[i]) ) {
+                LCOMPILERS_ASSERT(parent_body != nullptr);
+                parent_body->push_back(al, x.m_body[i]);
+            } else if( ASR::is_a<ASR::Where_t>(*x.m_body[i]) ) {
                 ASR::stmt_t* body_stmt = transform_Where_to_If(
                     *ASR::down_cast<ASR::Where_t>(x.m_body[i]));
                 body_vec.push_back(al, body_stmt);
@@ -83,7 +90,10 @@ class TransformWhereVisitor: public ASR::CallReplacerOnExpressionsVisitor<Transf
             }
         }
         for( size_t i = 0; i < x.n_orelse; i++ ) {
-            if( ASR::is_a<ASR::Where_t>(*x.m_orelse[i]) ) {
+            if( ASR::is_a<ASR::Associate_t>(*x.m_orelse[i]) ) {
+                LCOMPILERS_ASSERT(parent_body != nullptr);
+                parent_body->push_back(al, x.m_orelse[i]);
+            } else if( ASR::is_a<ASR::Where_t>(*x.m_orelse[i]) ) {
                 ASR::stmt_t* or_else_stmt = transform_Where_to_If(
                     *ASR::down_cast<ASR::Where_t>(x.m_orelse[i]));
                 or_else_vec.push_back(al, or_else_stmt);
