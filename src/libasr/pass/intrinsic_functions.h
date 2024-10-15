@@ -5228,7 +5228,7 @@ namespace SubstrIndex {
             b.Assignment(found, b.bool_t(0, arg_types[2]))
         }, {}));
 
-        body.push_back(al, b.While(b.And(b.Lt(i, b.StringLen(args[0])), b.Eq(found, b.bool_t(1, arg_types[2]))), {
+        body.push_back(al, b.While(b.And(b.Lt(i, b.Add(b.StringLen(args[0]), b.i32(1))), b.Eq(found, b.bool_t(1, arg_types[2]))), {
             b.Assignment(k, b.i_t(0, return_type)),
             b.Assignment(j, b.i_t(1, return_type)),
             b.While(b.And(b.LtE(j, b.StringLen(args[1])), b.Eq(found, b.bool_t(1, arg_types[2]))), {
