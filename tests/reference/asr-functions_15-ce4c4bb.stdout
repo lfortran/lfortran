@@ -60,16 +60,6 @@
                                                     Required
                                                     .false.
                                                 ),
-                                            present:
-                                                (ExternalSymbol
-                                                    5
-                                                    present
-                                                    7 present
-                                                    lfortran_intrinsic_builtin
-                                                    []
-                                                    present
-                                                    Private
-                                                ),
                                             x:
                                                 (Variable
                                                     5
@@ -106,12 +96,11 @@
                                     [(Var 5 x)]
                                     [(Assignment
                                         (Var 5 f)
-                                        (FunctionCall
-                                            5 present
-                                            ()
-                                            [((Var 5 x))]
+                                        (IntrinsicElementalFunction
+                                            Present
+                                            [(Var 5 x)]
+                                            0
                                             (Logical 4)
-                                            ()
                                             ()
                                         )
                                         ()
@@ -396,16 +385,6 @@
                                                     Public
                                                     Required
                                                     .false.
-                                                ),
-                                            present:
-                                                (ExternalSymbol
-                                                    3
-                                                    present
-                                                    7 present
-                                                    lfortran_intrinsic_builtin
-                                                    []
-                                                    present
-                                                    Private
                                                 )
                                         })
                                     sub_1
@@ -436,12 +415,11 @@
                                     (Var 3 e)
                                     (Var 3 f)]
                                     [(If
-                                        (FunctionCall
-                                            3 present
-                                            ()
-                                            [((Var 3 d))]
+                                        (IntrinsicElementalFunction
+                                            Present
+                                            [(Var 3 d)]
+                                            0
                                             (Logical 4)
-                                            ()
                                             ()
                                         )
                                         [(Assignment
@@ -475,12 +453,11 @@
                                             ()
                                         )
                                         (If
-                                            (FunctionCall
-                                                3 present
-                                                ()
-                                                [((Var 3 e))]
+                                            (IntrinsicElementalFunction
+                                                Present
+                                                [(Var 3 e)]
+                                                0
                                                 (Logical 4)
-                                                ()
                                                 ()
                                             )
                                             [(Assignment
@@ -542,12 +519,11 @@
                                             ()
                                         )
                                         (If
-                                            (FunctionCall
-                                                3 present
-                                                ()
-                                                [((Var 3 e))]
+                                            (IntrinsicElementalFunction
+                                                Present
+                                                [(Var 3 e)]
+                                                0
                                                 (Logical 4)
-                                                ()
                                                 ()
                                             )
                                             [(Assignment
@@ -593,12 +569,10 @@
                                 )
                         })
                     functions_15_module_1
-                    [lfortran_intrinsic_builtin]
+                    []
                     .false.
                     .false.
-                ),
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin)
+                )
         })
     []
 )
