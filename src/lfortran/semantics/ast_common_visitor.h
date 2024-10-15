@@ -6035,6 +6035,18 @@ public:
                     const bool are_all_args_evaluated { ASRUtils::all_args_evaluated(args, true) };
                     fill_optional_kind_arg(var_name, args);
                     scalar_kind_arg(var_name, args);
+                    if(var_name == "iand"){
+                        ASR::expr_t *val_a = args[0], *val_b = args[1];
+                        ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
+                        if( (ASRUtils::is_logical(*ASRUtils::expr_type(val_b)) && ASRUtils::is_logical(*ASRUtils::expr_type(val_a))) ){
+                                ImplicitCastRules::set_converted_value(al, x.base.base.loc, &val_a,
+                                                 ASRUtils::expr_type(val_a), int_type);
+                                ImplicitCastRules::set_converted_value(al, x.base.base.loc, &val_b,
+                                                 ASRUtils::expr_type(val_b), int_type);
+                        } 
+                        args.p[0] = val_a;
+                        args.p[1] = val_b;
+                    }
                     ASRUtils::create_intrinsic_function create_func =
                         ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function(var_name);
 
