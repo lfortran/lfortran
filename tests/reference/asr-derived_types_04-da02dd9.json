@@ -6,7 +6,11 @@
     "outfile": null,
     "outfile_hash": null,
     "stdout": "asr-derived_types_04-da02dd9.stdout",
+<<<<<<< HEAD
     "stdout_hash": "38abe72ba8b59c2b3e7289b5c60660013185ade2731ef3bc81c21924",
+=======
+    "stdout_hash": "be9f7ed35dd8fa7053200bcb9668ad2a324fa222fe80a89b84da5765",
+>>>>>>> main
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0

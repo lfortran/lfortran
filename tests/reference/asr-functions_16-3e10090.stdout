@@ -18,8 +18,6 @@
                         )
                     )]
                 ),
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin),
             tomlf_utils_sort:
                 (Module
                     (SymbolTable
@@ -876,16 +874,6 @@
                                                     Required
                                                     .false.
                                                 ),
-                                            present:
-                                                (ExternalSymbol
-                                                    5
-                                                    present
-                                                    11 present
-                                                    lfortran_intrinsic_builtin
-                                                    []
-                                                    present
-                                                    Private
-                                                ),
                                             sorted:
                                                 (Variable
                                                     5
@@ -1012,12 +1000,11 @@
                                         )
                                     )
                                     (If
-                                        (FunctionCall
-                                            5 present
-                                            ()
-                                            [((Var 5 compare))]
+                                        (IntrinsicElementalFunction
+                                            Present
+                                            [(Var 5 compare)]
+                                            0
                                             (Logical 4)
-                                            ()
                                             ()
                                         )
                                         [(SubroutineCall
@@ -1083,12 +1070,11 @@
                                         []
                                     )
                                     (If
-                                        (FunctionCall
-                                            5 present
-                                            ()
-                                            [((Var 5 idx))]
+                                        (IntrinsicElementalFunction
+                                            Present
+                                            [(Var 5 idx)]
+                                            0
                                             (Logical 4)
-                                            ()
                                             ()
                                         )
                                         [(Assignment
@@ -1239,7 +1225,7 @@
                                 )
                         })
                     tomlf_utils_sort
-                    [lfortran_intrinsic_builtin]
+                    []
                     .false.
                     .false.
                 )
