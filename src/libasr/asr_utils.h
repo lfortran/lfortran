@@ -2756,20 +2756,16 @@ static inline ASR::expr_t* cast_string_pointer_to_descriptor(Allocator& al, ASR:
 // Create `StringPhysicalCast` node from `DescriptorString` --> `PointerString`.
 static inline ASR::expr_t* cast_string_descriptor_to_pointer(Allocator& al, ASR::expr_t* string){
     LCOMPILERS_ASSERT(is_character(*ASRUtils::expr_type(string)) &&
-        is_descriptorString(expr_type(string)));
-    if(ASRUtils::is_descriptorString(ASRUtils::expr_type(string))){
-        // Create string node with `PointerString` physical type
-        ASR::ttype_t* stringPointer_type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(string));
-        ASR::down_cast<ASR::Character_t>(ASRUtils::type_get_past_allocatable(stringPointer_type))->m_physical_type = ASR::string_physical_typeType::PointerString;
-        // Create descriptorString to pointerString cast node
-        ASR::expr_t* des_to_ptr_string_cast = ASRUtils::EXPR(
-            ASR::make_StringPhysicalCast_t(al, string->base.loc , string,
-            ASR::string_physical_typeType::DescriptorString, ASR::string_physical_typeType::PointerString,
-            stringPointer_type, nullptr));
-        return des_to_ptr_string_cast;
-    } else {
-        return string;
-    }
+    is_descriptorString(expr_type(string)));
+    // Create string node with `PointerString` physical type
+    ASR::ttype_t* stringPointer_type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(string));
+    ASR::down_cast<ASR::Character_t>(ASRUtils::type_get_past_allocatable(stringPointer_type))->m_physical_type = ASR::string_physical_typeType::PointerString;
+    // Create descriptorString to pointerString cast node
+    ASR::expr_t* des_to_ptr_string_cast = ASRUtils::EXPR(
+        ASR::make_StringPhysicalCast_t(al, string->base.loc , string,
+        ASR::string_physical_typeType::DescriptorString, ASR::string_physical_typeType::PointerString,
+        stringPointer_type, nullptr));
+    return des_to_ptr_string_cast;
 }
 
 static inline ASR::ttype_t* duplicate_type_with_empty_dims(Allocator& al, ASR::ttype_t* t,
