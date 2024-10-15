@@ -3106,6 +3106,8 @@ namespace Mod {
         end function
         */
         int kind = ASRUtils::extract_kind_from_ttype_t(arg_types[1]);
+        int kind2 = ASRUtils::extract_kind_from_ttype_t(arg_types[0]);
+        
         if (is_real(*arg_types[1])) {
             if (kind == 4) {
                 body.push_back(al, b.Assignment(result, b.Sub(args[0], b.Mul(args[1], b.i2r_t(b.r2i_t(b.Div(args[0], args[1]), real32), real32)))));
@@ -3113,7 +3115,30 @@ namespace Mod {
                 body.push_back(al, b.Assignment(result, b.Sub(args[0], b.Mul(args[1], b.i2r_t(b.r2i_t(b.Div(args[0], args[1]), real64), real64)))));
             }
         } else {
-            body.push_back(al, b.Assignment(result, b.Sub(args[0], b.Mul(args[1], b.Div(args[0], args[1])))));
+
+            if(is_integer(*arg_types[0]) && is_integer(*arg_types[1]) && is_integer(*return_type)){
+
+                if(kind != kind2){
+
+                    int upper_kind = std::max(kind, kind2);
+
+                    if(upper_kind == 1){
+                        body.push_back(al, b.Assignment(b.i2i_t(result, int8), b.Sub(b.i2i_t(args[0], int8), b.Mul(b.i2i_t(args[1], int8), b.Div(b.i2i_t(args[0], int8), b.i2i_t(args[1], int8))))));
+                    }
+                    else if(upper_kind == 2){
+                        body.push_back(al, b.Assignment(b.i2i_t(result, int16), b.Sub(b.i2i_t(args[0], int16), b.Mul(b.i2i_t(args[1], int16), b.Div(b.i2i_t(args[0], int16), b.i2i_t(args[1], int16))))));
+                    }
+                    else if(upper_kind == 4){
+                        body.push_back(al, b.Assignment(b.i2i_t(result, int32), b.Sub(b.i2i_t(args[0], int32), b.Mul(b.i2i_t(args[1], int32), b.Div(b.i2i_t(args[0], int32), b.i2i_t(args[1], int32))))));
+                    }
+                    else if(upper_kind == 8){
+                        body.push_back(al, b.Assignment(b.i2i_t(result, int64), b.Sub(b.i2i_t(args[0], int64), b.Mul(b.i2i_t(args[1], int64), b.Div(b.i2i_t(args[0], int64), b.i2i_t(args[1], int64))))));
+                    }
+                }
+            }
+            else{
+                body.push_back(al, b.Assignment(result, b.Sub(args[0], b.Mul(args[1], b.Div(args[0], args[1])))));
+            }  
         }
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
