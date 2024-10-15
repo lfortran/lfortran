@@ -5261,7 +5261,11 @@ public:
             this->visit_expr(*x.m_args[i].m_end);
             args.p[i] = ASRUtils::EXPR(tmp);
             if(ASRUtils::is_descriptorString(ASRUtils::expr_type(args.p[i]))){
-                args.p[i] = ASRUtils::cast_string_descriptor_to_pointer(al, args.p[i]);
+                // Any compile-time intrinsic function doesn't need a cast from 
+                // descriptorString to pointerString. Only runtime ones need a cast.
+                if(intrinsic_name != "present"){
+                    args.p[i] = ASRUtils::cast_string_descriptor_to_pointer(al, args.p[i]);
+                }
             }
         }
         for( size_t i = 0; i < x.n_keywords; i++ ) {
