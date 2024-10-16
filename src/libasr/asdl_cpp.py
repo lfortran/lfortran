@@ -724,7 +724,7 @@ class CallReplacerOnExpressionsVisitor(ASDLVisitor):
         self.emit("public:")
         self.emit("    bool call_replacer_on_value=true;")
         self.emit("    bool visit_expr_after_replacement=true;")
-        self.emit("    ASR::expr_t** current_expr;")
+        self.emit("    ASR::expr_t** current_expr=nullptr;")
         self.emit("    SymbolTable* current_scope=nullptr;")
         self.emit("")
         self.emit("    void call_replacer() {}")
