@@ -1043,8 +1043,7 @@ RUN(NAME program_04 LABELS gfortran llvm)
 RUN(NAME where_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME where_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME where_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME where_04 LABELS gfortran llvm
-    EXTRA_ARGS --realloc-lhs) # TODO: Fix this test #1631
+RUN(NAME where_04 LABELS gfortran) # TODO: Fix this test #1631
 RUN(NAME where_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME where_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME where_07 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
