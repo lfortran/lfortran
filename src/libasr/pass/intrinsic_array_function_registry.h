@@ -1814,8 +1814,9 @@ namespace Spread {
         ASR::ttype_t *type_dim = expr_type(dim);
         ASR::ttype_t *type_ncopies = expr_type(ncopies);
         ASR::ttype_t *ret_type = expr_type(source);
-        ASRBuilder b(al, loc);
 
+        ASRBuilder b(al, loc);
+        int overload_id = 2;
         if(ASR::is_a<ASR::Integer_t>(*type_source) || ASR::is_a<ASR::Real_t>(*type_source) || 
             ASR::is_a<ASR::Character_t>(*type_source) || ASR::is_a<ASR::Logical_t>(*type_source) ){
             // Case : When Scalar is passed as source in Spread() 
@@ -1826,6 +1827,7 @@ namespace Spread {
             source = EXPR(ASRUtils::make_ArrayConstructor_t_util(al, loc,m_eles.p, 
                           m_eles.n, fixed_size_type, ASR::arraystorageType::ColMajor));
             type_source = ASRUtils::expr_type(source);
+            overload_id = -1;
         }
 
         if ( !is_array(type_source) ) {
@@ -1843,7 +1845,6 @@ namespace Spread {
         ASR::dimension_t* source_dims = nullptr;
         int source_rank = extract_dimensions_from_ttype(type_source, source_dims);
         ASRUtils::require_impl(source_rank > 0, "The argument `source` in `spread` must be of rank > 0", source->base.loc, diag);
-        int overload_id = 2;
         int dim1 = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(args[1]))->m_n;
         if( is_scalar ){
             Vec<ASR::dimension_t> result_dims; result_dims.reserve(al, 1);

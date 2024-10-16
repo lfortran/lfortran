@@ -7,6 +7,8 @@
 using LCompilers::ASR::is_a;
 using LCompilers::ASR::down_cast;
 
+Allocator al(8);
+
 namespace LCompilers {
 
 enum Precedence {
@@ -1346,6 +1348,16 @@ public:
         std::string out;
         std::string intrinsic_func_name = ASRUtils::get_array_intrinsic_name(static_cast<int64_t>(x.m_arr_intrinsic_id));
         if(intrinsic_func_name == "DotProduct") intrinsic_func_name = "dot_product";
+        if(intrinsic_func_name == "Spread" && x.m_overload_id == -1){
+            ASR::ArrayPhysicalCast_t *arr_physical = ASR::down_cast<ASR::ArrayPhysicalCast_t>(x.m_args[0]);
+            if(ASR::is_a<ASR::ArrayConstant_t>(*arr_physical->m_arg)){
+                ASR::ArrayConstant_t *arr_const = ASR::down_cast<ASR::ArrayConstant_t>(arr_physical->m_arg);
+                x.m_args[0] = ASRUtils::fetch_ArrayConstant_value(al, arr_const, 0);
+            } else if(ASR::is_a<ASR::ArrayConstructor_t>(*arr_physical->m_arg)){
+                ASR::ArrayConstructor_t *arr_const = ASR::down_cast<ASR::ArrayConstructor_t>(arr_physical->m_arg);
+                x.m_args[0] = arr_const->m_args[0];
+            }           
+        }
         visit_IntrinsicArrayFunction_helper(out, intrinsic_func_name, x);
     }
 
