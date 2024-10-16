@@ -120,6 +120,7 @@ inline std::string get_intrinsic_name(int64_t x) {
         INTRINSIC_NAME_CASE(SelectedIntKind)
         INTRINSIC_NAME_CASE(SelectedRealKind)
         INTRINSIC_NAME_CASE(SelectedCharKind)
+        INTRINSIC_NAME_CASE(Present)
         INTRINSIC_NAME_CASE(Adjustl)
         INTRINSIC_NAME_CASE(Adjustr)
         INTRINSIC_NAME_CASE(StringLenTrim)
@@ -496,6 +497,8 @@ namespace IntrinsicElementalFunctionRegistry {
             {nullptr, &UnaryIntrinsicFunction::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::SelectedIntKind),
             {&SelectedIntKind::instantiate_SelectedIntKind, &SelectedIntKind::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Present),
+            {&Present::instantiate_Present, &Present::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::SelectedRealKind),
             {&SelectedRealKind::instantiate_SelectedRealKind, &SelectedRealKind::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::SelectedCharKind),
@@ -741,6 +744,8 @@ namespace IntrinsicElementalFunctionRegistry {
             "hypot"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::SelectedIntKind),
             "selected_int_kind"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Present),
+            "present"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::SelectedRealKind),
             "selected_real_kind"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::SelectedCharKind),
@@ -990,6 +995,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"_lfortran_tolowercase", {&ToLowerCase::create_ToLowerCase, &ToLowerCase::eval_ToLowerCase}},
                 {"hypot", {&Hypot::create_Hypot, &Hypot::eval_Hypot}},
                 {"selected_int_kind", {&SelectedIntKind::create_SelectedIntKind, &SelectedIntKind::eval_SelectedIntKind}},
+                {"present", {&Present::create_Present, &Present::eval_Present}},
                 {"selected_real_kind", {&SelectedRealKind::create_SelectedRealKind, &SelectedRealKind::eval_SelectedRealKind}},
                 {"selected_char_kind", {&SelectedCharKind::create_SelectedCharKind, &SelectedCharKind::eval_SelectedCharKind}},
                 {"kind", {&Kind::create_Kind, &Kind::eval_Kind}},

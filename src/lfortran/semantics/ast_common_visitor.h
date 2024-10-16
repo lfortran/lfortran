@@ -5718,11 +5718,11 @@ public:
 
     void scalar_kind_arg(std::string &name, Vec<ASR::expr_t*> &args) {
         std::vector<std::string> optional_kind_arg = {"logical", "storage_size", "anint", "nint", "aint", "floor", 
-            "ceiling", "aimag", "maskl", "maskr", "ichar", "char", "achar", "real"};
+            "ceiling", "aimag", "maskl", "maskr", "ichar", "char", "achar", "real", "int"};
         if (std::find(optional_kind_arg.begin(), optional_kind_arg.end(), name) != optional_kind_arg.end()) {
             if (args[1]) {
                 if (ASRUtils::is_array(ASRUtils::expr_type(args[1]))) {
-                    throw SemanticError("Expected scalar argument for " + name + " intrinsic", args[1]->base.loc);
+                    throw SemanticError("kind argument of `" + name + "` intrinsic must be a scalar", args[1]->base.loc);
                 }
             }
         }
