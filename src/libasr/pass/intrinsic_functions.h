@@ -3121,18 +3121,11 @@ namespace Mod {
 
                     int upper_kind = std::max(kind, kind2);
 
-                    if(upper_kind == 1){
-                        body.push_back(al, b.Assignment(result, b.Sub(b.i2i_t(args[0], int8), b.Mul(b.i2i_t(args[1], int8), b.Div(b.i2i_t(args[0], int8), b.i2i_t(args[1], int8))))));
-                    }
-                    else if(upper_kind == 2){
-                        body.push_back(al, b.Assignment(result, b.Sub(b.i2i_t(args[0], int16), b.Mul(b.i2i_t(args[1], int16), b.Div(b.i2i_t(args[0], int16), b.i2i_t(args[1], int16))))));
-                    }
-                    else if(upper_kind == 4){
-                        body.push_back(al, b.Assignment(result, b.Sub(b.i2i_t(args[0], int32), b.Mul(b.i2i_t(args[1], int32), b.Div(b.i2i_t(args[0], int32), b.i2i_t(args[1], int32))))));
-                    }
-                    else if(upper_kind == 8){
-                        body.push_back(al, b.Assignment(result, b.Sub(b.i2i_t(args[0], int64), b.Mul(b.i2i_t(args[1], int64), b.Div(b.i2i_t(args[0], int64), b.i2i_t(args[1], int64))))));
-                    }
+                    ASR::ttype_t* new_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, upper_kind));
+                    ASR::expr_t* arg0 = b.i2i_t(args[0], new_type);
+                    ASR::expr_t* arg1 = b.i2i_t(args[1], new_type);
+
+                    body.push_back(al, b.Assignment(result, b.Sub(arg0, b.Mul(arg1, b.Div(arg0, arg1))))); 
                 }
                 else{
                     body.push_back(al, b.Assignment(result, b.Sub(args[0], b.Mul(args[1], b.Div(args[0], args[1])))));
