@@ -1,6 +1,7 @@
 program intrinsics_233
     implicit none
     real :: x
+    real :: z = -1.0
     real :: y(3)
     x = -1.0
     x = sqrt(x)
@@ -18,4 +19,11 @@ program intrinsics_233
     print*, y(3)
     print *, isnan(y(3))
     if (isnan(y(3)) .neqv. .true.) error stop
+
+    !tests for compile time argument
+    print *, isnan(1.0)
+    if (isnan(1.0) .neqv. .false.) error stop
+    print *, isnan(sqrt(z))
+    if (isnan(sqrt(z)) .neqv. .true.) error stop
+
 end program

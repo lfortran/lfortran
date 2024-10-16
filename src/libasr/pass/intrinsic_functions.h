@@ -425,7 +425,23 @@ create_unary_function(LogGamma, lgamma, log_gamma)
 create_unary_function(Log10, log10, log10)
 create_unary_function(Erf, erf, erf)
 create_unary_function(Erfc, erfc, erfc)
-create_unary_function(Isnan, isnan, is_nan)
+
+namespace Isnan{
+    static inline ASR::expr_t *eval_Isnan(Allocator &al, const Location &loc,     
+            ASR::ttype_t *t, Vec<ASR::expr_t*> &args,                           
+            diag::Diagnostics& /*diag*/) {                                      
+        double rv = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;          
+        ASRUtils::ASRBuilder b(al, loc);                                        
+        return b.bool_t(std::isnan(rv), t);                                       
+    }  
+    static inline ASR::expr_t* instantiate_Isnan(Allocator &al,                  
+            const Location &loc, SymbolTable *scope,                            
+            Vec<ASR::ttype_t*> &arg_types, ASR::ttype_t *return_type,           
+            Vec<ASR::call_arg_t> &new_args, int64_t overload_id) {              
+        return UnaryIntrinsicFunction::instantiate_functions(al, loc, scope,    
+            "is_nan", arg_types[0], return_type, new_args, overload_id);     
+    }
+}
 
 namespace ObjectType {
 
