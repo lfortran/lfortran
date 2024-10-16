@@ -1549,7 +1549,16 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     }
 
     void replace_ArrayConstructor(ASR::ArrayConstructor_t* /*x*/) {
-        force_replace_current_expr_for_array("_array_constructor_")
+        if( exprs_with_target.find(*current_expr) != exprs_with_target.end() ) {
+            if( exprs_with_target[*current_expr].second == targetType::OriginalTarget ) {
+                insert_allocate_stmt_for_array(al,
+                    exprs_with_target[*current_expr].first, *current_expr, current_body);
+                return ;
+            }
+        }
+        if( exprs_with_target.find(*current_expr) == exprs_with_target.end() ) {
+            force_replace_current_expr_for_array("_array_constructor_")
+        }
     }
 
     void replace_ArrayConstant(ASR::ArrayConstant_t* /*x*/) {
