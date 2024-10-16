@@ -735,8 +735,8 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
 
         Vec<ASR::expr_t**> vars;
         vars.reserve(al, 1);
-        ArrayVarAddressCollector var_collector_target(al, vars);
-        var_collector_target.visit_If(x);
+        ArrayVarAddressCollector array_var_adress_collector_target(al, vars);
+        array_var_adress_collector_target.visit_If(x);
 
         if( vars.size() == 0 ) {
             return ;
@@ -747,8 +747,8 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
 
         generate_loop(x, vars, fix_type_args, loc);
 
-        RemoveArrayProcessingNodeVisitor v(al);
-        v.visit_If(x);
+        RemoveArrayProcessingNodeVisitor remove_array_processing_node_visitor(al);
+        remove_array_processing_node_visitor.visit_If(x);
 
         FixTypeVisitor fix_type_visitor(al);
         fix_type_visitor.current_scope = current_scope;
