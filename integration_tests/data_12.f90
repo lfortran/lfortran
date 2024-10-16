@@ -24,7 +24,7 @@ program data_12_program
     print *, c1(1)
     if (abs(c1(1)-0.0) > 1e-5) error stop
 
-    print *, c1(2)
+    print *, c1
     if (abs(c1(2)-0.22) > 1e-5) error stop
 
     print *, c1(4)

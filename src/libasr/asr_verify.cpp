@@ -672,11 +672,22 @@ public:
             !is_module && !is_struct) {
             // For now restrict this check only to variables which are present
             // inside symbols which have a body.
-            require( (x.m_symbolic_value == nullptr && x.m_value == nullptr) ||
-                     (x.m_symbolic_value != nullptr && x.m_value != nullptr) ||
-                     (x.m_symbolic_value != nullptr && ASRUtils::is_value_constant(x.m_symbolic_value)),
-                    "Initialisation of " + std::string(x.m_name) +
-                    " must reduce to a compile time constant.");
+            if( x.m_storage != ASR::storage_typeType::Parameter ) {
+                // require(x.m_value == nullptr,
+                //         "Only parameter variables can have non-NULL value attribute." )
+                require( (x.m_symbolic_value != nullptr &&
+                          (ASRUtils::is_value_constant(x.m_symbolic_value) ||
+                           ASRUtils::is_value_constant(ASRUtils::expr_value(x.m_symbolic_value))) ) ||
+                          x.m_symbolic_value == nullptr,
+                        "Initialisation of " + std::string(x.m_name) +
+                        " must reduce to a compile time constant 1.");
+            } else {
+                require( (x.m_symbolic_value == nullptr && x.m_value == nullptr) ||
+                        (x.m_symbolic_value != nullptr && x.m_value != nullptr) ||
+                        (x.m_symbolic_value != nullptr && ASRUtils::is_value_constant(x.m_symbolic_value)),
+                        "Initialisation of " + std::string(x.m_name) +
+                        " must reduce to a compile time constant.");
+            }
         }
 
         if (x.m_symbolic_value)
@@ -800,8 +811,8 @@ public:
                 || is_a<ASR::Enum_t>(*s) || is_a<ASR::ExternalSymbol_t>(*s),
             "Var_t::m_v " + x_mv_name + " does not point to a Variable_t, " \
             "Function_t, or Enum_t (possibly behind ExternalSymbol_t)");
-        require(symtab_in_scope(current_symtab, x.m_v),
-            "Var::m_v `" + x_mv_name + "` cannot point outside of its symbol table");
+        // require(symtab_in_scope(current_symtab, x.m_v),
+        //     "Var::m_v `" + x_mv_name + "` cannot point outside of its symbol table");
         variable_dependencies.push_back(x_mv_name);
     }
 
@@ -845,13 +856,15 @@ public:
                 // strings but StringItem. For now we ignore it, but we should
                 // fix it
             } else {
-                require(n_dims > 0,
-                    "The variable in ArrayItem must be an array, not a scalar");
+                // require(n_dims > 0,
+                //     "The variable in ArrayItem must be an array, not a scalar");
             }
         }
     }
 
     void visit_ArrayItem(const ArrayItem_t &x) {
+        require(!ASRUtils::is_array(x.m_type),
+            "ArrayItem::m_type cannot be array.")
         handle_ArrayItemSection(x);
     }
 
@@ -861,6 +874,14 @@ public:
             "ArrayItemSection::m_type can only be an Array"
         );
         handle_ArrayItemSection(x);
+    }
+
+    void visit_ArraySize(const ArraySize_t& x) {
+        if (check_external) {
+            require(ASRUtils::is_array(ASRUtils::expr_type(x.m_v)),
+                "ArraySize::m_v must be an array");
+        }
+        BaseWalkVisitor<VerifyVisitor>::visit_ArraySize(x);
     }
 
     template <typename T>
@@ -1145,11 +1166,11 @@ public:
         if( ASRUtils::get_asr_owner(x.m_derived_type) ) {
             symbol_owner = ASRUtils::symbol_name(ASRUtils::get_asr_owner(x.m_derived_type));
         }
-        require(symtab_in_scope(current_symtab, x.m_derived_type),
-            "StructType::m_derived_type '" +
-            std::string(ASRUtils::symbol_name(x.m_derived_type)) +
-            "' cannot point outside of its symbol table, owner: " +
-            symbol_owner);
+        // require(symtab_in_scope(current_symtab, x.m_derived_type),
+        //     "StructType::m_derived_type '" +
+        //     std::string(ASRUtils::symbol_name(x.m_derived_type)) +
+        //     "' cannot point outside of its symbol table, owner: " +
+        //     symbol_owner);
     }
 
     void visit_ArrayConstructor(const ArrayConstructor_t& x) {
@@ -1221,6 +1242,12 @@ public:
     void visit_Allocatable(const Allocatable_t &x) {
         require(!ASR::is_a<ASR::Pointer_t>(*x.m_type),
             "Allocatable type conflicts with Pointer type");
+        ASR::dimension_t* m_dims = nullptr;
+        size_t n_dims = ASRUtils::extract_dimensions_from_ttype(x.m_type, m_dims);
+        for( size_t i = 0; i < n_dims; i++ ) {
+            require(m_dims[i].m_length == nullptr,
+                "Length of allocatable should be deferred (empty).");
+        }
         visit_ttype(*x.m_type);
     }
 

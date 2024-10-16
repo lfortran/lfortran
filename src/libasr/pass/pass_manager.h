@@ -17,8 +17,6 @@
 #include <libasr/pass/replace_do_loops.h>
 #include <libasr/pass/replace_for_all.h>
 #include <libasr/pass/while_else.h>
-#include <libasr/pass/replace_init_expr.h>
-#include <libasr/pass/replace_implied_do_loops.h>
 #include <libasr/pass/replace_array_op.h>
 #include <libasr/pass/replace_select_case.h>
 #include <libasr/pass/wrap_global_stmts.h>
@@ -40,7 +38,6 @@
 #include <libasr/pass/inline_function_calls.h>
 #include <libasr/pass/dead_code_removal.h>
 #include <libasr/pass/replace_for_all.h>
-#include <libasr/pass/replace_init_expr.h>
 #include <libasr/pass/replace_select_case.h>
 #include <libasr/pass/loop_vectorise.h>
 #include <libasr/pass/update_array_dim_intrinsic_calls.h>
@@ -51,10 +48,12 @@
 #include <libasr/pass/nested_vars.h>
 #include <libasr/pass/unique_symbols.h>
 #include <libasr/pass/insert_deallocate.h>
+#include <libasr/pass/simplifier.h>
 #include <libasr/pass/replace_print_struct_type.h>
 #include <libasr/pass/promote_allocatable_to_nonallocatable.h>
 #include <libasr/pass/replace_function_call_in_declaration.h>
 #include <libasr/pass/replace_openmp.h>
+#include <libasr/pass/replace_implied_do_loops.h>
 #include <libasr/codegen/asr_to_fortran.h>
 #include <libasr/asr_verify.h>
 #include <libasr/pickle.h>
@@ -105,7 +104,6 @@ namespace LCompilers {
             {"pass_array_by_data", &pass_array_by_data},
             {"subroutine_from_function", &pass_create_subroutine_from_function},
             {"transform_optional_argument_functions", &pass_transform_optional_argument_functions},
-            {"init_expr", &pass_replace_init_expr},
             {"nested_vars", &pass_nested_vars},
             {"where", &pass_replace_where},
             {"function_call_in_declaration", &pass_replace_function_call_in_declaration},
@@ -113,7 +111,8 @@ namespace LCompilers {
             {"print_struct_type", &pass_replace_print_struct_type},
             {"unique_symbols", &pass_unique_symbols},
             {"insert_deallocate", &pass_insert_deallocate},
-            {"promote_allocatable_to_nonallocatable", &pass_promote_allocatable_to_nonallocatable}
+            {"promote_allocatable_to_nonallocatable", &pass_promote_allocatable_to_nonallocatable},
+            {"simplifier", &pass_simplifier},
         };
 
         bool apply_default_passes;
@@ -208,24 +207,26 @@ namespace LCompilers {
         PassManager(): apply_default_passes{false},
             c_skip_pass{false} {
             _passes = {
-                "nested_vars",
                 "global_stmts",
-                "transform_optional_argument_functions",
-                "init_expr",
-                "forall",
+                "function_call_in_declaration",
+                // "implied_do_loops", // Should be implemented when optimisations for ImpliedDoLoop are possible in LFortran, until then not needed.
                 "openmp",
-                "implied_do_loops",
+                "simplifier", /* Verification checks to be implemented in this pass - 1. No array, user defined type variable should have a symbolic value. 2. Print, SubroutineCall, FileWrite, IntrinsicImpureSubroutine nodes shouldn't have non-Var arguments. 3. All expressions which need a temporary should be directly linked to a target via an assignment. 4. Sizes of auxiliary allocatables should be calculated using only Var nodes (with non-array symbols), or FunctionCall returning scalars. */
+                "nested_vars",
+                "transform_optional_argument_functions",
+                // "init_expr", This pass shouldn't be needed.
+                "forall",
                 "class_constructor",
                 "pass_list_expr",
                 "where",
-                "function_call_in_declaration",
-                "subroutine_from_function",
-                "array_op",
+                "subroutine_from_function", // To be re-written after simplifier is implemented.
+                "array_op", // To be re-written without creating any auxiliary variables or allocatables, everything already done by simplifier
                 "symbolic",
-                "intrinsic_function",
-                "intrinsic_subroutine",
-                "subroutine_from_function",
+                "intrinsic_function", // To be re-written without creating allocotables and auxiliary variables
+                "intrinsic_subroutine", // To be re-written without creating allocotables and auxiliary variables
                 "array_op",
+                // "subroutine_from_function", There should be no need to apply this twice
+                // "array_op", There should be no need to apply this twice
                 "pass_array_by_data",
                 "print_struct_type",
                 "print_arr",
@@ -242,24 +243,27 @@ namespace LCompilers {
             };
 
             _with_optimization_passes = {
-                "nested_vars",
                 "global_stmts",
-                "transform_optional_argument_functions",
-                "init_expr",
+                "function_call_in_declaration",
+                "implied_do_loops", // Should be implemented when optimisations for ImpliedDoLoop are possible in LFortran, until then not needed.
                 "openmp",
-                "implied_do_loops",
+                "simplifier", /* Verification checks to be implemented in this pass - 1. No array, user defined type variable should have a symbolic value. 2. Print, SubroutineCall, FileWrite, IntrinsicImpureSubroutine nodes shouldn't have non-Var arguments. 3. All expressions which need a temporary should be directly linked to a target via an assignment. 4. Sizes of auxiliary allocatables should be calculated using only Var nodes (with non-array symbols), or FunctionCall returning scalars. */
+                "nested_vars",
+                "transform_optional_argument_functions",
+                // "init_expr", This pass shouldn't be needed.
+                "forall",
                 "class_constructor",
                 "pass_list_expr",
                 "where",
-                "function_call_in_declaration",
-                "subroutine_from_function",
-                "array_op",
+                "subroutine_from_function", // To be re-written after simplifier is implemented.
+                "array_op", // To be re-written without creating any auxiliary variables or allocatables, everything already done by simplifier
                 "symbolic",
                 "flip_sign",
-                "intrinsic_function",
-                "intrinsic_subroutine",
-                "subroutine_from_function",
+                "intrinsic_function", // To be re-written without creating allocotables and auxiliary variables
+                "intrinsic_subroutine", // To be re-written without creating allocotables and auxiliary variables
                 "array_op",
+                // "subroutine_from_function", There should be no need to apply this twice
+                // "array_op", There should be no need to apply this twice
                 "pass_array_by_data",
                 "print_struct_type",
                 "print_arr",
@@ -268,7 +272,6 @@ namespace LCompilers {
                 "loop_vectorise",
                 "array_dim_intrinsics_update",
                 "do_loops",
-                "forall",
                 "while_else",
                 "dead_code_removal",
                 "select_case",

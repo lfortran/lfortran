@@ -1,6 +1,6 @@
 program intrinsics_301
     implicit none
-    	
+
     integer(4), parameter :: i1(1) = findloc([1, 2, 3], 2)
     integer(4), parameter :: i2(1) = findloc([1.0, 2.0, 3.0], 2.0)
     integer(4), parameter :: i3(1) = findloc(["aa", "db", "ca"], "aa")
@@ -75,8 +75,8 @@ program intrinsics_301
     if (i12(1) /= 0) error stop
     print *, i13
     if (i13 /= 4) error stop
-    
+
     print *, kind(findloc(["aa", "db", "ca"], "aa", 1, mask = [.false., .false., .false.], kind = 8))
     if (kind(findloc(["aa", "db", "ca"], "db", 1, mask = [.false., .false., .false.], kind = 8)) /= 8) error stop
-    
+
 end program intrinsics_301
