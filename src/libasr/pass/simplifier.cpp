@@ -1503,7 +1503,9 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     }
 
     void replace_FunctionCall(ASR::FunctionCall_t* x) {
-        if( PassUtils::is_elemental(x->m_name) ) {
+        if( PassUtils::is_elemental(x->m_name) && !ASR::is_a<ASR::StructType_t>(*x->m_type)) {
+            // ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(x->m_name);
+            // std::cout << f << "\n";
             return ;
         }
 
