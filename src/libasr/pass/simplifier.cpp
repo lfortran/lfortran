@@ -1509,7 +1509,8 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
 
         if( is_current_expr_linked_to_target && ASRUtils::is_array(x->m_type) ) {
             targetType target_Type = exprs_with_target[*current_expr].second;
-            if( target_Type == targetType::OriginalTarget && realloc_lhs ) {
+            if( target_Type == targetType::OriginalTarget && realloc_lhs &&
+                ASRUtils::is_allocatable(x->m_type)) {
                 force_replace_current_expr_for_array(std::string("_function_call_") +
                                            ASRUtils::symbol_name(x->m_name))
                 return ;
