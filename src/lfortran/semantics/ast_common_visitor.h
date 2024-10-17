@@ -4873,12 +4873,23 @@ public:
         ASR::symbol_t *f2 = ASRUtils::symbol_get_past_external(v);
         ASR::ttype_t *return_type = nullptr;
         ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(f2);
-        if( ASRUtils::get_FunctionType(func)->m_elemental &&
-            func->n_args >= 1 &&
-            ASRUtils::is_array(ASRUtils::expr_type(args[0].m_value)) ) {
+        bool is_elemental = ASRUtils::get_FunctionType(func)->m_elemental;
+        bool any_array_arg = false;
+        ASR::expr_t* first_array_arg = nullptr;
+        if (is_elemental && func->n_args >= 1) {
+            for (size_t i=0; i < args.size(); i++) {
+                if (ASRUtils::is_array(ASRUtils::expr_type(args[i].m_value))) {
+                    any_array_arg = true;
+                    first_array_arg = args[i].m_value;
+                    break;
+                }
+            }
+        }
+        if( is_elemental && func->n_args >= 1 && any_array_arg) {
+            LCOMPILERS_ASSERT(first_array_arg)
             ASR::dimension_t* array_dims;
             size_t array_n_dims = ASRUtils::extract_dimensions_from_ttype(
-                ASRUtils::expr_type(args[0].m_value), array_dims);
+                ASRUtils::expr_type(first_array_arg), array_dims);
             Vec<ASR::dimension_t> new_dims;
             new_dims.from_pointer_n_copy(al, array_dims, array_n_dims);
             return_type = ASRUtils::duplicate_type(al,
