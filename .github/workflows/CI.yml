@@ -278,9 +278,9 @@ jobs:
 
             ./emsdk activate 3.1.35
 
-            ./emsdk install node-14.18.2-64bit
+            ./emsdk install node-18.20.3-64bit
 
-            ./emsdk activate node-14.18.2-64bit
+            ./emsdk activate node-18.20.3-64bit
 
       - name: Show Emscripten and Node Info
         shell: bash -l {0}
