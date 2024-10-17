@@ -70,7 +70,7 @@ private:
        no_cast_required, no_cast_required, no_cast_required},
 
       // Logical
-      {logical_to_integer, no_cast_required, no_cast_required, no_cast_required,
+      {no_cast_required, no_cast_required, no_cast_required, no_cast_required,
        no_cast_required, no_cast_required, no_cast_required},
 
       // Derived
