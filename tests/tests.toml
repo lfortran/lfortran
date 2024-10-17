@@ -3122,6 +3122,7 @@ asr = true
 [[test]]
 filename = "errors/assign_01.f90"
 asr = true
+continue_compilation = true
 
 [[test]]
 filename = "fixed_form_if_variations.f"
@@ -3548,6 +3549,10 @@ asr = true
 [[test]]
 filename = "errors/array_06.f90"
 asr = true
+
+[[test]]
+filename = "errors/array_07.f90"
+continue_compilation = true
 
 [[test]]
 filename = "../integration_tests/where_02.f90"
