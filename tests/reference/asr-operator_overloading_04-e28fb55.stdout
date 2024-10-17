@@ -83,11 +83,19 @@
                                             (Var 4 lhs)
                                             4 1_string_type_raw
                                             (Allocatable
-                                                (Character 1 -2 () PointerString)
+                                                (Character 1 -2 () DescriptorString)
                                             )
                                             ()
                                         )
-                                        (Var 4 rhs)
+                                        (StringPhysicalCast
+                                            (Var 4 rhs)
+                                            PointerString
+                                            DescriptorString
+                                            (Allocatable
+                                                (Character 1 -1 () DescriptorString)
+                                            )
+                                            ()
+                                        )
                                         ()
                                     )]
                                     ()
@@ -111,7 +119,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (Character 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -210,7 +218,7 @@
                                             (Var 5 string)
                                             5 1_string_type_raw
                                             (Allocatable
-                                                (Character 1 -2 () PointerString)
+                                                (Character 1 -2 () DescriptorString)
                                             )
                                             ()
                                         )
@@ -218,9 +226,17 @@
                                             2 assign_string_char
                                             2 ~assign
                                             [((Var 5 trimmed_string))
-                                            ((StructInstanceMember
-                                                (Var 5 string)
-                                                5 1_string_type_raw
+                                            ((StringPhysicalCast
+                                                (StructInstanceMember
+                                                    (Var 5 string)
+                                                    5 1_string_type_raw
+                                                    (Allocatable
+                                                        (Character 1 -2 () DescriptorString)
+                                                    )
+                                                    ()
+                                                )
+                                                DescriptorString
+                                                PointerString
                                                 (Allocatable
                                                     (Character 1 -2 () PointerString)
                                                 )
