@@ -2092,10 +2092,6 @@ namespace And {
         return b.Call(f_sym, new_args, return_type, nullptr);
     }
 
-    static inline ASR::expr_t* AND(ASRBuilder &b, ASR::expr_t* i, ASR::expr_t* j, SymbolTable* scope) {
-        return b.CallIntrinsic(scope, {expr_type(i), expr_type(j)}, {i, j}, expr_type(i), 0, And::instantiate_And);
-    }
-
 } // namespace And
 
 namespace Ior {
