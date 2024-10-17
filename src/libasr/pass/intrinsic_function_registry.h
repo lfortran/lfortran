@@ -98,6 +98,7 @@ inline std::string get_intrinsic_name(int64_t x) {
         INTRINSIC_NAME_CASE(SetExponent)
         INTRINSIC_NAME_CASE(Not)
         INTRINSIC_NAME_CASE(Iand)
+        INTRINSIC_NAME_CASE(And)
         INTRINSIC_NAME_CASE(Ior)
         INTRINSIC_NAME_CASE(Ieor)
         INTRINSIC_NAME_CASE(Ibclr)
@@ -367,6 +368,8 @@ namespace IntrinsicElementalFunctionRegistry {
             {&Not::instantiate_Not, &Not::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Iand),
             {&Iand::instantiate_Iand, &Iand::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::And),
+            {&And::instantiate_And, &And::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Ior),
             {&Ior::instantiate_Ior, &Ior::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Ieor),
@@ -985,6 +988,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"set_exponent", {&SetExponent::create_SetExponent, &SetExponent::eval_SetExponent}},
                 {"not", {&Not::create_Not, &Not::eval_Not}},
                 {"iand", {&Iand::create_Iand, &Iand::eval_Iand}},
+                {"and", {&And::create_And, &And::eval_And}},
                 {"ior", {&Ior::create_Ior, &Ior::eval_Ior}},
                 {"ieor", {&Ieor::create_Ieor, &Ieor::eval_Ieor}},
                 {"ibclr", {&Ibclr::create_Ibclr, &Ibclr::eval_Ibclr}},
