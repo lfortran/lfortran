@@ -333,11 +333,15 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                 extra_args)
     
     if continue_compilation:
-        run_test(filename, "run", "lfortran --continue-compilation --no-color {infile}",
-            filename,
-            update_reference,
-            verify_hash,
-            extra_args)
+        if no_llvm:
+            log.info(f"{filename} * obj    SKIPPED as requested")
+        else:
+            run_test(filename, "run", "lfortran --continue-compilation --no-color {infile}",
+                filename,
+                update_reference,
+                verify_hash,
+                extra_args)
+
 
     if asr_implicit_typing:
         run_test(
