@@ -100,7 +100,9 @@ inline std::string get_intrinsic_name(int64_t x) {
         INTRINSIC_NAME_CASE(Iand)
         INTRINSIC_NAME_CASE(And)
         INTRINSIC_NAME_CASE(Ior)
+        INTRINSIC_NAME_CASE(Or)
         INTRINSIC_NAME_CASE(Ieor)
+        INTRINSIC_NAME_CASE(Xor)
         INTRINSIC_NAME_CASE(Ibclr)
         INTRINSIC_NAME_CASE(Ibset)
         INTRINSIC_NAME_CASE(Btest)
@@ -372,8 +374,12 @@ namespace IntrinsicElementalFunctionRegistry {
             {&And::instantiate_And, &And::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Ior),
             {&Ior::instantiate_Ior, &Ior::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Or),
+            {&Or::instantiate_Or, &Or::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Ieor),
             {&Ieor::instantiate_Ieor, &Ieor::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Xor),
+            {&Xor::instantiate_Xor, &Xor::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Ibclr),
             {&Ibclr::instantiate_Ibclr, &Ibclr::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Btest),
@@ -727,10 +733,16 @@ namespace IntrinsicElementalFunctionRegistry {
             "not"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Iand),
             "iand"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::And),
+            "and"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Ior),
             "ior"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Or),
+            "or"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Ieor),
             "ieor"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Xor),
+            "xor"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Ibclr),
             "ibclr"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Ibset),
@@ -990,7 +1002,9 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"iand", {&Iand::create_Iand, &Iand::eval_Iand}},
                 {"and", {&And::create_And, &And::eval_And}},
                 {"ior", {&Ior::create_Ior, &Ior::eval_Ior}},
+                {"or", {&Or::create_Or, &Or::eval_Or}},
                 {"ieor", {&Ieor::create_Ieor, &Ieor::eval_Ieor}},
+                {"xor", {&Xor::create_Xor, &Xor::eval_Xor}},
                 {"ibclr", {&Ibclr::create_Ibclr, &Ibclr::eval_Ibclr}},
                 {"ibset", {&Ibset::create_Ibset, &Ibset::eval_Ibset}},
                 {"btest", {&Btest::create_Btest, &Btest::eval_Btest}},

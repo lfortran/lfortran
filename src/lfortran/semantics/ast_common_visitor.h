@@ -797,7 +797,9 @@ public:
         {"iand", {IntrinsicSignature({"i", "j"}, 2, 2)}},
         {"and", {IntrinsicSignature({"i", "j"}, 2, 2)}},
         {"ior", {IntrinsicSignature({"i", "j"}, 2, 2)}},
+        {"or", {IntrinsicSignature({"i", "j"}, 2, 2)}},
         {"ieor", {IntrinsicSignature({"i", "j"}, 2, 2)}},
+        {"xor", {IntrinsicSignature({"i", "j"}, 2, 2)}},
         {"ibclr", {IntrinsicSignature({"i", "pos"}, 2, 2)}},
         {"ibset", {IntrinsicSignature({"i", "pos"}, 2, 2)}},
         {"btest", {IntrinsicSignature({"i", "pos"}, 2, 2)}},
@@ -922,8 +924,6 @@ public:
         {"ddim", {"dim", {"real8", "real8"}}},
         {"amod", {"mod", {"real4", "real4"}}},
         {"dmod", {"mod", {"real8", "real8"}}},
-        {"or", {"ior", {"any", "any"}}},
-        {"xor", {"ieor", {"any", "any"}}},
     };
     
     ASR::asr_t *tmp;
