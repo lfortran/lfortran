@@ -8,8 +8,9 @@ program intrinsics_275
     integer, parameter :: i2 = and(-1, 5)
     integer, parameter :: i3 = and(-4_8, 2_8)
     integer(8), parameter :: i4 = and(-2_8, 5_8)
-    ! logical, parameter :: l1 = and(.true., .false.) ! Does not work yet! #4380
-    ! logical :: true = .true., false = .false.
+    logical, parameter :: l1 = and(.true., .false.) 
+    logical, parameter :: l2 = and(.true., .true.) 
+    logical :: true = .true., false = .false.
 
     print *, i1
     if (i1 /= 0) error stop
@@ -19,11 +20,17 @@ program intrinsics_275
     if (i3 /= 0) error stop
     print *, i4
     if (i4 /= 4) error stop
-    ! print *, l1
-    ! if (l1 .neqv. .false.) error stop
 
-    ! print *, and(true, false)
-    ! if (and(true, false) .neqv. .false.) error stop
+    ! logical argument testing
+    print *, l1
+    if (l1 .neqv. .false.) error stop
+    print *, l2
+    if (l2 .neqv. .true.) error stop
+    print *, and(true, false)
+    if (and(true, false) .neqv. .false.) error stop 
+    print *, and(true, true)
+    if (and(true, true) .neqv. .true.) error stop 
+
     print*, and(5, 8)
     if (and(5, 8) /= 0) error stop
     print*, and(-1, 5)
