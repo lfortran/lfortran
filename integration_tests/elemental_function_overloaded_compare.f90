@@ -4,7 +4,7 @@
 ! but as that's not need to be able to compile and run the MRE,
 ! that's being skipped for now, actually we tried having their implementation
 ! as well, but the program failed to run (take that as a TODO)
-module stdlib_string_type
+module mod_elemental_function_overloaded_compare
     use iso_fortran_env, only: int32
     implicit none
     !> String type holding an arbitrary sequence of characters.
@@ -46,10 +46,10 @@ module stdlib_string_type
         call check_logical(new_string_from_integer_int32(-1026191) == trim(flc))
     end subroutine test_constructor
 
-end module stdlib_string_type
+end module mod_elemental_function_overloaded_compare
 
-program main
-    use stdlib_string_type
+program test_elemental_function_overloaded_compare
+    use mod_elemental_function_overloaded_compare
     implicit none
     call test_constructor()
-end program main
+end program
