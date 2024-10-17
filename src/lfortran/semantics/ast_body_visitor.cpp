@@ -2387,7 +2387,15 @@ public:
         }
         this->visit_expr(*x.m_target);
         ASR::expr_t *target = ASRUtils::EXPR(tmp);
-        this->visit_expr(*x.m_value);
+        try {
+            this->visit_expr(*x.m_value);
+        } catch (const SemanticError &e) {
+            // TODO: remove this once we replace SemanticError with diag.add + throw SemanticAbort
+            if ( compiler_options.continue_compilation ) diag.add(e.d);
+            else throw e;
+        } catch (const SemanticAbort &e) {
+            if (!compiler_options.continue_compilation) throw e;
+        }
         ASR::expr_t *value = ASRUtils::EXPR(tmp);
         ASR::stmt_t *overloaded_stmt = nullptr;
         if (ASR::is_a<ASR::Var_t>(*target)) {
@@ -2405,12 +2413,13 @@ public:
                     throw SemanticError("Cannot assign to an intent(in) variable `" + std::string(v->m_name) + "`", target->base.loc);
                 }
                 if (v->m_storage == ASR::storage_typeType::Parameter) {
-                    throw SemanticError(diag::Diagnostic(
-                                "Cannot assign to a constant variable",
-                                diag::Level::Error, diag::Stage::Semantic, {
-                                    diag::Label("assignment here", {x.base.base.loc}),
-                                    diag::Label("declared as constant", {v->base.base.loc}, false),
-                                }));
+                    diag.add(diag::Diagnostic(
+                        "Cannot assign to a constant variable",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("assignment here", {x.base.base.loc}),
+                            diag::Label("declared as constant", {v->base.base.loc}, false),
+                        }));
+                    if (!compiler_options.continue_compilation) throw SemanticAbort();
                 }
             }
             if (ASR::is_a<ASR::Function_t>(*sym)){
@@ -3166,7 +3175,13 @@ public:
         }
 
         for (size_t i=0; i<x.n_values; i++) {
-            visit_expr(*x.m_values[i]);
+            try {
+                this->visit_expr(*x.m_values[i]);
+            } catch (const SemanticError &e) {
+                if ( compiler_options.continue_compilation ) diag.add(e.d);
+                else throw e;
+            }
+            // visit_expr(*x.m_values[i]);
             ASR::expr_t *expr = ASRUtils::EXPR(tmp);
             body.push_back(al, expr);
         }
