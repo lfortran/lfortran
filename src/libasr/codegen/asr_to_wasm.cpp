@@ -1516,7 +1516,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         }
         this->visit_expr(*x.m_left);
         this->visit_expr(*x.m_right);
-        ASR::Integer_t *i = ASR::down_cast<ASR::Integer_t>(x.m_type);
+        LCOMPILERS_ASSERT(ASR::is_a<ASR::Integer_t>(*ASRUtils::extract_type(x.m_type)));
+        ASR::Integer_t *i = ASR::down_cast<ASR::Integer_t>(ASRUtils::extract_type(x.m_type));
         if (i->m_kind == 4) {
             switch (x.m_op) {
                 case ASR::binopType::Add: {
@@ -1699,7 +1700,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         }
         this->visit_expr(*x.m_left);
         this->visit_expr(*x.m_right);
-        ASR::Real_t *f = ASR::down_cast<ASR::Real_t>(x.m_type);
+        LCOMPILERS_ASSERT(ASR::is_a<ASR::Real_t>(*ASRUtils::extract_type(x.m_type)));
+        ASR::Real_t *f = ASR::down_cast<ASR::Real_t>(ASRUtils::extract_type(x.m_type));
         if (f->m_kind == 4) {
             switch (x.m_op) {
                 case ASR::binopType::Add: {
@@ -1801,8 +1803,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         }
         this->visit_expr(*x.m_left);
         this->visit_expr(*x.m_right);
-        LCOMPILERS_ASSERT(ASRUtils::is_complex(*x.m_type));
-        int a_kind = ASR::down_cast<ASR::Complex_t>(ASRUtils::type_get_past_pointer(x.m_type))->m_kind;
+        LCOMPILERS_ASSERT(ASR::is_a<ASR::Complex_t>(*ASRUtils::extract_type(x.m_type)));
+        int a_kind = ASR::down_cast<ASR::Complex_t>(ASRUtils::extract_type(x.m_type))->m_kind;
         switch (x.m_op) {
             case ASR::binopType::Add: {
                 if (a_kind == 4) {
@@ -1846,7 +1848,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             visit_expr(*x.m_value);
             return;
         }
-        ASR::Integer_t *i = ASR::down_cast<ASR::Integer_t>(x.m_type);
+        LCOMPILERS_ASSERT(ASR::is_a<ASR::Integer_t>(*ASRUtils::extract_type(x.m_type)));
+        ASR::Integer_t *i = ASR::down_cast<ASR::Integer_t>(ASRUtils::extract_type(x.m_type));
         // there seems no direct unary-minus inst in wasm, so subtracting from 0
         if (i->m_kind == 4) {
             m_wa.emit_i32_const(0);
@@ -1867,7 +1870,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             visit_expr(*x.m_value);
             return;
         }
-        ASR::Real_t *f = ASR::down_cast<ASR::Real_t>(x.m_type);
+        LCOMPILERS_ASSERT(ASR::is_a<ASR::Real_t>(*ASRUtils::extract_type(x.m_type)));
+        ASR::Real_t *f = ASR::down_cast<ASR::Real_t>(ASRUtils::extract_type(x.m_type));
         if (f->m_kind == 4) {
             this->visit_expr(*x.m_arg);
             m_wa.emit_f32_neg();
@@ -1884,7 +1888,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             visit_expr(*x.m_value);
             return;
         }
-        ASR::Complex_t *f = ASR::down_cast<ASR::Complex_t>(x.m_type);
+        LCOMPILERS_ASSERT(ASR::is_a<ASR::Complex_t>(*ASRUtils::extract_type(x.m_type)));
+        ASR::Complex_t *f = ASR::down_cast<ASR::Complex_t>(ASRUtils::extract_type(x.m_type));
         if (f->m_kind == 4) {
             this->visit_expr(*x.m_arg);
             m_wa.emit_f32_neg();
