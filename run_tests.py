@@ -52,6 +52,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     asr_implicit_interface_and_typing = is_included("asr_implicit_interface_and_typing")
     asr_implicit_argument_casting = is_included("asr_implicit_argument_casting")
     asr_implicit_interface_and_typing_with_llvm = is_included("asr_implicit_interface_and_typing_with_llvm")
+    continue_compilation = is_included("continue_compilation")
     asr_use_loop_variable_after_loop = is_included("asr_use_loop_variable_after_loop")
     asr_preprocess = is_included("asr_preprocess")
     asr_indent = is_included("asr_indent")
@@ -330,6 +331,13 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                 update_reference,
                 verify_hash,
                 extra_args)
+    
+    if continue_compilation:
+        run_test(filename, "run", "lfortran --continue-compilation --no-color {infile}",
+            filename,
+            update_reference,
+            verify_hash,
+            extra_args)
 
     if asr_implicit_typing:
         run_test(
