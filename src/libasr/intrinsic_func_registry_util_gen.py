@@ -595,11 +595,23 @@ intrinsic_funcs_args = {
             "same_kind_arg": 2
         },
     ],
+    "Or": [
+        {
+            "args": [("int", "int"), ("bool", "bool")],
+            "ret_type_arg_idx": 0,
+        },
+    ],
     "Ieor": [
         {
             "args": [("int", "int")],
             "ret_type_arg_idx": 0,
             "same_kind_arg": 2
+        },
+    ],
+    "Xor": [
+        {
+            "args": [("int", "int"), ("bool", "bool")],
+            "ret_type_arg_idx": 0,
         },
     ],
     "Ibclr": [
