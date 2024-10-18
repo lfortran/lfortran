@@ -1526,6 +1526,14 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         std::string name_hint = std::string("_intrinsic_array_function_") + ASRUtils::get_array_intrinsic_name(x->m_arr_intrinsic_id);
         if (!(is_current_expr_linked_to_target || ASRUtils::is_array(x->m_type))) {
             force_replace_current_expr_for_scalar(name_hint)
+        } else if (is_current_expr_linked_to_target &&
+            static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Transpose) == x->m_arr_intrinsic_id &&
+            exprs_with_target[*current_expr].second == targetType::OriginalTarget
+        ) {
+            // x = transpose(x), where 'x' is user-variable
+            // needs have a temporary, there might be more
+            // intrinsic array functions needing this
+            force_replace_current_expr_for_array(name_hint)
         } else {
             replace_current_expr(name_hint)
         }
