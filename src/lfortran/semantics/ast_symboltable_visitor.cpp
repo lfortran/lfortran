@@ -1917,6 +1917,7 @@ public:
             loc.first = 1;
             loc.last = 1;
             Vec<ASR::symbol_t*> symbols;
+            std::set<ASR::symbol_t*> symbols_set;
             symbols.reserve(al, proc.second.size());
             for (auto &pname : proc.second) {
                 std::string correct_pname = pname;
@@ -1930,7 +1931,14 @@ public:
                 // lower case the name
                 name = s2c(al, to_lower(name));
                 x = resolve_symbol(loc, name);
-                symbols.push_back(al, x);
+                if (symbols_set.find(x) == symbols_set.end()) {
+                    symbols.push_back(al, x);
+                    symbols_set.insert(x);
+                } else {
+                    throw SemanticError("Entity " + correct_pname
+                                            + " is already present in the interface",
+                                        x->base.loc);
+                }
             }
             std::string sym_name_str = proc.first;
             if( current_scope->get_symbol(proc.first) != nullptr ) {
@@ -1955,7 +1963,14 @@ public:
                             ASRUtils::symbol_name(gp->m_procs[i]));
                         if (s != nullptr) {
                             // Append all the module procedure's in the scope
-                            symbols.push_back(al, s);
+                            if (symbols_set.find(s) == symbols_set.end()) {
+                                symbols.push_back(al, s);
+                                symbols_set.insert(s);
+                            } else {
+                                throw SemanticError("Entity " + sym_name_str
+                                                        + " is already present in the interface",
+                                                    s->base.loc);
+                            }
                         } else {
                             // If not available, import it from the module
                             // Create an ExternalSymbol using it
@@ -1971,7 +1986,15 @@ public:
                                         fn->m_name, dflt_access);
                                 current_scope->add_symbol(fn->m_name, ep_s);
                                 // Append the ExternalSymbol
-                                symbols.push_back(al, ep_s);
+                                if (symbols_set.find(ep_s) == symbols_set.end()) {
+                                    symbols.push_back(al, ep_s);
+                                    symbols_set.insert(ep_s);
+                                } else {
+                                    throw SemanticError(
+                                        "Entity " + sym_name_str
+                                            + " is already present in the interface",
+                                        ep_s->base.loc);
+                                }
                             }
                         }
                     }
