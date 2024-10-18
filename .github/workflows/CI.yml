@@ -1216,28 +1216,28 @@ jobs:
           which node
           node --version
 
-      # - name: Build Linux
-      #   shell: bash -e -l {0}
-      #   run: |
-      #       ./build0.sh
-      #       cmake . -GNinja \
-      #         -DCMAKE_BUILD_TYPE=Debug \
-      #         -DWITH_LLVM=yes \
-      #         -DLFORTRAN_BUILD_ALL=yes \
-      #         -DWITH_STACKTRACE=no \
-      #         -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
-      #         -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
-      #         -DCMAKE_C_COMPILER_LAUNCHER=sccache \
-      #         -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+      - name: Build Linux
+        shell: bash -e -l {0}
+        run: |
+            ./build0.sh
+            cmake . -GNinja \
+              -DCMAKE_BUILD_TYPE=Debug \
+              -DWITH_LLVM=yes \
+              -DLFORTRAN_BUILD_ALL=yes \
+              -DWITH_STACKTRACE=no \
+              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
+              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
+              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 
-      #       cmake --build . -j16 --target install
+            cmake --build . -j16 --target install
 
-      # - name: Test Linux
-      #   shell: bash -e -l {0}
-      #   run: |
-      #       cd integration_tests
-      #       ./run_tests.py -b wasm
-      #       ./run_tests.py -b wasm -f
+      - name: Test Linux
+        shell: bash -e -l {0}
+        run: |
+            cd integration_tests
+            ./run_tests.py -b wasm
+            ./run_tests.py -b wasm -f
 
   test_fortran:
     name: Test Fortran backend
