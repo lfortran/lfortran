@@ -798,6 +798,7 @@ public:
         {"lge", {IntrinsicSignature({"string_A", "string_B"}, 2, 2)}},
         {"lle", {IntrinsicSignature({"string_A", "string_B"}, 2, 2)}},
         {"iand", {IntrinsicSignature({"i", "j"}, 2, 2)}},
+        {"and", {IntrinsicSignature({"i", "j"}, 2, 2)}},
         {"ior", {IntrinsicSignature({"i", "j"}, 2, 2)}},
         {"ieor", {IntrinsicSignature({"i", "j"}, 2, 2)}},
         {"ibclr", {IntrinsicSignature({"i", "pos"}, 2, 2)}},
@@ -924,7 +925,6 @@ public:
         {"ddim", {"dim", {"real8", "real8"}}},
         {"amod", {"mod", {"real4", "real4"}}},
         {"dmod", {"mod", {"real8", "real8"}}},
-        {"and", {"iand", {"any", "any"}}},
         {"or", {"ior", {"any", "any"}}},
         {"xor", {"ieor", {"any", "any"}}},
     };
@@ -5758,12 +5758,12 @@ public:
     }
 
     void scalar_kind_arg(std::string &name, Vec<ASR::expr_t*> &args) {
-        std::vector<std::string> optional_kind_arg = {"logical", "storage_size", "anint", "nint", "aint", "floor",
-            "ceiling", "aimag", "maskl", "maskr", "ichar", "char", "achar", "real"};
+        std::vector<std::string> optional_kind_arg = {"logical", "storage_size", "anint", "nint", "aint", "floor", 
+            "ceiling", "aimag", "maskl", "maskr", "ichar", "char", "achar", "real", "int"};
         if (std::find(optional_kind_arg.begin(), optional_kind_arg.end(), name) != optional_kind_arg.end()) {
             if (args[1]) {
                 if (ASRUtils::is_array(ASRUtils::expr_type(args[1]))) {
-                    throw SemanticError("Expected scalar argument for " + name + " intrinsic", args[1]->base.loc);
+                    throw SemanticError("kind argument of `" + name + "` intrinsic must be a scalar", args[1]->base.loc);
                 }
             }
         }

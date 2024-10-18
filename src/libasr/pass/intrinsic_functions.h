@@ -192,6 +192,8 @@ enum class IntrinsicElementalFunctions : int64_t {
     SymbolicSinQ,
     SymbolicGetArgument,
     Int,
+    Present,
+    And,
     // ...
 };
 
@@ -424,7 +426,23 @@ create_unary_function(LogGamma, lgamma, log_gamma)
 create_unary_function(Log10, log10, log10)
 create_unary_function(Erf, erf, erf)
 create_unary_function(Erfc, erfc, erfc)
-create_unary_function(Isnan, isnan, is_nan)
+
+namespace Isnan{
+    static inline ASR::expr_t *eval_Isnan(Allocator &al, const Location &loc,     
+            ASR::ttype_t *t, Vec<ASR::expr_t*> &args,                           
+            diag::Diagnostics& /*diag*/) {                                      
+        double rv = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;          
+        ASRUtils::ASRBuilder b(al, loc);                                        
+        return b.bool_t(std::isnan(rv), t);                                       
+    }  
+    static inline ASR::expr_t* instantiate_Isnan(Allocator &al,                  
+            const Location &loc, SymbolTable *scope,                            
+            Vec<ASR::ttype_t*> &arg_types, ASR::ttype_t *return_type,           
+            Vec<ASR::call_arg_t> &new_args, int64_t overload_id) {              
+        return UnaryIntrinsicFunction::instantiate_functions(al, loc, scope,    
+            "is_nan", arg_types[0], return_type, new_args, overload_id);     
+    }
+}
 
 namespace ObjectType {
 
@@ -1732,6 +1750,33 @@ namespace Bge {
 
 } // namespace Bge
 
+namespace Present {
+
+    static ASR::expr_t *eval_Present(Allocator &/*al*/, const Location &/*loc*/,
+        ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& /*diag*/) { return nullptr; }
+
+    static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
+        if (x.n_args != 1)  {
+            ASRUtils::require_impl(false, "Unexpected number of args, Present takes 1 arguments, found " + std::to_string(x.n_args), x.base.base.loc, diagnostics);
+        }
+    }
+
+    static inline ASR::asr_t* create_Present(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
+        ASRUtils::ExprStmtDuplicator expr_duplicator(al);
+        expr_duplicator.allow_procedure_calls = true;
+        ASR::ttype_t* type_ = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4));
+        ASR::ttype_t *return_type = type_;
+        ASR::expr_t *m_value = nullptr;
+        Vec<ASR::expr_t*> m_args; m_args.reserve(al, 1);
+        m_args.push_back(al, args[0]);
+        return ASR::make_IntrinsicElementalFunction_t(al, loc, static_cast<int64_t>(IntrinsicElementalFunctions::Present), m_args.p, m_args.n, 0, return_type, m_value);
+    }
+
+    static inline ASR::expr_t* instantiate_Present(Allocator &/*al*/, const Location &/*loc*/,
+            SymbolTable */*scope*/, Vec<ASR::ttype_t*>& /*arg_types*/, ASR::ttype_t */*return_type*/,
+            Vec<ASR::call_arg_t>& /*new_args*/, int64_t /*overload_id*/) { return nullptr;}
+}
+
 namespace Ble {
 
     static ASR::expr_t *eval_Ble(Allocator &al, const Location &loc,
@@ -2009,6 +2054,46 @@ namespace Iand {
     }
 
 } // namespace Iand
+
+namespace And {
+
+    static ASR::expr_t *eval_And(Allocator &al, const Location &loc,
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+        if(ASR::is_a<ASR::IntegerConstant_t>(*args[0])){
+            int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
+            int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
+            int64_t result;
+            result = val1 & val2;
+            return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);
+        } else {
+            bool val1 = ASR::down_cast<ASR::LogicalConstant_t>(args[0])->m_value;
+            bool val2 = ASR::down_cast<ASR::LogicalConstant_t>(args[1])->m_value;
+            bool result;
+            result = val1 & val2;
+            return make_ConstantWithType(make_LogicalConstant_t, result, t1, loc);
+        }
+    }
+
+    static inline ASR::expr_t* instantiate_And(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("_lcompilers_and_" + type_to_str_python(arg_types[0]));
+        fill_func_arg("x", arg_types[0]);
+        fill_func_arg("y", arg_types[1]);
+        auto result = declare(fn_name, return_type, ReturnVar);
+        /*
+        * r = and(x, y)
+        * r = x & y
+        */
+        body.push_back(al, b.Assignment(result, b.And(args[0], args[1])));
+
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, nullptr);
+    }
+
+} // namespace And
 
 namespace Ior {
 
@@ -5232,7 +5317,7 @@ namespace SubstrIndex {
             b.Assignment(found, b.bool_t(0, arg_types[2]))
         }, {}));
 
-        body.push_back(al, b.While(b.And(b.Lt(i, b.StringLen(args[0])), b.Eq(found, b.bool_t(1, arg_types[2]))), {
+        body.push_back(al, b.While(b.And(b.Lt(i, b.Add(b.StringLen(args[0]), b.i32(1))), b.Eq(found, b.bool_t(1, arg_types[2]))), {
             b.Assignment(k, b.i_t(0, return_type)),
             b.Assignment(j, b.i_t(1, return_type)),
             b.While(b.And(b.LtE(j, b.StringLen(args[1])), b.Eq(found, b.bool_t(1, arg_types[2]))), {
