@@ -60,16 +60,6 @@
                                                     Optional
                                                     .false.
                                                 ),
-                                            present:
-                                                (ExternalSymbol
-                                                    3
-                                                    present
-                                                    6 present
-                                                    lfortran_intrinsic_builtin
-                                                    []
-                                                    present
-                                                    Private
-                                                ),
                                             strout:
                                                 (Variable
                                                     3
@@ -127,12 +117,11 @@
                                     (Var 3 length)
                                     (Var 3 pattern)]
                                     [(If
-                                        (FunctionCall
-                                            3 present
-                                            ()
-                                            [((Var 3 pattern))]
+                                        (IntrinsicElementalFunction
+                                            Present
+                                            [(Var 3 pattern)]
+                                            0
                                             (Logical 4)
-                                            ()
                                             ()
                                         )
                                         [(Assignment
@@ -691,13 +680,10 @@
                                 )
                         })
                     fn5
-                    [lfortran_intrinsic_builtin
-                    fn5]
+                    [fn5]
                     .false.
                     .false.
-                ),
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin)
+                )
         })
     []
 )
