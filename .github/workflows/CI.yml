@@ -278,9 +278,9 @@ jobs:
 
             ./emsdk activate 3.1.35
 
-            ./emsdk install node-14.18.2-64bit
+            ./emsdk install node-18.20.3-64bit
 
-            ./emsdk activate node-14.18.2-64bit
+            ./emsdk activate node-18.20.3-64bit
 
       - name: Show Emscripten and Node Info
         shell: bash -l {0}
@@ -307,7 +307,7 @@ jobs:
             source $HOME/ext/emsdk/emsdk_env.sh # Activate Emscripten
             which node
             node -v
-            node --experimental-wasm-bigint src/lfortran/tests/test_lfortran.js
+            node src/lfortran/tests/test_lfortran.js
 
       - name: Upload to wasm_builds
         shell: bash -l {0}
@@ -1348,41 +1348,41 @@ jobs:
           variant: sccache
           key: ${{ github.job }}-${{ matrix.os }}
 
-      # - name: Build Linux
-      #   shell: bash -e -l {0}
-      #   run: |
-      #       ./build0.sh
-      #       cmake . -GNinja \
-      #         -DCMAKE_BUILD_TYPE=Debug \
-      #         -DWITH_LLVM=yes \
-      #         -DLFORTRAN_BUILD_ALL=yes \
-      #         -DWITH_STACKTRACE=no \
-      #         -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
-      #         -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
-      #         -DCMAKE_C_COMPILER_LAUNCHER=sccache \
-      #         -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+      - name: Build Linux
+        shell: bash -e -l {0}
+        run: |
+            ./build0.sh
+            cmake . -GNinja \
+              -DCMAKE_BUILD_TYPE=Debug \
+              -DWITH_LLVM=yes \
+              -DLFORTRAN_BUILD_ALL=yes \
+              -DWITH_STACKTRACE=no \
+              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
+              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
+              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 
-      #       cmake --build . -j16 --target install
+            cmake --build . -j16 --target install
 
-      # - name: Test Linux
-      #   shell: bash -e -l {0}
-      #   run: |
-      #       mkdir build-kokkos
-      #       cd build-kokkos
-      #       wget https://github.com/kokkos/kokkos/archive/3.1.01.tar.gz
-      #       tar xaf 3.1.01.tar.gz
-      #       cd kokkos-3.1.01
-      #       mkdir build
-      #       cd build
-      #       export LFORTRAN_KOKKOS_DIR=$HOME/ext/kokkos
-      #       cmake -DCMAKE_INSTALL_PREFIX=$LFORTRAN_KOKKOS_DIR -DKokkos_ENABLE_OPENMP=On -DKokkos_ARCH_HSW=On ..
-      #       make
-      #       make install
-      #       cd ../../..
+      - name: Test Linux
+        shell: bash -e -l {0}
+        run: |
+            mkdir build-kokkos
+            cd build-kokkos
+            wget https://github.com/kokkos/kokkos/archive/3.1.01.tar.gz
+            tar xaf 3.1.01.tar.gz
+            cd kokkos-3.1.01
+            mkdir build
+            cd build
+            export LFORTRAN_KOKKOS_DIR=$HOME/ext/kokkos
+            cmake -DCMAKE_INSTALL_PREFIX=$LFORTRAN_KOKKOS_DIR -DKokkos_ENABLE_OPENMP=On -DKokkos_ARCH_HSW=On ..
+            make
+            make install
+            cd ../../..
 
-      #       cd integration_tests
-      #       ./run_tests.py -b cpp c c_nopragma
-      #       ./run_tests.py -b cpp c c_nopragma -f
+            cd integration_tests
+            ./run_tests.py -b cpp c c_nopragma
+            ./run_tests.py -b cpp c c_nopragma -f
 
   upload_tarball:
     name: Upload Tarball
