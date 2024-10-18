@@ -56,6 +56,7 @@ FortranEvaluator::~FortranEvaluator() = default;
 Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate2(const std::string &code) {
     LocationManager lm;
     LCompilers::PassManager lpm;
+    lpm.compiler_options = compiler_options;
     lpm.use_default_passes();
     {
         LocationManager::FileLocations fl;

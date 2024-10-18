@@ -112,6 +112,7 @@ struct CompilerOptions {
     bool ignore_pragma = false;
     bool stack_arrays = false;
     bool wasm_html = false;
+    bool experimental_simplifier = true;
     std::string emcc_embed;
     std::vector<std::string> import_paths;
     Platform platform;
