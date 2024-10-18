@@ -29,7 +29,7 @@ intrinsic_funcs_args = {
     "Mod": [
         {
             "args": [("int", "int"), ("real", "real")],
-            "ret_type_arg_idx": 0
+            "ret_type_arg_idx": "dynamic"
         },
     ],
     "Trailz": [
@@ -1023,7 +1023,27 @@ def add_create_func_return_src(func_name):
     else:
         src += indent * 2 + "ASRUtils::ExprStmtDuplicator expr_duplicator(al);\n"
         src += indent * 2 + "expr_duplicator.allow_procedure_calls = true;\n"
-        src += indent * 2 + f"ASR::ttype_t* type_ = expr_duplicator.duplicate_ttype(expr_type(args[{ret_type_arg_idx}]));\n"
+        if ( ret_type_arg_idx == "dynamic"):
+            src += indent * 2 + f"ASR::ttype_t* type_;\n"
+            src += indent * 2 + f"int AllIntegerType = 1;\n"
+            src += indent * 2 + f"for(size_t i=0;i<args.size();i++){{\n"
+            src += indent * 3 + f"if(!is_integer(*expr_type(args[i]))){{\n"
+            src += indent * 4 + f"AllIntegerType = 0;\n"
+            src += indent * 4 + f"break;\n"
+            src += indent * 3 + f"}}\n"
+            src += indent * 2 + f"}}\n"
+            src += indent * 2 + f"if(AllIntegerType == 1) {{ \n"
+            src += indent * 3 + f"int upper_kind = ASRUtils::extract_kind_from_ttype_t(expr_type(args[0]));\n"
+            src += indent * 3 + f"for(size_t i=1;i<args.size();i++){{\n"
+            src += indent * 4 + f"upper_kind = std::max(upper_kind,ASRUtils::extract_kind_from_ttype_t(expr_type(args[i])));\n"
+            src += indent * 3 + f"}}\n"
+            src += indent * 3 + f"type_ = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, upper_kind));\n"
+            src += indent * 2 + f"}}\n"
+            src += indent * 2 + f"else{{\n"
+            src += indent * 3 + f"type_ = expr_duplicator.duplicate_ttype(expr_type(args[0]));\n"
+            src += indent * 2 + f"}}\n"
+        else:
+            src += indent * 2 + f"ASR::ttype_t* type_ = expr_duplicator.duplicate_ttype(expr_type(args[{ret_type_arg_idx}]));\n"
         ret_type = "type_"
     kind_arg = arg_infos[0].get("kind_arg", False)
     src += indent * 2 + f"ASR::ttype_t *return_type = {ret_type};\n"
