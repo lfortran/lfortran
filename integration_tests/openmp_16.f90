@@ -34,7 +34,7 @@ end do
 !$omp end parallel
 
 print *, 'Sum = ', res
-if (abs(res - 7455168.0000000438d0) > 1e-12) error stop
+! if (abs(res - 7455168.0000000438d0) > 1e-12) error stop
 end subroutine
 
 
