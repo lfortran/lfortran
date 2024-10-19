@@ -1830,6 +1830,8 @@ namespace Spread {
             Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
         ASR::expr_t *source = args[0], *dim = args[1], *ncopies = args[2];
         bool is_type_allocatable = false;
+        bool is_scalar = false;
+
         if (ASRUtils::is_allocatable(source)) {
             is_type_allocatable = true;
         }
@@ -1837,6 +1839,22 @@ namespace Spread {
         ASR::ttype_t *type_dim = expr_type(dim);
         ASR::ttype_t *type_ncopies = expr_type(ncopies);
         ASR::ttype_t *ret_type = expr_type(source);
+
+        ASRBuilder b(al, loc);
+        int overload_id = 2;
+        if(ASR::is_a<ASR::Integer_t>(*type_source) || ASR::is_a<ASR::Real_t>(*type_source) ||
+            ASR::is_a<ASR::Character_t>(*type_source) || ASR::is_a<ASR::Logical_t>(*type_source) ){
+            // Case : When Scalar is passed as source in Spread()
+            is_scalar = true;
+            Vec<ASR::expr_t *> m_eles; m_eles.reserve(al, 1);
+            m_eles.push_back(al, source);
+            ASR::ttype_t *fixed_size_type = b.Array({(int64_t) 1}, type_source);
+            source = EXPR(ASRUtils::make_ArrayConstructor_t_util(al, loc,m_eles.p,
+                          m_eles.n, fixed_size_type, ASR::arraystorageType::ColMajor));
+            type_source = ASRUtils::expr_type(source);
+            overload_id = -1;
+        }
+
         if ( !is_array(type_source) ) {
             append_error(diag, "The argument `source` in `spread` must be of type Array", source->base.loc);
             return nullptr;
@@ -1852,19 +1870,22 @@ namespace Spread {
         ASR::dimension_t* source_dims = nullptr;
         int source_rank = extract_dimensions_from_ttype(type_source, source_dims);
         ASRUtils::require_impl(source_rank > 0, "The argument `source` in `spread` must be of rank > 0", source->base.loc, diag);
-        ASRBuilder b(al, loc);
-        int overload_id = 2;
         int dim1 = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(args[1]))->m_n;
-        Vec<ASR::dimension_t> result_dims; result_dims.reserve(al, 2);
-        if (dim1 == 1) {
+        if( is_scalar ){
+            Vec<ASR::dimension_t> result_dims; result_dims.reserve(al, 1);
             result_dims.push_back(al, b.set_dim(source_dims[0].m_start, ncopies));
-            result_dims.push_back(al, b.set_dim(source_dims[0].m_start, source_dims[0].m_length));
+            ret_type = ASRUtils::duplicate_type(al, ret_type, &result_dims);
         } else {
-            result_dims.push_back(al, b.set_dim(source_dims[0].m_start, source_dims[0].m_length));
-            result_dims.push_back(al, b.set_dim(source_dims[0].m_start, ncopies));
+            Vec<ASR::dimension_t> result_dims; result_dims.reserve(al, 2);
+            if (dim1 == 1) {
+                result_dims.push_back(al, b.set_dim(source_dims[0].m_start, ncopies));
+                result_dims.push_back(al, b.set_dim(source_dims[0].m_start, source_dims[0].m_length));
+            } else {
+                result_dims.push_back(al, b.set_dim(source_dims[0].m_start, source_dims[0].m_length));
+                result_dims.push_back(al, b.set_dim(source_dims[0].m_start, ncopies));
+            }
+            ret_type = ASRUtils::duplicate_type(al, ret_type, &result_dims);
         }
-        ret_type = ASRUtils::duplicate_type(al, ret_type, &result_dims);
-
         if (is_type_allocatable) {
             ret_type = TYPE(ASRUtils::make_Allocatable_t_util(al, loc, ret_type));
         }

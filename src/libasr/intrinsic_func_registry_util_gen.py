@@ -582,6 +582,12 @@ intrinsic_funcs_args = {
             "same_kind_arg": 2
         },
     ],
+    "And": [
+        {
+            "args": [("int", "int"),("bool","bool")],
+            "ret_type_arg_idx": 0,
+        },
+    ],
     "Ior": [
         {
             "args": [("int", "int")],
