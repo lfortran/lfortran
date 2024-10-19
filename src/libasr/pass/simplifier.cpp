@@ -55,6 +55,10 @@ class ArrayVarCollector: public ASR::BaseWalkVisitor<ArrayVarCollector> {
         }
     }
 
+    void visit_ArrayBroadcast(const ASR::ArrayBroadcast_t& /*x*/) {
+
+    }
+
 };
 
 ASR::expr_t* get_ImpliedDoLoop_size(Allocator& al, ASR::ImpliedDoLoop_t* implied_doloop) {
@@ -759,6 +763,10 @@ void insert_allocate_stmt_for_array(Allocator& al, ASR::expr_t* temporary_var,
     if( !set_allocation_size(al, value, allocate_dims) ) {
         return ;
     }
+    LCOMPILERS_ASSERT(
+        (size_t) ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(temporary_var))
+        ==
+        allocate_dims.size());
     Vec<ASR::alloc_arg_t> alloc_args; alloc_args.reserve(al, 1);
     ASR::alloc_arg_t alloc_arg;
     alloc_arg.loc = value->base.loc;
