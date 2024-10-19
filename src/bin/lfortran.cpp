@@ -2224,6 +2224,7 @@ int main_app(int argc, char *argv[]) {
     app.add_flag("--ignore-pragma", compiler_options.ignore_pragma, "Ignores all the pragmas");
     app.add_flag("--stack-arrays", compiler_options.stack_arrays, "Allocate memory for arrays on stack");
     app.add_flag("--wasm-html", compiler_options.wasm_html, "Generate HTML file using emscripten for LLVM->WASM");
+    app.add_flag("--experimental-simplifier", compiler_options.po.experimental_simplifier, "Use experimental simplifier pass");
     app.add_option("--emcc-embed", compiler_options.emcc_embed, "Embed a given file/directory using emscripten for LLVM->WASM");
 
     // LSP specific options
