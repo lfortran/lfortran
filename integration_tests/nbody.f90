@@ -104,7 +104,14 @@ program nbody
         real(kind=dp), dimension(3) :: p
         integer :: i
 
-        p = (/ (sum(v(i,:) * mass(:)), i=1,3) /)
+        ! TODO: remove workaround
+        ! the below ImpliedDoLoop isn't handled in *simplifier_pass*
+        ! branch, so we've used a workaround by assigning values to
+        ! `p` one by one
+        ! p = (/ (sum(v(i,:) * mass(:)), i=1,3) /)
+        p(1) = sum(v(1,:) * mass(:))
+        p(2) = sum(v(2,:) * mass(:))
+        p(3) = sum(v(3,:) * mass(:))
         v(:,k) = -p / SOLAR_MASS
     end subroutine offsetMomentum
 

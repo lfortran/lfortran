@@ -65,13 +65,13 @@ program where_10
    !
    ! Uncomment after supporting the above:
    !
-   ! where (first_array(1, :) > 1.0)
-   !    first_array(1, :) = first_array(1, :) + 1
-   ! end where
-   !
-   ! print *, first_array
-   ! first_output = reshape([3.0, 1.0, 3.0, 1.0], [1, 4])
-   ! if (all(first_array /= first_output)) error stop
+   where (first_array(1, :) > 1.0)
+      first_array(1, :) = first_array(1, :) + 1
+   end where
+
+   print *, first_array
+   first_output = reshape([3.0, 1.0, 3.0, 1.0], [1, 4])
+   if (all(first_array /= first_output)) error stop
    !
    ! =========================================================
    !
@@ -80,13 +80,13 @@ program where_10
    !
    ! Uncomment after supporting the above:
    !
-   ! where (second_array(:, :) /= 0)
-   !    second_array(:, :) = 10
-   ! end where
-   !
-   ! print *, second_array
-   ! second_output = reshape([10, 10, 0, 10, 10, 0, 10, 0], [2, 4])
-   ! if (all(second_array /= second_output)) error stop
+   where (second_array(:, :) /= 0)
+      second_array(:, :) = 10
+   end where
+
+   print *, second_array
+   second_output = reshape([10, 10, 0, 10, 10, 0, 10, 0], [2, 4])
+   if (all(second_array /= second_output)) error stop
 
 
 end program where_10
