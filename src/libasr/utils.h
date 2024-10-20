@@ -86,6 +86,7 @@ struct CompilerOptions {
     bool lookup_name = false;
     std::string line = "";
     std::string column = "";
+    bool continue_compilation = false;
     bool generate_object_code = false;
     bool no_warnings = false;
     bool disable_style = false;
