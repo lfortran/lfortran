@@ -19,6 +19,10 @@
 #  include <unistd.h>
 #endif
 
+#if defined(__APPLE__)
+#  include <sys/time.h>
+#endif
+
 #include <libasr/runtime/lfortran_intrinsics.h>
 #include <libasr/config.h>
 
