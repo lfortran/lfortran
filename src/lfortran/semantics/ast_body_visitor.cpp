@@ -3535,7 +3535,7 @@ public:
             }
         }
         tmp = ASR::make_DoConcurrentLoop_t(al, x.base.base.loc, heads.p, heads.n, shared_expr.p, shared_expr.n, local_expr.p, local_expr.n, reductions.p, reductions.n, body.p,
-                body.size());
+                body.size(),1);
     }
 
     void visit_ForAllSingle(const AST::ForAllSingle_t &x) {
@@ -3798,6 +3798,7 @@ public:
 
                 Vec<ASR::expr_t *> m_local, m_shared; Vec<ASR::reduction_expr_t> m_reduction;
                 m_local.reserve(al, 1); m_shared.reserve(al, 1); m_reduction.reserve(al, 1);
+                int64_t collapse_level = 1;
                 for (size_t i = 0; i < x.n_clauses; i++) {
                     std::string clause = AST::down_cast<AST::String_t>(
                         x.m_clauses[i])->m_s;
@@ -3810,7 +3811,7 @@ public:
                     {
                         std::string collapse_value_str = clause.substr(
                             clause.find('(') + 1, clause.size() - clause_name.size() - 2);
-                        size_t collapse_level = std::stoi(collapse_value_str); // Get the value of N
+                        collapse_level = std::stoi(collapse_value_str); // Get the value of N
                     }
                     std::string list = clause.substr(clause.find('(')+1,
                         clause.size()-clause_name.size()-2);
@@ -3859,7 +3860,7 @@ public:
                 Vec<ASR::do_loop_head_t> heads;heads.reserve(al,1);ASR::do_loop_head_t head{};heads.push_back(al, head);
                 omp_constructs.push_back(ASR::down_cast2<ASR::DoConcurrentLoop_t>(
                 ASR::make_DoConcurrentLoop_t(al,loc, heads.p, heads.n, m_shared.p,
-                m_shared.n, m_local.p, m_local.n, m_reduction.p, m_reduction.n, nullptr, 0)));
+                m_shared.n, m_local.p, m_local.n, m_reduction.p, m_reduction.n, nullptr, 0,collapse_level)));
                 
             } else if ( strcmp(x.m_construct_name, "do") == 0 ) {
                 // pass
