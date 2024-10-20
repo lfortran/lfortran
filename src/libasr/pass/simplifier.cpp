@@ -59,6 +59,10 @@ class ArrayVarCollector: public ASR::BaseWalkVisitor<ArrayVarCollector> {
 
     }
 
+    void visit_ArraySize(const ASR::ArraySize_t& /*x*/) {
+
+    }
+
 };
 
 ASR::expr_t* get_ImpliedDoLoop_size(Allocator& al, ASR::ImpliedDoLoop_t* implied_doloop) {
@@ -1055,10 +1059,6 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         // Do nothing
     }
 
-    // void visit_ArrayBroadcast(const ASR::ArrayBroadcast_t& /*x*/) {
-    //     // Do nothing
-    // }
-
     void visit_Assignment(const ASR::Assignment_t& x) {
         ASR::Assignment_t& xx = const_cast<ASR::Assignment_t&>(x);
         // e.g.; a = [b, a], where 'a' is an allocatable
@@ -1647,20 +1647,6 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
 
     void replace_ArrayReshape(ASR::ArrayReshape_t* x) {
         replace_current_expr("_array_reshape_")
-    }
-
-    void replace_ArrayBroadcast(ASR::ArrayBroadcast_t* x) {
-        ASR::expr_t** current_expr_copy_161 = current_expr;
-        current_expr = &(x->m_array);
-        replace_expr(x->m_array);
-        current_expr = current_expr_copy_161;
-        replace_ttype(x->m_type);
-        if (call_replacer_on_value) {
-            ASR::expr_t** current_expr_copy_163 = current_expr;
-            current_expr = &(x->m_value);
-            replace_expr(x->m_value);
-            current_expr = current_expr_copy_163;
-        }
     }
 
     void replace_ArrayItem(ASR::ArrayItem_t* x) {
@@ -2376,6 +2362,8 @@ void pass_simplifier(Allocator &al, ASR::TranslationUnit_t &unit,
     // TODO: Add a visitor in asdl_cpp.py which will replace
     // current_expr with its own `m_value` (if `m_value` is not nullptr)
     // Call the visitor here.
+    ASRUtils::RemoveArrayProcessingNodeVisitor remove_array_processing_node_visitor(al);
+    remove_array_processing_node_visitor.visit_TranslationUnit(unit);
     ExprsWithTargetType exprs_with_target;
     InitialiseExprWithTarget init_expr_with_target(exprs_with_target);
     init_expr_with_target.visit_TranslationUnit(unit);
