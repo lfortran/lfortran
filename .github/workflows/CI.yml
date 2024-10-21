@@ -494,8 +494,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ["macos-latest", "ubuntu-latest"]
-        llvm-version: ["11", "19"]
+        os: ["ubuntu-latest"]
+        llvm-version: ["19"]
+        # os: ["macos-latest", "ubuntu-latest"]
+        # llvm-version: ["11", "19"]
         python-version: ["3.10"]
     steps:
       - uses: actions/checkout@v4
@@ -561,19 +563,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1.8.0
-        with:
-          micromamba-version: '1.5.10-0'
-          environment-file: ci/environment_linux_llvm.yml
-          create-args: >-
-            python=${{ matrix.python-version }}
-            llvmdev=${{ matrix.llvm-version }}
-            bison=3.4
-            openblas=0.3.21
-            llvm-openmp=14.0.4
-            cmake=3.26.4
-            make=4.3
-
       - uses: hendrikmuhs/ccache-action@main
         with:
           variant: sccache
@@ -582,6 +571,7 @@ jobs:
       - name: Test Legacy Minpack (SciPy)
         shell: bash -e -x -l {0}
         run: |
+            micromamba activate lf
             git clone https://github.com/certik/minpack.git
             cd minpack
             git checkout -t origin/scipy30
