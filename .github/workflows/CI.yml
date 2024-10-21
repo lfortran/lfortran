@@ -539,6 +539,8 @@ jobs:
 
             cmake --build . -j16 --target install
 
+            $(pwd)/src/bin/lfortran --version
+
       - name: Build MacOS
         shell: bash -e -l {0}
         if: contains(matrix.os, 'macos')
@@ -556,10 +558,6 @@ jobs:
         llvm-version: ["11"]
 
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
       - uses: mamba-org/setup-micromamba@v1.8.0
         with:
           micromamba-version: '1.5.10-0'
@@ -572,14 +570,14 @@ jobs:
       - name: Test Legacy Minpack (SciPy)
         shell: bash -e -x -l {0}
         run: |
-            micromamba activate lf
             git clone https://github.com/certik/minpack.git
             cd minpack
             git checkout -t origin/scipy30
             git checkout 409ba02a107f47ee835f3976952bbc64dd46de8a
             mkdir lf
             cd lf
-            FC="$(pwd)/../../src/bin/lfortran --intrinsic-mangling" cmake ..
+            export FC="$(pwd)/../../src/bin/lfortran --intrinsic-mangling"
+            cmake ..
             make
             examples/example_hybrd
             examples/example_hybrd1
