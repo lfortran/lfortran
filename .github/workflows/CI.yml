@@ -550,11 +550,16 @@ jobs:
             ./build0.sh
             ./build1.sh
 
+      - name: List files after build
+        run: |
+          find $(pwd)/src/bin
+
+
       - name: Upload LFortran binary to artifacts
         uses: actions/upload-artifact@v4
         with:
           name: lfortran-binary
-          path: $(pwd)/src/bin/
+          path: ./src/bin/
 
   test_minpack:
     name: Test Minpack - OS (${{ matrix.os }}), LLVM (${{ matrix.llvm-version }})
