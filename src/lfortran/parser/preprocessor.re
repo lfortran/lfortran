@@ -967,15 +967,17 @@ int parse_bfactor(unsigned char *&cur, const cpp_symtab &macro_definitions) {
     unsigned char *old_cur = cur;
     get_next_token(cur, type, str);
     if (type == CPPTokenType::TK_NAME && str == "defined") {
-        unsigned char *temp_cur = cur;
-        get_next_token(temp_cur, type, str);
         std::string macro_name;
-        if(type == CPPTokenType::TK_LPAREN){
-            accept(cur, CPPTokenType::TK_LPAREN);
+        get_next_token(cur, type, str);
+        if (type == CPPTokenType::TK_LPAREN) {
             macro_name = accept_name(cur);
             accept(cur, CPPTokenType::TK_RPAREN);
-        }else{
-            macro_name = accept_name(cur);
+        } else if (type == CPPTokenType::TK_NAME) {
+            macro_name = str;
+        } else {
+            throw LCompilersException("Unexpected token type "
+            + std::to_string((int)type)
+            + ", expected TK_LPAREN or TK_NAME");
         }
         if (macro_definitions.find(macro_name) != macro_definitions.end()) {
             return true;
