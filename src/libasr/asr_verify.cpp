@@ -852,6 +852,8 @@ public:
     }
 
     void visit_ArrayItem(const ArrayItem_t &x) {
+        require(!ASRUtils::is_array(x.m_type),
+            "ArrayItem::m_type cannot be array.")
         handle_ArrayItemSection(x);
     }
 
@@ -861,6 +863,14 @@ public:
             "ArrayItemSection::m_type can only be an Array"
         );
         handle_ArrayItemSection(x);
+    }
+
+    void visit_ArraySize(const ArraySize_t& x) {
+        if (check_external) {
+            require(ASRUtils::is_array(ASRUtils::expr_type(x.m_v)),
+                "ArraySize::m_v must be an array");
+        }
+        BaseWalkVisitor<VerifyVisitor>::visit_ArraySize(x);
     }
 
     template <typename T>
