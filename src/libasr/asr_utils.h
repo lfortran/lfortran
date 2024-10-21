@@ -5681,6 +5681,30 @@ static inline ASR::asr_t* make_SubroutineCall_t_util(
     return ASR::make_SubroutineCall_t(al, a_loc, a_name, a_original_name, a_args, n_args, a_dt);
 }
 
+/*
+    Checks if the function `f` is elemental and any of argument in
+    `args` is an array type, if yes, it returns the first array
+    argument, otherwise returns nullptr
+*/
+static inline ASR::expr_t* find_first_array_arg_if_elemental(
+    const ASR::Function_t* f,
+    const Vec<ASR::call_arg_t>& args
+) {
+    ASR::expr_t* first_array_argument = nullptr;
+    bool is_elemental = ASRUtils::get_FunctionType(f)->m_elemental;
+    if (!is_elemental || f->n_args == 0) {
+        return first_array_argument;
+    }
+    for (size_t i=0; i < args.size(); i++) {
+        if (args[i].m_value && is_array(ASRUtils::expr_type(args[i].m_value))) {
+            // return the very first *array* argument
+            first_array_argument = args[i].m_value;
+            break;
+        }
+    }
+    return first_array_argument;
+}
+
 static inline void promote_ints_to_kind_8(ASR::expr_t** m_args, size_t n_args,
     Allocator& al, const Location& loc) {
     for (size_t i = 0; i < n_args; i++) {
