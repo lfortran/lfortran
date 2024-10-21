@@ -572,7 +572,7 @@ jobs:
       - name: Test Legacy Minpack (SciPy)
         shell: bash -e -x -l {0}
         run: |
-            micromaba activate lf
+            micromamba activate lf
             git clone https://github.com/certik/minpack.git
             cd minpack
             git checkout -t origin/scipy30
