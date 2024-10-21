@@ -884,6 +884,172 @@ bool is_temporary_needed(ASR::expr_t* value) {
             !is_elemental_expr(value) && is_non_empty_fixed_size_array;
 }
 
+class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
+{
+
+    private:
+
+    Allocator& al;
+    Vec<ASR::stmt_t*>* current_body;
+    ExprsWithTargetType& exprs_with_target;
+    bool realloc_lhs;
+
+    public:
+
+    ArgSimplifier(Allocator& al_, ExprsWithTargetType& exprs_with_target_, bool realloc_lhs_) :
+        al(al_), current_body(nullptr), exprs_with_target(exprs_with_target_),
+        realloc_lhs(realloc_lhs_) {}
+
+    void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
+        transform_stmts_impl
+    }
+
+    #define BEGIN_VAR_CHECK(expr) if( !ASR::is_a<ASR::Var_t>(*expr) && \
+        ASRUtils::is_array(ASRUtils::expr_type(expr)) ) {
+    #define END_VAR_CHECK }
+
+    #define call_create_and_allocate_temporary_variable(expr) ASR::expr_t* x_m_args_i = ASRUtils::get_past_array_physical_cast(expr); \
+        ASR::expr_t* array_var_temporary = create_and_allocate_temporary_variable_for_array( \
+            x_m_args_i, name_hint, al, current_body, current_scope, exprs_with_target, \
+            ASR::is_a<ASR::ArraySection_t>(*x_m_args_i));
+
+    void visit_IO(ASR::expr_t**& x_values, size_t& n_values, const std::string& name_hint) {
+        Vec<ASR::expr_t*> x_m_values; x_m_values.reserve(al, n_values);
+        /* For frontends like LC, we will need to traverse the print statement arguments
+           in reverse order. */
+        for( size_t i = 0; i < n_values; i++ ) {
+            if( is_temporary_needed(x_values[i]) ) {
+                visit_expr(*x_values[i]);
+                call_create_and_allocate_temporary_variable(x_values[i])
+                x_m_values.push_back(al, array_var_temporary);
+            } else if( ASRUtils::is_struct(*ASRUtils::expr_type(x_values[i])) &&
+                       !ASR::is_a<ASR::Var_t>(
+                            *ASRUtils::get_past_array_physical_cast(x_values[i])) ) {
+                visit_expr(*x_values[i]);
+                ASR::expr_t* struct_var_temporary = create_and_allocate_temporary_variable_for_struct(
+                    ASRUtils::get_past_array_physical_cast(x_values[i]), name_hint, al, current_body,
+                    current_scope, exprs_with_target);
+                if( ASR::is_a<ASR::ArrayPhysicalCast_t>(*x_values[i]) ) {
+                    ASR::ArrayPhysicalCast_t* x_m_values_i = ASR::down_cast<ASR::ArrayPhysicalCast_t>(x_values[i]);
+                    struct_var_temporary = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
+                        al, struct_var_temporary->base.loc, struct_var_temporary,
+                        ASRUtils::extract_physical_type(ASRUtils::expr_type(struct_var_temporary)),
+                        x_m_values_i->m_new, x_m_values_i->m_type, nullptr));
+                }
+                x_m_values.push_back(al, struct_var_temporary);
+            } else if( ASR::is_a<ASR::ImpliedDoLoop_t>(*x_values[i]) ) {
+                ASR::ImpliedDoLoop_t* implied_do_loop = ASR::down_cast<ASR::ImpliedDoLoop_t>(x_values[i]);
+                const Location& loc = x_values[i]->base.loc;
+                Vec<ASR::expr_t*> array_con_args; array_con_args.reserve(al, 1);
+                array_con_args.push_back(al, x_values[i]);
+                Vec<ASR::dimension_t> m_dims; m_dims.reserve(al, 1);
+                ASRUtils::ASRBuilder builder(al, loc);
+                ASR::dimension_t m_dim; m_dim.loc = loc;
+                m_dim.m_start = builder.i32(1);
+                m_dim.m_length = get_ImpliedDoLoop_size(al, implied_do_loop);
+                m_dims.push_back(al, m_dim);
+                ASR::ttype_t* type = ASRUtils::make_Array_t_util(al, loc,
+                    implied_do_loop->m_type, m_dims.p, m_dims.size());
+                x_m_values.push_back(al, ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, loc,
+                    array_con_args.p, array_con_args.size(), type, ASR::arraystorageType::ColMajor)));
+            } else {
+                visit_expr(*x_values[i]);
+                x_m_values.push_back(al, x_values[i]);
+            }
+        }
+
+        x_values = x_m_values.p;
+        n_values = x_m_values.size();
+    }
+
+    void traverse_args(Vec<ASR::expr_t*>& x_m_args_vec, ASR::expr_t** x_m_args,
+        size_t x_n_args, const std::string& name_hint) {
+        /* For other frontends, we might need to traverse the arguments
+           in reverse order. */
+        for( size_t i = 0; i < x_n_args; i++ ) {
+            visit_expr(*x_m_args[i]);
+            if( is_temporary_needed(x_m_args[i]) ) {
+                call_create_and_allocate_temporary_variable(x_m_args[i])
+                if( ASR::is_a<ASR::ArrayPhysicalCast_t>(*x_m_args[i]) ) {
+                    ASR::ArrayPhysicalCast_t* x_m_args_i = ASR::down_cast<ASR::ArrayPhysicalCast_t>(x_m_args[i]);
+                    array_var_temporary = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
+                        al, array_var_temporary->base.loc, array_var_temporary,
+                        ASRUtils::extract_physical_type(ASRUtils::expr_type(array_var_temporary)),
+                        x_m_args_i->m_new, x_m_args_i->m_type, nullptr));
+                }
+                x_m_args_vec.push_back(al, array_var_temporary);
+            } else if( ASRUtils::is_struct(*ASRUtils::expr_type(x_m_args[i])) &&
+                       !ASR::is_a<ASR::Var_t>(
+                            *ASRUtils::get_past_array_physical_cast(x_m_args[i])) ) {
+                ASR::expr_t* struct_var_temporary = create_and_allocate_temporary_variable_for_struct(
+                    ASRUtils::get_past_array_physical_cast(x_m_args[i]), name_hint, al, current_body,
+                    current_scope, exprs_with_target);
+                if( ASR::is_a<ASR::ArrayPhysicalCast_t>(*x_m_args[i]) ) {
+                    ASR::ArrayPhysicalCast_t* x_m_args_i = ASR::down_cast<ASR::ArrayPhysicalCast_t>(x_m_args[i]);
+                    struct_var_temporary = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
+                        al, struct_var_temporary->base.loc, struct_var_temporary,
+                        ASRUtils::extract_physical_type(ASRUtils::expr_type(struct_var_temporary)),
+                        x_m_args_i->m_new, x_m_args_i->m_type, nullptr));
+                }
+                x_m_args_vec.push_back(al, struct_var_temporary);
+            } else {
+                x_m_args_vec.push_back(al, x_m_args[i]);
+            }
+        }
+    }
+
+    void traverse_call_args(Vec<ASR::call_arg_t>& x_m_args_vec, ASR::call_arg_t* x_m_args,
+        size_t x_n_args, const std::string& name_hint) {
+        /* For other frontends, we might need to traverse the arguments
+           in reverse order. */
+        for( size_t i = 0; i < x_n_args; i++ ) {
+            if( is_temporary_needed(x_m_args[i].m_value) ) {
+                visit_call_arg(x_m_args[i]);
+                call_create_and_allocate_temporary_variable(x_m_args[i].m_value)
+                if( ASR::is_a<ASR::ArrayPhysicalCast_t>(*x_m_args[i].m_value) ) {
+                    ASR::ArrayPhysicalCast_t* x_m_args_i = ASR::down_cast<ASR::ArrayPhysicalCast_t>(x_m_args[i].m_value);
+                    array_var_temporary = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
+                        al, array_var_temporary->base.loc, array_var_temporary,
+                        ASRUtils::extract_physical_type(ASRUtils::expr_type(array_var_temporary)),
+                        x_m_args_i->m_new, x_m_args_i->m_type, nullptr));
+                }
+                ASR::call_arg_t call_arg;
+                call_arg.loc = array_var_temporary->base.loc;
+                call_arg.m_value = array_var_temporary;
+                x_m_args_vec.push_back(al, call_arg);
+            } else if( x_m_args[i].m_value &&
+                       ASRUtils::is_struct(*ASRUtils::expr_type(x_m_args[i].m_value)) &&
+                       !ASR::is_a<ASR::Var_t>(
+                            *ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value)) ) {
+                ASR::expr_t* struct_var_temporary = create_and_allocate_temporary_variable_for_struct(
+                    ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value), name_hint, al, current_body,
+                    current_scope, exprs_with_target);
+                if( ASR::is_a<ASR::ArrayPhysicalCast_t>(*x_m_args[i].m_value) ) {
+                    ASR::ArrayPhysicalCast_t* x_m_args_i = ASR::down_cast<ASR::ArrayPhysicalCast_t>(x_m_args[i].m_value);
+                    struct_var_temporary = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
+                        al, struct_var_temporary->base.loc, struct_var_temporary,
+                        ASRUtils::extract_physical_type(ASRUtils::expr_type(struct_var_temporary)),
+                        x_m_args_i->m_new, x_m_args_i->m_type, nullptr));
+                }
+                ASR::call_arg_t struct_var_temporary_arg;
+                struct_var_temporary_arg.loc = struct_var_temporary->base.loc;
+                struct_var_temporary_arg.m_value = struct_var_temporary;
+                x_m_args_vec.push_back(al, struct_var_temporary_arg);
+            } else {
+                x_m_args_vec.push_back(al, x_m_args[i]);
+            }
+        }
+    }
+
+    void visit_Variable(const ASR::Variable_t& /*x*/) {
+        // Do nothing
+    }
+
+    void visit_FunctionType(const ASR::FunctionType_t& /*x*/) {
+        // Do nothing
+    }
+
+};
 
 class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemporary> {
 
@@ -958,10 +1124,9 @@ void pass_simplifier(Allocator &al, ASR::TranslationUnit_t &unit,
     // TODO: Add a visitor in asdl_cpp.py which will replace
     // current_expr with its own `m_value` (if `m_value` is not nullptr)
     // Call the visitor here.
-
-    (void)al; // remove once we start porting code from simplifier branch (warning silence)
-    (void)unit; // remove once we start porting code from simplifier branch (warning silence)
-    (void)pass_options; // remove once we start porting code from simplifier branch (warning silence)
+    ExprsWithTargetType exprs_with_target;
+    ArgSimplifier b(al, exprs_with_target, pass_options.realloc_lhs);
+    b.visit_TranslationUnit(unit);
 }
 
 
