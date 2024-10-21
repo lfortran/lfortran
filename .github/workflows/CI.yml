@@ -554,7 +554,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: lfortran-binary
-          path: $(pwd)/src/bin/lfortran
+          path: $(pwd)/src/bin/
 
   test_minpack:
     name: Test Minpack - OS (${{ matrix.os }}), LLVM (${{ matrix.llvm-version }})
