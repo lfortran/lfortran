@@ -73,6 +73,34 @@ class ReplacePresentCalls: public ASR::BaseExprReplacer<ReplacePresentCalls> {
     ReplacePresentCalls(Allocator& al_, ASR::Function_t* f_) : al{al_}, f{f_}
     {}
 
+    void replace_IntrinsicElementalFunction(ASR::IntrinsicElementalFunction_t* x) {
+        if (x->m_intrinsic_id == static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Present)) {
+            ASR::symbol_t* present_arg = ASR::down_cast<ASR::Var_t>(x->m_args[0])->m_v;
+            size_t i;
+            for( i = 0; i < f->n_args; i++ ) {
+                if( ASR::down_cast<ASR::Var_t>(f->m_args[i])->m_v == present_arg ) {
+                    i++;
+                    break;
+                }
+            }
+
+            *current_expr = ASRUtils::EXPR(ASR::make_Var_t(al, x->base.base.loc,
+                                ASR::down_cast<ASR::Var_t>(f->m_args[i])->m_v));
+            return;
+        }
+        for (size_t i = 0; i < x->n_args; i++) {
+            ASR::expr_t** current_expr_copy_12 = current_expr;
+            current_expr = &(x->m_args[i]);
+            replace_expr(x->m_args[i]);
+            current_expr = current_expr_copy_12;
+        }
+        replace_ttype(x->m_type);
+        ASR::expr_t** current_expr_copy_13 = current_expr;
+        current_expr = &(x->m_value);
+        replace_expr(x->m_value);
+        current_expr = current_expr_copy_13;
+    }
+
     void replace_FunctionCall(ASR::FunctionCall_t* x) {
         ASR::symbol_t* x_sym = x->m_name;
         bool replace_func_call = false;

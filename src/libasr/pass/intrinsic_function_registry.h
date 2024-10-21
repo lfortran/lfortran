@@ -98,8 +98,11 @@ inline std::string get_intrinsic_name(int64_t x) {
         INTRINSIC_NAME_CASE(SetExponent)
         INTRINSIC_NAME_CASE(Not)
         INTRINSIC_NAME_CASE(Iand)
+        INTRINSIC_NAME_CASE(And)
         INTRINSIC_NAME_CASE(Ior)
+        INTRINSIC_NAME_CASE(Or)
         INTRINSIC_NAME_CASE(Ieor)
+        INTRINSIC_NAME_CASE(Xor)
         INTRINSIC_NAME_CASE(Ibclr)
         INTRINSIC_NAME_CASE(Ibset)
         INTRINSIC_NAME_CASE(Btest)
@@ -120,6 +123,7 @@ inline std::string get_intrinsic_name(int64_t x) {
         INTRINSIC_NAME_CASE(SelectedIntKind)
         INTRINSIC_NAME_CASE(SelectedRealKind)
         INTRINSIC_NAME_CASE(SelectedCharKind)
+        INTRINSIC_NAME_CASE(Present)
         INTRINSIC_NAME_CASE(Adjustl)
         INTRINSIC_NAME_CASE(Adjustr)
         INTRINSIC_NAME_CASE(StringLenTrim)
@@ -366,10 +370,16 @@ namespace IntrinsicElementalFunctionRegistry {
             {&Not::instantiate_Not, &Not::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Iand),
             {&Iand::instantiate_Iand, &Iand::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::And),
+            {&And::instantiate_And, &And::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Ior),
             {&Ior::instantiate_Ior, &Ior::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Or),
+            {&Or::instantiate_Or, &Or::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Ieor),
             {&Ieor::instantiate_Ieor, &Ieor::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Xor),
+            {&Xor::instantiate_Xor, &Xor::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Ibclr),
             {&Ibclr::instantiate_Ibclr, &Ibclr::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Btest),
@@ -496,6 +506,8 @@ namespace IntrinsicElementalFunctionRegistry {
             {nullptr, &UnaryIntrinsicFunction::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::SelectedIntKind),
             {&SelectedIntKind::instantiate_SelectedIntKind, &SelectedIntKind::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Present),
+            {&Present::instantiate_Present, &Present::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::SelectedRealKind),
             {&SelectedRealKind::instantiate_SelectedRealKind, &SelectedRealKind::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::SelectedCharKind),
@@ -721,10 +733,16 @@ namespace IntrinsicElementalFunctionRegistry {
             "not"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Iand),
             "iand"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::And),
+            "and"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Ior),
             "ior"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Or),
+            "or"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Ieor),
             "ieor"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Xor),
+            "xor"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Ibclr),
             "ibclr"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Ibset),
@@ -741,6 +759,8 @@ namespace IntrinsicElementalFunctionRegistry {
             "hypot"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::SelectedIntKind),
             "selected_int_kind"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Present),
+            "present"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::SelectedRealKind),
             "selected_real_kind"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::SelectedCharKind),
@@ -980,8 +1000,11 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"set_exponent", {&SetExponent::create_SetExponent, &SetExponent::eval_SetExponent}},
                 {"not", {&Not::create_Not, &Not::eval_Not}},
                 {"iand", {&Iand::create_Iand, &Iand::eval_Iand}},
+                {"and", {&And::create_And, &And::eval_And}},
                 {"ior", {&Ior::create_Ior, &Ior::eval_Ior}},
+                {"or", {&Or::create_Or, &Or::eval_Or}},
                 {"ieor", {&Ieor::create_Ieor, &Ieor::eval_Ieor}},
+                {"xor", {&Xor::create_Xor, &Xor::eval_Xor}},
                 {"ibclr", {&Ibclr::create_Ibclr, &Ibclr::eval_Ibclr}},
                 {"ibset", {&Ibset::create_Ibset, &Ibset::eval_Ibset}},
                 {"btest", {&Btest::create_Btest, &Btest::eval_Btest}},
@@ -990,6 +1013,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"_lfortran_tolowercase", {&ToLowerCase::create_ToLowerCase, &ToLowerCase::eval_ToLowerCase}},
                 {"hypot", {&Hypot::create_Hypot, &Hypot::eval_Hypot}},
                 {"selected_int_kind", {&SelectedIntKind::create_SelectedIntKind, &SelectedIntKind::eval_SelectedIntKind}},
+                {"present", {&Present::create_Present, &Present::eval_Present}},
                 {"selected_real_kind", {&SelectedRealKind::create_SelectedRealKind, &SelectedRealKind::eval_SelectedRealKind}},
                 {"selected_char_kind", {&SelectedCharKind::create_SelectedCharKind, &SelectedCharKind::eval_SelectedCharKind}},
                 {"kind", {&Kind::create_Kind, &Kind::eval_Kind}},

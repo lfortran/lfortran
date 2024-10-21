@@ -17,8 +17,6 @@
 #include <libasr/pass/replace_do_loops.h>
 #include <libasr/pass/replace_for_all.h>
 #include <libasr/pass/while_else.h>
-#include <libasr/pass/replace_init_expr.h>
-#include <libasr/pass/replace_implied_do_loops.h>
 #include <libasr/pass/replace_array_op.h>
 #include <libasr/pass/replace_select_case.h>
 #include <libasr/pass/wrap_global_stmts.h>
@@ -40,7 +38,6 @@
 #include <libasr/pass/inline_function_calls.h>
 #include <libasr/pass/dead_code_removal.h>
 #include <libasr/pass/replace_for_all.h>
-#include <libasr/pass/replace_init_expr.h>
 #include <libasr/pass/replace_select_case.h>
 #include <libasr/pass/loop_vectorise.h>
 #include <libasr/pass/update_array_dim_intrinsic_calls.h>
@@ -51,10 +48,13 @@
 #include <libasr/pass/nested_vars.h>
 #include <libasr/pass/unique_symbols.h>
 #include <libasr/pass/insert_deallocate.h>
+#include <libasr/pass/simplifier.h>
 #include <libasr/pass/replace_print_struct_type.h>
 #include <libasr/pass/promote_allocatable_to_nonallocatable.h>
 #include <libasr/pass/replace_function_call_in_declaration.h>
+#include <libasr/pass/replace_init_expr.h>
 #include <libasr/pass/replace_openmp.h>
+#include <libasr/pass/replace_implied_do_loops.h>
 #include <libasr/codegen/asr_to_fortran.h>
 #include <libasr/asr_verify.h>
 #include <libasr/pickle.h>
@@ -71,7 +71,8 @@ namespace LCompilers {
 
     class PassManager {
         private:
-
+        std::vector<std::string> _passes_with_experimental_simplifier;
+        std::vector<std::string> _with_optimization_passes_for_experimental_simplifier;
         std::vector<std::string> _passes;
         std::vector<std::string> _with_optimization_passes;
         std::vector<std::string> _user_defined_passes;
@@ -105,7 +106,6 @@ namespace LCompilers {
             {"pass_array_by_data", &pass_array_by_data},
             {"subroutine_from_function", &pass_create_subroutine_from_function},
             {"transform_optional_argument_functions", &pass_transform_optional_argument_functions},
-            {"init_expr", &pass_replace_init_expr},
             {"nested_vars", &pass_nested_vars},
             {"where", &pass_replace_where},
             {"function_call_in_declaration", &pass_replace_function_call_in_declaration},
@@ -113,7 +113,9 @@ namespace LCompilers {
             {"print_struct_type", &pass_replace_print_struct_type},
             {"unique_symbols", &pass_unique_symbols},
             {"insert_deallocate", &pass_insert_deallocate},
-            {"promote_allocatable_to_nonallocatable", &pass_promote_allocatable_to_nonallocatable}
+            {"promote_allocatable_to_nonallocatable", &pass_promote_allocatable_to_nonallocatable},
+            {"simplifier", &pass_simplifier},
+            {"init_expr", &pass_replace_init_expr}
         };
 
         bool apply_default_passes;
@@ -207,6 +209,84 @@ namespace LCompilers {
 
         PassManager(): apply_default_passes{false},
             c_skip_pass{false} {
+            _passes_with_experimental_simplifier = {
+                "global_stmts",
+                "init_expr",// This pass shouldn't be needed.
+                "function_call_in_declaration",
+                "implied_do_loops", // Should be implemented when optimisations for ImpliedDoLoop are possible in LFortran, until then not needed.
+                "openmp",
+                "simplifier", /* Verification checks to be implemented in this pass - 1. No array, user defined type variable should have a symbolic value. 2. Print, SubroutineCall, FileWrite, IntrinsicImpureSubroutine nodes shouldn't have non-Var arguments. 3. All expressions which need a temporary should be directly linked to a target via an assignment. 4. Sizes of auxiliary allocatables should be calculated using only Var nodes (with non-array symbols), or FunctionCall returning scalars. */
+                "nested_vars",
+                "transform_optional_argument_functions",
+                "forall",
+                "class_constructor",
+                "pass_list_expr",
+                "where",
+                "subroutine_from_function", // To be re-written after simplifier is implemented.
+                "array_op", // To be re-written without creating any auxiliary variables or allocatables, everything already done by simplifier
+                "symbolic",
+                "intrinsic_function", // To be re-written without creating allocotables and auxiliary variables
+                "intrinsic_subroutine", // To be re-written without creating allocotables and auxiliary variables
+                "array_op",
+                // "subroutine_from_function", There should be no need to apply this twice
+                // "array_op", There should be no need to apply this twice
+                "pass_array_by_data",
+                "print_struct_type",
+                "print_arr",
+                "print_list_tuple",
+                "print_struct_type",
+                "array_dim_intrinsics_update",
+                "do_loops",
+                "while_else",
+                "select_case",
+                "inline_function_calls",
+                "unused_functions",
+                "unique_symbols",
+                "insert_deallocate",
+            };
+
+            _with_optimization_passes_for_experimental_simplifier = {
+                "global_stmts",
+                "init_expr",// This pass shouldn't be needed.
+                "function_call_in_declaration",
+                "implied_do_loops", // Should be implemented when optimisations for ImpliedDoLoop are possible in LFortran, until then not needed.
+                "openmp",
+                "simplifier", /* Verification checks to be implemented in this pass - 1. No array, user defined type variable should have a symbolic value. 2. Print, SubroutineCall, FileWrite, IntrinsicImpureSubroutine nodes shouldn't have non-Var arguments. 3. All expressions which need a temporary should be directly linked to a target via an assignment. 4. Sizes of auxiliary allocatables should be calculated using only Var nodes (with non-array symbols), or FunctionCall returning scalars. */
+                "nested_vars",
+                "transform_optional_argument_functions",
+                "forall",
+                "class_constructor",
+                "pass_list_expr",
+                "where",
+                "subroutine_from_function", // To be re-written after simplifier is implemented.
+                "array_op", // To be re-written without creating any auxiliary variables or allocatables, everything already done by simplifier
+                "symbolic",
+                "flip_sign",
+                "intrinsic_function", // To be re-written without creating allocotables and auxiliary variables
+                "intrinsic_subroutine", // To be re-written without creating allocotables and auxiliary variables
+                "array_op",
+                // "subroutine_from_function", There should be no need to apply this twice
+                // "array_op", There should be no need to apply this twice
+                "pass_array_by_data",
+                "print_struct_type",
+                "print_arr",
+                "print_list_tuple",
+                "print_struct_type",
+                "loop_vectorise",
+                "array_dim_intrinsics_update",
+                "do_loops",
+                "while_else",
+                "dead_code_removal",
+                "select_case",
+                "unused_functions",
+                "sign_from_value",
+                "div_to_mul",
+                "fma",
+                "inline_function_calls",
+                "unique_symbols",
+                "insert_deallocate",
+                "promote_allocatable_to_nonallocatable"
+            };
             _passes = {
                 "nested_vars",
                 "global_stmts",
@@ -281,7 +361,6 @@ namespace LCompilers {
                 "insert_deallocate",
                 "promote_allocatable_to_nonallocatable"
             };
-
             // These are re-write passes which are already handled
             // appropriately in C backend.
             _c_skip_passes = {
@@ -308,10 +387,14 @@ namespace LCompilers {
                 apply_passes(al, asr, _user_defined_passes, pass_options,
                     diagnostics);
             } else if( apply_default_passes ) {
-                if( pass_options.fast ) {
-                    apply_passes(al, asr, _with_optimization_passes, pass_options,
+                if( pass_options.fast && pass_options.experimental_simplifier ) {
+                    apply_passes(al, asr, _with_optimization_passes_for_experimental_simplifier, pass_options,
                         diagnostics);
-                } else {
+                } else if (!pass_options.fast && pass_options.experimental_simplifier) {
+                    apply_passes(al, asr, _passes_with_experimental_simplifier, pass_options, diagnostics);
+                } else if (pass_options.fast && !pass_options.experimental_simplifier){
+                    apply_passes(al, asr, _with_optimization_passes, pass_options, diagnostics);
+                } else if (!pass_options.fast && !pass_options.experimental_simplifier) {
                     apply_passes(al, asr, _passes, pass_options, diagnostics);
                 }
             }
@@ -321,10 +404,14 @@ namespace LCompilers {
                            PassOptions &pass_options,
                            [[maybe_unused]] diag::Diagnostics &diagnostics, LocationManager &lm) {
             std::vector<std::string> passes;
-            if (pass_options.fast) {
-                passes = _with_optimization_passes;
-            } else {
+            if (pass_options.fast && pass_options.experimental_simplifier) {
+                passes = _with_optimization_passes_for_experimental_simplifier;
+            } else if (!pass_options.fast && pass_options.experimental_simplifier) {
+                passes = _passes_with_experimental_simplifier;
+            } else if(pass_options.fast && !pass_options.experimental_simplifier){
                 passes = _passes;
+            } else if (!pass_options.fast && !pass_options.experimental_simplifier){
+                passes = _with_optimization_passes;
             }
             for (size_t i = 0; i < passes.size(); i++) {
                 // TODO: rework the whole pass manager: construct the passes

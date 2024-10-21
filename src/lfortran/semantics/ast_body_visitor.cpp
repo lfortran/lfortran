@@ -2121,10 +2121,10 @@ public:
             variable_dependencies_vec.reserve(al, 1);
             ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, int_type);
             ASR::asr_t* a_variable = ASR::make_Variable_t(al, x.base.base.loc, current_scope, a_var_name_f.c_str(al),
-                                                            variable_dependencies_vec.p, variable_dependencies_vec.size(),
-                                                            ASR::intentType::Local, nullptr, nullptr,
-                                                            ASR::storage_typeType::Default, int_type, nullptr,
-                                                            ASR::abiType::Source, ASR::Public, ASR::presenceType::Optional, false);
+                                                          variable_dependencies_vec.p, variable_dependencies_vec.size(),
+                                                          ASR::intentType::Local, nullptr, nullptr,
+                                                          ASR::storage_typeType::Default, int_type, nullptr,
+                                                          ASR::abiType::Source, ASR::Public, ASR::presenceType::Optional, false);
             current_scope->add_symbol(var_name, ASR::down_cast<ASR::symbol_t>(a_variable));
             sym = ASR::down_cast<ASR::symbol_t>(a_variable);
         } else {
@@ -3298,9 +3298,9 @@ public:
         transform_stmts(orelse, x.n_orelse, x.m_orelse);
         if (ASRUtils::is_array(ASRUtils::expr_type(test))) {
             if (ASR::is_a<ASR::Logical_t>(*ASRUtils::type_get_past_array_pointer_allocatable(ASRUtils::expr_type(test)))) {
-                // verify that `test` is *not* the ttype of an expression as we then 
+                // verify that `test` is *not* the ttype of an expression as we then
                 // are sure that it is a single standalone logical array
-                if  (!ASR::is_a<ASR::IntegerCompare_t>(*test) 
+                if  (!ASR::is_a<ASR::IntegerCompare_t>(*test)
                     && !ASR::is_a<ASR::RealCompare_t>(*test)
                     && !ASR::is_a<ASR::LogicalBinOp_t>(*test)) {
                         // Rewrite into a form "X == true" as a workaround

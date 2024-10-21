@@ -12,6 +12,22 @@
                                     (SymbolTable
                                         3
                                         {
+                                            __1__libasr_index_:
+                                                (Variable
+                                                    3
+                                                    __1__libasr_index_
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
                                             __libasr__created__var__0__array_constructor_:
                                                 (Variable
                                                     3
@@ -224,6 +240,22 @@
                                                 ()
                                                 ()
                                                 ()
+                                            )
+                                            (Assignment
+                                                (Var 3 __1__libasr_index_)
+                                                (ArrayBound
+                                                    (Var 3 __libasr__created__var__0__array_constructor_)
+                                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                                    (Integer 4)
+                                                    LBound
+                                                    ()
+                                                )
+                                                ()
+                                            )
+                                            (Assignment
+                                                (Var 3 strings)
+                                                (Var 3 __libasr__created__var__0__array_constructor_)
+                                                ()
                                             )]
                                         )]
                                         []
@@ -247,6 +279,22 @@
                                             ())]
                                             ()
                                             ()
+                                            ()
+                                        )
+                                        (Assignment
+                                            (Var 3 __1__libasr_index_)
+                                            (ArrayBound
+                                                (Var 3 __libasr__created__var__1__array_constructor_)
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                (Integer 4)
+                                                LBound
+                                                ()
+                                            )
+                                            ()
+                                        )
+                                        (Assignment
+                                            (Var 3 strings)
+                                            (Var 3 __libasr__created__var__1__array_constructor_)
                                             ()
                                         )]
                                         []

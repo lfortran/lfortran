@@ -156,16 +156,6 @@
                                                     Required
                                                     .false.
                                                 ),
-                                            present:
-                                                (ExternalSymbol
-                                                    5
-                                                    present
-                                                    7 present
-                                                    lfortran_intrinsic_builtin
-                                                    []
-                                                    present
-                                                    Private
-                                                ),
                                             x:
                                                 (Variable
                                                     5
@@ -559,16 +549,6 @@
                                                     Public
                                                     Required
                                                     .false.
-                                                ),
-                                            present:
-                                                (ExternalSymbol
-                                                    3
-                                                    present
-                                                    7 present
-                                                    lfortran_intrinsic_builtin
-                                                    []
-                                                    present
-                                                    Private
                                                 )
                                         })
                                     sub_1
@@ -739,12 +719,10 @@
                                 )
                         })
                     functions_15_module_1
-                    [lfortran_intrinsic_builtin]
+                    []
                     .false.
                     .false.
-                ),
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin)
+                )
         })
     []
 )
