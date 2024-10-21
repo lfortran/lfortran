@@ -595,6 +595,7 @@ jobs:
             mkdir lf
             cd lf
             echo $(pwd)
+            chmod +x $(pwd)/../../lfortran
             $(pwd)/../../lfortran --version
             export FC="$(pwd)/../../lfortran --intrinsic-mangling"
             cmake ..
