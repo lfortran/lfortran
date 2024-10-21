@@ -1824,7 +1824,7 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
                     ASR::FunctionCall_t* fc = ASR::down_cast<ASR::FunctionCall_t>(ab->m_array);
                     for( size_t i = 0; i < fc->n_args; i++ ) {
                         ASR::expr_t* arg = fc->m_args[i].m_value;
-                        if (arg != nullptr && ASRUtils::is_array(ASRUtils::expr_type(arg))) {
+                        if (arg != nullptr && ASRUtils::is_array(ASRUtils::expr_type(arg)) && !ASRUtils::is_character(*ASRUtils::expr_type(arg))) {
                             // case where `x = fc(y)` where x is array, y is array an fc(y) is scalar
                             // create a libasr scalar temporary `libasr_temporary = fc(y)`
                             // `x = libasr_temporary`
