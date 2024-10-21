@@ -576,6 +576,8 @@ jobs:
             git checkout 409ba02a107f47ee835f3976952bbc64dd46de8a
             mkdir lf
             cd lf
+            echo $(pwd)
+            $(pwd)/../../src/bin/lfortran --version
             export FC="$(pwd)/../../src/bin/lfortran --intrinsic-mangling"
             cmake ..
             make
