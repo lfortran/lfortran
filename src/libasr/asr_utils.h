@@ -177,6 +177,20 @@ static inline ASR::ttype_t *type_get_past_allocatable(ASR::ttype_t *f)
     }
 }
 
+static inline ASR::expr_t* get_past_array_physical_cast(ASR::expr_t* x) {
+    if( !ASR::is_a<ASR::ArrayPhysicalCast_t>(*x) ) {
+        return x;
+    }
+    return ASR::down_cast<ASR::ArrayPhysicalCast_t>(x)->m_arg;
+}
+
+static inline ASR::expr_t* get_past_array_broadcast(ASR::expr_t* x) {
+    if( !ASR::is_a<ASR::ArrayBroadcast_t>(*x) ) {
+        return x;
+    }
+    return ASR::down_cast<ASR::ArrayBroadcast_t>(x)->m_array;
+}
+
 static inline ASR::ttype_t *type_get_past_array(ASR::ttype_t *f)
 {
     if (ASR::is_a<ASR::Array_t>(*f)) {
@@ -2103,6 +2117,11 @@ static inline bool is_logical(ASR::ttype_t &x) {
                 type_get_past_pointer(&x))));
 }
 
+static inline bool is_struct(ASR::ttype_t& x) {
+    return ASR::is_a<ASR::StructType_t>(
+        *type_get_past_array_pointer_allocatable(&x));
+}
+
 // Checking if the ttype 't' is a type parameter
 static inline bool is_type_parameter(ASR::ttype_t &x) {
     switch (x.type) {
@@ -2745,6 +2764,11 @@ static inline ASR::ttype_t* duplicate_type_without_dims(Allocator& al, const ASR
         }
         default : throw LCompilersException("Not implemented " + ASRUtils::type_to_str_python(t));
     }
+}
+
+static inline ASR::asr_t* make_Allocatable_t_util(Allocator& al, const Location& loc, ASR::ttype_t* type) {
+    return ASR::make_Allocatable_t(
+        al, loc, duplicate_type_with_empty_dims(al, type));
 }
 
 inline std::string remove_trailing_white_spaces(std::string str) {
@@ -4105,6 +4129,17 @@ inline ASR::asr_t* make_Function_t_util(Allocator& al, const Location& loc,
         al, loc, m_symtab, m_name, func_type, m_dependencies, n_dependencies,
         a_args, n_args, m_body, n_body, m_return_var, m_access, m_deterministic,
         m_side_effect_free, m_c_header);
+}
+
+static inline ASR::asr_t* make_Variable_t_util(
+    Allocator &al, const Location &a_loc, SymbolTable* a_parent_symtab,
+    char* a_name, char** a_dependencies, size_t n_dependencies,
+    ASR::intentType a_intent, ASR::expr_t* a_symbolic_value, ASR::expr_t* a_value,
+    ASR::storage_typeType a_storage, ASR::ttype_t* a_type, ASR::symbol_t* a_type_declaration,
+    ASR::abiType a_abi, ASR::accessType a_access, ASR::presenceType a_presence, bool a_value_attr) {
+    return ASR::make_Variable_t(al, a_loc, a_parent_symtab, a_name, a_dependencies, n_dependencies,
+        a_intent, a_symbolic_value, a_value, a_storage, a_type, a_type_declaration, a_abi, a_access,
+        a_presence, a_value_attr);
 }
 
 class SymbolDuplicator {

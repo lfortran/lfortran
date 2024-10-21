@@ -70,6 +70,7 @@ set(SRC
     pass/unique_symbols.cpp
     pass/insert_deallocate.cpp
     pass/promote_allocatable_to_nonallocatable.cpp
+    pass/simplifier.cpp
 
     asr_verify.cpp
     asr_utils.cpp
