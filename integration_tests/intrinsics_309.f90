@@ -1,6 +1,6 @@
 program intrinsics_309
     implicit none
-    
+
     integer(1), parameter :: xi1(2) = pack([1_1, 2_1, 3_1], [.true., .false., .true.])
     integer(2), parameter :: xi2(3) = pack([1_2, 2_2, 3_2], [.true., .true., .true.])
     integer(4), parameter :: xi3(2) = pack([1, 2, 3], [.true., .false., .true.])

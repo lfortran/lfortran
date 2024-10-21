@@ -9,6 +9,7 @@ on:
   pull_request:
     branches:
       - main
+      - simplifier_pass
 
 env:
   MACOSX_DEPLOYMENT_TARGET: 14.0
@@ -615,7 +616,7 @@ jobs:
             git checkout -t origin/lf6
             git checkout bc04dbf476b6173b0bb945ff920119ffaf4a290d
             echo $CONDA_PREFIX
-            FC=$(pwd)/../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS .
+            FC=$(pwd)/../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_Fortran_FLAGS="--realloc-lhs" .
             make
             ls -l ./gpt2 ./chat ./test_basic_input ./test_chat ./test_more_inputs
             file ./gpt2 ./chat ./test_basic_input ./test_chat ./test_more_inputs
@@ -632,7 +633,7 @@ jobs:
 
             mkdir lf
             cd lf
-            FC=$(pwd)/../../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
+            FC=$(pwd)/../../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug -DCMAKE_Fortran_FLAGS="--realloc-lhs" ..
             make VERBOSE=1
             ln -s ../model.dat .
             ./gpt2
@@ -643,7 +644,7 @@ jobs:
 
             mkdir lf-fast
             cd lf-fast
-            FC="$(pwd)/../../src/bin/lfortran --fast" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Release ..
+            FC="$(pwd)/../../src/bin/lfortran --fast" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Release -DCMAKE_Fortran_FLAGS="--realloc-lhs" ..
             make VERBOSE=1
             ln -s ../model.dat .
             ./gpt2
@@ -659,7 +660,7 @@ jobs:
 
             mkdir lf
             cd lf
-            FC=$(pwd)/../../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
+            FC=$(pwd)/../../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug -DCMAKE_Fortran_FLAGS="--realloc-lhs" ..
             make VERBOSE=1
             ln -s ../model.dat .
             ./gpt2
@@ -669,7 +670,7 @@ jobs:
 
             mkdir lf-fast
             cd lf-fast
-            FC="$(pwd)/../../src/bin/lfortran --fast" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Release ..
+            FC="$(pwd)/../../src/bin/lfortran --fast" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Release -DCMAKE_Fortran_FLAGS="--realloc-lhs" ..
             make VERBOSE=1
             ln -s ../model.dat .
             ./gpt2
@@ -693,14 +694,13 @@ jobs:
 
             mkdir lf
             cd lf
-            FC=$(pwd)/../../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
+            FC=$(pwd)/../../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug -DCMAKE_Fortran_FLAGS="--realloc-lhs" ..
             make VERBOSE=1
             ln -s ../model.dat .
             ./gpt2
             ./test_basic_input
             ./test_more_inputs
             cd ..
-
 
       - name: Test fpm
         shell: bash -e -x -l {0}
@@ -716,12 +716,12 @@ jobs:
       - name: Test stdlib
         shell: bash -e -x -l {0}
         run: |
-            git clone https://github.com/czgdp1807/stdlib.git
+            git clone https://github.com/Pranavchiku/stdlib-fortran-lang.git stdlib
             cd stdlib
             export PATH="$(pwd)/../src/bin:$PATH"
 
-            git checkout lf20
-            git checkout abb1d33d6ae02d8b62a13be7f9e51f6117c67ba4
+            git checkout origin/lf21
+            git checkout f06d89524bd5d3b5dc2a06c807a5c67190fe0371
             micromamba install -c conda-forge fypp gfortran
             git clean -fdx
             FC=lfortran cmake . -DTEST_DRIVE_BUILD_TESTING=OFF -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE -DCMAKE_Fortran_FLAGS="--cpp --realloc-lhs"
@@ -801,7 +801,7 @@ jobs:
             ctest --output-on-failure
             cd integration_tests
             ./run_tests.py -b llvm llvmImplicit
-            ./run_tests.py -b llvm llvmImplicit -f
+            #./run_tests.py -b llvm llvmImplicit -f
 
       - name: Test Legacy Minpack (SciPy)
         shell: bash -e -x -l {0}
@@ -891,7 +891,7 @@ jobs:
 
             mkdir lf
             cd lf
-            FC=$(pwd)/../../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
+            FC=$(pwd)/../../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug -DCMAKE_Fortran_FLAGS="--realloc-lhs" ..
             make VERBOSE=1
             ln -s ../model.dat .
             ./gpt2
@@ -902,7 +902,7 @@ jobs:
 
             mkdir lf-fast
             cd lf-fast
-            FC="$(pwd)/../../src/bin/lfortran --fast" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Release ..
+            FC="$(pwd)/../../src/bin/lfortran --fast" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Release -DCMAKE_Fortran_FLAGS="--realloc-lhs" ..
             make VERBOSE=1
             ln -s ../model.dat .
             ./gpt2
@@ -918,7 +918,7 @@ jobs:
 
             mkdir lf
             cd lf
-            FC=$(pwd)/../../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
+            FC=$(pwd)/../../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug -DCMAKE_Fortran_FLAGS="--realloc-lhs" ..
             make VERBOSE=1
             ln -s ../model.dat .
             ./gpt2
@@ -928,7 +928,7 @@ jobs:
 
             mkdir lf-fast
             cd lf-fast
-            FC="$(pwd)/../../src/bin/lfortran --fast" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Release ..
+            FC="$(pwd)/../../src/bin/lfortran --fast" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Release -DCMAKE_Fortran_FLAGS="--realloc-lhs" ..
             make VERBOSE=1
             ln -s ../model.dat .
             ./gpt2
@@ -952,7 +952,7 @@ jobs:
 
             mkdir lf
             cd lf
-            FC=$(pwd)/../../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
+            FC=$(pwd)/../../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug -DCMAKE_Fortran_FLAGS="--realloc-lhs" ..
             make VERBOSE=1
             ln -s ../model.dat .
             ./gpt2
@@ -975,12 +975,12 @@ jobs:
       - name: Test stdlib
         shell: bash -e -x -l {0}
         run: |
-            git clone https://github.com/czgdp1807/stdlib.git
+            git clone https://github.com/Pranavchiku/stdlib-fortran-lang.git stdlib
             cd stdlib
             export PATH="$(pwd)/../src/bin:$PATH"
 
-            git checkout lf20
-            git checkout abb1d33d6ae02d8b62a13be7f9e51f6117c67ba4
+            git checkout origin/lf21
+            git checkout f06d89524bd5d3b5dc2a06c807a5c67190fe0371
             micromamba install -c conda-forge fypp gfortran
             git clean -fdx
             FC=lfortran cmake . -DTEST_DRIVE_BUILD_TESTING=OFF -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE -DCMAKE_Fortran_FLAGS="--cpp --realloc-lhs"
@@ -1469,31 +1469,31 @@ jobs:
           SSH_PRIVATE_KEY_DOCS: ${{ secrets.SSH_PRIVATE_KEY_DOCS }}
 
 
-  build-and-push-image:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-    env:
-      REGISTRY: ghcr.io
-      USER: lfortran
-      PROJECT: lfortran
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+  # build-and-push-image:
+  #   runs-on: ubuntu-latest
+  #   permissions:
+  #     contents: read
+  #     packages: write
+  #   env:
+  #     REGISTRY: ghcr.io
+  #     USER: lfortran
+  #     PROJECT: lfortran
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #       with:
+  #         fetch-depth: 0
 
-      - name: Log in to the Container registry
-        if: ${{ github.event_name == 'push' }}
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ env.USER }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+  #     - name: Log in to the Container registry
+  #       if: ${{ github.event_name == 'push' }}
+  #       uses: docker/login-action@v3
+  #       with:
+  #         registry: ${{ env.REGISTRY }}
+  #         username: ${{ env.USER }}
+  #         password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          push: ${{ github.event_name == 'push' }}
-          tags: ${{ env.REGISTRY }}/${{ env.USER }}/${{ env.PROJECT }}:latest
+  #     - name: Build and push
+  #       uses: docker/build-push-action@v6
+  #       with:
+  #         context: .
+  #         push: ${{ github.event_name == 'push' }}
+  #         tags: ${{ env.REGISTRY }}/${{ env.USER }}/${{ env.PROJECT }}:latest

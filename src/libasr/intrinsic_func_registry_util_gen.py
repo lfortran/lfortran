@@ -29,7 +29,7 @@ intrinsic_funcs_args = {
     "Mod": [
         {
             "args": [("int", "int"), ("real", "real")],
-            "ret_type_arg_idx": "dynamic"
+            "ret_type_arg_idx": 0
         },
     ],
     "Trailz": [
@@ -186,7 +186,7 @@ intrinsic_funcs_args = {
     "Logical": [
         {
             "args": [("bool", )],
-            "ret_type_arg_idx": 0, 
+            "ret_type_arg_idx": 0,
             "kind_arg": True
         }
     ],
@@ -595,11 +595,23 @@ intrinsic_funcs_args = {
             "same_kind_arg": 2
         },
     ],
+    "Or": [
+        {
+            "args": [("int", "int"), ("bool", "bool")],
+            "ret_type_arg_idx": 0,
+        },
+    ],
     "Ieor": [
         {
             "args": [("int", "int")],
             "ret_type_arg_idx": 0,
             "same_kind_arg": 2
+        },
+    ],
+    "Xor": [
+        {
+            "args": [("int", "int"), ("bool", "bool")],
+            "ret_type_arg_idx": 0,
         },
     ],
     "Ibclr": [
@@ -755,7 +767,7 @@ intrinsic_funcs_args = {
             "ret_type_arg_idx": 0,
             "same_kind_arg": 3
         }
-    ], 
+    ],
     "Ishftc": [
         {
             "args": [("int", "int", "int")],
@@ -1044,7 +1056,7 @@ def add_create_func_return_src(func_name):
         src += indent * 4 +         "return nullptr;\n"
         src += indent * 3 +     "}\n"
         src += indent * 3 +     "set_kind_to_ttype_t(return_type, kind);\n"
-        src += indent * 2 + "}\n"        
+        src += indent * 2 + "}\n"
     src += indent * 2 + "ASR::expr_t *m_value = nullptr;\n"
     src += indent * 2 + f"Vec<ASR::expr_t*> m_args; m_args.reserve(al, {no_of_args});\n"
     for _i in range(no_of_args):
@@ -1060,12 +1072,17 @@ def add_create_func_return_src(func_name):
             "ASRUtils::expr_type(m_args[0]), m_args[0], return_type, m_value);\n"
 
     else:
-        if ret_type_val:
-            src += indent * 2 + "ASR::ttype_t* type = ASRUtils::expr_type(args[0]);\n"
-            src += indent * 2 + "if (ASR::is_a<ASR::Array_t>(*type)) {\n"
-            src += indent * 3 + "ASR::Array_t* e = ASR::down_cast<ASR::Array_t>(type);\n"
-            src += indent * 3 + f"return_type = TYPE(ASR::make_Array_t(al, type->base.loc,  return_type, e->m_dims, e->n_dims, ASR::array_physical_typeType::FixedSizeArray));\n"
-            src += indent * 2 + "}\n"
+        src += indent * 2 + f"for( size_t i = 0; i < {no_of_args}; i++ ) " + "{\n"
+        src += indent * 3 + "ASR::ttype_t* type = ASRUtils::expr_type(args[i]);\n"
+        src += indent * 3 + "if (ASRUtils::is_array(type)) {\n"
+        src += indent * 4 + "ASR::dimension_t* m_dims = nullptr;\n"
+        src += indent * 4 + "size_t n_dims = ASRUtils::extract_dimensions_from_ttype(type, m_dims);\n"
+        src += indent * 4 + "return_type = ASRUtils::make_Array_t_util(al, type->base.loc, "
+        src += "return_type, m_dims, n_dims, ASR::abiType::Source, false, "
+        src += "ASR::array_physical_typeType::DescriptorArray, true);\n"
+        src += indent * 4 + "break;\n"
+        src += indent * 3 + "}\n"
+        src += indent * 2 + "}\n"
         src += indent * 2 + "if (all_args_evaluated(m_args)) {\n"
         src += indent * 3 +     f"Vec<ASR::expr_t*> args_values; args_values.reserve(al, {no_of_args});\n"
         for _i in range(no_of_args):
