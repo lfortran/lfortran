@@ -594,8 +594,8 @@ jobs:
             mkdir lf
             cd lf
             echo $(pwd)
-            $(pwd)/../../src/bin/lfortran --version
-            export FC="$(pwd)/../../src/bin/lfortran --intrinsic-mangling"
+            $(pwd)/lfortran --version
+            export FC="$(pwd)/lfortran --intrinsic-mangling"
             cmake ..
             make
             examples/example_hybrd
