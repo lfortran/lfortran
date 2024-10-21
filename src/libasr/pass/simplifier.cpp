@@ -575,30 +575,8 @@ bool set_allocation_size(
         case ASR::exprType::IntrinsicElementalFunction: {
             ASR::IntrinsicElementalFunction_t* intrinsic_elemental_function =
                 ASR::down_cast<ASR::IntrinsicElementalFunction_t>(value);
-            switch (intrinsic_elemental_function->m_intrinsic_id) {
-                case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::BesselJ0):
-                case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::BesselJ1):
-                case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::BesselJN):
-                case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::BesselY0):
-                case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::BesselY1):
-                case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::BesselYN):
-                case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Real):
-                case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Sin):
-                case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Exp):
-                case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Abs):
-                case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Aimag):
-                case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Int):
-                case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Merge): {
-                    set_allocation_size_elemental_function(al, loc, intrinsic_elemental_function,
+            set_allocation_size_elemental_function(al, loc, intrinsic_elemental_function,
                         allocate_dims);
-                    break;
-                }
-                default: {
-                    LCOMPILERS_ASSERT_MSG(false, "ASR::IntrinsicElementalFunctions::" +
-                        ASRUtils::get_intrinsic_name(intrinsic_elemental_function->m_intrinsic_id)
-                        + " not handled yet in set_allocation_size");
-                }
-            }
             break;
         }
         case ASR::exprType::IntrinsicArrayFunction: {
