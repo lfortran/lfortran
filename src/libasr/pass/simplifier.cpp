@@ -892,7 +892,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
     Allocator& al;
     Vec<ASR::stmt_t*>* current_body;
     ExprsWithTargetType& exprs_with_target;
-    bool realloc_lhs;
+    [[maybe_unused]]bool realloc_lhs;
 
     public:
 
@@ -1065,19 +1065,6 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
 #define check_if_ASR_owner_is_struct(asr_owner) asr_owner && \
     ASR::is_a<ASR::symbol_t>(*asr_owner) && \
     ASR::is_a<ASR::Struct_t>(*ASR::down_cast<ASR::symbol_t>(asr_owner))
-
-class ReplaceModuleVarWithValue:
-    public ASR::BaseExprReplacer<ReplaceModuleVarWithValue> {
-
-    private:
-
-    Allocator& al;
-
-    public:
-
-    ReplaceModuleVarWithValue(Allocator& al_): al(al_) {}
-
-};
 
 
 
