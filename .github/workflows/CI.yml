@@ -564,7 +564,8 @@ jobs:
             git checkout 409ba02a107f47ee835f3976952bbc64dd46de8a
             mkdir lf
             cd lf
-            FC="$(pwd)/../../src/bin/lfortran --intrinsic-mangling" cmake ..
+            echo $(pwd)
+            FC="$(pwd)/../../lfortran/src/bin/lfortran --intrinsic-mangling" cmake ..
             make
             examples/example_hybrd
             examples/example_hybrd1
@@ -579,11 +580,11 @@ jobs:
             git clone https://github.com/fortran-lang/minpack modern_minpack_01
             cd modern_minpack_01
             git checkout c0b5aea9fcd2b83865af921a7a7e881904f8d3c2
-            $(pwd)/../src/bin/lfortran ./src/minpack.f90 -c --legacy-array-sections
-            $(pwd)/../src/bin/lfortran ./examples/example_hybrd.f90 --legacy-array-sections
-            $(pwd)/../src/bin/lfortran ./examples/example_hybrd1.f90 --legacy-array-sections
-            $(pwd)/../src/bin/lfortran ./examples/example_lmdif1.f90 --legacy-array-sections
-            $(pwd)/../src/bin/lfortran ./examples/example_lmder1.f90 --legacy-array-sections
+            $(pwd)/../lfortran/src/bin/lfortran ./src/minpack.f90 -c --legacy-array-sections
+            $(pwd)/../lfortran/src/bin/lfortran ./examples/example_hybrd.f90 --legacy-array-sections
+            $(pwd)/../lfortran/src/bin/lfortran ./examples/example_hybrd1.f90 --legacy-array-sections
+            $(pwd)/../lfortran/src/bin/lfortran ./examples/example_lmdif1.f90 --legacy-array-sections
+            $(pwd)/../lfortran/src/bin/lfortran ./examples/example_lmder1.f90 --legacy-array-sections
 
 
   # third_party_code_compile:
