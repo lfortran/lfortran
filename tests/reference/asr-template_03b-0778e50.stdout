@@ -131,8 +131,13 @@
                                                                 ()
                                                                 [((Var 8 a))
                                                                 ((Var 8 x))]
-                                                                (TypeParameter
-                                                                    w
+                                                                (Array
+                                                                    (TypeParameter
+                                                                        w
+                                                                    )
+                                                                    [(()
+                                                                    ())]
+                                                                    DescriptorArray
                                                                 )
                                                                 ()
                                                                 ()
@@ -562,7 +567,12 @@
                                                                 ()
                                                                 [((Var 15 a))
                                                                 ((Var 15 x))]
-                                                                (Real 4)
+                                                                (Array
+                                                                    (Real 4)
+                                                                    [(()
+                                                                    ())]
+                                                                    DescriptorArray
+                                                                )
                                                                 ()
                                                                 ()
                                                             ))]
@@ -1321,7 +1331,12 @@
                                                 ()
                                                 [((Var 11 a))
                                                 ((Var 11 x))]
-                                                (Real 4)
+                                                (Array
+                                                    (Real 4)
+                                                    [(()
+                                                    ())]
+                                                    DescriptorArray
+                                                )
                                                 ()
                                                 ()
                                             ))]

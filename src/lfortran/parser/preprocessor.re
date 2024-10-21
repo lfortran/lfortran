@@ -957,6 +957,7 @@ int parse_relation(unsigned char *&cur, const cpp_symtab &macro_definitions) {
 /*
 b-factor
     = "defined(" TK_NAME ")"
+    | "defined" TK_NAME
     | "!" b-factor
     | relation
 */
@@ -966,9 +967,16 @@ int parse_bfactor(unsigned char *&cur, const cpp_symtab &macro_definitions) {
     unsigned char *old_cur = cur;
     get_next_token(cur, type, str);
     if (type == CPPTokenType::TK_NAME && str == "defined") {
-        accept(cur, CPPTokenType::TK_LPAREN);
-        std::string macro_name = accept_name(cur);
-        accept(cur, CPPTokenType::TK_RPAREN);
+        unsigned char *temp_cur = cur;
+        get_next_token(temp_cur, type, str);
+        std::string macro_name;
+        if(type == CPPTokenType::TK_LPAREN){
+            accept(cur, CPPTokenType::TK_LPAREN);
+            macro_name = accept_name(cur);
+            accept(cur, CPPTokenType::TK_RPAREN);
+        }else{
+            macro_name = accept_name(cur);
+        }
         if (macro_definitions.find(macro_name) != macro_definitions.end()) {
             return true;
         } else {
