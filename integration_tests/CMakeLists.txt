@@ -1813,8 +1813,6 @@ RUN(NAME struct_type_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME func_parameter_type_02 LABELS gfortran) # function passed in other argument of function
 RUN(NAME logical_not_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-# TODO: we should eventually save the below program's ASR as well
-RUN(NAME elemental_function_scalar_array_arg LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 # TOD: below is an MRE extracted from stdlib, it currently fails
 # we need to fix it
 # RUN(NAME generic_interface_function_call_of_function_call LABELS gfortran llvm llvm_wasm llvm_wasm_emcc
@@ -1823,3 +1821,4 @@ RUN(NAME assign_allocatable_array_of_struct_instances LABELS gfortran llvm llvm_
     EXTRA_ARGS --realloc-lhs)
 RUN(NAME elemental_function_overloaded_compare LABELS gfortran llvm llvm_wasm llvm_wasm_emcc
     EXTRA_ARGS --realloc-lhs)
+RUN(NAME elemental_function_scalar_array_arg LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
