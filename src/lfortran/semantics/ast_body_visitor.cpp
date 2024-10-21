@@ -3535,7 +3535,7 @@ public:
             }
         }
         tmp = ASR::make_DoConcurrentLoop_t(al, x.base.base.loc, heads.p, heads.n, shared_expr.p, shared_expr.n, local_expr.p, local_expr.n, reductions.p, reductions.n, body.p,
-                body.size(),1);
+                body.size(),0);
     }
 
     void visit_ForAllSingle(const AST::ForAllSingle_t &x) {
@@ -3798,7 +3798,7 @@ public:
 
                 Vec<ASR::expr_t *> m_local, m_shared; Vec<ASR::reduction_expr_t> m_reduction;
                 m_local.reserve(al, 1); m_shared.reserve(al, 1); m_reduction.reserve(al, 1);
-                int64_t collapse_level = 1;
+                int64_t collapse_level = 0;
                 for (size_t i = 0; i < x.n_clauses; i++) {
                     std::string clause = AST::down_cast<AST::String_t>(
                         x.m_clauses[i])->m_s;
