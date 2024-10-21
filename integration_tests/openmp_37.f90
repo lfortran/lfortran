@@ -19,19 +19,3 @@ end do
 !$omp end parallel do
 
 end program
-
-! Converted to 
-
-! !$omp parallel do private(iy, ix, iz)
-! do I = 0, (ny * nx) - 1
-!     iy = (I / nx) + 1
-!     ix = (I % nx) + 1
-!     print *, "iy->", iy, "ix->", ix
-! end do
-! !$omp parallel do private(iy, ix, iz)
-! do I = 0, (nz * nx) - 1
-!     iz = (I / nx) + 1
-!     ix = (I % nx) + 1
-!     print *, "iz->", iz, "ix->", ix
-! end do
-! !$omp end parallel do
