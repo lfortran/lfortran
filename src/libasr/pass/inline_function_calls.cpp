@@ -338,7 +338,7 @@ public:
                     break;
                 }
                 ASR::ttype_t* local_var_type = func_var->m_type;
-                ASR::symbol_t* local_var = (ASR::symbol_t*) ASRUtils::make_Variable_t_util(
+                ASR::symbol_t* local_var = (ASR::symbol_t*) ASR::make_Variable_t(
                         al, func_var->base.base.loc, current_scope,
                         s2c(al, local_var_name), nullptr, 0, ASR::intentType::Local,
                         nullptr, nullptr, ASR::storage_typeType::Default,
