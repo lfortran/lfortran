@@ -1082,8 +1082,6 @@ class ReplaceExprWithTemporaryVisitor:
 
     ReplaceExprWithTemporaryVisitor(Allocator& al_, ExprsWithTargetType& exprs_with_target_, bool realloc_lhs_):
         al(al_), exprs_with_target(exprs_with_target_), replacer(al, exprs_with_target, realloc_lhs_) {
-        replacer.call_replacer_on_value = false;
-        call_replacer_on_value = false;
     }
 
     void call_replacer() {
@@ -1176,34 +1174,6 @@ class CheckNodeTypesInExpr: public ASR::BaseWalkVisitor<CheckNodeTypesInExpr> {
 
 };
 
-class VerifySimplifierASROutput:
-    public ASR::BaseWalkVisitor<VerifySimplifierASROutput> {
-
-    private:
-
-    Allocator& al;
-    ExprsWithTargetType& exprs_with_target;
-
-    public:
-
-    VerifySimplifierASROutput(Allocator& al_, ExprsWithTargetType& exprs_with_target_) :
-        al(al_), exprs_with_target(exprs_with_target_) {
-        visit_compile_time_value = false;
-        (void)exprs_with_target; // explicitly reference to avoid unused warning
-    }
-
-    #define check_for_var_if_array(expr) if( is_temporary_needed(expr) ) { \
-            LCOMPILERS_ASSERT(ASR::is_a<ASR::Var_t>(*ASRUtils::get_past_array_physical_cast(expr))); \
-        } \
-
-    #define check_if_linked_to_target(expr, type) if( ASRUtils::is_aggregate_type(type) \
-        && ASRUtils::is_simd_array(type) ) { \
-         LCOMPILERS_ASSERT( exprs_with_target.find(&(const_cast<ASR::expr_t&>(expr))) != \
-                            exprs_with_target.end()); \
-    }
-
-    
-};
 
 class InitialiseExprWithTarget: public ASR::BaseWalkVisitor<InitialiseExprWithTarget> {
     private:
