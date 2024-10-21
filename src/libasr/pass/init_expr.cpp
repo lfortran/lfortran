@@ -26,14 +26,15 @@ class ReplaceInitExpr: public ASR::BaseExprReplacer<ReplaceInitExpr> {
     ASR::cast_kindType cast_kind;
     ASR::ttype_t* casted_type;
     bool perform_cast;
+    bool pass_simplifier = false;
 
     ReplaceInitExpr(
         Allocator& al_,
-        std::map<SymbolTable*, Vec<ASR::stmt_t*>>& symtab2decls_) :
+        std::map<SymbolTable*, Vec<ASR::stmt_t*>>& symtab2decls_, bool pass_simplifier_) :
     al(al_), symtab2decls(symtab2decls_),
     current_scope(nullptr), result_var(nullptr),
     cast_kind(ASR::cast_kindType::IntegerToInteger),
-    casted_type(nullptr), perform_cast(false) {}
+    casted_type(nullptr), perform_cast(false), pass_simplifier(pass_simplifier_) {}
 
     void replace_ArrayConstant(ASR::ArrayConstant_t* x) {
         if( symtab2decls.find(current_scope) == symtab2decls.end() ) {
@@ -63,10 +64,12 @@ class ReplaceInitExpr: public ASR::BaseExprReplacer<ReplaceInitExpr> {
         if( casted_type != nullptr ) {
             casted_type = ASRUtils::type_get_past_array(casted_type);
         }
-        PassUtils::ReplacerUtils::replace_ArrayConstructor(x, this,
+        if (pass_simplifier) PassUtils::ReplacerUtils::replace_ArrayConstructor_(al, x, result_var, result_vec,
+            current_scope, perform_cast, cast_kind, casted_type);
+        else PassUtils::ReplacerUtils::replace_ArrayConstructor(x, this,
             remove_original_statement, result_vec,
             perform_cast, cast_kind, casted_type);
-        *current_expr = nullptr;
+            *current_expr = nullptr;
     }
 
     void replace_StructConstructor(ASR::StructConstructor_t* x) {
@@ -111,8 +114,8 @@ class InitExprVisitor : public ASR::CallReplacerOnExpressionsVisitor<InitExprVis
 
     public:
 
-        InitExprVisitor(Allocator& al_) :
-        al(al_), replacer(al_, symtab2decls) {
+        InitExprVisitor(Allocator& al_, bool pass_simplifier_) :
+        al(al_), replacer(al_, symtab2decls, pass_simplifier_) {
         }
 
         void call_replacer() {
@@ -216,8 +219,8 @@ class InitExprVisitor : public ASR::CallReplacerOnExpressionsVisitor<InitExprVis
 
 void pass_replace_init_expr(Allocator &al,
     ASR::TranslationUnit_t &unit,
-    const LCompilers::PassOptions& /*pass_options*/) {
-    InitExprVisitor v(al);
+    const LCompilers::PassOptions& pass_options) {
+    InitExprVisitor v(al, pass_options.experimental_simplifier);
     v.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor w(al);
     w.visit_TranslationUnit(unit);
