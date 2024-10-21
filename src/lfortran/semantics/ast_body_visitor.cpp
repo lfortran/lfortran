@@ -938,7 +938,7 @@ public:
             SetChar variable_dependencies_vec;
             variable_dependencies_vec.reserve(al, 1);
             ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, tmp_type);
-            ASR::asr_t *v = ASRUtils::make_Variable_t_util(al, x.base.base.loc, new_scope,
+            ASR::asr_t *v = ASR::make_Variable_t(al, x.base.base.loc, new_scope,
                                                  name_c, variable_dependencies_vec.p, variable_dependencies_vec.size(),
                                                  ASR::intentType::Local, nullptr, nullptr, tmp_storage, tmp_type, nullptr,
                                                  ASR::abiType::Source, ASR::accessType::Private, ASR::presenceType::Required,
@@ -1327,7 +1327,7 @@ public:
             ASR::Variable_t* assoc_variable = nullptr;
             ASR::symbol_t* assoc_sym = nullptr;
             if( x.m_assoc_name ) {
-                assoc_sym = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
+                assoc_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(
                     al, x.base.base.loc, current_scope, x.m_assoc_name,
                     nullptr, 0, ASR::intentType::Local, nullptr, nullptr,
                     ASR::storage_typeType::Default, nullptr, nullptr, ASR::abiType::Source,
@@ -1728,7 +1728,7 @@ public:
                         ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(master_function_arg);
                         sym_name = ASRUtils::symbol_name(var->m_v);
                     }
-                    ASR::asr_t* var_asr = ASRUtils::make_Variable_t_util(al, master_function_arg->base.loc,
+                    ASR::asr_t* var_asr = ASR::make_Variable_t(al, master_function_arg->base.loc,
                                             entry_function->m_symtab, s2c(al,sym_name), nullptr, 0, ASR::intentType::Local,
                                             nullptr, nullptr, ASR::storage_typeType::Default, type, nullptr, ASR::abiType::Source,
                                             ASR::accessType::Public, ASR::presenceType::Required, false);
@@ -2120,11 +2120,11 @@ public:
             SetChar variable_dependencies_vec;
             variable_dependencies_vec.reserve(al, 1);
             ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, int_type);
-            ASR::asr_t* a_variable = ASRUtils::make_Variable_t_util(al, x.base.base.loc, current_scope, a_var_name_f.c_str(al),
-                                                            variable_dependencies_vec.p, variable_dependencies_vec.size(),
-                                                            ASR::intentType::Local, nullptr, nullptr,
-                                                            ASR::storage_typeType::Default, int_type, nullptr,
-                                                            ASR::abiType::Source, ASR::Public, ASR::presenceType::Optional, false);
+            ASR::asr_t* a_variable = ASR::make_Variable_t(al, x.base.base.loc, current_scope, a_var_name_f.c_str(al),
+                                                          variable_dependencies_vec.p, variable_dependencies_vec.size(),
+                                                          ASR::intentType::Local, nullptr, nullptr,
+                                                          ASR::storage_typeType::Default, int_type, nullptr,
+                                                          ASR::abiType::Source, ASR::Public, ASR::presenceType::Optional, false);
             current_scope->add_symbol(var_name, ASR::down_cast<ASR::symbol_t>(a_variable));
             sym = ASR::down_cast<ASR::symbol_t>(a_variable);
         } else {
@@ -2237,7 +2237,7 @@ public:
             SetChar variable_dependencies_vec;
             variable_dependencies_vec.reserve(al, 1);
             ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, ASRUtils::expr_type(end));
-            ASR::asr_t *arg_var = ASRUtils::make_Variable_t_util(al, x.base.base.loc,
+            ASR::asr_t *arg_var = ASR::make_Variable_t(al, x.base.base.loc,
                 current_scope, s2c(al, arg_name),
                 variable_dependencies_vec.p, variable_dependencies_vec.size(),
                 ASRUtils::intent_in, nullptr, nullptr,
@@ -2273,7 +2273,7 @@ public:
         SetChar variable_dependencies_vec;
         variable_dependencies_vec.reserve(al, 1);
         ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, type);
-        ASR::asr_t *return_var = ASRUtils::make_Variable_t_util(al, x.base.base.loc,
+        ASR::asr_t *return_var = ASR::make_Variable_t(al, x.base.base.loc,
             current_scope, s2c(al, return_var_name),
             variable_dependencies_vec.p, variable_dependencies_vec.size(),
             ASRUtils::intent_return_var, nullptr, nullptr,
