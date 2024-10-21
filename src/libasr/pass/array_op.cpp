@@ -649,6 +649,27 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             ASR::exprType::IntrinsicArrayFunction,
             ASR::exprType::ArrayReshape,
         };
+        if (ASR::is_a<ASR::ArrayBroadcast_t>(*x.m_value)) {
+            ASR::ArrayBroadcast_t* ab = ASR::down_cast<ASR::ArrayBroadcast_t>(x.m_value);
+            if ( ASR::is_a<ASR::FunctionCall_t>(*ab->m_array) && !ASRUtils::is_array(ASRUtils::expr_type(ab->m_array)) &&
+                ASRUtils::is_array(ASRUtils::expr_type(x.m_target))) {
+                ASR::FunctionCall_t* fc = ASR::down_cast<ASR::FunctionCall_t>(ab->m_array);
+                for( size_t i = 0; i < fc->n_args; i++ ) {
+                    ASR::expr_t* arg = fc->m_args[i].m_value;
+                    if (arg != nullptr && ASRUtils::is_array(ASRUtils::expr_type(arg))) {
+                        // case where `x = fc(y)` where x is array, y is array an fc(y) is scalar
+                        // create a libasr scalar temporary `libasr_temporary = fc(y)`
+                        // `x = libasr_temporary`
+                        ASRUtils::ASRBuilder b(al, x.base.base.loc);
+                        ASR::expr_t* v = b.Variable(current_scope, current_scope->get_unique_name("libasr_temporary"), ASRUtils::expr_type(ab->m_array), ASR::intentType::Local);
+                        pass_result.push_back(al, b.Assignment(v, ab->m_array));
+                        ab->m_array = v;
+                        break;
+                    }
+                }
+           }
+
+        }
         if ( ASR::is_a<ASR::IntrinsicArrayFunction_t>(*xx.m_value) ) {
             // We need to do this because, we may have an assignment
             // in which IntrinsicArrayFunction is evaluated already and
