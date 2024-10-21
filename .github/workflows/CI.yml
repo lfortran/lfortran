@@ -550,6 +550,12 @@ jobs:
             ./build0.sh
             ./build1.sh
 
+      - name: Upload LFortran binary to artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: lfortran-binary
+          path: $(pwd)/src/bin/lfortran
+
   test_minpack:
     name: Test Minpack - OS (${{ matrix.os }}), LLVM (${{ matrix.llvm-version }})
     runs-on: ${{ matrix.os }}
@@ -560,6 +566,10 @@ jobs:
         llvm-version: ["11"]
 
     steps:
+      - name: Dowload LFortran binary
+        uses: actions/download-artifact@v4
+        with:
+          name: lfortran-binary
       - uses: mamba-org/setup-micromamba@v1.8.0
         with:
           micromamba-version: '1.5.10-0'
@@ -579,8 +589,8 @@ jobs:
             mkdir lf
             cd lf
             echo $(pwd)
-            $(pwd)/../../lfortran-binary-directory/lfortran --version
-            export FC="$(pwd)/../../lfortran-binary-directory/lfortran --intrinsic-mangling"
+            $(pwd)/../../src/bin/lfortran --version
+            export FC="$(pwd)/../../src/bin/lfortran --intrinsic-mangling"
             cmake ..
             make
             examples/example_hybrd
