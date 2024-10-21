@@ -540,6 +540,8 @@ jobs:
             cmake --build . -j16 --target install
 
             $(pwd)/src/bin/lfortran --version
+            mkdir lfortran-binary-directory
+            cp $(pwd)/src/bin/lfortran lfortran-binary-directory
 
       - name: Build MacOS
         shell: bash -e -l {0}
@@ -577,8 +579,8 @@ jobs:
             mkdir lf
             cd lf
             echo $(pwd)
-            $(pwd)/../../src/bin/lfortran --version
-            export FC="$(pwd)/../../src/bin/lfortran --intrinsic-mangling"
+            $(pwd)/../../lfortran-binary-directory/lfortran --version
+            export FC="$(pwd)/../../lfortran-binary-directory/lfortran --intrinsic-mangling"
             cmake ..
             make
             examples/example_hybrd
