@@ -36,20 +36,6 @@ static inline ASR::asr_t* make_Assignment_t_util(
     return ASR::make_Assignment_t(al, a_loc, a_target, a_value, a_overloaded);
 }
 
-/*
-This pass collector that the BinOp only Var nodes and nothing else.
-*/
-class ArrayVarCollector: public ASR::BaseWalkVisitor<ArrayVarCollector> {
-    private:
-
-    Allocator& al;
-    Vec<ASR::expr_t*>& vars;
-
-    public:
-
-    ArrayVarCollector(Allocator& al_, Vec<ASR::expr_t*>& vars_): al(al_), vars(vars_) {}
-
-};
 
 ASR::expr_t* get_ImpliedDoLoop_size(Allocator& al, ASR::ImpliedDoLoop_t* implied_doloop) {
     const Location& loc = implied_doloop->base.base.loc;
@@ -455,8 +441,8 @@ bool set_allocation_size(
             */
 
             Vec<ASR::expr_t*> array_vars; array_vars.reserve(al, 1);
-            ArrayVarCollector array_var_collector(al, array_vars);
-            array_var_collector.visit_expr(*value);
+            // ArrayVarCollector array_var_collector(al, array_vars);
+            // array_var_collector.visit_expr(*value);
             Vec<ASR::expr_t*> arrays_with_maximum_rank;
             arrays_with_maximum_rank.reserve(al, 1);
             size_t max_rank = 0;
@@ -1019,9 +1005,9 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
 
     private:
 
-    Allocator& al;
-    ExprsWithTargetType& exprs_with_target;
-    bool realloc_lhs;
+    // Allocator& al;
+    // ExprsWithTargetType& exprs_with_target;
+    // bool realloc_lhs;
 
     public:
 
@@ -1031,9 +1017,9 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     bool is_simd_expression;
     ASR::ttype_t* simd_type;
 
-    ReplaceExprWithTemporary(Allocator& al_, ExprsWithTargetType& exprs_with_target_, bool realloc_lhs_) :
-        al(al_), exprs_with_target(exprs_with_target_), realloc_lhs(realloc_lhs_), current_scope(nullptr),
-        is_assignment_target_array_section(false), is_simd_expression(false), simd_type(nullptr) {}
+    // ReplaceExprWithTemporary(Allocator& al_, ExprsWithTargetType& exprs_with_target_, bool realloc_lhs_) :
+    //     al(al_), exprs_with_target(exprs_with_target_), realloc_lhs(realloc_lhs_), current_scope(nullptr),
+    //     is_assignment_target_array_section(false), is_simd_expression(false), simd_type(nullptr) {}
 
     #define is_current_expr_linked_to_target exprs_with_target.find(*current_expr) != exprs_with_target.end()
 
@@ -1068,31 +1054,6 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         }
 };
 
-class ReplaceExprWithTemporaryVisitor:
-    public ASR::CallReplacerOnExpressionsVisitor<ReplaceExprWithTemporaryVisitor> {
-
-    private:
-
-    Allocator& al;
-    ExprsWithTargetType& exprs_with_target;
-    Vec<ASR::stmt_t*>* current_body;
-    ReplaceExprWithTemporary replacer;
-
-    public:
-
-    ReplaceExprWithTemporaryVisitor(Allocator& al_, ExprsWithTargetType& exprs_with_target_, bool realloc_lhs_):
-        al(al_), exprs_with_target(exprs_with_target_), replacer(al, exprs_with_target, realloc_lhs_) {
-    }
-
-    void call_replacer() {
-        replacer.current_expr = current_expr;
-        replacer.current_body = current_body;
-        replacer.current_scope = current_scope;
-        replacer.replace_expr(*current_expr);
-    }
-
-};
-
 #define check_if_ASR_owner_is_module(asr_owner) asr_owner && \
     ASR::is_a<ASR::symbol_t>(*asr_owner) && \
     ASR::is_a<ASR::Module_t>(*ASR::down_cast<ASR::symbol_t>(asr_owner))
@@ -1118,74 +1079,8 @@ class ReplaceModuleVarWithValue:
 
 };
 
-class TransformVariableInitialiser:
-    public ASR::CallReplacerOnExpressionsVisitor<TransformVariableInitialiser> {
-
-    private:
-
-    Allocator& al;
-    ExprsWithTargetType& exprs_with_target;
-    std::map<SymbolTable*, Vec<ASR::stmt_t*>> symtab2decls;
-    ReplaceModuleVarWithValue replacer;
-
-    public:
-
-    TransformVariableInitialiser(Allocator& al_, ExprsWithTargetType& exprs_with_target_): al(al_),
-        exprs_with_target(exprs_with_target_), replacer(al_) {}
-
-    void call_replacer() {
-        replacer.current_expr = current_expr;
-        replacer.replace_expr(*current_expr);
-    }
-
-    void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
-        Vec<ASR::stmt_t*> body;
-        body.reserve(al, n_body);
-
-        if( symtab2decls.find(current_scope) != symtab2decls.end() ) {
-            Vec<ASR::stmt_t*>& decls = symtab2decls[current_scope];
-            for (size_t j = 0; j < decls.size(); j++) {
-                body.push_back(al, decls[j]);
-            }
-            symtab2decls.erase(current_scope);
-        }
-
-        for (size_t i = 0; i < n_body; i++) {
-            visit_stmt(*m_body[i]);
-            body.push_back(al, m_body[i]);
-        }
-        m_body = body.p;
-        n_body = body.size();
-    }
 
 
-};
-
-class CheckNodeTypesInExpr: public ASR::BaseWalkVisitor<CheckNodeTypesInExpr> {
-    private:
-
-    Vec<ASR::exprType>& nodes;
-
-    public:
-
-    bool is_node_incorrect;
-    CheckNodeTypesInExpr(Vec<ASR::exprType>& nodes_):
-        nodes(nodes_), is_node_incorrect(false) {}
-
-};
-
-
-class InitialiseExprWithTarget: public ASR::BaseWalkVisitor<InitialiseExprWithTarget> {
-    private:
-
-    ExprsWithTargetType& exprs_with_target;
-
-    public:
-
-    InitialiseExprWithTarget(ExprsWithTargetType& exprs_with_target_):
-        exprs_with_target(exprs_with_target_) {}
-
-};
 
 void pass_simplifier(Allocator &al, ASR::TranslationUnit_t &unit,
                      const PassOptions &pass_options) {
@@ -1193,20 +1088,16 @@ void pass_simplifier(Allocator &al, ASR::TranslationUnit_t &unit,
     // current_expr with its own `m_value` (if `m_value` is not nullptr)
     // Call the visitor here.
     ExprsWithTargetType exprs_with_target;
-    InitialiseExprWithTarget init_expr_with_target(exprs_with_target);
-    init_expr_with_target.visit_TranslationUnit(unit);
-    TransformVariableInitialiser a(al, exprs_with_target);
-    a.visit_TranslationUnit(unit);
+    // InitialiseExprWithTarget init_expr_with_target(exprs_with_target);
+    // init_expr_with_target.visit_TranslationUnit(unit);
+    // TransformVariableInitialiser a(al, exprs_with_target);
+    // a.visit_TranslationUnit(unit);
     ArgSimplifier b(al, exprs_with_target, pass_options.realloc_lhs);
     b.visit_TranslationUnit(unit);
-    ReplaceExprWithTemporaryVisitor c(al, exprs_with_target, pass_options.realloc_lhs);
-    c.visit_TranslationUnit(unit);
+    // ReplaceExprWithTemporaryVisitor c(al, exprs_with_target, pass_options.realloc_lhs);
+    // c.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor d(al);
     d.visit_TranslationUnit(unit);
-    #if defined(WITH_LFORTRAN_ASSERT)
-    VerifySimplifierASROutput e(al, exprs_with_target);
-    e.visit_TranslationUnit(unit);
-    #endif
 }
 
 
