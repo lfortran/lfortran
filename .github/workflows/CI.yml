@@ -495,7 +495,7 @@ jobs:
       fail-fast: false
       matrix:
         os: ["ubuntu-latest"]
-        llvm-version: ["19"]
+        llvm-version: ["11"]
         # os: ["macos-latest", "ubuntu-latest"]
         # llvm-version: ["11", "19"]
         python-version: ["3.10"]
