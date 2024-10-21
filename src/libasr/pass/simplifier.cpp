@@ -958,6 +958,10 @@ void pass_simplifier(Allocator &al, ASR::TranslationUnit_t &unit,
     // TODO: Add a visitor in asdl_cpp.py which will replace
     // current_expr with its own `m_value` (if `m_value` is not nullptr)
     // Call the visitor here.
+
+    (void)al; // remove once we start porting code from simplifier branch (warning silence)
+    (void)unit; // remove once we start porting code from simplifier branch (warning silence)
+    (void)pass_options; // remove once we start porting code from simplifier branch (warning silence)
 }
 
 
