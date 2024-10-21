@@ -3520,7 +3520,7 @@ public:
             }
         }
         tmp = ASR::make_DoConcurrentLoop_t(al, x.base.base.loc, heads.p, heads.n, shared_expr.p, shared_expr.n, local_expr.p, local_expr.n, reductions.p, reductions.n, body.p,
-                body.size());
+                body.size(),0);
     }
 
     void visit_ForAllSingle(const AST::ForAllSingle_t &x) {
@@ -3783,13 +3783,20 @@ public:
 
                 Vec<ASR::expr_t *> m_local, m_shared; Vec<ASR::reduction_expr_t> m_reduction;
                 m_local.reserve(al, 1); m_shared.reserve(al, 1); m_reduction.reserve(al, 1);
+                int64_t collapse_level = 0;
                 for (size_t i = 0; i < x.n_clauses; i++) {
                     std::string clause = AST::down_cast<AST::String_t>(
                         x.m_clauses[i])->m_s;
                     std::string clause_name = clause.substr(0, clause.find('('));
-                    if (clause_name != "private" && clause_name != "shared" && clause_name != "reduction") {
+                    if (clause_name != "private" && clause_name != "shared" && clause_name != "reduction" && clause_name != "collapse") {
                         throw SemanticError("The clause "+ clause_name
                             +" is not supported yet", loc);
+                    }
+                    if (clause_name == "collapse")
+                    {
+                        std::string collapse_value_str = clause.substr(
+                            clause.find('(') + 1, clause.size() - clause_name.size() - 2);
+                        collapse_level = std::stoi(collapse_value_str); // Get the value of N
                     }
                     std::string list = clause.substr(clause.find('(')+1,
                         clause.size()-clause_name.size()-2);
@@ -3829,7 +3836,7 @@ public:
                             } else {
                                 m_shared.push_back(al, v);
                             }
-                        } else {
+                        } else if (clause_name != "collapse") {
                             throw SemanticError("The clause variable `"+ s
                                 +"` is not declared", loc);
                         }
@@ -3838,7 +3845,7 @@ public:
                 Vec<ASR::do_loop_head_t> heads;heads.reserve(al,1);ASR::do_loop_head_t head{};heads.push_back(al, head);
                 omp_constructs.push_back(ASR::down_cast2<ASR::DoConcurrentLoop_t>(
                 ASR::make_DoConcurrentLoop_t(al,loc, heads.p, heads.n, m_shared.p,
-                m_shared.n, m_local.p, m_local.n, m_reduction.p, m_reduction.n, nullptr, 0)));
+                m_shared.n, m_local.p, m_local.n, m_reduction.p, m_reduction.n, nullptr, 0,collapse_level)));
                 
             } else if ( strcmp(x.m_construct_name, "do") == 0 ) {
                 // pass
