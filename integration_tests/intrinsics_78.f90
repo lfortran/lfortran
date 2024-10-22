@@ -84,4 +84,11 @@ program intrinsics_78
     dresult = mod(dx, dy)
     print *, "Test 13: mod(", dx, ",", dy, ") = ", dresult
     if (abs(dresult - (-1.14D0)) > 1d-9) error stop "Test 13 failed"
+
+    ! Test integer values with different kinds
+    integer(8) :: i = 121
+    integer(4) :: j = 121
+    iresult = kind(mod(j,i))
+    print *, "Test 14: kind(mod(", i, ",", j, ")) = ", iresult 
+    if(iresult /= 8) error stop "Test 14 failed"
 end program intrinsics_78
