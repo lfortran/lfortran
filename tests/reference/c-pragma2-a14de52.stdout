@@ -1,3 +1,4 @@
+#include <inttypes.h>
 
 #include <stdlib.h>
 #include <stdbool.h>
@@ -27,7 +28,10 @@ struct r32
 int main(int argc, char* argv[])
 {
     _lpython_set_argv(argc, argv);
+    int32_t __libasr_index_0_;
     float a __attribute__ (( vector_size(sizeof(float) * 8) ));
-    a = (float __attribute__ (( vector_size(sizeof(float) * 8) ))) {(float)(1), (float)(1), (float)(1), (float)(1), (float)(1), (float)(1), (float)(1), (float)(1)};
+    for (__libasr_index_0_=0; __libasr_index_0_<=7; __libasr_index_0_++) {
+        a[__libasr_index_0_] = (float)(1);
+    }
     return 0;
 }
