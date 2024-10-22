@@ -36,7 +36,7 @@ public:
         heads.reserve(al,1);
         heads.push_back(al, x.m_head);
         ASR::stmt_t *stmt = ASRUtils::STMT(
-            ASR::make_DoConcurrentLoop_t(al, loc, heads.p, heads.n, nullptr, 0, nullptr, 0, nullptr, 0, body.p, body.size(), 0)
+            ASR::make_DoConcurrentLoop_t(al, loc, heads.p, heads.n, nullptr, 0, nullptr, 0, nullptr, 0, body.p, body.size())
         );
         Vec<ASR::stmt_t*> result;
         result.reserve(al, 1);
