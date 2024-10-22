@@ -4611,7 +4611,7 @@ public:
             llvm::Type *i64 = llvm::Type::getInt64Ty(context);
             if (ASR::is_a<ASR::PointerNullConstant_t>(*x.m_value)) {
                 builder->CreateStore(llvm_value, llvm_target);
-            } else if( is_target_class && !is_value_class ) {
+            } else if (is_target_class && !is_value_class) {
                 llvm::Value* vtab_address_ptr = llvm_utils->create_gep(llvm_target, 0);
                 llvm_target = llvm_utils->create_gep(llvm_target, 1);
                 ASR::StructType_t* struct_t = ASR::down_cast<ASR::StructType_t>(
@@ -6487,7 +6487,9 @@ public:
         LCOMPILERS_ASSERT(ASRUtils::is_complex(*x.m_type));
         llvm::Type *type;
         int a_kind;
-        a_kind = down_cast<ASR::Complex_t>(ASRUtils::type_get_past_array(ASRUtils::type_get_past_pointer(x.m_type)))->m_kind;
+        a_kind = ASR::down_cast<ASR::Complex_t>(
+            ASRUtils::type_get_past_array(
+                ASRUtils::type_get_past_pointer(x.m_type)))->m_kind;
         type = llvm_utils->getComplexType(a_kind);
         if( left_val->getType()->isPointerTy() ) {
             left_val = llvm_utils->CreateLoad(left_val);
