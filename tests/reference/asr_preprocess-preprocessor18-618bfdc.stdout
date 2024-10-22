@@ -2,7 +2,7 @@
     (SymbolTable
         1
         {
-            temp:
+            preprocessor18:
                 (Program
                     (SymbolTable
                         2
@@ -24,7 +24,7 @@
                                     .false.
                                 )
                         })
-                    temp
+                    preprocessor18
                     []
                     []
                 )
