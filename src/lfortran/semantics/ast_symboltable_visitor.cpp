@@ -1770,13 +1770,24 @@ public:
             if (AST::is_a<AST::InterfaceModuleProcedure_t>(*item)) {
                 AST::InterfaceModuleProcedure_t *proc
                     = AST::down_cast<AST::InterfaceModuleProcedure_t>(item);
+                std::set<std::string> items_set;
                 for (size_t i = 0; i < proc->n_names; i++) {
                     /* Check signatures of procedures
                     * to ensure there are no two procedures
                     * with same signatures.
                     */
                     char *proc_name = proc->m_names[i];
-                    proc_names.push_back(std::string(proc_name));
+                    std::string item_proc_name = std::string(proc_name);
+                    if (items_set.find(item_proc_name) == items_set.end()) {
+                        proc_names.push_back(item_proc_name);
+                        items_set.insert(item_proc_name);
+                    } else {
+                        diag.semantic_error_label("Entity " + item_proc_name
+                                                      + " is already present in the interface",
+                                                  { item->base.loc },
+                                                  " ");
+                        throw SemanticAbort();
+                    }
                 }
             } else if(AST::is_a<AST::InterfaceProc_t>(*item)) {
                 visit_interface_item(*item);
@@ -1917,7 +1928,6 @@ public:
             loc.first = 1;
             loc.last = 1;
             Vec<ASR::symbol_t*> symbols;
-            std::set<ASR::symbol_t*> symbols_set;
             symbols.reserve(al, proc.second.size());
             for (auto &pname : proc.second) {
                 std::string correct_pname = pname;
@@ -1931,14 +1941,7 @@ public:
                 // lower case the name
                 name = s2c(al, to_lower(name));
                 x = resolve_symbol(loc, name);
-                if (symbols_set.find(x) == symbols_set.end()) {
-                    symbols.push_back(al, x);
-                    symbols_set.insert(x);
-                } else {
-                    throw SemanticError("Entity " + correct_pname
-                                            + " is already present in the interface",
-                                        x->base.loc);
-                }
+                symbols.push_back(al, x);
             }
             std::string sym_name_str = proc.first;
             if( current_scope->get_symbol(proc.first) != nullptr ) {
@@ -1963,14 +1966,7 @@ public:
                             ASRUtils::symbol_name(gp->m_procs[i]));
                         if (s != nullptr) {
                             // Append all the module procedure's in the scope
-                            if (symbols_set.find(s) == symbols_set.end()) {
-                                symbols.push_back(al, s);
-                                symbols_set.insert(s);
-                            } else {
-                                throw SemanticError("Entity " + sym_name_str
-                                                        + " is already present in the interface",
-                                                    s->base.loc);
-                            }
+                            symbols.push_back(al, s);
                         } else {
                             // If not available, import it from the module
                             // Create an ExternalSymbol using it
@@ -1986,15 +1982,7 @@ public:
                                         fn->m_name, dflt_access);
                                 current_scope->add_symbol(fn->m_name, ep_s);
                                 // Append the ExternalSymbol
-                                if (symbols_set.find(ep_s) == symbols_set.end()) {
-                                    symbols.push_back(al, ep_s);
-                                    symbols_set.insert(ep_s);
-                                } else {
-                                    throw SemanticError(
-                                        "Entity " + sym_name_str
-                                            + " is already present in the interface",
-                                        ep_s->base.loc);
-                                }
+                                symbols.push_back(al, ep_s);
                             }
                         }
                     }

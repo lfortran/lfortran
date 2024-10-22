@@ -1,9 +1,5 @@
 semantic error: Entity test_01 is already present in the interface
-  --> tests/errors/duplicate_module_procedures.f90:8:5 - 12:26
-   |
- 8 |        SUBROUTINE test_01 (x)
-   |        ^^^^^^^^^^^^^^^^^^^^^^...
-...
-   |
-12 |        END SUBROUTINE test_01
-   | ...^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+ --> tests/errors/duplicate_module_procedures.f90:4:8
+  |
+4 |        MODULE PROCEDURE test_01, test_01, test_01
+  |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^  
