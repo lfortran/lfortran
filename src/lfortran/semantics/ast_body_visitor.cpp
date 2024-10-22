@@ -32,6 +32,10 @@ public:
     size_t starting_n_body = 0;
     size_t loop_nesting = 0;
     size_t pragma_nesting_level = 0;
+    int collapse_status = 0;
+    size_t collapse_value=0;
+    Vec<ASR::do_loop_head_t> do_loop_heads_for_collapse;
+    Vec<ASR::stmt_t*> do_loop_bodies_for_collapse;
     AST::stmt_t **starting_m_body = nullptr;
     std::vector<ASR::symbol_t*> do_loop_variables;
     std::map<ASR::asr_t*, std::pair<const AST::stmt_t*,int64_t>> print_statements;
@@ -3431,11 +3435,36 @@ public:
                 ASR::DoConcurrentLoop_t* do_concurrent = omp_constructs.back();
                 Vec<ASR::do_loop_head_t> do_concurrent_head;
                 do_concurrent_head.reserve(al, 1);
+                if(collapse_status == 1) {
+                        do_concurrent_head.reserve(al, do_loop_heads_for_collapse.size()+1);
+                    for(size_t i=0;i<do_loop_heads_for_collapse.size();i++) {  
+                        do_concurrent_head.push_back(al, do_loop_heads_for_collapse[i]);
+                    }
+                }
                 do_concurrent_head.push_back(al, head);
                 do_concurrent->m_head = do_concurrent_head.p;
-                do_concurrent->m_body = body.p; do_concurrent->n_body = body.size();
+                do_concurrent->n_head = do_concurrent_head.size();
+                do_concurrent->m_body = do_loop_bodies_for_collapse.p; do_concurrent->n_body = do_loop_bodies_for_collapse.size();
                 tmp = (ASR::asr_t*) do_concurrent;
-            } else {
+            } 
+            else if (collapse_status == 1 && !omp_constructs.empty() && collapse_value>loop_nesting-1) {
+                collapse_value--;
+                do_loop_heads_for_collapse.push_back(al, head);
+                Vec<ASR::stmt_t*> temp;
+                temp.reserve(al, do_loop_bodies_for_collapse.size());
+                for(size_t i=0;i<do_loop_bodies_for_collapse.size();i++) {
+                    temp.push_back(al, do_loop_bodies_for_collapse[i]);
+                }
+                int size=temp.size()+body.size();
+                do_loop_bodies_for_collapse.reserve(al, size);
+                for(size_t i=0;i<temp.size();i++) {
+                    do_loop_bodies_for_collapse.push_back(al, temp[i]);
+                }
+                for(size_t i=0;i<body.size();i++) {
+                    do_loop_bodies_for_collapse.push_back(al, body[i]);
+                }
+            }
+            else {
                 tmp = ASR::make_DoLoop_t(al, x.base.base.loc, x.m_stmt_name,
                     head, body.p, body.size(), nullptr, 0);
             }
@@ -3535,7 +3564,7 @@ public:
             }
         }
         tmp = ASR::make_DoConcurrentLoop_t(al, x.base.base.loc, heads.p, heads.n, shared_expr.p, shared_expr.n, local_expr.p, local_expr.n, reductions.p, reductions.n, body.p,
-                body.size(),0);
+                body.size());
     }
 
     void visit_ForAllSingle(const AST::ForAllSingle_t &x) {
@@ -3812,6 +3841,9 @@ public:
                         std::string collapse_value_str = clause.substr(
                             clause.find('(') + 1, clause.size() - clause_name.size() - 2);
                         collapse_level = std::stoi(collapse_value_str); // Get the value of N
+                        collapse_value = collapse_level;
+                        collapse_status = 1;
+                        do_loop_heads_for_collapse.reserve(al, collapse_value);do_loop_bodies_for_collapse={};
                     }
                     std::string list = clause.substr(clause.find('(')+1,
                         clause.size()-clause_name.size()-2);
@@ -3860,7 +3892,7 @@ public:
                 Vec<ASR::do_loop_head_t> heads;heads.reserve(al,1);ASR::do_loop_head_t head{};heads.push_back(al, head);
                 omp_constructs.push_back(ASR::down_cast2<ASR::DoConcurrentLoop_t>(
                 ASR::make_DoConcurrentLoop_t(al,loc, heads.p, heads.n, m_shared.p,
-                m_shared.n, m_local.p, m_local.n, m_reduction.p, m_reduction.n, nullptr, 0,collapse_level)));
+                m_shared.n, m_local.p, m_local.n, m_reduction.p, m_reduction.n, nullptr, 0)));
                 
             } else if ( strcmp(x.m_construct_name, "do") == 0 ) {
                 // pass
