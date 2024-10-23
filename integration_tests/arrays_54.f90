@@ -7,6 +7,6 @@ program arrays_54
     x = 1
     center = 0
     res = sum((x - center), dim) / size(x, dim)
-    if( any(res /= 1) ) error stop
+    if (any(res /= 1)) error stop
     print *, res
 end program
