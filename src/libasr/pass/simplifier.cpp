@@ -59,6 +59,10 @@ class ArrayVarCollector: public ASR::BaseWalkVisitor<ArrayVarCollector> {
 
     }
 
+    void visit_ArraySize(const ASR::ArraySize_t& /*x*/) {
+
+    }
+
 };
 
 ASR::expr_t* get_ImpliedDoLoop_size(Allocator& al, ASR::ImpliedDoLoop_t* implied_doloop) {
@@ -392,7 +396,8 @@ void set_allocation_size_elemental_function(
 
 bool set_allocation_size(
     Allocator& al, ASR::expr_t* value,
-    Vec<ASR::dimension_t>& allocate_dims
+    Vec<ASR::dimension_t>& allocate_dims,
+    size_t target_n_dims
 ) {
     if ( !ASRUtils::is_array(ASRUtils::expr_type(value)) ) {
         return false;
@@ -469,26 +474,18 @@ bool set_allocation_size(
             array_var_collector.visit_expr(*value);
             Vec<ASR::expr_t*> arrays_with_maximum_rank;
             arrays_with_maximum_rank.reserve(al, 1);
-            size_t max_rank = 0;
-            for( size_t i = 0; i < array_vars.size(); i++ ) {
-                size_t rank = ASRUtils::extract_n_dims_from_ttype(
-                    ASRUtils::expr_type(array_vars[i]));
-                if( rank > max_rank ) {
-                    max_rank = rank;
-                }
-            }
-            LCOMPILERS_ASSERT(max_rank > 0);
+            LCOMPILERS_ASSERT(target_n_dims > 0);
             for( size_t i = 0; i < array_vars.size(); i++ ) {
                 if( (size_t) ASRUtils::extract_n_dims_from_ttype(
-                        ASRUtils::expr_type(array_vars[i])) == max_rank ) {
+                        ASRUtils::expr_type(array_vars[i])) == target_n_dims ) {
                     arrays_with_maximum_rank.push_back(al, array_vars[i]);
                 }
             }
 
             LCOMPILERS_ASSERT(arrays_with_maximum_rank.size() > 0);
             ASR::expr_t* selected_array = arrays_with_maximum_rank[0];
-            allocate_dims.reserve(al, max_rank);
-            for( size_t i = 0; i < max_rank; i++ ) {
+            allocate_dims.reserve(al, target_n_dims);
+            for( size_t i = 0; i < target_n_dims; i++ ) {
                 ASR::dimension_t allocate_dim;
                 Location loc; loc.first = 1, loc.last = 1;
                 allocate_dim.loc = loc;
@@ -738,13 +735,11 @@ void insert_allocate_stmt_for_array(Allocator& al, ASR::expr_t* temporary_var,
         return ;
     }
     Vec<ASR::dimension_t> allocate_dims;
-    if( !set_allocation_size(al, value, allocate_dims) ) {
+    size_t target_n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(temporary_var));
+    if( !set_allocation_size(al, value, allocate_dims, target_n_dims) ) {
         return ;
     }
-    LCOMPILERS_ASSERT(
-        (size_t) ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(temporary_var))
-        ==
-        allocate_dims.size());
+    LCOMPILERS_ASSERT(target_n_dims == allocate_dims.size());
     Vec<ASR::alloc_arg_t> alloc_args; alloc_args.reserve(al, 1);
     ASR::alloc_arg_t alloc_arg;
     alloc_arg.loc = value->base.loc;
@@ -1054,10 +1049,6 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
     void visit_FunctionType(const ASR::FunctionType_t& /*x*/) {
         // Do nothing
     }
-
-    // void visit_ArrayBroadcast(const ASR::ArrayBroadcast_t& /*x*/) {
-    //     // Do nothing
-    // }
 
     void visit_Assignment(const ASR::Assignment_t& x) {
         ASR::Assignment_t& xx = const_cast<ASR::Assignment_t&>(x);
@@ -1647,20 +1638,6 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
 
     void replace_ArrayReshape(ASR::ArrayReshape_t* x) {
         replace_current_expr("_array_reshape_")
-    }
-
-    void replace_ArrayBroadcast(ASR::ArrayBroadcast_t* x) {
-        ASR::expr_t** current_expr_copy_161 = current_expr;
-        current_expr = &(x->m_array);
-        replace_expr(x->m_array);
-        current_expr = current_expr_copy_161;
-        replace_ttype(x->m_type);
-        if (call_replacer_on_value) {
-            ASR::expr_t** current_expr_copy_163 = current_expr;
-            current_expr = &(x->m_value);
-            replace_expr(x->m_value);
-            current_expr = current_expr_copy_163;
-        }
     }
 
     void replace_ArrayItem(ASR::ArrayItem_t* x) {
@@ -2376,6 +2353,8 @@ void pass_simplifier(Allocator &al, ASR::TranslationUnit_t &unit,
     // TODO: Add a visitor in asdl_cpp.py which will replace
     // current_expr with its own `m_value` (if `m_value` is not nullptr)
     // Call the visitor here.
+    ASRUtils::RemoveArrayProcessingNodeVisitor remove_array_processing_node_visitor(al);
+    remove_array_processing_node_visitor.visit_TranslationUnit(unit);
     ExprsWithTargetType exprs_with_target;
     InitialiseExprWithTarget init_expr_with_target(exprs_with_target);
     init_expr_with_target.visit_TranslationUnit(unit);

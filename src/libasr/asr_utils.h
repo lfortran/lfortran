@@ -5973,6 +5973,45 @@ static inline bool is_argument_of_type_CPtr(ASR::expr_t *var) {
     return is_argument;
 }
 
+class RemoveArrayProcessingNodeReplacer: public ASR::BaseExprReplacer<RemoveArrayProcessingNodeReplacer> {
+
+    public:
+
+    Allocator& al;
+
+    RemoveArrayProcessingNodeReplacer(Allocator& al_): al(al_) {
+    }
+
+    void replace_ArrayBroadcast(ASR::ArrayBroadcast_t* x) {
+        *current_expr = x->m_array;
+    }
+
+    void replace_ArrayPhysicalCast(ASR::ArrayPhysicalCast_t* x) {
+        ASR::BaseExprReplacer<RemoveArrayProcessingNodeReplacer>::replace_ArrayPhysicalCast(x);
+        if( !ASRUtils::is_array(ASRUtils::expr_type(x->m_arg)) ) {
+            *current_expr = x->m_arg;
+        }
+    }
+
+};
+
+class RemoveArrayProcessingNodeVisitor: public ASR::CallReplacerOnExpressionsVisitor<RemoveArrayProcessingNodeVisitor> {
+
+    private:
+
+    RemoveArrayProcessingNodeReplacer replacer;
+
+    public:
+
+    void call_replacer() {
+        replacer.current_expr = current_expr;
+        replacer.replace_expr(*current_expr);
+    }
+
+    RemoveArrayProcessingNodeVisitor(Allocator& al_): replacer(al_) {}
+
+};
+
 } // namespace ASRUtils
 
 } // namespace LCompilers
