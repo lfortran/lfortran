@@ -495,25 +495,7 @@
                             (IntegerConstant 1 (Integer 4) Decimal)
                             (Var 2 nx)
                             ())
-                            [(Print
-                                (StringFormat
-                                    ()
-                                    [(StringConstant
-                                        "iy->"
-                                        (Character 1 4 () PointerString)
-                                    )
-                                    (Var 2 iy)
-                                    (StringConstant
-                                        "ix->"
-                                        (Character 1 4 () PointerString)
-                                    )
-                                    (Var 2 ix)]
-                                    FormatFortran
-                                    (Character -1 0 () PointerString)
-                                    ()
-                                )
-                            )
-                            (DoLoop
+                            [(DoLoop
                                 ()
                                 ((Var 2 iz)
                                 (IntegerConstant 1 (Integer 4) Decimal)
