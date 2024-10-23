@@ -396,9 +396,9 @@ namespace LCompilers {
                 } else if (!pass_options.fast && !pass_options.experimental_simplifier) {
                     apply_passes(al, asr, _passes, pass_options, diagnostics);
                 } else if (pass_options.fast && pass_options.experimental_simplifier){
-                    apply_passes(al, asr, _passes_with_experimental_simplifier, pass_options, diagnostics);
-                } else if (!pass_options.fast && pass_options.experimental_simplifier) {
                     apply_passes(al, asr, _with_optimization_passes_for_experimental_simplifier, pass_options, diagnostics);
+                } else if (!pass_options.fast && pass_options.experimental_simplifier) {
+                    apply_passes(al, asr, _passes_with_experimental_simplifier, pass_options, diagnostics);
                 }
             }
         }
