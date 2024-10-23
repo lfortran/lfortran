@@ -825,13 +825,17 @@ int save_mod_files(const LCompilers::ASR::TranslationUnit_t &u,
             LCompilers::ASR::TranslationUnit_t *tu =
                 LCompilers::ASR::down_cast2<LCompilers::ASR::TranslationUnit_t>(asr);
             LCompilers::diag::Diagnostics diagnostics;
-            LCOMPILERS_ASSERT(LCompilers::asr_verify(*tu, true, diagnostics));
+            LCOMPILERS_ASSERT(
+                LCompilers::asr_verify(*tu, true, diagnostics, compiler_options.po)
+            );
 
             std::string modfile_binary = LCompilers::save_modfile(*tu);
 
             m->m_symtab->parent = orig_symtab;
 
-            LCOMPILERS_ASSERT(LCompilers::asr_verify(u, true, diagnostics));
+            LCOMPILERS_ASSERT(
+                LCompilers::asr_verify(u, true, diagnostics, compiler_options.po)
+            );
 
 	    std::filesystem::path filename { std::string(m->m_name) + ".mod" };
             std::filesystem::path fullpath = compiler_options.po.mod_files_dir / filename;

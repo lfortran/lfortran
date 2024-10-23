@@ -173,7 +173,7 @@ namespace LCompilers {
                 }
                 _passes_db[passes[i]](al, *asr, pass_options);
 #if defined(WITH_LFORTRAN_ASSERT)
-                if (!asr_verify(*asr, true, diagnostics)) {
+                if (!asr_verify(*asr, true, diagnostics, pass_options)) {
                     std::cerr << diagnostics.render2();
                     throw LCompilersException("Verify failed in the pass: "
                         + passes[i]);
@@ -465,7 +465,7 @@ namespace LCompilers {
                     outfile.close();
                 }
 #if defined(WITH_LFORTRAN_ASSERT)
-                if (!asr_verify(*asr, true, diagnostics)) {
+                if (!asr_verify(*asr, true, diagnostics, pass_options)) {
                     std::cerr << diagnostics.render2();
                     throw LCompilersException("Verify failed in the pass: "
                         + passes[i]);

@@ -38,6 +38,7 @@ private:
     SymbolTable *current_symtab;
     bool check_external;
     diag::Diagnostics &diagnostics;
+    const PassOptions &pass_options;
 
     // For checking that all symtabs have a unique ID.
     // We first walk all symtabs, and then we check that everything else
@@ -55,8 +56,9 @@ private:
     bool _processing_dims = false;
 
 public:
-    VerifyVisitor(bool check_external, diag::Diagnostics &diagnostics) : check_external{check_external},
-        diagnostics{diagnostics}, symbol_visited{false} {}
+    VerifyVisitor(bool check_external, diag::Diagnostics &diagnostics,
+        const PassOptions &pass_options) : check_external{check_external},
+        diagnostics{diagnostics}, pass_options{pass_options}, symbol_visited{false} {}
 
     // Requires the condition `cond` to be true. Raise an exception otherwise.
     #define require(cond, error_msg) ASRUtils::require_impl((cond), (error_msg), x.base.base.loc, diagnostics);
@@ -1231,6 +1233,14 @@ public:
     void visit_Allocatable(const Allocatable_t &x) {
         require(!ASR::is_a<ASR::Pointer_t>(*x.m_type),
             "Allocatable type conflicts with Pointer type");
+        if (pass_options.experimental_simplifier) {
+            ASR::dimension_t* m_dims = nullptr;
+            size_t n_dims = ASRUtils::extract_dimensions_from_ttype(x.m_type, m_dims);
+            for( size_t i = 0; i < n_dims; i++ ) {
+                require(m_dims[i].m_length == nullptr,
+                    "Length of allocatable should be deferred (empty).");
+            }
+        }
         visit_ttype(*x.m_type);
     }
 
@@ -1264,8 +1274,9 @@ public:
 } // namespace ASR
 
 bool asr_verify(const ASR::TranslationUnit_t &unit, bool check_external,
-            diag::Diagnostics &diagnostics) {
-    ASR::VerifyVisitor v(check_external, diagnostics);
+            diag::Diagnostics &diagnostics, const PassOptions &pass_options
+) {
+    ASR::VerifyVisitor v(check_external, diagnostics, pass_options);
     try {
         v.visit_TranslationUnit(unit);
     } catch (const ASRUtils::VerifyAbort &) {
