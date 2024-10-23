@@ -719,7 +719,7 @@ public:
             }
             case (ASR::ttypeType::Allocatable): {
                 ASR::Allocatable_t *a = ASR::down_cast<ASR::Allocatable_t>(ttype);
-                return ASRUtils::TYPE(ASR::make_Allocatable_t(al, ttype->base.loc,
+                return ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, ttype->base.loc,
                     substitute_type(a->m_type)));
             }
             case (ASR::ttypeType::ClassType): {
@@ -1389,7 +1389,7 @@ public:
             }
             case (ASR::ttypeType::Allocatable) : {
                 ASR::Allocatable_t *a = ASR::down_cast<ASR::Allocatable_t>(ttype);
-                return ASRUtils::TYPE(ASR::make_Allocatable_t(al, ttype->base.loc,
+                return ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, ttype->base.loc,
                     substitute_type(a->m_type)));
             }
             case (ASR::ttypeType::ClassType) : {
@@ -1809,7 +1809,7 @@ public:
             }
             case (ASR::ttypeType::Allocatable): {
                 ASR::Allocatable_t *a = ASR::down_cast<ASR::Allocatable_t>(ttype);
-                return ASRUtils::TYPE(ASR::make_Allocatable_t(al, ttype->base.loc,
+                return ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, ttype->base.loc,
                     substitute_type(a->m_type)));
             }
             case (ASR::ttypeType::ClassType) : {

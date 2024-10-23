@@ -96,17 +96,17 @@ class ASRBuilder {
         false, nullptr, 0, false, false, false));
 
     // Types -------------------------------------------------------------------
-    #define int8         TYPE(ASR::make_Integer_t(al, loc, 1))
-    #define int16        TYPE(ASR::make_Integer_t(al, loc, 2))
-    #define int32        TYPE(ASR::make_Integer_t(al, loc, 4))
-    #define int64        TYPE(ASR::make_Integer_t(al, loc, 8))
-    #define real32       TYPE(ASR::make_Real_t(al, loc, 4))
-    #define real64       TYPE(ASR::make_Real_t(al, loc, 8))
-    #define complex32    TYPE(ASR::make_Complex_t(al, loc, 4))
-    #define complex64    TYPE(ASR::make_Complex_t(al, loc, 8))
-    #define logical      TYPE(ASR::make_Logical_t(al, loc, 4))
-    #define character(x) TYPE(ASR::make_Character_t(al, loc, 1, x, nullptr, ASR::string_physical_typeType::PointerString))
-    #define List(x)      TYPE(ASR::make_List_t(al, loc, x))
+    #define int8         ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 1))
+    #define int16        ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 2))
+    #define int32        ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))
+    #define int64        ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 8))
+    #define real32       ASRUtils::TYPE(ASR::make_Real_t(al, loc, 4))
+    #define real64       ASRUtils::TYPE(ASR::make_Real_t(al, loc, 8))
+    #define complex32    ASRUtils::TYPE(ASR::make_Complex_t(al, loc, 4))
+    #define complex64    ASRUtils::TYPE(ASR::make_Complex_t(al, loc, 8))
+    #define logical      ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4))
+    #define character(x) ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, x, nullptr, ASR::string_physical_typeType::PointerString))
+    #define List(x)      ASRUtils::TYPE(ASR::make_List_t(al, loc, x))
 
     ASR::ttype_t *Tuple(std::vector<ASR::ttype_t*> tuple_type) {
         Vec<ASR::ttype_t*> m_tuple_type; m_tuple_type.reserve(al, 3);
@@ -131,6 +131,18 @@ class ASRBuilder {
             m_dims.push_back(al, dim);
         }
         return make_Array_t_util(al, loc, type, m_dims.p, m_dims.n);
+    }
+
+    ASR::ttype_t* create_type(ASR::ttype_t* t, int64_t kind) {
+        if (ASRUtils::is_integer(*t)) {
+            return ASRUtils::TYPE(ASR::make_Integer_t(al, loc, kind));
+        } else if (ASRUtils::is_real(*t)) {
+            return ASRUtils::TYPE(ASR::make_Real_t(al, loc, kind));
+        } else if (ASRUtils::is_complex(*t)) {
+            return ASRUtils::TYPE(ASR::make_Complex_t(al, loc, kind));
+        } else {
+            throw LCompilersException("Type not supported");
+        }
     }
 
     ASR::ttype_t* CPtr() {
@@ -300,6 +312,11 @@ class ASRBuilder {
     }
 
     // Cast --------------------------------------------------------------------
+
+    #define avoid_cast(x, t) if( ASRUtils::extract_kind_from_ttype_t(t) <= \
+        ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(x)) ) { \
+        return x; \
+    } \
 
     inline ASR::expr_t* r2i_t(ASR::expr_t* x, ASR::ttype_t* t) {
         return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::RealToInteger, t, nullptr));
@@ -578,7 +595,7 @@ class ASRBuilder {
         return intrinsic_func(al, loc, scope, arg_types, return_type, new_args, overload_id);
     }
 
-    // Compare -----------------------------------------------------------------   
+    // Compare -----------------------------------------------------------------
     ASR::expr_t *Gt(ASR::expr_t *left, ASR::expr_t *right) {
         LCOMPILERS_ASSERT(check_equal_type(expr_type(left), expr_type(right)));
         ASR::ttype_t *type = expr_type(left);

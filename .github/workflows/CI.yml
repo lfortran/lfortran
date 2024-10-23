@@ -423,6 +423,8 @@ jobs:
             ./run_tests.py -m
             ./run_tests.py -b llvm
             ./run_tests.py -b llvm -f
+            ./run_tests.py -b llvm --experimental-simplifier
+            ./run_tests.py -b llvm -f --experimental-simplifier
 
   release:
     name: Check Release build
@@ -478,6 +480,8 @@ jobs:
             ./run_tests.py -m
             ./run_tests.py -b llvm
             ./run_tests.py -b llvm -f
+            ./run_tests.py -b llvm --experimental-simplifier
+            ./run_tests.py -b llvm -f --experimental-simplifier
 
       - name: Test Installation
         shell: bash -e -l {0}
@@ -802,6 +806,8 @@ jobs:
             cd integration_tests
             ./run_tests.py -b llvm llvmImplicit
             ./run_tests.py -b llvm llvmImplicit -f
+            ./run_tests.py -b llvm llvmImplicit --experimental-simplifier
+            ./run_tests.py -b llvm llvmImplicit -f --experimental-simplifier
 
       - name: Test Legacy Minpack (SciPy)
         shell: bash -e -x -l {0}
@@ -1089,6 +1095,7 @@ jobs:
             export WASMTIME_NEW_CLI=0
             cd integration_tests
             ./run_tests.py -b llvm_wasm llvm_wasm_emcc
+            ./run_tests.py -b llvm_wasm llvm_wasm_emcc --experimental-simplifier
 
   gfortran:
     name: Test integration_tests with GFortran
@@ -1147,6 +1154,7 @@ jobs:
         run: |
             cd integration_tests
             ./run_tests.py -b llvm_omp
+            ./run_tests.py -b llvm_omp --experimental-simplifier
 
   test_without_llvm:
     name: Test without LLVM Backend
@@ -1238,6 +1246,8 @@ jobs:
             cd integration_tests
             ./run_tests.py -b wasm
             ./run_tests.py -b wasm -f
+            ./run_tests.py -b wasm --experimental-simplifier
+            ./run_tests.py -b wasm -f --experimental-simplifier
 
   test_fortran:
     name: Test Fortran backend
@@ -1281,6 +1291,8 @@ jobs:
             cd integration_tests
             ./run_tests.py -b fortran -j1
             ./run_tests.py -b fortran -f -j1
+            ./run_tests.py -b fortran -j1 --experimental-simplifier
+            ./run_tests.py -b fortran -f -j1 --experimental-simplifier
 
   test_mlir:
     name: Test MLIR backend
@@ -1326,6 +1338,7 @@ jobs:
         run: |
             cd integration_tests
             ./run_tests.py -b mlir -j1
+            ./run_tests.py -b mlir -j1 --experimental-simplifier
 
 
   test_c_cpp:
@@ -1383,6 +1396,8 @@ jobs:
             cd integration_tests
             ./run_tests.py -b cpp c c_nopragma
             ./run_tests.py -b cpp c c_nopragma -f
+            ./run_tests.py -b cpp c c_nopragma --experimental-simplifier
+            ./run_tests.py -b cpp c c_nopragma -f --experimental-simplifier
 
   upload_tarball:
     name: Upload Tarball
