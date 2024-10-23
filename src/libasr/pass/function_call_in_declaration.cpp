@@ -337,6 +337,7 @@ public:
     }
 
     void visit_Function(const ASR::Function_t &x) {
+        ASR::CallReplacerOnExpressionsVisitor<FunctionTypeVisitor>::visit_Function(x);
         current_scope = x.m_symtab;
         this->visit_ttype(*x.m_function_signature);
         current_scope = nullptr;
