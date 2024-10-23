@@ -899,7 +899,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
 
     ArgSimplifier(Allocator& al_, ExprsWithTargetType& exprs_with_target_, bool realloc_lhs_) :
         al(al_), current_body(nullptr), exprs_with_target(exprs_with_target_),
-        realloc_lhs(realloc_lhs_) {}
+        realloc_lhs(realloc_lhs_) {(void)realloc_lhs; /*Silence-Warning*/}
 
     void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
         transform_stmts_impl

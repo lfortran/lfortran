@@ -133,6 +133,18 @@ class ASRBuilder {
         return make_Array_t_util(al, loc, type, m_dims.p, m_dims.n);
     }
 
+    ASR::ttype_t* create_type(ASR::ttype_t* t, int64_t kind) {
+        if (ASRUtils::is_integer(*t)) {
+            return ASRUtils::TYPE(ASR::make_Integer_t(al, loc, kind));
+        } else if (ASRUtils::is_real(*t)) {
+            return ASRUtils::TYPE(ASR::make_Real_t(al, loc, kind));
+        } else if (ASRUtils::is_complex(*t)) {
+            return ASRUtils::TYPE(ASR::make_Complex_t(al, loc, kind));
+        } else {
+            throw LCompilersException("Type not supported");
+        }
+    }
+
     ASR::ttype_t* CPtr() {
         return TYPE(ASR::make_CPtr_t(al, loc));
     }

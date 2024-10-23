@@ -123,7 +123,6 @@ namespace LCompilers {
 
         public:
         bool rtlib=false;
-
         void apply_passes(Allocator& al, ASR::TranslationUnit_t* asr,
                            std::vector<std::string>& passes, PassOptions &pass_options,
                            [[maybe_unused]] diag::Diagnostics &diagnostics) {
@@ -244,7 +243,6 @@ namespace LCompilers {
                 "unique_symbols",
                 "insert_deallocate",
             };
-
             _with_optimization_passes_for_experimental_simplifier = {
                 "global_stmts",
                 "init_expr",// This pass shouldn't be needed.
@@ -396,6 +394,10 @@ namespace LCompilers {
                     apply_passes(al, asr, _with_optimization_passes, pass_options, diagnostics);
                 } else if (!pass_options.fast && !pass_options.experimental_simplifier) {
                     apply_passes(al, asr, _passes, pass_options, diagnostics);
+                } else if (pass_options.fast && pass_options.experimental_simplifier){
+                    apply_passes(al, asr, _passes_with_experimental_simplifier, pass_options, diagnostics);
+                } else if (!pass_options.fast && pass_options.experimental_simplifier) {
+                    apply_passes(al, asr, _with_optimization_passes_for_experimental_simplifier, pass_options, diagnostics);
                 }
             }
         }
