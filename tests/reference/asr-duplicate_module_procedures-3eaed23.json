@@ -2,12 +2,12 @@
     "basename": "asr-duplicate_module_procedures-3eaed23",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/errors/duplicate_module_procedures.f90",
-    "infile_hash": "e9cde8ba3a436d435bbef78838652ac5e8b74afc461c5136c192897a",
+    "infile_hash": "3a9e11036265ddc79e565af9c00310f2d8d7235a45c7c805375832bd",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
     "stderr": "asr-duplicate_module_procedures-3eaed23.stderr",
-    "stderr_hash": "f3cacc46469d9104c8c16606af96213f14e133c8f4b104a49a3778c0",
+    "stderr_hash": "38d21afeae8536898184a80cf9b870afed4bd09bc105d7be51f34fbe",
     "returncode": 2
 }

@@ -1,20 +1,20 @@
-MODULE input_module
+module input_module
     implicit none
-    INTERFACE test_interface
-       MODULE PROCEDURE test_01, test_01, test_01
-    END INTERFACE test_interface
-CONTAINS
+    interface test_interface
+       module procedure test_01, test_01, test_01
+    end interface test_interface
+contains
 
-    SUBROUTINE test_01 (x)
+    subroutine test_01 (x)
         implicit none
         integer , intent(in):: x
         print *, x
-    END SUBROUTINE test_01
+    end subroutine test_01
 
-END MODULE input_module
+end module input_module
 
 
-PROGRAM main
-    USE input_module
-    CALL test_interface(1)
-END PROGRAM main
+program main
+    use input_module
+    call test_interface(1)
+end program main
