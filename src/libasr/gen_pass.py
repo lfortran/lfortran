@@ -30,6 +30,7 @@ passes = [
         "replace_select_case",
         "replace_sign_from_value",
         "create_subroutine_from_function",
+        "create_subroutine_from_function_simplifier",
         "transform_optional_argument_functions",
         "unused_functions",
         "update_array_dim_intrinsic_calls",
