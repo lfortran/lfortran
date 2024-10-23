@@ -32,7 +32,7 @@ public:
     size_t starting_n_body = 0;
     size_t loop_nesting = 0;
     size_t pragma_nesting_level = 0;
-    bool collapse_status = false;
+    bool openmp_collapse = false;
     size_t collapse_value=0;
     Vec<ASR::do_loop_head_t> do_loop_heads_for_collapse;
     Vec<ASR::stmt_t*> do_loop_bodies_for_collapse;
@@ -3435,39 +3435,38 @@ public:
                 ASR::DoConcurrentLoop_t* do_concurrent = omp_constructs.back();
                 Vec<ASR::do_loop_head_t> do_concurrent_head;
                 do_concurrent_head.reserve(al, 1);
-                if(collapse_status == true) {
-                        do_concurrent_head.reserve(al, do_loop_heads_for_collapse.size()+1);
-                    for(size_t i=0;i<do_loop_heads_for_collapse.size();i++) {  
+                if (openmp_collapse == true) {
+                    for (size_t i=0;i<do_loop_heads_for_collapse.size();i++) {  
                         do_concurrent_head.push_back(al, do_loop_heads_for_collapse[i]);
                     }
                     do_concurrent->m_body = do_loop_bodies_for_collapse.p; do_concurrent->n_body = do_loop_bodies_for_collapse.size();
                 }
-                else{
+                else {
                     do_concurrent->m_body = body.p; do_concurrent->n_body = body.size();
                 }
                 do_concurrent_head.push_back(al, head);
                 do_concurrent->m_head = do_concurrent_head.p;
                 do_concurrent->n_head = do_concurrent_head.size();
                 tmp = (ASR::asr_t*) do_concurrent;
-            } 
-            else if (collapse_status == true && !omp_constructs.empty() && collapse_value>loop_nesting-1) {
+                openmp_collapse = false;
+                collapse_value = 0;
+            } else if (openmp_collapse == true && !omp_constructs.empty() && collapse_value>loop_nesting-1) {
                 collapse_value--;
                 do_loop_heads_for_collapse.push_back(al, head);
                 Vec<ASR::stmt_t*> temp;
                 temp.reserve(al, do_loop_bodies_for_collapse.size());
-                for(size_t i=0;i<do_loop_bodies_for_collapse.size();i++) {
+                for (size_t i=0;i<do_loop_bodies_for_collapse.size();i++) {
                     temp.push_back(al, do_loop_bodies_for_collapse[i]);
                 }
                 int size=temp.size()+body.size();
                 do_loop_bodies_for_collapse.reserve(al, size);
-                for(size_t i=0;i<temp.size();i++) {
+                for (size_t i=0;i<temp.size();i++) {
                     do_loop_bodies_for_collapse.push_back(al, temp[i]);
                 }
-                for(size_t i=0;i<body.size();i++) {
+                for (size_t i=0;i<body.size();i++) {
                     do_loop_bodies_for_collapse.push_back(al, body[i]);
                 }
-            }
-            else {
+            } else {
                 tmp = ASR::make_DoLoop_t(al, x.base.base.loc, x.m_stmt_name,
                     head, body.p, body.size(), nullptr, 0);
             }
@@ -3830,7 +3829,6 @@ public:
 
                 Vec<ASR::expr_t *> m_local, m_shared; Vec<ASR::reduction_expr_t> m_reduction;
                 m_local.reserve(al, 1); m_shared.reserve(al, 1); m_reduction.reserve(al, 1);
-                int64_t collapse_level = 0;
                 for (size_t i = 0; i < x.n_clauses; i++) {
                     std::string clause = AST::down_cast<AST::String_t>(
                         x.m_clauses[i])->m_s;
@@ -3843,9 +3841,8 @@ public:
                     {
                         std::string collapse_value_str = clause.substr(
                             clause.find('(') + 1, clause.size() - clause_name.size() - 2);
-                        collapse_level = std::stoi(collapse_value_str); // Get the value of N
-                        collapse_value = collapse_level;
-                        collapse_status = true;
+                        collapse_value = std::stoi(collapse_value_str); // Get the value of N
+                        openmp_collapse = true;
                         do_loop_heads_for_collapse.reserve(al, collapse_value);do_loop_bodies_for_collapse={};
                     }
                     std::string list = clause.substr(clause.find('(')+1,
