@@ -154,6 +154,18 @@ filename = "../integration_tests/openmp_36.f90"
 asr = true
 
 [[test]]
+filename = "../integration_tests/openmp_37.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/openmp_38.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/openmp_39.f90"
+asr = true
+
+[[test]]
 filename = "subroutine2.f90"
 ast = true
 
