@@ -388,7 +388,7 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
     if (run_verify) {
 #if defined(WITH_LFORTRAN_ASSERT)
         diag::Diagnostics diagnostics;
-        if (!asr_verify(*tu, true, diagnostics)) {
+        if (!asr_verify(*tu, true, diagnostics, pass_options)) {
             std::cerr << diagnostics.render2();
             throw LCompilersException("Verify failed");
         };
