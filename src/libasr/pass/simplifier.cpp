@@ -59,9 +59,9 @@ class ArrayVarCollector: public ASR::BaseWalkVisitor<ArrayVarCollector> {
 
     }
 
-    void visit_ArraySize(const ASR::ArraySize_t& /*x*/) {
+    // void visit_ArraySize(const ASR::ArraySize_t& /*x*/) {
 
-    }
+    // }
 
 };
 
@@ -1480,6 +1480,7 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     }
 
     void replace_FunctionCall(ASR::FunctionCall_t* x) {
+        ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_FunctionCall(x);
         if( PassUtils::is_elemental(x->m_name) && !ASR::is_a<ASR::StructType_t>(*x->m_type)) {
             // ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(x->m_name);
             // std::cout << f << "\n";
@@ -1720,6 +1721,14 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
 
     void replace_ArrayBound(ASR::ArrayBound_t* x) {
         replace_current_expr("_array_bound_")
+    }
+
+    void replace_ArrayPhysicalCast(ASR::ArrayPhysicalCast_t* x) {
+        ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_ArrayPhysicalCast(x);
+        x->m_old = ASRUtils::extract_physical_type(ASRUtils::expr_type(x->m_arg));
+        if( x->m_old == x->m_new ) {
+            *current_expr = x->m_arg;
+        }
     }
 };
 
@@ -2360,10 +2369,12 @@ void pass_simplifier(Allocator &al, ASR::TranslationUnit_t &unit,
     init_expr_with_target.visit_TranslationUnit(unit);
     TransformVariableInitialiser a(al, exprs_with_target);
     a.visit_TranslationUnit(unit);
+    ReplaceExprWithTemporaryVisitor c1(al, exprs_with_target, pass_options.realloc_lhs);
+    c1.visit_TranslationUnit(unit);
     ArgSimplifier b(al, exprs_with_target, pass_options.realloc_lhs);
     b.visit_TranslationUnit(unit);
-    ReplaceExprWithTemporaryVisitor c(al, exprs_with_target, pass_options.realloc_lhs);
-    c.visit_TranslationUnit(unit);
+    ReplaceExprWithTemporaryVisitor c2(al, exprs_with_target, pass_options.realloc_lhs);
+    c2.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor d(al);
     d.visit_TranslationUnit(unit);
     #if defined(WITH_LFORTRAN_ASSERT)
