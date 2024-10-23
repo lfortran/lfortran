@@ -47,6 +47,7 @@
 #include <libasr/pass/array_by_data.h>
 #include <libasr/pass/list_expr.h>
 #include <libasr/pass/create_subroutine_from_function.h>
+#include <libasr/pass/create_subroutine_from_function_simplifier.h>
 #include <libasr/pass/transform_optional_argument_functions.h>
 #include <libasr/pass/nested_vars.h>
 #include <libasr/pass/unique_symbols.h>
@@ -107,6 +108,7 @@ namespace LCompilers {
             {"pass_list_expr", &pass_list_expr},
             {"pass_array_by_data", &pass_array_by_data},
             {"subroutine_from_function", &pass_create_subroutine_from_function},
+            {"subroutine_from_function_simplifier", &pass_create_subroutine_from_function_simplifier},
             {"transform_optional_argument_functions", &pass_transform_optional_argument_functions},
             {"init_expr", &pass_replace_init_expr},
             {"nested_vars", &pass_nested_vars},
@@ -223,7 +225,7 @@ namespace LCompilers {
                 "class_constructor",
                 "pass_list_expr",
                 "where",
-                "subroutine_from_function", // To be re-written after simplifier is implemented.
+                "subroutine_from_function_simplifier", // To be re-written after simplifier is implemented.
                 "array_op", // To be re-written without creating any auxiliary variables or allocatables, everything already done by simplifier
                 "symbolic",
                 "intrinsic_function", // To be re-written without creating allocotables and auxiliary variables
@@ -258,7 +260,7 @@ namespace LCompilers {
                 "class_constructor",
                 "pass_list_expr",
                 "where",
-                "subroutine_from_function", // To be re-written after simplifier is implemented.
+                "subroutine_from_function_simplifier", // To be re-written after simplifier is implemented.
                 "array_op", // To be re-written without creating any auxiliary variables or allocatables, everything already done by simplifier
                 "symbolic",
                 "flip_sign",
