@@ -53,10 +53,11 @@ private:
     bool symbol_visited;
     bool _return_var_or_intent_out = false;
     bool _processing_dims = false;
+    bool pass_simplifier = false;
 
 public:
-    VerifyVisitor(bool check_external, diag::Diagnostics &diagnostics) : check_external{check_external},
-        diagnostics{diagnostics}, symbol_visited{false} {}
+    VerifyVisitor(bool check_external, diag::Diagnostics &diagnostics, bool pass_simplifier_) : check_external{check_external},
+        diagnostics{diagnostics}, symbol_visited{false}, pass_simplifier(pass_simplifier_) {}
 
     // Requires the condition `cond` to be true. Raise an exception otherwise.
     #define require(cond, error_msg) ASRUtils::require_impl((cond), (error_msg), x.base.base.loc, diagnostics);
@@ -672,7 +673,8 @@ public:
             !is_module && !is_struct) {
             // For now restrict this check only to variables which are present
             // inside symbols which have a body.
-            if( x.m_storage != ASR::storage_typeType::Parameter ) {
+            if (pass_simplifier) {
+                if( x.m_storage != ASR::storage_typeType::Parameter ) {
                 // require(x.m_value == nullptr,
                 //         "Only parameter variables can have non-NULL value attribute." )
                 require( (x.m_symbolic_value != nullptr &&
@@ -681,6 +683,13 @@ public:
                           x.m_symbolic_value == nullptr,
                         "Initialisation of " + std::string(x.m_name) +
                         " must reduce to a compile time constant 1.");
+                } else {
+                    require( (x.m_symbolic_value == nullptr && x.m_value == nullptr) ||
+                            (x.m_symbolic_value != nullptr && x.m_value != nullptr) ||
+                            (x.m_symbolic_value != nullptr && ASRUtils::is_value_constant(x.m_symbolic_value)),
+                            "Initialisation of " + std::string(x.m_name) +
+                            " must reduce to a compile time constant.");
+                }
             } else {
                 require( (x.m_symbolic_value == nullptr && x.m_value == nullptr) ||
                         (x.m_symbolic_value != nullptr && x.m_value != nullptr) ||
@@ -863,9 +872,21 @@ public:
     }
 
     void visit_ArrayItem(const ArrayItem_t &x) {
-        require(!ASRUtils::is_array(x.m_type),
+        if (pass_simplifier) {
+            require(!ASRUtils::is_array(x.m_type),
             "ArrayItem::m_type cannot be array.")
+        }
         handle_ArrayItemSection(x);
+    }
+
+    void visit_ArraySize(const ArraySize_t& x) {
+        if (pass_simplifier) {
+            if (check_external) {
+                require(ASRUtils::is_array(ASRUtils::expr_type(x.m_v)),
+                    "ArraySize::m_v must be an array");
+            }
+            BaseWalkVisitor<VerifyVisitor>::visit_ArraySize(x);
+        }
     }
 
     void visit_ArraySection(const ArraySection_t &x) {
@@ -1242,11 +1263,13 @@ public:
     void visit_Allocatable(const Allocatable_t &x) {
         require(!ASR::is_a<ASR::Pointer_t>(*x.m_type),
             "Allocatable type conflicts with Pointer type");
-        ASR::dimension_t* m_dims = nullptr;
-        size_t n_dims = ASRUtils::extract_dimensions_from_ttype(x.m_type, m_dims);
-        for( size_t i = 0; i < n_dims; i++ ) {
-            require(m_dims[i].m_length == nullptr,
-                "Length of allocatable should be deferred (empty).");
+        if (pass_simplifier) {
+            ASR::dimension_t* m_dims = nullptr;
+            size_t n_dims = ASRUtils::extract_dimensions_from_ttype(x.m_type, m_dims);
+            for( size_t i = 0; i < n_dims; i++ ) {
+                require(m_dims[i].m_length == nullptr,
+                    "Length of allocatable should be deferred (empty).");
+            }
         }
         visit_ttype(*x.m_type);
     }
@@ -1281,8 +1304,8 @@ public:
 } // namespace ASR
 
 bool asr_verify(const ASR::TranslationUnit_t &unit, bool check_external,
-            diag::Diagnostics &diagnostics) {
-    ASR::VerifyVisitor v(check_external, diagnostics);
+            diag::Diagnostics &diagnostics, const LCompilers::PassOptions& pass_options) {
+    ASR::VerifyVisitor v(check_external, diagnostics, pass_options.experimental_simplifier);
     try {
         v.visit_TranslationUnit(unit);
     } catch (const ASRUtils::VerifyAbort &) {
