@@ -15,44 +15,6 @@
 
 namespace LCompilers {
 
-class RemoveArrayProcessingNodeReplacer: public ASR::BaseExprReplacer<RemoveArrayProcessingNodeReplacer> {
-
-    public:
-
-    Allocator& al;
-
-    RemoveArrayProcessingNodeReplacer(Allocator& al_): al(al_) {
-    }
-
-    void replace_ArrayBroadcast(ASR::ArrayBroadcast_t* x) {
-        *current_expr = x->m_array;
-    }
-
-    void replace_ArrayPhysicalCast(ASR::ArrayPhysicalCast_t* x) {
-        if( !ASRUtils::is_array(ASRUtils::expr_type(x->m_arg)) ) {
-            *current_expr = x->m_arg;
-        }
-    }
-
-};
-
-class RemoveArrayProcessingNodeVisitor: public ASR::CallReplacerOnExpressionsVisitor<RemoveArrayProcessingNodeVisitor> {
-
-    private:
-
-    RemoveArrayProcessingNodeReplacer replacer;
-
-    public:
-
-    void call_replacer() {
-        replacer.current_expr = current_expr;
-        replacer.replace_expr(*current_expr);
-    }
-
-    RemoveArrayProcessingNodeVisitor(Allocator& al_): replacer(al_) {}
-
-};
-
 class ArrayVarAddressReplacer: public ASR::BaseExprReplacer<ArrayVarAddressReplacer> {
 
     public:
@@ -66,6 +28,10 @@ class ArrayVarAddressReplacer: public ASR::BaseExprReplacer<ArrayVarAddressRepla
     }
 
     void replace_ArraySize(ASR::ArraySize_t* /*x*/) {
+
+    }
+
+    void replace_ArrayBound(ASR::ArrayBound_t* /*x*/) {
 
     }
 
@@ -533,7 +499,7 @@ class ArrayOpSimplifierVisitor: public ASR::CallReplacerOnExpressionsVisitor<Arr
                 indices.size(), var_i_type, ASR::arraystorageType::ColMajor, nullptr));
         }
 
-        RemoveArrayProcessingNodeVisitor array_broadcast_visitor(al);
+        ASRUtils::RemoveArrayProcessingNodeVisitor array_broadcast_visitor(al);
         for( size_t i = 0; i < fix_types_args.size(); i++ ) {
             array_broadcast_visitor.current_expr = fix_types_args[i];
             array_broadcast_visitor.call_replacer();
@@ -747,7 +713,7 @@ class ArrayOpSimplifierVisitor: public ASR::CallReplacerOnExpressionsVisitor<Arr
 
         generate_loop(x, vars, fix_type_args, loc);
 
-        RemoveArrayProcessingNodeVisitor remove_array_processing_node_visitor(al);
+        ASRUtils::RemoveArrayProcessingNodeVisitor remove_array_processing_node_visitor(al);
         remove_array_processing_node_visitor.visit_If(x);
 
         FixTypeVisitor fix_type_visitor(al);
