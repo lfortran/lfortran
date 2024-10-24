@@ -1,4 +1,0 @@
-LCOMPILERS_ASSERT failed: $DIR/src/libasr/asr_utils.h
-function type_get_past_array(), line number 198 at 
-!ASR::is_a<ASR::Array_t>(*e->m_type)
-Aborted (core dumped)
