@@ -554,6 +554,9 @@ bool set_allocation_size(
                 ASR::expr_t* start = array_section_t->m_args[i].m_left;
                 ASR::expr_t* end = array_section_t->m_args[i].m_right;
                 ASR::expr_t* step = array_section_t->m_args[i].m_step;
+                if( start == nullptr && step == nullptr && end != nullptr ) {
+                    continue ;
+                }
                 ASR::expr_t* end_minus_start = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
                     end, ASR::binopType::Sub, start, ASRUtils::expr_type(end), nullptr));
                 ASR::expr_t* by_step = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
@@ -1186,17 +1189,6 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         return true;
     }
 
-    void visit_IntegerBinOp(const ASR::IntegerBinOp_t& x) {
-        ASR::IntegerBinOp_t& xx = const_cast<ASR::IntegerBinOp_t&>(x);
-        std::pair<ASR::expr_t*, ASR::expr_t*> binop;
-        if( !visit_BinOpUtil(&xx, "integer_binop", binop) ) {
-            return ;
-        }
-        xx.m_left = binop.first;
-        xx.m_right = binop.second;
-        CallReplacerOnExpressionsVisitor::visit_IntegerBinOp(x);
-    }
-
     void visit_RealBinOp(const ASR::RealBinOp_t& x) {
         ASR::RealBinOp_t& xx = const_cast<ASR::RealBinOp_t&>(x);
         std::pair<ASR::expr_t*, ASR::expr_t*> binop;
@@ -1550,10 +1542,6 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         replace_current_expr("_set_constant_")
     }
 
-    void replace_IntegerBinOp(ASR::IntegerBinOp_t* x) {
-        replace_current_expr("_integer_binop_")
-    }
-
     void replace_RealBinOp(ASR::RealBinOp_t* x) {
         if( ASRUtils::is_simd_array(x->m_type) ) {
             ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_RealBinOp(x);
@@ -1720,6 +1708,15 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
 
     void replace_ArrayBound(ASR::ArrayBound_t* x) {
         replace_current_expr("_array_bound_")
+    }
+
+    void replace_ArraySize(ASR::ArraySize_t* x) {
+        ASR::expr_t** current_expr_copy_149 = current_expr;
+        current_expr = &(x->m_v);
+        if( !ASR::is_a<ASR::Var_t>(*x->m_v) ) {
+            force_replace_current_expr_for_array("_array_size_v")
+        }
+        current_expr = current_expr_copy_149;
     }
 };
 
