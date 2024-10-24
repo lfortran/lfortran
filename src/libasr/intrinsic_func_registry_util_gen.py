@@ -1044,7 +1044,12 @@ def add_create_func_return_src(func_name):
             src += indent * 2 + f"ASR::ttype_t* type_ = expr_duplicator.duplicate_ttype(ASRUtils::type_get_past_array_pointer_allocatable(expr_type(args[0])));\n"
             src += indent * 2 + f"type_ = b.create_type(type_, upper_kind);\n"
         else:
-            src += indent * 2 + f"ASR::ttype_t* type_ = expr_duplicator.duplicate_ttype(expr_type(args[{ret_type_arg_idx}]));\n"
+            src += indent * 2 + "ASR::ttype_t* type_ = nullptr;\n"
+            src += indent * 2 + "if (use_experimental_simplifier) {\n"
+            src += indent * 3 +     f"type_ = expr_duplicator.duplicate_ttype(ASRUtils::type_get_past_array_pointer_allocatable(expr_type(args[{ret_type_arg_idx}])));\n"
+            src += indent * 2 + "} else {\n"
+            src += indent * 3 +     f"type_ = expr_duplicator.duplicate_ttype(expr_type(args[{ret_type_arg_idx}]));\n"
+            src += indent * 2 + "}\n"
         ret_type = "type_"
     kind_arg = arg_infos[0].get("kind_arg", False)
     src += indent * 2 + f"ASR::ttype_t *return_type = {ret_type};\n"
@@ -1072,12 +1077,28 @@ def add_create_func_return_src(func_name):
             "ASRUtils::expr_type(m_args[0]), m_args[0], return_type, m_value);\n"
 
     else:
+        src += indent * 2 + "if (use_experimental_simplifier) {\n"
+        src += indent * 3 +     f"for( size_t i = 0; i < {no_of_args}; i++ ) " + "{\n"
+        src += indent * 4 +         "ASR::ttype_t* type = ASRUtils::expr_type(args[i]);\n"
+        src += indent * 4 +         "if (ASRUtils::is_array(type)) {\n"
+        src += indent * 5 +             "ASR::dimension_t* m_dims = nullptr;\n"
+        src += indent * 5 +             "size_t n_dims = ASRUtils::extract_dimensions_from_ttype(type, m_dims);\n"
+        src += indent * 5 +             "return_type = ASRUtils::make_Array_t_util(al, type->base.loc, "
+        src +=                              "return_type, m_dims, n_dims, ASR::abiType::Source, false, "
+        src +=                              "ASR::array_physical_typeType::DescriptorArray, true);\n"
+        src += indent * 5 +             "break;\n"
+        src += indent * 4 +         "}\n"
+        src += indent * 3 +     "}\n"
+        src += indent * 2 + "}\n"
         if ret_type_val:
-            src += indent * 2 + "ASR::ttype_t* type = ASRUtils::expr_type(args[0]);\n"
-            src += indent * 2 + "if (ASR::is_a<ASR::Array_t>(*type)) {\n"
-            src += indent * 3 + "ASR::Array_t* e = ASR::down_cast<ASR::Array_t>(type);\n"
-            src += indent * 3 + f"return_type = TYPE(ASR::make_Array_t(al, type->base.loc,  return_type, e->m_dims, e->n_dims, ASR::array_physical_typeType::FixedSizeArray));\n"
+            src += indent * 2 + "else {\n"
+            src += indent * 3 +     "ASR::ttype_t* type = ASRUtils::expr_type(args[0]);\n"
+            src += indent * 3 +     "if (ASR::is_a<ASR::Array_t>(*type)) {\n"
+            src += indent * 4 +         "ASR::Array_t* e = ASR::down_cast<ASR::Array_t>(type);\n"
+            src += indent * 4 +         f"return_type = TYPE(ASR::make_Array_t(al, type->base.loc,  return_type, e->m_dims, e->n_dims, ASR::array_physical_typeType::FixedSizeArray));\n"
+            src += indent * 3 +     "}\n"
             src += indent * 2 + "}\n"
+
         src += indent * 2 + "if (all_args_evaluated(m_args)) {\n"
         src += indent * 3 +     f"Vec<ASR::expr_t*> args_values; args_values.reserve(al, {no_of_args});\n"
         for _i in range(no_of_args):
@@ -1126,6 +1147,7 @@ def get_registry_funcs_src():
 HEAD = """#ifndef LIBASR_PASS_INTRINSIC_FUNC_REG_UTIL_H
 #define LIBASR_PASS_INTRINSIC_FUNC_REG_UTIL_H
 
+#include <libasr/asr_utils.h>
 #include <libasr/pass/intrinsic_functions.h>
 
 namespace LCompilers {
