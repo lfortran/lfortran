@@ -1030,11 +1030,6 @@ public:
           instantiate_symbols{instantiate_symbols}, data_structure{data_structure} {
         current_module_dependencies.reserve(al, 4);
         enum_init_val = 0;
-
-        // CommonVisitor is the entry point to start converting AST-> ASR. 
-        // From this visitor we start using functions in scope ASRUtils.
-        // `ASRUtils::use_experimental_simplifier` needs to be set based on the compiler option, so we sit it here.
-        ASRUtils::use_experimental_simplifier = compiler_options.po.experimental_simplifier;
     }
 
     ASR::symbol_t* resolve_symbol(const Location &loc, const std::string &sub_name) {
