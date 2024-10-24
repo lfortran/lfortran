@@ -20,6 +20,7 @@
 #include <libasr/pass/replace_init_expr.h>
 #include <libasr/pass/replace_implied_do_loops.h>
 #include <libasr/pass/replace_array_op.h>
+#include <libasr/pass/replace_array_op_simplifier.h>
 #include <libasr/pass/replace_select_case.h>
 #include <libasr/pass/wrap_global_stmts.h>
 #include <libasr/pass/replace_param_to_const.h>
@@ -86,6 +87,7 @@ namespace LCompilers {
             {"global_stmts", &pass_wrap_global_stmts},
             {"implied_do_loops", &pass_replace_implied_do_loops},
             {"array_op", &pass_replace_array_op},
+            {"array_op_simplifier", &pass_replace_array_op_simplifier},
             {"symbolic", &pass_replace_symbolic},
             {"flip_sign", &pass_replace_flip_sign},
             {"intrinsic_function", &pass_replace_intrinsic_function},
@@ -226,11 +228,10 @@ namespace LCompilers {
                 "pass_list_expr",
                 "where",
                 "subroutine_from_function_simplifier", // To be re-written after simplifier is implemented.
-                "array_op", // To be re-written without creating any auxiliary variables or allocatables, everything already done by simplifier
+                "array_op_simplifier", // To be re-written without creating any auxiliary variables or allocatables, everything already done by simplifier
                 "symbolic",
                 "intrinsic_function", // To be re-written without creating allocotables and auxiliary variables
                 "intrinsic_subroutine", // To be re-written without creating allocotables and auxiliary variables
-                "array_op",
                 // "subroutine_from_function", There should be no need to apply this twice
                 // "array_op", There should be no need to apply this twice
                 "pass_array_by_data",
@@ -261,12 +262,11 @@ namespace LCompilers {
                 "pass_list_expr",
                 "where",
                 "subroutine_from_function_simplifier", // To be re-written after simplifier is implemented.
-                "array_op", // To be re-written without creating any auxiliary variables or allocatables, everything already done by simplifier
+                "array_op_simplifier", // To be re-written without creating any auxiliary variables or allocatables, everything already done by simplifier
                 "symbolic",
                 "flip_sign",
                 "intrinsic_function", // To be re-written without creating allocotables and auxiliary variables
                 "intrinsic_subroutine", // To be re-written without creating allocotables and auxiliary variables
-                "array_op",
                 // "subroutine_from_function", There should be no need to apply this twice
                 // "array_op", There should be no need to apply this twice
                 "pass_array_by_data",
