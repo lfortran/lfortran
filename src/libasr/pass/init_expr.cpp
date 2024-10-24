@@ -63,7 +63,7 @@ class ReplaceInitExpr: public ASR::BaseExprReplacer<ReplaceInitExpr> {
         if( casted_type != nullptr ) {
             casted_type = ASRUtils::type_get_past_array(casted_type);
         }
-        PassUtils::ReplacerUtils::replace_ArrayConstructor(al, x, result_var, result_vec,
+        PassUtils::ReplacerUtils::replace_ArrayConstructor_(al, x, result_var, result_vec,
         current_scope, perform_cast, cast_kind, casted_type);
         *current_expr = nullptr;
     }

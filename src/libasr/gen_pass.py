@@ -4,6 +4,7 @@ passes = [
         "replace_openmp",
         "replace_function_call_in_declaration",
         "replace_array_op",
+        "replace_array_op_simplifier",
         "replace_class_constructor",
         "dead_code_removal",
         "replace_div_to_mul",
