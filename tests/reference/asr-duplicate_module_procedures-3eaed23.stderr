@@ -1,0 +1,5 @@
+semantic error: Entity test_01 is already present in the interface
+ --> tests/errors/duplicate_module_procedures.f90:4:8
+  |
+4 |        module procedure test_01, test_01, test_01
+  |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^  

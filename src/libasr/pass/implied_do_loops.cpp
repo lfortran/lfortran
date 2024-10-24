@@ -293,7 +293,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
         }
         LCOMPILERS_ASSERT(result_var != nullptr);
         Vec<ASR::stmt_t*>* result_vec = &pass_result;
-        PassUtils::ReplacerUtils::replace_ArrayConstructor(al, x, result_var, result_vec, current_scope);
+        PassUtils::ReplacerUtils::replace_ArrayConstructor_(al, x, result_var, result_vec, current_scope);
         result_var = result_var_copy;
     }
 
