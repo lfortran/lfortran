@@ -802,13 +802,13 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                 has_array_type_index = true;
                 ASR::expr_t* arg = x->m_args[i].m_right;
                 Vec<ASR::expr_t*> idx_vars;
-                [[maybe_unused]] Vec<ASR::expr_t*> idx_vars_value, loop_vars;
+                Vec<ASR::expr_t*> idx_vars_value, loop_vars;
                 std::vector<int> loop_var_indices;
                 Vec<ASR::stmt_t*> doloop_body;
                 create_do_loop(
                     loc, PassUtils::get_rank(x->m_v),
                     idx_vars, idx_vars_value, loop_vars, loop_var_indices, doloop_body, arg,
-                    [=, &idx_vars, &idx_vars_value, &doloop_body] {
+                    [=, &idx_vars, &doloop_body] {
                         ASR::expr_t* res = PassUtils::create_array_ref(result_var, idx_vars, al, current_scope);
 
                         for (size_t j = 0; j < x->n_args; j++) {
