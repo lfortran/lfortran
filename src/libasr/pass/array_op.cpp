@@ -422,6 +422,87 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
 
     void replace_ArrayItem(ASR::ArrayItem_t* x) {
         replace_vars_helper(x);
+        for ( size_t i = 0; i < x->n_args; i++ ) {
+            ASR::expr_t* arg = x->m_args[i].m_right;
+            if (ASRUtils::is_array(ASRUtils::expr_type(arg))) {
+                ASR::expr_t* arg = x->m_args[i].m_right;
+                Vec<ASR::expr_t*> idx_vars;
+                Vec<ASR::expr_t*> idx_vars_value, loop_vars;
+                std::vector<int> loop_var_indices;
+                Vec<ASR::stmt_t*> doloop_body;
+                
+                ASR::dimension_t* arr_expr_dims = nullptr; int arr_expr_n_dims;
+                arr_expr_n_dims = ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(x->m_v), arr_expr_dims);
+
+                if( result_var == nullptr ) {
+                    bool allocate = false;
+                    ASR::ttype_t* result_var_type = get_result_type(ASRUtils::expr_type(x->m_v),
+                        arr_expr_dims, arr_expr_n_dims, x->base.base.loc, x->class_type, allocate);
+                    if( allocate ) {
+                        result_var_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, x->base.base.loc,
+                        ASRUtils::type_get_past_allocatable(result_var_type)));
+                    }
+                    result_var = PassUtils::create_var(
+                        result_counter, "_array_item", x->base.base.loc,
+                        result_var_type, al, current_scope);
+                    result_counter += 1;
+                    if( allocate ) {
+                        Location loc = x->base.base.loc;
+                        allocate_result_var(arg, arr_expr_dims, arr_expr_n_dims, true, false);
+                    }
+                }
+
+                create_do_loop(
+                    x->base.base.loc, PassUtils::get_rank(x->m_v),
+                    idx_vars, idx_vars_value, loop_vars, loop_var_indices, doloop_body, arg,
+                    [=, &idx_vars, &doloop_body] {
+                        ASR::expr_t* res = PassUtils::create_array_ref(result_var, idx_vars, al, current_scope);
+
+                        for (size_t j = 0; j < x->n_args; j++) {
+                            if (ASRUtils::is_array(ASRUtils::expr_type(x->m_args[j].m_right))) {
+                                Vec<ASR::array_index_t> arr_dims;
+                                arr_dims.reserve(al, idx_vars.size());
+                                ASR::array_index_t ai;
+                                ai.loc = idx_vars[j]->base.loc;
+                                ai.m_left = nullptr;
+                                ai.m_right = idx_vars[j];
+                                ai.m_step = nullptr;
+                                arr_dims.push_back(al, ai);
+
+                                ASR::expr_t* arr_index = ASRUtils::EXPR(ASR::make_ArrayItem_t(
+                                                            al, x->base.base.loc, x->m_args[j].m_right, arr_dims.p, arr_dims.n,
+                                                            ASRUtils::type_get_past_array_pointer_allocatable(
+                                                                ASRUtils::expr_type(x->m_args[j].m_right)),
+                                                            ASR::arraystorageType::ColMajor,
+                                                            nullptr));
+                                x->m_args[j].m_right = arr_index;
+                            } else {
+                                x->m_args[j].loc = idx_vars[j]->base.loc;
+                                x->m_args[j].m_left = nullptr;
+                                x->m_args[j].m_right = idx_vars[j];
+                                x->m_args[j].m_step = nullptr;
+                            }
+                        }
+
+                        ASR::stmt_t* assign = ASRUtils::STMT(
+                                                ASR::make_Assignment_t(al, x->base.base.loc, res,
+                                                    ASRUtils::EXPR(ASR::make_ArrayItem_t(
+                                                        al, x->base.base.loc, x->m_v, x->m_args, x->n_args,
+                                                        ASRUtils::type_get_past_array_pointer_allocatable(
+                                                            ASRUtils::expr_type(x->m_v)),
+                                                        ASR::arraystorageType::ColMajor,
+                                                        nullptr)),
+                                                    nullptr));
+
+                        doloop_body.push_back(al, assign);
+                    }                        
+                );
+                
+                *current_expr = result_var;
+                break;
+            }
+        }
+
     }
 
     void replace_ComplexConstructor(ASR::ComplexConstructor_t* x) {
