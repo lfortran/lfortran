@@ -720,12 +720,12 @@ jobs:
       - name: Test stdlib
         shell: bash -e -x -l {0}
         run: |
-            git clone https://github.com/czgdp1807/stdlib.git
+            git clone https://github.com/Pranavchiku/stdlib-fortran-lang.git stdlib
             cd stdlib
             export PATH="$(pwd)/../src/bin:$PATH"
 
-            git checkout lf20
-            git checkout abb1d33d6ae02d8b62a13be7f9e51f6117c67ba4
+            git checkout origin/lf21
+            git checkout f06d89524bd5d3b5dc2a06c807a5c67190fe0371
             micromamba install -c conda-forge fypp gfortran
             git clean -fdx
             FC=lfortran cmake . -DTEST_DRIVE_BUILD_TESTING=OFF -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE -DCMAKE_Fortran_FLAGS="--cpp --realloc-lhs"
@@ -981,12 +981,12 @@ jobs:
       - name: Test stdlib
         shell: bash -e -x -l {0}
         run: |
-            git clone https://github.com/czgdp1807/stdlib.git
+            git clone https://github.com/Pranavchiku/stdlib-fortran-lang.git stdlib
             cd stdlib
             export PATH="$(pwd)/../src/bin:$PATH"
 
-            git checkout lf20
-            git checkout abb1d33d6ae02d8b62a13be7f9e51f6117c67ba4
+            git checkout origin/lf21
+            git checkout f06d89524bd5d3b5dc2a06c807a5c67190fe0371
             micromamba install -c conda-forge fypp gfortran
             git clean -fdx
             FC=lfortran cmake . -DTEST_DRIVE_BUILD_TESTING=OFF -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE -DCMAKE_Fortran_FLAGS="--cpp --realloc-lhs"
