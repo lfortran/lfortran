@@ -2728,8 +2728,8 @@ public:
                     value = x.m_symbolic_value;
                 }
                 if (value) {
-                    LCOMPILERS_ASSERT(ASR::is_a<ASR::ArrayConstant_t>(*x.m_value));
-                    ASR::ArrayConstant_t* arr_const = ASR::down_cast<ASR::ArrayConstant_t>(x.m_value);
+                    LCOMPILERS_ASSERT(ASR::is_a<ASR::ArrayConstant_t>(*value));
+                    ASR::ArrayConstant_t* arr_const = ASR::down_cast<ASR::ArrayConstant_t>(value);
                     std::vector<llvm::Constant*> arr_elements;
                     size_t arr_const_size = (size_t) ASRUtils::get_fixed_size_of_array(arr_const->m_type);
                     arr_elements.reserve(arr_const_size);
