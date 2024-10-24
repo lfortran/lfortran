@@ -1036,13 +1036,12 @@ def add_create_func_return_src(func_name):
         src += indent * 2 + "ASRUtils::ExprStmtDuplicator expr_duplicator(al);\n"
         src += indent * 2 + "expr_duplicator.allow_procedure_calls = true;\n"
         if ( ret_type_arg_idx == "dynamic"):
-            src += indent * 2 + f"ASRUtils::ASRBuilder b(al, loc);\n"
             src += indent * 2 + f"int upper_kind = 0;\n"
             src += indent * 2 + f"for(size_t i=0;i<args.size();i++){{\n"
             src += indent * 3 + f"upper_kind = std::max(upper_kind,ASRUtils::extract_kind_from_ttype_t(expr_type(args[i])));\n"
             src += indent * 2 + f"}}\n"
             src += indent * 2 + f"ASR::ttype_t* type_ = expr_duplicator.duplicate_ttype(ASRUtils::type_get_past_array_pointer_allocatable(expr_type(args[0])));\n"
-            src += indent * 2 + f"type_ = b.duplicate_type_change_kind(type_, upper_kind);\n"
+            src += indent * 2 + f"set_kind_to_ttype_t(type_,upper_kind);\n"
         else:
             src += indent * 2 + f"ASR::ttype_t* type_ = expr_duplicator.duplicate_ttype(expr_type(args[{ret_type_arg_idx}]));\n"
         ret_type = "type_"
