@@ -1770,13 +1770,24 @@ public:
             if (AST::is_a<AST::InterfaceModuleProcedure_t>(*item)) {
                 AST::InterfaceModuleProcedure_t *proc
                     = AST::down_cast<AST::InterfaceModuleProcedure_t>(item);
+                std::set<std::string> items_set;
                 for (size_t i = 0; i < proc->n_names; i++) {
                     /* Check signatures of procedures
                     * to ensure there are no two procedures
                     * with same signatures.
                     */
                     char *proc_name = proc->m_names[i];
-                    proc_names.push_back(std::string(proc_name));
+                    std::string item_proc_name = std::string(proc_name);
+                    if (items_set.find(item_proc_name) == items_set.end()) {
+                        proc_names.push_back(item_proc_name);
+                        items_set.insert(item_proc_name);
+                    } else {
+                        diag.semantic_error_label("Entity " + item_proc_name
+                                                      + " is already present in the interface",
+                                                  { item->base.loc },
+                                                  " ");
+                        throw SemanticAbort();
+                    }
                 }
             } else if(AST::is_a<AST::InterfaceProc_t>(*item)) {
                 visit_interface_item(*item);

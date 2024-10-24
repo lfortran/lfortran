@@ -4226,5 +4226,9 @@ filename = "errors/func_arg_array.f90"
 asr = true
 
 [[test]]
+filename = "errors/duplicate_module_procedures.f90"
+asr = true
+
+[[test]]
 filename = "errors/string_negative_start_index.f90"
 asr = true

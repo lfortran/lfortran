@@ -576,6 +576,26 @@ static inline ASR::expr_t *eval_ArrIntrinsic(Allocator & al,
     return nullptr;
 }
 
+static inline void fill_dimensions_for_ArrIntrinsic(Allocator& al, size_t n_dims,
+    ASR::expr_t* array, ASR::expr_t* dim, diag::Diagnostics& diag, bool runtime_dim,
+    Vec<ASR::dimension_t>& dims) {
+    Location loc; loc.first = 1, loc.last = 1;
+    dims.reserve(al, n_dims);
+    for( size_t it = 0; it < n_dims; it++ ) {
+        Vec<ASR::expr_t*> args_merge; args_merge.reserve(al, 3);
+        ASRUtils::ASRBuilder b(al, loc);
+        args_merge.push_back(al, b.ArraySize(array, b.i32(it+1), int32));
+        args_merge.push_back(al, b.ArraySize(array, b.i32(it+2), int32));
+        args_merge.push_back(al, b.Lt(b.i32(it+1), dim));
+        ASR::expr_t* merge = EXPR(Merge::create_Merge(al, loc, args_merge, diag));
+        ASR::dimension_t dim;
+        dim.loc = array->base.loc;
+        dim.m_start = b.i32(1);
+        dim.m_length = runtime_dim ? merge : nullptr;
+        dims.push_back(al, dim);
+    }
+}
+
 static inline ASR::asr_t* create_ArrIntrinsic(
     Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args,
     diag::Diagnostics& diag, ASRUtils::IntrinsicArrayFunctions intrinsic_func_id) {
@@ -5545,8 +5565,6 @@ namespace IntrinsicArrayFunctionRegistry {
             id == IntrinsicArrayFunctions::Spread ||
             id == IntrinsicArrayFunctions::Unpack ) {
             return 2; // return variable index
-        } else {
-            LCOMPILERS_ASSERT(false);
         }
         return -1;
     }
