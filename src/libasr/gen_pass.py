@@ -37,6 +37,7 @@ passes = [
         "unused_functions",
         "update_array_dim_intrinsic_calls",
         "replace_where",
+        "replace_where_simplifier",
         "unique_symbols",
         "insert_deallocate",
         "promote_allocatable_to_nonallocatable"
