@@ -1,8 +1,10 @@
 program intrinsics_78
     implicit none
     integer :: ix, iy, iresult
-    integer(8) :: j
-    integer(4) :: i
+    integer(8) :: i
+    integer(4) :: j
+    real(8) :: a
+    real(4) :: b
     real :: rx, ry, rresult
     double precision :: dx, dy, dresult
 
@@ -90,7 +92,14 @@ program intrinsics_78
     ! Test integer values with different kinds
     i = 121
     j = 121
-    iresult = kind(mod(j,i))
+    iresult = kind(mod(i,j))
     print *, "Test 14: kind(mod(", i, ",", j, ")) = ", iresult 
     if(iresult /= 8) error stop "Test 14 failed"
+
+    ! Test real values with different kinds
+    a = 121.882
+    b = 121.882
+    iresult = kind(mod(a,b))
+    print *, "Test 15: kind(mod(", a, ",", b, ")) = ", iresult 
+    if(iresult /= 8) error stop "Test 15 failed"
 end program intrinsics_78
