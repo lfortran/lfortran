@@ -1,5 +1,0 @@
-semantic error: The RHS character len must be known at compile time
- --> tests/char1.f90:2:1
-  |
-2 | character(len=1, kind=1), parameter :: c_null_char = char(0)
-  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 

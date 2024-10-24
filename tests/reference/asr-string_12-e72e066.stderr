@@ -1,5 +1,0 @@
-semantic error: The RHS character len must be known at compile time
- --> tests/../integration_tests/string_12.f90:4:5
-  |
-4 |     character(len=*), parameter :: fullhex_digits = "0123456789ABCDEFabcdef" !! 0 .. 9A .. Fa .. f
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
