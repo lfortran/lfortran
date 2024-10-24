@@ -6,7 +6,7 @@ program arrays_54
     order = 2
     x = 1
     center = 0
-    res = sum((x - center), dim) / size(x, dim)
-    if (any(res /= 1)) error stop
+    res = 1 + sum((x - center), dim) / size(x, dim)
+    if( any(res /= 2) ) error stop
     print *, res
 end program
