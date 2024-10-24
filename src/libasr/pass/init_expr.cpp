@@ -60,16 +60,12 @@ class ReplaceInitExpr: public ASR::BaseExprReplacer<ReplaceInitExpr> {
             symtab2decls[current_scope] = result_vec_;
         }
         Vec<ASR::stmt_t*>* result_vec = &symtab2decls[current_scope];
-        bool remove_original_statement = false;
         if( casted_type != nullptr ) {
             casted_type = ASRUtils::type_get_past_array(casted_type);
         }
-        if (pass_simplifier) PassUtils::ReplacerUtils::replace_ArrayConstructor_(al, x, result_var, result_vec,
-            current_scope, perform_cast, cast_kind, casted_type);
-        else PassUtils::ReplacerUtils::replace_ArrayConstructor(x, this,
-            remove_original_statement, result_vec,
-            perform_cast, cast_kind, casted_type);
-            *current_expr = nullptr;
+        PassUtils::ReplacerUtils::replace_ArrayConstructor(al, x, result_var, result_vec,
+        current_scope, perform_cast, cast_kind, casted_type);
+        *current_expr = nullptr;
     }
 
     void replace_StructConstructor(ASR::StructConstructor_t* x) {

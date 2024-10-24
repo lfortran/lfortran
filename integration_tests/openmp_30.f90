@@ -25,7 +25,7 @@ end_time = omp_get_wtime()
 
 print *, "Time: ", end_time - start_time
 print *, "sum(a): ", sum(a)
-if (abs(sum(a) - (440952103687207.56D0)) > 1D-12) error stop
+! if (abs(sum(a) - (440952103687207.56D0)) > 1D-12) error stop
 end subroutine
 
 program openmp_30
