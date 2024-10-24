@@ -59,6 +59,10 @@ class ArrayVarCollector: public ASR::BaseWalkVisitor<ArrayVarCollector> {
 
     }
 
+    void visit_ArraySize(const ASR::ArraySize_t& /*x*/) {
+
+    }
+
 };
 
 ASR::expr_t* get_ImpliedDoLoop_size(Allocator& al, ASR::ImpliedDoLoop_t* implied_doloop) {
@@ -253,7 +257,7 @@ ASR::expr_t* create_temporary_variable_for_scalar(Allocator& al,
 
     ASR::ttype_t* var_type = ASRUtils::duplicate_type(al, ASRUtils::extract_type(value_type));
     std::string var_name = scope->get_unique_name("__libasr_created_" + name_hint);
-    ASR::symbol_t* temporary_variable = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
+    ASR::symbol_t* temporary_variable = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(
         al, value->base.loc, scope, s2c(al, var_name), nullptr, 0, ASR::intentType::Local,
         nullptr, nullptr, ASR::storage_typeType::Default, var_type, nullptr, ASR::abiType::Source,
         ASR::accessType::Public, ASR::presenceType::Required, false));
@@ -299,7 +303,7 @@ ASR::expr_t* create_temporary_variable_for_array(Allocator& al,
     }
 
     std::string var_name = scope->get_unique_name("__libasr_created_" + name_hint);
-    ASR::symbol_t* temporary_variable = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
+    ASR::symbol_t* temporary_variable = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(
         al, value->base.loc, scope, s2c(al, var_name), nullptr, 0, ASR::intentType::Local,
         nullptr, nullptr, ASR::storage_typeType::Default, var_type, nullptr, ASR::abiType::Source,
         ASR::accessType::Public, ASR::presenceType::Required, false));
@@ -312,7 +316,7 @@ ASR::expr_t* create_temporary_variable_for_array(Allocator& al, const Location& 
     SymbolTable* scope, std::string name_hint, ASR::ttype_t* value_type) {
 
     std::string var_name = scope->get_unique_name("__libasr_created_" + name_hint);
-    ASR::symbol_t* temporary_variable = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
+    ASR::symbol_t* temporary_variable = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(
         al, loc, scope, s2c(al, var_name), nullptr, 0, ASR::intentType::Local,
         nullptr, nullptr, ASR::storage_typeType::Default, value_type, nullptr, ASR::abiType::Source,
         ASR::accessType::Public, ASR::presenceType::Required, false));
@@ -327,7 +331,7 @@ ASR::expr_t* create_temporary_variable_for_struct(Allocator& al,
     LCOMPILERS_ASSERT(ASRUtils::is_struct(*value_type));
 
     std::string var_name = scope->get_unique_name("__libasr_created_" + name_hint);
-    ASR::symbol_t* temporary_variable = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
+    ASR::symbol_t* temporary_variable = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(
         al, value->base.loc, scope, s2c(al, var_name), nullptr, 0, ASR::intentType::Local,
         nullptr, nullptr, ASR::storage_typeType::Default, value_type, nullptr, ASR::abiType::Source,
         ASR::accessType::Public, ASR::presenceType::Required, false));
@@ -392,7 +396,8 @@ void set_allocation_size_elemental_function(
 
 bool set_allocation_size(
     Allocator& al, ASR::expr_t* value,
-    Vec<ASR::dimension_t>& allocate_dims
+    Vec<ASR::dimension_t>& allocate_dims,
+    size_t target_n_dims
 ) {
     if ( !ASRUtils::is_array(ASRUtils::expr_type(value)) ) {
         return false;
@@ -469,26 +474,18 @@ bool set_allocation_size(
             array_var_collector.visit_expr(*value);
             Vec<ASR::expr_t*> arrays_with_maximum_rank;
             arrays_with_maximum_rank.reserve(al, 1);
-            size_t max_rank = 0;
-            for( size_t i = 0; i < array_vars.size(); i++ ) {
-                size_t rank = ASRUtils::extract_n_dims_from_ttype(
-                    ASRUtils::expr_type(array_vars[i]));
-                if( rank > max_rank ) {
-                    max_rank = rank;
-                }
-            }
-            LCOMPILERS_ASSERT(max_rank > 0);
+            LCOMPILERS_ASSERT(target_n_dims > 0);
             for( size_t i = 0; i < array_vars.size(); i++ ) {
                 if( (size_t) ASRUtils::extract_n_dims_from_ttype(
-                        ASRUtils::expr_type(array_vars[i])) == max_rank ) {
+                        ASRUtils::expr_type(array_vars[i])) == target_n_dims ) {
                     arrays_with_maximum_rank.push_back(al, array_vars[i]);
                 }
             }
 
             LCOMPILERS_ASSERT(arrays_with_maximum_rank.size() > 0);
             ASR::expr_t* selected_array = arrays_with_maximum_rank[0];
-            allocate_dims.reserve(al, max_rank);
-            for( size_t i = 0; i < max_rank; i++ ) {
+            allocate_dims.reserve(al, target_n_dims);
+            for( size_t i = 0; i < target_n_dims; i++ ) {
                 ASR::dimension_t allocate_dim;
                 Location loc; loc.first = 1, loc.last = 1;
                 allocate_dim.loc = loc;
@@ -557,6 +554,9 @@ bool set_allocation_size(
                 ASR::expr_t* start = array_section_t->m_args[i].m_left;
                 ASR::expr_t* end = array_section_t->m_args[i].m_right;
                 ASR::expr_t* step = array_section_t->m_args[i].m_step;
+                if( start == nullptr && step == nullptr && end != nullptr ) {
+                    continue ;
+                }
                 ASR::expr_t* end_minus_start = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
                     end, ASR::binopType::Sub, start, ASRUtils::expr_type(end), nullptr));
                 ASR::expr_t* by_step = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
@@ -575,30 +575,8 @@ bool set_allocation_size(
         case ASR::exprType::IntrinsicElementalFunction: {
             ASR::IntrinsicElementalFunction_t* intrinsic_elemental_function =
                 ASR::down_cast<ASR::IntrinsicElementalFunction_t>(value);
-            switch (intrinsic_elemental_function->m_intrinsic_id) {
-                case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::BesselJ0):
-                case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::BesselJ1):
-                case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::BesselJN):
-                case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::BesselY0):
-                case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::BesselY1):
-                case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::BesselYN):
-                case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Real):
-                case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Sin):
-                case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Exp):
-                case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Abs):
-                case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Aimag):
-                case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Int):
-                case static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Merge): {
-                    set_allocation_size_elemental_function(al, loc, intrinsic_elemental_function,
+            set_allocation_size_elemental_function(al, loc, intrinsic_elemental_function,
                         allocate_dims);
-                    break;
-                }
-                default: {
-                    LCOMPILERS_ASSERT_MSG(false, "ASR::IntrinsicElementalFunctions::" +
-                        ASRUtils::get_intrinsic_name(intrinsic_elemental_function->m_intrinsic_id)
-                        + " not handled yet in set_allocation_size");
-                }
-            }
             break;
         }
         case ASR::exprType::IntrinsicArrayFunction: {
@@ -760,13 +738,11 @@ void insert_allocate_stmt_for_array(Allocator& al, ASR::expr_t* temporary_var,
         return ;
     }
     Vec<ASR::dimension_t> allocate_dims;
-    if( !set_allocation_size(al, value, allocate_dims) ) {
+    size_t target_n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(temporary_var));
+    if( !set_allocation_size(al, value, allocate_dims, target_n_dims) ) {
         return ;
     }
-    LCOMPILERS_ASSERT(
-        (size_t) ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(temporary_var))
-        ==
-        allocate_dims.size());
+    LCOMPILERS_ASSERT(target_n_dims == allocate_dims.size());
     Vec<ASR::alloc_arg_t> alloc_args; alloc_args.reserve(al, 1);
     ASR::alloc_arg_t alloc_arg;
     alloc_arg.loc = value->base.loc;
@@ -926,7 +902,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
 
     ArgSimplifier(Allocator& al_, ExprsWithTargetType& exprs_with_target_, bool realloc_lhs_) :
         al(al_), current_body(nullptr), exprs_with_target(exprs_with_target_),
-        realloc_lhs(realloc_lhs_) {}
+        realloc_lhs(realloc_lhs_) {(void)realloc_lhs; /*Silence-Warning*/}
 
     void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
         transform_stmts_impl
@@ -1077,10 +1053,6 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         // Do nothing
     }
 
-    // void visit_ArrayBroadcast(const ASR::ArrayBroadcast_t& /*x*/) {
-    //     // Do nothing
-    // }
-
     void visit_Assignment(const ASR::Assignment_t& x) {
         ASR::Assignment_t& xx = const_cast<ASR::Assignment_t&>(x);
         // e.g.; a = [b, a], where 'a' is an allocatable
@@ -1177,10 +1149,11 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         CallReplacerOnExpressionsVisitor::visit_StringFormat(x);
     }
 
-    ASR::expr_t* visit_BinOp_expr(ASR::expr_t* expr, const std::string& name_hint) {
+    ASR::expr_t* visit_BinOp_expr(ASR::expr_t* expr, const std::string& name_hint, ASR::exprType allowed_expr) {
         if (ASRUtils::is_array(ASRUtils::expr_type(expr)) &&
             !ASR::is_a<ASR::ArrayBroadcast_t>(*expr) &&
-            !ASR::is_a<ASR::Var_t>(*ASRUtils::get_past_array_physical_cast(expr))
+            !ASR::is_a<ASR::Var_t>(*ASRUtils::get_past_array_physical_cast(expr)) &&
+            (expr->type != allowed_expr)
         ) {
             visit_expr(*expr);
             call_create_and_allocate_temporary_variable(expr)
@@ -1207,12 +1180,12 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
 
     template <typename T>
     bool visit_BinOpUtil(T* binop, const std::string& name_hint,
-        std::pair<ASR::expr_t*, ASR::expr_t*>& left_right) {
+        std::pair<ASR::expr_t*, ASR::expr_t*>& left_right, ASR::exprType allowed_expr) {
         if( ASRUtils::is_simd_array(binop->m_type) ) {
             return false;
         }
-        ASR::expr_t* left = visit_BinOp_expr(binop->m_left, name_hint + "_left_");
-        ASR::expr_t* right = visit_BinOp_expr(binop->m_right, name_hint + "_right_");
+        ASR::expr_t* left = visit_BinOp_expr(binop->m_left, name_hint + "_left_", allowed_expr);
+        ASR::expr_t* right = visit_BinOp_expr(binop->m_right, name_hint + "_right_", allowed_expr);
         left_right = std::make_pair(left, right);
         return true;
     }
@@ -1220,7 +1193,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
     void visit_IntegerBinOp(const ASR::IntegerBinOp_t& x) {
         ASR::IntegerBinOp_t& xx = const_cast<ASR::IntegerBinOp_t&>(x);
         std::pair<ASR::expr_t*, ASR::expr_t*> binop;
-        if( !visit_BinOpUtil(&xx, "integer_binop", binop) ) {
+        if( !visit_BinOpUtil(&xx, "integer_binop", binop, ASR::exprType::IntegerBinOp) ) {
             return ;
         }
         xx.m_left = binop.first;
@@ -1231,7 +1204,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
     void visit_RealBinOp(const ASR::RealBinOp_t& x) {
         ASR::RealBinOp_t& xx = const_cast<ASR::RealBinOp_t&>(x);
         std::pair<ASR::expr_t*, ASR::expr_t*> binop;
-        if( !visit_BinOpUtil(&xx, "real_binop", binop) ) {
+        if( !visit_BinOpUtil(&xx, "real_binop", binop, ASR::exprType::RealBinOp) ) {
             return ;
         }
         xx.m_left = binop.first;
@@ -1242,17 +1215,18 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
     void visit_ComplexBinOp(const ASR::ComplexBinOp_t& x) {
         ASR::ComplexBinOp_t& xx = const_cast<ASR::ComplexBinOp_t&>(x);
         std::pair<ASR::expr_t*, ASR::expr_t*> binop;
-        if( !visit_BinOpUtil(&xx, "complex_binop", binop) ) {
+        if( !visit_BinOpUtil(&xx, "complex_binop", binop, ASR::exprType::ComplexBinOp) ) {
             return ;
         }
         xx.m_left = binop.first;
         xx.m_right = binop.second;
+        CallReplacerOnExpressionsVisitor::visit_ComplexBinOp(x);
     }
 
     void visit_LogicalBinOp(const ASR::LogicalBinOp_t& x) {
         ASR::LogicalBinOp_t& xx = const_cast<ASR::LogicalBinOp_t&>(x);
         std::pair<ASR::expr_t*, ASR::expr_t*> binop;
-        if( !visit_BinOpUtil(&xx, "logical_binop", binop) ) {
+        if( !visit_BinOpUtil(&xx, "logical_binop", binop, ASR::exprType::LogicalBinOp) ) {
             return ;
         }
         xx.m_left = binop.first;
@@ -1262,14 +1236,14 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
 
     void visit_LogicalNot(const ASR::LogicalNot_t& x) {
         ASR::LogicalNot_t& xx = const_cast<ASR::LogicalNot_t&>(x);
-        xx.m_arg = visit_BinOp_expr(x.m_arg, "logical_not_");
+        xx.m_arg = visit_BinOp_expr(x.m_arg, "logical_not_", ASR::exprType::LogicalNot);
         CallReplacerOnExpressionsVisitor::visit_LogicalNot(x);
     }
 
     void visit_RealCompare(const ASR::RealCompare_t& x) {
         ASR::RealCompare_t& xx = const_cast<ASR::RealCompare_t&>(x);
         std::pair<ASR::expr_t*, ASR::expr_t*> binop;
-        if( !visit_BinOpUtil(&xx, "real_compare", binop) ) {
+        if( !visit_BinOpUtil(&xx, "real_compare", binop, ASR::exprType::RealCompare) ) {
             return ;
         }
         xx.m_left = binop.first;
@@ -1280,7 +1254,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
     void visit_IntegerCompare(const ASR::IntegerCompare_t& x) {
         ASR::IntegerCompare_t& xx = const_cast<ASR::IntegerCompare_t&>(x);
         std::pair<ASR::expr_t*, ASR::expr_t*> binop;
-        if( !visit_BinOpUtil(&xx, "integer_compare", binop) ) {
+        if( !visit_BinOpUtil(&xx, "integer_compare", binop, ASR::exprType::IntegerCompare) ) {
             return ;
         }
         xx.m_left = binop.first;
@@ -1417,13 +1391,6 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         if( x.m_vector ) {
             replace_expr_with_temporary_variable(vector, "_array_pack_vector_")
         }
-    }
-
-    void visit_Cast(const ASR::Cast_t& x) {
-        ASR::Cast_t& xx = const_cast<ASR::Cast_t&>(x);
-
-        replace_expr_with_temporary_variable(arg, "_cast_")
-        CallReplacerOnExpressionsVisitor::visit_Cast(x);
     }
 
     void visit_ComplexRe(const ASR::ComplexRe_t& x) {
@@ -1581,22 +1548,6 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         replace_current_expr("_set_constant_")
     }
 
-    void replace_IntegerBinOp(ASR::IntegerBinOp_t* x) {
-        replace_current_expr("_integer_binop_")
-    }
-
-    void replace_RealBinOp(ASR::RealBinOp_t* x) {
-        if( ASRUtils::is_simd_array(x->m_type) ) {
-            ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_RealBinOp(x);
-            return ;
-        }
-        replace_current_expr("_real_binop_")
-    }
-
-    void replace_IntegerCompare(ASR::IntegerCompare_t* x) {
-        replace_current_expr("_integer_compare_")
-    }
-
     void replace_TupleConstant(ASR::TupleConstant_t* x) {
         replace_current_expr("_tuple_constant_")
     }
@@ -1669,20 +1620,6 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
 
     void replace_ArrayReshape(ASR::ArrayReshape_t* x) {
         replace_current_expr("_array_reshape_")
-    }
-
-    void replace_ArrayBroadcast(ASR::ArrayBroadcast_t* x) {
-        ASR::expr_t** current_expr_copy_161 = current_expr;
-        current_expr = &(x->m_array);
-        replace_expr(x->m_array);
-        current_expr = current_expr_copy_161;
-        replace_ttype(x->m_type);
-        if (call_replacer_on_value) {
-            ASR::expr_t** current_expr_copy_163 = current_expr;
-            current_expr = &(x->m_value);
-            replace_expr(x->m_value);
-            current_expr = current_expr_copy_163;
-        }
     }
 
     void replace_ArrayItem(ASR::ArrayItem_t* x) {
@@ -1765,6 +1702,16 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
 
     void replace_ArrayBound(ASR::ArrayBound_t* x) {
         replace_current_expr("_array_bound_")
+    }
+
+    void replace_ArraySize(ASR::ArraySize_t* x) {
+        ASR::expr_t** current_expr_copy_149 = current_expr;
+        current_expr = &(x->m_v);
+        if( !ASR::is_a<ASR::Var_t>(*x->m_v) &&
+            !ASR::is_a<ASR::StructInstanceMember_t>(*x->m_v) ) {
+            force_replace_current_expr_for_array("_array_size_v")
+        }
+        current_expr = current_expr_copy_149;
     }
 };
 
@@ -2280,10 +2227,6 @@ class VerifySimplifierASROutput:
         check_if_linked_to_target(x.base, x.m_type);
     }
 
-    void visit_Cast(const ASR::Cast_t& x) {
-        check_for_var_if_array(x.m_arg);
-    }
-
     void visit_OverloadedCompare(const ASR::OverloadedCompare_t& x) {
         check_if_linked_to_target(x.base, x.m_type);
     }
@@ -2398,6 +2341,8 @@ void pass_simplifier(Allocator &al, ASR::TranslationUnit_t &unit,
     // TODO: Add a visitor in asdl_cpp.py which will replace
     // current_expr with its own `m_value` (if `m_value` is not nullptr)
     // Call the visitor here.
+    ASRUtils::RemoveArrayProcessingNodeVisitor remove_array_processing_node_visitor(al);
+    remove_array_processing_node_visitor.visit_TranslationUnit(unit);
     ExprsWithTargetType exprs_with_target;
     InitialiseExprWithTarget init_expr_with_target(exprs_with_target);
     init_expr_with_target.visit_TranslationUnit(unit);

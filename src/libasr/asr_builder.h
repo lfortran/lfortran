@@ -39,7 +39,7 @@ class ASRBuilder {
             ASR::ttype_t *type, ASR::intentType intent,
             ASR::abiType abi=ASR::abiType::Source, bool a_value_attr=false) {
         ASR::symbol_t* sym = ASR::down_cast<ASR::symbol_t>(
-            ASRUtils::make_Variable_t_util(al, loc, symtab, s2c(al, var_name), nullptr, 0,
+            ASR::make_Variable_t(al, loc, symtab, s2c(al, var_name), nullptr, 0,
             intent, nullptr, nullptr, ASR::storage_typeType::Default, type, nullptr, abi,
             ASR::Public, ASR::presenceType::Required, a_value_attr));
         symtab->add_symbol(s2c(al, var_name), sym);
@@ -50,7 +50,7 @@ class ASRBuilder {
             ASR::ttype_t *type, ASR::intentType intent,
             ASR::abiType abi=ASR::abiType::Source, bool a_value_attr=false) {
         ASR::symbol_t* sym = ASR::down_cast<ASR::symbol_t>(
-            ASRUtils::make_Variable_t_util(al, loc, symtab, s2c(al, var_name), nullptr, 0,
+            ASR::make_Variable_t(al, loc, symtab, s2c(al, var_name), nullptr, 0,
             intent, nullptr, nullptr, ASR::storage_typeType::Default, type, nullptr, abi,
             ASR::Public, ASR::presenceType::Required, a_value_attr));
         symtab->add_symbol(s2c(al, var_name), sym);
@@ -61,7 +61,7 @@ class ASRBuilder {
             ASR::ttype_t *type, ASR::intentType intent,
             ASR::abiType abi=ASR::abiType::Source, bool a_value_attr=false) {
         ASR::symbol_t* sym = ASR::down_cast<ASR::symbol_t>(
-            ASRUtils::make_Variable_t_util(al, loc, symtab, s2c(al, var_name), nullptr, 0,
+            ASR::make_Variable_t(al, loc, symtab, s2c(al, var_name), nullptr, 0,
             intent, nullptr, nullptr, ASR::storage_typeType::Default, type, nullptr, abi,
             ASR::Public, ASR::presenceType::Required, a_value_attr));
         symtab->add_or_overwrite_symbol(s2c(al, var_name), sym);
@@ -131,6 +131,18 @@ class ASRBuilder {
             m_dims.push_back(al, dim);
         }
         return make_Array_t_util(al, loc, type, m_dims.p, m_dims.n);
+    }
+
+    ASR::ttype_t* create_type(ASR::ttype_t* t, int64_t kind) {
+        if (ASRUtils::is_integer(*t)) {
+            return ASRUtils::TYPE(ASR::make_Integer_t(al, loc, kind));
+        } else if (ASRUtils::is_real(*t)) {
+            return ASRUtils::TYPE(ASR::make_Real_t(al, loc, kind));
+        } else if (ASRUtils::is_complex(*t)) {
+            return ASRUtils::TYPE(ASR::make_Complex_t(al, loc, kind));
+        } else {
+            throw LCompilersException("Type not supported");
+        }
     }
 
     ASR::ttype_t* CPtr() {

@@ -1042,6 +1042,7 @@ def add_create_func_return_src(func_name):
             src += indent * 2 + f"}}\n"
             src += indent * 2 + f"ASR::ttype_t* type_ = expr_duplicator.duplicate_ttype(ASRUtils::type_get_past_array_pointer_allocatable(expr_type(args[0])));\n"
             src += indent * 2 + f"set_kind_to_ttype_t(type_,upper_kind);\n"
+
         else:
             src += indent * 2 + f"ASR::ttype_t* type_ = expr_duplicator.duplicate_ttype(ASRUtils::type_get_past_array_pointer_allocatable(expr_type(args[{ret_type_arg_idx}])));\n"
         ret_type = "type_"

@@ -22,6 +22,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
     Allocator& al;
     Vec<ASR::stmt_t*>& pass_result;
     bool& remove_original_statement;
+    bool pass_simplifier = false;
 
     SymbolTable* current_scope;
     ASR::expr_t* result_var;
@@ -32,12 +33,14 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
     ReplaceArrayConstant(Allocator& al_, Vec<ASR::stmt_t*>& pass_result_,
         bool& remove_original_statement_,
         std::map<ASR::expr_t*, ASR::expr_t*>& resultvar2value_,
-        bool realloc_lhs_, bool allocate_target_) :
+        bool realloc_lhs_, bool allocate_target_, bool pass_simplifier_) :
     al(al_), pass_result(pass_result_),
     remove_original_statement(remove_original_statement_),
-    current_scope(nullptr), result_var(nullptr), result_counter(0),
-    resultvar2value(resultvar2value_), realloc_lhs(realloc_lhs_),
-    allocate_target(allocate_target_) {}
+    pass_simplifier(pass_simplifier_),
+    current_scope(nullptr), 
+    result_var(nullptr), result_counter(0),
+    resultvar2value(resultvar2value_), 
+    realloc_lhs(realloc_lhs_), allocate_target(allocate_target_) {}
 
     ASR::expr_t* get_ImpliedDoLoop_size(ASR::ImpliedDoLoop_t* implied_doloop) {
         const Location& loc = implied_doloop->base.base.loc;
@@ -420,10 +423,10 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
 
     public:
 
-        ArrayConstantVisitor(Allocator& al_, bool realloc_lhs_) :
+        ArrayConstantVisitor(Allocator& al_, bool realloc_lhs_, bool pass_simplifier_) :
         al(al_), remove_original_statement(false),
         replacer(al_, pass_result, remove_original_statement,
-            resultvar2value, realloc_lhs_, allocate_target),
+            resultvar2value, realloc_lhs_, allocate_target, pass_simplifier_),
         parent_body(nullptr) {
             pass_result.n = 0;
             pass_result.reserve(al, 0);
@@ -719,7 +722,7 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
 void pass_replace_implied_do_loops(Allocator &al,
     ASR::TranslationUnit_t &unit,
     const LCompilers::PassOptions& pass_options) {
-    ArrayConstantVisitor v(al, pass_options.realloc_lhs);
+    ArrayConstantVisitor v(al, pass_options.realloc_lhs, pass_options.experimental_simplifier);
     v.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor u(al);
     u.visit_TranslationUnit(unit);

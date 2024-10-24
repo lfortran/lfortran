@@ -102,4 +102,5 @@ program intrinsics_78
     iresult = kind(mod(a,b))
     print *, "Test 15: kind(mod(", a, ",", b, ")) = ", iresult 
     if(iresult /= 8) error stop "Test 15 failed"
+    
 end program intrinsics_78

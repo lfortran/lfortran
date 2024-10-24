@@ -763,9 +763,9 @@ namespace Abs {
                 std::to_string(input_kind) + " output kind: " + std::to_string(output_kind),
                 loc, diagnostics);
         } else {
-            // ASRUtils::require_impl(ASRUtils::check_equal_type(input_type, output_type, true),
-            //     "The input and output type of elemental intrinsics must exactly match, input type: " +
-            //     input_type_str + " output type: " + output_type_str, loc, diagnostics);
+            ASRUtils::require_impl(ASRUtils::check_equal_type(input_type, output_type, true),
+                "The input and output type of elemental intrinsics must exactly match, input type: " +
+                input_type_str + " output type: " + output_type_str, loc, diagnostics);
         }
     }
 
@@ -3314,7 +3314,7 @@ namespace Mod {
             }
             else{
                 body.push_back(al, b.Assignment(result, b.Sub(args[0], b.Mul(args[1], b.Div(args[0], args[1])))));
-            }
+            } 
         }
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
