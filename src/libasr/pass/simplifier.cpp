@@ -554,6 +554,9 @@ bool set_allocation_size(
                 ASR::expr_t* start = array_section_t->m_args[i].m_left;
                 ASR::expr_t* end = array_section_t->m_args[i].m_right;
                 ASR::expr_t* step = array_section_t->m_args[i].m_step;
+                if( start == nullptr && step == nullptr && end != nullptr ) {
+                    continue ;
+                }
                 ASR::expr_t* end_minus_start = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
                     end, ASR::binopType::Sub, start, ASRUtils::expr_type(end), nullptr));
                 ASR::expr_t* by_step = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
@@ -1146,10 +1149,11 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         CallReplacerOnExpressionsVisitor::visit_StringFormat(x);
     }
 
-    ASR::expr_t* visit_BinOp_expr(ASR::expr_t* expr, const std::string& name_hint) {
+    ASR::expr_t* visit_BinOp_expr(ASR::expr_t* expr, const std::string& name_hint, ASR::exprType allowed_expr) {
         if (ASRUtils::is_array(ASRUtils::expr_type(expr)) &&
             !ASR::is_a<ASR::ArrayBroadcast_t>(*expr) &&
-            !ASR::is_a<ASR::Var_t>(*ASRUtils::get_past_array_physical_cast(expr))
+            !ASR::is_a<ASR::Var_t>(*ASRUtils::get_past_array_physical_cast(expr)) &&
+            (expr->type != allowed_expr)
         ) {
             visit_expr(*expr);
             call_create_and_allocate_temporary_variable(expr)
@@ -1176,12 +1180,12 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
 
     template <typename T>
     bool visit_BinOpUtil(T* binop, const std::string& name_hint,
-        std::pair<ASR::expr_t*, ASR::expr_t*>& left_right) {
+        std::pair<ASR::expr_t*, ASR::expr_t*>& left_right, ASR::exprType allowed_expr) {
         if( ASRUtils::is_simd_array(binop->m_type) ) {
             return false;
         }
-        ASR::expr_t* left = visit_BinOp_expr(binop->m_left, name_hint + "_left_");
-        ASR::expr_t* right = visit_BinOp_expr(binop->m_right, name_hint + "_right_");
+        ASR::expr_t* left = visit_BinOp_expr(binop->m_left, name_hint + "_left_", allowed_expr);
+        ASR::expr_t* right = visit_BinOp_expr(binop->m_right, name_hint + "_right_", allowed_expr);
         left_right = std::make_pair(left, right);
         return true;
     }
@@ -1189,7 +1193,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
     void visit_IntegerBinOp(const ASR::IntegerBinOp_t& x) {
         ASR::IntegerBinOp_t& xx = const_cast<ASR::IntegerBinOp_t&>(x);
         std::pair<ASR::expr_t*, ASR::expr_t*> binop;
-        if( !visit_BinOpUtil(&xx, "integer_binop", binop) ) {
+        if( !visit_BinOpUtil(&xx, "integer_binop", binop, ASR::exprType::IntegerBinOp) ) {
             return ;
         }
         xx.m_left = binop.first;
@@ -1200,7 +1204,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
     void visit_RealBinOp(const ASR::RealBinOp_t& x) {
         ASR::RealBinOp_t& xx = const_cast<ASR::RealBinOp_t&>(x);
         std::pair<ASR::expr_t*, ASR::expr_t*> binop;
-        if( !visit_BinOpUtil(&xx, "real_binop", binop) ) {
+        if( !visit_BinOpUtil(&xx, "real_binop", binop, ASR::exprType::RealBinOp) ) {
             return ;
         }
         xx.m_left = binop.first;
@@ -1211,17 +1215,18 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
     void visit_ComplexBinOp(const ASR::ComplexBinOp_t& x) {
         ASR::ComplexBinOp_t& xx = const_cast<ASR::ComplexBinOp_t&>(x);
         std::pair<ASR::expr_t*, ASR::expr_t*> binop;
-        if( !visit_BinOpUtil(&xx, "complex_binop", binop) ) {
+        if( !visit_BinOpUtil(&xx, "complex_binop", binop, ASR::exprType::ComplexBinOp) ) {
             return ;
         }
         xx.m_left = binop.first;
         xx.m_right = binop.second;
+        CallReplacerOnExpressionsVisitor::visit_ComplexBinOp(x);
     }
 
     void visit_LogicalBinOp(const ASR::LogicalBinOp_t& x) {
         ASR::LogicalBinOp_t& xx = const_cast<ASR::LogicalBinOp_t&>(x);
         std::pair<ASR::expr_t*, ASR::expr_t*> binop;
-        if( !visit_BinOpUtil(&xx, "logical_binop", binop) ) {
+        if( !visit_BinOpUtil(&xx, "logical_binop", binop, ASR::exprType::LogicalBinOp) ) {
             return ;
         }
         xx.m_left = binop.first;
@@ -1231,14 +1236,14 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
 
     void visit_LogicalNot(const ASR::LogicalNot_t& x) {
         ASR::LogicalNot_t& xx = const_cast<ASR::LogicalNot_t&>(x);
-        xx.m_arg = visit_BinOp_expr(x.m_arg, "logical_not_");
+        xx.m_arg = visit_BinOp_expr(x.m_arg, "logical_not_", ASR::exprType::LogicalNot);
         CallReplacerOnExpressionsVisitor::visit_LogicalNot(x);
     }
 
     void visit_RealCompare(const ASR::RealCompare_t& x) {
         ASR::RealCompare_t& xx = const_cast<ASR::RealCompare_t&>(x);
         std::pair<ASR::expr_t*, ASR::expr_t*> binop;
-        if( !visit_BinOpUtil(&xx, "real_compare", binop) ) {
+        if( !visit_BinOpUtil(&xx, "real_compare", binop, ASR::exprType::RealCompare) ) {
             return ;
         }
         xx.m_left = binop.first;
@@ -1249,7 +1254,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
     void visit_IntegerCompare(const ASR::IntegerCompare_t& x) {
         ASR::IntegerCompare_t& xx = const_cast<ASR::IntegerCompare_t&>(x);
         std::pair<ASR::expr_t*, ASR::expr_t*> binop;
-        if( !visit_BinOpUtil(&xx, "integer_compare", binop) ) {
+        if( !visit_BinOpUtil(&xx, "integer_compare", binop, ASR::exprType::IntegerCompare) ) {
             return ;
         }
         xx.m_left = binop.first;
@@ -1386,13 +1391,6 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         if( x.m_vector ) {
             replace_expr_with_temporary_variable(vector, "_array_pack_vector_")
         }
-    }
-
-    void visit_Cast(const ASR::Cast_t& x) {
-        ASR::Cast_t& xx = const_cast<ASR::Cast_t&>(x);
-
-        replace_expr_with_temporary_variable(arg, "_cast_")
-        CallReplacerOnExpressionsVisitor::visit_Cast(x);
     }
 
     void visit_ComplexRe(const ASR::ComplexRe_t& x) {
@@ -1550,22 +1548,6 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         replace_current_expr("_set_constant_")
     }
 
-    void replace_IntegerBinOp(ASR::IntegerBinOp_t* x) {
-        replace_current_expr("_integer_binop_")
-    }
-
-    void replace_RealBinOp(ASR::RealBinOp_t* x) {
-        if( ASRUtils::is_simd_array(x->m_type) ) {
-            ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_RealBinOp(x);
-            return ;
-        }
-        replace_current_expr("_real_binop_")
-    }
-
-    void replace_IntegerCompare(ASR::IntegerCompare_t* x) {
-        replace_current_expr("_integer_compare_")
-    }
-
     void replace_TupleConstant(ASR::TupleConstant_t* x) {
         replace_current_expr("_tuple_constant_")
     }
@@ -1720,6 +1702,16 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
 
     void replace_ArrayBound(ASR::ArrayBound_t* x) {
         replace_current_expr("_array_bound_")
+    }
+
+    void replace_ArraySize(ASR::ArraySize_t* x) {
+        ASR::expr_t** current_expr_copy_149 = current_expr;
+        current_expr = &(x->m_v);
+        if( !ASR::is_a<ASR::Var_t>(*x->m_v) &&
+            !ASR::is_a<ASR::StructInstanceMember_t>(*x->m_v) ) {
+            force_replace_current_expr_for_array("_array_size_v")
+        }
+        current_expr = current_expr_copy_149;
     }
 };
 
@@ -2233,10 +2225,6 @@ class VerifySimplifierASROutput:
 
     void visit_UnionInstanceMember(const ASR::UnionInstanceMember_t& x) {
         check_if_linked_to_target(x.base, x.m_type);
-    }
-
-    void visit_Cast(const ASR::Cast_t& x) {
-        check_for_var_if_array(x.m_arg);
     }
 
     void visit_OverloadedCompare(const ASR::OverloadedCompare_t& x) {
