@@ -1,0 +1,114 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            logical5:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            a:
+                                (Variable
+                                    2
+                                    a
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            b:
+                                (Variable
+                                    2
+                                    b
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            c:
+                                (Variable
+                                    2
+                                    c
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    logical5
+                    []
+                    [(Assignment
+                        (Var 2 a)
+                        (Cast
+                            (LogicalConstant
+                                .true.
+                                (Logical 4)
+                            )
+                            LogicalToInteger
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                    )
+                    (Assignment
+                        (Var 2 b)
+                        (Cast
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                            LogicalToInteger
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                    )
+                    (Assignment
+                        (Var 2 c)
+                        (Cast
+                            (LogicalConstant
+                                .true.
+                                (Logical 4)
+                            )
+                            LogicalToInteger
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(Var 2 a)
+                            (Var 2 b)
+                            (Var 2 c)]
+                            FormatFortran
+                            (Character -1 0 () PointerString)
+                            ()
+                        )
+                    )]
+                )
+        })
+    []
+)

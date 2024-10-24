@@ -1,0 +1,13 @@
+{
+    "basename": "wat-logical5-0c6cbb8",
+    "cmd": "lfortran --no-color --show-wat {infile}",
+    "infile": "tests/../integration_tests/logical5.f90",
+    "infile_hash": "f44f503aa7262fed1bd2e925e83435b4d7bdcb63ea5833a3fc7a6113",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "wat-logical5-0c6cbb8.stdout",
+    "stdout_hash": "6c8af5fdb72af2f5b64e3e32b85e2b26926321d9ce4e9de6bd415535",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
