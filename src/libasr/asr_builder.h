@@ -133,7 +133,7 @@ class ASRBuilder {
         return make_Array_t_util(al, loc, type, m_dims.p, m_dims.n);
     }
 
-    ASR::ttype_t* create_type(ASR::ttype_t* t, int64_t kind) {
+    ASR::ttype_t* duplicate_type_change_kind(ASR::ttype_t* t, int64_t kind) {
         if (ASRUtils::is_integer(*t)) {
             return ASRUtils::TYPE(ASR::make_Integer_t(al, loc, kind));
         } else if (ASRUtils::is_real(*t)) {
