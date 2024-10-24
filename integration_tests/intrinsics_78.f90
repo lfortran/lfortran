@@ -1,8 +1,8 @@
 program intrinsics_78
     implicit none
     integer :: ix, iy, iresult
-    integer(8) :: i
-    integer(4) :: j
+    integer(8) :: j
+    integer(4) :: i
     real(8) :: a
     real(4) :: b
     real :: rx, ry, rresult
@@ -92,7 +92,7 @@ program intrinsics_78
     ! Test integer values with different kinds
     i = 121
     j = 121
-    iresult = kind(mod(i,j))
+    iresult = kind(mod(j,i))
     print *, "Test 14: kind(mod(", i, ",", j, ")) = ", iresult 
     if(iresult /= 8) error stop "Test 14 failed"
 
