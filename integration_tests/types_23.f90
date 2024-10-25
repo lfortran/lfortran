@@ -7,7 +7,7 @@ program types_23
     print*, A
     if ( abs(real(A(1)) - 1.00) > 10e-5 ) error stop
     if ( abs(imag(A(2)) - 2.00) > 10e-5 ) error stop
-
+    
     print*, B
     if ( abs(B(1) - 1.00) > 10e-5 ) error stop
 

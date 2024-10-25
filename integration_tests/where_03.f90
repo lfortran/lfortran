@@ -2,13 +2,13 @@ subroutine where_03
     implicit none
     real a(4)
     real b(4)
-
+    
     a = (/ 1.0, 2.0, 3.0, 4.0/)
     b = (/ -1.0, -2.0, 5.0, 7.0/)
-    where (a > b)
+    where (a > b) 
         a = 1.0
     endwhere
-
+    
     where(a == 1.0)
         a = 2.0
     else where(a == 2.0)
