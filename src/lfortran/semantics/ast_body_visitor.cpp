@@ -2494,22 +2494,38 @@ public:
                 target->type == ASR::exprType::ArrayItem ||
                 target->type == ASR::exprType::ArraySection ||
                 target->type == ASR::exprType::StructInstanceMember) &&
-                !ASRUtils::check_equal_type(target_type, value_type)) {
-                if (value->type == ASR::exprType::ArrayConstant) {
+                ASRUtils::check_equal_type(target_type, value_type)) {
+                if (ASR::is_a<ASR::ArrayConstant_t>(*value)) {
                     ASR::ArrayConstant_t *ac = ASR::down_cast<ASR::ArrayConstant_t>(value);
                     int size = ASRUtils::get_fixed_size_of_array(ac->m_type);
                     Vec<ASR::expr_t*> args; args.reserve(al, size);
-                    for (size_t i = 0; i < (size_t) size; i++) {
-                        ASR::expr_t* arg = ASRUtils::fetch_ArrayConstant_value(al, ac, i);
-                        ImplicitCastRules::set_converted_value(al, x.base.base.loc, &arg,
-                                                ASRUtils::expr_type(arg),
-                                                ASRUtils::type_get_past_allocatable(target_type));
-                        // ASRUtils::set_ArrayConstant_value(ac, arg, i);
-                        args.push_back(al, arg);
+                    if (ASR::is_a<ASR::Character_t>(*ASRUtils::type_get_past_array(value_type))) {
+                        for (size_t i = 0; i < (size_t) size; i++) {
+                            ASR::expr_t* arg = adjust_character_length(x, al, value->base.loc, target_type, 
+                                                                ASRUtils::fetch_ArrayConstant_value(al, ac, i));
+                            ImplicitCastRules::set_converted_value(al, x.base.base.loc, &arg,
+                                                    ASRUtils::expr_type(arg),
+                                                    ASRUtils::type_get_past_allocatable(target_type));
+                            // ASRUtils::set_ArrayConstant_value(ac, arg, i);
+                            args.push_back(al, arg);
+                        }
+                    } else {
+                        for (size_t i = 0; i < (size_t) size; i++) {
+                            ASR::expr_t* arg = ASRUtils::fetch_ArrayConstant_value(al, ac, i);
+                            ImplicitCastRules::set_converted_value(al, x.base.base.loc, &arg,
+                                                    ASRUtils::expr_type(arg),
+                                                    ASRUtils::type_get_past_allocatable(target_type));
+                            // ASRUtils::set_ArrayConstant_value(ac, arg, i);
+                            args.push_back(al, arg);
+                        }
                     }
                     ac = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, ac->base.base.loc,
                             args.p, args.n, ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(target_type)), ac->m_storage_format))));
                     value = ASRUtils::EXPR((ASR::asr_t*) ac);
+                    // set symbolic_value to m_value for character arrays to maintain any trimming or padding of data
+                    if (ASR::is_a<ASR::Character_t>(*ASRUtils::type_get_past_array(value_type))) {
+                        ASR::down_cast<ASR::Variable_t>(ASR::down_cast<ASR::Var_t>(target)->m_v)->m_symbolic_value = value;
+                    } 
                     LCOMPILERS_ASSERT(ASRUtils::is_array(ac->m_type));
                     if( ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_pointer(
                             ASRUtils::type_get_past_allocatable(ac->m_type))) ) {
