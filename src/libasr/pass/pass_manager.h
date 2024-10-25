@@ -232,6 +232,7 @@ namespace LCompilers {
                 "symbolic",
                 "intrinsic_function", // To be re-written without creating allocotables and auxiliary variables
                 "intrinsic_subroutine", // To be re-written without creating allocotables and auxiliary variables
+                "array_op_simplifier",
                 // "subroutine_from_function", There should be no need to apply this twice
                 // "array_op", There should be no need to apply this twice
                 "pass_array_by_data",
@@ -257,7 +258,7 @@ namespace LCompilers {
                 "simplifier", /* Verification checks to be implemented in this pass - 1. No array, user defined type variable should have a symbolic value. 2. Print, SubroutineCall, FileWrite, IntrinsicImpureSubroutine nodes shouldn't have non-Var arguments. 3. All expressions which need a temporary should be directly linked to a target via an assignment. 4. Sizes of auxiliary allocatables should be calculated using only Var nodes (with non-array symbols), or FunctionCall returning scalars. */
                 "nested_vars",
                 "transform_optional_argument_functions",
-                    "forall",
+                "forall",
                 "class_constructor",
                 "pass_list_expr",
                 "where",
@@ -267,6 +268,7 @@ namespace LCompilers {
                 "flip_sign",
                 "intrinsic_function", // To be re-written without creating allocotables and auxiliary variables
                 "intrinsic_subroutine", // To be re-written without creating allocotables and auxiliary variables
+                "array_op_simplifier",
                 // "subroutine_from_function", There should be no need to apply this twice
                 // "array_op", There should be no need to apply this twice
                 "pass_array_by_data",
