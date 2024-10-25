@@ -2,8 +2,8 @@ program bits_05
     implicit none
     integer(4) :: from, res
     integer(8) :: from8, res8
-    integer :: i, len, pos
-    integer(8) :: pos8, i8, len8
+    integer :: i, pos, len
+    integer(8) :: i8, pos8, len8
     integer, parameter :: i1 = ibits(10, 2, 2)
     integer(8), parameter :: i2 = ibits(10_8, 2, 2)
     integer, parameter :: i3 = ibits(10, 5_8, 2)
@@ -29,7 +29,7 @@ program bits_05
 
     print *, ibits(i, pos8, len)
     if (ibits(i, pos8, len) /= 0) error stop
-
+    
     from = 10
     from8 = 10_8
 

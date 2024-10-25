@@ -11,7 +11,7 @@ program main
     real :: absdiff
     reldiff = [0.0,0.0]
     absdiff = 0.5
-
+    
     where (solution() /= 0.0) reldiff = absdiff / abs(solution())
 
     if (abs(reldiff(1) - 5.0) > 1e-7) error stop
@@ -27,3 +27,4 @@ program main
         x = [0.10,0.10]
     end function solution
 end program main
+

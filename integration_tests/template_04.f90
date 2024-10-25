@@ -267,7 +267,7 @@ module template_04_matrix
 
         interface operator(*)
             procedure times_matrix
-        end interface
+        end interface        
 
         template matrix_subtraction_t(minus_t)
             require :: unit_ring_only_minus(T, plus_t, zero_t, times_t, one_t, minus_t)
@@ -281,7 +281,7 @@ module template_04_matrix
 
             template gaussian_solver_tmpl(div_t)
                 instantiate derive_unit_ring_from_minus(T, plus_t, zero_t, times_t, one_t, minus_t), only: negate
-                require :: field_only_division(T, plus_t, zero_t, times_t, one_t, minus_t, negate, div_t)
+                require :: field_only_division(T, plus_t, zero_t, times_t, one_t, minus_t, negate, div_t)      
             contains
                 pure function row_eschelon(x) result(reduced)
                     type(matrix), intent(in) :: x
@@ -303,7 +303,7 @@ module template_04_matrix
                         end do
                     end do
                 end function
-
+                
                 pure function back_substitute(x, y) result(solved)
                     type(matrix), intent(in) :: x, y
                     type(matrix) :: solved

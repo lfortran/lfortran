@@ -2,7 +2,7 @@
     "basename": "asr-where_04-a7fce45",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/../integration_tests/where_04.f90",
-    "infile_hash": "16b4eaae79874dc74227ff43884811546334fd5ebded7aa71bbaf4e1",
+    "infile_hash": "48449a9af8d215a5a118d0776d25e23b7b310df89b1775164ddfde5e",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "asr-where_04-a7fce45.stdout",
