@@ -3,8 +3,17 @@ program character_07
    character:: d(6)*4
    character:: e(6)*2
 
+   character(len=5), parameter :: ar1(2) = ["abcdef", "ghijkl"]
+   character(len=5), parameter :: ar2(2) = ["abc"//"def", "ghi"//"jkl"]
+   
    integer :: i
+   
+   if (ar1(1) /= "abcde") error stop
+   if (ar1(2) /= "ghijk") error stop
 
+   if (ar2(1) /= "abcde") error stop
+   if (ar2(2) /= "ghijk") error stop
+   
    do i = 1, 6
       print *, c(i), len(c(i))
       if (c(i) /= "ab ") error stop
