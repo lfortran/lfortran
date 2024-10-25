@@ -2125,18 +2125,6 @@ public:
             // LHS is a runtime vaue
             if (lhs_len < 0 && storage_type != ASR::storage_typeType::Parameter) return value;
             if (lhs_len >= 0) {
-                // raise a warning only for loss of data
-                if (lhs_len < rhs_len) {
-                    diag.semantic_warning_label(
-                        "The LHS character len="
-                            + std::to_string(lhs_len)
-                            + " and the RHS character len="
-                            + std::to_string(rhs_len)
-                            + " are not equal.",
-                        {x.base.base.loc},
-                        "help: consider changing the RHS character len to match the LHS character len"
-                    );
-                }
                 // adjust character string by padding or trimming
                 if (lhs_len != rhs_len) {
                     if (ASR::is_a<ASR::StringConstant_t>(*value)) {
@@ -2148,6 +2136,16 @@ public:
                         char* adjusted_str = al.allocate<char>(new_length + 1);
 
                         if (lhs_len < rhs_len) { // trim
+                            // raise a warning only for loss of data
+                            diag.semantic_warning_label(
+                                "The LHS character len="
+                                    + std::to_string(lhs_len)
+                                    + " and the RHS character len="
+                                    + std::to_string(rhs_len)
+                                    + " are not equal.",
+                                {x.base.base.loc},
+                                "help: consider changing the RHS character len to match the LHS character len"
+                            );
                             std::memcpy(adjusted_str, original_str, new_length);
                         } else { // pad
                             std::memcpy(adjusted_str, original_str, original_length);
@@ -3240,16 +3238,29 @@ public:
                             ASR::ArrayConstant_t *a = ASR::down_cast<ASR::ArrayConstant_t>(value);
                             Vec<ASR::expr_t*> body;
                             body.reserve(al, ASRUtils::get_fixed_size_of_array(a->m_type));
-                            for (size_t i=0; i < (size_t) ASRUtils::get_fixed_size_of_array(a->m_type); i++) {
-                                ASR::expr_t* a_m_args = ASRUtils::fetch_ArrayConstant_value(al, a, i);
-                                // if( a_m_args == nullptr ) {
-                                //     a_m_args = a->m_args[i];
-                                // }
-                                body.push_back(al, a_m_args);
+                            if (is_char_type) {
+                                for (size_t i=0; i < (size_t) ASRUtils::get_fixed_size_of_array(type); i++) {
+                                    ASR::expr_t* a_m_args = adjust_character_length(x, al, init_expr->base.loc, type, 
+                                                                ASRUtils::fetch_ArrayConstant_value(al, a, i), storage_type);
+                                    // if( a_m_args == nullptr ) {
+                                    //     a_m_args = a->m_args[i];
+                                    // }
+                                    body.push_back(al, a_m_args);
+                                }
+                            } else {
+                                for (size_t i=0; i < (size_t) ASRUtils::get_fixed_size_of_array(a->m_type); i++) {
+                                    ASR::expr_t* a_m_args = ASRUtils::fetch_ArrayConstant_value(al, a, i);
+                                    // if( a_m_args == nullptr ) {
+                                    //     a_m_args = a->m_args[i];
+                                    // }
+                                    body.push_back(al, a_m_args);
+                                }
                             }
                             value = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al,
                                 a->base.base.loc, body.p, body.size(),
-                                a->m_type, a->m_storage_format));
+                                is_char_type ? type : a->m_type, a->m_storage_format));
+                            // set symbolic_value to m_value for character arrays to maintain any trimming or padding of data
+                            if (is_char_type) init_expr = value;
                             if (ASRUtils::is_dimension_empty(dims.p, dims.n)) {
                                 type = a->m_type;
                             }
