@@ -2720,16 +2720,15 @@ public:
             llvm::Constant *ptr = module->getOrInsertGlobal(x.m_name, type);
             if (!external) {
                 ASR::expr_t* value = nullptr;
-                if (x.m_value) {
+                if( x.m_value ) {
                     value = x.m_value;
-                } else if (x.m_symbolic_value &&
-                            ASRUtils::is_value_constant(x.m_symbolic_value)
-                ) {
+                } else if( x.m_symbolic_value &&
+                           ASRUtils::is_value_constant(x.m_symbolic_value) ) {
                     value = x.m_symbolic_value;
                 }
                 if (value) {
-                    LCOMPILERS_ASSERT(ASR::is_a<ASR::ArrayConstant_t>(*x.m_value));
-                    ASR::ArrayConstant_t* arr_const = ASR::down_cast<ASR::ArrayConstant_t>(x.m_value);
+                    LCOMPILERS_ASSERT(ASR::is_a<ASR::ArrayConstant_t>(*value));
+                    ASR::ArrayConstant_t* arr_const = ASR::down_cast<ASR::ArrayConstant_t>(value);
                     std::vector<llvm::Constant*> arr_elements;
                     size_t arr_const_size = (size_t) ASRUtils::get_fixed_size_of_array(arr_const->m_type);
                     arr_elements.reserve(arr_const_size);
