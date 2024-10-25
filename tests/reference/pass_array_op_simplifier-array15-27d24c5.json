@@ -1,0 +1,13 @@
+{
+    "basename": "pass_array_op_simplifier-array15-27d24c5",
+    "cmd": "lfortran --pass=array_op_simplifier --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/array15.f90",
+    "infile_hash": "18924f1dcd04103b427c1fe1321fa206ef73add7548a17e61ea10df2",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "pass_array_op_simplifier-array15-27d24c5.stdout",
+    "stdout_hash": "649dc570522815debd7d4e042db44cf0729db2fde21c920cdb67849c",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
