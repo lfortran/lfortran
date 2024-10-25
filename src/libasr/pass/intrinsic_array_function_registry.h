@@ -16,7 +16,6 @@ namespace LCompilers {
 
 namespace ASRUtils {
 
-extern bool pass_simplifier_intrinsic;
 
 /************************* Intrinsic Array Functions **************************/
 enum class IntrinsicArrayFunctions : int64_t {
@@ -681,7 +680,7 @@ static inline ASR::asr_t* create_ArrIntrinsic(
         ASRUtils::type_get_past_pointer(array_type));
         return_type = ASRUtils::duplicate_type_without_dims(al, type, loc);
     } else if( overload_id == id_array_dim || overload_id == id_array_dim_mask ) {
-        if ( pass_simplifier_intrinsic ) {
+        if ( use_experimental_simplifier ) {
             Vec<ASR::dimension_t> dims;
             size_t n_dims = ASRUtils::extract_n_dims_from_ttype(array_type);
             fill_dimensions_for_ArrIntrinsic(al, (int64_t) n_dims - 1,
@@ -926,7 +925,7 @@ static inline ASR::expr_t* instantiate_ArrIntrinsic(Allocator &al,
             return_type_ = ASRUtils::make_Array_t_util(al, loc,
                 ASRUtils::extract_type(return_type_), empty_dims.p, empty_dims.size());
             if( is_allocatable ) {
-                if (pass_simplifier_intrinsic) {
+                if (use_experimental_simplifier) {
                     return_type_ = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, loc, return_type_));
                 } else {
                     return_type_ = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc, return_type_));
@@ -994,7 +993,7 @@ static inline ASR::expr_t *eval_MaxMinLoc(Allocator &al, const Location &loc,
         ASR::ttype_t *type, Vec<ASR::expr_t*> &args, ASRUtils::IntrinsicArrayFunctions intrinsic_func_id) {
     ASRBuilder b(al, loc);
     ASR::expr_t* array = args[0];
-    if(pass_simplifier_intrinsic) {
+    if(use_experimental_simplifier) {
         array = ASRUtils::expr_value(array);
     }
     if (!array) return nullptr;
@@ -1266,7 +1265,7 @@ static inline ASR::expr_t *instantiate_MaxMinLoc(Allocator &al,
     ASR::ttype_t* array_type = ASRUtils::duplicate_type_with_empty_dims(al, arg_types[0]);
     fill_func_arg("array", array_type);
     fill_func_arg("dim", arg_types[1]);
-    if (pass_simplifier_intrinsic) {
+    if (use_experimental_simplifier) {
         fill_func_arg("mask", ASRUtils::duplicate_type_with_empty_dims(
             al, arg_types[2], ASR::array_physical_typeType::DescriptorArray, true));
     } else {
@@ -1277,7 +1276,7 @@ static inline ASR::expr_t *instantiate_MaxMinLoc(Allocator &al,
     ASR::expr_t *result = nullptr;
     int n_dims = extract_n_dims_from_ttype(arg_types[0]);
     ASR::ttype_t *type = extract_type(return_type);
-    if ( pass_simplifier_intrinsic ) {
+    if ( use_experimental_simplifier ) {
         if( !ASRUtils::is_array(return_type) ) {
             result = declare("result", return_type, ReturnVar);
         } else {
@@ -1352,7 +1351,7 @@ static inline ASR::expr_t *instantiate_MaxMinLoc(Allocator &al,
             }, [=, &al, &b, &idx_vars, &target_idx_vars, &doloop_body] () {
                 ASR::expr_t *result_ref, *array_ref_02;
                 bool condition = is_array(return_type);
-                if ( pass_simplifier_intrinsic ) {
+                if ( use_experimental_simplifier ) {
                     condition = condition && n_dims > 1;
                 }
                 if (condition) {
@@ -1404,7 +1403,7 @@ static inline ASR::expr_t *instantiate_MaxMinLoc(Allocator &al,
             });
     }
     body.push_back(al, b.Return());
-    if ( pass_simplifier_intrinsic ) {
+    if ( use_experimental_simplifier ) {
         ASR::symbol_t *fn_sym = nullptr;
         if( ASRUtils::expr_intent(result) == ASR::intentType::ReturnVar ) {
             fn_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
@@ -1505,7 +1504,7 @@ namespace Shape {
         fill_func_arg("source", ASRUtils::duplicate_type_with_empty_dims(al,
             arg_types[0]));
         ASR::expr_t* result = nullptr;
-        if (pass_simplifier_intrinsic) {
+        if (use_experimental_simplifier) {
             result = declare(fn_name, return_type, Out);
             args.push_back(al, result);
         } else {
@@ -1520,7 +1519,7 @@ namespace Shape {
             b.Assignment(i, b.Add(i, b.i32(1)))
         }));
         body.push_back(al, b.Return());
-        if ( pass_simplifier_intrinsic ) {
+        if ( use_experimental_simplifier ) {
             ASR::symbol_t *f_sym = make_Function_Without_ReturnVar_t(
                 fn_name, fn_symtab, dep, args,
                 body, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -1636,7 +1635,7 @@ namespace Cshift {
             ret_type = ASRUtils::duplicate_type(al, ret_type, &result_dims);
         }
         if (is_type_allocatable) {
-            if (pass_simplifier_intrinsic) {
+            if (use_experimental_simplifier) {
                 ret_type = TYPE(ASRUtils::make_Allocatable_t_util(al, loc, ret_type));
             } else {
                 ret_type = TYPE(ASR::make_Allocatable_t(al, loc, ret_type));
@@ -1687,7 +1686,7 @@ namespace Cshift {
             return_type_ = ASRUtils::make_Array_t_util(al, loc,
                 ASRUtils::extract_type(return_type_), empty_dims.p, empty_dims.size());
             if( is_allocatable ) {
-                if (pass_simplifier_intrinsic) {
+                if (use_experimental_simplifier) {
                     return_type_ = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, loc, return_type_));
                 } else {
                     return_type_ = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc, return_type_));
@@ -1958,7 +1957,7 @@ namespace Spread {
             ret_type = ASRUtils::duplicate_type(al, ret_type, &result_dims);
         }
         if (is_type_allocatable) {
-            if ( pass_simplifier_intrinsic ) {
+            if ( use_experimental_simplifier ) {
                 ret_type = TYPE(ASRUtils::make_Allocatable_t_util(al, loc, ret_type));
             } else {
                 ret_type = TYPE(ASR::make_Allocatable_t(al, loc, ret_type));
@@ -2018,7 +2017,7 @@ namespace Spread {
             return_type = ASRUtils::make_Array_t_util(al, loc,
                 ASRUtils::extract_type(return_type), empty_dims.p, empty_dims.size());
             if( is_allocatable ) {
-                if ( pass_simplifier_intrinsic ) {
+                if ( use_experimental_simplifier ) {
                     return_type = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, loc, return_type));
                 } else {
                     return_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc, return_type));
@@ -2194,7 +2193,7 @@ namespace Eoshift {
             ret_type = ASRUtils::duplicate_type(al, ret_type, &result_dims);
         }
         if (is_type_allocatable) {
-            if (pass_simplifier_intrinsic) {
+            if (use_experimental_simplifier) {
                 ret_type = TYPE(ASRUtils::make_Allocatable_t_util(al, loc, ret_type));
             } else {
                 ret_type = TYPE(ASR::make_Allocatable_t(al, loc, ret_type));
@@ -2205,7 +2204,7 @@ namespace Eoshift {
             final_boundary = boundary;
         }
         else{
-            ASR::ttype_t *boundary_type = pass_simplifier_intrinsic ? ASRUtils::type_get_past_array_pointer_allocatable(type_array) : type_array;
+            ASR::ttype_t *boundary_type = use_experimental_simplifier ? ASRUtils::type_get_past_array_pointer_allocatable(type_array) : type_array;
             if(is_integer(*type_array)) {
                 final_boundary = b.i_t(0, boundary_type);
                 final_boundary = b.i_t(0, boundary_type);
@@ -2277,7 +2276,7 @@ namespace Eoshift {
             return_type_ = ASRUtils::make_Array_t_util(al, loc,
                 ASRUtils::extract_type(return_type_), empty_dims.p, empty_dims.size());
             if( is_allocatable ) {
-                if (pass_simplifier_intrinsic) {
+                if (use_experimental_simplifier) {
                     return_type_ = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, loc, return_type_));
                 } else {
                     return_type_ = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc, return_type_));
@@ -3494,7 +3493,7 @@ namespace FindLoc {
     fill_func_arg("kind", arg_types[4]);
     fill_func_arg("back", arg_types[5]);
     ASR::expr_t* result = nullptr;
-    if (pass_simplifier_intrinsic) {
+    if (use_experimental_simplifier) {
         result = declare("result", ASRUtils::duplicate_type_with_empty_dims(
                 al, return_type, ASR::array_physical_typeType::DescriptorArray, true), Out);
         args.push_back(al, result);
@@ -3515,7 +3514,7 @@ namespace FindLoc {
         else{
             mask_new = mask;
         }
-        body.push_back(al, b.Assignment(result, b.i_t(0, pass_simplifier_intrinsic ? ASRUtils::type_get_past_array(return_type) : return_type)));
+        body.push_back(al, b.Assignment(result, b.i_t(0, use_experimental_simplifier ? ASRUtils::type_get_past_array(return_type) : return_type)));
         body.push_back(al, b.DoLoop(i, b.i_t(1, type), UBound(array, 1), {
             b.If(b.And(b.Eq(ArrayItem_02(array, i), value), b.Eq(mask_new, b.bool_t(1, logical))), {
                 b.Assignment(result, i),
@@ -3525,7 +3524,7 @@ namespace FindLoc {
             }, {})
         }));
     } else {
-        body.push_back(al, b.Assignment(result, b.i_t(0, pass_simplifier_intrinsic ? ASRUtils::type_get_past_array(return_type) : return_type)));
+        body.push_back(al, b.Assignment(result, b.i_t(0, use_experimental_simplifier ? ASRUtils::type_get_past_array(return_type) : return_type)));
         body.push_back(al, b.DoLoop(i, b.i_t(1, type), UBound(array, 1), {
             b.If(b.Eq(ArrayItem_02(array, i), value), {
                 b.Assignment(result, i),
@@ -3538,7 +3537,7 @@ namespace FindLoc {
 
     body.push_back(al, b.Return());
     ASR::expr_t* return_var = nullptr;
-    if (!pass_simplifier_intrinsic) {
+    if (!use_experimental_simplifier) {
         return_var = result;
     }
     ASR::symbol_t *fn_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
@@ -3721,7 +3720,7 @@ namespace MatMul {
         }
         ret_type = ASRUtils::duplicate_type(al, ret_type, &result_dims);
         if (is_type_allocatable) {
-            if (pass_simplifier_intrinsic) {
+            if (use_experimental_simplifier) {
                 ret_type = TYPE(ASRUtils::make_Allocatable_t_util(al, loc, ret_type));
             } else {
                 ret_type = TYPE(ASR::make_Allocatable_t(al, loc, ret_type));
@@ -3766,7 +3765,7 @@ namespace MatMul {
             return_type_ = ASRUtils::make_Array_t_util(al, loc,
                 ASRUtils::extract_type(return_type_), empty_dims.p, empty_dims.size());
             if( is_allocatable ) {
-                if (pass_simplifier_intrinsic) {
+                if (use_experimental_simplifier) {
                     return_type_ = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, loc, return_type_));
                 } else {
                     return_type_ = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc, return_type_));
@@ -4740,7 +4739,7 @@ namespace Pack {
             is_type_allocatable = true;
         }
         if (is_type_allocatable) {
-            if (pass_simplifier_intrinsic) {
+            if (use_experimental_simplifier) {
                 ret_type = TYPE(ASRUtils::make_Allocatable_t_util(al, loc, ret_type));
             } else {
                 ret_type = TYPE(ASR::make_Allocatable_t(al, loc, ret_type));
@@ -4773,7 +4772,7 @@ namespace Pack {
         }
         ASR::ttype_t* ret_type = return_type;
         if (overload_id == 2) {
-            if ( pass_simplifier_intrinsic ) {
+            if ( use_experimental_simplifier ) {
                 ret_type = ASRUtils::duplicate_type_with_empty_dims(
                     al, ASRUtils::type_get_past_pointer(
                             ASRUtils::type_get_past_allocatable(return_type)),
@@ -5122,7 +5121,7 @@ namespace Unpack {
         }
         ret_type = ASRUtils::duplicate_type(al, ret_type, &result_dims);
         if (is_type_allocatable) {
-            if (pass_simplifier_intrinsic) {
+            if (use_experimental_simplifier) {
                 ret_type = TYPE(ASRUtils::make_Allocatable_t_util(al, loc, ret_type));
             } else {
                 ret_type = TYPE(ASR::make_Allocatable_t(al, loc, ret_type));
@@ -5446,14 +5445,14 @@ namespace DotProduct {
         } else if (is_real(*return_type)) {
             body.push_back(al, b.Assignment(result, make_ConstantWithType(make_RealConstant_t, 0.0, return_type, loc)));
             body.push_back(al, b.DoLoop(i, LBound(args[0], 1), UBound(args[0], 1), {
-                pass_simplifier_intrinsic ?
+                use_experimental_simplifier ?
                 b.Assignment(result, b.Add(result, b.Mul(b.ArrayItem_01(args[0], {i}), b.r2r_t(b.ArrayItem_01(args[1], {i}), ASRUtils::type_get_past_array(arg_types[0]))))):
                 b.Assignment(result, b.Add(result, b.Mul(b.ArrayItem_01(args[0], {i}), b.ArrayItem_01(b.r2r_t(args[1], arg_types[0]), {i}))))
             }, nullptr));
         } else {
             body.push_back(al, b.Assignment(result, make_ConstantWithType(make_IntegerConstant_t, 0, return_type, loc)));
             body.push_back(al, b.DoLoop(i, LBound(args[0], 1), UBound(args[0], 1), {
-                pass_simplifier_intrinsic ?
+                use_experimental_simplifier ?
                 b.Assignment(result, b.Add(result, b.Mul(b.ArrayItem_01(args[0], {i}), b.i2i_t(b.ArrayItem_01(args[1], {i}), ASRUtils::type_get_past_array(arg_types[0]))))) :
                 b.Assignment(result, b.Add(result, b.Mul(b.ArrayItem_01(args[0], {i}), b.ArrayItem_01(b.i2i_t(args[1], arg_types[0]), {i}))))
             }, nullptr));
@@ -5512,7 +5511,7 @@ namespace Transpose {
             matrix_a_dims[0].m_length));
         ret_type = ASRUtils::duplicate_type(al, ret_type, &result_dims);
         if (is_type_allocatable) {
-            if (pass_simplifier_intrinsic) {
+            if (use_experimental_simplifier) {
                 ret_type = TYPE(ASRUtils::make_Allocatable_t_util(al, loc, ret_type));
             } else {
                 ret_type = TYPE(ASR::make_Allocatable_t(al, loc, ret_type));
@@ -5555,7 +5554,7 @@ namespace Transpose {
             return_type_ = ASRUtils::make_Array_t_util(al, loc,
                 ASRUtils::extract_type(return_type_), empty_dims.p, empty_dims.size());
             if( is_allocatable ) {
-                if ( pass_simplifier_intrinsic ) {
+                if ( use_experimental_simplifier ) {
                     return_type_ = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, loc, return_type_));
                 } else {
                     return_type_ = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc, return_type_));

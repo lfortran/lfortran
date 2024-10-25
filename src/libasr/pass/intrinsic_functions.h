@@ -7,8 +7,6 @@
 
 namespace LCompilers::ASRUtils {
 
-extern bool pass_simplifier_intrinsic;
-
 /*
 To add a new function implementation,
 
@@ -3513,7 +3511,7 @@ namespace Merge {
             Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
         ASR::ttype_t *tsource_type = nullptr, *fsource_type = nullptr, *mask_type = nullptr;
-        if ( pass_simplifier_intrinsic ) {
+        if ( use_experimental_simplifier ) {
             tsource_type = ASRUtils::duplicate_type(al,
                 ASRUtils::type_get_past_array_pointer_allocatable(arg_types[0]));
             fsource_type = ASRUtils::duplicate_type(al,
