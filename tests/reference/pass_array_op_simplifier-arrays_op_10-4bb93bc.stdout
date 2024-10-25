@@ -1,0 +1,295 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            main:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            compare_solutions:
+                                (Function
+                                    (SymbolTable
+                                        3
+                                        {
+                                            i:
+                                                (Variable
+                                                    3
+                                                    i
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            x:
+                                                (Variable
+                                                    3
+                                                    x
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Array
+                                                        (Real 4)
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 2 (Integer 4) Decimal))]
+                                                        FixedSizeArray
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    compare_solutions
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    [solution]
+                                    []
+                                    [(Print
+                                        (StringFormat
+                                            ()
+                                            [(ArraySize
+                                                (FunctionCall
+                                                    2 solution
+                                                    ()
+                                                    []
+                                                    (Array
+                                                        (Real 4)
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 2 (Integer 4) Decimal))]
+                                                        FixedSizeArray
+                                                    )
+                                                    ()
+                                                    ()
+                                                )
+                                                ()
+                                                (Integer 4)
+                                                (IntegerConstant 2 (Integer 4) Decimal)
+                                            )]
+                                            FormatFortran
+                                            (Character -1 0 () PointerString)
+                                            ()
+                                        )
+                                    )
+                                    (DoLoop
+                                        ()
+                                        ((Var 3 i)
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        (ArraySize
+                                            (FunctionCall
+                                                2 solution
+                                                ()
+                                                []
+                                                (Array
+                                                    (Real 4)
+                                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                                    (IntegerConstant 2 (Integer 4) Decimal))]
+                                                    FixedSizeArray
+                                                )
+                                                ()
+                                                ()
+                                            )
+                                            ()
+                                            (Integer 4)
+                                            (IntegerConstant 2 (Integer 4) Decimal)
+                                        )
+                                        ())
+                                        [(Assignment
+                                            (ArrayItem
+                                                (Var 3 x)
+                                                [(()
+                                                (Var 3 i)
+                                                ())]
+                                                (Real 4)
+                                                ColMajor
+                                                ()
+                                            )
+                                            (Cast
+                                                (Var 3 i)
+                                                IntegerToReal
+                                                (Real 4)
+                                                ()
+                                            )
+                                            ()
+                                        )]
+                                        []
+                                    )
+                                    (DoLoop
+                                        ()
+                                        ((Var 3 i)
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 2 (Integer 4) Decimal)
+                                        ())
+                                        [(Print
+                                            (StringFormat
+                                                ()
+                                                [(ArrayItem
+                                                    (Var 3 x)
+                                                    [(()
+                                                    (Var 3 i)
+                                                    ())]
+                                                    (Real 4)
+                                                    ColMajor
+                                                    ()
+                                                )]
+                                                FormatFortran
+                                                (Character -1 0 () PointerString)
+                                                ()
+                                            )
+                                        )
+                                        (If
+                                            (RealCompare
+                                                (ArrayItem
+                                                    (Var 3 x)
+                                                    [(()
+                                                    (Var 3 i)
+                                                    ())]
+                                                    (Real 4)
+                                                    ColMajor
+                                                    ()
+                                                )
+                                                NotEq
+                                                (Cast
+                                                    (Var 3 i)
+                                                    IntegerToReal
+                                                    (Real 4)
+                                                    ()
+                                                )
+                                                (Logical 4)
+                                                ()
+                                            )
+                                            [(ErrorStop
+                                                ()
+                                            )]
+                                            []
+                                        )]
+                                        []
+                                    )]
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            solution:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            x:
+                                                (Variable
+                                                    4
+                                                    x
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Array
+                                                        (Real 4)
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 2 (Integer 4) Decimal))]
+                                                        FixedSizeArray
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    solution
+                                    (FunctionType
+                                        []
+                                        (Array
+                                            (Real 4)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 2 (Integer 4) Decimal))]
+                                            FixedSizeArray
+                                        )
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    []
+                                    [(Assignment
+                                        (ArrayItem
+                                            (Var 4 x)
+                                            [(()
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            ())]
+                                            (Real 4)
+                                            ColMajor
+                                            ()
+                                        )
+                                        (RealConstant
+                                            1.000000
+                                            (Real 4)
+                                        )
+                                        ()
+                                    )
+                                    (Assignment
+                                        (ArrayItem
+                                            (Var 4 x)
+                                            [(()
+                                            (IntegerConstant 2 (Integer 4) Decimal)
+                                            ())]
+                                            (Real 4)
+                                            ColMajor
+                                            ()
+                                        )
+                                        (RealConstant
+                                            1.000000
+                                            (Real 4)
+                                        )
+                                        ()
+                                    )]
+                                    (Var 4 x)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                )
+                        })
+                    main
+                    []
+                    [(SubroutineCall
+                        2 compare_solutions
+                        ()
+                        []
+                        ()
+                    )]
+                )
+        })
+    []
+)

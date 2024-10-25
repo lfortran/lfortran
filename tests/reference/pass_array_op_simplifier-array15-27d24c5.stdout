@@ -1,0 +1,86 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            array15:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            __libasr_index_0_:
+                                (Variable
+                                    2
+                                    __libasr_index_0_
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            x:
+                                (Variable
+                                    2
+                                    x
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 3 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    array15
+                    []
+                    [(DoLoop
+                        ()
+                        ((Var 2 __libasr_index_0_)
+                        (ArrayBound
+                            (Var 2 x)
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Integer 4)
+                            LBound
+                            ()
+                        )
+                        (ArrayBound
+                            (Var 2 x)
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Integer 4)
+                            UBound
+                            ()
+                        )
+                        ())
+                        [(Assignment
+                            (ArrayItem
+                                (Var 2 x)
+                                [(()
+                                (Var 2 __libasr_index_0_)
+                                ())]
+                                (Integer 4)
+                                ColMajor
+                                ()
+                            )
+                            (IntegerConstant 23 (Integer 4) Decimal)
+                            ()
+                        )]
+                        []
+                    )]
+                )
+        })
+    []
+)

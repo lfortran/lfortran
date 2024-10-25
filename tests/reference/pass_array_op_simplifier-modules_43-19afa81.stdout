@@ -1,0 +1,503 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            modules_43:
+                (Program
+                    (SymbolTable
+                        5
+                        {
+                            add_sources_from_dir:
+                                (ExternalSymbol
+                                    5
+                                    add_sources_from_dir
+                                    2 add_sources_from_dir
+                                    modules_43_fpm_sources
+                                    []
+                                    add_sources_from_dir
+                                    Public
+                                ),
+                            sources:
+                                (Variable
+                                    5
+                                    sources
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Allocatable
+                                        (Array
+                                            (StructType
+                                                5 srcfile_t
+                                            )
+                                            [(()
+                                            ())]
+                                            DescriptorArray
+                                        )
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            srcfile_t:
+                                (ExternalSymbol
+                                    5
+                                    srcfile_t
+                                    2 srcfile_t
+                                    modules_43_fpm_sources
+                                    []
+                                    srcfile_t
+                                    Public
+                                )
+                        })
+                    modules_43
+                    [modules_43_fpm_sources]
+                    [(Allocate
+                        [((Var 5 sources)
+                        [((IntegerConstant 1 (Integer 4) Decimal)
+                        (IntegerConstant 1 (Integer 4) Decimal))]
+                        ()
+                        ())]
+                        ()
+                        ()
+                        ()
+                    )
+                    (SubroutineCall
+                        5 add_sources_from_dir
+                        ()
+                        [((Var 5 sources))]
+                        ()
+                    )
+                    (ImplicitDeallocate
+                        [(Var 5 sources)]
+                    )]
+                ),
+            modules_43_fpm_sources:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            add_sources_from_dir:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            __1__libasr_index_:
+                                                (Variable
+                                                    4
+                                                    __1__libasr_index_
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            __1_t:
+                                                (Variable
+                                                    4
+                                                    __1_t
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            dir_sources:
+                                                (Variable
+                                                    4
+                                                    dir_sources
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Allocatable
+                                                        (Array
+                                                            (StructType
+                                                                2 srcfile_t
+                                                            )
+                                                            [(()
+                                                            ())]
+                                                            DescriptorArray
+                                                        )
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            exclude_source:
+                                                (Variable
+                                                    4
+                                                    exclude_source
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Array
+                                                        (Logical 4)
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 10 (Integer 4) Decimal))]
+                                                        FixedSizeArray
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            sources:
+                                                (Variable
+                                                    4
+                                                    sources
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Allocatable
+                                                        (Array
+                                                            (StructType
+                                                                2 srcfile_t
+                                                            )
+                                                            [(()
+                                                            ())]
+                                                            DescriptorArray
+                                                        )
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    add_sources_from_dir
+                                    (FunctionType
+                                        [(Allocatable
+                                            (Array
+                                                (StructType
+                                                    2 srcfile_t
+                                                )
+                                                [(()
+                                                ())]
+                                                DescriptorArray
+                                            )
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 4 sources)]
+                                    [(Allocate
+                                        [((Var 4 dir_sources)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 1 (Integer 4) Decimal))]
+                                        ()
+                                        ())]
+                                        ()
+                                        ()
+                                        ()
+                                    )
+                                    (If
+                                        (LogicalNot
+                                            (IntrinsicImpureFunction
+                                                Allocated
+                                                [(Var 4 sources)]
+                                                0
+                                                (Logical 4)
+                                                ()
+                                            )
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(Assignment
+                                            (Var 4 sources)
+                                            (IntrinsicArrayFunction
+                                                Pack
+                                                [(Var 4 dir_sources)
+                                                (ArrayPhysicalCast
+                                                    (LogicalNot
+                                                        (Var 4 exclude_source)
+                                                        (Array
+                                                            (Logical 4)
+                                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                                            (IntegerConstant 10 (Integer 4) Decimal))]
+                                                            FixedSizeArray
+                                                        )
+                                                        ()
+                                                    )
+                                                    FixedSizeArray
+                                                    DescriptorArray
+                                                    (Array
+                                                        (Logical 4)
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 10 (Integer 4) Decimal))]
+                                                        DescriptorArray
+                                                    )
+                                                    ()
+                                                )]
+                                                2
+                                                (Allocatable
+                                                    (Allocatable
+                                                        (Array
+                                                            (StructType
+                                                                2 srcfile_t
+                                                            )
+                                                            [(()
+                                                            ())]
+                                                            DescriptorArray
+                                                        )
+                                                    )
+                                                )
+                                                ()
+                                            )
+                                            ()
+                                        )]
+                                        [(Assignment
+                                            (Var 4 __1__libasr_index_)
+                                            (ArrayBound
+                                                (Var 4 sources)
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                (Integer 4)
+                                                LBound
+                                                ()
+                                            )
+                                            ()
+                                        )
+                                        (DoLoop
+                                            ()
+                                            ((Var 4 __1_t)
+                                            (ArrayBound
+                                                (Var 4 sources)
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                (Integer 4)
+                                                LBound
+                                                ()
+                                            )
+                                            (ArrayBound
+                                                (Var 4 sources)
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                (Integer 4)
+                                                UBound
+                                                ()
+                                            )
+                                            ())
+                                            [(Assignment
+                                                (ArrayItem
+                                                    (Var 4 sources)
+                                                    [(()
+                                                    (Var 4 __1__libasr_index_)
+                                                    ())]
+                                                    (StructType
+                                                        2 srcfile_t
+                                                    )
+                                                    RowMajor
+                                                    ()
+                                                )
+                                                (ArrayItem
+                                                    (Var 4 sources)
+                                                    [(()
+                                                    (Var 4 __1_t)
+                                                    ())]
+                                                    (StructType
+                                                        2 srcfile_t
+                                                    )
+                                                    RowMajor
+                                                    ()
+                                                )
+                                                ()
+                                            )
+                                            (Assignment
+                                                (Var 4 __1__libasr_index_)
+                                                (IntegerBinOp
+                                                    (Var 4 __1__libasr_index_)
+                                                    Add
+                                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                                    (Integer 4)
+                                                    ()
+                                                )
+                                                ()
+                                            )]
+                                            []
+                                        )
+                                        (Assignment
+                                            (ArrayItem
+                                                (Var 4 sources)
+                                                [(()
+                                                (Var 4 __1__libasr_index_)
+                                                ())]
+                                                (StructType
+                                                    2 srcfile_t
+                                                )
+                                                RowMajor
+                                                ()
+                                            )
+                                            (IntrinsicArrayFunction
+                                                Pack
+                                                [(Var 4 dir_sources)
+                                                (ArrayPhysicalCast
+                                                    (LogicalNot
+                                                        (Var 4 exclude_source)
+                                                        (Array
+                                                            (Logical 4)
+                                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                                            (IntegerConstant 10 (Integer 4) Decimal))]
+                                                            FixedSizeArray
+                                                        )
+                                                        ()
+                                                    )
+                                                    FixedSizeArray
+                                                    DescriptorArray
+                                                    (Array
+                                                        (Logical 4)
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 10 (Integer 4) Decimal))]
+                                                        DescriptorArray
+                                                    )
+                                                    ()
+                                                )]
+                                                2
+                                                (Allocatable
+                                                    (Allocatable
+                                                        (Array
+                                                            (StructType
+                                                                2 srcfile_t
+                                                            )
+                                                            [(()
+                                                            ())]
+                                                            DescriptorArray
+                                                        )
+                                                    )
+                                                )
+                                                ()
+                                            )
+                                            ()
+                                        )
+                                        (Assignment
+                                            (Var 4 __1__libasr_index_)
+                                            (IntegerBinOp
+                                                (Var 4 __1__libasr_index_)
+                                                Add
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            ()
+                                        )]
+                                    )
+                                    (ImplicitDeallocate
+                                        [(Var 4 dir_sources)]
+                                    )]
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            srcfile_t:
+                                (Struct
+                                    (SymbolTable
+                                        3
+                                        {
+                                            digest:
+                                                (Variable
+                                                    3
+                                                    digest
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 8)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            exe_name:
+                                                (Variable
+                                                    3
+                                                    exe_name
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Allocatable
+                                                        (Character 1 -2 () PointerString)
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            file_name:
+                                                (Variable
+                                                    3
+                                                    file_name
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Allocatable
+                                                        (Character 1 -2 () PointerString)
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    srcfile_t
+                                    []
+                                    [file_name
+                                    exe_name
+                                    digest]
+                                    Source
+                                    Public
+                                    .false.
+                                    .false.
+                                    []
+                                    ()
+                                    ()
+                                )
+                        })
+                    modules_43_fpm_sources
+                    []
+                    .false.
+                    .false.
+                )
+        })
+    []
+)
