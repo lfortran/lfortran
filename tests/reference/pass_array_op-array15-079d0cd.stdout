@@ -7,10 +7,10 @@
                     (SymbolTable
                         2
                         {
-                            __libasr_index_0_:
+                            __1_t:
                                 (Variable
                                     2
-                                    __libasr_index_0_
+                                    __1_t
                                     []
                                     Local
                                     ()
@@ -49,7 +49,7 @@
                     []
                     [(DoLoop
                         ()
-                        ((Var 2 __libasr_index_0_)
+                        ((Var 2 __1_t)
                         (ArrayBound
                             (Var 2 x)
                             (IntegerConstant 1 (Integer 4) Decimal)
@@ -69,10 +69,10 @@
                             (ArrayItem
                                 (Var 2 x)
                                 [(()
-                                (Var 2 __libasr_index_0_)
+                                (Var 2 __1_t)
                                 ())]
                                 (Integer 4)
-                                ColMajor
+                                RowMajor
                                 ()
                             )
                             (IntegerConstant 23 (Integer 4) Decimal)
