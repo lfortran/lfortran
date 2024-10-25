@@ -793,9 +793,9 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                 /*
                     Convert `array_1(:, array_2)` to :
 
-                        DO i = lbound(array_1, 1), ubound(array_1, 1)
-                            DO j = lbound(array_1, 2), ubound(array_1, 2)
-                                array_1(i, j) = a(i, array_2(j))
+                        DO i = lbound(array_3, 1), ubound(array_3, 1)
+                            DO j = lbound(array_3, 2), ubound(array_3, 2)
+                                array_3(i, j) = array_1(i, array_2(j))
                             END DO
                         END DO
                 */ 
@@ -805,6 +805,23 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                 Vec<ASR::expr_t*> idx_vars_value, loop_vars;
                 std::vector<int> loop_var_indices;
                 Vec<ASR::stmt_t*> doloop_body;
+                if( result_var == nullptr ) {
+                    bool allocate = false;
+                    ASR::dimension_t* res_dims = nullptr;
+                    int res_dims_n = ASRUtils::extract_dimensions_from_ttype(x->m_type, res_dims);
+                    ASR::ttype_t* result_var_type = get_result_type(x->m_type,
+                        res_dims, res_dims_n, loc, x->class_type, allocate);
+                    if( allocate ) {
+                        result_var_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc,
+                           ASRUtils::type_get_past_allocatable(result_var_type)));
+                    }
+                    result_var = PassUtils::create_var(result_counter, "array_section", loc,
+                                    result_var_type, al, current_scope);
+                    result_counter += 1;
+                    if( allocate ) {
+                        allocate_result_var(x->m_v, res_dims, res_dims_n, true, true);
+                    }
+                }
                 create_do_loop(
                     loc, PassUtils::get_rank(x->m_v),
                     idx_vars, idx_vars_value, loop_vars, loop_var_indices, doloop_body, arg,
