@@ -673,30 +673,11 @@ public:
             !is_module && !is_struct) {
             // For now restrict this check only to variables which are present
             // inside symbols which have a body.
-            if (pass_simplifier) {
-                if( x.m_storage != ASR::storage_typeType::Parameter ) {
-                    // require(x.m_value == nullptr,
-                    //         "Only parameter variables can have non-NULL value attribute." )
-                    require( (x.m_symbolic_value != nullptr &&
-                          (ASRUtils::is_value_constant(x.m_symbolic_value) ||
-                           ASRUtils::is_value_constant(ASRUtils::expr_value(x.m_symbolic_value))) ) ||
-                          x.m_symbolic_value == nullptr,
-                        "Initialisation of " + std::string(x.m_name) +
-                        " must reduce to a compile time constant 1.");
-                } else {
-                    require( (x.m_symbolic_value == nullptr && x.m_value == nullptr) ||
-                            (x.m_symbolic_value != nullptr && x.m_value != nullptr) ||
-                            (x.m_symbolic_value != nullptr && ASRUtils::is_value_constant(x.m_symbolic_value)),
-                            "Initialisation of " + std::string(x.m_name) +
-                            " must reduce to a compile time constant.");
-                }
-            } else {
-                require( (x.m_symbolic_value == nullptr && x.m_value == nullptr) ||
-                        (x.m_symbolic_value != nullptr && x.m_value != nullptr) ||
-                        (x.m_symbolic_value != nullptr && ASRUtils::is_value_constant(x.m_symbolic_value)),
-                        "Initialisation of " + std::string(x.m_name) +
-                        " must reduce to a compile time constant.");
-            }
+            require( (x.m_symbolic_value == nullptr && x.m_value == nullptr) ||
+                    (x.m_symbolic_value != nullptr && x.m_value != nullptr) ||
+                    (x.m_symbolic_value != nullptr && ASRUtils::is_value_constant(x.m_symbolic_value)),
+                    "Initialisation of " + std::string(x.m_name) +
+                    " must reduce to a compile time constant.");
         }
 
         if (x.m_symbolic_value)
