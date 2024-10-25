@@ -31,14 +31,13 @@ class ReplaceIntrinsicFunctions: public ASR::BaseExprReplacer<ReplaceIntrinsicFu
 
     Allocator& al;
     SymbolTable* global_scope;
-    bool pass_simplifier = false;
     std::map<ASR::symbol_t*, ASRUtils::IntrinsicArrayFunctions>& func2intrinsicid;
 
     public:
 
     ReplaceIntrinsicFunctions(Allocator& al_, SymbolTable* global_scope_,
-    std::map<ASR::symbol_t*, ASRUtils::IntrinsicArrayFunctions>& func2intrinsicid_, bool pass_simplifier_) :
-        al(al_), global_scope(global_scope_), pass_simplifier(pass_simplifier_), func2intrinsicid(func2intrinsicid_) {}
+    std::map<ASR::symbol_t*, ASRUtils::IntrinsicArrayFunctions>& func2intrinsicid_) :
+        al(al_), global_scope(global_scope_), func2intrinsicid(func2intrinsicid_) {}
 
 
     void replace_IntrinsicElementalFunction(ASR::IntrinsicElementalFunction_t* x) {
@@ -46,12 +45,11 @@ class ReplaceIntrinsicFunctions: public ASR::BaseExprReplacer<ReplaceIntrinsicFu
             *current_expr = x->m_value;
             return;
         }
-        ASRUtils::pass_simplifier_intrinsic = pass_simplifier;
 
         Vec<ASR::call_arg_t> new_args; new_args.reserve(al, x->n_args);
         // Replace any IntrinsicElementalFunctions in the argument first:
         for( size_t i = 0; i < x->n_args; i++ ) {
-            if (pass_simplifier) {
+            if (ASRUtils::use_experimental_simplifier) {
                 ASR::call_arg_t arg0;
                 arg0.loc = (*current_expr)->base.loc;
                 arg0.m_value = x->m_args[i];
@@ -84,7 +82,7 @@ class ReplaceIntrinsicFunctions: public ASR::BaseExprReplacer<ReplaceIntrinsicFu
             arg_types.push_back(al, ASRUtils::expr_type(x->m_args[i]));
         }
         ASR::ttype_t* type = nullptr;
-        if (pass_simplifier) {
+        if (ASRUtils::use_experimental_simplifier) {
             type = ASRUtils::extract_type(x->m_type);
         } else {
             type = x->m_type;
@@ -95,7 +93,6 @@ class ReplaceIntrinsicFunctions: public ASR::BaseExprReplacer<ReplaceIntrinsicFu
     }
 
     void replace_IntrinsicArrayFunction(ASR::IntrinsicArrayFunction_t* x) {
-        ASRUtils::pass_simplifier_intrinsic = pass_simplifier;
         std::string intrinsic_name_ = std::string(ASRUtils::get_array_intrinsic_name(x->m_arr_intrinsic_id));
         if (x->m_value) {
             *current_expr = x->m_value;
@@ -105,7 +102,7 @@ class ReplaceIntrinsicFunctions: public ASR::BaseExprReplacer<ReplaceIntrinsicFu
         Vec<ASR::call_arg_t> new_args; new_args.reserve(al, x->n_args);
         // Replace any IntrinsicArrayFunctions in the argument first:
         for( size_t i = 0; i < x->n_args; i++ ) {
-            if (pass_simplifier) {
+            if (ASRUtils::use_experimental_simplifier) {
                 ASR::call_arg_t arg0;
                 arg0.loc = (*current_expr)->base.loc;
                 arg0.m_value = x->m_args[i];
@@ -143,7 +140,7 @@ class ReplaceIntrinsicFunctions: public ASR::BaseExprReplacer<ReplaceIntrinsicFu
         ASR::expr_t* func_call = current_expr_;
         *current_expr = current_expr_;
         bool condition = ASR::is_a<ASR::FunctionCall_t>(*func_call);
-        if (pass_simplifier) {
+        if (ASRUtils::use_experimental_simplifier) {
             condition = condition && ASRUtils::is_array(x->m_type);
         }
         if (condition) {
@@ -168,8 +165,8 @@ class ReplaceIntrinsicFunctionsVisitor : public ASR::CallReplacerOnExpressionsVi
     public:
 
         ReplaceIntrinsicFunctionsVisitor(Allocator& al_, SymbolTable* global_scope_,
-            std::map<ASR::symbol_t*, ASRUtils::IntrinsicArrayFunctions>& func2intrinsicid_, bool pass_simplifier_) :
-            replacer(al_, global_scope_, func2intrinsicid_, pass_simplifier_) {}
+            std::map<ASR::symbol_t*, ASRUtils::IntrinsicArrayFunctions>& func2intrinsicid_) :
+            replacer(al_, global_scope_, func2intrinsicid_) {}
 
         void call_replacer() {
             replacer.current_expr = current_expr;
@@ -190,15 +187,13 @@ class ReplaceFunctionCallReturningArray: public ASR::BaseExprReplacer<ReplaceFun
     public:
     ASR::expr_t* result_var_; // Declared in simplifier
     SymbolTable* current_scope;
-    bool pass_simplifier = false;
 
     ReplaceFunctionCallReturningArray(Allocator& al_, Vec<ASR::stmt_t*>& pass_result_,
-    std::map<ASR::symbol_t*, ASRUtils::IntrinsicArrayFunctions>& func2intrinsicid_, bool pass_simplifier_) :
+    std::map<ASR::symbol_t*, ASRUtils::IntrinsicArrayFunctions>& func2intrinsicid_) :
     al(al_), pass_result(pass_result_), result_counter(0),
     func2intrinsicid(func2intrinsicid_),
     result_var_(nullptr),
-    current_scope(nullptr),
-    pass_simplifier(pass_simplifier_) {}
+    current_scope(nullptr) {}
 
     // Not called from anywhere but kept for future use.
     // Especially if we don't find alternatives to allocatables
@@ -295,7 +290,7 @@ class ReplaceFunctionCallReturningArray: public ASR::BaseExprReplacer<ReplaceFun
     void replace_FunctionCall(ASR::FunctionCall_t* x) {
         ASR::symbol_t* x_m_name = ASRUtils::symbol_get_past_external(x->m_name);
         int n_dims = ASRUtils::extract_n_dims_from_ttype(x->m_type);
-        if ( pass_simplifier ) {
+        if ( ASRUtils::use_experimental_simplifier ) {
             if( func2intrinsicid.find(x_m_name) == func2intrinsicid.end() ) {
                 return;
             }
@@ -310,7 +305,7 @@ class ReplaceFunctionCallReturningArray: public ASR::BaseExprReplacer<ReplaceFun
         Vec<ASR::call_arg_t> new_args;
         new_args.reserve(al, x->n_args + 1);
         for( size_t i = 0; i < x->n_args; i++ ) {
-            if ( pass_simplifier ) {
+            if ( ASRUtils::use_experimental_simplifier ) {
                 ASR::call_arg_t new_arg;
                 new_arg.loc = x->m_args[i].loc;
                 new_arg.m_value = x->m_args[i].m_value;
@@ -328,7 +323,7 @@ class ReplaceFunctionCallReturningArray: public ASR::BaseExprReplacer<ReplaceFun
                 }
             }
         }
-        if (!pass_simplifier) {
+        if (!ASRUtils::use_experimental_simplifier) {
             ASR::expr_t* result_var_ = nullptr;
             int dim_index = ASRUtils::IntrinsicArrayFunctionRegistry::
                 get_dim_index(func2intrinsicid[x_m_name]);
@@ -416,7 +411,7 @@ class ReplaceFunctionCallReturningArray: public ASR::BaseExprReplacer<ReplaceFun
         new_arg.loc = this->result_var_->base.loc;
         new_arg.m_value = this->result_var_;
         new_args.push_back(al, new_arg);
-        if ( pass_simplifier ) {
+        if ( ASRUtils::use_experimental_simplifier ) {
             ASR::stmt_t* subrout_call = ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(
                 al, x->base.base.loc, x->m_name, x->m_original_name, new_args.p,
                 new_args.size(), x->m_dt, nullptr, false, false));
@@ -439,15 +434,14 @@ class ReplaceFunctionCallReturningArrayVisitor : public ASR::CallReplacerOnExpre
         ReplaceFunctionCallReturningArray replacer;
         Vec<ASR::stmt_t*> pass_result;
         Vec<ASR::stmt_t*>* parent_body;
-        bool pass_simplifier = false;
 
     public:
 
         ReplaceFunctionCallReturningArrayVisitor(Allocator& al_,
-            std::map<ASR::symbol_t*, ASRUtils::IntrinsicArrayFunctions>& func2intrinsicid_, bool pass_simplifier_) :
+            std::map<ASR::symbol_t*, ASRUtils::IntrinsicArrayFunctions>& func2intrinsicid_) :
         al(al_),
-        replacer(al_, pass_result, func2intrinsicid_, pass_simplifier_), 
-        parent_body(nullptr), pass_simplifier(pass_simplifier_) {
+        replacer(al_, pass_result, func2intrinsicid_), 
+        parent_body(nullptr) {
             pass_result.n = 0;
         }
         
@@ -474,7 +468,7 @@ class ReplaceFunctionCallReturningArrayVisitor : public ASR::CallReplacerOnExpre
                 parent_body = &body;
                 visit_stmt(*m_body[i]);
                 parent_body = parent_body_copy;
-                if ( !pass_simplifier ) {
+                if ( !ASRUtils::use_experimental_simplifier ) {
                     for (size_t j=0; j < pass_result.size(); j++) {
                         body.push_back(al, pass_result[j]);
                     }
@@ -495,7 +489,7 @@ class ReplaceFunctionCallReturningArrayVisitor : public ASR::CallReplacerOnExpre
         }
 
         void visit_Assignment(const ASR::Assignment_t& x) {
-            if( pass_simplifier ) {
+            if( ASRUtils::use_experimental_simplifier ) {
                 replacer.result_var_ = x.m_target;
                 ASR::CallReplacerOnExpressionsVisitor<ReplaceFunctionCallReturningArrayVisitor>::visit_Assignment(x);
                 replacer.result_var_ = nullptr;
@@ -523,9 +517,9 @@ class ReplaceFunctionCallReturningArrayVisitor : public ASR::CallReplacerOnExpre
 void pass_replace_intrinsic_function(Allocator &al, ASR::TranslationUnit_t &unit,
                              const LCompilers::PassOptions& pass_options) {
     std::map<ASR::symbol_t*, ASRUtils::IntrinsicArrayFunctions> func2intrinsicid;
-    ReplaceIntrinsicFunctionsVisitor v(al, unit.m_symtab, func2intrinsicid, pass_options.experimental_simplifier);
+    ReplaceIntrinsicFunctionsVisitor v(al, unit.m_symtab, func2intrinsicid);
     v.visit_TranslationUnit(unit);
-    ReplaceFunctionCallReturningArrayVisitor u(al, func2intrinsicid, pass_options.experimental_simplifier);
+    ReplaceFunctionCallReturningArrayVisitor u(al, func2intrinsicid);
     u.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor w(al);
     w.visit_TranslationUnit(unit);
