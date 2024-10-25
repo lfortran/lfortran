@@ -7,6 +7,7 @@ program enum_03
     end enum
 
     call get_value(x)
+    print *, x
     if (x /= 999) error stop
 
 contains
