@@ -17,6 +17,7 @@ namespace LCompilers {
 namespace ASRUtils {
 
 
+
 /************************* Intrinsic Array Functions **************************/
 enum class IntrinsicArrayFunctions : int64_t {
     Any,
@@ -533,7 +534,6 @@ static inline ASR::expr_t *eval_ArrIntrinsic(Allocator & al,
                     } else {
                         double result = std::numeric_limits<double>::max();
                         result = find_minval(size, (double*)(a->m_data), mask_data);
-                        result = find_minval(size, (double*)(a->m_data), mask_data);
                         value = ASRUtils::EXPR(ASR::make_RealConstant_t(al,
                             loc, result, t));
                     }
@@ -563,7 +563,6 @@ static inline ASR::expr_t *eval_ArrIntrinsic(Allocator & al,
                             loc, result, t));
                     } else {
                         double result = std::numeric_limits<double>::min();
-                        result = find_maxval(size, (double*)(a->m_data), mask_data);
                         result = find_maxval(size, (double*)(a->m_data), mask_data);
                         value = ASRUtils::EXPR(ASR::make_RealConstant_t(al,
                             loc, result, t));
@@ -1401,8 +1400,8 @@ static inline ASR::expr_t *instantiate_MaxMinLoc(Allocator &al,
             });
     }
     body.push_back(al, b.Return());
-    ASR::symbol_t *fn_sym = nullptr;
     if ( use_experimental_simplifier ) {
+        ASR::symbol_t *fn_sym = nullptr;
         if( ASRUtils::expr_intent(result) == ASR::intentType::ReturnVar ) {
             fn_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
                 body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -1412,13 +1411,12 @@ static inline ASR::expr_t *instantiate_MaxMinLoc(Allocator &al,
         }
         scope->add_symbol(fn_name, fn_sym);
         return b.Call(fn_sym, m_args, return_type, nullptr);
-    } else {
-        ASR::symbol_t *fn_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+    }
+    ASR::symbol_t *fn_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, fn_sym);
         return b.Call(fn_sym, m_args, return_type, nullptr);
     }
-}
 
 } // namespace ArrIntrinsic
 
@@ -2075,9 +2073,9 @@ namespace Eoshift {
 
     static ASR::expr_t *eval_Eoshift(Allocator &al, const Location &loc,
             ASR::ttype_t *type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
-        ASRBuilder b(al, loc);
-        if (all_args_evaluated(args) &&
-            extract_n_dims_from_ttype(expr_type(args[0])) == 1) {
+            ASRBuilder b(al, loc);
+            if (all_args_evaluated(args) &&
+                extract_n_dims_from_ttype(expr_type(args[0])) == 1) {
             ASR::ArrayConstant_t *arr = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(args[0]));
             ASR::ttype_t* arr_type = expr_type(args[0]);
             ASR::expr_t *final_boundary = args[2];
@@ -2205,15 +2203,11 @@ namespace Eoshift {
             ASR::ttype_t *boundary_type = use_experimental_simplifier ? ASRUtils::type_get_past_array_pointer_allocatable(type_array) : type_array;
             if(is_integer(*type_array)) {
                 final_boundary = b.i_t(0, boundary_type);
-                final_boundary = b.i_t(0, boundary_type);
             } else if(is_real(*type_array)) {
-                final_boundary = b.f_t(0.0, boundary_type);
                 final_boundary = b.f_t(0.0, boundary_type);
             } else if(is_logical(*type_array)) {
                 final_boundary = b.bool_t(false, boundary_type);
-                final_boundary = b.bool_t(false, boundary_type);
             } else if(is_character(*type_array)) {
-                final_boundary = b.StringConstant("  ", boundary_type);
                 final_boundary = b.StringConstant("  ", boundary_type);
             }
         }
@@ -2294,7 +2288,6 @@ namespace Eoshift {
         body.push_back(al, b.Assignment(shift_val, args[1]));
         body.push_back(al, b.Assignment(abs_shift, shift_val));
         body.push_back(al, b.Assignment(abs_shift_val, shift_val));
-
 
         body.push_back(al, b.If(b.Lt(args[1], b.i32(0)), {
             b.Assignment(shift_val, b.Add(shift_val, UBound(args[0], 1))),
@@ -2448,7 +2441,6 @@ namespace IanyIall {
         }
         return value;
     }
-
 
     static inline ASR::asr_t* create_IanyIall(Allocator& al, const Location& loc,
         Vec<ASR::expr_t*>& args, diag::Diagnostics& diag, ASRUtils::IntrinsicArrayFunctions intrinsic_func_id,
@@ -2817,7 +2809,6 @@ namespace AnyAll {
         return value;
     }
 
-
     static inline ASR::asr_t* create_AnyAll(Allocator& al, const Location& loc,
         Vec<ASR::expr_t*>& args, diag::Diagnostics& diag, ASRUtils::IntrinsicArrayFunctions intrinsic_func_id,
         bool init_logical_val, std::function<bool(bool,bool)> logical_operation) {
@@ -2841,7 +2832,6 @@ namespace AnyAll {
         arg_values.push_back(al, ASRUtils::expr_value(mask));
         if( dim ) arg_values.push_back(al,  ASRUtils::expr_value(dim));
 
-
         ASR::ttype_t* logical_return_type = logical;
         if( dim ) {
             overload_id = 1;
@@ -2859,7 +2849,6 @@ namespace AnyAll {
                     logical, dims.p, dims.size());
             }
         }
-
 
         value = eval_AnyAll(al, loc, logical_return_type, arg_values, init_logical_val, logical_operation);
         any_all_args.push_back(al, mask);
@@ -4216,7 +4205,6 @@ namespace Parity {
                 b.Assignment(c, b.Xor(c, b.ArrayItem_01(args[0], idx)))
             });
 
-
             ASR::stmt_t* do_loop = PassUtils::create_do_loop_helper_parity_dim(al, loc,
                                     idx, res_idx, inner_most_do_loop, c, args[0], result, 0, dim);
             body.push_back(al, do_loop);
@@ -4291,7 +4279,6 @@ namespace Norm2 {
         if (array_rank == 1) {
             overload_id = id_array;
         }
-
 
         ASR::expr_t *value = nullptr;
         Vec<ASR::expr_t*> arg_values; arg_values.reserve(al, 2);
@@ -5699,7 +5686,6 @@ namespace IntrinsicArrayFunctionRegistry {
             id == IntrinsicArrayFunctions::Parity) {
             return 1; // dim argument index
         } else if( id == IntrinsicArrayFunctions::MatMul ||
-            id == IntrinsicArrayFunctions::Transpose ||
             id == IntrinsicArrayFunctions::Transpose ||
             id == IntrinsicArrayFunctions::Pack ||
             id == IntrinsicArrayFunctions::Cshift ||
