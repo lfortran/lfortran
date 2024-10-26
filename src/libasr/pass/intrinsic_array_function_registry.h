@@ -998,7 +998,6 @@ static inline ASR::expr_t *eval_MaxMinLoc(Allocator &al, const Location &loc,
     }
     if (!array) return nullptr;
     if (extract_n_dims_from_ttype(expr_type(array)) == 1) {
-    if (extract_n_dims_from_ttype(expr_type(array)) == 1) {
         int arr_size = 0;
         ASR::ArrayConstant_t *arr = nullptr;
         if (ASR::is_a<ASR::ArrayConstant_t>(*array)) {
@@ -1121,7 +1120,6 @@ static inline ASR::expr_t *eval_MaxMinLoc(Allocator &al, const Location &loc,
             return b.i_t(index + 1, type);
         } else {
             return b.ArrayConstant({b.i32(index + 1)}, extract_type(type), false);
-        }
         }
     } else {
         return nullptr;
