@@ -182,6 +182,7 @@ class ReplaceFunctionCallReturningArray: public ASR::BaseExprReplacer<ReplaceFun
 
     Allocator& al;
     Vec<ASR::stmt_t*>& pass_result;
+    size_t result_counter;
     std::map<ASR::symbol_t*, ASRUtils::IntrinsicArrayFunctions>& func2intrinsicid;
 
     public:

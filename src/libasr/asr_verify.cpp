@@ -878,14 +878,6 @@ public:
         handle_ArrayItemSection(x);
     }
 
-    void visit_ArraySize(const ArraySize_t& x) {
-        if (check_external) {
-            require(ASRUtils::is_array(ASRUtils::expr_type(x.m_v)),
-                "ArraySize::m_v must be an array");
-        }
-        BaseWalkVisitor<VerifyVisitor>::visit_ArraySize(x);
-    }
-
     template <typename T>
     void verify_args(const T& x) {
         ASR::symbol_t* func_sym = ASRUtils::symbol_get_past_external(x.m_name);
