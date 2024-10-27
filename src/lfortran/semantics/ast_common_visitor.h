@@ -1340,7 +1340,24 @@ public:
             if (m_dim[i].m_start) {
                 this->visit_expr(*m_dim[i].m_start);
                 dim.m_start = ASRUtils::EXPR(tmp);
-            } else {
+                ASR::expr_t* start = dim.m_start;
+                if(ASR::is_a<ASR::Var_t>(*start)) {
+
+                    ASR::Var_t* start_var = ASR::down_cast<ASR::Var_t>(start);
+                    ASR::symbol_t* start_sym = start_var->m_v;
+                    SymbolTable* symbol_scope = ASRUtils::symbol_parent_symtab(start_sym);
+                    if(ASR::is_a<ASR::Variable_t>(*start_sym)) {
+                        ASR::Variable_t* start_variable = ASR::down_cast<ASR::Variable_t>(start_sym);
+
+                        if(start_variable->m_storage != ASR::storage_typeType::Parameter) {
+
+                            if(!in_Subroutine && (symbol_scope->counter == current_scope->counter) && !ASR::is_a<ASR::IntegerConstant_t>(*start)) {
+                                throw SemanticError("Explicit shaped array with nonconstant bounds at ",m_dim[i].m_start->base.loc);
+                            }
+                        }
+                    }
+                }
+            }  else {
                 dim.m_start = nullptr;
             }
             if (m_dim[i].m_end) {
@@ -1355,6 +1372,16 @@ public:
                         ASRUtils::expr_value(end) == nullptr) ) {
                             end = get_transformed_function_call(end_sym);
                         }
+                    else if(ASR::is_a<ASR::Variable_t>(*end_sym)) {
+                        ASR::Variable_t* end_variable = ASR::down_cast<ASR::Variable_t>(end_sym);
+
+                        if(end_variable->m_storage != ASR::storage_typeType::Parameter) {
+
+                            if(!in_Subroutine && (symbol_scope->counter == current_scope->counter) && !ASR::is_a<ASR::IntegerConstant_t>(*end)) {
+                                throw SemanticError("Explicit shaped array with nonconstant bounds at ",m_dim[i].m_end->base.loc);
+                            }
+                        }
+                    }
                 } else if(ASR::is_a<ASR::IntegerBinOp_t>(*end)) {
                     end = convert_integer_binop_to_function_call(end, is_argument);
                 }
