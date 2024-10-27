@@ -17,6 +17,8 @@
 #include <libasr/pass/replace_do_loops.h>
 #include <libasr/pass/replace_for_all.h>
 #include <libasr/pass/while_else.h>
+#include <libasr/pass/replace_init_expr.h>
+#include <libasr/pass/replace_implied_do_loops.h>
 #include <libasr/pass/replace_array_op.h>
 #include <libasr/pass/replace_array_op_simplifier.h>
 #include <libasr/pass/replace_select_case.h>
@@ -55,9 +57,7 @@
 #include <libasr/pass/replace_print_struct_type.h>
 #include <libasr/pass/promote_allocatable_to_nonallocatable.h>
 #include <libasr/pass/replace_function_call_in_declaration.h>
-#include <libasr/pass/replace_init_expr.h>
 #include <libasr/pass/replace_openmp.h>
-#include <libasr/pass/replace_implied_do_loops.h>
 #include <libasr/codegen/asr_to_fortran.h>
 #include <libasr/asr_verify.h>
 #include <libasr/pickle.h>
@@ -74,6 +74,7 @@ namespace LCompilers {
 
     class PassManager {
         private:
+
         std::vector<std::string> _passes_with_experimental_simplifier;
         std::vector<std::string> _with_optimization_passes_for_experimental_simplifier;
         std::vector<std::string> _passes;
@@ -111,6 +112,7 @@ namespace LCompilers {
             {"subroutine_from_function", &pass_create_subroutine_from_function},
             {"subroutine_from_function_simplifier", &pass_create_subroutine_from_function_simplifier},
             {"transform_optional_argument_functions", &pass_transform_optional_argument_functions},
+            {"init_expr", &pass_replace_init_expr},
             {"nested_vars", &pass_nested_vars},
             {"where", &pass_replace_where},
             {"where_simplifier", &pass_replace_where_simplifier},
@@ -120,8 +122,7 @@ namespace LCompilers {
             {"unique_symbols", &pass_unique_symbols},
             {"insert_deallocate", &pass_insert_deallocate},
             {"promote_allocatable_to_nonallocatable", &pass_promote_allocatable_to_nonallocatable},
-            {"simplifier", &pass_simplifier},
-            {"init_expr", &pass_replace_init_expr}
+            {"simplifier", &pass_simplifier}
         };
 
         bool apply_default_passes;
@@ -365,6 +366,7 @@ namespace LCompilers {
                 "insert_deallocate",
                 "promote_allocatable_to_nonallocatable"
             };
+
             // These are re-write passes which are already handled
             // appropriately in C backend.
             _c_skip_passes = {

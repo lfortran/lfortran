@@ -942,7 +942,6 @@ namespace LCompilers {
             bool perform_cast=false, ASR::cast_kindType cast_kind=ASR::cast_kindType::IntegerToInteger,
             ASR::ttype_t* casted_type=nullptr) {
             LCOMPILERS_ASSERT(result_var != nullptr);
-
             const Location& loc = x->base.base.loc;
             LCOMPILERS_ASSERT(ASR::is_a<ASR::Var_t>(*result_var));
             [[maybe_unused]] ASR::ttype_t* result_var_type = ASRUtils::expr_type(result_var);

@@ -1342,7 +1342,7 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
                     self.emit("    head.m_v = duplicate_expr(x->m_head[i].m_v);", level)
                     self.emit("    head.m_start = duplicate_expr(x->m_head[i].m_start);", level)
                     self.emit("    head.m_end = duplicate_expr(x->m_head[i].m_end);", level)
-                    self.emit("    head.m_increment = duplicate_expr(x->m_head[i].m_increment);", level)
+                    self.emit("    head.m_increment = duplicate_expr(x->m_head[i].m_increment);", level) 
                     self.emit("    m_%s.push_back(al, head);" % (field.name), level)
                 else:
                     self.emit("    m_%s.push_back(al, self().duplicate_%s(x->m_%s[i]));" % (field.name, field.type, field.name), level)

@@ -43,7 +43,7 @@ class ReplaceIntrinsicFunctions: public ASR::BaseExprReplacer<ReplaceIntrinsicFu
     void replace_IntrinsicElementalFunction(ASR::IntrinsicElementalFunction_t* x) {
         if (x->m_value) {
             *current_expr = x->m_value;
-            return ;
+            return;
         }
 
         Vec<ASR::call_arg_t> new_args; new_args.reserve(al, x->n_args);
@@ -96,7 +96,7 @@ class ReplaceIntrinsicFunctions: public ASR::BaseExprReplacer<ReplaceIntrinsicFu
         std::string intrinsic_name_ = std::string(ASRUtils::get_array_intrinsic_name(x->m_arr_intrinsic_id));
         if (x->m_value) {
             *current_expr = x->m_value;
-            return ;
+            return;
         }
 
         replace_ttype(x->m_type);
