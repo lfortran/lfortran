@@ -2120,18 +2120,41 @@ namespace Eoshift {
                 }
             }
             int shift = 0;
-            if (extract_value(expr_value(args[1]), shift)) {
-                if (shift < 0) {
-                    std::rotate(m_eles.begin(), m_eles.begin() + m_eles.size() + shift, m_eles.end());
-                    for(int j = 0; j < (-1*shift); j++) {
-                        m_eles[j] = final_boundary;
+            if (use_experimental_simplifier) {
+                if (extract_value(expr_value(args[1]), shift)) {
+                    if (shift < 0) {
+                        std::rotate(m_eles.begin(), m_eles.begin() + m_eles.size() + shift, m_eles.end());
+                        for(int j = 0; j < (-1*shift); j++) {
+                            m_eles[j] = final_boundary;
+                        }
+                    } else {
+                        std::rotate(m_eles.begin(), m_eles.begin() + shift, m_eles.end());
+                        int i = m_eles.size() - 1;
+                        for(int j = 0; j < shift; j++) {
+                            m_eles[i] = final_boundary;
+                            i--;
+                        }
                     }
-                } else {
+                }
+            } else {
+                if (extract_value(expr_value(args[1]), shift)) {
+                    if (shift < 0) {
+                        shift = m_eles.size() + shift;
+                    }
                     std::rotate(m_eles.begin(), m_eles.begin() + shift, m_eles.end());
-                    int i = m_eles.size() - 1;
-                    for(int j = 0; j < shift; j++) {
-                        m_eles[i] = final_boundary;
-                        i--;
+                }
+                if (extract_value(expr_value(args[1]), shift)) {
+                    if(shift > 0) {
+                        int i = m_eles.size() - 1;
+                        for(int j = 0; j < shift; j++) {
+                            m_eles[i] = final_boundary;
+                            i--;
+                        }
+                    }
+                    else {
+                        for(int j = 0; j < (-1*shift); j++) {
+                            m_eles[j] = final_boundary;
+                        }
                     }
                 }
             }
