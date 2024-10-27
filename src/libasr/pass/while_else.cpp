@@ -17,13 +17,13 @@ public:
 
     std::unordered_map<ASR::stmt_t*, ASR::symbol_t*> flag_map;
     std::stack<ASR::stmt_t*> loop_stack;
-
+    
     ExitVisitor(Allocator &al)
         : StatementWalkVisitor(al) {}
 
     void visit_WhileLoop(const ASR::WhileLoop_t &x) {
         ASR::stmt_t *while_stmt = (ASR::stmt_t*)(&x);
-
+            
         loop_stack.push(while_stmt);
         ASR::WhileLoop_t &xx = const_cast<ASR::WhileLoop_t&>(x);
         transform_stmts(xx.m_body, xx.n_body);

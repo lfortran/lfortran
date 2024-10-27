@@ -149,10 +149,10 @@ namespace LCompilers {
                 ai.m_step = nullptr;
                 args.push_back(al, ai);
             }
+            ASR::expr_t* array_ref = nullptr;
             ASR::expr_t* arr_expr_copy = arr_expr;
             ASR::expr_t** original_arr_expr =&arr_expr_copy;
             ASR::expr_t** array_ref_container_node = nullptr; // If we have a structInstanceMember hierarch, It'd be used to emplace the resulting array_ref in the correct node.
-            ASR::expr_t* array_ref = nullptr;
             ASR::StructInstanceMember_t* tmp = nullptr;
 
             // if first depth of hierarchy contains array, don't set array_ref_container_node and return array_ref directly.
