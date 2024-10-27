@@ -2102,57 +2102,56 @@ namespace Eoshift {
                         m_eles.push_back(b.bool_t(ele, arr_type));
                     }
                 }
-            } else if (is_character(*arr_type)) {
-                std::string str = "";
-                for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(arr->m_type); i++) {
-                    str = ASR::down_cast<ASR::StringConstant_t>(ASRUtils::fetch_ArrayConstant_value(al, arr, i))->m_s;
-                    m_eles.push_back(b.StringConstant(str, arr_type));
-                }
-                int len_str = str.length();
-                str = "";
-                for(int i = 0; i < len_str; i++){
-                    str += " ";
-                }
-                if(is_logical(*boundary_type)){
-                    final_boundary = b.StringConstant(str, arr_type);
+        } else if (is_character(*arr_type)) {
+            std::string str = "";
+            for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(arr->m_type); i++) {
+                str = ASR::down_cast<ASR::StringConstant_t>(ASRUtils::fetch_ArrayConstant_value(al, arr, i))->m_s;
+                m_eles.push_back(b.StringConstant(str, arr_type));
+            }
+            int len_str = str.length();
+            str = "";
+            for(int i = 0; i < len_str; i++){
+                str += " ";
+            }
+            if(is_logical(*boundary_type)){
+                final_boundary = b.StringConstant(str, arr_type);
+            }
+        }
+        int shift = 0;
+        if (use_experimental_simplifier) {
+            if (extract_value(expr_value(args[1]), shift)) {
+                if (shift < 0) {
+                    std::rotate(m_eles.begin(), m_eles.begin() + m_eles.size() + shift, m_eles.end());
+                    for(int j = 0; j < (-1*shift); j++) {
+                        m_eles[j] = final_boundary;
+                    }
+                } else {
+                    std::rotate(m_eles.begin(), m_eles.begin() + shift, m_eles.end());
+                    int i = m_eles.size() - 1;
+                    for(int j = 0; j < shift; j++) {
+                        m_eles[i] = final_boundary;
+                        i--;
+                    }
                 }
             }
-            int shift = 0;
-            if (use_experimental_simplifier) {
-                if (extract_value(expr_value(args[1]), shift)) {
-                    if (shift < 0) {
-                        std::rotate(m_eles.begin(), m_eles.begin() + m_eles.size() + shift, m_eles.end());
-                        for(int j = 0; j < (-1*shift); j++) {
-                            m_eles[j] = final_boundary;
-                        }
-                    } else {
-                        std::rotate(m_eles.begin(), m_eles.begin() + shift, m_eles.end());
-                        int i = m_eles.size() - 1;
-                        for(int j = 0; j < shift; j++) {
-                            m_eles[i] = final_boundary;
-                            i--;
-                        }
+        } else {
+            if (extract_value(expr_value(args[1]), shift)) {
+                if (shift < 0) {
+                    shift = m_eles.size() + shift;
+                }
+                std::rotate(m_eles.begin(), m_eles.begin() + shift, m_eles.end());
+            }
+            if (extract_value(expr_value(args[1]), shift)) {
+                if(shift > 0) {
+                    int i = m_eles.size() - 1;
+                    for(int j = 0; j < shift; j++) {
+                        m_eles[i] = final_boundary;
+                        i--;
                     }
                 }
-            } else {
-                if (extract_value(expr_value(args[1]), shift)) {
-                    if (shift < 0) {
-                        shift = m_eles.size() + shift;
-                    }
-                    std::rotate(m_eles.begin(), m_eles.begin() + shift, m_eles.end());
-                }
-                if (extract_value(expr_value(args[1]), shift)) {
-                    if(shift > 0) {
-                        int i = m_eles.size() - 1;
-                        for(int j = 0; j < shift; j++) {
-                            m_eles[i] = final_boundary;
-                            i--;
-                        }
-                    }
-                    else {
-                        for(int j = 0; j < (-1*shift); j++) {
-                            m_eles[j] = final_boundary;
-                        }
+                else {
+                    for(int j = 0; j < (-1*shift); j++) {
+                        m_eles[j] = final_boundary;
                     }
                 }
             }
