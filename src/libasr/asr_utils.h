@@ -52,7 +52,7 @@ namespace LCompilers  {
 
     namespace ASRUtils  {
     
-    static bool use_experimental_simplifier = true; // TODO : concern about this flag (see : https://github.com/lfortran/lfortran/issues/5144)
+    extern bool use_experimental_simplifier; // TODO : concern about this flag (see : https://github.com/lfortran/lfortran/issues/5144)
 
 ASR::symbol_t* import_class_procedure(Allocator &al, const Location& loc,
         ASR::symbol_t* original_sym, SymbolTable *current_scope);
