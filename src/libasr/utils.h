@@ -59,7 +59,7 @@ struct PassOptions {
     bool with_intrinsic_mods = false;
     bool c_mangling = false;
     bool openmp = false;
-    bool experimental_simplifier = true;
+    bool experimental_simplifier = false;
 };
 
 struct CompilerOptions {
