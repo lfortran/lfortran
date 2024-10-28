@@ -1814,6 +1814,10 @@ RUN(NAME openmp_33 LABELS gfortran llvm_omp NO_EXPERIMENTAL_SIMPLIFIER GFORTRAN_
 RUN(NAME openmp_34 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp) # Ensure uniform load distribution over threads
 RUN(NAME openmp_35 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_36 LABELS gfortran GFORTRAN_ARGS -fopenmp)
+RUN(NAME openmp_37 LABELS gfortran GFORTRAN_ARGS -fopenmp)
+RUN(NAME openmp_38 LABELS gfortran GFORTRAN_ARGS -fopenmp)
+RUN(NAME openmp_39 LABELS gfortran GFORTRAN_ARGS -fopenmp)
+RUN(NAME openmp_40 LABELS gfortran GFORTRAN_ARGS -fopenmp)
 
 RUN(NAME compiler_version_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 

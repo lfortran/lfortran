@@ -3440,8 +3440,7 @@ public:
                         do_concurrent_head.push_back(al, do_loop_heads_for_collapse[i]);
                     }
                     do_concurrent->m_body = do_loop_bodies_for_collapse.p; do_concurrent->n_body = do_loop_bodies_for_collapse.size();
-                }
-                else {
+                } else {
                     do_concurrent->m_body = body.p; do_concurrent->n_body = body.size();
                 }
                 do_concurrent_head.push_back(al, head);
