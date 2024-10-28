@@ -2264,7 +2264,10 @@ int main_app(int argc, char *argv[]) {
     app.get_formatter()->column_width(25);
     app.require_subcommand(0, 1);
     CLI11_PARSE(app, argc, argv);
-    LCompilers::ASRUtils::use_experimental_simplifier = compiler_options.po.experimental_simplifier;
+    // this is hard-code here on 'simplifier_pass' branch
+    // intentionally, to make sure that all test on this branch
+    // run with experimental simplifier enabled
+    LCompilers::ASRUtils::use_experimental_simplifier = true;
     lcompilers_unique_ID = compiler_options.generate_object_code ? get_unique_ID() : "";
 
     if (arg_version) {
