@@ -1,0 +1,13 @@
+{
+    "basename": "pass_where_simplifier-where_01-4f9cf4c",
+    "cmd": "lfortran --pass=where_simplifier --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/where_01.f90",
+    "infile_hash": "b3e2251e4cd263f14db0266759a9af716dce48521dcd2f1e6eadce17",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "pass_where_simplifier-where_01-4f9cf4c.stdout",
+    "stdout_hash": "63ff21970bc6a164a7e4e72bb7de84f4889eaeb0dbc36eaea6e48adb",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
