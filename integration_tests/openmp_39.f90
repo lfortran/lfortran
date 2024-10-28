@@ -6,6 +6,7 @@ program main
     ny=3
     nx=4
     nz=5
+    nk=6
 
 !$omp parallel do collapse(2) private(iy, ix, iz)
 do iy = 1, ny
