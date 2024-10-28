@@ -394,14 +394,14 @@ namespace LCompilers {
                 apply_passes(al, asr, _user_defined_passes, pass_options,
                     diagnostics);
             } else if( apply_default_passes ) {
-                if( pass_options.fast && !pass_options.experimental_simplifier ) {
+                if( pass_options.fast && !ASRUtils::use_experimental_simplifier ) {
                     apply_passes(al, asr, _with_optimization_passes, pass_options,
                         diagnostics);
-                } else if (!pass_options.fast && !pass_options.experimental_simplifier) {
+                } else if (!pass_options.fast && !ASRUtils::use_experimental_simplifier) {
                     apply_passes(al, asr, _passes, pass_options, diagnostics);
-                } else if (pass_options.fast && pass_options.experimental_simplifier){
+                } else if (pass_options.fast && ASRUtils::use_experimental_simplifier){
                     apply_passes(al, asr, _with_optimization_passes_for_experimental_simplifier, pass_options, diagnostics);
-                } else if (!pass_options.fast && pass_options.experimental_simplifier) {
+                } else if (!pass_options.fast && ASRUtils::use_experimental_simplifier) {
                     apply_passes(al, asr, _passes_with_experimental_simplifier, pass_options, diagnostics);
                 }
             }
