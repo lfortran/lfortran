@@ -3448,9 +3448,7 @@ public:
                 do_concurrent->m_head = do_concurrent_head.p;
                 do_concurrent->n_head = do_concurrent_head.size();
                 tmp = (ASR::asr_t*) do_concurrent;
-                openmp_collapse = false;
-                collapse_value = 0;
-            } else if (openmp_collapse == true && !omp_constructs.empty() && collapse_value>loop_nesting-1) {
+            } else if (openmp_collapse == true && !omp_constructs.empty() && collapse_value>loop_nesting-1-omp_constructs.size()+1) {
                 collapse_value--;
                 do_loop_heads_for_collapse.push_back(al, head);
                 Vec<ASR::stmt_t*> temp;
@@ -3812,6 +3810,12 @@ public:
             if (x.m_end) {
                 if (LCompilers::startswith(x.m_construct_name, "parallel")) {
                     omp_constructs.pop_back();
+                    if (collapse_value > 0) {
+                        collapse_value = 0;
+                    }
+                    if (openmp_collapse) {
+                        openmp_collapse = false;
+                    }
                     return;
                 }
             }
@@ -3837,8 +3841,7 @@ public:
                         throw SemanticError("The clause "+ clause_name
                             +" is not supported yet", loc);
                     }
-                    if (clause_name == "collapse")
-                    {
+                    if (clause_name == "collapse") {
                         std::string collapse_value_str = clause.substr(
                             clause.find('(') + 1, clause.size() - clause_name.size() - 2);
                         collapse_value = std::stoi(collapse_value_str); // Get the value of N
