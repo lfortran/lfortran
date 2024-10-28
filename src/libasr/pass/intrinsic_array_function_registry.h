@@ -1399,8 +1399,8 @@ static inline ASR::expr_t *instantiate_MaxMinLoc(Allocator &al,
             });
     }
     body.push_back(al, b.Return());
-    ASR::symbol_t *fn_sym = nullptr;
     if ( use_experimental_simplifier ) {
+        ASR::symbol_t *fn_sym = nullptr;
         if( ASRUtils::expr_intent(result) == ASR::intentType::ReturnVar ) {
             fn_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
                 body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -1410,12 +1410,11 @@ static inline ASR::expr_t *instantiate_MaxMinLoc(Allocator &al,
         }
         scope->add_symbol(fn_name, fn_sym);
         return b.Call(fn_sym, m_args, return_type, nullptr);
-    } else {
-        ASR::symbol_t *fn_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
-            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
-        scope->add_symbol(fn_name, fn_sym);
-        return b.Call(fn_sym, m_args, return_type, nullptr);
     }
+    ASR::symbol_t *fn_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+    scope->add_symbol(fn_name, fn_sym);
+    return b.Call(fn_sym, m_args, return_type, nullptr);
 }
 
 } // namespace ArrIntrinsic
@@ -1548,47 +1547,47 @@ namespace Cshift {
         ASRBuilder b(al, loc);
         if (all_args_evaluated(args) &&
             extract_n_dims_from_ttype(expr_type(args[0])) == 1) {
-            ASR::ArrayConstant_t *arr = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(args[0]));
-            ASR::ttype_t* arr_type = expr_type(args[0]);
-            std::vector<ASR::expr_t *> m_eles;
-            if (is_integer(*arr_type)) {
-                for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(arr->m_type); i++) {
-                    int ele = 0;
-                    if(extract_value(ASRUtils::fetch_ArrayConstant_value(al, arr, i), ele)) {
-                        m_eles.push_back(b.i_t(ele, arr_type));
-                    }
-                }
-            } else if (is_real(*arr_type)) {
-                for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(arr->m_type); i++) {
-                    double ele = 0;
-                    if(extract_value(ASRUtils::fetch_ArrayConstant_value(al, arr, i), ele)) {
-                        m_eles.push_back(b.f_t(ele, arr_type));
-                    }
-                }
-            } else if (is_logical(*arr_type)) {
-                for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(arr->m_type); i++) {
-                    bool ele = false;
-                    if(extract_value(ASRUtils::fetch_ArrayConstant_value(al, arr, i), ele)) {
-                        m_eles.push_back(b.bool_t(ele, arr_type));
-                    }
-                }
-            } else if (is_character(*arr_type)) {
-                for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(arr->m_type); i++) {
-                    std::string str = "";
-                    str = ASR::down_cast<ASR::StringConstant_t>(ASRUtils::fetch_ArrayConstant_value(al, arr, i))->m_s;
-                    m_eles.push_back(b.StringConstant(str, arr_type));
+        ASR::ArrayConstant_t *arr = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(args[0]));
+        ASR::ttype_t* arr_type = expr_type(args[0]);
+        std::vector<ASR::expr_t *> m_eles;
+        if (is_integer(*arr_type)) {
+            for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(arr->m_type); i++) {
+                int ele = 0;
+                if(extract_value(ASRUtils::fetch_ArrayConstant_value(al, arr, i), ele)) {
+                    m_eles.push_back(b.i_t(ele, arr_type));
                 }
             }
-            int shift = 0;
-            if (extract_value(expr_value(args[1]), shift)) {
-                if (shift < 0) {
-                    shift = m_eles.size() + shift;
+        } else if (is_real(*arr_type)) {
+            for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(arr->m_type); i++) {
+                double ele = 0;
+                if(extract_value(ASRUtils::fetch_ArrayConstant_value(al, arr, i), ele)) {
+                    m_eles.push_back(b.f_t(ele, arr_type));
                 }
-                std::rotate(m_eles.begin(), m_eles.begin() + shift, m_eles.end());
             }
-            return b.ArrayConstant(m_eles, extract_type(type), false);
-        } else {
-            return nullptr;
+        } else if (is_logical(*arr_type)) {
+            for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(arr->m_type); i++) {
+                bool ele = false;
+                if(extract_value(ASRUtils::fetch_ArrayConstant_value(al, arr, i), ele)) {
+                    m_eles.push_back(b.bool_t(ele, arr_type));
+                }
+            }
+        } else if (is_character(*arr_type)) {
+            for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(arr->m_type); i++) {
+                std::string str = "";
+                str = ASR::down_cast<ASR::StringConstant_t>(ASRUtils::fetch_ArrayConstant_value(al, arr, i))->m_s;
+                m_eles.push_back(b.StringConstant(str, arr_type));
+            }
+        }
+        int shift = 0;
+        if (extract_value(expr_value(args[1]), shift)) {
+            if (shift < 0) {
+                shift = m_eles.size() + shift;
+            }
+            std::rotate(m_eles.begin(), m_eles.begin() + shift, m_eles.end());
+        }
+        return b.ArrayConstant(m_eles, extract_type(type), false);
+    } else {
+        return nullptr;
         }
     }
 
@@ -2076,89 +2075,89 @@ namespace Eoshift {
         ASRBuilder b(al, loc);
         if (all_args_evaluated(args) &&
             extract_n_dims_from_ttype(expr_type(args[0])) == 1) {
-            ASR::ArrayConstant_t *arr = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(args[0]));
-            ASR::ttype_t* arr_type = expr_type(args[0]);
-            ASR::expr_t *final_boundary = args[2];
-            ASR::ttype_t* boundary_type = expr_type(args[2]);
-            std::vector<ASR::expr_t *> m_eles;
-            if (is_integer(*arr_type)) {
-                for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(arr->m_type); i++) {
-                    int ele = 0;
-                    if(extract_value(ASRUtils::fetch_ArrayConstant_value(al, arr, i), ele)) {
-                        m_eles.push_back(b.i_t(ele, arr_type));
-                    }
-                }
-            } else if (is_real(*arr_type)) {
-                for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(arr->m_type); i++) {
-                    double ele = 0;
-                    if(extract_value(ASRUtils::fetch_ArrayConstant_value(al, arr, i), ele)) {
-                        m_eles.push_back(b.f_t(ele, arr_type));
-                    }
-                }
-            } else if (is_logical(*arr_type)) {
-                for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(arr->m_type); i++) {
-                    bool ele = false;
-                    if(extract_value(ASRUtils::fetch_ArrayConstant_value(al, arr, i), ele)) {
-                        m_eles.push_back(b.bool_t(ele, arr_type));
-                    }
-                }
-            } else if (is_character(*arr_type)) {
-                std::string str = "";
-                for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(arr->m_type); i++) {
-                    str = ASR::down_cast<ASR::StringConstant_t>(ASRUtils::fetch_ArrayConstant_value(al, arr, i))->m_s;
-                    m_eles.push_back(b.StringConstant(str, arr_type));
-                }
-                int len_str = str.length();
-                str = "";
-                for(int i = 0; i < len_str; i++){
-                    str += " ";
-                }
-                if(is_logical(*boundary_type)){
-                    final_boundary = b.StringConstant(str, arr_type);
+        ASR::ArrayConstant_t *arr = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(args[0]));
+        ASR::ttype_t* arr_type = expr_type(args[0]);
+        ASR::expr_t *final_boundary = args[2];
+        ASR::ttype_t* boundary_type = expr_type(args[2]);
+        std::vector<ASR::expr_t *> m_eles;
+        if (is_integer(*arr_type)) {
+            for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(arr->m_type); i++) {
+                int ele = 0;
+                if(extract_value(ASRUtils::fetch_ArrayConstant_value(al, arr, i), ele)) {
+                    m_eles.push_back(b.i_t(ele, arr_type));
                 }
             }
-            int shift = 0;
-            if (use_experimental_simplifier) {
-                if (extract_value(expr_value(args[1]), shift)) {
-                    if (shift < 0) {
-                        std::rotate(m_eles.begin(), m_eles.begin() + m_eles.size() + shift, m_eles.end());
-                        for(int j = 0; j < (-1*shift); j++) {
-                            m_eles[j] = final_boundary;
-                        }
-                    } else {
-                        std::rotate(m_eles.begin(), m_eles.begin() + shift, m_eles.end());
-                        int i = m_eles.size() - 1;
-                        for(int j = 0; j < shift; j++) {
-                            m_eles[i] = final_boundary;
-                            i--;
-                        }
-                    }
+        } else if (is_real(*arr_type)) {
+            for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(arr->m_type); i++) {
+                double ele = 0;
+                if(extract_value(ASRUtils::fetch_ArrayConstant_value(al, arr, i), ele)) {
+                    m_eles.push_back(b.f_t(ele, arr_type));
                 }
-            } else {
-                if (extract_value(expr_value(args[1]), shift)) {
-                    if (shift < 0) {
-                        shift = m_eles.size() + shift;
+            }
+        } else if (is_logical(*arr_type)) {
+            for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(arr->m_type); i++) {
+                bool ele = false;
+                if(extract_value(ASRUtils::fetch_ArrayConstant_value(al, arr, i), ele)) {
+                    m_eles.push_back(b.bool_t(ele, arr_type));
+                }
+            }
+        } else if (is_character(*arr_type)) {
+            std::string str = "";
+            for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(arr->m_type); i++) {
+                str = ASR::down_cast<ASR::StringConstant_t>(ASRUtils::fetch_ArrayConstant_value(al, arr, i))->m_s;
+                m_eles.push_back(b.StringConstant(str, arr_type));
+            }
+            int len_str = str.length();
+            str = "";
+            for(int i = 0; i < len_str; i++){
+                str += " ";
+            }
+            if(is_logical(*boundary_type)){
+                final_boundary = b.StringConstant(str, arr_type);
+            }
+        }
+        int shift = 0;
+        if (use_experimental_simplifier) {
+            if (extract_value(expr_value(args[1]), shift)) {
+                if (shift < 0) {
+                    std::rotate(m_eles.begin(), m_eles.begin() + m_eles.size() + shift, m_eles.end());
+                    for(int j = 0; j < (-1*shift); j++) {
+                        m_eles[j] = final_boundary;
                     }
+                } else {
                     std::rotate(m_eles.begin(), m_eles.begin() + shift, m_eles.end());
-                }
-                if (extract_value(expr_value(args[1]), shift)) {
-                    if(shift > 0) {
-                        int i = m_eles.size() - 1;
-                        for(int j = 0; j < shift; j++) {
-                            m_eles[i] = final_boundary;
-                            i--;
-                        }
-                    }
-                    else {
-                        for(int j = 0; j < (-1*shift); j++) {
-                            m_eles[j] = final_boundary;
-                        }
+                    int i = m_eles.size() - 1;
+                    for(int j = 0; j < shift; j++) {
+                        m_eles[i] = final_boundary;
+                        i--;
                     }
                 }
             }
-            return b.ArrayConstant(m_eles, extract_type(type), false);
         } else {
-            return nullptr;
+            if (extract_value(expr_value(args[1]), shift)) {
+                if (shift < 0) {
+                    shift = m_eles.size() + shift;
+                }
+                std::rotate(m_eles.begin(), m_eles.begin() + shift, m_eles.end());
+            }
+            if (extract_value(expr_value(args[1]), shift)) {
+                if(shift > 0) {
+                    int i = m_eles.size() - 1;
+                    for(int j = 0; j < shift; j++) {
+                        m_eles[i] = final_boundary;
+                        i--;
+                    }
+                }
+                else {
+                    for(int j = 0; j < (-1*shift); j++) {
+                        m_eles[j] = final_boundary;
+                    }
+                }
+            }
+        }
+        return b.ArrayConstant(m_eles, extract_type(type), false);
+    } else {
+        return nullptr;
         }
     }
 
@@ -2224,17 +2223,13 @@ namespace Eoshift {
         }
         else{
             ASR::ttype_t *boundary_type = use_experimental_simplifier ? ASRUtils::type_get_past_array_pointer_allocatable(type_array) : type_array;
-            if(is_integer(*type_array)) {
+            if(is_integer(*type_array))
                 final_boundary = b.i_t(0, boundary_type);
-                final_boundary = b.i_t(0, boundary_type);
-            } else if(is_real(*type_array)) {
+            else if(is_real(*type_array))
                 final_boundary = b.f_t(0.0, boundary_type);
-                final_boundary = b.f_t(0.0, boundary_type);
-            } else if(is_logical(*type_array)) {
+            else if(is_logical(*type_array))
                 final_boundary = b.bool_t(false, boundary_type);
-                final_boundary = b.bool_t(false, boundary_type);
-            } else if(is_character(*type_array)) {
-                final_boundary = b.StringConstant("  ", boundary_type);
+            else if(is_character(*type_array)){
                 final_boundary = b.StringConstant("  ", boundary_type);
             }
         }
