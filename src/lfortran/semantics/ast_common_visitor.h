@@ -1337,27 +1337,38 @@ public:
         for (size_t i=0; i<n_dim; i++) {
             ASR::dimension_t dim; dim.m_length = nullptr; dim.m_start = nullptr;
             dim.loc = m_dim[i].loc;
-            if (m_dim[i].m_start) {
+           if (m_dim[i].m_start) {
                 this->visit_expr(*m_dim[i].m_start);
                 dim.m_start = ASRUtils::EXPR(tmp);
                 ASR::expr_t* start = dim.m_start;
-                if(ASR::is_a<ASR::Var_t>(*start)) {
+                if (ASR::is_a<ASR::Var_t>(*start)) {
 
                     ASR::Var_t* start_var = ASR::down_cast<ASR::Var_t>(start);
                     ASR::symbol_t* start_sym = start_var->m_v;
                     SymbolTable* symbol_scope = ASRUtils::symbol_parent_symtab(start_sym);
-                    if(ASR::is_a<ASR::Variable_t>(*start_sym)) {
+                    if (ASR::is_a<ASR::Variable_t>(*start_sym)) {
                         ASR::Variable_t* start_variable = ASR::down_cast<ASR::Variable_t>(start_sym);
 
-                        if(start_variable->m_storage != ASR::storage_typeType::Parameter) {
+                        if (start_variable->m_storage != ASR::storage_typeType::Parameter) {
 
-                            if(!in_Subroutine && (symbol_scope->counter == current_scope->counter) && !ASR::is_a<ASR::IntegerConstant_t>(*start)) {
-                                throw SemanticError("Explicit shaped array with nonconstant bounds at ",m_dim[i].m_start->base.loc);
+                            if(!in_Subroutine && (symbol_scope->counter == current_scope->counter)) {
+                                throw SemanticError("Expecting a scalar integer or parameter annotated integer variable ",m_dim[i].m_start->base.loc);
                             }
                         }
                     }
+                    else {
+                        throw SemanticError("Expecting a scalar integer or parameter annotated integer variable ",m_dim[i].m_start->base.loc);
+                    }
                 }
-            }  else {
+                else {
+
+                    ASR::ttype_t* start_type = ASRUtils::expr_type(start);
+
+                    if (start_type->type != ASR::ttypeType::Integer) {
+                        throw SemanticError("Expecting a scalar integer or parameter annotated integer variable ",m_dim[i].m_start->base.loc);
+                    }
+                }
+            }   else {
                 dim.m_start = nullptr;
             }
             if (m_dim[i].m_end) {
@@ -1371,19 +1382,30 @@ public:
                         (symbol_scope->counter != current_scope->counter && is_argument &&
                         ASRUtils::expr_value(end) == nullptr) ) {
                             end = get_transformed_function_call(end_sym);
-                        }
-                    else if(ASR::is_a<ASR::Variable_t>(*end_sym)) {
+                    }
+                    else if (ASR::is_a<ASR::Variable_t>(*end_sym)) {
                         ASR::Variable_t* end_variable = ASR::down_cast<ASR::Variable_t>(end_sym);
 
-                        if(end_variable->m_storage != ASR::storage_typeType::Parameter) {
+                        if (end_variable->m_storage != ASR::storage_typeType::Parameter) {
 
-                            if(!in_Subroutine && (symbol_scope->counter == current_scope->counter) && !ASR::is_a<ASR::IntegerConstant_t>(*end)) {
-                                throw SemanticError("Explicit shaped array with nonconstant bounds at ",m_dim[i].m_end->base.loc);
+                            if(!in_Subroutine && (symbol_scope->counter == current_scope->counter)) {
+                                throw SemanticError("Expecting a scalar integer or parameter annotated integer variable ",m_dim[i].m_end->base.loc);
                             }
                         }
                     }
+                    else {
+                        throw SemanticError("Expecting a scalar integer or parameter annotated integer variable ",m_dim[i].m_end->base.loc);
+                    }
                 } else if(ASR::is_a<ASR::IntegerBinOp_t>(*end)) {
                     end = convert_integer_binop_to_function_call(end, is_argument);
+                }
+                else {
+
+                    ASR::ttype_t* end_type = ASRUtils::expr_type(end);
+
+                    if (end_type->type != ASR::ttypeType::Integer) {
+                        throw SemanticError("Expecting a scalar integer or parameter annotated integer variable ",m_dim[i].m_end->base.loc);
+                    }
                 }
                 dim.m_length = ASRUtils::compute_length_from_start_end(al, dim.m_start,
                                     end);
