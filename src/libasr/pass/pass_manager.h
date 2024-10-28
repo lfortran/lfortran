@@ -42,6 +42,7 @@
 #include <libasr/pass/inline_function_calls.h>
 #include <libasr/pass/dead_code_removal.h>
 #include <libasr/pass/replace_for_all.h>
+#include <libasr/pass/replace_init_expr.h>
 #include <libasr/pass/replace_select_case.h>
 #include <libasr/pass/loop_vectorise.h>
 #include <libasr/pass/update_array_dim_intrinsic_calls.h>
@@ -393,13 +394,9 @@ namespace LCompilers {
                 apply_passes(al, asr, _user_defined_passes, pass_options,
                     diagnostics);
             } else if( apply_default_passes ) {
-                if( pass_options.fast && pass_options.experimental_simplifier ) {
-                    apply_passes(al, asr, _with_optimization_passes_for_experimental_simplifier, pass_options,
+                if( pass_options.fast && !pass_options.experimental_simplifier ) {
+                    apply_passes(al, asr, _with_optimization_passes, pass_options,
                         diagnostics);
-                } else if (!pass_options.fast && pass_options.experimental_simplifier) {
-                    apply_passes(al, asr, _passes_with_experimental_simplifier, pass_options, diagnostics);
-                } else if (pass_options.fast && !pass_options.experimental_simplifier){
-                    apply_passes(al, asr, _with_optimization_passes, pass_options, diagnostics);
                 } else if (!pass_options.fast && !pass_options.experimental_simplifier) {
                     apply_passes(al, asr, _passes, pass_options, diagnostics);
                 } else if (pass_options.fast && pass_options.experimental_simplifier){
@@ -414,14 +411,14 @@ namespace LCompilers {
                            PassOptions &pass_options,
                            [[maybe_unused]] diag::Diagnostics &diagnostics, LocationManager &lm) {
             std::vector<std::string> passes;
-            if (pass_options.fast && pass_options.experimental_simplifier) {
+            if (pass_options.fast && !pass_options.experimental_simplifier) {
+                passes = _with_optimization_passes;
+            } else if (!pass_options.fast && !pass_options.experimental_simplifier) {
+                passes = _passes;
+            } else if (pass_options.fast && pass_options.experimental_simplifier){
                 passes = _with_optimization_passes_for_experimental_simplifier;
             } else if (!pass_options.fast && pass_options.experimental_simplifier) {
                 passes = _passes_with_experimental_simplifier;
-            } else if(pass_options.fast && !pass_options.experimental_simplifier){
-                passes = _passes;
-            } else if (!pass_options.fast && !pass_options.experimental_simplifier){
-                passes = _with_optimization_passes;
             }
             for (size_t i = 0; i < passes.size(); i++) {
                 // TODO: rework the whole pass manager: construct the passes
