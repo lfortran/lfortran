@@ -614,11 +614,11 @@ jobs:
             $(pwd)/../src/bin/lfortran ./examples/example_lmder1.f90 --legacy-array-sections
 
             # Test with experimental simplifier
-            $(pwd)/../src/bin/lfortran ./src/minpack.f90 -c --legacy-array-sections
-            $(pwd)/../src/bin/lfortran ./examples/example_hybrd.f90 --legacy-array-sections
-            $(pwd)/../src/bin/lfortran ./examples/example_hybrd1.f90 --legacy-array-sections
-            $(pwd)/../src/bin/lfortran ./examples/example_lmdif1.f90 --legacy-array-sections
-            $(pwd)/../src/bin/lfortran ./examples/example_lmder1.f90 --legacy-array-sections
+            $(pwd)/../src/bin/lfortran ./src/minpack.f90 -c --legacy-array-sections --experimental-simplifier
+            $(pwd)/../src/bin/lfortran ./examples/example_hybrd.f90 --legacy-array-sections --experimental-simplifier
+            $(pwd)/../src/bin/lfortran ./examples/example_hybrd1.f90 --legacy-array-sections --experimental-simplifier
+            $(pwd)/../src/bin/lfortran ./examples/example_lmdif1.f90 --legacy-array-sections --experimental-simplifier
+            $(pwd)/../src/bin/lfortran ./examples/example_lmder1.f90 --legacy-array-sections --experimental-simplifier
 
             # $(pwd)/../src/bin/lfortran --fast ./examples/example_hybrd.f90 --legacy-array-sections
             # $(pwd)/../src/bin/lfortran --fast ./examples/example_hybrd1.f90 --legacy-array-sections
@@ -951,6 +951,21 @@ jobs:
             examples/example_primes
             ctest
 
+            cd ..
+
+            # Test with experimental simplifier
+            git clean -dfx
+            mkdir lf
+            cd lf
+            FC="$(pwd)/../../src/bin/lfortran --intrinsic-mangling --experimental-simplifier" cmake ..
+            make
+            examples/example_hybrd
+            examples/example_hybrd1
+            examples/example_lmder1
+            examples/example_lmdif1
+            examples/example_primes
+            ctest
+
       - name: Test Modern Minpack (Fortran-Lang)
         shell: bash -e -x -l {0}
         run: |
@@ -962,6 +977,13 @@ jobs:
             $(pwd)/../src/bin/lfortran ./examples/example_hybrd1.f90 --legacy-array-sections
             $(pwd)/../src/bin/lfortran ./examples/example_lmdif1.f90 --legacy-array-sections
             $(pwd)/../src/bin/lfortran ./examples/example_lmder1.f90 --legacy-array-sections
+
+            # Test with experimental simplifier
+            $(pwd)/../src/bin/lfortran ./src/minpack.f90 -c --legacy-array-sections --experimental-simplifier
+            $(pwd)/../src/bin/lfortran ./examples/example_hybrd.f90 --legacy-array-sections --experimental-simplifier
+            $(pwd)/../src/bin/lfortran ./examples/example_hybrd1.f90 --legacy-array-sections --experimental-simplifier
+            $(pwd)/../src/bin/lfortran ./examples/example_lmdif1.f90 --legacy-array-sections --experimental-simplifier
+            $(pwd)/../src/bin/lfortran ./examples/example_lmder1.f90 --legacy-array-sections --experimental-simplifier
 
       - name: Test Modern Minpack (check results)
         shell: bash -e -x -l {0}
@@ -975,6 +997,13 @@ jobs:
             $(pwd)/../src/bin/lfortran ./examples/example_hybrd1.f90 --legacy-array-sections
             $(pwd)/../src/bin/lfortran ./examples/example_lmdif1.f90 --legacy-array-sections
             $(pwd)/../src/bin/lfortran ./examples/example_lmder1.f90 --legacy-array-sections
+
+            # Test with experimental simplifier
+            $(pwd)/../src/bin/lfortran ./src/minpack.f90 -c --legacy-array-sections --experimental-simplifier
+            $(pwd)/../src/bin/lfortran ./examples/example_hybrd.f90 --legacy-array-sections --experimental-simplifier
+            $(pwd)/../src/bin/lfortran ./examples/example_hybrd1.f90 --legacy-array-sections --experimental-simplifier
+            $(pwd)/../src/bin/lfortran ./examples/example_lmdif1.f90 --legacy-array-sections --experimental-simplifier
+            $(pwd)/../src/bin/lfortran ./examples/example_lmder1.f90 --legacy-array-sections --experimental-simplifier
 
             # $(pwd)/../src/bin/lfortran --fast ./examples/example_hybrd.f90 --legacy-array-sections
             # $(pwd)/../src/bin/lfortran --fast ./examples/example_hybrd1.f90 --legacy-array-sections
