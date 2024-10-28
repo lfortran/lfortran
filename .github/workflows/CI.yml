@@ -719,6 +719,7 @@ jobs:
             ctest -V
 
             # Test with experimental simplifier
+            git clean -dfx
             FC="$(pwd)/../../src/bin/lfortran --fast" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Release -DCMAKE_Fortran_FLAGS="--experimental-simplifier --realloc-lhs" ..
             make VERBOSE=1
             ln -s ../model.dat .
@@ -762,6 +763,7 @@ jobs:
             ./test_more_inputs
 
             # Test with experimental simplifier
+            git clean -dfx
             FC="$(pwd)/../../src/bin/lfortran --fast" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Release -DCMAKE_Fortran_FLAGS="--experimental-simplifier --realloc-lhs" ..
             make VERBOSE=1
             ln -s ../model.dat .
@@ -1073,6 +1075,7 @@ jobs:
             ctest -V
 
             # Test with experimental simplifier
+            git clean -dfx
             FC="$(pwd)/../../src/bin/lfortran --fast" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Release -DCMAKE_Fortran_FLAGS="--experimental-simplifier --realloc-lhs" ..
             make VERBOSE=1
             ln -s ../model.dat .
@@ -1116,6 +1119,7 @@ jobs:
             ./test_more_inputs
 
             # Test with experimental simplifier
+            git clean -dfx
             FC="$(pwd)/../../src/bin/lfortran --fast" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Release -DCMAKE_Fortran_FLAGS="--experimental-simplifier --realloc-lhs" ..
             make VERBOSE=1
             ln -s ../model.dat .
