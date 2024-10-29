@@ -1327,7 +1327,7 @@ public:
             left, end_bin_op->m_op, right, end_bin_op->m_type, end_bin_op->m_value));
     }
 
-    bool dimensionAttribute_error_check(ASR::expr_t* dim_expr) {
+    bool dimension_attribute_error_check(ASR::expr_t* dim_expr) {
         if (ASR::is_a<ASR::Var_t>(*dim_expr)) {
             ASR::Var_t* dim_expr_var = ASR::down_cast<ASR::Var_t>(dim_expr);
             ASR::symbol_t* dim_expr_sym = dim_expr_var->m_v;
@@ -1369,8 +1369,7 @@ public:
             if (m_dim[i].m_start) {
                 this->visit_expr(*m_dim[i].m_start);
                 dim.m_start = ASRUtils::EXPR(tmp);
-                ASR::expr_t* start = dim.m_start;
-                if (dimensionAttribute_error_check(start)) {
+                if (dimension_attribute_error_check(dim.m_start)) {
                     throw SemanticError("Expecting a scalar integer or parameter annotated integer variable ",m_dim[i].m_start->base.loc);
                 }
             } else {
@@ -1379,7 +1378,7 @@ public:
             if (m_dim[i].m_end) {
                 this->visit_expr(*m_dim[i].m_end);
                 ASR::expr_t* end = ASRUtils::EXPR(tmp);
-                if (dimensionAttribute_error_check(end)) {
+                if (dimension_attribute_error_check(end)) {
                     throw SemanticError("Expecting a scalar integer or parameter annotated integer variable ",m_dim[i].m_end->base.loc);
                 }
                 if (ASR::is_a<ASR::Var_t>(*end)) {
