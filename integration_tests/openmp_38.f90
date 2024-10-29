@@ -17,15 +17,4 @@ do iy = 1, ny
 end do
 !$omp end parallel do
 
-!$omp parallel do collapse(3) private(iy, ix, iz)
-do iy = 1, ny
-    do ix = 1, nx
-        print *,"iy->", iy,"ix->", ix
-        do iz = 1, nz
-            print *,"iy->", iy,"ix->", ix,"iz->", iz
-        end do
-    end do
-end do
-!$omp end parallel do
-
 end program

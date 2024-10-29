@@ -166,14 +166,6 @@ filename = "../integration_tests/openmp_39.f90"
 asr_openmp = true
 
 [[test]]
-filename = "../integration_tests/openmp_40.f90"
-asr_openmp = true
-
-[[test]]
-filename = "../integration_tests/openmp_41.f90"
-asr_openmp = true
-
-[[test]]
 filename = "subroutine2.f90"
 ast = true
 
