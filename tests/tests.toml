@@ -151,7 +151,7 @@ asr = true
 
 [[test]]
 filename = "../integration_tests/openmp_36.f90"
-asr_openmp = true
+asr = true
 
 [[test]]
 filename = "../integration_tests/openmp_37.f90"
