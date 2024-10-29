@@ -1335,15 +1335,15 @@ public:
             if (ASR::is_a<ASR::Variable_t>(*dim_expr_sym)) {
                 ASR::Variable_t* dim_expr_variable = ASR::down_cast<ASR::Variable_t>(dim_expr_sym);
 
-                if (dim_expr_variable->m_storage != ASR::storage_typeType::Parameter) {
+                if (dim_expr_variable->m_type->type != ASR::ttypeType::Integer) {
+                    return true;
+                } else {
 
-                    if(!in_Subroutine && (symbol_scope->counter == current_scope->counter)) {
+                    if ((dim_expr_variable->m_storage != ASR::storage_typeType::Parameter) && !(in_Subroutine) && (symbol_scope->counter == current_scope->counter)) {
                         return true;
                     }
                 }
-            } else {
-                return true;
-            }
+            } 
         } else {
 
             ASR::ttype_t* dim_expr_type = ASRUtils::expr_type(dim_expr);
