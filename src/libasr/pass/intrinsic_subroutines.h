@@ -325,21 +325,21 @@ namespace GetCommand {
         declare_basic_variables(new_name);
         Vec<ASR::expr_t*> call_args; call_args.reserve(al, 0);
 
-        if(arg_types[0]){
+        if(arg_types.size() > 0){
             fill_func_arg_sub("command", arg_types[0], InOut);
             ASR::symbol_t *s_1 = b.create_c_func_subroutines(c_func_name_1, fn_symtab, 0, arg_types[0]);
             fn_symtab->add_symbol(c_func_name_1, s_1);
             dep.push_back(al, s2c(al, c_func_name_1));
             body.push_back(al, b.Assignment(args[0], b.Call(s_1, call_args, arg_types[0])));
         }
-        if(arg_types[1]){
+        if(arg_types.size() > 1){
             fill_func_arg_sub("length", arg_types[1], InOut);
             ASR::symbol_t *s_2 = b.create_c_func_subroutines(c_func_name_2, fn_symtab, 0, arg_types[1]);
             fn_symtab->add_symbol(c_func_name_2, s_2);
             dep.push_back(al, s2c(al, c_func_name_2));
             body.push_back(al, b.Assignment(args[1], b.Call(s_2, call_args, arg_types[1])));
         }
-        if(arg_types[2]){
+        if(arg_types.size() > 2){
             fill_func_arg_sub("status", arg_types[2], InOut);
             ASR::symbol_t *s_3 = b.create_c_func_subroutines(c_func_name_3, fn_symtab, 0, arg_types[2]);
             fn_symtab->add_symbol(c_func_name_3, s_3);
