@@ -4241,3 +4241,11 @@ asr = true
 [[test]]
 filename = "errors/string_negative_start_index.f90"
 asr = true
+
+[[test]]
+filename = "errors/dimension_01.f90"
+asr = true
+
+[[test]]
+filename = "errors/dimension_02.f90"
+asr = true

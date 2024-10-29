@@ -1327,6 +1327,35 @@ public:
             left, end_bin_op->m_op, right, end_bin_op->m_type, end_bin_op->m_value));
     }
 
+    bool dimension_attribute_error_check(ASR::expr_t* dim_expr) {
+        if (ASR::is_a<ASR::Var_t>(*dim_expr)) {
+            ASR::Var_t* dim_expr_var = ASR::down_cast<ASR::Var_t>(dim_expr);
+            ASR::symbol_t* dim_expr_sym = dim_expr_var->m_v;
+            SymbolTable* symbol_scope = ASRUtils::symbol_parent_symtab(dim_expr_sym);
+            if (ASR::is_a<ASR::Variable_t>(*dim_expr_sym)) {
+                ASR::Variable_t* dim_expr_variable = ASR::down_cast<ASR::Variable_t>(dim_expr_sym);
+
+                if (dim_expr_variable->m_type->type != ASR::ttypeType::Integer) {
+                    return true;
+                } else {
+
+                    if ((dim_expr_variable->m_storage != ASR::storage_typeType::Parameter) && !(in_Subroutine) && (symbol_scope->counter == current_scope->counter)) {
+                        return true;
+                    }
+                }
+            } 
+        } else {
+
+            ASR::ttype_t* dim_expr_type = ASRUtils::expr_type(dim_expr);
+
+            if (dim_expr_type->type != ASR::ttypeType::Integer) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     void process_dims(Allocator &al, Vec<ASR::dimension_t> &dims,
         AST::dimension_t *m_dim, size_t n_dim, bool &is_compile_time,
         bool is_char_type=false, bool is_argument=false) {
@@ -1340,12 +1369,18 @@ public:
             if (m_dim[i].m_start) {
                 this->visit_expr(*m_dim[i].m_start);
                 dim.m_start = ASRUtils::EXPR(tmp);
+                if (dimension_attribute_error_check(dim.m_start)) {
+                    throw SemanticError("Expecting a scalar integer or parameter annotated integer variable ",m_dim[i].m_start->base.loc);
+                }
             } else {
                 dim.m_start = nullptr;
             }
             if (m_dim[i].m_end) {
                 this->visit_expr(*m_dim[i].m_end);
                 ASR::expr_t* end = ASRUtils::EXPR(tmp);
+                if (dimension_attribute_error_check(end)) {
+                    throw SemanticError("Expecting a scalar integer or parameter annotated integer variable ",m_dim[i].m_end->base.loc);
+                }
                 if (ASR::is_a<ASR::Var_t>(*end)) {
                     ASR::Var_t* end_var = ASR::down_cast<ASR::Var_t>(end);
                     ASR::symbol_t* end_sym = end_var->m_v;
@@ -1354,7 +1389,7 @@ public:
                         (symbol_scope->counter != current_scope->counter && is_argument &&
                         ASRUtils::expr_value(end) == nullptr) ) {
                             end = get_transformed_function_call(end_sym);
-                        }
+                    }
                 } else if(ASR::is_a<ASR::IntegerBinOp_t>(*end)) {
                     end = convert_integer_binop_to_function_call(end, is_argument);
                 }
