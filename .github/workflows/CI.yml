@@ -373,59 +373,6 @@ jobs:
   #         inst.moved/bin/lfortran --openmp --backend=cpp expr2.F90 -o expr2c
   #         ./expr2c
 
-  # debug:
-  #   name: Check Debug build
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #       with:
-  #         fetch-depth: 0
-
-  #     - uses: mamba-org/setup-micromamba@v1.8.0
-  #       with:
-  #         micromamba-version: '1.5.10-0'
-  #         environment-file: ci/environment_linux.yml
-  #         create-args: >-
-  #           python=3.10
-
-  #     - uses: hendrikmuhs/ccache-action@main
-  #       with:
-  #         variant: sccache
-  #         key: ${{ github.job }}-${{ matrix.os }}
-
-  #     - name: Build Linux
-  #       shell: bash -e -l {0}
-  #       run: |
-  #           ./build0.sh
-  #           export CXXFLAGS="-Werror"
-  #           export CFLAGS="-Werror"
-  #           cmake . -GNinja \
-  #             -DCMAKE_BUILD_TYPE=Debug \
-  #             -DWITH_LLVM=yes \
-  #             -DCMAKE_VERBOSE_MAKEFILE= yes \
-  #             -DLFORTRAN_BUILD_ALL=yes \
-  #             -DWITH_STACKTRACE=no \
-  #             -DWITH_RUNTIME_STACKTRACE=yes \
-  #             -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
-  #             -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
-  #             -DCMAKE_C_COMPILER_LAUNCHER=sccache \
-  #             -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
-
-  #           cmake --build . -j16 --target install
-
-  #     - name: Test Linux
-  #       shell: bash -e -l {0}
-  #       run: |
-  #           ctest
-  #           ./run_tests.py
-  #           ./run_tests.py -vh
-  #           cd integration_tests
-  #           ./run_tests.py -m
-  #           ./run_tests.py -b llvm
-  #           ./run_tests.py -b llvm -f
-  #           ./run_tests.py -b llvm --experimental-simplifier
-  #           ./run_tests.py -b llvm -f --experimental-simplifier
-
   # release:
   #   name: Check Release build
   #   runs-on: ubuntu-latest
@@ -1316,22 +1263,8 @@ jobs:
   #           ./run_tests.py -b llvm_wasm llvm_wasm_emcc
   #           ./run_tests.py -b llvm_wasm llvm_wasm_emcc --experimental-simplifier
 
-  gfortran:
-    name: Test integration_tests with GFortran
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Test integration_tests with GFortran
-        shell: bash -e -l {0}
-        run: |
-            cd integration_tests
-            ./run_tests.py -b gfortran
-
-  lfortran_backends_tarball_cpp_build:
-    name: Test Fortran, OpenMP, C/C++ backend, Upload Tarball, CPP Build
+  lfortran_debug_build_backends_tarball_cpp_build_wasm_gfortran:
+    name: Test GFortran, Debug Build, Fortran, OpenMP, C/C++ backend, Upload Tarball, CPP Build, WASM
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -1346,27 +1279,70 @@ jobs:
           environment-file: ci/environment_linux.yml
           create-args: >-
             llvm-openmp
+            nodejs=18.13.0
 
       - uses: hendrikmuhs/ccache-action@main
         with:
           variant: sccache
           key: ${{ github.job }}-${{ matrix.os }}
 
+      - name: Upload Tarball
+        shell: bash -e -l {0}
+        run: |
+          ./build0.sh
+          lfortran_version=$(<version)
+          pandoc --standalone --to man doc/man/lfortran.md -o doc/man/lfortran.1
+          ci/create_source_tarball.sh $lfortran_version
+          ci/upload_tarball.sh
+        env:
+          SSH_DEPLOY_KEY: ${{ secrets.SSH_DEPLOY_KEY }}
+
+      - name: Upload Tarball to Release
+        if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+        shell: bash -e -l {0}
+        run: |
+          ci/upload_tarball_to_release.sh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Test integration_tests with GFortran
+        shell: bash -e -l {0}
+        run: |
+            cd integration_tests
+            ./run_tests.py -b gfortran
+
       - name: Build Linux
         shell: bash -e -l {0}
         run: |
             ./build0.sh
+            export CXXFLAGS="-Werror"
+            export CFLAGS="-Werror"
             cmake . -GNinja \
               -DCMAKE_BUILD_TYPE=Debug \
               -DWITH_LLVM=yes \
+              -DCMAKE_VERBOSE_MAKEFILE= yes \
               -DLFORTRAN_BUILD_ALL=yes \
               -DWITH_STACKTRACE=no \
+              -DWITH_RUNTIME_STACKTRACE=yes \
               -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
               -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
               -DCMAKE_C_COMPILER_LAUNCHER=sccache \
               -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 
             cmake --build . -j16 --target install
+
+      - name: Test Debug Build Linux
+        shell: bash -e -l {0}
+        run: |
+            ctest
+            ./run_tests.py
+            ./run_tests.py -vh
+            cd integration_tests
+            ./run_tests.py -m
+            ./run_tests.py -b llvm
+            ./run_tests.py -b llvm -f
+            ./run_tests.py -b llvm --experimental-simplifier
+            ./run_tests.py -b llvm -f --experimental-simplifier
 
       - name: Test OpenMP
         shell: bash -e -l {0}
@@ -1406,29 +1382,27 @@ jobs:
             ./run_tests.py -b cpp c c_nopragma --experimental-simplifier
             ./run_tests.py -b cpp c c_nopragma -f --experimental-simplifier
 
-      - name: Upload Tarball
-        shell: bash -e -l {0}
-        run: |
-          ./build0.sh
-          lfortran_version=$(<version)
-          pandoc --standalone --to man doc/man/lfortran.md -o doc/man/lfortran.1
-          ci/create_source_tarball.sh $lfortran_version
-          ci/upload_tarball.sh
-        env:
-          SSH_DEPLOY_KEY: ${{ secrets.SSH_DEPLOY_KEY }}
-
-      - name: Upload Tarball to Release
-        if: ${{ startsWith(github.ref, 'refs/tags/v') }}
-        shell: bash -e -l {0}
-        run: |
-          ci/upload_tarball_to_release.sh
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Test CPP
         shell: bash -e -l {0}
         run: |
             xonsh ci/test_cpp_version.xsh
+
+      - name: Show Node Info
+        shell: bash -e -l {0}
+        run: |
+          set -ex
+          which node
+          node --version
+
+      - name: Test WASM backend
+        shell: bash -e -l {0}
+        run: |
+            cd integration_tests
+            ./run_tests.py -b wasm
+            ./run_tests.py -b wasm -f
+            ./run_tests.py -b wasm --experimental-simplifier
+            ./run_tests.py -b wasm -f --experimental-simplifier
+
 
   # test_without_llvm:
   #   name: Test without LLVM Backend
@@ -1449,60 +1423,6 @@ jobs:
   #       shell: bash -e -l {0}
   #       run: |
   #         xonsh ci/test_without_llvm_backend.xsh
-
-
-  # test_wasm:
-  #   name: Test WASM
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #       with:
-  #         fetch-depth: 0
-
-  #     - uses: mamba-org/setup-micromamba@v1.8.0
-  #       with:
-  #         micromamba-version: '1.5.10-0'
-  #         environment-file: ci/environment_linux.yml
-  #         create-args: >-
-  #           python=3.10
-  #           nodejs=18.13.0
-
-  #     - uses: hendrikmuhs/ccache-action@main
-  #       with:
-  #         variant: sccache
-  #         key: ${{ github.job }}-${{ matrix.os }}
-
-  #     - name: Show Node Info
-  #       shell: bash -e -l {0}
-  #       run: |
-  #         set -ex
-  #         which node
-  #         node --version
-
-  #     - name: Build Linux
-  #       shell: bash -e -l {0}
-  #       run: |
-  #           ./build0.sh
-  #           cmake . -GNinja \
-  #             -DCMAKE_BUILD_TYPE=Debug \
-  #             -DWITH_LLVM=yes \
-  #             -DLFORTRAN_BUILD_ALL=yes \
-  #             -DWITH_STACKTRACE=no \
-  #             -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
-  #             -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
-  #             -DCMAKE_C_COMPILER_LAUNCHER=sccache \
-  #             -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
-
-  #           cmake --build . -j16 --target install
-
-  #     - name: Test Linux
-  #       shell: bash -e -l {0}
-  #       run: |
-  #           cd integration_tests
-  #           ./run_tests.py -b wasm
-  #           ./run_tests.py -b wasm -f
-  #           ./run_tests.py -b wasm --experimental-simplifier
-  #           ./run_tests.py -b wasm -f --experimental-simplifier
 
   # test_mlir:
   #   name: Test MLIR backend
