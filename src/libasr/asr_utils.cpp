@@ -16,6 +16,8 @@ namespace LCompilers {
 
     namespace ASRUtils  {
 
+        bool use_experimental_simplifier = false;
+
 // depth-first graph traversal
 void visit(
     std::string const& a,

@@ -566,6 +566,21 @@ jobs:
             examples/example_primes
             ctest
 
+            cd ..
+
+            # Test with experimental simplifier
+            git clean -dfx
+            mkdir lf
+            cd lf
+            FC="$(pwd)/../../src/bin/lfortran --intrinsic-mangling --experimental-simplifier" cmake ..
+            make
+            examples/example_hybrd
+            examples/example_hybrd1
+            examples/example_lmder1
+            examples/example_lmdif1
+            examples/example_primes
+            ctest
+
       - name: Test Modern Minpack (Fortran-Lang)
         shell: bash -e -x -l {0}
         run: |
@@ -578,6 +593,13 @@ jobs:
             $(pwd)/../src/bin/lfortran ./examples/example_lmdif1.f90 --legacy-array-sections
             $(pwd)/../src/bin/lfortran ./examples/example_lmder1.f90 --legacy-array-sections
 
+            # Test with experimental simplifier
+            $(pwd)/../src/bin/lfortran ./src/minpack.f90 -c --legacy-array-sections --experimental-simplifier
+            $(pwd)/../src/bin/lfortran ./examples/example_hybrd.f90 --legacy-array-sections --experimental-simplifier
+            $(pwd)/../src/bin/lfortran ./examples/example_hybrd1.f90 --legacy-array-sections --experimental-simplifier
+            $(pwd)/../src/bin/lfortran ./examples/example_lmdif1.f90 --legacy-array-sections --experimental-simplifier
+            $(pwd)/../src/bin/lfortran ./examples/example_lmder1.f90 --legacy-array-sections --experimental-simplifier
+
       - name: Test Modern Minpack (check results)
         shell: bash -e -x -l {0}
         run: |
@@ -585,6 +607,13 @@ jobs:
             cd modern_minpack_02
             git checkout -t origin/w5
             git checkout fcde66ca86348eb0c4012dbdf0f4d8dba61261d8
+            $(pwd)/../src/bin/lfortran ./src/minpack.f90 -c --legacy-array-sections
+            $(pwd)/../src/bin/lfortran ./examples/example_hybrd.f90 --legacy-array-sections
+            $(pwd)/../src/bin/lfortran ./examples/example_hybrd1.f90 --legacy-array-sections
+            $(pwd)/../src/bin/lfortran ./examples/example_lmdif1.f90 --legacy-array-sections
+            $(pwd)/../src/bin/lfortran ./examples/example_lmder1.f90 --legacy-array-sections
+
+            # Test with experimental simplifier
             $(pwd)/../src/bin/lfortran ./src/minpack.f90 -c --legacy-array-sections
             $(pwd)/../src/bin/lfortran ./examples/example_hybrd.f90 --legacy-array-sections
             $(pwd)/../src/bin/lfortran ./examples/example_hybrd1.f90 --legacy-array-sections
@@ -606,8 +635,19 @@ jobs:
             export PATH="$(pwd)/../src/bin:$PATH"
             make -f Makefile.manual
             make -f Makefile.manual test
+
+            # Test with experimental simplifier
+            git clean -dfx
+            make -f Makefile.manual F90="lfortran --experimental-simplifier"
+            make -f Makefile.manual test
+
             git clean -dfx
             make -f Makefile.manual F90="lfortran --skip-pass=inline_function_calls,fma --fast"
+            make -f Makefile.manual test
+
+            # Test with experimental simplifier
+            git clean -dfx
+            make -f Makefile.manual F90="lfortran --experimental-simplifier --skip-pass=inline_function_calls,fma --fast"
             make -f Makefile.manual test
 
       - name: Test fastGPT ( ubuntu-latest )
@@ -620,6 +660,18 @@ jobs:
             git checkout bc04dbf476b6173b0bb945ff920119ffaf4a290d
             echo $CONDA_PREFIX
             FC=$(pwd)/../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS .
+            make
+            ls -l ./gpt2 ./chat ./test_basic_input ./test_chat ./test_more_inputs
+            file ./gpt2 ./chat ./test_basic_input ./test_chat ./test_more_inputs
+            ldd ./gpt2
+            ldd ./chat
+            ldd ./test_basic_input
+            ldd ./test_chat
+            ldd ./test_more_inputs
+
+            # Test with experimental simplifier
+            git clean -dfx
+            FC=$(pwd)/../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_Fortran_FLAGS="--experimental-simplifier --realloc-lhs" .
             make
             ls -l ./gpt2 ./chat ./test_basic_input ./test_chat ./test_more_inputs
             file ./gpt2 ./chat ./test_basic_input ./test_chat ./test_more_inputs
@@ -643,11 +695,32 @@ jobs:
             ./test_more_inputs
             ./test_chat
             ctest -V
+
+            # Test with experimental simplifier
+            git clean -dfx
+            FC=$(pwd)/../../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug -DCMAKE_Fortran_FLAGS="--experimental-simplifier --realloc-lhs" ..
+            make VERBOSE=1
+            ln -s ../model.dat .
+            ./gpt2
+            ./test_more_inputs
+            ./test_chat
+            ctest -V
+
             cd ..
 
             mkdir lf-fast
             cd lf-fast
             FC="$(pwd)/../../src/bin/lfortran --fast" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Release ..
+            make VERBOSE=1
+            ln -s ../model.dat .
+            ./gpt2
+            ./test_more_inputs
+            ./test_chat
+            ctest -V
+
+            # Test with experimental simplifier
+            git clean -dfx
+            FC="$(pwd)/../../src/bin/lfortran --fast" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Release -DCMAKE_Fortran_FLAGS="--experimental-simplifier --realloc-lhs" ..
             make VERBOSE=1
             ln -s ../model.dat .
             ./gpt2
@@ -669,6 +742,15 @@ jobs:
             ./gpt2
             ./test_basic_input
             ./test_more_inputs
+
+            # Test with experimental simplifier
+            git clean -dfx
+            FC=$(pwd)/../../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug -DCMAKE_Fortran_FLAGS="--experimental-simplifier --realloc-lhs" ..
+            make VERBOSE=1
+            ln -s ../model.dat .
+            ./gpt2
+            ./test_basic_input
+            ./test_more_inputs
             cd ..
 
             mkdir lf-fast
@@ -679,6 +761,16 @@ jobs:
             ./gpt2
             ./test_basic_input
             ./test_more_inputs
+
+            # Test with experimental simplifier
+            git clean -dfx
+            FC="$(pwd)/../../src/bin/lfortran --fast" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Release -DCMAKE_Fortran_FLAGS="--experimental-simplifier --realloc-lhs" ..
+            make VERBOSE=1
+            ln -s ../model.dat .
+            ./gpt2
+            ./test_basic_input
+            ./test_more_inputs
+
             cd ..
 
             rm -rf fastGPT/
@@ -703,8 +795,16 @@ jobs:
             ./gpt2
             ./test_basic_input
             ./test_more_inputs
-            cd ..
 
+            # Test with experimental simplifier
+            git clean -fdx
+            FC=$(pwd)/../../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug .. -DCMAKE_Fortran_FLAGS="--experimental-simplifier --realloc-lhs"
+            make VERBOSE=1
+            ln -s ../model.dat .
+            ./gpt2
+            ./test_basic_input
+            ./test_more_inputs
+            cd ..
 
       - name: Test fpm
         shell: bash -e -x -l {0}
@@ -733,6 +833,20 @@ jobs:
             ctest
             ./build_test_gf.sh
 
+            # Test with experimental simplifier
+            cd ..
+            rm -rf stdlib
+            git clone https://github.com/Pranavchiku/stdlib-fortran-lang.git stdlib
+            cd stdlib
+            export PATH="$(pwd)/../src/bin:$PATH"
+            git checkout origin/lf21
+            git checkout f06d89524bd5d3b5dc2a06c807a5c67190fe0371
+            git clean -fdx
+            FC=lfortran cmake . -DTEST_DRIVE_BUILD_TESTING=OFF -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE -DCMAKE_Fortran_FLAGS="--cpp --realloc-lhs --experimental-simplifier"
+            make -j8
+            ctest
+            ./build_test_gf.sh
+
       - name: Test SNAP
         shell: bash -e -x -l {0}
         run: |
@@ -746,8 +860,18 @@ jobs:
             make -j8 FORTRAN=lfortran FFLAGS= MPI=no OPENMP=no
             ./gsnap ../qasnap/sample/inp out
 
+            # Test with experimental simplifier
+            make clean
+            make -j8 FORTRAN=lfortran FFLAGS="--experimental-simplifier" MPI=no OPENMP=no
+            ./gsnap ../qasnap/sample/inp out
+
             make clean
             make -j8 FORTRAN=lfortran FFLAGS="--fast --skip-pass=promote_allocatable_to_nonallocatable" MPI=no OPENMP=no
+            ./gsnap ../qasnap/sample/inp out
+
+            # Test with experimental simplifier
+            make clean
+            make -j8 FORTRAN=lfortran FFLAGS="--fast --skip-pass=promote_allocatable_to_nonallocatable --experimental-simplifier" MPI=no OPENMP=no
             ./gsnap ../qasnap/sample/inp out
 
   test_llvm:
@@ -867,8 +991,19 @@ jobs:
             export PATH="$(pwd)/../src/bin:$PATH"
             make -f Makefile.manual
             make -f Makefile.manual test
+
+            # Test with experimental simplifier
+            git clean -dfx
+            make -f Makefile.manual F90="lfortran --experimental-simplifier"
+            make -f Makefile.manual test
+
             git clean -dfx
             make -f Makefile.manual F90="lfortran --skip-pass=inline_function_calls,fma --fast"
+            make -f Makefile.manual test
+
+            # Test with experimental simplifier
+            git clean -dfx
+            make -f Makefile.manual F90="lfortran --experimental-simplifier --skip-pass=inline_function_calls,fma --fast"
             make -f Makefile.manual test
 
       - name: Test fastGPT ( ubuntu-latest )
@@ -881,6 +1016,18 @@ jobs:
             git checkout bc04dbf476b6173b0bb945ff920119ffaf4a290d
             echo $CONDA_PREFIX
             FC=$(pwd)/../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS .
+            make
+            ls -l ./gpt2 ./chat ./test_basic_input ./test_chat ./test_more_inputs
+            file ./gpt2 ./chat ./test_basic_input ./test_chat ./test_more_inputs
+            ldd ./gpt2
+            ldd ./chat
+            ldd ./test_basic_input
+            ldd ./test_chat
+            ldd ./test_more_inputs
+
+            # Test with experimental simplifier
+            git clean -dfx
+            FC=$(pwd)/../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_Fortran_FLAGS="--experimental-simplifier --realloc-lhs" .
             make
             ls -l ./gpt2 ./chat ./test_basic_input ./test_chat ./test_more_inputs
             file ./gpt2 ./chat ./test_basic_input ./test_chat ./test_more_inputs
@@ -904,11 +1051,32 @@ jobs:
             ./test_more_inputs
             ./test_chat
             ctest -V
+
+            # Test with experimental simplifier
+            git clean -dfx
+            FC=$(pwd)/../../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug -DCMAKE_Fortran_FLAGS="--experimental-simplifier --realloc-lhs" ..
+            make VERBOSE=1
+            ln -s ../model.dat .
+            ./gpt2
+            ./test_more_inputs
+            ./test_chat
+            ctest -V
+
             cd ..
 
             mkdir lf-fast
             cd lf-fast
             FC="$(pwd)/../../src/bin/lfortran --fast" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Release ..
+            make VERBOSE=1
+            ln -s ../model.dat .
+            ./gpt2
+            ./test_more_inputs
+            ./test_chat
+            ctest -V
+
+            # Test with experimental simplifier
+            git clean -dfx
+            FC="$(pwd)/../../src/bin/lfortran --fast" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Release -DCMAKE_Fortran_FLAGS="--experimental-simplifier --realloc-lhs" ..
             make VERBOSE=1
             ln -s ../model.dat .
             ./gpt2
@@ -930,6 +1098,15 @@ jobs:
             ./gpt2
             ./test_basic_input
             ./test_more_inputs
+
+            # Test with experimental simplifier
+            git clean -dfx
+            FC=$(pwd)/../../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug -DCMAKE_Fortran_FLAGS="--experimental-simplifier --realloc-lhs" ..
+            make VERBOSE=1
+            ln -s ../model.dat .
+            ./gpt2
+            ./test_basic_input
+            ./test_more_inputs
             cd ..
 
             mkdir lf-fast
@@ -940,6 +1117,16 @@ jobs:
             ./gpt2
             ./test_basic_input
             ./test_more_inputs
+
+            # Test with experimental simplifier
+            git clean -dfx
+            FC="$(pwd)/../../src/bin/lfortran --fast" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Release -DCMAKE_Fortran_FLAGS="--experimental-simplifier --realloc-lhs" ..
+            make VERBOSE=1
+            ln -s ../model.dat .
+            ./gpt2
+            ./test_basic_input
+            ./test_more_inputs
+
             cd ..
 
             rm -rf fastGPT/
@@ -964,8 +1151,16 @@ jobs:
             ./gpt2
             ./test_basic_input
             ./test_more_inputs
-            cd ..
 
+            # Test with experimental simplifier
+            git clean -fdx
+            FC=$(pwd)/../../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug .. -DCMAKE_Fortran_FLAGS="--experimental-simplifier --realloc-lhs"
+            make VERBOSE=1
+            ln -s ../model.dat .
+            ./gpt2
+            ./test_basic_input
+            ./test_more_inputs
+            cd ..
 
       - name: Test fpm
         shell: bash -e -x -l {0}
@@ -994,6 +1189,20 @@ jobs:
             ctest
             ./build_test_gf.sh
 
+            # Test with experimental simplifier
+            cd ..
+            rm -rf stdlib
+            git clone https://github.com/Pranavchiku/stdlib-fortran-lang.git stdlib
+            cd stdlib
+            export PATH="$(pwd)/../src/bin:$PATH"
+            git checkout origin/lf21
+            git checkout f06d89524bd5d3b5dc2a06c807a5c67190fe0371
+            git clean -fdx
+            FC=lfortran cmake . -DTEST_DRIVE_BUILD_TESTING=OFF -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE -DCMAKE_Fortran_FLAGS="--cpp --realloc-lhs --experimental-simplifier"
+            make -j8
+            ctest
+            ./build_test_gf.sh
+
       - name: Test SNAP
         shell: bash -e -x -l {0}
         run: |
@@ -1007,8 +1216,18 @@ jobs:
             make -j8 FORTRAN=lfortran FFLAGS= MPI=no OPENMP=no
             ./gsnap ../qasnap/sample/inp out
 
+            # Test with experimental simplifier
+            make clean
+            make -j8 FORTRAN=lfortran FFLAGS="--experimental-simplifier" MPI=no OPENMP=no
+            ./gsnap ../qasnap/sample/inp out
+
             make clean
             make -j8 FORTRAN=lfortran FFLAGS="--fast --skip-pass=promote_allocatable_to_nonallocatable" MPI=no OPENMP=no
+            ./gsnap ../qasnap/sample/inp out
+
+            # Test with experimental simplifier
+            make clean
+            make -j8 FORTRAN=lfortran FFLAGS="--fast --skip-pass=promote_allocatable_to_nonallocatable --experimental-simplifier" MPI=no OPENMP=no
             ./gsnap ../qasnap/sample/inp out
 
   test_llvm_wasm:

@@ -53,11 +53,10 @@ private:
     bool symbol_visited;
     bool _return_var_or_intent_out = false;
     bool _processing_dims = false;
-    bool pass_simplifier = false;
 
 public:
-    VerifyVisitor(bool check_external, diag::Diagnostics &diagnostics, bool pass_simplifier_) : check_external{check_external},
-        diagnostics{diagnostics}, symbol_visited{false}, pass_simplifier(pass_simplifier_) {}
+    VerifyVisitor(bool check_external, diag::Diagnostics &diagnostics) : check_external{check_external},
+        diagnostics{diagnostics}, symbol_visited{false} {}
 
     // Requires the condition `cond` to be true. Raise an exception otherwise.
     #define require(cond, error_msg) ASRUtils::require_impl((cond), (error_msg), x.base.base.loc, diagnostics);
@@ -853,7 +852,7 @@ public:
     }
 
     void visit_ArrayItem(const ArrayItem_t &x) {
-        if (pass_simplifier) {
+        if (ASRUtils::use_experimental_simplifier) {
             require(!ASRUtils::is_array(x.m_type),
                 "ArrayItem::m_type cannot be array.")
         }
@@ -861,7 +860,7 @@ public:
     }
 
     void visit_ArraySize(const ArraySize_t& x) {
-        if (pass_simplifier) {
+        if (ASRUtils::use_experimental_simplifier) {
             if (check_external) {
                 require(ASRUtils::is_array(ASRUtils::expr_type(x.m_v)),
                     "ArraySize::m_v must be an array");
@@ -1236,7 +1235,7 @@ public:
     void visit_Allocatable(const Allocatable_t &x) {
         require(!ASR::is_a<ASR::Pointer_t>(*x.m_type),
             "Allocatable type conflicts with Pointer type");
-        if (pass_simplifier) {
+        if (ASRUtils::use_experimental_simplifier) {
             ASR::dimension_t* m_dims = nullptr;
             size_t n_dims = ASRUtils::extract_dimensions_from_ttype(x.m_type, m_dims);
             for( size_t i = 0; i < n_dims; i++ ) {
@@ -1277,8 +1276,8 @@ public:
 } // namespace ASR
 
 bool asr_verify(const ASR::TranslationUnit_t &unit, bool check_external,
-            diag::Diagnostics &diagnostics, const LCompilers::PassOptions& pass_options) {
-    ASR::VerifyVisitor v(check_external, diagnostics, pass_options.experimental_simplifier);
+            diag::Diagnostics &diagnostics) {
+    ASR::VerifyVisitor v(check_external, diagnostics);
     try {
         v.visit_TranslationUnit(unit);
     } catch (const ASRUtils::VerifyAbort &) {

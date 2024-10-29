@@ -4160,7 +4160,13 @@ public:
                 dims, type_declaration, ASR::abiType::Source);
         } else {
             if (x.n_args == 0) {
-                throw SemanticError("Empty array constructor is not allowed", x.base.base.loc);
+                // throw SemanticError("Empty array constructor is not allowed", x.base.base.loc);
+                diag.add(Diagnostic(
+                    "Empty array constructor is not allowed",
+                    Level::Error, Stage::Semantic, {
+                        Label("",{x.base.base.loc})
+                    }));
+                throw SemanticAbort();
             }
         }
 
@@ -8484,8 +8490,16 @@ public:
     void visit_NameUtil(AST::struct_member_t* x_m_member, size_t x_n_member,
                         char* x_m_id, const Location& loc) {
         if (x_n_member == 0) {
-            tmp = (ASR::asr_t*) replace_with_common_block_variables(
-                ASRUtils::EXPR(resolve_variable(loc, to_lower(x_m_id))));
+            try {
+                ASR::expr_t* expr = ASRUtils::EXPR(resolve_variable(loc, to_lower(x_m_id)));
+                tmp = (ASR::asr_t*) replace_with_common_block_variables(expr);
+            } catch (const SemanticError &e) {
+                // TODO: remove this once we replace SemanticError with diag.add + throw SemanticAbort
+                if ( compiler_options.continue_compilation ) diag.add(e.d);
+                else throw e;
+            } catch (const SemanticAbort &a) {
+                if (!compiler_options.continue_compilation) throw a;
+            }
         } else if (x_n_member == 1) {
             if (x_m_member[0].n_args == 0) {
                 SymbolTable* scope = current_scope;
