@@ -1230,17 +1230,17 @@
                         ()
                     )
                     (DoConcurrentLoop
-                        [((Var 2 iz)
+                        [((Var 2 iy)
                         (IntegerConstant 1 (Integer 4) Decimal)
-                        (Var 2 nz)
+                        (Var 2 ny)
                         ())
                         ((Var 2 ix)
                         (IntegerConstant 1 (Integer 4) Decimal)
                         (Var 2 nx)
                         ())
-                        ((Var 2 iy)
+                        ((Var 2 iz)
                         (IntegerConstant 1 (Integer 4) Decimal)
-                        (Var 2 ny)
+                        (Var 2 nz)
                         ())]
                         []
                         [(Var 2 iy)

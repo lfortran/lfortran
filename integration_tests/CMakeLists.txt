@@ -1818,7 +1818,6 @@ RUN(NAME openmp_37 LABELS gfortran GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_38 LABELS gfortran GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_39 LABELS gfortran GFORTRAN_ARGS -fopenmp)
 
-
 RUN(NAME compiler_version_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME exit_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)

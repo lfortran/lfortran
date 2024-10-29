@@ -9,8 +9,8 @@ program openmp_39
     nk=6
 
 !$omp parallel do collapse(2) private(iy, ix, iz)
-do iy = 1, ny
-    do ix = 1, nx
+do ix = 1, nx
+    do iy = 1, ny
         print *,"iy->", iy,"ix->", ix
         do iz = 1, nz
             do ik = 1, nk

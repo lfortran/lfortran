@@ -1113,22 +1113,6 @@
                                     Required
                                     .false.
                                 ),
-                            iz:
-                                (Variable
-                                    2
-                                    iz
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Integer 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                ),
                             nk:
                                 (Variable
                                     2
@@ -1165,22 +1149,6 @@
                                 (Variable
                                     2
                                     ny
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Integer 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                ),
-                            nz:
-                                (Variable
-                                    2
-                                    nz
                                     []
                                     Local
                                     ()
@@ -1257,11 +1225,6 @@
                         ()
                     )
                     (Assignment
-                        (Var 2 nz)
-                        (IntegerConstant 5 (Integer 4) Decimal)
-                        ()
-                    )
-                    (Assignment
                         (Var 2 nk)
                         (IntegerConstant 6 (Integer 4) Decimal)
                         ()
@@ -1273,13 +1236,13 @@
                         (Var 2 ny)
                         ())
                         [(DoConcurrentLoop
-                            [((Var 2 ik)
-                            (IntegerConstant 1 (Integer 4) Decimal)
-                            (Var 2 nk)
-                            ())
-                            ((Var 2 ix)
+                            [((Var 2 ix)
                             (IntegerConstant 1 (Integer 4) Decimal)
                             (Var 2 nx)
+                            ())
+                            ((Var 2 ik)
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Var 2 nk)
                             ())]
                             []
                             []

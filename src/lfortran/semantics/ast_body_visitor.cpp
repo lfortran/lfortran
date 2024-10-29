@@ -3435,15 +3435,15 @@ public:
                 ASR::DoConcurrentLoop_t* do_concurrent = omp_constructs.back();
                 Vec<ASR::do_loop_head_t> do_concurrent_head;
                 do_concurrent_head.reserve(al, 1);
+                do_concurrent_head.push_back(al, head);
                 if (openmp_collapse == true) {
                     for (size_t i=0;i<do_loop_heads_for_collapse.size();i++) {  
-                        do_concurrent_head.push_back(al, do_loop_heads_for_collapse[i]);
+                        do_concurrent_head.push_back(al, do_loop_heads_for_collapse[do_loop_heads_for_collapse.size()-1-i]);
                     }
                     do_concurrent->m_body = do_loop_bodies_for_collapse.p; do_concurrent->n_body = do_loop_bodies_for_collapse.size();
                 } else {
                     do_concurrent->m_body = body.p; do_concurrent->n_body = body.size();
                 }
-                do_concurrent_head.push_back(al, head);
                 do_concurrent->m_head = do_concurrent_head.p;
                 do_concurrent->n_head = do_concurrent_head.size();
                 tmp = (ASR::asr_t*) do_concurrent;
