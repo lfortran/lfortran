@@ -808,9 +808,23 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                 if( result_var == nullptr ) {
                     bool allocate = false;
                     ASR::dimension_t* res_dims = nullptr;
-                    int res_dims_n = ASRUtils::extract_dimensions_from_ttype(x->m_type, res_dims);
-                    ASR::ttype_t* result_var_type = get_result_type(x->m_type,
-                        res_dims, res_dims_n, loc, x->class_type, allocate);
+                    size_t res_dims_n = ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(x->m_v), res_dims);
+                    Vec<ASR::dimension_t> res_dims_vec;
+                    res_dims_vec.from_pointer_n_copy(al, res_dims, res_dims_n);
+                    for (size_t j = 0; j < x->n_args; j++) {
+                        if (x->m_args[j].m_step != nullptr) {
+                          // TODO: handle dimension if there is step
+                        } else if (ASRUtils::is_array(ASRUtils::expr_type(x->m_args[j].m_right))) {
+                            ASR::dimension_t* arg_dim = nullptr;
+                            int arg_dims_n = ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(x->m_args[j].m_right), arg_dim);
+                            LCOMPILERS_ASSERT(arg_dims_n == 1);
+                            res_dims_vec.p[j] = arg_dim[0];
+                        } else {
+                          // TODO: handle dimension if there is no step
+                        }
+                    }
+                    ASR::ttype_t* result_var_type = get_result_type(ASRUtils::expr_type(x->m_v),
+                        res_dims_vec.p, res_dims_vec.size(), loc, x->class_type, allocate);
                     if( allocate ) {
                         result_var_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc,
                            ASRUtils::type_get_past_allocatable(result_var_type)));
@@ -819,7 +833,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                                     result_var_type, al, current_scope);
                     result_counter += 1;
                     if( allocate ) {
-                        allocate_result_var(x->m_v, res_dims, res_dims_n, true, true);
+                        allocate_result_var(x->m_v, res_dims_vec.p, res_dims_vec.size(), true, true);
                     }
                 }
                 create_do_loop(
