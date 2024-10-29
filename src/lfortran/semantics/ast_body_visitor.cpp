@@ -3840,16 +3840,15 @@ public:
                         throw SemanticError("The clause "+ clause_name
                             +" is not supported yet", loc);
                     }
-                    if (clause_name == "collapse") {
-                        std::string collapse_value_str = clause.substr(
-                            clause.find('(') + 1, clause.size() - clause_name.size() - 2);
-                        collapse_value = std::stoi(collapse_value_str); // Get the value of N
-                        openmp_collapse = true;
-                        do_loop_heads_for_collapse.reserve(al, collapse_value);do_loop_bodies_for_collapse={};
-                    }
                     std::string list = clause.substr(clause.find('(')+1,
                         clause.size()-clause_name.size()-2);
                     ASR::reduction_opType op = ASR::reduction_opType::ReduceAdd; // required for reduction
+                    if (clause_name == "collapse") {
+                        collapse_value = std::stoi(list.erase(0, list.find_first_not_of(" "))); // Get the value of N
+                        openmp_collapse = true;
+                        do_loop_heads_for_collapse.reserve(al, collapse_value);do_loop_bodies_for_collapse={};
+                        continue;
+                    }
                     if (clause_name == "reduction") {
                         std::string reduction_op = list.substr(0, list.find(':'));
                         if ( reduction_op == "+" ) {
@@ -3885,7 +3884,7 @@ public:
                             } else {
                                 m_shared.push_back(al, v);
                             }
-                        } else if (clause_name != "collapse") {
+                        } else {
                             throw SemanticError("The clause variable `"+ s
                                 +"` is not declared", loc);
                         }
