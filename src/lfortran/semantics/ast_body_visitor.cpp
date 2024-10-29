@@ -32,6 +32,10 @@ public:
     size_t starting_n_body = 0;
     size_t loop_nesting = 0;
     size_t pragma_nesting_level = 0;
+    bool openmp_collapse = false;
+    size_t collapse_value=0;
+    Vec<ASR::do_loop_head_t> do_loop_heads_for_collapse;
+    Vec<ASR::stmt_t*> do_loop_bodies_for_collapse;
     AST::stmt_t **starting_m_body = nullptr;
     std::vector<ASR::symbol_t*> do_loop_variables;
     std::map<ASR::asr_t*, std::pair<const AST::stmt_t*,int64_t>> print_statements;
@@ -3432,9 +3436,33 @@ public:
                 Vec<ASR::do_loop_head_t> do_concurrent_head;
                 do_concurrent_head.reserve(al, 1);
                 do_concurrent_head.push_back(al, head);
+                if (openmp_collapse == true) {
+                    for (size_t i=0;i<do_loop_heads_for_collapse.size();i++) {  
+                        do_concurrent_head.push_back(al, do_loop_heads_for_collapse[do_loop_heads_for_collapse.size()-1-i]);
+                    }
+                    do_concurrent->m_body = do_loop_bodies_for_collapse.p; do_concurrent->n_body = do_loop_bodies_for_collapse.size();
+                } else {
+                    do_concurrent->m_body = body.p; do_concurrent->n_body = body.size();
+                }
                 do_concurrent->m_head = do_concurrent_head.p;
-                do_concurrent->m_body = body.p; do_concurrent->n_body = body.size();
+                do_concurrent->n_head = do_concurrent_head.size();
                 tmp = (ASR::asr_t*) do_concurrent;
+            } else if (openmp_collapse == true && !omp_constructs.empty() && collapse_value>loop_nesting-1-omp_constructs.size()+1) {
+                collapse_value--;
+                do_loop_heads_for_collapse.push_back(al, head);
+                Vec<ASR::stmt_t*> temp;
+                temp.reserve(al, do_loop_bodies_for_collapse.size());
+                for (size_t i=0;i<do_loop_bodies_for_collapse.size();i++) {
+                    temp.push_back(al, do_loop_bodies_for_collapse[i]);
+                }
+                int size=temp.size()+body.size();
+                do_loop_bodies_for_collapse.reserve(al, size);
+                for (size_t i=0;i<temp.size();i++) {
+                    do_loop_bodies_for_collapse.push_back(al, temp[i]);
+                }
+                for (size_t i=0;i<body.size();i++) {
+                    do_loop_bodies_for_collapse.push_back(al, body[i]);
+                }
             } else {
                 tmp = ASR::make_DoLoop_t(al, x.base.base.loc, x.m_stmt_name,
                     head, body.p, body.size(), nullptr, 0);
@@ -3781,6 +3809,12 @@ public:
             if (x.m_end) {
                 if (LCompilers::startswith(x.m_construct_name, "parallel")) {
                     omp_constructs.pop_back();
+                    if (collapse_value > 0) {
+                        collapse_value = 0;
+                    }
+                    if (openmp_collapse) {
+                        openmp_collapse = false;
+                    }
                     return;
                 }
             }
@@ -3802,13 +3836,19 @@ public:
                     std::string clause = AST::down_cast<AST::String_t>(
                         x.m_clauses[i])->m_s;
                     std::string clause_name = clause.substr(0, clause.find('('));
-                    if (clause_name != "private" && clause_name != "shared" && clause_name != "reduction") {
+                    if (clause_name != "private" && clause_name != "shared" && clause_name != "reduction" && clause_name != "collapse") {
                         throw SemanticError("The clause "+ clause_name
                             +" is not supported yet", loc);
                     }
                     std::string list = clause.substr(clause.find('(')+1,
                         clause.size()-clause_name.size()-2);
                     ASR::reduction_opType op = ASR::reduction_opType::ReduceAdd; // required for reduction
+                    if (clause_name == "collapse") {
+                        collapse_value = std::stoi(list.erase(0, list.find_first_not_of(" "))); // Get the value of N
+                        openmp_collapse = true;
+                        do_loop_heads_for_collapse.reserve(al, collapse_value);do_loop_bodies_for_collapse={};
+                        continue;
+                    }
                     if (clause_name == "reduction") {
                         std::string reduction_op = list.substr(0, list.find(':'));
                         if ( reduction_op == "+" ) {
@@ -3850,7 +3890,10 @@ public:
                         }
                     }
                 }
-                Vec<ASR::do_loop_head_t> heads;heads.reserve(al,1);ASR::do_loop_head_t head{};heads.push_back(al, head);
+                Vec<ASR::do_loop_head_t> heads;
+                heads.reserve(al,1);
+                ASR::do_loop_head_t head{};
+                heads.push_back(al, head);
                 omp_constructs.push_back(ASR::down_cast2<ASR::DoConcurrentLoop_t>(
                 ASR::make_DoConcurrentLoop_t(al,loc, heads.p, heads.n, m_shared.p,
                 m_shared.n, m_local.p, m_local.n, m_reduction.p, m_reduction.n, nullptr, 0)));
