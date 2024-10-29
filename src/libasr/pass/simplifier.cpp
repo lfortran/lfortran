@@ -1352,7 +1352,10 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
     }
 
     void visit_FunctionCall(const ASR::FunctionCall_t& x) {
+        ASR::FunctionCall_t& xx = const_cast<ASR::FunctionCall_t&>(x);
         visit_Call(x, "_function_call_");
+        ASRUtils::ReplaceFunctionParamVisitor func_param_visitor(xx.m_args);
+        func_param_visitor.replace_ttype(xx.m_type);
         ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>::visit_FunctionCall(x);
     }
 
