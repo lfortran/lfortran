@@ -85,7 +85,7 @@
                                                     Default
                                                     (Allocatable
                                                         (Array
-                                                            (Character 1 -1 () PointerString)
+                                                            (Character 1 1 () PointerString)
                                                             [(()
                                                             ())]
                                                             DescriptorArray
@@ -197,7 +197,7 @@
                                                             ()
                                                         )
                                                         ())]
-                                                        (Character 1 -1 () PointerString)
+                                                        (Character 1 1 () PointerString)
                                                         ColMajor
                                                         ()
                                                     )

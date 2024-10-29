@@ -1,0 +1,5 @@
+warning: The LHS character len=4 and the RHS character len=5 are not equal.
+ --> tests/character2.f90:6:5
+  |
+6 |     char2 = "Balle"
+  |     ^^^^^^^^^^^^^^^ help: consider changing the RHS character len to match the LHS character len

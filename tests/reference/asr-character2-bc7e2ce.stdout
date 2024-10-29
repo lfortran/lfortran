@@ -73,8 +73,8 @@
                     [(Assignment
                         (Var 2 char2)
                         (StringConstant
-                            "Balle"
-                            (Character 1 5 () PointerString)
+                            "Ball"
+                            (Character 1 4 () PointerString)
                         )
                         ()
                     )]
