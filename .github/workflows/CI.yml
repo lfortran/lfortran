@@ -373,6 +373,59 @@ jobs:
           inst.moved/bin/lfortran --openmp --backend=cpp expr2.F90 -o expr2c
           ./expr2c
 
+  debug:
+    name: Check Debug build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: mamba-org/setup-micromamba@v1.8.0
+        with:
+          micromamba-version: '1.5.10-0'
+          environment-file: ci/environment_linux.yml
+          create-args: >-
+            python=3.10
+
+      - uses: hendrikmuhs/ccache-action@main
+        with:
+          variant: sccache
+          key: ${{ github.job }}-${{ matrix.os }}
+
+      - name: Build Linux
+        shell: bash -e -l {0}
+        run: |
+            ./build0.sh
+            export CXXFLAGS="-Werror"
+            export CFLAGS="-Werror"
+            cmake . -GNinja \
+              -DCMAKE_BUILD_TYPE=Debug \
+              -DWITH_LLVM=yes \
+              -DCMAKE_VERBOSE_MAKEFILE= yes \
+              -DLFORTRAN_BUILD_ALL=yes \
+              -DWITH_STACKTRACE=no \
+              -DWITH_RUNTIME_STACKTRACE=yes \
+              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
+              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
+              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+
+            cmake --build . -j16 --target install
+
+      - name: Test Linux
+        shell: bash -e -l {0}
+        run: |
+            ctest
+            ./run_tests.py
+            ./run_tests.py -vh
+            cd integration_tests
+            ./run_tests.py -m
+            ./run_tests.py -b llvm
+            ./run_tests.py -b llvm -f
+            ./run_tests.py -b llvm --experimental-simplifier
+            ./run_tests.py -b llvm -f --experimental-simplifier
+
   release:
     name: Check Release build
     runs-on: ubuntu-latest
@@ -561,11 +614,11 @@ jobs:
             $(pwd)/../src/bin/lfortran ./examples/example_lmder1.f90 --legacy-array-sections
 
             # Test with experimental simplifier
-            $(pwd)/../src/bin/lfortran ./src/minpack.f90 -c --legacy-array-sections
-            $(pwd)/../src/bin/lfortran ./examples/example_hybrd.f90 --legacy-array-sections
-            $(pwd)/../src/bin/lfortran ./examples/example_hybrd1.f90 --legacy-array-sections
-            $(pwd)/../src/bin/lfortran ./examples/example_lmdif1.f90 --legacy-array-sections
-            $(pwd)/../src/bin/lfortran ./examples/example_lmder1.f90 --legacy-array-sections
+            $(pwd)/../src/bin/lfortran ./src/minpack.f90 -c --legacy-array-sections --experimental-simplifier
+            $(pwd)/../src/bin/lfortran ./examples/example_hybrd.f90 --legacy-array-sections --experimental-simplifier
+            $(pwd)/../src/bin/lfortran ./examples/example_hybrd1.f90 --legacy-array-sections --experimental-simplifier
+            $(pwd)/../src/bin/lfortran ./examples/example_lmdif1.f90 --legacy-array-sections --experimental-simplifier
+            $(pwd)/../src/bin/lfortran ./examples/example_lmder1.f90 --legacy-array-sections --experimental-simplifier
 
             # $(pwd)/../src/bin/lfortran --fast ./examples/example_hybrd.f90 --legacy-array-sections
             # $(pwd)/../src/bin/lfortran --fast ./examples/example_hybrd1.f90 --legacy-array-sections
@@ -898,6 +951,21 @@ jobs:
             examples/example_primes
             ctest
 
+            cd ..
+
+            # Test with experimental simplifier
+            git clean -dfx
+            mkdir lf
+            cd lf
+            FC="$(pwd)/../../src/bin/lfortran --intrinsic-mangling --experimental-simplifier" cmake ..
+            make
+            examples/example_hybrd
+            examples/example_hybrd1
+            examples/example_lmder1
+            examples/example_lmdif1
+            examples/example_primes
+            ctest
+
       - name: Test Modern Minpack (Fortran-Lang)
         shell: bash -e -x -l {0}
         run: |
@@ -909,6 +977,13 @@ jobs:
             $(pwd)/../src/bin/lfortran ./examples/example_hybrd1.f90 --legacy-array-sections
             $(pwd)/../src/bin/lfortran ./examples/example_lmdif1.f90 --legacy-array-sections
             $(pwd)/../src/bin/lfortran ./examples/example_lmder1.f90 --legacy-array-sections
+
+            # Test with experimental simplifier
+            $(pwd)/../src/bin/lfortran ./src/minpack.f90 -c --legacy-array-sections --experimental-simplifier
+            $(pwd)/../src/bin/lfortran ./examples/example_hybrd.f90 --legacy-array-sections --experimental-simplifier
+            $(pwd)/../src/bin/lfortran ./examples/example_hybrd1.f90 --legacy-array-sections --experimental-simplifier
+            $(pwd)/../src/bin/lfortran ./examples/example_lmdif1.f90 --legacy-array-sections --experimental-simplifier
+            $(pwd)/../src/bin/lfortran ./examples/example_lmder1.f90 --legacy-array-sections --experimental-simplifier
 
       - name: Test Modern Minpack (check results)
         shell: bash -e -x -l {0}
@@ -922,6 +997,13 @@ jobs:
             $(pwd)/../src/bin/lfortran ./examples/example_hybrd1.f90 --legacy-array-sections
             $(pwd)/../src/bin/lfortran ./examples/example_lmdif1.f90 --legacy-array-sections
             $(pwd)/../src/bin/lfortran ./examples/example_lmder1.f90 --legacy-array-sections
+
+            # Test with experimental simplifier
+            $(pwd)/../src/bin/lfortran ./src/minpack.f90 -c --legacy-array-sections --experimental-simplifier
+            $(pwd)/../src/bin/lfortran ./examples/example_hybrd.f90 --legacy-array-sections --experimental-simplifier
+            $(pwd)/../src/bin/lfortran ./examples/example_hybrd1.f90 --legacy-array-sections --experimental-simplifier
+            $(pwd)/../src/bin/lfortran ./examples/example_lmdif1.f90 --legacy-array-sections --experimental-simplifier
+            $(pwd)/../src/bin/lfortran ./examples/example_lmder1.f90 --legacy-array-sections --experimental-simplifier
 
             # $(pwd)/../src/bin/lfortran --fast ./examples/example_hybrd.f90 --legacy-array-sections
             # $(pwd)/../src/bin/lfortran --fast ./examples/example_hybrd1.f90 --legacy-array-sections
@@ -1263,6 +1345,7 @@ jobs:
             ./run_tests.py -b llvm_wasm llvm_wasm_emcc
             ./run_tests.py -b llvm_wasm llvm_wasm_emcc --experimental-simplifier
 
+
   lfortran_debug_build_backends_tarball_cpp_build_wasm_gfortran:
     name: Test GFortran, Debug Build, Fortran, OpenMP, C/C++ backend, Upload Tarball, CPP Build, WASM
     runs-on: ubuntu-latest
@@ -1470,6 +1553,8 @@ jobs:
             ./run_tests.py -b mlir -j1
             ./run_tests.py -b mlir -j1 --experimental-simplifier
 
+
+
   upload_docs:
     name: Documentation
     runs-on: ubuntu-latest
@@ -1519,6 +1604,7 @@ jobs:
           ../ci/upload_docs.sh
         env:
           SSH_PRIVATE_KEY_DOCS: ${{ secrets.SSH_PRIVATE_KEY_DOCS }}
+
 
   build-and-push-image:
     runs-on: ubuntu-latest
