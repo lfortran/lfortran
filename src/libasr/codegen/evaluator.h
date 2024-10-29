@@ -78,6 +78,7 @@ public:
     void opt(llvm::Module &m);
     static std::string module_to_string(llvm::Module &m);
     static void print_version_message();
+    static std::string llvm_version();
     llvm::LLVMContext &get_context();
     static void print_targets();
     static std::string get_default_target_triple();
