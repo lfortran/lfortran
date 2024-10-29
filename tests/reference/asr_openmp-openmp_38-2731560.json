@@ -2,11 +2,11 @@
     "basename": "asr_openmp-openmp_38-2731560",
     "cmd": "lfortran --show-asr --no-color --openmp {infile} -o {outfile}",
     "infile": "tests/../integration_tests/openmp_38.f90",
-    "infile_hash": "c5fb9a591c03f15fcf55256facd6ab21dad921383e62dc213237978b",
+    "infile_hash": "c373b1dfea2a21e4cb12fc60efb372bb5534b0a0b4b876224e147b73",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "asr_openmp-openmp_38-2731560.stdout",
-    "stdout_hash": "c3e6e1f8a7670ef357d92241d1021e47fd2b2edfb2c39cc72d90aee0",
+    "stdout_hash": "a3ffe86c0dbf7a08f7790a46a5d35911965a7705058bebdd5433d7e9",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0
