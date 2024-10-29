@@ -2695,6 +2695,10 @@ filename = "fixedform_module.f"
 ast = true
 
 [[test]]
+filename = "fixed_form_interface.f"
+ast = true
+
+[[test]]
 filename = "../integration_tests/format_03.f"
 ast = true
 
