@@ -4100,7 +4100,8 @@ class ReplaceFunctionParamVisitor: public ASR::BaseExprReplacer<ReplaceFunctionP
         m_args(m_args_) {}
 
     void replace_FunctionParam(ASR::FunctionParam_t* x) {
-        *current_expr = m_args[x->m_param_number].m_value;
+        *current_expr = ASRUtils::get_past_array_physical_cast(
+            m_args[x->m_param_number].m_value);
     }
 
 };
@@ -5721,16 +5722,33 @@ static inline bool is_elemental(ASR::symbol_t* x) {
 static inline ASR::asr_t* make_FunctionCall_t_util(
     Allocator &al, const Location &a_loc, ASR::symbol_t* a_name,
     ASR::symbol_t* a_original_name, ASR::call_arg_t* a_args, size_t n_args,
-    ASR::ttype_t* /*a_type*/, ASR::expr_t* a_value, ASR::expr_t* a_dt, bool nopass) {
+    ASR::ttype_t* a_type, ASR::expr_t* a_value, ASR::expr_t* a_dt, bool nopass) {
 
     Call_t_body(al, a_name, a_args, n_args, a_dt, nullptr, false, nopass);
 
-    ASR::FunctionType_t* func_type = ASRUtils::get_FunctionType(a_name);
-    ASRUtils::ExprStmtDuplicator expr_stmt_duplicator(al);
+    if( ASRUtils::is_array(a_type) || ASRUtils::is_elemental(a_name) ) {
+        ASR::FunctionType_t* func_type = ASRUtils::get_FunctionType(a_name);
+        ASRUtils::ExprStmtDuplicator expr_stmt_duplicator(al);
+        if( ASRUtils::is_elemental(a_name) ) {
+            for( size_t i = 0; i < n_args; i++ ) {
+                if( a_args[i].m_value && ASRUtils::is_array(ASRUtils::expr_type(a_args[i].m_value)) ) {
+                    ASR::ttype_t* array_type = expr_stmt_duplicator.duplicate_ttype(
+                        ASRUtils::expr_type(a_args[i].m_value));
+                    ASR::dimension_t* m_dims = nullptr;
+                    size_t n_dims = ASRUtils::extract_dimensions_from_ttype(array_type, m_dims);
+                    Vec<ASR::dimension_t> dims; dims.from_pointer_n(m_dims, n_dims);
+                    a_type = ASRUtils::duplicate_type(al, a_type, &dims,
+                        ASRUtils::extract_physical_type(array_type));
+                    break ;
+                }
+            }
+        } else if( func_type->m_return_var_type ) {
+            a_type = expr_stmt_duplicator.duplicate_ttype(func_type->m_return_var_type);
+        }
+    }
 
     return ASR::make_FunctionCall_t(al, a_loc, a_name, a_original_name,
-            a_args, n_args, expr_stmt_duplicator.duplicate_ttype(func_type->m_return_var_type),
-            a_value, a_dt);
+                a_args, n_args, a_type, a_value, a_dt);
 }
 
 static inline ASR::asr_t* make_SubroutineCall_t_util(

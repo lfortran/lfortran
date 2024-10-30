@@ -3035,7 +3035,7 @@ public:
 
                     // when lhs_rank > rhs_rank it can broadcast
                     if( lhs_rank != rhs_rank && lhs_rank < rhs_rank ){
-                        throw SemanticError("Incompatible ranks `"+ std::to_string(lhs_rank) + "` and `" 
+                        throw SemanticError("Incompatible ranks `"+ std::to_string(lhs_rank) + "` and `"
                                                                   + std::to_string(rhs_rank) + "` in assignment",
                                             x.base.base.loc);
                     }
@@ -3043,7 +3043,7 @@ public:
                      if ( ASR::is_a<ASR::Array_t>(*init_type) && ASR::is_a<ASR::ArrayReshape_t>(*init_expr) ){
                         ASR::Array_t* arr_rhs = ASR::down_cast<ASR::Array_t>(init_type);
                         ASR::Array_t* arr_lhs = ASR::down_cast<ASR::Array_t>(type);
-                        
+
                     for (size_t i = 0; i < arr_lhs->n_dims; i++) {
                            std::string lhs_dim = ASRUtils::extract_dim_value(arr_lhs->m_dims[i].m_length);
                            std::string rhs_dim = ASRUtils::extract_dim_value(arr_rhs->m_dims[i].m_length);
@@ -4721,14 +4721,14 @@ public:
             }
         }
     }
-    
+
     void validate_create_function_arguments(Vec<ASR::call_arg_t>& args, ASR::symbol_t *v){
         ASR::symbol_t *f2 = ASRUtils::symbol_get_past_external(v);
         ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(f2);
         ASR::FunctionType_t* func_type = ASRUtils::get_FunctionType(v);
 
         // Currently present function is supporting only integer arguments
-        // After implementing present below if condition should be removed 
+        // After implementing present below if condition should be removed
         if( to_lower(func->m_name) != "present" ){
             for( size_t i = 0; i < args.size(); i++ ) {
                 if( args.p[i].m_value == nullptr ) {
@@ -4739,7 +4739,7 @@ public:
                         ASRUtils::type_get_past_pointer(ASRUtils::expr_type(arg)));
                 ASR::ttype_t* orig_arg_type = ASRUtils::type_get_past_allocatable(
                         ASRUtils::type_get_past_pointer(func_type->m_arg_types[i]));
-                
+
                 if( ASR::is_a<ASR::FunctionType_t>(*arg_type) ) continue;
 
                 bool is_compile_time = true;
@@ -4788,17 +4788,17 @@ public:
                             }
                         }
                         if( lhs_ele < rhs_ele ){
-                            throw SemanticError("Array passed into function has `" + std::to_string(lhs_ele) + 
+                            throw SemanticError("Array passed into function has `" + std::to_string(lhs_ele) +
                             "` elements but function expects `" + std::to_string(rhs_ele) + "`.",
                             args.p[i].loc);
                         }
                     }
                 }
-                
+
                 if(!ASRUtils::check_equal_type(arg_type,orig_arg_type)){
                     std::string arg_str = ASRUtils::type_to_str(arg_type);
                     std::string orig_arg_str = ASRUtils::type_to_str(orig_arg_type);
-                    throw SemanticError("Type mismatch in argument at argument (" + std::to_string(i+1) + 
+                    throw SemanticError("Type mismatch in argument at argument (" + std::to_string(i+1) +
                                         "); passed `" + arg_str + "` to `" + orig_arg_str + "`.", args.p[i].loc);
                 }
             }
@@ -5768,7 +5768,7 @@ public:
     }
 
     void scalar_kind_arg(std::string &name, Vec<ASR::expr_t*> &args) {
-        std::vector<std::string> optional_kind_arg = {"logical", "storage_size", "anint", "nint", "aint", "floor", 
+        std::vector<std::string> optional_kind_arg = {"logical", "storage_size", "anint", "nint", "aint", "floor",
             "ceiling", "aimag", "maskl", "maskr", "ichar", "char", "achar", "real", "int"};
         if (std::find(optional_kind_arg.begin(), optional_kind_arg.end(), name) != optional_kind_arg.end()) {
             if (args[1]) {
@@ -6111,13 +6111,13 @@ public:
                         ASR::expr_t *matrix_a = args[0], *matrix_b = args[1];
                         ASR::ttype_t *type_a = ASRUtils::expr_type(matrix_a);
                         ASR::ttype_t *type_b = ASRUtils::expr_type(matrix_b);
-                        if((ASRUtils::is_real(*type_b) && ASRUtils::is_integer(*type_a)) || 
-                            (ASRUtils::is_complex(*type_b) && ASRUtils::is_integer(*type_a)) || 
+                        if((ASRUtils::is_real(*type_b) && ASRUtils::is_integer(*type_a)) ||
+                            (ASRUtils::is_complex(*type_b) && ASRUtils::is_integer(*type_a)) ||
                             (ASRUtils::is_complex(*type_b) && ASRUtils::is_real(*type_a)) ){
                             ImplicitCastRules::set_converted_value(al, x.base.base.loc, &matrix_a,
                                             type_a, ASRUtils::type_get_past_allocatable(type_b));
-                        } else if((ASRUtils::is_real(*type_a) && ASRUtils::is_integer(*type_b)) || 
-                                   (ASRUtils::is_complex(*type_a) && ASRUtils::is_integer(*type_b)) || 
+                        } else if((ASRUtils::is_real(*type_a) && ASRUtils::is_integer(*type_b)) ||
+                                   (ASRUtils::is_complex(*type_a) && ASRUtils::is_integer(*type_b)) ||
                                     (ASRUtils::is_complex(*type_a) && ASRUtils::is_real(*type_b)) ){
                             ImplicitCastRules::set_converted_value(al, x.base.base.loc, &matrix_b,
                                             type_b, ASRUtils::type_get_past_allocatable(type_a));
