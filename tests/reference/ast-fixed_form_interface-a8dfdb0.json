@@ -2,11 +2,11 @@
     "basename": "ast-fixed_form_interface-a8dfdb0",
     "cmd": "lfortran --fixed-form --show-ast --no-color {infile} -o {outfile}",
     "infile": "tests/fixed_form_interface.f",
-    "infile_hash": "8371968071bed3b9b0d988eac42412e79ae6d973ca1305a683e829dc",
+    "infile_hash": "9e58bd3e551fc161ecfe80d0408ce95a2ab9a1cfe11c619d7d18e28f",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "ast-fixed_form_interface-a8dfdb0.stdout",
-    "stdout_hash": "2fd0ca15a0b39abda3414f4c8b564d7a39050a22bbd3e57f408ae07d",
+    "stdout_hash": "26081f68b470cf5e9bd0e6ca827da1b162bbff00ce28a5c0a4b00a28",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0
