@@ -5726,24 +5726,26 @@ static inline ASR::asr_t* make_FunctionCall_t_util(
 
     Call_t_body(al, a_name, a_args, n_args, a_dt, nullptr, false, nopass);
 
-    if( ASRUtils::is_array(a_type) || ASRUtils::is_elemental(a_name) ) {
-        ASR::FunctionType_t* func_type = ASRUtils::get_FunctionType(a_name);
-        ASRUtils::ExprStmtDuplicator expr_stmt_duplicator(al);
-        if( ASRUtils::is_elemental(a_name) ) {
-            for( size_t i = 0; i < n_args; i++ ) {
-                if( a_args[i].m_value && ASRUtils::is_array(ASRUtils::expr_type(a_args[i].m_value)) ) {
-                    ASR::ttype_t* array_type = expr_stmt_duplicator.duplicate_ttype(
-                        ASRUtils::expr_type(a_args[i].m_value));
-                    ASR::dimension_t* m_dims = nullptr;
-                    size_t n_dims = ASRUtils::extract_dimensions_from_ttype(array_type, m_dims);
-                    Vec<ASR::dimension_t> dims; dims.from_pointer_n(m_dims, n_dims);
-                    a_type = ASRUtils::duplicate_type(al, a_type, &dims,
-                        ASRUtils::extract_physical_type(array_type));
-                    break ;
+    if( use_experimental_simplifier ) {
+        if( ASRUtils::is_array(a_type) || ASRUtils::is_elemental(a_name) ) {
+            ASR::FunctionType_t* func_type = ASRUtils::get_FunctionType(a_name);
+            ASRUtils::ExprStmtDuplicator expr_stmt_duplicator(al);
+            if( ASRUtils::is_elemental(a_name) ) {
+                for( size_t i = 0; i < n_args; i++ ) {
+                    if( a_args[i].m_value && ASRUtils::is_array(ASRUtils::expr_type(a_args[i].m_value)) ) {
+                        ASR::ttype_t* array_type = expr_stmt_duplicator.duplicate_ttype(
+                            ASRUtils::expr_type(a_args[i].m_value));
+                        ASR::dimension_t* m_dims = nullptr;
+                        size_t n_dims = ASRUtils::extract_dimensions_from_ttype(array_type, m_dims);
+                        Vec<ASR::dimension_t> dims; dims.from_pointer_n(m_dims, n_dims);
+                        a_type = ASRUtils::duplicate_type(al, a_type, &dims,
+                            ASRUtils::extract_physical_type(array_type));
+                        break ;
+                    }
                 }
+            } else if( func_type->m_return_var_type ) {
+                a_type = expr_stmt_duplicator.duplicate_ttype(func_type->m_return_var_type);
             }
-        } else if( func_type->m_return_var_type ) {
-            a_type = expr_stmt_duplicator.duplicate_ttype(func_type->m_return_var_type);
         }
     }
 
