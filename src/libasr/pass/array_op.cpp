@@ -813,18 +813,43 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                     res_dims_vec.from_pointer_n_copy(al, res_dims, res_dims_n);
                     for (size_t j = 0; j < x->n_args; j++) {
                         if (x->m_args[j].m_step != nullptr) {
-                          // TODO: handle dimension if there is step
+                            ASR::expr_t* m_left = x->m_args[j].m_left;
+                            LCOMPILERS_ASSERT(m_left);
+                            ASR::expr_t* m_right = x->m_args[j].m_right;
+                            LCOMPILERS_ASSERT(m_right);
+                            ASR::expr_t* m_step = x->m_args[j].m_step;
+                            m_left = CastingUtil::perform_casting(m_left, int32_type, al, loc);
+                            m_right = CastingUtil::perform_casting(m_right, int32_type, al, loc);
+                            m_step = CastingUtil::perform_casting(m_step, int32_type, al, loc);
+                            res_dims_vec.p[j].m_start = x->m_args[j].m_left;
+                            res_dims_vec.p[j].m_length = builder.Add(builder.Div(
+                                builder.Sub(m_right, m_left),
+                                m_step), i32_one);
                         } else if (ASRUtils::is_array(ASRUtils::expr_type(x->m_args[j].m_right))) {
                             ASR::dimension_t* arg_dim = nullptr;
                             int arg_dims_n = ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(x->m_args[j].m_right), arg_dim);
                             LCOMPILERS_ASSERT(arg_dims_n == 1);
                             res_dims_vec.p[j] = arg_dim[0];
-                        } else {
-                          // TODO: handle dimension if there is no step
+                        } else if (x->m_args[j].m_right != nullptr || x->m_args[j].m_left != nullptr) {
+                            ASR::expr_t* m_left = x->m_args[j].m_left;
+                            ASR::expr_t* m_right = x->m_args[j].m_right;
+
+                            if (m_left)
+                              m_left = CastingUtil::perform_casting(m_left, int32_type, al, loc);
+                            else
+                              m_left = i32_one;
+
+                            res_dims_vec.p[j].m_start = m_left;
+                            if (m_right) {
+                              m_right = CastingUtil::perform_casting(m_right, int32_type, al, loc);
+                              res_dims_vec.p[j].m_length = builder.Add(builder.Sub(m_right, m_left), i32_one);
+                            } else {
+                              res_dims_vec.p[j].m_length = builder.Add(builder.Sub(res_dims_vec.p[j].m_length, m_left), i32_one);
+                            }
                         }
                     }
                     ASR::ttype_t* result_var_type = get_result_type(ASRUtils::expr_type(x->m_v),
-                        res_dims_vec.p, res_dims_vec.size(), loc, x->class_type, allocate);
+                        res_dims_vec.p, (int)res_dims_vec.size(), loc, x->class_type, allocate);
                     if( allocate ) {
                         result_var_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc,
                            ASRUtils::type_get_past_allocatable(result_var_type)));
@@ -833,13 +858,13 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                                     result_var_type, al, current_scope);
                     result_counter += 1;
                     if( allocate ) {
-                        allocate_result_var(x->m_v, res_dims_vec.p, res_dims_vec.size(), true, true);
+                        allocate_result_var(x->m_v, res_dims_vec.p, (int)res_dims_vec.size(), true, true);
                     }
                 }
                 create_do_loop(
                     loc, PassUtils::get_rank(x->m_v),
                     idx_vars, idx_vars_value, loop_vars, loop_var_indices, doloop_body, arg,
-                    [=, &idx_vars, &doloop_body] {
+                    [=, &idx_vars, &doloop_body, &builder] {
                         ASR::expr_t* res = PassUtils::create_array_ref(result_var, idx_vars, al, current_scope);
 
                         for (size_t j = 0; j < x->n_args; j++) {
@@ -861,9 +886,21 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                                                             nullptr));
                                 x->m_args[j].m_right = arr_index;
                             } else {
+                                ASR::expr_t* m_right = x->m_args[j].m_right;
+                                ASR::expr_t* m_left = x->m_args[j].m_left;
+                                ASR::expr_t* m_step = x->m_args[j].m_step;
+                                if (m_right) m_right = CastingUtil::perform_casting(m_right, int32_type, al, loc);
+                                if (m_left) m_left = CastingUtil::perform_casting(m_left, int32_type, al, loc);
+                                if (m_step)
+                                  m_step = CastingUtil::perform_casting(m_step, int32_type, al, loc);
+                                else
+                                  m_step = i32_one;
                                 x->m_args[j].loc = idx_vars[j]->base.loc;
-                                x->m_args[j].m_left = nullptr;
-                                x->m_args[j].m_right = idx_vars[j];
+                                if (m_left)
+                                  x->m_args[j].m_right = builder.Add(m_left, builder.Mul(
+                                          builder.Sub(idx_vars[j], i32_one), m_step));
+                                else
+                                  x->m_args[j].m_right = builder.Mul(idx_vars[j], m_step);
                                 x->m_args[j].m_step = nullptr;
                             }
                         }
