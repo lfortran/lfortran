@@ -161,6 +161,26 @@
             0)]
             []
             ()
+        )
+        (Assignment
+            0
+            factors
+            (ArrayInitializer
+                ()
+                ()
+                [3
+                4]
+            )
+            ()
+        )
+        (Deallocate
+            0
+            [(()
+            factors
+            ()
+            0)]
+            []
+            ()
         )]
         []
     )]

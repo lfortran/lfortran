@@ -16,8 +16,10 @@ c           tests that 'interface' is tokinized correctly
 c           tests that 'allocate' is tokenized correctly
             integer :: num = 2
             integer, dimension(:), allocatable :: factors
-
             allocate ( factors(num) )
+            factors = [3, 4]
+c           tests that 'deallocate' is tokenized correctly
+            deallocate(factors)
         contains
 
         end program fixed_form_interface
