@@ -1,7 +1,7 @@
         program fixed_form_interface
             implicit none
 
-            ! tests that 'interface' is tokinized correctly
+c           tests that 'interface' is tokinized correctly
             interface
                 subroutine my_subroutine(a)
                     integer, intent(in) :: a
@@ -13,8 +13,7 @@
                 end function my_function
             end interface
 
-            ! tests that 'allocate' is tokenized correctly
-
+c           tests that 'allocate' is tokenized correctly
             integer :: num = 2
             integer, dimension(:), allocatable :: factors
 
