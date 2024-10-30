@@ -3631,10 +3631,10 @@ public:
                 throw SemanticError("Procedure type '" + func_name
                                     + "' not declared", loc);
             }
+            type_declaration = v;
             v = ASRUtils::symbol_get_past_external(v);
             LCOMPILERS_ASSERT(ASR::is_a<ASR::Function_t>(*v));
             type = ASR::down_cast<ASR::Function_t>(v)->m_function_signature;
-            type_declaration = v;
         } else {
             throw SemanticError("Type not implemented yet.",
                     loc);
