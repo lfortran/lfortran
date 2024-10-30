@@ -30,10 +30,10 @@ public:
     bool from_block;
     std::set<std::string> labels;
     size_t starting_n_body = 0;
-    size_t loop_nesting = 0;
-    size_t pragma_nesting_level = 0;
+    int loop_nesting = 0;
+    int pragma_nesting_level = 0;
     bool openmp_collapse = false;
-    size_t collapse_value=0;
+    int collapse_value=0;
     Vec<ASR::do_loop_head_t> do_loop_heads_for_collapse;
     Vec<ASR::stmt_t*> do_loop_bodies_for_collapse;
     AST::stmt_t **starting_m_body = nullptr;
@@ -3447,7 +3447,7 @@ public:
                 do_concurrent->m_head = do_concurrent_head.p;
                 do_concurrent->n_head = do_concurrent_head.size();
                 tmp = (ASR::asr_t*) do_concurrent;
-            } else if (openmp_collapse == true && !omp_constructs.empty() && collapse_value>loop_nesting-1-omp_constructs.size()+1) {
+            } else if (openmp_collapse == true && !omp_constructs.empty() && collapse_value > loop_nesting - 1 - static_cast<int>(omp_constructs.size()) + 1) {
                 collapse_value--;
                 do_loop_heads_for_collapse.push_back(al, head);
                 Vec<ASR::stmt_t*> temp;
