@@ -99,8 +99,69 @@
                     []
                 )
             )]
+        )
+        (Declaration
+            (AttrType
+                TypeInteger
+                []
+                ()
+                ()
+                None
+            )
+            []
+            [(num
+            []
+            []
+            ()
+            2
+            Equal
+            ())]
+            ()
+        )
+        (Declaration
+            (AttrType
+                TypeInteger
+                []
+                ()
+                ()
+                None
+            )
+            [(AttrDimension
+                [(()
+                ()
+                DimensionExpr)]
+            )
+            (SimpleAttribute
+                AttrAllocatable
+            )]
+            [(factors
+            []
+            []
+            ()
+            ()
+            None
+            ())]
+            ()
         )]
-        []
+        [(Allocate
+            0
+            [(()
+            (FuncCallOrArray
+                factors
+                []
+                [(()
+                num
+                ()
+                0)]
+                []
+                []
+                []
+            )
+            ()
+            0)]
+            []
+            ()
+        )]
         []
     )]
 )
