@@ -10,5 +10,6 @@ subroutine evaluate(calcfc)
     use eval_dependency
     implicit none
     procedure(OBJCON) :: calcfc 
+    call calcfc()
 end subroutine evaluate
 end module procedure_decl_01_b
