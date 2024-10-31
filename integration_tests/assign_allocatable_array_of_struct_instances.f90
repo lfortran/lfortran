@@ -25,7 +25,6 @@ contains
        type(string), allocatable :: tkns(:)
        type(string) :: merged_token
        merged_token%s = intokens(idx)%s // intokens(idx+1)%s
-       ! The segmentation fault occurs at the below line
        tkns = [intokens(:idx-1), merged_token, intokens(idx+2:)]
     end function
  
