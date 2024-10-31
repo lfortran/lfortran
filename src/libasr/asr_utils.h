@@ -2608,7 +2608,7 @@ static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
         case ASR::ttypeType::Character: {
             ASR::Character_t* tnew = ASR::down_cast<ASR::Character_t>(t);
             t_ = ASRUtils::TYPE(ASR::make_Character_t(al, t->base.loc,
-                    tnew->m_kind, tnew->m_len, tnew->m_len_expr, ASR::string_physical_typeType::PointerString));
+                    tnew->m_kind, tnew->m_len, tnew->m_len_expr, tnew->m_physical_type));
             break;
         }
         case ASR::ttypeType::StructType: {
@@ -2725,6 +2725,47 @@ static inline void set_absent_optional_arguments_to_null(
         }
     }
     LCOMPILERS_ASSERT(args.size() + offset == (func->n_args));
+}
+
+// Check if the passed ttype node is character type node of
+// physical type `DescriptorString`. 
+static inline bool is_descriptorString(ASR::ttype_t* t){
+    return is_character(*t) &&
+        ASR::down_cast<ASR::Character_t>(
+        ASRUtils::type_get_past_array_pointer_allocatable(t))->m_physical_type == ASR::string_physical_typeType::DescriptorString; 
+}
+
+// Create `StringPhysicalCast` node from  `PointerString` --> `DescriptorString`.
+static inline ASR::expr_t* cast_string_pointer_to_descriptor(Allocator& al, ASR::expr_t* string){
+    LCOMPILERS_ASSERT(is_character(*ASRUtils::expr_type(string)) &&
+        !is_descriptorString(expr_type(string)));
+    ASR::ttype_t* string_type = ASRUtils::expr_type(string);
+    ASR::ttype_t* stringDescriptor_type = ASRUtils::duplicate_type(al,
+        ASRUtils::type_get_past_array_pointer_allocatable(string_type));
+    ASR::down_cast<ASR::Character_t>(stringDescriptor_type)->m_physical_type = ASR::string_physical_typeType::DescriptorString;
+    ASR::ttype_t* alloctable_stringDescriptor_type = ASRUtils::TYPE(
+        ASR::make_Allocatable_t(al, string->base.loc, stringDescriptor_type));
+    // Create pointerString to descriptorString cast node
+    ASR::expr_t* ptr_to_desc_string_cast = ASRUtils::EXPR(
+        ASR::make_StringPhysicalCast_t(al, string->base.loc , string,
+        ASR::string_physical_typeType::PointerString, ASR::string_physical_typeType::DescriptorString,
+        alloctable_stringDescriptor_type, nullptr));
+    return ptr_to_desc_string_cast;
+}
+
+// Create `StringPhysicalCast` node from `DescriptorString` --> `PointerString`.
+static inline ASR::expr_t* cast_string_descriptor_to_pointer(Allocator& al, ASR::expr_t* string){
+    LCOMPILERS_ASSERT(is_character(*ASRUtils::expr_type(string)) &&
+    is_descriptorString(expr_type(string)));
+    // Create string node with `PointerString` physical type
+    ASR::ttype_t* stringPointer_type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(string));
+    ASR::down_cast<ASR::Character_t>(ASRUtils::type_get_past_allocatable(stringPointer_type))->m_physical_type = ASR::string_physical_typeType::PointerString;
+    // Create descriptorString to pointerString cast node
+    ASR::expr_t* des_to_ptr_string_cast = ASRUtils::EXPR(
+        ASR::make_StringPhysicalCast_t(al, string->base.loc , string,
+        ASR::string_physical_typeType::DescriptorString, ASR::string_physical_typeType::PointerString,
+        stringPointer_type, nullptr));
+    return des_to_ptr_string_cast;
 }
 
 static inline ASR::ttype_t* duplicate_type_with_empty_dims(Allocator& al, ASR::ttype_t* t,
@@ -5560,6 +5601,12 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
             ASRUtils::type_get_past_pointer(ASRUtils::expr_type(arg)));
         ASR::ttype_t* orig_arg_type = ASRUtils::type_get_past_allocatable(
             ASRUtils::type_get_past_pointer(func_type->m_arg_types[i + is_method]));
+        // cast string source based on the dest
+        if( ASRUtils::is_character(*orig_arg_type) && 
+            !ASRUtils::is_descriptorString(orig_arg_type) && 
+            ASRUtils::is_descriptorString(ASRUtils::expr_type(a_args[i].m_value))){
+            a_args[i].m_value = ASRUtils::cast_string_descriptor_to_pointer(al, a_args[i].m_value);
+        }
         if( !ASRUtils::is_intrinsic_symbol(a_name_) &&
             !(ASR::is_a<ASR::ClassType_t>(*ASRUtils::type_get_past_array(arg_type)) ||
               ASR::is_a<ASR::ClassType_t>(*ASRUtils::type_get_past_array(orig_arg_type))) &&

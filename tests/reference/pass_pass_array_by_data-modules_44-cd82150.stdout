@@ -164,9 +164,17 @@
                                     (SubroutineCall
                                         2 warnwrite_character____1
                                         2 warnwrite_character____1
-                                        [((StructInstanceMember
-                                            (Var 8 settings)
-                                            8 1_fpm_new_settings_name
+                                        [((StringPhysicalCast
+                                            (StructInstanceMember
+                                                (Var 8 settings)
+                                                8 1_fpm_new_settings_name
+                                                (Allocatable
+                                                    (Character 1 -2 () DescriptorString)
+                                                )
+                                                ()
+                                            )
+                                            DescriptorString
+                                            PointerString
                                             (Allocatable
                                                 (Character 1 -2 () PointerString)
                                             )
@@ -225,7 +233,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (Character 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -260,7 +268,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (Character 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source

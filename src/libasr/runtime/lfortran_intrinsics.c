@@ -163,6 +163,9 @@ LFORTRAN_API void _lfortran_printf(const char* format, ...)
     va_start(args, format);
     char* str = va_arg(args, char*);
     char* end = va_arg(args, char*);
+    if(str == NULL){
+        str = " "; // dummy output
+    }
     // Detect "\b" to raise error
     if(str[0] == '\b'){
         str = str+1;
@@ -1975,7 +1978,7 @@ LFORTRAN_API void _lfortran_strcat(char** s1, char** s2, char** dest)
 
 // strcpy -----------------------------------------------------------
 
-LFORTRAN_API void _lfortran_strcpy(char** x, char *y, int8_t free_target)
+LFORTRAN_API void _lfortran_strcpy(char** x, char *y, int8_t free_target, int64_t x_size, int64_t x_capacity)
 {
     if (free_target) {
         if (*x) {
@@ -2359,7 +2362,7 @@ LFORTRAN_API void _lfortran_free(char* ptr) {
     free((void*)ptr);
 }
 
-LFORTRAN_API void _lfortran_alloc(char** ptr, int32_t size) {
+LFORTRAN_API void _lfortran_alloc(char** ptr, int32_t size, int64_t* string_size, int64_t* string_capacity) {
     *ptr = (char *) malloc(size);
 }
 
@@ -3334,7 +3337,7 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
     (void)!ftruncate(fileno(filep), ftell(filep));
 }
 
-LFORTRAN_API void _lfortran_string_write(char **str_holder, int32_t* iostat, const char *format, ...) {
+LFORTRAN_API void _lfortran_string_write(char **str_holder, int64_t size, int64_t capacity, int32_t* iostat, const char *format, ...) {
     va_list args;
     va_start(args, format);
     char* str = va_arg(args, char*);
@@ -3357,7 +3360,7 @@ LFORTRAN_API void _lfortran_string_write(char **str_holder, int32_t* iostat, con
     } else {
         sprintf(s, format, str);
     }
-    _lfortran_strcpy(str_holder, s, 0);
+    _lfortran_strcpy(str_holder, s, 0, size, capacity);
     free(s);
     va_end(args);
     if(iostat != NULL) *iostat = 0;

@@ -1601,6 +1601,12 @@ public:
         src = r;
     }
 
+    void visit_StringPhysicalCast(const ASR::StringPhysicalCast_t &x) {
+        visit_expr(*x.m_arg);
+    }
+
+
+
     // void visit_CPtrCompare(const ASR::CPtrCompare_t &x) {}
 
     // void visit_SymbolicCompare(const ASR::SymbolicCompare_t &x) {}

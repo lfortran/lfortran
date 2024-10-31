@@ -85,24 +85,32 @@
                                     [(SubroutineCall
                                         2 filewrite
                                         ()
-                                        [((FunctionCall
-                                            2 join_path
-                                            ()
-                                            [((StringConstant
-                                                "build"
-                                                (Character 1 5 () PointerString)
-                                            ))
-                                            ((StringConstant
-                                                ".gitignore"
-                                                (Character 1 10 () PointerString)
-                                            ))
-                                            (())
-                                            (())
-                                            (())]
+                                        [((StringPhysicalCast
+                                            (FunctionCall
+                                                2 join_path
+                                                ()
+                                                [((StringConstant
+                                                    "build"
+                                                    (Character 1 5 () PointerString)
+                                                ))
+                                                ((StringConstant
+                                                    ".gitignore"
+                                                    (Character 1 10 () PointerString)
+                                                ))
+                                                (())
+                                                (())
+                                                (())]
+                                                (Allocatable
+                                                    (Character 1 -2 () DescriptorString)
+                                                )
+                                                ()
+                                                ()
+                                            )
+                                            DescriptorString
+                                            PointerString
                                             (Allocatable
                                                 (Character 1 -2 () PointerString)
                                             )
-                                            ()
                                             ()
                                         ))
                                         ((ArrayPhysicalCast
@@ -335,7 +343,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (Character 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -352,7 +360,7 @@
                                         (Character 1 -1 () PointerString)
                                         (Character 1 -1 () PointerString)]
                                         (Allocatable
-                                            (Character 1 -2 () PointerString)
+                                            (Character 1 -2 () DescriptorString)
                                         )
                                         Source
                                         Implementation

@@ -1253,6 +1253,7 @@ RUN(NAME associate_10 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME associate_11 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME associate_12 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME associate_13 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME associate_14 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME real_dp_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME real_dp_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
