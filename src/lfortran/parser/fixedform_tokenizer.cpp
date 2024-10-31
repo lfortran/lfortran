@@ -994,8 +994,25 @@ struct FixedFormRecursiveDescent {
             return true;
         }
 
+        if (next_is(cur, "interface")) {
+            lex_interface(cur);
+            return true;
+        }
+
         if (next_is(cur, "exit")) {
             push_token_advance(cur, "exit");
+            tokenize_line(cur);
+            return true;
+        }
+
+        if (next_is(cur, "allocate")) {
+            push_token_advance(cur, "allocate");
+            tokenize_line(cur);
+            return true;
+        }
+
+        if (next_is(cur, "deallocate")) {
+            push_token_advance(cur, "deallocate");
             tokenize_line(cur);
             return true;
         }
@@ -1475,6 +1492,26 @@ struct FixedFormRecursiveDescent {
         }
     }
 
+    void lex_interface(unsigned char *&cur) {
+        push_token_advance(cur, "interface");
+        tokenize_line(cur);
+
+        while (true) {
+            if (next_is(cur, "endinterface")) {
+                push_token_advance(cur, "endinterface");
+                tokenize_line(cur);
+                break;
+            } else if (next_is(cur, "subroutine") || next_is(cur, "function")) {
+                // Handle procedure declaration within the interface
+                lex_procedure(cur);
+            } else if (next_is(cur, "moduleprocedure")) {
+                // TODO: handle module procedure
+            } else {
+                error(cur, "Unexpected token in interface block");
+            }
+        }
+    }
+
     void lex_block_data(unsigned char *&cur) {
         push_token_advance(cur, "block");
         push_token_advance(cur, "data");
@@ -1584,6 +1621,8 @@ struct FixedFormRecursiveDescent {
         }
         if (is_program(cur)) {
             lex_program(cur, true);
+        } else if (next_is(cur, "interface")) {
+            lex_interface(cur);
         } else if (is_module(cur)) {
             lex_module(cur);
         } else if (lex_procedure(cur)) {

@@ -2197,6 +2197,7 @@ int main_app(int argc, char *argv[]) {
     app.add_flag("--lookup-name", compiler_options.lookup_name, "Lookup a name specified by --line & --column in the ASR");
     app.add_option("--line", compiler_options.line, "Line number for --lookup-name")->capture_default_str();
     app.add_option("--column", compiler_options.column, "Column number for --lookup-name")->capture_default_str();
+    app.add_flag("--continue-compilation", compiler_options.continue_compilation, "collect error message and continue compilation");
     app.add_flag("--generate-object-code", compiler_options.generate_object_code, "Generate object code into .o files");
     app.add_flag("--rtlib", compiler_options.rtlib, "Include the full runtime library in the LLVM output");
     app.add_flag("--use-loop-variable-after-loop", compiler_options.po.use_loop_variable_after_loop, "Allow using loop variable after the loop");
@@ -2272,6 +2273,7 @@ int main_app(int argc, char *argv[]) {
         std::cout << "LFortran version: " << version << std::endl;
         std::cout << "Platform: " << pf2s(compiler_options.platform) << std::endl;
 #ifdef HAVE_LFORTRAN_LLVM
+        std::cout << "LLVM: " << LCompilers::LLVMEvaluator::llvm_version() << std::endl;
         std::cout << "Default target: " << LCompilers::LLVMEvaluator::get_default_target_triple() << std::endl;
 #endif
         return 0;

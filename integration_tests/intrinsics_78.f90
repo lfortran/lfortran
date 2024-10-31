@@ -3,6 +3,8 @@ program intrinsics_78
     integer :: ix, iy, iresult
     integer(8) :: j
     integer(4) :: i
+    real(8) :: a
+    real(4) :: b
     real :: rx, ry, rresult
     double precision :: dx, dy, dresult
 
@@ -93,4 +95,11 @@ program intrinsics_78
     iresult = kind(mod(j,i))
     print *, "Test 14: kind(mod(", i, ",", j, ")) = ", iresult 
     if(iresult /= 8) error stop "Test 14 failed"
+
+    ! Test real values with different kinds
+    a = 121.882
+    b = 121.882
+    iresult = kind(mod(a,b))
+    print *, "Test 15: kind(mod(", a, ",", b, ")) = ", iresult 
+    if(iresult /= 8) error stop "Test 15 failed"
 end program intrinsics_78

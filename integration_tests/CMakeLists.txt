@@ -490,8 +490,10 @@ RUN(NAME arrays_29 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
 RUN(NAME arrays_30 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray) # maxloc
 RUN(NAME arrays_31 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm) # init expr with fixed size arr as dependency
 RUN(NAME arrays_32 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
+# The test `arrays_33` below has `NO_EXPERIMENTAL_SIMPLIFIER` label because it fails when the `--fast` flag is used
+# with the `--experimental-simplifier` flag. It executes correctly with `--experimental-simplifier`
 RUN(NAME arrays_33 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray NO_EXPERIMENTAL_SIMPLIFIER)
-RUN(NAME arrays_34 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray NO_EXPERIMENTAL_SIMPLIFIER)
+RUN(NAME arrays_34 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
 RUN(NAME arrays_35 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME arrays_36 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME arrays_37 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -1813,6 +1815,9 @@ RUN(NAME openmp_33 LABELS gfortran llvm_omp NO_EXPERIMENTAL_SIMPLIFIER GFORTRAN_
 RUN(NAME openmp_34 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp) # Ensure uniform load distribution over threads
 RUN(NAME openmp_35 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_36 LABELS gfortran GFORTRAN_ARGS -fopenmp)
+RUN(NAME openmp_37 LABELS gfortran GFORTRAN_ARGS -fopenmp)
+RUN(NAME openmp_38 LABELS gfortran GFORTRAN_ARGS -fopenmp)
+RUN(NAME openmp_39 LABELS gfortran GFORTRAN_ARGS -fopenmp)
 
 RUN(NAME compiler_version_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
@@ -1831,3 +1836,5 @@ RUN(NAME generic_interface_function_call_of_function_call LABELS gfortran llvm
 RUN(NAME elemental_function_scalar_array_arg LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME elemental_function_overloaded_compare LABELS gfortran llvm llvm_wasm llvm_wasm_emcc
     EXTRA_ARGS --realloc-lhs)
+
+RUN(NAME procedure_decl_01_a LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRAFILES  procedure_decl_01_b)

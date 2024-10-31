@@ -154,6 +154,18 @@ filename = "../integration_tests/openmp_36.f90"
 asr = true
 
 [[test]]
+filename = "../integration_tests/openmp_37.f90"
+asr_openmp = true
+
+[[test]]
+filename = "../integration_tests/openmp_38.f90"
+asr_openmp = true
+
+[[test]]
+filename = "../integration_tests/openmp_39.f90"
+asr_openmp = true
+
+[[test]]
 filename = "subroutine2.f90"
 ast = true
 
@@ -2695,6 +2707,10 @@ filename = "fixedform_module.f"
 ast = true
 
 [[test]]
+filename = "fixed_form_interface.f"
+ast = true
+
+[[test]]
 filename = "../integration_tests/format_03.f"
 ast = true
 
@@ -3122,6 +3138,7 @@ asr = true
 [[test]]
 filename = "errors/assign_01.f90"
 asr = true
+continue_compilation = true
 
 [[test]]
 filename = "fixed_form_if_variations.f"
@@ -3548,6 +3565,10 @@ asr = true
 [[test]]
 filename = "errors/array_06.f90"
 asr = true
+
+[[test]]
+filename = "errors/array_07.f90"
+continue_compilation = true
 
 [[test]]
 filename = "../integration_tests/where_02.f90"
@@ -4231,4 +4252,12 @@ asr = true
 
 [[test]]
 filename = "errors/string_negative_start_index.f90"
+asr = true
+
+[[test]]
+filename = "errors/dimension_01.f90"
+asr = true
+
+[[test]]
+filename = "errors/dimension_02.f90"
 asr = true

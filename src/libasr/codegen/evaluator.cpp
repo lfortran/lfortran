@@ -438,6 +438,11 @@ void LLVMEvaluator::print_version_message()
     llvm::cl::PrintVersionMessage();
 }
 
+std::string LLVMEvaluator::llvm_version()
+{
+    return LLVM_VERSION_STRING;
+}
+
 llvm::LLVMContext &LLVMEvaluator::get_context()
 {
     return *context;

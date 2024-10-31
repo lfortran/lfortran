@@ -1333,6 +1333,35 @@ public:
             left, end_bin_op->m_op, right, end_bin_op->m_type, end_bin_op->m_value));
     }
 
+    bool dimension_attribute_error_check(ASR::expr_t* dim_expr) {
+        if (ASR::is_a<ASR::Var_t>(*dim_expr)) {
+            ASR::Var_t* dim_expr_var = ASR::down_cast<ASR::Var_t>(dim_expr);
+            ASR::symbol_t* dim_expr_sym = dim_expr_var->m_v;
+            SymbolTable* symbol_scope = ASRUtils::symbol_parent_symtab(dim_expr_sym);
+            if (ASR::is_a<ASR::Variable_t>(*dim_expr_sym)) {
+                ASR::Variable_t* dim_expr_variable = ASR::down_cast<ASR::Variable_t>(dim_expr_sym);
+
+                if (dim_expr_variable->m_type->type != ASR::ttypeType::Integer) {
+                    return true;
+                } else {
+
+                    if ((dim_expr_variable->m_storage != ASR::storage_typeType::Parameter) && !(in_Subroutine) && (symbol_scope->counter == current_scope->counter)) {
+                        return true;
+                    }
+                }
+            } 
+        } else {
+
+            ASR::ttype_t* dim_expr_type = ASRUtils::expr_type(dim_expr);
+
+            if (dim_expr_type->type != ASR::ttypeType::Integer) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     void process_dims(Allocator &al, Vec<ASR::dimension_t> &dims,
         AST::dimension_t *m_dim, size_t n_dim, bool &is_compile_time,
         bool is_char_type=false, bool is_argument=false) {
@@ -1346,12 +1375,18 @@ public:
             if (m_dim[i].m_start) {
                 this->visit_expr(*m_dim[i].m_start);
                 dim.m_start = ASRUtils::EXPR(tmp);
+                if (dimension_attribute_error_check(dim.m_start)) {
+                    throw SemanticError("Expecting a scalar integer or parameter annotated integer variable ",m_dim[i].m_start->base.loc);
+                }
             } else {
                 dim.m_start = nullptr;
             }
             if (m_dim[i].m_end) {
                 this->visit_expr(*m_dim[i].m_end);
                 ASR::expr_t* end = ASRUtils::EXPR(tmp);
+                if (dimension_attribute_error_check(end)) {
+                    throw SemanticError("Expecting a scalar integer or parameter annotated integer variable ",m_dim[i].m_end->base.loc);
+                }
                 if (ASR::is_a<ASR::Var_t>(*end)) {
                     ASR::Var_t* end_var = ASR::down_cast<ASR::Var_t>(end);
                     ASR::symbol_t* end_sym = end_var->m_v;
@@ -1360,7 +1395,7 @@ public:
                         (symbol_scope->counter != current_scope->counter && is_argument &&
                         ASRUtils::expr_value(end) == nullptr) ) {
                             end = get_transformed_function_call(end_sym);
-                        }
+                    }
                 } else if(ASR::is_a<ASR::IntegerBinOp_t>(*end)) {
                     end = convert_integer_binop_to_function_call(end, is_argument);
                 }
@@ -3603,10 +3638,10 @@ public:
                 throw SemanticError("Procedure type '" + func_name
                                     + "' not declared", loc);
             }
+            type_declaration = v;
             v = ASRUtils::symbol_get_past_external(v);
             LCOMPILERS_ASSERT(ASR::is_a<ASR::Function_t>(*v));
             type = ASR::down_cast<ASR::Function_t>(v)->m_function_signature;
-            type_declaration = v;
         } else {
             throw SemanticError("Type not implemented yet.",
                     loc);
@@ -4175,7 +4210,13 @@ public:
                 dims, type_declaration, ASR::abiType::Source);
         } else {
             if (x.n_args == 0) {
-                throw SemanticError("Empty array constructor is not allowed", x.base.base.loc);
+                // throw SemanticError("Empty array constructor is not allowed", x.base.base.loc);
+                diag.add(Diagnostic(
+                    "Empty array constructor is not allowed",
+                    Level::Error, Stage::Semantic, {
+                        Label("",{x.base.base.loc})
+                    }));
+                throw SemanticAbort();
             }
         }
 
@@ -8519,8 +8560,16 @@ public:
     void visit_NameUtil(AST::struct_member_t* x_m_member, size_t x_n_member,
                         char* x_m_id, const Location& loc) {
         if (x_n_member == 0) {
-            tmp = (ASR::asr_t*) replace_with_common_block_variables(
-                ASRUtils::EXPR(resolve_variable(loc, to_lower(x_m_id))));
+            try {
+                ASR::expr_t* expr = ASRUtils::EXPR(resolve_variable(loc, to_lower(x_m_id)));
+                tmp = (ASR::asr_t*) replace_with_common_block_variables(expr);
+            } catch (const SemanticError &e) {
+                // TODO: remove this once we replace SemanticError with diag.add + throw SemanticAbort
+                if ( compiler_options.continue_compilation ) diag.add(e.d);
+                else throw e;
+            } catch (const SemanticAbort &a) {
+                if (!compiler_options.continue_compilation) throw a;
+            }
         } else if (x_n_member == 1) {
             if (x_m_member[0].n_args == 0) {
                 SymbolTable* scope = current_scope;
