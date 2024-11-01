@@ -717,10 +717,17 @@ char** parse_fortran_format(char* format, int64_t *count, int64_t *item_start) {
                 *item_start = format_values_count;
                 break;
             case 't' :
+                // handle 'T', 'TL' & 'TR' editing see section 13.8.1.2 in 24-007.pdf
                 start = index++;
-                // raise error when "T" is specified itself or with non-positive width
+                if (tolower(format[index]) == 'l' || tolower(format[index]) == 'r') {
+                     index++;  // move past 'L' or 'R'
+                }
+                // raise error when "T/TL/TR" is specified itself or with
+                // non-positive width
                 if (!isdigit(format[index])) {
-                    printf("Error: Positive width required with 'T' descriptor in format string\n");
+                    // TODO: if just 'T' is specified the error message will print 'T,', fix it
+                    printf("Error: Positive width required with '%c%c' descriptor in format string\n",
+                        format[start], format[start + 1]);
                     exit(1);
                 }
                 while (isdigit(format[index])) {
@@ -1046,25 +1053,51 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
             } else if (tolower(value[strlen(value) - 1]) == 'x') {
                 result = append_to_string(result, " ");
             } else if (tolower(value[0]) == 't') {
-                if (count <= 0) break;
-                int tab_position = atoi(value + 1);
-                int current_length = strlen(result);
-                int spaces_needed = tab_position - current_length - 1;
-                if (spaces_needed > 0) {
-                    char* spaces = (char*)malloc((spaces_needed + 1) * sizeof(char));
-                    memset(spaces, ' ', spaces_needed);
-                    spaces[spaces_needed] = '\0';
-                    result = append_to_string(result, spaces);
-                    free(spaces);
-                } else if (spaces_needed < 0) {
-                    // Truncate the string to the length specified by Tn if the current position exceeds it
-                    if (tab_position < current_length) {
-                        result[tab_position] = '\0';  // Truncate the string at the position specified by Tn
+                if (tolower(value[1]) == 'l') {
+                    // handle "TL" format specifier
+                    int tab_left_pos = atoi(value + 2);
+                    int current_length = strlen(result);
+                    if (tab_left_pos > current_length) {
+                        result[0] = '\0';
+                    } else {
+                        result[current_length - tab_left_pos] = '\0';
+                    }
+                } else if (tolower(value[1]) == 'r') {
+                    // handle "TR" format specifier
+                    int tab_right_pos = atoi(value + 2);
+                    int current_length = strlen(result);
+                    int spaces_needed = tab_right_pos;
+                    if (spaces_needed > 0) {
+                        char* spaces = (char*)malloc((spaces_needed + 1) * sizeof(char));
+                        memset(spaces, ' ', spaces_needed);
+                        spaces[spaces_needed] = '\0';
+                        result = append_to_string(result, spaces);
+                        free(spaces);
+                    }
+                } else {
+                    if (count <= 0) break;
+                    int tab_position = atoi(value + 1);
+                    int current_length = strlen(result);
+                    int spaces_needed = tab_position - current_length - 1;
+                    if (spaces_needed > 0) {
+                        char* spaces = (char*)malloc((spaces_needed + 1) * sizeof(char));
+                        memset(spaces, ' ', spaces_needed);
+                        spaces[spaces_needed] = '\0';
+                        result = append_to_string(result, spaces);
+                        free(spaces);
+                    } else if (spaces_needed < 0) {
+                        // Truncate the string to the length specified by Tn
+                        // if the current position exceeds it
+                        if (tab_position < current_length) {
+                            // Truncate the string at the position specified by Tn
+                            result[tab_position] = '\0';
+                        }
                     }
                 }
             } else {
-                if(count <= 0) break;
-                if(!array_looping && !default_formatting){ // Fetch type integer when we don't have an array.
+                if (count <= 0) break;
+                if (!array_looping && !default_formatting) {
+                    // Fetch type integer when we don't have an array.
                     current_arg_type_int =  va_arg(args,int32_t);
                     count--;
                 }
