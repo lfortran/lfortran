@@ -777,7 +777,7 @@ void lex_format(unsigned char *&cur, Location &loc,
                 ;
 
             position_edit_desc
-                = 'T' whitespace? int ('L' | 'R')? whitespace? int
+                = 'T' whitespace? ('L' | 'R')? whitespace? int
                 | int whitespace? 'X'
                 ;
             control_edit_desc

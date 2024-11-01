@@ -1,7 +1,7 @@
         program fixed_form_interface
             implicit none
 
-c           tests that 'interface' is tokinized correctly
+c           tests that 'interface' is tokenized correctly
             interface
                 subroutine my_subroutine(a)
                     integer, intent(in) :: a
@@ -20,6 +20,9 @@ c           tests that 'allocate' is tokenized correctly
             factors = [3, 4]
 c           tests that 'deallocate' is tokenized correctly
             deallocate(factors)
+
+    1       FORMAT (TR1, A)
+            print 1, factors
         contains
 
         end program fixed_form_interface
