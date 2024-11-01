@@ -176,7 +176,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
                 if( array_size == nullptr ) {
                     array_size = array_section_size;
                 } else {
-                    builder.Add(array_section_size, array_size);
+                    array_size = builder.Add(array_section_size, array_size);
                 }
             } else {
                 constant_size += 1;
