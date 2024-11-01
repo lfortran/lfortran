@@ -1537,10 +1537,10 @@ jobs:
         shell: bash -e -l {0}
         run: |
             cd integration_tests
-            ./run_tests.py -b fortran -j1
-            ./run_tests.py -b fortran -f -j1
-            ./run_tests.py -b fortran -j1 --experimental-simplifier
-            ./run_tests.py -b fortran -f -j1 --experimental-simplifier
+            ./run_tests.py -b fortran
+            ./run_tests.py -b fortran -f
+            ./run_tests.py -b fortran --experimental-simplifier
+            ./run_tests.py -b fortran -f --experimental-simplifier
 
   test_mlir:
     name: Test MLIR backend
@@ -1585,8 +1585,8 @@ jobs:
         shell: bash -e -l {0}
         run: |
             cd integration_tests
-            ./run_tests.py -b mlir -j1
-            ./run_tests.py -b mlir -j1 --experimental-simplifier
+            ./run_tests.py -b mlir
+            ./run_tests.py -b mlir --experimental-simplifier
 
 
   test_c_cpp:
