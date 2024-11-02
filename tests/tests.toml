@@ -3549,6 +3549,7 @@ asr = true
 [[test]]
 filename = "errors/array_02.f90"
 asr = true
+continue_compilation = true
 
 [[test]]
 filename = "errors/array_03.f90"

@@ -1,0 +1,13 @@
+{
+    "basename": "run-array_02-becdf83",
+    "cmd": "lfortran --continue-compilation --no-color {infile}",
+    "infile": "tests/errors/array_02.f90",
+    "infile_hash": "8a51160d53f16bf9016e09ee1d74a1b589515e57b37d097c26e52b1a",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "run-array_02-becdf83.stderr",
+    "stderr_hash": "5b69fda59876bd0f57004f8ef6e27919bcdc33b5f3ca35c01fdad382",
+    "returncode": 0
+}

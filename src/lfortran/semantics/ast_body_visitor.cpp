@@ -118,7 +118,11 @@ public:
             // Visit the statement
             LCOMPILERS_ASSERT(current_body != nullptr)
             tmp = nullptr;
-            this->visit_stmt(*m_body[i]);
+            try {
+                this->visit_stmt(*m_body[i]);
+            } catch (const SemanticAbort &a) {
+                if (!compiler_options.continue_compilation) throw a;
+            }
             if (tmp != nullptr) {
                 ASR::stmt_t* tmp_stmt = ASRUtils::STMT(tmp);
                 if (tmp_stmt->type == ASR::stmtType::SubroutineCall) {
