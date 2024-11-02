@@ -7,7 +7,34 @@
             []
             ()
         )]
-        [(Interface
+        [(Declaration
+            (AttrType
+                TypeInteger
+                []
+                ()
+                ()
+                None
+            )
+            []
+            [(i
+            []
+            []
+            ()
+            ()
+            None
+            ())
+            (arr
+            [(1
+            5
+            DimensionExpr)]
+            []
+            ()
+            ()
+            None
+            ())]
+            ()
+        )
+        (Interface
             (InterfaceHeader)
             ()
             [(InterfaceProc
@@ -191,6 +218,36 @@
             0
             1
             [factors]
+            ()
+        )
+        (DoConcurrentLoop
+            0
+            ()
+            [(ConcurrentControl
+                i
+                1
+                10
+                2
+            )]
+            ()
+            []
+            [(Assignment
+                0
+                (FuncCallOrArray
+                    arr
+                    []
+                    [(()
+                    i
+                    ()
+                    0)]
+                    []
+                    []
+                    []
+                )
+                i
+                ()
+            )]
+            ()
             ()
         )]
         []
