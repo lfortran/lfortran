@@ -2377,23 +2377,51 @@ public:
             {
                 // if in any of the dimension, arrays have different size
                 // raise an error
-                for (size_t i = 0; i < target_rank; i++) {
-                    ASR::dimension_t dim_a = target_dims[i];
-                    ASR::dimension_t dim_b = value_dims[i];
-                    int dim_a_int {-1};
-                    int dim_b_int {-1};
-                    // 'm_length' isn't assigned for allocatable arrays
-                    // let them be valid for now atleast
-                    if (!(dim_a.m_length && dim_b.m_length)) {
-                        continue;
+                bool is_array_concat = false;
+                int flat_size = 0;
+                if( AST::is_a<AST::ArrayInitializer_t>(*x.m_value)){
+                     AST::ArrayInitializer_t *temp_array =
+                            AST::down_cast<AST::ArrayInitializer_t>(x.m_value);
+                    for(size_t i=0; i < temp_array->n_args; i++){
+                        this->visit_expr(*temp_array->m_args[i]);
+                        ASR::expr_t *temp = ASRUtils::EXPR(tmp);
+                        if( ASRUtils::expr_type(temp)->type == ASR::ttypeType::Array ) {
+                            flat_size += ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(temp));
+                            is_array_concat = true;
+                        } else {
+                            flat_size += 1;
+                        }
+                    }  
+                }
+                if(!is_array_concat){
+                    for (size_t i = 0; i < target_rank; i++) {
+                        ASR::dimension_t dim_a = target_dims[i];
+                        ASR::dimension_t dim_b = value_dims[i];
+                        int dim_a_int {-1};
+                        int dim_b_int {-1};
+                        // 'm_length' isn't assigned for allocatable arrays
+                        // let them be valid for now atleast
+                        if (!(dim_a.m_length && dim_b.m_length)) {
+                            continue;
+                        }
+                        ASRUtils::extract_value(ASRUtils::expr_value(dim_a.m_length), dim_a_int);
+                        ASRUtils::extract_value(ASRUtils::expr_value(dim_b.m_length), dim_b_int);
+                        if (dim_a_int > 0 && dim_b_int > 0 && dim_a_int != dim_b_int) {
+                            throw SemanticError("Different shape for array assignment on "
+                                "dimension " + std::to_string(i + 1) + "(" +
+                                std::to_string(dim_a_int) + " and " +
+                                std::to_string(dim_b_int) + ")", x.base.base.loc);
+                        }
                     }
+                } else {
+                    //Case : C = [B, A] where B or A is Array
+                    ASR::dimension_t dim_a = target_dims[0];
+                    int dim_a_int {-1};
                     ASRUtils::extract_value(ASRUtils::expr_value(dim_a.m_length), dim_a_int);
-                    ASRUtils::extract_value(ASRUtils::expr_value(dim_b.m_length), dim_b_int);
-                    if (dim_a_int > 0 && dim_b_int > 0 && dim_a_int != dim_b_int) {
+                    if (dim_a_int > 0 && flat_size > 0 && dim_a_int != flat_size) {
                         throw SemanticError("Different shape for array assignment on "
-                            "dimension " + std::to_string(i + 1) + "(" +
-                            std::to_string(dim_a_int) + " and " +
-                            std::to_string(dim_b_int) + ")", x.base.base.loc);
+                            "dimension 1 (" + std::to_string(dim_a_int) + " and " +
+                            std::to_string(flat_size) + ")", x.base.base.loc);
                     }
                 }
             }
