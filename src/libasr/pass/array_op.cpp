@@ -827,8 +827,9 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                                 m_step), i32_one);
                         } else if (ASRUtils::is_array(ASRUtils::expr_type(x->m_args[j].m_right))) {
                             ASR::dimension_t* arg_dim = nullptr;
-                            int arg_dims_n = ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(x->m_args[j].m_right), arg_dim);
-                            LCOMPILERS_ASSERT(arg_dims_n == 1);
+                            LCOMPILERS_ASSERT(
+                                ASRUtils::extract_dimensions_from_ttype(
+                                    ASRUtils::expr_type(x->m_args[j].m_right), arg_dim) == 1);
                             res_dims_vec.p[j] = arg_dim[0];
                         } else if (x->m_args[j].m_right != nullptr || x->m_args[j].m_left != nullptr) {
                             ASR::expr_t* m_left = x->m_args[j].m_left;
