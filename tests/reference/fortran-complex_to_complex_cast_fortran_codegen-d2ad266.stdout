@@ -4,6 +4,6 @@ complex(4) :: complexvalue1
 complex(8) :: complexvalue2
 complexvalue1 = cmplx(1.00000000e+00, 2.00000000e+00)
 complexvalue2 = cmplx(complexvalue1, kind=8)
-print *
-print *
+print *, "Complex Value 1 (Default Kind):", complexvalue1
+print *, "Complex Value 2 (Kind=8):", complexvalue2
 end program implicitcomplextocomplexdifferentkindexample
