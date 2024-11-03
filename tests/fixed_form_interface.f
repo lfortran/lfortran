@@ -1,6 +1,7 @@
         program fixed_form_interface
             implicit none
             integer :: i, arr(5)
+            integer :: OUTPUT_UNIT
 
 c           tests that 'interface' is tokenized correctly
             interface
@@ -28,6 +29,9 @@ c           tests that 'deallocate' is tokenized correctly
             do concurrent (i=1:10:2)
                 arr(i) = i
             enddo
+
+c           ensures that 'FLUSH' is tokenized
+            FLUSH(OUTPUT_UNIT)
         contains
 
         end program fixed_form_interface
