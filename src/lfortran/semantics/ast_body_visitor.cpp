@@ -117,11 +117,15 @@ public:
             }
             // Visit the statement
             LCOMPILERS_ASSERT(current_body != nullptr)
-            tmp = nullptr;
             try {
                 this->visit_stmt(*m_body[i]);
             } catch (const SemanticAbort &a) {
-                if (!compiler_options.continue_compilation) throw a;
+                if (!compiler_options.continue_compilation) {
+                    throw a;
+                } else {
+                    tmp = nullptr;
+                    tmp_vec.clear();
+                }
             }
             if (tmp != nullptr) {
                 ASR::stmt_t* tmp_stmt = ASRUtils::STMT(tmp);
