@@ -1010,6 +1010,12 @@ struct FixedFormRecursiveDescent {
             return true;
         }
 
+        if (next_is(cur, "flush")) {
+            push_token_advance(cur, "flush");
+            tokenize_line(cur);
+            return true;
+        }
+
         if (next_is(cur, "allocate")) {
             push_token_advance(cur, "allocate");
             tokenize_line(cur);
