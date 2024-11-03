@@ -875,8 +875,8 @@ jobs:
             ./gsnap ../qasnap/sample/inp out
 
   test_llvm:
-    name: Test LLVM ${{ matrix.llvm-version }}
-    runs-on: ubuntu-latest
+    name: Test LLVM ${{ matrix.llvm-version }} - OS (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
@@ -887,6 +887,7 @@ jobs:
         # exactly the same manner, to ensure that users can just change the
         # `llvmdev` version in their conda environment and everything will just
         # work.
+        os: ["macos-latest", "ubuntu-latest"]
         llvm-version: ["10", "11", "12", "13", "14", "15", "16", "17", "18", "19"]
     steps:
       - uses: actions/checkout@v4
@@ -907,6 +908,7 @@ jobs:
 
       - name: Build Linux
         shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu')
         run: |
             ./build0.sh
             cmake . -GNinja \
@@ -922,9 +924,17 @@ jobs:
 
             cmake --build . -j16 --target install
 
+      - name: Build MacOS
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'macos')
+        run: |
+            ./build0.sh
+            ./build1.sh
+
       # LLVM 10-19 all work in exactly the same way, so the test is identical
       - name: Test Linux LLVM 10-19
         shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu')
         run: |
             ctest --output-on-failure
             cd integration_tests
