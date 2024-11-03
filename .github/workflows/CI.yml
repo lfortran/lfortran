@@ -1357,22 +1357,9 @@ jobs:
             ./run_tests.py -b llvm_wasm llvm_wasm_emcc
             ./run_tests.py -b llvm_wasm llvm_wasm_emcc --experimental-simplifier
 
-  gfortran:
-    name: Test integration_tests with GFortran
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      - name: Test integration_tests with GFortran
-        shell: bash -e -l {0}
-        run: |
-            cd integration_tests
-            ./run_tests.py -b gfortran
-
-  lfortran_openmp:
-    name: Test OpenMP integration tests
+  lfortran_debug_build_backends_tarball_cpp_build_wasm_gfortran:
+    name: Test GFortran, Debug Build, Fortran, OpenMP, C/C++ backend, Upload Tarball, CPP Build, WASM
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -1387,21 +1374,51 @@ jobs:
           environment-file: ci/environment_linux.yml
           create-args: >-
             llvm-openmp
+            nodejs=18.13.0
 
       - uses: hendrikmuhs/ccache-action@main
         with:
           variant: sccache
           key: ${{ github.job }}-${{ matrix.os }}
 
+      - name: Upload Tarball
+        shell: bash -e -l {0}
+        run: |
+          ./build0.sh
+          lfortran_version=$(<version)
+          pandoc --standalone --to man doc/man/lfortran.md -o doc/man/lfortran.1
+          ci/create_source_tarball.sh $lfortran_version
+          ci/upload_tarball.sh
+        env:
+          SSH_DEPLOY_KEY: ${{ secrets.SSH_DEPLOY_KEY }}
+
+      - name: Upload Tarball to Release
+        if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+        shell: bash -e -l {0}
+        run: |
+          ci/upload_tarball_to_release.sh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Test integration_tests with GFortran
+        shell: bash -e -l {0}
+        run: |
+            cd integration_tests
+            ./run_tests.py -b gfortran
+
       - name: Build Linux
         shell: bash -e -l {0}
         run: |
             ./build0.sh
+            export CXXFLAGS="-Werror"
+            export CFLAGS="-Werror"
             cmake . -GNinja \
               -DCMAKE_BUILD_TYPE=Debug \
               -DWITH_LLVM=yes \
+              -DCMAKE_VERBOSE_MAKEFILE= yes \
               -DLFORTRAN_BUILD_ALL=yes \
               -DWITH_STACKTRACE=no \
+              -DWITH_RUNTIME_STACKTRACE=yes \
               -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
               -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
               -DCMAKE_C_COMPILER_LAUNCHER=sccache \
@@ -1409,12 +1426,78 @@ jobs:
 
             cmake --build . -j16 --target install
 
-      - name: Test Linux
+      - name: Test Debug Build Linux
+        shell: bash -e -l {0}
+        run: |
+            ctest
+            ./run_tests.py
+            ./run_tests.py -vh
+            cd integration_tests
+            ./run_tests.py -m
+            ./run_tests.py -b llvm
+            ./run_tests.py -b llvm -f
+            ./run_tests.py -b llvm --experimental-simplifier
+            ./run_tests.py -b llvm -f --experimental-simplifier
+
+      - name: Test OpenMP
         shell: bash -e -l {0}
         run: |
             cd integration_tests
             ./run_tests.py -b llvm_omp
             ./run_tests.py -b llvm_omp --experimental-simplifier
+
+      - name: Test Fortran Backend
+        shell: bash -e -l {0}
+        run: |
+            cd integration_tests
+            ./run_tests.py -b fortran -j1
+            ./run_tests.py -b fortran -f -j1
+            ./run_tests.py -b fortran -j1 --experimental-simplifier
+            ./run_tests.py -b fortran -f -j1 --experimental-simplifier
+
+      - name: Test C/C++ Backend
+        shell: bash -e -l {0}
+        run: |
+            mkdir build-kokkos
+            cd build-kokkos
+            wget https://github.com/kokkos/kokkos/archive/3.1.01.tar.gz
+            tar xaf 3.1.01.tar.gz
+            cd kokkos-3.1.01
+            mkdir build
+            cd build
+            export LFORTRAN_KOKKOS_DIR=$HOME/ext/kokkos
+            cmake -DCMAKE_INSTALL_PREFIX=$LFORTRAN_KOKKOS_DIR -DKokkos_ENABLE_OPENMP=On -DKokkos_ARCH_HSW=On ..
+            make
+            make install
+            cd ../../..
+
+            cd integration_tests
+            ./run_tests.py -b cpp c c_nopragma
+            ./run_tests.py -b cpp c c_nopragma -f
+            ./run_tests.py -b cpp c c_nopragma --experimental-simplifier
+            ./run_tests.py -b cpp c c_nopragma -f --experimental-simplifier
+
+      - name: Test CPP
+        shell: bash -e -l {0}
+        run: |
+            xonsh ci/test_cpp_version.xsh
+
+      - name: Show Node Info
+        shell: bash -e -l {0}
+        run: |
+          set -ex
+          which node
+          node --version
+
+      - name: Test WASM backend
+        shell: bash -e -l {0}
+        run: |
+            cd integration_tests
+            ./run_tests.py -b wasm
+            ./run_tests.py -b wasm -f
+            ./run_tests.py -b wasm --experimental-simplifier
+            ./run_tests.py -b wasm -f --experimental-simplifier
+
 
   test_without_llvm:
     name: Test without LLVM Backend
@@ -1435,124 +1518,6 @@ jobs:
         shell: bash -e -l {0}
         run: |
           xonsh ci/test_without_llvm_backend.xsh
-
-  test_cpp_build:
-    name: Test CPP
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: mamba-org/setup-micromamba@v1.8.0
-        with:
-          micromamba-version: '1.5.10-0'
-          environment-file: ci/environment_linux.yml
-          create-args: >-
-            python=3.10
-
-      - name: Test CPP
-        shell: bash -e -l {0}
-        run: |
-            xonsh ci/test_cpp_version.xsh
-
-  test_wasm:
-    name: Test WASM
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: mamba-org/setup-micromamba@v1.8.0
-        with:
-          micromamba-version: '1.5.10-0'
-          environment-file: ci/environment_linux.yml
-          create-args: >-
-            python=3.10
-            nodejs=18.13.0
-
-      - uses: hendrikmuhs/ccache-action@main
-        with:
-          variant: sccache
-          key: ${{ github.job }}-${{ matrix.os }}
-
-      - name: Show Node Info
-        shell: bash -e -l {0}
-        run: |
-          set -ex
-          which node
-          node --version
-
-      - name: Build Linux
-        shell: bash -e -l {0}
-        run: |
-            ./build0.sh
-            cmake . -GNinja \
-              -DCMAKE_BUILD_TYPE=Debug \
-              -DWITH_LLVM=yes \
-              -DLFORTRAN_BUILD_ALL=yes \
-              -DWITH_STACKTRACE=no \
-              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
-              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
-              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
-              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
-
-            cmake --build . -j16 --target install
-
-      - name: Test Linux
-        shell: bash -e -l {0}
-        run: |
-            cd integration_tests
-            ./run_tests.py -b wasm
-            ./run_tests.py -b wasm -f
-            ./run_tests.py -b wasm --experimental-simplifier
-            ./run_tests.py -b wasm -f --experimental-simplifier
-
-  test_fortran:
-    name: Test Fortran backend
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: mamba-org/setup-micromamba@v1.8.0
-        with:
-          micromamba-version: '1.5.10-0'
-          environment-file: ci/environment_linux.yml
-          create-args: >-
-            python=3.10
-
-      - uses: hendrikmuhs/ccache-action@main
-        with:
-          variant: sccache
-          key: ${{ github.job }}-${{ matrix.os }}
-
-      - name: Build Linux
-        shell: bash -e -l {0}
-        run: |
-            ./build0.sh
-            cmake . -GNinja \
-              -DCMAKE_BUILD_TYPE=Debug \
-              -DWITH_LLVM=yes \
-              -DLFORTRAN_BUILD_ALL=yes \
-              -DWITH_STACKTRACE=no \
-              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
-              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
-              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
-              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
-
-            cmake --build . -j16 --target install
-
-      - name: Test Linux
-        shell: bash -e -l {0}
-        run: |
-            cd integration_tests
-            ./run_tests.py -b fortran -j1
-            ./run_tests.py -b fortran -f -j1
-            ./run_tests.py -b fortran -j1 --experimental-simplifier
-            ./run_tests.py -b fortran -f -j1 --experimental-simplifier
 
   test_mlir:
     name: Test MLIR backend
@@ -1601,97 +1566,6 @@ jobs:
             ./run_tests.py -b mlir -j1 --experimental-simplifier
 
 
-  test_c_cpp:
-    name: Test C/C++ backend
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: mamba-org/setup-micromamba@v1.8.0
-        with:
-          micromamba-version: '1.5.10-0'
-          environment-file: ci/environment_linux.yml
-          create-args: >-
-            python=3.10
-
-      - uses: hendrikmuhs/ccache-action@main
-        with:
-          variant: sccache
-          key: ${{ github.job }}-${{ matrix.os }}
-
-      - name: Build Linux
-        shell: bash -e -l {0}
-        run: |
-            ./build0.sh
-            cmake . -GNinja \
-              -DCMAKE_BUILD_TYPE=Debug \
-              -DWITH_LLVM=yes \
-              -DLFORTRAN_BUILD_ALL=yes \
-              -DWITH_STACKTRACE=no \
-              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
-              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
-              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
-              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
-
-            cmake --build . -j16 --target install
-
-      - name: Test Linux
-        shell: bash -e -l {0}
-        run: |
-            mkdir build-kokkos
-            cd build-kokkos
-            wget https://github.com/kokkos/kokkos/archive/3.1.01.tar.gz
-            tar xaf 3.1.01.tar.gz
-            cd kokkos-3.1.01
-            mkdir build
-            cd build
-            export LFORTRAN_KOKKOS_DIR=$HOME/ext/kokkos
-            cmake -DCMAKE_INSTALL_PREFIX=$LFORTRAN_KOKKOS_DIR -DKokkos_ENABLE_OPENMP=On -DKokkos_ARCH_HSW=On ..
-            make
-            make install
-            cd ../../..
-
-            cd integration_tests
-            ./run_tests.py -b cpp c c_nopragma
-            ./run_tests.py -b cpp c c_nopragma -f
-            ./run_tests.py -b cpp c c_nopragma --experimental-simplifier
-            ./run_tests.py -b cpp c c_nopragma -f --experimental-simplifier
-
-  upload_tarball:
-    name: Upload Tarball
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: mamba-org/setup-micromamba@v1.8.0
-        with:
-          micromamba-version: '1.5.10-0'
-          environment-file: ci/environment_linux.yml
-          create-args: >-
-            python=3.10
-
-      - name: Upload Tarball
-        shell: bash -e -l {0}
-        run: |
-          ./build0.sh
-          lfortran_version=$(<version)
-          pandoc --standalone --to man doc/man/lfortran.md -o doc/man/lfortran.1
-          ci/create_source_tarball.sh $lfortran_version
-          ci/upload_tarball.sh
-        env:
-          SSH_DEPLOY_KEY: ${{ secrets.SSH_DEPLOY_KEY }}
-
-      - name: Upload Tarball to Release
-        if: ${{ startsWith(github.ref, 'refs/tags/v') }}
-        shell: bash -e -l {0}
-        run: |
-          ci/upload_tarball_to_release.sh
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   upload_docs:
     name: Documentation
