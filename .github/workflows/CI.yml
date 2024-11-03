@@ -1037,7 +1037,6 @@ jobs:
 
       - name: Test fastGPT ( ubuntu-latest )
         shell: bash -e -x -l {0}
-        if: contains(matrix.os, 'ubuntu')
         run: |
             git clone https://github.com/certik/fastGPT.git
             cd fastGPT
@@ -1160,6 +1159,9 @@ jobs:
 
             rm -rf fastGPT/
 
+      # The below job isn't every run because this run on 'macOS' and it
+      # isn't worth the extra runners on CI to for testing fastGPT on macOS
+      # with all the LLVM versions
       - name: Test fastGPT ( macos-latest )
         shell: bash -e -x -l {0}
         if: contains(matrix.os, 'macos')
@@ -1193,7 +1195,6 @@ jobs:
 
       - name: Test fpm
         shell: bash -e -x -l {0}
-        if: contains(matrix.os, 'ubuntu')
         run: |
             git clone https://github.com/certik/fpm.git
             cd fpm
