@@ -880,8 +880,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ["macos-latest", "ubuntu-latest"]
-        python-version: ["3.10"]
         # Note: The LLVM 11 test is redundant, since it is already tested by
         # most other tests (since LLVM 11 is our default version), but we have
         # it here as well for consistency, and that way other tests can freely
@@ -889,6 +887,7 @@ jobs:
         # exactly the same manner, to ensure that users can just change the
         # `llvmdev` version in their conda environment and everything will just
         # work.
+        os: ["macos-latest", "ubuntu-latest"]
         llvm-version: ["10", "11", "12", "13", "14", "15", "16", "17", "18", "19"]
     steps:
       - uses: actions/checkout@v4
@@ -900,12 +899,7 @@ jobs:
           micromamba-version: '1.5.10-0'
           environment-file: ci/environment_linux_llvm.yml
           create-args: >-
-            python=${{ matrix.python-version }}
             llvmdev=${{ matrix.llvm-version }}
-            bison=3.4
-            openblas=0.3.21
-            cmake=3.26.4
-            make=4.3
 
       - uses: hendrikmuhs/ccache-action@main
         with:
