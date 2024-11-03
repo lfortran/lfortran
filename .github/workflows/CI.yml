@@ -876,10 +876,12 @@ jobs:
 
   test_llvm:
     name: Test LLVM ${{ matrix.llvm-version }}
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
+        # this is only run on ubuntu intentionally
+        os: ["ubuntu-latest"]
         # Note: The LLVM 11 test is redundant, since it is already tested by
         # most other tests (since LLVM 11 is our default version), but we have
         # it here as well for consistency, and that way other tests can freely
@@ -888,6 +890,7 @@ jobs:
         # `llvmdev` version in their conda environment and everything will just
         # work.
         llvm-version: ["10", "11", "12", "13", "14", "15", "16", "17", "18", "19"]
+        python-version: ["3.10"]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -898,7 +901,13 @@ jobs:
           micromamba-version: '1.5.10-0'
           environment-file: ci/environment_linux_llvm.yml
           create-args: >-
+            python=${{ matrix.python-version }}
             llvmdev=${{ matrix.llvm-version }}
+            bison=3.4
+            openblas=0.3.21
+            llvm-openmp=14.0.4
+            cmake=3.26.4
+            make=4.3
 
       - uses: hendrikmuhs/ccache-action@main
         with:
@@ -1160,6 +1169,9 @@ jobs:
 
             rm -rf fastGPT/
 
+      # The below job isn't ever run because this runs on 'macOS' and it
+      # isn't worth the extra runners on CI to for testing fastGPT on macOS
+      # with all the LLVM versions
       - name: Test fastGPT ( macos-latest )
         shell: bash -e -x -l {0}
         if: contains(matrix.os, 'macos')
