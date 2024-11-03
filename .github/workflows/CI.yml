@@ -904,7 +904,6 @@ jobs:
             llvmdev=${{ matrix.llvm-version }}
             bison=3.4
             openblas=0.3.21
-            llvm-openmp=14.0.4
             cmake=3.26.4
             make=4.3
 
