@@ -952,7 +952,6 @@ jobs:
 
       - name: Test Legacy Minpack (SciPy)
         shell: bash -e -x -l {0}
-        if: contains(matrix.os, 'ubuntu')
         run: |
             git clone https://github.com/certik/minpack.git
             cd minpack
@@ -986,7 +985,6 @@ jobs:
 
       - name: Test Modern Minpack (Fortran-Lang)
         shell: bash -e -x -l {0}
-        if: contains(matrix.os, 'ubuntu')
         run: |
             git clone https://github.com/fortran-lang/minpack modern_minpack_01
             cd modern_minpack_01
@@ -1006,7 +1004,6 @@ jobs:
 
       - name: Test Modern Minpack (check results)
         shell: bash -e -x -l {0}
-        if: contains(matrix.os, 'ubuntu')
         run: |
             git clone https://github.com/Pranavchiku/modern_minpack.git modern_minpack_02
             cd modern_minpack_02
@@ -1032,7 +1029,6 @@ jobs:
 
       - name: Test dftatom
         shell: bash -e -x -l {0}
-        if: contains(matrix.os, 'ubuntu')
         run: |
             git clone https://github.com/czgdp1807/dftatom.git
             cd dftatom
@@ -1225,7 +1221,6 @@ jobs:
 
       - name: Test stdlib
         shell: bash -e -x -l {0}
-        if: contains(matrix.os, 'ubuntu')
         run: |
             git clone https://github.com/czgdp1807/stdlib.git
             cd stdlib
@@ -1256,7 +1251,6 @@ jobs:
 
       - name: Test SNAP
         shell: bash -e -x -l {0}
-        if: contains(matrix.os, 'ubuntu')
         run: |
             git clone https://github.com/certik/SNAP.git
             cd SNAP
