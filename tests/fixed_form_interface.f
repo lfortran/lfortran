@@ -1,5 +1,6 @@
         program fixed_form_interface
             implicit none
+            integer :: i, arr(5)
 
 c           tests that 'interface' is tokenized correctly
             interface
@@ -23,6 +24,10 @@ c           tests that 'deallocate' is tokenized correctly
 
     1       FORMAT (TR1, A)
             print 1, factors
+
+            do concurrent (i=1:10:2)
+                arr(i) = i
+            enddo
         contains
 
         end program fixed_form_interface

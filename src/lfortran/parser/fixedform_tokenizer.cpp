@@ -956,6 +956,11 @@ struct FixedFormRecursiveDescent {
             return true;
         }
 
+        if (next_is(cur, "doconcurrent(")) {
+            lex_do_concurrent(cur);
+            return true;
+        }
+
         if (next_is(cur, "dowhile(")) {
             lex_dowhile(cur);
             return true;
@@ -1265,6 +1270,27 @@ struct FixedFormRecursiveDescent {
             }
         }
         return false;
+    }
+
+    void lex_do_concurrent(unsigned char *&cur) {
+        push_token_advance(cur, "do");
+        push_token_advance(cur, "concurrent");
+        tokenize_line(cur);
+
+        while (true) {
+            if (next_is(cur, "enddo")) {
+                push_token_no_advance(cur, "enddo");
+                push_token_no_advance(cur, "\n");
+                next_line(cur);
+                break;
+            } else if (!lex_body_statement(cur)) {
+                Location loc;
+                loc.first = cur - string_start;
+                loc.last = cur - string_start;
+                throw parser_local::TokenizerError("Expected an executable "
+                    "statement inside do concurrent loop", loc);
+            }
+        }
     }
 
     void lex_do(unsigned char *&cur) {
