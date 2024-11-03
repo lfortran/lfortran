@@ -122,36 +122,44 @@
                                     [(SubroutineCall
                                         2 filewrite_character____1
                                         2 filewrite_character____1
-                                        [((FunctionCall
-                                            2 join_path
-                                            ()
-                                            [((StringConstant
-                                                "build"
-                                                (Character 1 5 () PointerString)
-                                            ))
-                                            ((StringConstant
-                                                ".gitignore"
-                                                (Character 1 10 () PointerString)
-                                            ))
-                                            ((Var 7 __libasr_created_variable_))
-                                            ((LogicalConstant
-                                                .false.
-                                                (Logical 4)
-                                            ))
-                                            ((Var 7 __libasr_created_variable_1))
-                                            ((LogicalConstant
-                                                .false.
-                                                (Logical 4)
-                                            ))
-                                            ((Var 7 __libasr_created_variable_2))
-                                            ((LogicalConstant
-                                                .false.
-                                                (Logical 4)
-                                            ))]
+                                        [((StringPhysicalCast
+                                            (FunctionCall
+                                                2 join_path
+                                                ()
+                                                [((StringConstant
+                                                    "build"
+                                                    (Character 1 5 () PointerString)
+                                                ))
+                                                ((StringConstant
+                                                    ".gitignore"
+                                                    (Character 1 10 () PointerString)
+                                                ))
+                                                ((Var 7 __libasr_created_variable_))
+                                                ((LogicalConstant
+                                                    .false.
+                                                    (Logical 4)
+                                                ))
+                                                ((Var 7 __libasr_created_variable_1))
+                                                ((LogicalConstant
+                                                    .false.
+                                                    (Logical 4)
+                                                ))
+                                                ((Var 7 __libasr_created_variable_2))
+                                                ((LogicalConstant
+                                                    .false.
+                                                    (Logical 4)
+                                                ))]
+                                                (Allocatable
+                                                    (Character 1 -2 () DescriptorString)
+                                                )
+                                                ()
+                                                ()
+                                            )
+                                            DescriptorString
+                                            PointerString
                                             (Allocatable
                                                 (Character 1 -2 () PointerString)
                                             )
-                                            ()
                                             ()
                                         ))
                                         ((ArrayPhysicalCast
@@ -479,7 +487,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (Character 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -499,7 +507,7 @@
                                         (Character 1 -1 () PointerString)
                                         (Logical 4)]
                                         (Allocatable
-                                            (Character 1 -2 () PointerString)
+                                            (Character 1 -2 () DescriptorString)
                                         )
                                         Source
                                         Implementation

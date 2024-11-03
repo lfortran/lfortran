@@ -154,6 +154,18 @@ filename = "../integration_tests/openmp_36.f90"
 asr = true
 
 [[test]]
+filename = "../integration_tests/openmp_37.f90"
+asr_openmp = true
+
+[[test]]
+filename = "../integration_tests/openmp_38.f90"
+asr_openmp = true
+
+[[test]]
+filename = "../integration_tests/openmp_39.f90"
+asr_openmp = true
+
+[[test]]
 filename = "subroutine2.f90"
 ast = true
 
@@ -4240,4 +4252,12 @@ asr = true
 
 [[test]]
 filename = "errors/string_negative_start_index.f90"
+asr = true
+
+[[test]]
+filename = "errors/dimension_01.f90"
+asr = true
+
+[[test]]
+filename = "errors/dimension_02.f90"
 asr = true

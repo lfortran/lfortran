@@ -940,11 +940,33 @@ struct FixedFormRecursiveDescent {
         return true;
     }
 
+    void lex_derived_type(unsigned char *&cur) {
+        push_token_advance(cur, "type");
+        tokenize_line(cur);
+        while (true) {
+            if (next_is(cur, "endtype")) {
+                push_token_advance(cur, "endtype");
+                tokenize_line(cur);
+                break;
+            } else {
+                lex_declaration(cur);
+            }
+        }
+    }
+
     bool lex_body_statement(unsigned char *&cur) {
         int64_t l = eat_label(cur);
+        // handle derived type tokenization
+        // this needs to be done before 'lex_declaration'
+        if (next_is(cur, "type::")) {
+            lex_derived_type(cur);
+            return true;
+        }
+
         if (lex_declaration(cur)) {
             return true;
         }
+
         if (lex_io(cur)) return true;
         if (next_is(cur, "if(")) {
             lex_cond(cur);
@@ -953,6 +975,11 @@ struct FixedFormRecursiveDescent {
         unsigned char *nline = cur; next_line(nline);
         if (is_do_loop(cur)) {
             lex_do(cur);
+            return true;
+        }
+
+        if (next_is(cur, "doconcurrent(")) {
+            lex_do_concurrent(cur);
             return true;
         }
 
@@ -1001,6 +1028,24 @@ struct FixedFormRecursiveDescent {
 
         if (next_is(cur, "exit")) {
             push_token_advance(cur, "exit");
+            tokenize_line(cur);
+            return true;
+        }
+
+        if (next_is(cur, "flush")) {
+            push_token_advance(cur, "flush");
+            tokenize_line(cur);
+            return true;
+        }
+
+        if (next_is(cur, "allocate")) {
+            push_token_advance(cur, "allocate");
+            tokenize_line(cur);
+            return true;
+        }
+
+        if (next_is(cur, "deallocate")) {
+            push_token_advance(cur, "deallocate");
             tokenize_line(cur);
             return true;
         }
@@ -1253,6 +1298,27 @@ struct FixedFormRecursiveDescent {
             }
         }
         return false;
+    }
+
+    void lex_do_concurrent(unsigned char *&cur) {
+        push_token_advance(cur, "do");
+        push_token_advance(cur, "concurrent");
+        tokenize_line(cur);
+
+        while (true) {
+            if (next_is(cur, "enddo")) {
+                push_token_no_advance(cur, "enddo");
+                push_token_no_advance(cur, "\n");
+                next_line(cur);
+                break;
+            } else if (!lex_body_statement(cur)) {
+                Location loc;
+                loc.first = cur - string_start;
+                loc.last = cur - string_start;
+                throw parser_local::TokenizerError("Expected an executable "
+                    "statement inside do concurrent loop", loc);
+            }
+        }
     }
 
     void lex_do(unsigned char *&cur) {

@@ -30,8 +30,12 @@ public:
     bool from_block;
     std::set<std::string> labels;
     size_t starting_n_body = 0;
-    size_t loop_nesting = 0;
-    size_t pragma_nesting_level = 0;
+    int loop_nesting = 0;
+    int pragma_nesting_level = 0;
+    bool openmp_collapse = false;
+    int collapse_value=0;
+    Vec<ASR::do_loop_head_t> do_loop_heads_for_collapse;
+    Vec<ASR::stmt_t*> do_loop_bodies_for_collapse;
     AST::stmt_t **starting_m_body = nullptr;
     std::vector<ASR::symbol_t*> do_loop_variables;
     std::map<ASR::asr_t*, std::pair<const AST::stmt_t*,int64_t>> print_statements;
@@ -264,6 +268,9 @@ public:
                 if (!ASRUtils::is_character(*a_filename_type)) {
                         throw SemanticError("`file` must be of type, Character or CharacterPointer", x.base.base.loc);
                 }
+                if(ASRUtils::is_descriptorString(ASRUtils::expr_type(a_filename))){
+                    a_filename = ASRUtils::cast_string_descriptor_to_pointer(al, a_filename);
+                }
             } else if( m_arg_str == std::string("status") ) {
                 if( a_status != nullptr ) {
                     throw SemanticError(R"""(Duplicate value of `status` found, unit has already been specified via arguments or keyword arguments)""",
@@ -274,6 +281,9 @@ public:
                 ASR::ttype_t* a_status_type = ASRUtils::expr_type(a_status);
                 if (!ASRUtils::is_character(*a_status_type)) {
                         throw SemanticError("`status` must be of type, Character or CharacterPointer", x.base.base.loc);
+                }
+                if(ASRUtils::is_descriptorString(ASRUtils::expr_type(a_status))){
+                    a_status = ASRUtils::cast_string_descriptor_to_pointer(al, a_status);
                 }
             } else if( m_arg_str == std::string("form") ) {
                 if ( a_form != nullptr ) {
@@ -286,6 +296,10 @@ public:
                 if (!ASRUtils::is_character(*a_form_type)) {
                         throw SemanticError("`form` must be of type, Character or CharacterPointer", x.base.base.loc);
                 }
+                if(ASRUtils::is_descriptorString(ASRUtils::expr_type(a_form))){
+                    a_form = ASRUtils::cast_string_descriptor_to_pointer(al, a_form);
+                }
+
             } else {
                 const std::unordered_set<std::string> unsupported_args {"iostat", "iomsg", "err", "blank", "access", \
                                                                         "recl", "fileopt", "action", "position", "pad"};
@@ -651,7 +665,11 @@ public:
         }
         for( std::uint32_t i = 0; i < n_values; i++ ) {
             this->visit_expr(*m_values[i]);
-            a_values_vec.push_back(al, ASRUtils::EXPR(tmp));
+            ASR::expr_t* expr = ASRUtils::EXPR(tmp);
+            if(ASRUtils::is_descriptorString(ASRUtils::expr_type(expr))){
+                expr = ASRUtils::cast_string_descriptor_to_pointer(al, expr);
+            }
+            a_values_vec.push_back(al, expr);
         }
 
         read_write = (_type == AST::stmtType::Write) ? "~write" : "~read";
@@ -882,6 +900,9 @@ public:
         current_variable_type_ = target_type;
         this->visit_expr(*(x.m_value));
         ASR::expr_t* value = ASRUtils::EXPR(tmp);
+        if(ASRUtils::is_descriptorString(ASRUtils::expr_type(value))){
+            value = ASRUtils::cast_string_descriptor_to_pointer(al, ASRUtils::EXPR(tmp));
+        }
         ASR::ttype_t* value_type = ASRUtils::expr_type(value);
         bool is_target_pointer = ASRUtils::is_pointer(target_type);
         if ( !is_target_pointer && !ASR::is_a<ASR::FunctionType_t>(*target_type) ) {
@@ -2356,23 +2377,51 @@ public:
             {
                 // if in any of the dimension, arrays have different size
                 // raise an error
-                for (size_t i = 0; i < target_rank; i++) {
-                    ASR::dimension_t dim_a = target_dims[i];
-                    ASR::dimension_t dim_b = value_dims[i];
-                    int dim_a_int {-1};
-                    int dim_b_int {-1};
-                    // 'm_length' isn't assigned for allocatable arrays
-                    // let them be valid for now atleast
-                    if (!(dim_a.m_length && dim_b.m_length)) {
-                        continue;
+                bool is_array_concat = false;
+                int flat_size = 0;
+                if( AST::is_a<AST::ArrayInitializer_t>(*x.m_value)){
+                     AST::ArrayInitializer_t *temp_array =
+                            AST::down_cast<AST::ArrayInitializer_t>(x.m_value);
+                    for(size_t i=0; i < temp_array->n_args; i++){
+                        this->visit_expr(*temp_array->m_args[i]);
+                        ASR::expr_t *temp = ASRUtils::EXPR(tmp);
+                        if( ASRUtils::expr_type(temp)->type == ASR::ttypeType::Array ) {
+                            flat_size += ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(temp));
+                            is_array_concat = true;
+                        } else {
+                            flat_size += 1;
+                        }
+                    }  
+                }
+                if(!is_array_concat){
+                    for (size_t i = 0; i < target_rank; i++) {
+                        ASR::dimension_t dim_a = target_dims[i];
+                        ASR::dimension_t dim_b = value_dims[i];
+                        int dim_a_int {-1};
+                        int dim_b_int {-1};
+                        // 'm_length' isn't assigned for allocatable arrays
+                        // let them be valid for now atleast
+                        if (!(dim_a.m_length && dim_b.m_length)) {
+                            continue;
+                        }
+                        ASRUtils::extract_value(ASRUtils::expr_value(dim_a.m_length), dim_a_int);
+                        ASRUtils::extract_value(ASRUtils::expr_value(dim_b.m_length), dim_b_int);
+                        if (dim_a_int > 0 && dim_b_int > 0 && dim_a_int != dim_b_int) {
+                            throw SemanticError("Different shape for array assignment on "
+                                "dimension " + std::to_string(i + 1) + "(" +
+                                std::to_string(dim_a_int) + " and " +
+                                std::to_string(dim_b_int) + ")", x.base.base.loc);
+                        }
                     }
+                } else {
+                    //Case : C = [B, A] where B or A is Array
+                    ASR::dimension_t dim_a = target_dims[0];
+                    int dim_a_int {-1};
                     ASRUtils::extract_value(ASRUtils::expr_value(dim_a.m_length), dim_a_int);
-                    ASRUtils::extract_value(ASRUtils::expr_value(dim_b.m_length), dim_b_int);
-                    if (dim_a_int > 0 && dim_b_int > 0 && dim_a_int != dim_b_int) {
+                    if (dim_a_int > 0 && flat_size > 0 && dim_a_int != flat_size) {
                         throw SemanticError("Different shape for array assignment on "
-                            "dimension " + std::to_string(i + 1) + "(" +
-                            std::to_string(dim_a_int) + " and " +
-                            std::to_string(dim_b_int) + ")", x.base.base.loc);
+                            "dimension 1 (" + std::to_string(dim_a_int) + " and " +
+                            std::to_string(flat_size) + ")", x.base.base.loc);
                     }
                 }
             }
@@ -2397,6 +2446,16 @@ public:
             if (!compiler_options.continue_compilation) throw e;
         }
         ASR::expr_t *value = ASRUtils::EXPR(tmp);
+        if( ASRUtils::is_character(*ASRUtils::expr_type(target)) && 
+            ASRUtils::is_character(*ASRUtils::expr_type(value))){ // string assignment.
+            if( ASRUtils::is_descriptorString(ASRUtils::expr_type(target)) &&  
+                !ASRUtils::is_descriptorString(ASRUtils::expr_type(value))){
+                value = ASRUtils::cast_string_pointer_to_descriptor(al ,value);
+            } else if ( !ASRUtils::is_descriptorString(ASRUtils::expr_type(target)) &&  
+                        ASRUtils::is_descriptorString(ASRUtils::expr_type(value))) {
+                value = ASRUtils::cast_string_descriptor_to_pointer(al, value);
+            }
+        }
         ASR::stmt_t *overloaded_stmt = nullptr;
         if (ASR::is_a<ASR::Var_t>(*target)) {
             ASR::Var_t *var = ASR::down_cast<ASR::Var_t>(target);
@@ -3183,6 +3242,9 @@ public:
             }
             // visit_expr(*x.m_values[i]);
             ASR::expr_t *expr = ASRUtils::EXPR(tmp);
+            if(ASRUtils::is_descriptorString(ASRUtils::expr_type(expr))){
+                expr = ASRUtils::cast_string_descriptor_to_pointer(al, expr);
+            }
             body.push_back(al, expr);
         }
         if (fmt && ASR::is_a<ASR::IntegerConstant_t>(*fmt)) {
@@ -3432,9 +3494,33 @@ public:
                 Vec<ASR::do_loop_head_t> do_concurrent_head;
                 do_concurrent_head.reserve(al, 1);
                 do_concurrent_head.push_back(al, head);
+                if (openmp_collapse == true) {
+                    for (size_t i=0;i<do_loop_heads_for_collapse.size();i++) {  
+                        do_concurrent_head.push_back(al, do_loop_heads_for_collapse[do_loop_heads_for_collapse.size()-1-i]);
+                    }
+                    do_concurrent->m_body = do_loop_bodies_for_collapse.p; do_concurrent->n_body = do_loop_bodies_for_collapse.size();
+                } else {
+                    do_concurrent->m_body = body.p; do_concurrent->n_body = body.size();
+                }
                 do_concurrent->m_head = do_concurrent_head.p;
-                do_concurrent->m_body = body.p; do_concurrent->n_body = body.size();
+                do_concurrent->n_head = do_concurrent_head.size();
                 tmp = (ASR::asr_t*) do_concurrent;
+            } else if (openmp_collapse == true && !omp_constructs.empty() && collapse_value > loop_nesting - 1 - static_cast<int>(omp_constructs.size()) + 1) {
+                collapse_value--;
+                do_loop_heads_for_collapse.push_back(al, head);
+                Vec<ASR::stmt_t*> temp;
+                temp.reserve(al, do_loop_bodies_for_collapse.size());
+                for (size_t i=0;i<do_loop_bodies_for_collapse.size();i++) {
+                    temp.push_back(al, do_loop_bodies_for_collapse[i]);
+                }
+                int size=temp.size()+body.size();
+                do_loop_bodies_for_collapse.reserve(al, size);
+                for (size_t i=0;i<temp.size();i++) {
+                    do_loop_bodies_for_collapse.push_back(al, temp[i]);
+                }
+                for (size_t i=0;i<body.size();i++) {
+                    do_loop_bodies_for_collapse.push_back(al, body[i]);
+                }
             } else {
                 tmp = ASR::make_DoLoop_t(al, x.base.base.loc, x.m_stmt_name,
                     head, body.p, body.size(), nullptr, 0);
@@ -3781,6 +3867,12 @@ public:
             if (x.m_end) {
                 if (LCompilers::startswith(x.m_construct_name, "parallel")) {
                     omp_constructs.pop_back();
+                    if (collapse_value > 0) {
+                        collapse_value = 0;
+                    }
+                    if (openmp_collapse) {
+                        openmp_collapse = false;
+                    }
                     return;
                 }
             }
@@ -3802,13 +3894,19 @@ public:
                     std::string clause = AST::down_cast<AST::String_t>(
                         x.m_clauses[i])->m_s;
                     std::string clause_name = clause.substr(0, clause.find('('));
-                    if (clause_name != "private" && clause_name != "shared" && clause_name != "reduction") {
+                    if (clause_name != "private" && clause_name != "shared" && clause_name != "reduction" && clause_name != "collapse") {
                         throw SemanticError("The clause "+ clause_name
                             +" is not supported yet", loc);
                     }
                     std::string list = clause.substr(clause.find('(')+1,
                         clause.size()-clause_name.size()-2);
                     ASR::reduction_opType op = ASR::reduction_opType::ReduceAdd; // required for reduction
+                    if (clause_name == "collapse") {
+                        collapse_value = std::stoi(list.erase(0, list.find_first_not_of(" "))); // Get the value of N
+                        openmp_collapse = true;
+                        do_loop_heads_for_collapse.reserve(al, collapse_value);do_loop_bodies_for_collapse={};
+                        continue;
+                    }
                     if (clause_name == "reduction") {
                         std::string reduction_op = list.substr(0, list.find(':'));
                         if ( reduction_op == "+" ) {
@@ -3850,7 +3948,10 @@ public:
                         }
                     }
                 }
-                Vec<ASR::do_loop_head_t> heads;heads.reserve(al,1);ASR::do_loop_head_t head{};heads.push_back(al, head);
+                Vec<ASR::do_loop_head_t> heads;
+                heads.reserve(al,1);
+                ASR::do_loop_head_t head{};
+                heads.push_back(al, head);
                 omp_constructs.push_back(ASR::down_cast2<ASR::DoConcurrentLoop_t>(
                 ASR::make_DoConcurrentLoop_t(al,loc, heads.p, heads.n, m_shared.p,
                 m_shared.n, m_local.p, m_local.n, m_reduction.p, m_reduction.n, nullptr, 0)));

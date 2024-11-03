@@ -931,6 +931,11 @@ public:
             } else {
                 r += "*";
             }
+            for (size_t i = 0; i < sf->n_args; i++) {
+                r += ", ";
+                visit_expr(*sf->m_args[i]);
+                r += src;
+            }
         } else if (ASR::is_a<ASR::Character_t>(*ASRUtils::expr_type(x.m_text))) {
             r += "*";
             r += ", ";
@@ -1599,6 +1604,10 @@ public:
             if (i < x.n_args-1) r += ", ";
         }
         src = r;
+    }
+
+    void visit_StringPhysicalCast(const ASR::StringPhysicalCast_t &x) {
+        visit_expr(*x.m_arg);
     }
 
     // void visit_CPtrCompare(const ASR::CPtrCompare_t &x) {}

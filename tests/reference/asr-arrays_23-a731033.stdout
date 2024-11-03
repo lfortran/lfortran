@@ -76,7 +76,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (Character 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -104,7 +104,7 @@
                                     add_context
                                     (FunctionType
                                         [(Allocatable
-                                            (Character 1 -2 () PointerString)
+                                            (Character 1 -2 () DescriptorString)
                                         )
                                         (StructType
                                             2 toml_context
@@ -164,31 +164,17 @@
                                         )
                                         (Assignment
                                             (Var 4 message)
-                                            (StringConcat
-                                                (StringSection
-                                                    (Var 4 num)
-                                                    (IntegerBinOp
-                                                        (IntegerConstant 1 (Integer 4) Decimal)
-                                                        Sub
-                                                        (IntegerConstant 1 (Integer 4) Decimal)
-                                                        (Integer 4)
-                                                        (IntegerConstant 0 (Integer 4) Decimal)
-                                                    )
-                                                    (IntegerBinOp
-                                                        (IntrinsicElementalFunction
-                                                            StringLenTrim
-                                                            [(Var 4 num)]
-                                                            0
+                                            (StringPhysicalCast
+                                                (StringConcat
+                                                    (StringSection
+                                                        (Var 4 num)
+                                                        (IntegerBinOp
+                                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                                            Sub
+                                                            (IntegerConstant 1 (Integer 4) Decimal)
                                                             (Integer 4)
-                                                            ()
+                                                            (IntegerConstant 0 (Integer 4) Decimal)
                                                         )
-                                                        Add
-                                                        (IntegerConstant 1 (Integer 4) Decimal)
-                                                        (Integer 4)
-                                                        ()
-                                                    )
-                                                    (IntegerConstant 1 (Integer 4) Decimal)
-                                                    (Character 1 -3 (IntegerBinOp
                                                         (IntegerBinOp
                                                             (IntrinsicElementalFunction
                                                                 StringLenTrim
@@ -202,21 +188,51 @@
                                                             (Integer 4)
                                                             ()
                                                         )
-                                                        Sub
-                                                        (IntegerBinOp
-                                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                                        (Character 1 -3 (IntegerBinOp
+                                                            (IntegerBinOp
+                                                                (IntrinsicElementalFunction
+                                                                    StringLenTrim
+                                                                    [(Var 4 num)]
+                                                                    0
+                                                                    (Integer 4)
+                                                                    ()
+                                                                )
+                                                                Add
+                                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                                (Integer 4)
+                                                                ()
+                                                            )
                                                             Sub
-                                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                                            (IntegerBinOp
+                                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                                Sub
+                                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                                (Integer 4)
+                                                                (IntegerConstant 0 (Integer 4) Decimal)
+                                                            )
                                                             (Integer 4)
-                                                            (IntegerConstant 0 (Integer 4) Decimal)
-                                                        )
-                                                        (Integer 4)
+                                                            ()
+                                                        ) PointerString)
                                                         ()
-                                                    ) PointerString)
+                                                    )
+                                                    (StringPhysicalCast
+                                                        (Var 4 message)
+                                                        DescriptorString
+                                                        PointerString
+                                                        (Allocatable
+                                                            (Character 1 -2 () PointerString)
+                                                        )
+                                                        ()
+                                                    )
+                                                    (Character 1 -1 () PointerString)
                                                     ()
                                                 )
-                                                (Var 4 message)
-                                                (Character 1 -1 () PointerString)
+                                                PointerString
+                                                DescriptorString
+                                                (Allocatable
+                                                    (Character 1 -1 () DescriptorString)
+                                                )
                                                 ()
                                             )
                                             ()
@@ -225,38 +241,35 @@
                                     )
                                     (Assignment
                                         (Var 4 message)
-                                        (StringConcat
+                                        (StringPhysicalCast
                                             (StringConcat
                                                 (StringConcat
-                                                    (Var 4 message)
-                                                    (StringConstant
-                                                        "   | "
-                                                        (Character 1 5 () PointerString)
-                                                    )
-                                                    (Character 1 -1 () PointerString)
-                                                    ()
-                                                )
-                                                (StringSection
-                                                    (StructInstanceMember
-                                                        (Var 4 context)
-                                                        4 1_toml_context_ptr
-                                                        (Pointer
-                                                            (Character 1 -2 () PointerString)
+                                                    (StringConcat
+                                                        (StringPhysicalCast
+                                                            (Var 4 message)
+                                                            DescriptorString
+                                                            PointerString
+                                                            (Allocatable
+                                                                (Character 1 -2 () PointerString)
+                                                            )
+                                                            ()
                                                         )
+                                                        (StringConstant
+                                                            "   | "
+                                                            (Character 1 5 () PointerString)
+                                                        )
+                                                        (Character 1 -1 () PointerString)
                                                         ()
                                                     )
-                                                    (IntegerBinOp
-                                                        (IntegerConstant 1 (Integer 4) Decimal)
-                                                        Sub
-                                                        (IntegerConstant 1 (Integer 4) Decimal)
-                                                        (Integer 4)
-                                                        (IntegerConstant 0 (Integer 4) Decimal)
-                                                    )
-                                                    (Var 4 line_break)
-                                                    (IntegerConstant 1 (Integer 4) Decimal)
-                                                    (Character 1 -3 (IntegerBinOp
-                                                        (Var 4 line_break)
-                                                        Sub
+                                                    (StringSection
+                                                        (StructInstanceMember
+                                                            (Var 4 context)
+                                                            4 1_toml_context_ptr
+                                                            (Pointer
+                                                                (Character 1 -2 () PointerString)
+                                                            )
+                                                            ()
+                                                        )
                                                         (IntegerBinOp
                                                             (IntegerConstant 1 (Integer 4) Decimal)
                                                             Sub
@@ -264,19 +277,38 @@
                                                             (Integer 4)
                                                             (IntegerConstant 0 (Integer 4) Decimal)
                                                         )
-                                                        (Integer 4)
+                                                        (Var 4 line_break)
+                                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                                        (Character 1 -3 (IntegerBinOp
+                                                            (Var 4 line_break)
+                                                            Sub
+                                                            (IntegerBinOp
+                                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                                Sub
+                                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                                (Integer 4)
+                                                                (IntegerConstant 0 (Integer 4) Decimal)
+                                                            )
+                                                            (Integer 4)
+                                                            ()
+                                                        ) PointerString)
                                                         ()
-                                                    ) PointerString)
+                                                    )
+                                                    (Character 1 -1 () PointerString)
                                                     ()
+                                                )
+                                                (StringConstant
+                                                    "   |"
+                                                    (Character 1 4 () PointerString)
                                                 )
                                                 (Character 1 -1 () PointerString)
                                                 ()
                                             )
-                                            (StringConstant
-                                                "   |"
-                                                (Character 1 4 () PointerString)
+                                            PointerString
+                                            DescriptorString
+                                            (Allocatable
+                                                (Character 1 -1 () DescriptorString)
                                             )
-                                            (Character 1 -1 () PointerString)
                                             ()
                                         )
                                         ()

@@ -44,7 +44,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (Character 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -102,7 +102,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (Character 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -448,7 +448,7 @@
                                                 (Var 7 cmd_settings)
                                                 7 1_fpm_new_settings_name
                                                 (Allocatable
-                                                    (Character 1 -2 () PointerString)
+                                                    (Character 1 -2 () DescriptorString)
                                                 )
                                                 ()
                                             )

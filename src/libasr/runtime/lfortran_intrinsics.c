@@ -163,6 +163,9 @@ LFORTRAN_API void _lfortran_printf(const char* format, ...)
     va_start(args, format);
     char* str = va_arg(args, char*);
     char* end = va_arg(args, char*);
+    if(str == NULL){
+        str = " "; // dummy output
+    }
     // Detect "\b" to raise error
     if(str[0] == '\b'){
         str = str+1;
@@ -714,10 +717,17 @@ char** parse_fortran_format(char* format, int64_t *count, int64_t *item_start) {
                 *item_start = format_values_count;
                 break;
             case 't' :
+                // handle 'T', 'TL' & 'TR' editing see section 13.8.1.2 in 24-007.pdf
                 start = index++;
-                // raise error when "T" is specified itself or with non-positive width
+                if (tolower(format[index]) == 'l' || tolower(format[index]) == 'r') {
+                     index++;  // move past 'L' or 'R'
+                }
+                // raise error when "T/TL/TR" is specified itself or with
+                // non-positive width
                 if (!isdigit(format[index])) {
-                    printf("Error: Positive width required with 'T' descriptor in format string\n");
+                    // TODO: if just 'T' is specified the error message will print 'T,', fix it
+                    printf("Error: Positive width required with '%c%c' descriptor in format string\n",
+                        format[start], format[start + 1]);
                     exit(1);
                 }
                 while (isdigit(format[index])) {
@@ -1043,25 +1053,51 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
             } else if (tolower(value[strlen(value) - 1]) == 'x') {
                 result = append_to_string(result, " ");
             } else if (tolower(value[0]) == 't') {
-                if (count <= 0) break;
-                int tab_position = atoi(value + 1);
-                int current_length = strlen(result);
-                int spaces_needed = tab_position - current_length - 1;
-                if (spaces_needed > 0) {
-                    char* spaces = (char*)malloc((spaces_needed + 1) * sizeof(char));
-                    memset(spaces, ' ', spaces_needed);
-                    spaces[spaces_needed] = '\0';
-                    result = append_to_string(result, spaces);
-                    free(spaces);
-                } else if (spaces_needed < 0) {
-                    // Truncate the string to the length specified by Tn if the current position exceeds it
-                    if (tab_position < current_length) {
-                        result[tab_position] = '\0';  // Truncate the string at the position specified by Tn
+                if (tolower(value[1]) == 'l') {
+                    // handle "TL" format specifier
+                    int tab_left_pos = atoi(value + 2);
+                    int current_length = strlen(result);
+                    if (tab_left_pos > current_length) {
+                        result[0] = '\0';
+                    } else {
+                        result[current_length - tab_left_pos] = '\0';
+                    }
+                } else if (tolower(value[1]) == 'r') {
+                    // handle "TR" format specifier
+                    int tab_right_pos = atoi(value + 2);
+                    int current_length = strlen(result);
+                    int spaces_needed = tab_right_pos;
+                    if (spaces_needed > 0) {
+                        char* spaces = (char*)malloc((spaces_needed + 1) * sizeof(char));
+                        memset(spaces, ' ', spaces_needed);
+                        spaces[spaces_needed] = '\0';
+                        result = append_to_string(result, spaces);
+                        free(spaces);
+                    }
+                } else {
+                    if (count <= 0) break;
+                    int tab_position = atoi(value + 1);
+                    int current_length = strlen(result);
+                    int spaces_needed = tab_position - current_length - 1;
+                    if (spaces_needed > 0) {
+                        char* spaces = (char*)malloc((spaces_needed + 1) * sizeof(char));
+                        memset(spaces, ' ', spaces_needed);
+                        spaces[spaces_needed] = '\0';
+                        result = append_to_string(result, spaces);
+                        free(spaces);
+                    } else if (spaces_needed < 0) {
+                        // Truncate the string to the length specified by Tn
+                        // if the current position exceeds it
+                        if (tab_position < current_length) {
+                            // Truncate the string at the position specified by Tn
+                            result[tab_position] = '\0';
+                        }
                     }
                 }
             } else {
-                if(count <= 0) break;
-                if(!array_looping && !default_formatting){ // Fetch type integer when we don't have an array.
+                if (count <= 0) break;
+                if (!array_looping && !default_formatting) {
+                    // Fetch type integer when we don't have an array.
                     current_arg_type_int =  va_arg(args,int32_t);
                     count--;
                 }
@@ -1975,7 +2011,7 @@ LFORTRAN_API void _lfortran_strcat(char** s1, char** s2, char** dest)
 
 // strcpy -----------------------------------------------------------
 
-LFORTRAN_API void _lfortran_strcpy(char** x, char *y, int8_t free_target)
+LFORTRAN_API void _lfortran_strcpy(char** x, char *y, int8_t free_target, int64_t x_size, int64_t x_capacity)
 {
     if (free_target) {
         if (*x) {
@@ -2359,7 +2395,7 @@ LFORTRAN_API void _lfortran_free(char* ptr) {
     free((void*)ptr);
 }
 
-LFORTRAN_API void _lfortran_alloc(char** ptr, int32_t size) {
+LFORTRAN_API void _lfortran_alloc(char** ptr, int32_t size, int64_t* string_size, int64_t* string_capacity) {
     *ptr = (char *) malloc(size);
 }
 
@@ -3334,7 +3370,7 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
     (void)!ftruncate(fileno(filep), ftell(filep));
 }
 
-LFORTRAN_API void _lfortran_string_write(char **str_holder, int32_t* iostat, const char *format, ...) {
+LFORTRAN_API void _lfortran_string_write(char **str_holder, int64_t size, int64_t capacity, int32_t* iostat, const char *format, ...) {
     va_list args;
     va_start(args, format);
     char* str = va_arg(args, char*);
@@ -3357,7 +3393,7 @@ LFORTRAN_API void _lfortran_string_write(char **str_holder, int32_t* iostat, con
     } else {
         sprintf(s, format, str);
     }
-    _lfortran_strcpy(str_holder, s, 0);
+    _lfortran_strcpy(str_holder, s, 0, size, capacity);
     free(s);
     va_end(args);
     if(iostat != NULL) *iostat = 0;

@@ -1,0 +1,13 @@
+{
+    "basename": "asr-dimension_01-2172e76",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/dimension_01.f90",
+    "infile_hash": "0a6954d8790d6aca192ed8950554bda2671bec782ab05c87c7a74912",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-dimension_01-2172e76.stderr",
+    "stderr_hash": "9b74d99f78462b1b6e613732abfbf556364eb63270d82813b234b3d5",
+    "returncode": 2
+}
