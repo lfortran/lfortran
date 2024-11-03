@@ -3,6 +3,20 @@
             integer :: i, arr(5)
             integer :: OUTPUT_UNIT
 
+            type :: element
+                character(len=2) :: symbol
+                integer :: atomic_number
+                real :: atomic_mass
+                integer :: quantity
+            end type element
+
+            type :: chemical_compound
+                character(len=30) :: name
+                character(len=10) :: formula
+                real :: molecular_weight
+                type(element), allocatable, dimension(:) :: elements
+            end type
+
 c           tests that 'interface' is tokenized correctly
             interface
                 subroutine my_subroutine(a)

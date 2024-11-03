@@ -940,11 +940,33 @@ struct FixedFormRecursiveDescent {
         return true;
     }
 
+    void lex_derived_type(unsigned char *&cur) {
+        push_token_advance(cur, "type");
+        tokenize_line(cur);
+        while (true) {
+            if (next_is(cur, "endtype")) {
+                push_token_advance(cur, "endtype");
+                tokenize_line(cur);
+                break;
+            } else {
+                lex_declaration(cur);
+            }
+        }
+    }
+
     bool lex_body_statement(unsigned char *&cur) {
         int64_t l = eat_label(cur);
+        // handle derived type tokenization
+        // this needs to be done before 'lex_declaration'
+        if (next_is(cur, "type::")) {
+            lex_derived_type(cur);
+            return true;
+        }
+
         if (lex_declaration(cur)) {
             return true;
         }
+
         if (lex_io(cur)) return true;
         if (next_is(cur, "if(")) {
             lex_cond(cur);
