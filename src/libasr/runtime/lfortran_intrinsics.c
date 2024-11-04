@@ -2043,6 +2043,7 @@ LFORTRAN_API void _lfortran_alloc(char** ptr, int32_t desired_size /*Null-Charac
         // printf("runtime error: Attempting to allocate already allocated variable\n");
         // exit(1);
         // A workaround till this issue is resolved : https://github.com/lfortran/lfortran/issues/5249
+        // after resolving the previous issue delete the code below.
         int32_t inital_capacity;
         if(100 < desired_size){
             inital_capacity = desired_size;
@@ -2069,9 +2070,6 @@ LFORTRAN_API void _lfortran_strcpy_descriptor_string(char** x, char *y, int64_t*
     ASSERT_MSG(((*x != NULL) && (*x_string_size <= (*x_string_capacity - 1))) ||
         (*x == NULL && *x_string_size == 0 && *x_string_capacity == 0) , "%s",
     "compiler-behavior error : string x_string_capacity < string size");
-    /* Remove this (It's for debugging purposes) */
-    // ASSERT_MSG(strlen(*x) == (*x_string_size),
-    // "%s","Compiler-Internal Error : Size in string descriptor doesn't match actual size of char*");
     size_t y_len, x_len; 
     y_len= strlen(y); 
     x_len = y_len;
