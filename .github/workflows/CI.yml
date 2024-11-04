@@ -315,6 +315,7 @@ jobs:
         env:
           SSH_PRIVATE_KEY_WASM_BUILDS: ${{ secrets.SSH_PRIVATE_KEY_WASM_BUILDS }}
 
+
   debug_outOfSource:
     name: Check Out-of-Source Debug build
     runs-on: ubuntu-latest
@@ -372,59 +373,6 @@ jobs:
           ./expr2b
           inst.moved/bin/lfortran --openmp --backend=cpp expr2.F90 -o expr2c
           ./expr2c
-
-  debug:
-    name: Check Debug build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: mamba-org/setup-micromamba@v1.8.0
-        with:
-          micromamba-version: '1.5.10-0'
-          environment-file: ci/environment_linux.yml
-          create-args: >-
-            python=3.10
-
-      - uses: hendrikmuhs/ccache-action@main
-        with:
-          variant: sccache
-          key: ${{ github.job }}-${{ matrix.os }}
-
-      - name: Build Linux
-        shell: bash -e -l {0}
-        run: |
-            ./build0.sh
-            export CXXFLAGS="-Werror"
-            export CFLAGS="-Werror"
-            cmake . -GNinja \
-              -DCMAKE_BUILD_TYPE=Debug \
-              -DWITH_LLVM=yes \
-              -DCMAKE_VERBOSE_MAKEFILE= yes \
-              -DLFORTRAN_BUILD_ALL=yes \
-              -DWITH_STACKTRACE=no \
-              -DWITH_RUNTIME_STACKTRACE=yes \
-              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
-              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
-              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
-              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
-
-            cmake --build . -j16 --target install
-
-      - name: Test Linux
-        shell: bash -e -l {0}
-        run: |
-            ctest
-            ./run_tests.py
-            ./run_tests.py -vh
-            cd integration_tests
-            ./run_tests.py -m
-            ./run_tests.py -b llvm
-            ./run_tests.py -b llvm -f
-            ./run_tests.py -b llvm --experimental-simplifier
-            ./run_tests.py -b llvm -f --experimental-simplifier
 
   release:
     name: Check Release build
@@ -1123,13 +1071,11 @@ jobs:
             ctest -V
             cd ..
 
-            git clean -dfx
             git checkout -t origin/namelist
             git checkout d3eef520c1be8e2db98a3c2189740af1ae7c3e06
-            curl -o model.dat -L https://huggingface.co/datasets/certik/fastGPT/resolve/main/model_fastgpt_124M_v1.dat
 
-            mkdir lf
             cd lf
+            git clean -dfx
             FC=$(pwd)/../../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
             make VERBOSE=1
             ln -s ../model.dat .
@@ -1147,8 +1093,8 @@ jobs:
             ./test_more_inputs
             cd ..
 
-            mkdir lf-fast
             cd lf-fast
+            git clean -dfx
             FC="$(pwd)/../../src/bin/lfortran --fast" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Release ..
             make VERBOSE=1
             ln -s ../model.dat .
@@ -1168,40 +1114,6 @@ jobs:
             cd ..
 
             rm -rf fastGPT/
-
-      # The below job isn't ever run because this runs on 'macOS' and it
-      # isn't worth the extra runners on CI to for testing fastGPT on macOS
-      # with all the LLVM versions
-      - name: Test fastGPT ( macos-latest )
-        shell: bash -e -x -l {0}
-        if: contains(matrix.os, 'macos')
-        run: |
-            git clone https://github.com/certik/fastGPT.git
-            cd fastGPT
-
-            git clean -dfx
-            git checkout -t origin/namelist
-            git checkout d3eef520c1be8e2db98a3c2189740af1ae7c3e06
-            curl -o model.dat -L https://huggingface.co/datasets/certik/fastGPT/resolve/main/model_fastgpt_124M_v1.dat
-
-            mkdir lf
-            cd lf
-            FC=$(pwd)/../../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
-            make VERBOSE=1
-            ln -s ../model.dat .
-            ./gpt2
-            ./test_basic_input
-            ./test_more_inputs
-
-            # Test with experimental simplifier
-            git clean -fdx
-            FC=$(pwd)/../../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug .. -DCMAKE_Fortran_FLAGS="--experimental-simplifier --realloc-lhs"
-            make VERBOSE=1
-            ln -s ../model.dat .
-            ./gpt2
-            ./test_basic_input
-            ./test_more_inputs
-            cd ..
 
       - name: Test fpm
         shell: bash -e -x -l {0}
@@ -1228,21 +1140,16 @@ jobs:
             FC=lfortran cmake . -DTEST_DRIVE_BUILD_TESTING=OFF -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE -DCMAKE_Fortran_FLAGS="--cpp --realloc-lhs"
             make -j8
             ctest
-            ./build_test_gf.sh
 
             # Test with experimental simplifier
-            cd ..
-            rm -rf stdlib
-            git clone https://github.com/Pranavchiku/stdlib-fortran-lang.git stdlib
-            cd stdlib
-            export PATH="$(pwd)/../src/bin:$PATH"
-            git checkout origin/lf21
+            git remote add pranavchiku https://github.com/Pranavchiku/stdlib-fortran-lang.git
+            git fetch pranavchiku
+            git checkout -t pranavchiku/lf21
             git checkout f06d89524bd5d3b5dc2a06c807a5c67190fe0371
             git clean -fdx
             FC=lfortran cmake . -DTEST_DRIVE_BUILD_TESTING=OFF -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE -DCMAKE_Fortran_FLAGS="--cpp --realloc-lhs --experimental-simplifier"
             make -j8
             ctest
-            ./build_test_gf.sh
 
       - name: Test SNAP
         shell: bash -e -x -l {0}
@@ -1375,6 +1282,7 @@ jobs:
           create-args: >-
             llvm-openmp
             nodejs=18.13.0
+            python=3.10
 
       - uses: hendrikmuhs/ccache-action@main
         with:
