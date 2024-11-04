@@ -1092,6 +1092,7 @@ public:
         // populate the external_procedures_mapping
         uint64_t hash = get_hash(tmp);
         external_procedures_mapping[hash] = external_procedures;
+        external_procedures.clear();
         if (subroutine_contains_entry_function(sym_name, x.m_body, x.n_body)) {
             /*
                 This subroutine contains an entry function, create
