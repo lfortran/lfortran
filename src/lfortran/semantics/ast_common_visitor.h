@@ -1634,9 +1634,12 @@ public:
                                           size_t &value_index) {
         ASR::ImpliedDoLoop_t *implied_do_loop = ASR::down_cast<ASR::ImpliedDoLoop_t>(implied_do_loop_expr);
 
-        ASR::expr_t* loop_start_expr = implied_do_loop->m_start;
-        ASR::expr_t* loop_end_expr = implied_do_loop->m_end;
+        ASR::expr_t* loop_start_expr = ASRUtils::expr_value(implied_do_loop->m_start);
+        ASR::expr_t* loop_end_expr = ASRUtils::expr_value(implied_do_loop->m_end);
         ASR::expr_t* loop_increment_expr = implied_do_loop->m_increment;
+        if (loop_increment_expr) {
+            loop_increment_expr = ASRUtils::expr_value(loop_increment_expr);
+        }
 
         ASR::ttype_t *integer_type = ASRUtils::TYPE(
                                         ASR::make_Integer_t(al, data_stmt.base.base.loc,
