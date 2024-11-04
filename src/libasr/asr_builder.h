@@ -323,6 +323,11 @@ class ASRBuilder {
     }
 
     inline ASR::expr_t* r2r_t(ASR::expr_t* x, ASR::ttype_t* t) {
+        int kind_x = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(x));
+        int kind_t = ASRUtils::extract_kind_from_ttype_t(t);
+        if (kind_x == kind_t) {
+            return x;
+        }
         return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::RealToReal, t, nullptr));
     }
 
