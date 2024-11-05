@@ -845,6 +845,7 @@ jobs:
           fetch-depth: 0
 
       - uses: mamba-org/setup-micromamba@v1.8.0
+        if: contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '16')
         with:
           micromamba-version: '1.5.10-0'
           environment-file: ci/environment_linux_llvm.yml
@@ -857,6 +858,20 @@ jobs:
             cmake=3.26.4
             make=4.3
             nodejs=18.13.0
+        
+      - uses: mamba-org/setup-micromamba@v1.8.0
+        if: "!(contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '16'))"
+        with:
+          micromamba-version: '1.5.10-0'
+          environment-file: ci/environment_linux_llvm.yml
+          create-args: >-
+            python=${{ matrix.python-version }}
+            llvmdev=${{ matrix.llvm-version }}
+            bison=3.4
+            openblas=0.3.21
+            llvm-openmp=14.0.4
+            cmake=3.26.4
+            make=4.3
 
       - uses: hendrikmuhs/ccache-action@main
         with:
