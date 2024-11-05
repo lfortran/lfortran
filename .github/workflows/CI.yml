@@ -823,7 +823,7 @@ jobs:
             ./gsnap ../qasnap/sample/inp out
 
   test_llvm:
-    name: Test LLVM ${{ matrix.llvm-version }} and WASM
+    name: Test LLVM ${{ matrix.llvm-version }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
