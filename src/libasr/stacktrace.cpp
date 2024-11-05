@@ -9,7 +9,7 @@
 #include <string>
 #include <vector>
 
-#ifdef HAVE_LFORTRAN_LLVM
+#ifdef HAVE_LFORTRAN_LLVM_STACKTRACE
 #include <llvm/DebugInfo/Symbolize/Symbolize.h>
 #include <llvm/Support/CommandLine.h>
 #include <llvm/Support/raw_ostream.h>
@@ -497,7 +497,7 @@ std::string addr2str(const StacktraceItem &i)
   return s.str();
 }
 
-#ifdef HAVE_LFORTRAN_LLVM
+#ifdef HAVE_LFORTRAN_LLVM_STACKTRACE
 void get_symbol_info_llvm(StacktraceItem &item, llvm::symbolize::LLVMSymbolizer &symbolizer) {
   auto binary_file = llvm::object::ObjectFile::createObjectFile(item.binary_filename);
 
@@ -691,7 +691,7 @@ void get_local_info_dwarfdump(std::vector<StacktraceItem> &d)
 
 void get_local_info(std::vector<StacktraceItem> &d)
 {
-#ifdef HAVE_LFORTRAN_LLVM
+#ifdef HAVE_LFORTRAN_LLVM_STACKTRACE
     get_llvm_info(d);
 #else
 #ifdef HAVE_LFORTRAN_DWARFDUMP
@@ -705,7 +705,7 @@ void get_local_info(std::vector<StacktraceItem> &d)
   }
 #endif // HAVE_LFORTRAN_BFD
 #endif // HAVE_LFOTRAN_DWARFDUMP
-#endif // HAVE_LFORTRAN_LLVM
+#endif // HAVE_LFORTRAN_LLVM_STACKTRACE
 }
 
 std::string error_stacktrace(const std::vector<StacktraceItem> &stacktrace)
