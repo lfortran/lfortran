@@ -703,6 +703,8 @@ void get_local_info(std::vector<StacktraceItem> &d)
     get_symbol_info_bfd(d[i].binary_filename, d[i].local_pc,
       d[i].source_filename, d[i].function_name, d[i].line_number);
   }
+#else
+  (void)d;
 #endif // HAVE_LFORTRAN_BFD
 #endif // HAVE_LFOTRAN_DWARFDUMP
 #endif // HAVE_LFORTRAN_LLVM_STACKTRACE
