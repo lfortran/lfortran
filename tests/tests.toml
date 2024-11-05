@@ -3567,8 +3567,16 @@ filename = "errors/array_05.f90"
 asr = true
 
 [[test]]
+filename = "errors/array_05_cc.f90"
+continue_compilation = true
+
+[[test]]
 filename = "errors/array_06.f90"
 asr = true
+
+[[test]]
+filename = "errors/array_06_cc.f90"
+continue_compilation = true
 
 [[test]]
 filename = "errors/array_07.f90"
