@@ -2077,9 +2077,10 @@ LFORTRAN_API void _lfortran_strcpy_descriptor_string(char** x, char *y, int64_t*
     if (*x == NULL) {
         _lfortran_alloc(x, y_len+1, x_string_size, x_string_capacity); // Allocate new memory for x.
     } else {
-        if(*x_string_capacity < y_len){
-        extend_string(x, y_len+1, x_string_capacity);
-        *x_string_size = y_len;
+        int8_t null_char_len = 1;
+        if(*x_string_capacity < (y_len + null_char_len)){
+            extend_string(x, y_len+1, x_string_capacity);
+            *x_string_size = y_len;
         }
     }
     int64_t null_character_index = x_len;
