@@ -1113,6 +1113,8 @@ RUN(NAME implicit_interface_17 LABELS gfortran llvm2 EXTRA_ARGS --implicit-inter
 
 RUN(NAME implicit_typing_01 LABELS gfortran llvmImplicit)
 RUN(NAME implicit_typing_02 LABELS gfortran llvmImplicit)
+RUN(NAME implicit_typing_03 LABELS gfortran llvmImplicit)
+
 
 RUN(NAME generic_name_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME generic_name_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
