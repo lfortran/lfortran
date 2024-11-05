@@ -1,0 +1,13 @@
+{
+    "basename": "run-array_06_cc-e5490ba",
+    "cmd": "lfortran --continue-compilation --no-color {infile}",
+    "infile": "tests/errors/array_06_cc.f90",
+    "infile_hash": "a2934ed73b27bb33b6f812f17615780a23513b88cf68a4dcc98f0f72",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "run-array_06_cc-e5490ba.stdout",
+    "stdout_hash": "a779ee4f7341ddce58a41cee3d249ecf1b37216d7d4f16eb4e0f528e",
+    "stderr": "run-array_06_cc-e5490ba.stderr",
+    "stderr_hash": "40279d827c309a6f1a8612615495a233cbb6f1d158a6b3f442710569",
+    "returncode": 0
+}

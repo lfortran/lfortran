@@ -1,4 +1,4 @@
-semantic error: Rank mismatch in array reference: the array `a` has rank `1`, but is referenced as rank `2`
+semantic error: Rank mismatch in array reference: the array `a` has rank `1, but is referenced as rank `2
  --> tests/errors/array_03.f90:5:1
   |
 5 | a(:,:) = 1
