@@ -628,6 +628,7 @@ int python_wrapper(const std::string &infile, std::string array_order,
     LCompilers::diag::Diagnostics diagnostics;
     LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
         r = fe.get_asr2(input, lm, diagnostics);
+    bool has_error_w_cc = diagnostics.has_error() && compiler_options.continue_compilation;
     std::cerr << diagnostics.render(lm, compiler_options);
     if (!r.ok) {
         LCOMPILERS_ASSERT(diagnostics.has_error())
@@ -663,7 +664,7 @@ int python_wrapper(const std::string &infile, std::string array_order,
         std::cout << LCompilers::pickle(*asr, compiler_options.use_colors, compiler_options.indent,
                 compiler_options.po.with_intrinsic_mods) << std::endl;
     }
-    return 0;
+    return has_error_w_cc;
 }
 
 int emit_cpp(const std::string &infile, CompilerOptions &compiler_options)
@@ -766,7 +767,7 @@ int emit_fortran(const std::string &infile, CompilerOptions &compiler_options) {
     std::cerr << diagnostics.render(lm, compiler_options);
     if (src.ok) {
         std::cout << src.result;
-        return 0;
+        return diagnostics.has_error() && compiler_options.continue_compilation;
     } else {
         LCOMPILERS_ASSERT(diagnostics.has_error())
         return 1;
@@ -942,7 +943,7 @@ int emit_llvm(const std::string &infile, LCompilers::PassManager& pass_manager,
     std::cerr << diagnostics.render(lm, compiler_options);
     if (llvm.ok) {
         std::cout << llvm.result;
-        return 0;
+        return diagnostics.has_error() && compiler_options.continue_compilation;
     } else {
         LCOMPILERS_ASSERT(diagnostics.has_error())
         return 1;
@@ -999,6 +1000,7 @@ int compile_src_to_object_file(const std::string &infile,
     LCompilers::diag::Diagnostics diagnostics;
     LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
         result = fe.get_asr2(input, lm, diagnostics);
+    bool has_error_w_cc = diagnostics.has_error() && compiler_options.continue_compilation;
     std::cerr << diagnostics.render(lm, compiler_options);
     if (result.ok) {
         asr = result.result;
@@ -1059,8 +1061,8 @@ int compile_src_to_object_file(const std::string &infile,
     } else {
         e.save_object_file(*(m->m_m), outfile);
     }
-    
-    return 0;
+
+    return has_error_w_cc;
 }
 
 int compile_llvm_to_object_file(const std::string& infile,
@@ -2601,6 +2603,7 @@ int main_app(int argc, char *argv[]) {
         }
     }
 
+    int err_ = 0;
     std::vector<std::string> object_files;
     for (const auto &arg_file : arg_files) {
         int err = 0;
@@ -2655,11 +2658,12 @@ int main_app(int argc, char *argv[]) {
             // assume it's an object file
             tmp_o = arg_file;
         }
-        if (err) return err;
+        if (err && !compiler_options.continue_compilation) return err;
+        err_ = err;
         object_files.push_back(tmp_o);
     }
 
-    return link_executable(object_files, outfile, runtime_library_dir, backend, static_link, shared_link,
+    return err_ + link_executable(object_files, outfile, runtime_library_dir, backend, static_link, shared_link,
                            link_with_gcc, true, arg_v, arg_L, arg_l, linker_flags, compiler_options);
 }
 
