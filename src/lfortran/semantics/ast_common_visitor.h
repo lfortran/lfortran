@@ -3850,7 +3850,7 @@ public:
             diag.add(Diagnostic(
                 "Rank mismatch in array reference: the array `"
                 + var_name + "` has rank `" + std::to_string(n_dims) +
-                ", but is referenced as rank `" + std::to_string(n_args) + "",
+                ", but is referenced as rank `" + std::to_string(n_args) + "`",
                 Level::Error, Stage::Semantic, {
                     Label("",{loc})
                 }));
