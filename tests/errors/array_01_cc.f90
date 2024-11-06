@@ -3,6 +3,6 @@ implicit none
 
 integer :: a(5)
 a = []
-print *, a
+print *, "compilation continued"
 
 end program
