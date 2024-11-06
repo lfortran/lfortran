@@ -314,7 +314,7 @@
                                             ()
                                             [(StringConstant
                                                 "point: "
-                                                (Character 1 7 () PointerString)
+                                                (String 1 7 () PointerString)
                                             )
                                             (StructInstanceMember
                                                 (Var 7 an)
@@ -329,7 +329,7 @@
                                                 ()
                                             )]
                                             FormatFortran
-                                            (Character -1 0 () PointerString)
+                                            (String -1 0 () PointerString)
                                             ()
                                         )
                                     )]
@@ -400,7 +400,7 @@
                                             ()
                                             [(StringConstant
                                                 "color_point: "
-                                                (Character 1 13 () PointerString)
+                                                (String 1 13 () PointerString)
                                             )
                                             (StructInstanceMember
                                                 (Var 8 an)
@@ -421,7 +421,7 @@
                                                 ()
                                             )]
                                             FormatFortran
-                                            (Character -1 0 () PointerString)
+                                            (String -1 0 () PointerString)
                                             ()
                                         )
                                     )]

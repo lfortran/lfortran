@@ -78,9 +78,7 @@
         (Print
             0
             ()
-            [(String
-                "1"
-            )
+            [(String "1")
             j]
             ()
         )
@@ -91,9 +89,7 @@
             [(Print
                 0
                 ()
-                [(String
-                    "2"
-                )]
+                [(String "2")]
                 ()
             )
             (DataStmt
@@ -491,9 +487,7 @@
             (Print
                 0
                 ()
-                [(String
-                    "3"
-                )]
+                [(String "3")]
                 ()
             )]
             ()
@@ -503,9 +497,7 @@
         (Print
             0
             ()
-            [(String
-                "4"
-            )]
+            [(String "4")]
             ()
         )
         (DataStmt
@@ -542,9 +534,7 @@
         (Print
             0
             ()
-            [(String
-                "5"
-            )]
+            [(String "5")]
             ()
         )]
         []

@@ -50,7 +50,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () PointerString)
+                                                    (String 1 -1 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -60,7 +60,7 @@
                                         })
                                     new_string
                                     (FunctionType
-                                        [(Character 1 -1 () PointerString)]
+                                        [(String 1 -1 () PointerString)]
                                         (StructType
                                             2 string_type
                                         )
@@ -297,7 +297,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () DescriptorString)
+                                                        (String 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -370,7 +370,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () PointerString)
+                                                    (String 1 -1 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -380,7 +380,7 @@
                                         })
                                     new_string
                                     (FunctionType
-                                        [(Character 1 -1 () PointerString)]
+                                        [(String 1 -1 () PointerString)]
                                         (StructType
                                             8 string_type
                                         )

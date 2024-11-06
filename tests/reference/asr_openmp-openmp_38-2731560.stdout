@@ -1252,21 +1252,21 @@
                                 ()
                                 [(StringConstant
                                     "iy->"
-                                    (Character 1 4 () PointerString)
+                                    (String 1 4 () PointerString)
                                 )
                                 (Var 2 iy)
                                 (StringConstant
                                     "ix->"
-                                    (Character 1 4 () PointerString)
+                                    (String 1 4 () PointerString)
                                 )
                                 (Var 2 ix)
                                 (StringConstant
                                     "iz->"
-                                    (Character 1 4 () PointerString)
+                                    (String 1 4 () PointerString)
                                 )
                                 (Var 2 iz)]
                                 FormatFortran
-                                (Character -1 0 () PointerString)
+                                (String -1 0 () PointerString)
                                 ()
                             )
                         )]

@@ -3224,7 +3224,7 @@
                                             ()
                                             [(Var 15 xi)]
                                             FormatFortran
-                                            (Character -1 0 () PointerString)
+                                            (String -1 0 () PointerString)
                                             ()
                                         )
                                     )
@@ -3233,7 +3233,7 @@
                                             ()
                                             [(Var 15 xr)]
                                             FormatFortran
-                                            (Character -1 0 () PointerString)
+                                            (String -1 0 () PointerString)
                                             ()
                                         )
                                     )
@@ -3242,7 +3242,7 @@
                                             ()
                                             [(Var 15 xm)]
                                             FormatFortran
-                                            (Character -1 0 () PointerString)
+                                            (String -1 0 () PointerString)
                                             ()
                                         )
                                     )]

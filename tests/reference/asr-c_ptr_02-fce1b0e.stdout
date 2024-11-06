@@ -376,7 +376,7 @@
                             ()
                             [(Var 2 c_arr)]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )
                     )
@@ -385,7 +385,7 @@
                             ()
                             [(Var 2 r_ptr)]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )
                     )]

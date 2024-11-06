@@ -21,7 +21,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () PointerString)
+                                                    (String 1 -1 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -47,7 +47,7 @@
                                         })
                                     f90_assert
                                     (FunctionType
-                                        [(Character 1 -1 () PointerString)
+                                        [(String 1 -1 () PointerString)
                                         (Integer 4)]
                                         ()
                                         Source
@@ -71,22 +71,22 @@
                                                 (StringConcat
                                                     (StringConstant
                                                         "Assertion failed at "
-                                                        (Character 1 20 () PointerString)
+                                                        (String 1 20 () PointerString)
                                                     )
                                                     (Var 4 file)
-                                                    (Character 1 -1 () PointerString)
+                                                    (String 1 -1 () PointerString)
                                                     ()
                                                 )
                                                 (StringConstant
                                                     ":"
-                                                    (Character 1 1 () PointerString)
+                                                    (String 1 1 () PointerString)
                                                 )
-                                                (Character 1 -1 () PointerString)
+                                                (String 1 -1 () PointerString)
                                                 ()
                                             )
                                             (Var 4 line)]
                                             FormatFortran
-                                            (Character -1 0 () PointerString)
+                                            (String -1 0 () PointerString)
                                             ()
                                         )
                                     )
@@ -209,7 +209,7 @@
                             ()
                             [((StringConstant
                                 "tests/preprocessor12.f90"
-                                (Character 1 24 () PointerString)
+                                (String 1 24 () PointerString)
                             ))
                             ((IntegerConstant 7 (Integer 4) Decimal))]
                             ()
@@ -239,7 +239,7 @@
                             ()
                             [((StringConstant
                                 "tests/preprocessor12.f90"
-                                (Character 1 24 () PointerString)
+                                (String 1 24 () PointerString)
                             ))
                             ((IntegerConstant 8 (Integer 4) Decimal))]
                             ()
@@ -281,7 +281,7 @@
                             ()
                             [((StringConstant
                                 "tests/preprocessor12.f90"
-                                (Character 1 24 () PointerString)
+                                (String 1 24 () PointerString)
                             ))
                             ((IntegerConstant 9 (Integer 4) Decimal))]
                             ()
@@ -307,7 +307,7 @@
                             ()
                             [((StringConstant
                                 "tests/preprocessor12.f90"
-                                (Character 1 24 () PointerString)
+                                (String 1 24 () PointerString)
                             ))
                             ((IntegerConstant 11 (Integer 4) Decimal))]
                             ()
@@ -337,7 +337,7 @@
                             ()
                             [((StringConstant
                                 "tests/preprocessor12.f90"
-                                (Character 1 24 () PointerString)
+                                (String 1 24 () PointerString)
                             ))
                             ((IntegerConstant 13 (Integer 4) Decimal))]
                             ()

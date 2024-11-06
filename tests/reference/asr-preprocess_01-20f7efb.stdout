@@ -51,7 +51,7 @@
                     (Print
                         (StringConstant
                             "Else condition"
-                            (Character 1 14 () PointerString)
+                            (String 1 14 () PointerString)
                         )
                     )
                     (Assignment
@@ -64,7 +64,7 @@
                             ()
                             [(Var 2 x)]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )
                     )

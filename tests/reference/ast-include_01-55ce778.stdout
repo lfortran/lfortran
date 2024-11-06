@@ -17,17 +17,13 @@
         [(Print
             0
             ()
-            [(String
-                "From B"
-            )]
+            [(String "From B")]
             ()
         )
         (Print
             0
             ()
-            [(String
-                "From C"
-            )]
+            [(String "From C")]
             (TriviaNode
                 []
                 [(EndOfLine)
@@ -38,9 +34,7 @@
         (Print
             0
             ()
-            [(String
-                "From A"
-            )]
+            [(String "From A")]
             ()
         )]
         []
@@ -64,9 +58,7 @@
         (Print
             0
             ()
-            [(String
-                "From Main"
-            )]
+            [(String "From Main")]
             ()
         )]
         []

@@ -167,14 +167,14 @@
                                     Local
                                     (StringConstant
                                         "B"
-                                        (Character 1 1 () PointerString)
+                                        (String 1 1 () PointerString)
                                     )
                                     (StringConstant
                                         "B"
-                                        (Character 1 1 () PointerString)
+                                        (String 1 1 () PointerString)
                                     )
                                     Parameter
-                                    (Character 1 1 () PointerString)
+                                    (String 1 1 () PointerString)
                                     ()
                                     Source
                                     Public
@@ -221,12 +221,12 @@
                         [(CaseStmt
                             [(StringConstant
                                 "A"
-                                (Character 1 1 () PointerString)
+                                (String 1 1 () PointerString)
                             )]
                             [(Print
                                 (StringConstant
                                     "Excellent!"
-                                    (Character 1 10 () PointerString)
+                                    (String 1 10 () PointerString)
                                 )
                             )]
                             .false.
@@ -234,7 +234,7 @@
                         (CaseStmt
                             [(StringConstant
                                 "B"
-                                (Character 1 1 () PointerString)
+                                (String 1 1 () PointerString)
                             )]
                             [(If
                                 (IntegerCompare
@@ -247,7 +247,7 @@
                                 [(Print
                                     (StringConstant
                                         "a == b"
-                                        (Character 1 6 () PointerString)
+                                        (String 1 6 () PointerString)
                                     )
                                 )
                                 (If
@@ -264,13 +264,13 @@
                                     [(Print
                                         (StringConstant
                                             "ap == bp"
-                                            (Character 1 8 () PointerString)
+                                            (String 1 8 () PointerString)
                                         )
                                     )]
                                     [(Print
                                         (StringConstant
                                             "ap /= bp"
-                                            (Character 1 8 () PointerString)
+                                            (String 1 8 () PointerString)
                                         )
                                     )]
                                 )]
@@ -296,7 +296,7 @@
                                     [(Print
                                         (StringConstant
                                             "ap == cp"
-                                            (Character 1 8 () PointerString)
+                                            (String 1 8 () PointerString)
                                         )
                                     )
                                     (If
@@ -313,13 +313,13 @@
                                         [(Print
                                             (StringConstant
                                                 "cp == dp"
-                                                (Character 1 8 () PointerString)
+                                                (String 1 8 () PointerString)
                                             )
                                         )]
                                         [(Print
                                             (StringConstant
                                                 "cp /= dp"
-                                                (Character 1 8 () PointerString)
+                                                (String 1 8 () PointerString)
                                             )
                                         )]
                                     )]
@@ -334,7 +334,7 @@
                                         [(Print
                                             (StringConstant
                                                 "c == d"
-                                                (Character 1 6 () PointerString)
+                                                (String 1 6 () PointerString)
                                             )
                                         )]
                                         []
@@ -346,12 +346,12 @@
                         (CaseStmt
                             [(StringConstant
                                 "C"
-                                (Character 1 1 () PointerString)
+                                (String 1 1 () PointerString)
                             )]
                             [(Print
                                 (StringConstant
                                     "Well done"
-                                    (Character 1 9 () PointerString)
+                                    (String 1 9 () PointerString)
                                 )
                             )]
                             .false.
@@ -359,12 +359,12 @@
                         (CaseStmt
                             [(StringConstant
                                 "D"
-                                (Character 1 1 () PointerString)
+                                (String 1 1 () PointerString)
                             )]
                             [(Print
                                 (StringConstant
                                     "You passed"
-                                    (Character 1 10 () PointerString)
+                                    (String 1 10 () PointerString)
                                 )
                             )]
                             .false.
@@ -372,12 +372,12 @@
                         (CaseStmt
                             [(StringConstant
                                 "F"
-                                (Character 1 1 () PointerString)
+                                (String 1 1 () PointerString)
                             )]
                             [(Print
                                 (StringConstant
                                     "Better try again"
-                                    (Character 1 16 () PointerString)
+                                    (String 1 16 () PointerString)
                                 )
                             )]
                             .false.
@@ -385,7 +385,7 @@
                         [(Print
                             (StringConstant
                                 "Invalid grade"
-                                (Character 1 13 () PointerString)
+                                (String 1 13 () PointerString)
                             )
                         )]
                         .false.
@@ -395,11 +395,11 @@
                             ()
                             [(StringConstant
                                 "Your grade is "
-                                (Character 1 14 () PointerString)
+                                (String 1 14 () PointerString)
                             )
                             (Var 2 grade_fixed)]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )
                     )
@@ -422,7 +422,7 @@
                             [(Print
                                 (StringConstant
                                     "Pass!"
-                                    (Character 1 5 () PointerString)
+                                    (String 1 5 () PointerString)
                                 )
                             )]
                         )
@@ -438,14 +438,14 @@
                             [(Print
                                 (StringConstant
                                     "Failed!"
-                                    (Character 1 7 () PointerString)
+                                    (String 1 7 () PointerString)
                                 )
                             )]
                         )]
                         [(Print
                             (StringConstant
                                 "Invalid marks"
-                                (Character 1 13 () PointerString)
+                                (String 1 13 () PointerString)
                             )
                         )]
                         .false.
@@ -455,11 +455,11 @@
                             ()
                             [(StringConstant
                                 "Your marks are "
-                                (Character 1 15 () PointerString)
+                                (String 1 15 () PointerString)
                             )
                             (Var 2 marks)]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )
                     )
@@ -477,7 +477,7 @@
                             [(Print
                                 (StringConstant
                                     "Pass!"
-                                    (Character 1 5 () PointerString)
+                                    (String 1 5 () PointerString)
                                 )
                             )]
                         )
@@ -493,14 +493,14 @@
                             [(Print
                                 (StringConstant
                                     "Failed!"
-                                    (Character 1 7 () PointerString)
+                                    (String 1 7 () PointerString)
                                 )
                             )]
                         )]
                         [(Print
                             (StringConstant
                                 "Invalid marks"
-                                (Character 1 13 () PointerString)
+                                (String 1 13 () PointerString)
                             )
                         )]
                         .false.
@@ -510,11 +510,11 @@
                             ()
                             [(StringConstant
                                 "Your marks are "
-                                (Character 1 15 () PointerString)
+                                (String 1 15 () PointerString)
                             )
                             (Var 2 marks)]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )
                     )]
