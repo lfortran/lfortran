@@ -9,5 +9,5 @@
     "stdout_hash": "a779ee4f7341ddce58a41cee3d249ecf1b37216d7d4f16eb4e0f528e",
     "stderr": "run-array_02_cc-634bad3.stderr",
     "stderr_hash": "e5dac3833910ebb373f5c18d40cbb77da46d1932776c3970b6a1c2f5",
-    "returncode": 0
+    "returncode": 1
 }
