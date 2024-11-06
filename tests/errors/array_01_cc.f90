@@ -1,4 +1,4 @@
-program array_01
+program array_01_cc
 implicit none
 
 integer :: a(5)
