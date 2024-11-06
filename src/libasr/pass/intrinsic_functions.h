@@ -4696,7 +4696,7 @@ namespace StringLenTrim {
         SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
         Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
         declare_basic_variables("_lcompilers_len_trim_" + type_to_str_python(arg_types[0]));
-        fill_func_arg("str", ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -1, nullptr, ASR::string_physical_typeType::PointerString)));
+        fill_func_arg("str", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, -1, nullptr, ASR::string_physical_typeType::PointerString)));
         auto result = declare("result", return_type, ReturnVar);
 
         /*
@@ -4753,9 +4753,9 @@ namespace StringTrim {
         SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
         Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
         declare_basic_variables("_lcompilers_trim_" + type_to_str_python(arg_types[0]));
-        fill_func_arg("str", ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -1, nullptr, ASR::string_physical_typeType::PointerString)));
+        fill_func_arg("str", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, -1, nullptr, ASR::string_physical_typeType::PointerString)));
         ASR::expr_t* func_call_lentrim = StringLenTrim::StringLenTrim(b, args[0], int32, scope);
-        return_type = TYPE(ASR::make_Character_t(al, loc, 1, -3, func_call_lentrim, ASR::string_physical_typeType::PointerString));
+        return_type = TYPE(ASR::make_String_t(al, loc, 1, -3, func_call_lentrim, ASR::string_physical_typeType::PointerString));
         auto result = declare("result", return_type, ReturnVar);
 
         /*
@@ -4770,7 +4770,7 @@ namespace StringTrim {
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
-        return_type = TYPE(ASR::make_Character_t(al, loc, 1, -3, EXPR(ASR::make_StringLen_t(al, loc, new_args[0].m_value, int32, nullptr)), ASR::string_physical_typeType::PointerString));
+        return_type = TYPE(ASR::make_String_t(al, loc, 1, -3, EXPR(ASR::make_StringLen_t(al, loc, new_args[0].m_value, int32, nullptr)), ASR::string_physical_typeType::PointerString));
         scope->add_symbol(fn_name, f_sym);
         return b.Call(f_sym, new_args, return_type, nullptr);
     }

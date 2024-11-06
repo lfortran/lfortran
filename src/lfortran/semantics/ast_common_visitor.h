@@ -4165,8 +4165,8 @@ public:
                         if(!l && !r){
                             // No runtime slicing is required. 
                             // Use the actual type of lhs as the type of the resulting expr from string slicing operation.
-                            char_type = ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, a_len, a_len_expr, 
-                                ASR::down_cast<ASR::Character_t>(
+                            char_type = ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, a_len, a_len_expr, 
+                                ASR::down_cast<ASR::String_t>(
                                 ASRUtils::type_get_past_array_pointer_allocatable(v_type))->m_physical_type));
                         } else { // resulting string is of pointerString physical type
                             char_type = ASRUtils::TYPE(ASR::make_String_t(al, loc,
