@@ -29,8 +29,8 @@ bool is_program_end(AST::Name_t* name) {
     // "end program" should not be a name. Ideally, it should be a special entity.
     // It is used as a Name_t here, so that `end`, `endprogram` and `end program`
     // can all be handled together and this simplifies the code logic.
-    return (strcmp(name->m_id, "end") == 0 || strcmp(name->m_id, "endprogram") == 0
-            || strcmp(name->m_id, "end program") == 0);
+    return (to_lower(name->m_id) == "end" || to_lower(name->m_id) == "endprogram"
+            || to_lower(name->m_id) == "end program");
 }
 
 void fix_program_without_program_line(Allocator &al, AST::TranslationUnit_t &ast) {
