@@ -3972,7 +3972,7 @@ public:
                 ASR::make_DoConcurrentLoop_t(al,loc, heads.p, heads.n, m_shared.p,
                 m_shared.n, m_local.p, m_local.n, m_reduction.p, m_reduction.n, nullptr, 0)));
                 
-            } else if ( strcmp(x.m_construct_name, "do") == 0 ) {
+            } else if ( to_lower(x.m_construct_name) == "do" ) {
                 // pass
             } else {
                 throw SemanticError("The construct "+ std::string(x.m_construct_name)

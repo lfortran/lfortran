@@ -87,7 +87,7 @@ void fix_program_without_program_line(Allocator &al, AST::TranslationUnit_t &ast
             AST::expr_t* expr = AST::down_cast<AST::expr_t>(ast.m_items[i]);
             if (AST::is_a<AST::Name_t>(*expr)) {
                 AST::Name_t* name = AST::down_cast<AST::Name_t>(expr);
-                if (strcmp(name->m_id, "stop") == 0) {
+                if (to_lower(name->m_id) == "stop") {
                     AST::ast_t* stop_ast = AST::make_Stop_t(al, name->base.base.loc, 0, nullptr, nullptr, nullptr);
                     body.push_back(al, AST::down_cast<AST::stmt_t>(stop_ast));
                 } else if (is_program_end(name)) {
@@ -97,7 +97,7 @@ void fix_program_without_program_line(Allocator &al, AST::TranslationUnit_t &ast
 
                     global_items.push_back(al, program_ast);
                     program_added = true;
-                } else if (strcmp(name->m_id, "contains") == 0) {
+                } else if (to_lower(name->m_id) == "contains") {
                     contains = true;
                 } else {
                     throw parser_local::ParserError("Statement or Declaration expected inside program, found Variable name", ast.m_items[i]->loc);
