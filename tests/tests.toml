@@ -3712,6 +3712,10 @@ ast = true
 filename = "parser/program_without_line_07.f90"
 ast = true
 
+[[test]]
+filename = "parser/derived_type_without_start_program.f90"
+ast = true
+
 # Parser errors
 
 [[test]]
