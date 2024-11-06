@@ -126,6 +126,14 @@ public:
                     tmp = nullptr;
                     tmp_vec.clear();
                 }
+            } catch (const SemanticError &e) {
+                if (!compiler_options.continue_compilation) {
+                    throw e;
+                } else {
+                    diag.add(e.d);
+                    tmp = nullptr;
+                    tmp_vec.clear();
+                }
             }
             if (tmp != nullptr) {
                 ASR::stmt_t* tmp_stmt = ASRUtils::STMT(tmp);
