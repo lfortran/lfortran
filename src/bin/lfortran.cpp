@@ -628,7 +628,7 @@ int python_wrapper(const std::string &infile, std::string array_order,
     LCompilers::diag::Diagnostics diagnostics;
     LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
         r = fe.get_asr2(input, lm, diagnostics);
-    bool has_error_w_cc = diagnostics.has_error() && compiler_options.continue_compilation;
+    bool has_error_w_cc = compiler_options.continue_compilation && diagnostics.has_error();
     std::cerr << diagnostics.render(lm, compiler_options);
     if (!r.ok) {
         LCOMPILERS_ASSERT(diagnostics.has_error())
@@ -767,7 +767,7 @@ int emit_fortran(const std::string &infile, CompilerOptions &compiler_options) {
     std::cerr << diagnostics.render(lm, compiler_options);
     if (src.ok) {
         std::cout << src.result;
-        return diagnostics.has_error() && compiler_options.continue_compilation;
+        return compiler_options.continue_compilation && diagnostics.has_error();
     } else {
         LCOMPILERS_ASSERT(diagnostics.has_error())
         return 1;
@@ -943,7 +943,7 @@ int emit_llvm(const std::string &infile, LCompilers::PassManager& pass_manager,
     std::cerr << diagnostics.render(lm, compiler_options);
     if (llvm.ok) {
         std::cout << llvm.result;
-        return diagnostics.has_error() && compiler_options.continue_compilation;
+        return compiler_options.continue_compilation && diagnostics.has_error();
     } else {
         LCOMPILERS_ASSERT(diagnostics.has_error())
         return 1;
@@ -1000,7 +1000,7 @@ int compile_src_to_object_file(const std::string &infile,
     LCompilers::diag::Diagnostics diagnostics;
     LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
         result = fe.get_asr2(input, lm, diagnostics);
-    bool has_error_w_cc = diagnostics.has_error() && compiler_options.continue_compilation;
+    bool has_error_w_cc = compiler_options.continue_compilation && diagnostics.has_error();
     std::cerr << diagnostics.render(lm, compiler_options);
     if (result.ok) {
         asr = result.result;
