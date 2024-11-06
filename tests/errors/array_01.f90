@@ -1,8 +1,7 @@
-program array_01
+program array_07
 implicit none
 
 integer :: a(5)
 a = []
-print *, a
 
 end program
