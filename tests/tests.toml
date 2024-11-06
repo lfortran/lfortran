@@ -3716,6 +3716,10 @@ ast = true
 filename = "parser/derived_type_without_start_program.f90"
 ast = true
 
+[[test]]
+filename = "parser/enum_decl_without_start_program.f90"
+ast = true
+
 # Parser errors
 
 [[test]]
