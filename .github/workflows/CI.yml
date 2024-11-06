@@ -845,6 +845,37 @@ jobs:
           fetch-depth: 0
 
       - uses: mamba-org/setup-micromamba@v1.8.0
+        if: contains(matrix.llvm-version, '19')
+        with:
+          micromamba-version: '1.5.10-0'
+          environment-file: ci/environment_linux_llvm.yml
+          create-args: >-
+            python=${{ matrix.python-version }}
+            llvmdev=${{ matrix.llvm-version }}
+            bison=3.4
+            openblas=0.3.21
+            llvm-openmp=14.0.4
+            cmake=3.26.4
+            make=4.3
+            nodejs=18.20.4
+
+      - uses: mamba-org/setup-micromamba@v1.8.0
+        if: contains(matrix.llvm-version, '10')
+        with:
+          micromamba-version: '1.5.10-0'
+          environment-file: ci/environment_linux_llvm.yml
+          create-args: >-
+            python=${{ matrix.python-version }}
+            llvmdev=${{ matrix.llvm-version }}
+            bison=3.4
+            openblas=0.3.21
+            llvm-openmp=14.0.4
+            cmake=3.26.4
+            make=4.3
+            nodejs=18.13.0
+        
+      - uses: mamba-org/setup-micromamba@v1.8.0
+        if: "!(contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19'))"
         with:
           micromamba-version: '1.5.10-0'
           environment-file: ci/environment_linux_llvm.yml
@@ -862,7 +893,75 @@ jobs:
           variant: sccache
           key: ${{ github.job }}-${{ matrix.llvm-version }}
 
+      - name: Setup WASI SDK
+        if: contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19')
+        shell: bash -e -l {0}
+        run: |
+          cd $HOME
+          curl -o wasi-sdk.tar.gz -L https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-21/wasi-sdk-21.0-linux.tar.gz
+          tar -xvf wasi-sdk.tar.gz
+          export WASI_SDK_PATH=$HOME/wasi-sdk-21.0
+          echo $WASI_SDK_PATH
+          $WASI_SDK_PATH/bin/clang --version
+
+      - name: Install wasmtime
+        if: contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19')
+        shell: bash -e -l {0}
+        run: |
+          cd $HOME
+          curl -o wasmtime.tar.gz -L https://github.com/bytecodealliance/wasmtime/releases/download/v19.0.2/wasmtime-v19.0.2-x86_64-linux.tar.xz
+          tar -xvf wasmtime.tar.gz
+          export PATH=$HOME/wasmtime-v19.0.2-x86_64-linux:$PATH
+          wasmtime --version
+
+      - name: Setup EMSCRIPTEN SDK
+        if: contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19')
+        shell: bash -e -l {0}
+        run: |
+          cd $HOME
+          curl -o emsdk.tar.gz -L https://github.com/emscripten-core/emsdk/archive/refs/tags/3.1.59.tar.gz
+          tar -xvf emsdk.tar.gz
+          export EMSDK_PATH=$HOME/emsdk-3.1.59
+          echo $EMSDK_PATH
+          cd $EMSDK_PATH
+          ./emsdk install latest
+          ./emsdk activate latest
+
+      - name: Build Linux ( WASM )
+        if: contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19')
+        shell: bash -e -l {0}
+        run: |
+            export WASI_SDK_PATH=$HOME/wasi-sdk-21.0
+            export EMSDK_PATH=$HOME/emsdk-3.1.59
+            ./build0.sh
+            cmake . -GNinja \
+              -DCMAKE_BUILD_TYPE=Debug \
+              -DWITH_LLVM=yes \
+              -DWITH_TARGET_WASM=yes \
+              -DLFORTRAN_BUILD_ALL=yes \
+              -DWITH_STACKTRACE=no \
+              -DWITH_LIBUNWIND=yes \
+              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
+              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
+              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+
+            cmake --build . -j16 --target install
+
+      - name: Test Linux ( WASM )
+        if: contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19')
+        shell: bash -e -l {0}
+        run: |
+            export WASI_SDK_PATH=$HOME/wasi-sdk-21.0
+            export EMSDK_PATH=$HOME/emsdk-3.1.59
+            export PATH=$HOME/wasmtime-v19.0.2-x86_64-linux:$PATH
+            export WASMTIME_NEW_CLI=0
+            cd integration_tests
+            ./run_tests.py -b llvm_wasm llvm_wasm_emcc
+            ./run_tests.py -b llvm_wasm llvm_wasm_emcc --experimental-simplifier
+
       - name: Build Linux
+        if: "!( (contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19')) )"
         shell: bash -e -l {0}
         run: |
             ./build0.sh
@@ -1177,93 +1276,6 @@ jobs:
             make clean
             make -j8 FORTRAN=lfortran FFLAGS="--fast --skip-pass=promote_allocatable_to_nonallocatable --experimental-simplifier" MPI=no OPENMP=no
             ./gsnap ../qasnap/sample/inp out
-
-  test_llvm_wasm:
-    name: Test LLVM->WASM ${{ matrix.llvm-version }}
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        llvm-version: ["10", "16"]
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: mamba-org/setup-micromamba@v1.8.0
-        with:
-          micromamba-version: '1.5.10-0'
-          environment-file: ci/environment_linux_llvm.yml
-          create-args: >-
-            llvmdev=${{ matrix.llvm-version }}
-            nodejs=18.13.0
-
-      - uses: hendrikmuhs/ccache-action@main
-        with:
-          variant: sccache
-          key: ${{ github.job }}-${{ matrix.llvm-version }}
-
-      - name: Setup WASI SDK
-        shell: bash -e -l {0}
-        run: |
-          cd $HOME
-          curl -o wasi-sdk.tar.gz -L https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-21/wasi-sdk-21.0-linux.tar.gz
-          tar -xvf wasi-sdk.tar.gz
-          export WASI_SDK_PATH=$HOME/wasi-sdk-21.0
-          echo $WASI_SDK_PATH
-          $WASI_SDK_PATH/bin/clang --version
-
-      - name: Install wasmtime
-        shell: bash -e -l {0}
-        run: |
-          cd $HOME
-          curl -o wasmtime.tar.gz -L https://github.com/bytecodealliance/wasmtime/releases/download/v19.0.2/wasmtime-v19.0.2-x86_64-linux.tar.xz
-          tar -xvf wasmtime.tar.gz
-          export PATH=$HOME/wasmtime-v19.0.2-x86_64-linux:$PATH
-          wasmtime --version
-
-      - name: Setup EMSCRIPTEN SDK
-        shell: bash -e -l {0}
-        run: |
-          cd $HOME
-          curl -o emsdk.tar.gz -L https://github.com/emscripten-core/emsdk/archive/refs/tags/3.1.59.tar.gz
-          tar -xvf emsdk.tar.gz
-          export EMSDK_PATH=$HOME/emsdk-3.1.59
-          echo $EMSDK_PATH
-          cd $EMSDK_PATH
-          ./emsdk install latest
-          ./emsdk activate latest
-
-      - name: Build Linux
-        shell: bash -e -l {0}
-        run: |
-            export WASI_SDK_PATH=$HOME/wasi-sdk-21.0
-            export EMSDK_PATH=$HOME/emsdk-3.1.59
-            ./build0.sh
-            cmake . -GNinja \
-              -DCMAKE_BUILD_TYPE=Debug \
-              -DWITH_LLVM=yes \
-              -DWITH_TARGET_WASM=yes \
-              -DLFORTRAN_BUILD_ALL=yes \
-              -DWITH_STACKTRACE=no \
-              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
-              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
-              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
-              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
-
-            cmake --build . -j16 --target install
-
-      - name: Test Linux
-        shell: bash -e -l {0}
-        run: |
-            export WASI_SDK_PATH=$HOME/wasi-sdk-21.0
-            export EMSDK_PATH=$HOME/emsdk-3.1.59
-            export PATH=$HOME/wasmtime-v19.0.2-x86_64-linux:$PATH
-            export WASMTIME_NEW_CLI=0
-            cd integration_tests
-            ./run_tests.py -b llvm_wasm llvm_wasm_emcc
-            ./run_tests.py -b llvm_wasm llvm_wasm_emcc --experimental-simplifier
-
 
   lfortran_debug_build_backends_tarball_cpp_build_wasm_gfortran:
     name: Test GFortran, Debug Build, Fortran, OpenMP, C/C++ backend, Upload Tarball, CPP Build, WASM
