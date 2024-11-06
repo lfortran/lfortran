@@ -3,10 +3,7 @@
         __xx_main
         ()
         []
-        [(ImplicitNone
-            []
-            ()
-        )]
+        []
         [(DerivedType
             test_t
             []
