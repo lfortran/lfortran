@@ -610,6 +610,7 @@ script_unit
     | use_statement
     | implicit_statement
     | var_decl
+    | derived_type_decl
     | statement          %dprec 7
     | expr sep           %dprec 8
     | KW_END_PROGRAM sep { $$ = SYMBOL($1, @$); }

@@ -1,0 +1,35 @@
+(TranslationUnit
+    [(Program
+        __xx_main
+        ()
+        []
+        []
+        [(DerivedType
+            test_t
+            []
+            ()
+            []
+            [(Declaration
+                (AttrType
+                    TypeReal
+                    []
+                    ()
+                    ()
+                    None
+                )
+                []
+                [(a
+                []
+                []
+                ()
+                ()
+                None
+                ())]
+                ()
+            )]
+            []
+        )]
+        []
+        []
+    )]
+)
