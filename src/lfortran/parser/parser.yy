@@ -5,7 +5,7 @@
 %locations
 %glr-parser
 %expect    210 // shift/reduce conflicts
-%expect-rr 189 // reduce/reduce conflicts
+%expect-rr 193 // reduce/reduce conflicts
 
 // Uncomment this to get verbose error messages
 //%define parse.error verbose
@@ -611,6 +611,7 @@ script_unit
     | implicit_statement
     | var_decl
     | derived_type_decl
+    | enum_decl
     | statement          %dprec 7
     | expr sep           %dprec 8
     | KW_END_PROGRAM sep { $$ = SYMBOL($1, @$); }
