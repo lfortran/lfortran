@@ -845,7 +845,7 @@ jobs:
           fetch-depth: 0
 
       - uses: mamba-org/setup-micromamba@v1.8.0
-        if: contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '16')
+        if: contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19')
         with:
           micromamba-version: '1.5.10-0'
           environment-file: ci/environment_linux_llvm.yml
@@ -860,7 +860,7 @@ jobs:
             nodejs=18.13.0
         
       - uses: mamba-org/setup-micromamba@v1.8.0
-        if: "!(contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '16'))"
+        if: "!(contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19'))"
         with:
           micromamba-version: '1.5.10-0'
           environment-file: ci/environment_linux_llvm.yml
@@ -879,7 +879,7 @@ jobs:
           key: ${{ github.job }}-${{ matrix.llvm-version }}
 
       - name: Setup WASI SDK
-        if: contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '16')
+        if: contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19')
         shell: bash -e -l {0}
         run: |
           cd $HOME
@@ -890,7 +890,7 @@ jobs:
           $WASI_SDK_PATH/bin/clang --version
 
       - name: Install wasmtime
-        if: contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '16')
+        if: contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19')
         shell: bash -e -l {0}
         run: |
           cd $HOME
@@ -900,7 +900,7 @@ jobs:
           wasmtime --version
 
       - name: Setup EMSCRIPTEN SDK
-        if: contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '16')
+        if: contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19')
         shell: bash -e -l {0}
         run: |
           cd $HOME
@@ -913,7 +913,7 @@ jobs:
           ./emsdk activate latest
 
       - name: Build Linux ( WASM )
-        if: contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '16')
+        if: contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19')
         shell: bash -e -l {0}
         run: |
             export WASI_SDK_PATH=$HOME/wasi-sdk-21.0
@@ -934,7 +934,7 @@ jobs:
             cmake --build . -j16 --target install
 
       - name: Test Linux ( WASM )
-        if: contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '16')
+        if: contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19')
         shell: bash -e -l {0}
         run: |
             export WASI_SDK_PATH=$HOME/wasi-sdk-21.0
@@ -946,7 +946,7 @@ jobs:
             ./run_tests.py -b llvm_wasm llvm_wasm_emcc --experimental-simplifier
 
       - name: Build Linux
-        if: "!( (contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '16')) )"
+        if: "!( (contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19')) )"
         shell: bash -e -l {0}
         run: |
             ./build0.sh
