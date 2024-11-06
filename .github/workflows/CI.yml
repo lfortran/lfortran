@@ -1060,17 +1060,21 @@ jobs:
             git checkout 6e0f6e7506440b042aae93e57b10444ee6c36f7a
             export PATH="$(pwd)/../src/bin:$PATH"
             make -f Makefile.manual
+            make -f Makefile.manual test
 
             # Test with experimental simplifier
             git clean -dfx
             make -f Makefile.manual F90="lfortran --experimental-simplifier"
+            make -f Makefile.manual test
 
             git clean -dfx
             make -f Makefile.manual F90="lfortran --skip-pass=inline_function_calls,fma --fast"
+            make -f Makefile.manual test
 
             # Test with experimental simplifier
             git clean -dfx
             make -f Makefile.manual F90="lfortran --experimental-simplifier --skip-pass=inline_function_calls,fma --fast"
+            make -f Makefile.manual test
 
       - name: Test fastGPT ( ubuntu-latest )
         shell: bash -e -x -l {0}
