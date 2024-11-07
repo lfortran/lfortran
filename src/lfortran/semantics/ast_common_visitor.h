@@ -1200,7 +1200,16 @@ public:
                 throw SemanticAbort();
             }
         }
-        return ASR::make_Var_t(al, loc, v);
+
+        // The symbol `v` must be a Variable
+        if (ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(v))) {
+            return ASR::make_Var_t(al, loc, v);
+        } else {
+            diag.semantic_error_label("Symbol '" + var_name
+                + "' must be a variable", {loc},
+                "'" + var_name + "' not a variable");
+            throw SemanticAbort();
+        }
     }
 
     std::string create_getter_function(const Location& loc, ASR::symbol_t* end_sym) {
