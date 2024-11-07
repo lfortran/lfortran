@@ -609,7 +609,7 @@ script_unit
     | function
     | use_statement
     | implicit_statement
-    | var_decl
+    | var_decl           %dprec 9
     | derived_type_decl
     | enum_decl
     | statement          %dprec 7
