@@ -754,40 +754,44 @@ public:
     }
 
     llvm::Value* lfortran_str_copy(llvm::Value* dest, llvm::Value *src, bool is_allocatable=false) {
-        std::string runtime_func_name = "_lfortran_strcpy";
-        llvm::Value* char_ptr, *string_size, *string_capacity;
         // If string is of allocatable (physically a DescriptorString), extract (char*, size, capacity).
-        if(is_allocatable) {
-            char_ptr = llvm_utils->create_gep2(string_descriptor, dest, 0);
-            string_size = llvm_utils->CreateLoad2(llvm::Type::getInt64Ty(context),
-                llvm_utils->create_gep2(string_descriptor, dest, 1));
-            string_capacity = llvm_utils->CreateLoad2(llvm::Type::getInt64Ty(context),
-                llvm_utils->create_gep2(string_descriptor, dest, 2));
-                
-            src = llvm_utils->CreateLoad2(character_type,
-                llvm_utils->create_gep2(string_descriptor, src, 0));
+        if(!is_allocatable) {
+            std::string runtime_func_name = "_lfortran_strcpy_pointer_string";
+            llvm::Function *fn = module->getFunction(runtime_func_name);
+            if (!fn) {
+                llvm::FunctionType *function_type = llvm::FunctionType::get(
+                        llvm::Type::getVoidTy(context), 
+                        {
+                            llvm::Type::getInt8Ty(context)->getPointerTo()->getPointerTo(), 
+                            llvm::Type::getInt8Ty(context)->getPointerTo()
+                        }, false);
+                fn = llvm::Function::Create(function_type,
+                        llvm::Function::ExternalLinkage, runtime_func_name, *module);
+            }
+            return builder->CreateCall(fn, {dest, src});
         } else {
-            char_ptr = dest;
-            string_size = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), -1);
-            string_capacity = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), -1);
+            llvm::Value* src_char_ptr, *dest_char_ptr, *string_size, *string_capacity;
+            std::string runtime_func_name = "_lfortran_strcpy_descriptor_string";
+            dest_char_ptr = llvm_utils->create_gep2(string_descriptor, dest, 0);
+            string_size = llvm_utils->create_gep2(string_descriptor, dest, 1);
+            string_capacity = llvm_utils->create_gep2(string_descriptor, dest, 2);
+            src_char_ptr = llvm_utils->CreateLoad2(character_type,
+                llvm_utils->create_gep2(string_descriptor, src, 0));
+            llvm::Function *fn = module->getFunction(runtime_func_name);
+            if (!fn) {
+                llvm::FunctionType *function_type = llvm::FunctionType::get(
+                        llvm::Type::getVoidTy(context), 
+                        {
+                            llvm::Type::getInt8Ty(context)->getPointerTo()->getPointerTo(), 
+                            llvm::Type::getInt8Ty(context)->getPointerTo(),
+                            llvm::Type::getInt64Ty(context)->getPointerTo(),
+                            llvm::Type::getInt64Ty(context)->getPointerTo()
+                        }, false);
+                fn = llvm::Function::Create(function_type,
+                        llvm::Function::ExternalLinkage, runtime_func_name, *module);
+            }
+            return builder->CreateCall(fn, {dest_char_ptr, src_char_ptr, string_size, string_capacity});
         }
-        llvm::Function *fn = module->getFunction(runtime_func_name);
-        if (!fn) {
-            llvm::FunctionType *function_type = llvm::FunctionType::get(
-                     llvm::Type::getVoidTy(context), 
-                     {
-                        llvm::Type::getInt8Ty(context)->getPointerTo()->getPointerTo(), 
-                        llvm::Type::getInt8Ty(context)->getPointerTo(),
-                        llvm::Type::getInt8Ty(context),
-                        llvm::Type::getInt64Ty(context),
-                        llvm::Type::getInt64Ty(context)
-                    }, false);
-            fn = llvm::Function::Create(function_type,
-                    llvm::Function::ExternalLinkage, runtime_func_name, *module);
-        }
-        llvm::Value* is_allocatable_val = llvm::ConstantInt::get(
-            llvm::Type::getInt8Ty(context), llvm::APInt(8, is_allocatable));
-        return builder->CreateCall(fn, {char_ptr, src, is_allocatable_val, string_size, string_capacity});
     }
 
     llvm::Value* lfortran_type_to_str(llvm::Value* arg, llvm::Type* value_type, std::string type, int value_kind) {
@@ -999,6 +1003,8 @@ public:
             if( n_dims == 0 ) {
                 llvm::Function *fn = _Allocate(realloc);
                 if (ASRUtils::is_character(*curr_arg_m_a_type)) {
+                    LCOMPILERS_ASSERT_MSG(ASRUtils::is_descriptorString(expr_type(tmp_expr)),
+                    "string isn't allocatable");
                     // TODO: Add ASR reference to capture the length of the string
                     // during initialization.
                     int64_t ptr_loads_copy = ptr_loads;
@@ -1011,22 +1017,12 @@ public:
                     llvm::Value* alloc_size = builder->CreateAdd(m_len, const_one);
                     std::vector<llvm::Value*> args;
                     llvm::Value* ptr_to_init;
-                    //pass size and capactiy if stringPhysicalType is DescriptorString.
-                    if(ASRUtils::is_descriptorString(expr_type(tmp_expr))) {
-                        llvm::Value* char_ptr_ptr = llvm_utils->create_gep2(string_descriptor, x_arr, 0); // fetch char pointer
-                        llvm::Value* size_ptr = llvm_utils->create_gep2(string_descriptor, x_arr, 1); // fetch size
-                        llvm::Value* capacity_ptr = llvm_utils->create_gep2(string_descriptor, x_arr, 2); // fetch capacity
-                        args = {char_ptr_ptr, alloc_size, size_ptr, capacity_ptr};
-                        builder->CreateCall(fn, args);
-                        ptr_to_init = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context)->getPointerTo(), char_ptr_ptr);
-                    } else {
-                        args = {x_arr, 
-                            alloc_size,
-                            llvm::ConstantInt::getNullValue(llvm::Type::getInt64Ty(context)->getPointerTo()),
-                            llvm::ConstantInt::getNullValue(llvm::Type::getInt64Ty(context)->getPointerTo())};
-                        builder->CreateCall(fn, args);
-                        ptr_to_init = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context)->getPointerTo(), x_arr);
-                    }
+                    llvm::Value* char_ptr_ptr = llvm_utils->create_gep2(string_descriptor, x_arr, 0); // fetch char pointer
+                    llvm::Value* size_ptr = llvm_utils->create_gep2(string_descriptor, x_arr, 1); // fetch size
+                    llvm::Value* capacity_ptr = llvm_utils->create_gep2(string_descriptor, x_arr, 2); // fetch capacity
+                    args = {char_ptr_ptr, alloc_size, size_ptr, capacity_ptr};
+                    builder->CreateCall(fn, args);
+                    ptr_to_init = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context)->getPointerTo(), char_ptr_ptr);
                     string_init(context, *module, *builder, alloc_size, ptr_to_init);
                 } else if(ASR::is_a<ASR::StructType_t>(*curr_arg_m_a_type) ||
                           ASR::is_a<ASR::ClassType_t>(*curr_arg_m_a_type) ||
@@ -1035,6 +1031,7 @@ public:
                     ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)));
                     llvm::Value* malloc_ptr = LLVMArrUtils::lfortran_malloc(
                         context, *module, *builder, malloc_size);
+                    builder->CreateMemSet(malloc_ptr, llvm::ConstantInt::get(context, llvm::APInt(8, 0)), malloc_size, llvm::MaybeAlign());
                     llvm::Type* llvm_arg_type = llvm_utils->get_type_from_ttype_t_util(curr_arg_m_a_type, module.get());
                     builder->CreateStore(builder->CreateBitCast(
                         malloc_ptr, llvm_arg_type->getPointerTo()), x_arr);
@@ -8102,8 +8099,8 @@ public:
             ptr_loads = 0;
             runtime_func_name = "_lfortran_string_write";
             args_type.push_back(character_type->getPointerTo());
-            args_type.push_back(llvm::Type::getInt64Ty(context));
-            args_type.push_back(llvm::Type::getInt64Ty(context));
+            args_type.push_back(llvm::Type::getInt64Ty(context)->getPointerTo());
+            args_type.push_back(llvm::Type::getInt64Ty(context)->getPointerTo());
         } else if ( ASRUtils::is_integer(*expr_type(x.m_unit)) ) {
             ptr_loads = 1;
             runtime_func_name = "_lfortran_file_write";
@@ -8121,15 +8118,15 @@ public:
         } else {
             if (ASRUtils::is_descriptorString(expr_type(x.m_unit))){
                 unit = llvm_utils->create_gep2(string_descriptor, tmp, 0); //fetch char*
-                string_size = llvm_utils->CreateLoad2(llvm::Type::getInt64Ty(context),
-                    llvm_utils->create_gep2(string_descriptor, tmp, 1));
-                string_capacity = llvm_utils->CreateLoad2(llvm::Type::getInt64Ty(context),
-                    llvm_utils->create_gep2(string_descriptor, tmp, 2));
+                string_size = llvm_utils->create_gep2(string_descriptor, tmp, 1);
+                string_capacity = llvm_utils->create_gep2(string_descriptor, tmp, 2);
 
             } else {
                 unit = tmp;
-                string_size = llvm::ConstantInt::get(context, llvm::APInt(64, -1));
-                string_capacity = llvm::ConstantInt::get(context, llvm::APInt(64, -1));
+                llvm::Value* negative_one_constant = builder->CreateAlloca(llvm::Type::getInt64Ty(context), nullptr, "negative_one_constant"); 
+                builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(64, -1, true)), negative_one_constant);
+                string_size = negative_one_constant;
+                string_capacity = negative_one_constant;
             }
         } 
 
