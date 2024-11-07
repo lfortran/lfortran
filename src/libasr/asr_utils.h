@@ -2383,6 +2383,86 @@ inline bool is_array(ASR::ttype_t *x) {
     return extract_dimensions_from_ttype(x, dims) > 0;
 }
 
+static inline bool is_binop_expr(ASR::expr_t* x) {
+    switch( x->type ) {
+        case ASR::exprType::IntegerBinOp:
+        case ASR::exprType::RealBinOp:
+        case ASR::exprType::ComplexBinOp:
+        case ASR::exprType::LogicalBinOp:
+        case ASR::exprType::UnsignedIntegerBinOp:
+        case ASR::exprType::IntegerCompare:
+        case ASR::exprType::RealCompare:
+        case ASR::exprType::ComplexCompare:
+        case ASR::exprType::LogicalCompare:
+        case ASR::exprType::UnsignedIntegerCompare:
+        case ASR::exprType::StringCompare: {
+            return true;
+        }
+        default: {
+            return false;
+        }
+    }
+}
+
+static inline bool is_unaryop_expr(ASR::expr_t* x) {
+    switch( x->type ) {
+        case ASR::exprType::IntegerUnaryMinus:
+        case ASR::exprType::RealUnaryMinus:
+        case ASR::exprType::ComplexUnaryMinus:
+        case ASR::exprType::LogicalNot: {
+            return true;
+        }
+        default: {
+            return false;
+        }
+    }
+}
+
+static inline ASR::expr_t* extract_member_from_unaryop(ASR::expr_t* x) {
+    #define UNARYOP_MEMBER_CASE(X, X_t) \
+    case (ASR::exprType::X) : { \
+        return ASR::down_cast<ASR::X_t>(x)->m_arg; \
+    }
+
+    switch (x->type) {
+        UNARYOP_MEMBER_CASE(IntegerUnaryMinus, IntegerUnaryMinus_t)
+        UNARYOP_MEMBER_CASE(RealUnaryMinus, RealUnaryMinus_t)
+        UNARYOP_MEMBER_CASE(ComplexUnaryMinus, ComplexUnaryMinus_t)
+        UNARYOP_MEMBER_CASE(LogicalNot, LogicalNot_t)
+        default: {
+            LCOMPILERS_ASSERT(false)
+        }
+    }
+}
+
+static inline ASR::expr_t* extract_member_from_binop(ASR::expr_t* x, int8_t member) {
+    #define BINOP_MEMBER_CASE(X, X_t) \
+    case (ASR::exprType::X) : { \
+        if( member == 0 ) { \
+            return ASR::down_cast<ASR::X_t>(x)->m_left; \
+        } else { \
+            return ASR::down_cast<ASR::X_t>(x)->m_right; \
+        } \
+    }
+
+    switch (x->type) {
+        BINOP_MEMBER_CASE(IntegerBinOp, IntegerBinOp_t)
+        BINOP_MEMBER_CASE(RealBinOp, RealBinOp_t)
+        BINOP_MEMBER_CASE(ComplexBinOp, ComplexBinOp_t)
+        BINOP_MEMBER_CASE(LogicalBinOp, LogicalBinOp_t)
+        BINOP_MEMBER_CASE(UnsignedIntegerBinOp, UnsignedIntegerBinOp_t)
+        BINOP_MEMBER_CASE(IntegerCompare, IntegerCompare_t)
+        BINOP_MEMBER_CASE(RealCompare, RealCompare_t)
+        BINOP_MEMBER_CASE(ComplexCompare, ComplexCompare_t)
+        BINOP_MEMBER_CASE(LogicalCompare, LogicalCompare_t)
+        BINOP_MEMBER_CASE(UnsignedIntegerCompare, UnsignedIntegerCompare_t)
+        BINOP_MEMBER_CASE(StringCompare, StringCompare_t)
+        default: {
+            LCOMPILERS_ASSERT(false)
+        }
+    }
+}
+
 static inline ASR::asr_t* make_ArraySize_t_util(
     Allocator &al, const Location &a_loc, ASR::expr_t* a_v,
     ASR::expr_t* a_dim, ASR::ttype_t* a_type, ASR::expr_t* a_value,
@@ -2468,6 +2548,14 @@ static inline ASR::asr_t* make_ArraySize_t_util(
                 break;
             }
         }
+    } else if( is_binop_expr(a_v) && for_type ) {
+        if( ASR::is_a<ASR::Var_t>(*extract_member_from_binop(a_v, 1)) ) {
+            return make_ArraySize_t_util(al, a_loc, extract_member_from_binop(a_v, 1), a_dim, a_type, a_value, for_type);
+        } else {
+            return make_ArraySize_t_util(al, a_loc, extract_member_from_binop(a_v, 0), a_dim, a_type, a_value, for_type);
+        }
+    } else if( is_unaryop_expr(a_v) && for_type ) {
+        return make_ArraySize_t_util(al, a_loc, extract_member_from_unaryop(a_v), a_dim, a_type, a_value, for_type);
     } else {
         ASR::dimension_t* m_dims = nullptr;
         size_t n_dims = ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(a_v), m_dims);
