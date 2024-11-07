@@ -1692,9 +1692,9 @@ public:
                         for(auto struct_member : sym_table_of_struct->get_scope()){
                             if(ASRUtils::is_allocatable(ASRUtils::symbol_type(struct_member.second))){
                                 del_syms.push_back(al, ASRUtils::EXPR(
-                                    ASR::make_StructInstanceMember_t(al, arg_var->base.base.loc,
-                                    subrout_call->m_args[i].m_value, struct_member.second, 
-                                    ASRUtils::symbol_type(struct_member.second), nullptr)));
+                                    ASRUtils::getStructInstanceMember_t(al,subrout_call->m_args[i].m_value->base.loc,
+                                    (ASR::asr_t*)subrout_call->m_args[i].m_value,
+                                    const_cast<ASR::symbol_t*>(sym), struct_member.second, current_scope)));
                             }
                         }
                     }
