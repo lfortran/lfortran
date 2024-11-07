@@ -1109,6 +1109,9 @@ public:
             }
         }
 
+        // TODO: the code below should be simplified:
+        // https://github.com/lfortran/lfortran/issues/5290
+
         // Check for the variable in enum symtab, if enum is declared
         bool from_enum = false;
         {
