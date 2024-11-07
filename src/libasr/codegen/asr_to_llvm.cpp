@@ -441,8 +441,14 @@ public:
         ptr_loads = 2;
         for( int r = 0; r < n_dims; r++ ) {
             ASR::dimension_t m_dim = m_dims[r];
+            if (compiler_options.continue_compilation && !m_dim.m_start) {
+                return ;
+            }
             visit_expr(*(m_dim.m_start));
             llvm::Value* start = tmp;
+            if (compiler_options.continue_compilation && !m_dim.m_length) {
+                return ;
+            }
             visit_expr(*(m_dim.m_length));
             llvm::Value* end = tmp;
             llvm_dims.push_back(std::make_pair(start, end));
