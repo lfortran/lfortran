@@ -818,9 +818,7 @@
                     stop_error
                     []
                     [(()
-                    (String
-                        "Shape parameter must be >= 1"
-                    )
+                    (String "Shape parameter must be >= 1")
                     ()
                     0)]
                     []

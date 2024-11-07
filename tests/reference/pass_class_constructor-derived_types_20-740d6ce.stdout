@@ -44,7 +44,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () DescriptorString)
+                                                        (String 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -102,7 +102,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () DescriptorString)
+                                                        (String 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -400,7 +400,7 @@
                                                         50
                                                         ["src", "lib", "app", "test", "example"]
                                                         (Array
-                                                            (Character 1 10 () PointerString)
+                                                            (String 1 10 () PointerString)
                                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                                             (IntegerConstant 5 (Integer 4) Decimal))]
                                                             FixedSizeArray
@@ -448,13 +448,13 @@
                                                 (Var 7 cmd_settings)
                                                 7 1_fpm_new_settings_name
                                                 (Allocatable
-                                                    (Character 1 -2 () DescriptorString)
+                                                    (String 1 -2 () DescriptorString)
                                                 )
                                                 ()
                                             )
                                             (StringConstant
                                                 "xyz"
-                                                (Character 1 3 () PointerString)
+                                                (String 1 3 () PointerString)
                                             )
                                             ()
                                         )
@@ -566,7 +566,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () PointerString)
+                                                    (String 1 -1 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -592,7 +592,7 @@
                                         })
                                     specified
                                     (FunctionType
-                                        [(Character 1 -1 () PointerString)]
+                                        [(String 1 -1 () PointerString)]
                                         (Logical 4)
                                         Source
                                         Implementation

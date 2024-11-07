@@ -139,17 +139,13 @@
             [(Print
                 0
                 ()
-                [(String
-                    "pass"
-                )]
+                [(String "pass")]
                 ()
             )]
             [(Print
                 0
                 ()
-                [(String
-                    "fail"
-                )]
+                [(String "fail")]
                 ()
             )]
             ()
@@ -247,17 +243,13 @@
             [(Print
                 0
                 ()
-                [(String
-                    "pass"
-                )]
+                [(String "pass")]
                 ()
             )]
             [(Print
                 0
                 ()
-                [(String
-                    "fail"
-                )]
+                [(String "fail")]
                 ()
             )]
             ()

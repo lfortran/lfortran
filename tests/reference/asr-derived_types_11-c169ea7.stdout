@@ -51,29 +51,29 @@
                                     (StringConcat
                                         (StringConstant
                                             "lf"
-                                            (Character 1 2 () PointerString)
+                                            (String 1 2 () PointerString)
                                         )
                                         (StructInstanceMember
                                             (Var 2 type_y)
                                             2 1_y_backslash
-                                            (Character 1 1 () PointerString)
+                                            (String 1 1 () PointerString)
                                             (StringConstant
                                                 "\\"
-                                                (Character 1 1 () PointerString)
+                                                (String 1 1 () PointerString)
                                             )
                                         )
-                                        (Character 1 3 () PointerString)
+                                        (String 1 3 () PointerString)
                                         (StringConstant
                                             "lf\\"
-                                            (Character 1 3 () PointerString)
+                                            (String 1 3 () PointerString)
                                         )
                                     )
                                     (StringConstant
                                         "lf\\"
-                                        (Character 1 3 () PointerString)
+                                        (String 1 3 () PointerString)
                                     )
                                     Save
-                                    (Character 1 3 () PointerString)
+                                    (String 1 3 () PointerString)
                                     ()
                                     Source
                                     Public
@@ -93,14 +93,14 @@
                                                     Local
                                                     (StringConstant
                                                         "\\"
-                                                        (Character 1 1 () PointerString)
+                                                        (String 1 1 () PointerString)
                                                     )
                                                     (StringConstant
                                                         "\\"
-                                                        (Character 1 1 () PointerString)
+                                                        (String 1 1 () PointerString)
                                                     )
                                                     Save
-                                                    (Character 1 1 () PointerString)
+                                                    (String 1 1 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -188,16 +188,16 @@
                             (StructInstanceMember
                                 (Var 4 type_y)
                                 4 1_y_backslash
-                                (Character 1 1 () PointerString)
+                                (String 1 1 () PointerString)
                                 (StringConstant
                                     "\\"
-                                    (Character 1 1 () PointerString)
+                                    (String 1 1 () PointerString)
                                 )
                             )
                             NotEq
                             (StringConstant
                                 "\\"
-                                (Character 1 1 () PointerString)
+                                (String 1 1 () PointerString)
                             )
                             (Logical 4)
                             (LogicalConstant
@@ -216,7 +216,7 @@
                             NotEq
                             (StringConstant
                                 "lf\\"
-                                (Character 1 3 () PointerString)
+                                (String 1 3 () PointerString)
                             )
                             (Logical 4)
                             ()

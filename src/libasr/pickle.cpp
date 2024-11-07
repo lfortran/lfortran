@@ -95,7 +95,7 @@ public:
         else s.append(" ");
         s.append("[");
         int size = x.m_n_data / (ASRUtils::is_character(*x.m_type) ?
-                                ASR::down_cast<ASR::Character_t>(ASRUtils::type_get_past_array(x.m_type))->m_len :
+                                ASR::down_cast<ASR::String_t>(ASRUtils::type_get_past_array(x.m_type))->m_len :
                                 ASRUtils::extract_kind_from_ttype_t(x.m_type));
         int curr = 0;
         for (int i = 0; i < 3; i++) {

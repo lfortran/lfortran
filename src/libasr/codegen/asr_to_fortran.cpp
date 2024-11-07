@@ -177,8 +177,8 @@ public:
                 r += std::to_string(down_cast<ASR::Complex_t>(t)->m_kind);
                 r += ")";
                 break;
-            } case ASR::ttypeType::Character: {
-                ASR::Character_t *c = down_cast<ASR::Character_t>(t);
+            } case ASR::ttypeType::String: {
+                ASR::String_t *c = down_cast<ASR::String_t>(t);
                 r = "character(len=";
                 if(c->m_len > 0) {
                     r += std::to_string(c->m_len);
@@ -936,7 +936,7 @@ public:
                 visit_expr(*sf->m_args[i]);
                 r += src;
             }
-        } else if (ASR::is_a<ASR::Character_t>(*ASRUtils::expr_type(x.m_text))) {
+        } else if (ASR::is_a<ASR::String_t>(*ASRUtils::expr_type(x.m_text))) {
             r += "*";
             r += ", ";
             visit_expr(*x.m_text);

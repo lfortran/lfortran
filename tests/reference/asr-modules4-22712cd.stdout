@@ -297,14 +297,14 @@
                                                     (Var 6 self)
                                                     6 1_toml_value_key
                                                     (Allocatable
-                                                        (Character 1 -2 () DescriptorString)
+                                                        (String 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                 )
                                                 DescriptorString
                                                 PointerString
                                                 (Allocatable
-                                                    (Character 1 -2 () PointerString)
+                                                    (String 1 -2 () PointerString)
                                                 )
                                                 ()
                                             )]
@@ -317,7 +317,7 @@
                                                 (Var 6 self)
                                                 6 1_toml_value_key
                                                 (Allocatable
-                                                    (Character 1 -2 () DescriptorString)
+                                                    (String 1 -2 () DescriptorString)
                                                 )
                                                 ()
                                             )]
@@ -585,14 +585,14 @@
                                                     (Var 23 self)
                                                     23 1_toml_value_key
                                                     (Allocatable
-                                                        (Character 1 -2 () DescriptorString)
+                                                        (String 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                 )
                                                 DescriptorString
                                                 PointerString
                                                 (Allocatable
-                                                    (Character 1 -2 () PointerString)
+                                                    (String 1 -2 () PointerString)
                                                 )
                                                 ()
                                             )]
@@ -605,7 +605,7 @@
                                                 (Var 23 self)
                                                 23 1_toml_value_key
                                                 (Allocatable
-                                                    (Character 1 -2 () DescriptorString)
+                                                    (String 1 -2 () DescriptorString)
                                                 )
                                                 ()
                                             )]
@@ -620,14 +620,14 @@
                                                     (Var 23 self)
                                                     23 1_toml_keyval_raw
                                                     (Allocatable
-                                                        (Character 1 -2 () DescriptorString)
+                                                        (String 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                 )
                                                 DescriptorString
                                                 PointerString
                                                 (Allocatable
-                                                    (Character 1 -2 () PointerString)
+                                                    (String 1 -2 () PointerString)
                                                 )
                                                 ()
                                             )]
@@ -640,7 +640,7 @@
                                                 (Var 23 self)
                                                 23 1_toml_keyval_raw
                                                 (Allocatable
-                                                    (Character 1 -2 () DescriptorString)
+                                                    (String 1 -2 () DescriptorString)
                                                 )
                                                 ()
                                             )]
@@ -736,7 +736,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () DescriptorString)
+                                                        (String 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -782,7 +782,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () DescriptorString)
+                                                        (String 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -889,7 +889,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () DescriptorString)
+                                                        (String 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source

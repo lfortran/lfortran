@@ -1908,7 +1908,7 @@ namespace Spread {
         ASRBuilder b(al, loc);
         int overload_id = 2;
         if(ASR::is_a<ASR::Integer_t>(*type_source) || ASR::is_a<ASR::Real_t>(*type_source) || 
-            ASR::is_a<ASR::Character_t>(*type_source) || ASR::is_a<ASR::Logical_t>(*type_source) ){
+            ASR::is_a<ASR::String_t>(*type_source) || ASR::is_a<ASR::Logical_t>(*type_source) ){
             // Case : When Scalar is passed as source in Spread() 
             is_scalar = true;
             Vec<ASR::expr_t *> m_eles; m_eles.reserve(al, 1);

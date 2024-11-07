@@ -840,7 +840,7 @@ public:
             check_var_external(*x.m_v);
             int n_dims = ASRUtils::extract_n_dims_from_ttype(
                     ASRUtils::expr_type(x.m_v));
-            if (ASR::is_a<ASR::Character_t>(*x.m_type) && n_dims == 0) {
+            if (ASR::is_a<ASR::String_t>(*x.m_type) && n_dims == 0) {
                 // TODO: This seems like a bug, we should not use ArrayItem with
                 // strings but StringItem. For now we ignore it, but we should
                 // fix it
@@ -1179,7 +1179,7 @@ public:
         int64_t n_data = ASRUtils::get_fixed_size_of_array(x.m_type) * ASRUtils::extract_kind_from_ttype_t(x.m_type);
         if (ASRUtils::is_character(*x.m_type)) {
             ASR::ttype_t* t = ASRUtils::type_get_past_array(x.m_type);
-            n_data = ASRUtils::get_fixed_size_of_array(x.m_type) * ASR::down_cast<ASR::Character_t>(t)->m_len;
+            n_data = ASRUtils::get_fixed_size_of_array(x.m_type) * ASR::down_cast<ASR::String_t>(t)->m_len;
         }
         require(n_data == x.m_n_data, "ArrayConstant::m_n_data must match the byte size of the array");
         visit_ttype(*x.m_type);

@@ -232,8 +232,8 @@ static inline int extract_kind_from_ttype_t(const ASR::ttype_t* type) {
         case ASR::ttypeType::Complex: {
             return ASR::down_cast<ASR::Complex_t>(type)->m_kind;
         }
-        case ASR::ttypeType::Character: {
-            return ASR::down_cast<ASR::Character_t>(type)->m_kind;
+        case ASR::ttypeType::String: {
+            return ASR::down_cast<ASR::String_t>(type)->m_kind;
         }
         case ASR::ttypeType::Logical: {
             return ASR::down_cast<ASR::Logical_t>(type)->m_kind;
@@ -275,8 +275,8 @@ static inline void set_kind_to_ttype_t(ASR::ttype_t* type, int kind) {
             ASR::down_cast<ASR::Complex_t>(type)->m_kind = kind;
             break;
         }
-        case ASR::ttypeType::Character: {
-            ASR::down_cast<ASR::Character_t>(type)->m_kind = kind;
+        case ASR::ttypeType::String: {
+            ASR::down_cast<ASR::String_t>(type)->m_kind = kind;
             break;
         }
         case ASR::ttypeType::Logical: {
@@ -567,8 +567,8 @@ static inline std::string type_to_str(const ASR::ttype_t *t)
         case ASR::ttypeType::Logical: {
             return "logical";
         }
-        case ASR::ttypeType::Character: {
-            return "character";
+        case ASR::ttypeType::String: {
+            return "string";
         }
         case ASR::ttypeType::Tuple: {
             return "tuple";
@@ -1511,7 +1511,7 @@ static inline std::string get_type_code(const ASR::ttype_t *t, bool use_undersco
             res = "i1";
             break;
         }
-        case ASR::ttypeType::Character: {
+        case ASR::ttypeType::String: {
             return "str";
         }
         case ASR::ttypeType::Tuple: {
@@ -1697,7 +1697,7 @@ static inline std::string type_to_str_python(const ASR::ttype_t *t, bool for_err
         case ASR::ttypeType::Logical: {
             return "bool";
         }
-        case ASR::ttypeType::Character: {
+        case ASR::ttypeType::String: {
             return "str";
         }
         case ASR::ttypeType::Tuple: {
@@ -1774,7 +1774,7 @@ static inline std::string binop_to_str_python(const ASR::binopType t) {
 }
 
 static inline bool is_immutable(const ASR::ttype_t *type) {
-    return ((ASR::is_a<ASR::Character_t>(*type) || ASR::is_a<ASR::Tuple_t>(*type)
+    return ((ASR::is_a<ASR::String_t>(*type) || ASR::is_a<ASR::Tuple_t>(*type)
         || ASR::is_a<ASR::Complex_t>(*type)));
 }
 
@@ -2094,7 +2094,7 @@ static inline bool is_real(ASR::ttype_t &x) {
 }
 
 static inline bool is_character(ASR::ttype_t &x) {
-    return ASR::is_a<ASR::Character_t>(
+    return ASR::is_a<ASR::String_t>(
         *type_get_past_array(
             type_get_past_allocatable(
                 type_get_past_pointer(&x))));
@@ -2238,7 +2238,7 @@ inline size_t extract_dimensions_from_ttype(ASR::ttype_t *x,
         case ASR::ttypeType::UnsignedInteger:
         case ASR::ttypeType::Real:
         case ASR::ttypeType::Complex:
-        case ASR::ttypeType::Character:
+        case ASR::ttypeType::String:
         case ASR::ttypeType::Logical:
         case ASR::ttypeType::StructType:
         case ASR::ttypeType::EnumType:
@@ -2669,7 +2669,7 @@ inline bool ttype_set_dimensions(ASR::ttype_t** x,
         case ASR::ttypeType::UnsignedInteger:
         case ASR::ttypeType::Real:
         case ASR::ttypeType::Complex:
-        case ASR::ttypeType::Character:
+        case ASR::ttypeType::String:
         case ASR::ttypeType::Logical:
         case ASR::ttypeType::StructType:
         case ASR::ttypeType::EnumType:
@@ -2692,7 +2692,7 @@ static inline bool is_aggregate_type(ASR::ttype_t* asr_type) {
               ASR::is_a<ASR::Real_t>(*asr_type) ||
               ASR::is_a<ASR::Complex_t>(*asr_type) ||
               ASR::is_a<ASR::Logical_t>(*asr_type) ||
-              ASR::is_a<ASR::Character_t>(
+              ASR::is_a<ASR::String_t>(
                 *ASRUtils::type_get_past_pointer(
                     ASRUtils::type_get_past_allocatable(asr_type))) ||
               ASR::is_a<ASR::TypeParameter_t>(*asr_type));
@@ -2748,9 +2748,9 @@ static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
             t_ = ASRUtils::TYPE(ASR::make_Logical_t(al, t->base.loc, tnew->m_kind));
             break;
         }
-        case ASR::ttypeType::Character: {
-            ASR::Character_t* tnew = ASR::down_cast<ASR::Character_t>(t);
-            t_ = ASRUtils::TYPE(ASR::make_Character_t(al, t->base.loc,
+        case ASR::ttypeType::String: {
+            ASR::String_t* tnew = ASR::down_cast<ASR::String_t>(t);
+            t_ = ASRUtils::TYPE(ASR::make_String_t(al, t->base.loc,
                     tnew->m_kind, tnew->m_len, tnew->m_len_expr, tnew->m_physical_type));
             break;
         }
@@ -2770,7 +2770,7 @@ static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
                 physical_type, override_physical_type);
             if( override_physical_type &&
                 (physical_type == ASR::array_physical_typeType::FixedSizeArray ||
-                (physical_type == ASR::array_physical_typeType::CharacterArraySinglePointer &&
+                (physical_type == ASR::array_physical_typeType::StringArraySinglePointer &&
                 dims != nullptr) ) ) {
                 return dup_type;
             }
@@ -2874,8 +2874,8 @@ static inline void set_absent_optional_arguments_to_null(
 // physical type `DescriptorString`.
 static inline bool is_descriptorString(ASR::ttype_t* t){
     return is_character(*t) &&
-        ASR::down_cast<ASR::Character_t>(
-        ASRUtils::type_get_past_array_pointer_allocatable(t))->m_physical_type == ASR::string_physical_typeType::DescriptorString;
+        ASR::down_cast<ASR::String_t>(
+        ASRUtils::type_get_past_array_pointer_allocatable(t))->m_physical_type == ASR::string_physical_typeType::DescriptorString; 
 }
 
 // Create `StringPhysicalCast` node from  `PointerString` --> `DescriptorString`.
@@ -2885,7 +2885,7 @@ static inline ASR::expr_t* cast_string_pointer_to_descriptor(Allocator& al, ASR:
     ASR::ttype_t* string_type = ASRUtils::expr_type(string);
     ASR::ttype_t* stringDescriptor_type = ASRUtils::duplicate_type(al,
         ASRUtils::type_get_past_array_pointer_allocatable(string_type));
-    ASR::down_cast<ASR::Character_t>(stringDescriptor_type)->m_physical_type = ASR::string_physical_typeType::DescriptorString;
+    ASR::down_cast<ASR::String_t>(stringDescriptor_type)->m_physical_type = ASR::string_physical_typeType::DescriptorString;
     ASR::ttype_t* alloctable_stringDescriptor_type = ASRUtils::TYPE(
         ASR::make_Allocatable_t(al, string->base.loc, stringDescriptor_type));
     // Create pointerString to descriptorString cast node
@@ -2902,7 +2902,7 @@ static inline ASR::expr_t* cast_string_descriptor_to_pointer(Allocator& al, ASR:
     is_descriptorString(expr_type(string)));
     // Create string node with `PointerString` physical type
     ASR::ttype_t* stringPointer_type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(string));
-    ASR::down_cast<ASR::Character_t>(ASRUtils::type_get_past_allocatable(stringPointer_type))->m_physical_type = ASR::string_physical_typeType::PointerString;
+    ASR::down_cast<ASR::String_t>(ASRUtils::type_get_past_allocatable(stringPointer_type))->m_physical_type = ASR::string_physical_typeType::PointerString;
     // Create descriptorString to pointerString cast node
     ASR::expr_t* des_to_ptr_string_cast = ASRUtils::EXPR(
         ASR::make_StringPhysicalCast_t(al, string->base.loc , string,
@@ -2952,9 +2952,9 @@ static inline ASR::ttype_t* duplicate_type_without_dims(Allocator& al, const ASR
             ASR::Logical_t* tnew = ASR::down_cast<ASR::Logical_t>(t);
             return ASRUtils::TYPE(ASR::make_Logical_t(al, loc, tnew->m_kind));
         }
-        case ASR::ttypeType::Character: {
-            ASR::Character_t* tnew = ASR::down_cast<ASR::Character_t>(t);
-            return ASRUtils::TYPE(ASR::make_Character_t(al, loc,
+        case ASR::ttypeType::String: {
+            ASR::String_t* tnew = ASR::down_cast<ASR::String_t>(t);
+            return ASRUtils::TYPE(ASR::make_String_t(al, loc,
                         tnew->m_kind, tnew->m_len, tnew->m_len_expr, ASR::string_physical_typeType::PointerString));
         }
         case ASR::ttypeType::StructType: {
@@ -3377,9 +3377,9 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b,
                 ASR::Logical_t *b2 = ASR::down_cast<ASR::Logical_t>(b);
                 return (a2->m_kind == b2->m_kind);
             }
-            case (ASR::ttypeType::Character) : {
-                ASR::Character_t *a2 = ASR::down_cast<ASR::Character_t>(a);
-                ASR::Character_t *b2 = ASR::down_cast<ASR::Character_t>(b);
+            case (ASR::ttypeType::String) : {
+                ASR::String_t *a2 = ASR::down_cast<ASR::String_t>(a);
+                ASR::String_t *b2 = ASR::down_cast<ASR::String_t>(b);
                 return (a2->m_kind == b2->m_kind);
             }
             case (ASR::ttypeType::List) : {
@@ -3560,9 +3560,9 @@ inline bool types_equal_with_substitution(ASR::ttype_t *a, ASR::ttype_t *b,
                 ASR::Logical_t *b2 = ASR::down_cast<ASR::Logical_t>(b);
                 return (a2->m_kind == b2->m_kind);
             }
-            case (ASR::ttypeType::Character) : {
-                ASR::Character_t *a2 = ASR::down_cast<ASR::Character_t>(a);
-                ASR::Character_t *b2 = ASR::down_cast<ASR::Character_t>(b);
+            case (ASR::ttypeType::String) : {
+                ASR::String_t *a2 = ASR::down_cast<ASR::String_t>(a);
+                ASR::String_t *b2 = ASR::down_cast<ASR::String_t>(b);
                 return (a2->m_kind == b2->m_kind);
             }
             case (ASR::ttypeType::List) : {
@@ -4844,7 +4844,7 @@ static inline bool is_pass_array_by_data_possible(ASR::Function_t* x, std::vecto
              argi->m_intent == ASRUtils::intent_inout) &&
             !ASR::is_a<ASR::Allocatable_t>(*argi->m_type) &&
             !ASR::is_a<ASR::StructType_t>(*argi->m_type) &&
-            !ASR::is_a<ASR::Character_t>(*argi->m_type) &&
+            !ASR::is_a<ASR::String_t>(*argi->m_type) &&
             argi->m_presence != ASR::presenceType::Optional) {
             v.push_back(i);
         }
@@ -5221,10 +5221,10 @@ static inline void import_struct_t(Allocator& al,
                 var_type = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, loc, var_type));
             }
         }
-    } else if( ASR::is_a<ASR::Character_t>(*var_type_unwrapped) ) {
-        ASR::Character_t* char_t = ASR::down_cast<ASR::Character_t>(var_type_unwrapped);
+    } else if( ASR::is_a<ASR::String_t>(*var_type_unwrapped) ) {
+        ASR::String_t* char_t = ASR::down_cast<ASR::String_t>(var_type_unwrapped);
         if( char_t->m_len == -1 && intent == ASR::intentType::Local ) {
-            var_type = ASRUtils::TYPE(ASR::make_Character_t(al, loc, char_t->m_kind, 1, nullptr, ASR::string_physical_typeType::PointerString));
+            var_type = ASRUtils::TYPE(ASR::make_String_t(al, loc, char_t->m_kind, 1, nullptr, ASR::string_physical_typeType::PointerString));
             if( is_array ) {
                 var_type = ASRUtils::make_Array_t_util(al, loc, var_type, m_dims, n_dims,
                     ASR::abiType::Source, false, ptype, true);
@@ -5335,8 +5335,8 @@ inline void set_ArrayConstant_value(ASR::ArrayConstant_t* x, ASR::expr_t* value,
             ((bool*)x->m_data)[i] = value_logical->m_value;
             break;
         }
-        case ASR::ttypeType::Character: {
-            ASR::Character_t* char_type = ASR::down_cast<ASR::Character_t>(type);
+        case ASR::ttypeType::String: {
+            ASR::String_t* char_type = ASR::down_cast<ASR::String_t>(type);
             int len = char_type->m_len;
             ASR::StringConstant_t* value_str = ASR::down_cast<ASR::StringConstant_t>(value);
             char* data = value_str->m_s;
@@ -5402,8 +5402,8 @@ inline std::string fetch_ArrayConstant_value(void *data, ASR::ttype_t* type, int
             if (((bool*)data)[i] == 1) return ".true.";
             return ".false.";
         }
-        case ASR::ttypeType::Character: {
-            ASR::Character_t* char_type = ASR::down_cast<ASR::Character_t>(type);
+        case ASR::ttypeType::String: {
+            ASR::String_t* char_type = ASR::down_cast<ASR::String_t>(type);
             int len = char_type->m_len;
             char* data_char = (char*)data + i*len;
             // take first len characters
@@ -5495,8 +5495,8 @@ inline ASR::expr_t* fetch_ArrayConstant_value_helper(Allocator &al, const Locati
                                 ((bool*)data)[i], type));
             return value;
         }
-        case ASR::ttypeType::Character: {
-            ASR::Character_t* char_type = ASR::down_cast<ASR::Character_t>(type);
+        case ASR::ttypeType::String: {
+            ASR::String_t* char_type = ASR::down_cast<ASR::String_t>(type);
             int len = char_type->m_len;
             char* data_char = (char*)data;
             std::string str = std::string(data_char + i*len, len);
@@ -5595,8 +5595,8 @@ inline void* set_ArrayConstant_data(ASR::expr_t** a_args, size_t n_args, ASR::tt
             }
             return (void*) data;
         }
-        case ASR::ttypeType::Character: {
-            int len = ASR::down_cast<ASR::Character_t>(a_type)->m_len;
+        case ASR::ttypeType::String: {
+            int len = ASR::down_cast<ASR::String_t>(a_type)->m_len;
             char* data = new char[len*n_args + 1];
             for (size_t i = 0; i < n_args; i++) {
                 char* value = ASR::down_cast<ASR::StringConstant_t>(ASRUtils::expr_value(a_args[i]))->m_s;
@@ -5697,7 +5697,7 @@ inline ASR::asr_t* make_ArrayConstructor_t_util(Allocator &al, const Location &a
         // data is always allocated to n_data bytes
         int64_t n_data = curr_idx * extract_kind_from_ttype_t(a_type_->m_type);
         if (is_character(*a_type_->m_type)) {
-            n_data = curr_idx * ASR::down_cast<ASR::Character_t>(a_type_->m_type)->m_len;
+            n_data = curr_idx * ASR::down_cast<ASR::String_t>(a_type_->m_type)->m_len;
         }
         value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, a_loc, n_data, data, new_type, a_storage_format));
     }
@@ -5713,10 +5713,10 @@ void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,
 static inline ASR::asr_t* make_print_t_util(Allocator& al, const Location& loc,
     ASR::expr_t** a_args, size_t n_args){
     LCOMPILERS_ASSERT(n_args > 0);
-    if(n_args == 1 && ASR::is_a<ASR::Character_t>(*ASRUtils::expr_type(a_args[0]))){
+    if(n_args == 1 && ASR::is_a<ASR::String_t>(*ASRUtils::expr_type(a_args[0]))){
         return ASR::make_Print_t(al, loc, a_args[0]);
     } else {
-        ASR::ttype_t *char_type = ASRUtils::TYPE(ASR::make_Character_t(
+        ASR::ttype_t *char_type = ASRUtils::TYPE(ASR::make_String_t(
             al, loc, -1, 0, nullptr, ASR::string_physical_typeType::PointerString));
         return ASR::make_Print_t(al, loc,
             ASRUtils::EXPR(ASR::make_StringFormat_t(al, loc, nullptr, a_args,n_args,

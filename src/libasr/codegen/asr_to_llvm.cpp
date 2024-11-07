@@ -1320,7 +1320,7 @@ public:
                                     n_dims_local, a_kind_local, module.get());
         std::string type_code = ASRUtils::get_type_code(list_type->m_type);
         int32_t type_size = -1;
-        if( ASR::is_a<ASR::Character_t>(*list_type->m_type) ||
+        if( ASR::is_a<ASR::String_t>(*list_type->m_type) ||
             LLVM::is_llvm_struct(list_type->m_type) ||
             ASR::is_a<ASR::Complex_t>(*list_type->m_type) ) {
             llvm::DataLayout data_layout(module.get());
@@ -1908,7 +1908,7 @@ public:
                                     n_dims_local, a_kind_local, module.get());
         std::string type_code = ASRUtils::get_type_code(el_type);
         int32_t type_size = -1;
-        if( ASR::is_a<ASR::Character_t>(*el_type) ||
+        if( ASR::is_a<ASR::String_t>(*el_type) ||
             LLVM::is_llvm_struct(el_type) ||
             ASR::is_a<ASR::Complex_t>(*el_type) ) {
             llvm::DataLayout data_layout(module.get());
@@ -2172,7 +2172,7 @@ public:
             n_dims_local, a_kind_local, module.get());
         std::string type_code = ASRUtils::get_type_code(list_type->m_type);
         int32_t type_size = -1;
-        if( ASR::is_a<ASR::Character_t>(*list_type->m_type) ||
+        if( ASR::is_a<ASR::String_t>(*list_type->m_type) ||
             LLVM::is_llvm_struct(list_type->m_type) ||
             ASR::is_a<ASR::Complex_t>(*list_type->m_type) ) {
             llvm::DataLayout data_layout(module.get());
@@ -2382,7 +2382,7 @@ public:
             if( array_t->m_physical_type == ASR::array_physical_typeType::PointerToDataArray ||
                 array_t->m_physical_type == ASR::array_physical_typeType::FixedSizeArray ||
                 array_t->m_physical_type == ASR::array_physical_typeType::SIMDArray ||
-                (array_t->m_physical_type == ASR::array_physical_typeType::CharacterArraySinglePointer && ASRUtils::is_fixed_size_array(x_mv_type)) ) {
+                (array_t->m_physical_type == ASR::array_physical_typeType::StringArraySinglePointer && ASRUtils::is_fixed_size_array(x_mv_type)) ) {
                 int ptr_loads_copy = ptr_loads;
                 for( size_t idim = 0; idim < x.n_args; idim++ ) {
                     ptr_loads = 2 - !LLVM::is_llvm_pointer(*ASRUtils::expr_type(m_dims[idim].m_start));
@@ -2419,7 +2419,7 @@ public:
                 bool is_fixed_size = (array_t->m_physical_type == ASR::array_physical_typeType::FixedSizeArray ||
                     array_t->m_physical_type == ASR::array_physical_typeType::SIMDArray ||
                     (
-                        array_t->m_physical_type == ASR::array_physical_typeType::CharacterArraySinglePointer &&
+                        array_t->m_physical_type == ASR::array_physical_typeType::StringArraySinglePointer &&
                         ASRUtils::is_fixed_size_array(x_mv_type)
                     )
                 );
@@ -2448,7 +2448,7 @@ public:
         ASR::dimension_t* m_dims;
         [[maybe_unused]] int n_dims = ASRUtils::extract_dimensions_from_ttype(
                         ASRUtils::expr_type(x.m_v), m_dims);
-        LCOMPILERS_ASSERT(ASR::is_a<ASR::Character_t>(*ASRUtils::expr_type(x.m_v)) &&
+        LCOMPILERS_ASSERT(ASR::is_a<ASR::String_t>(*ASRUtils::expr_type(x.m_v)) &&
                         n_dims == 0);
         // String indexing:
         if (x.n_args == 1) {
@@ -2806,7 +2806,7 @@ public:
                 }
             }
             llvm_symtab[h] = ptr;
-        } else if (x.m_type->type == ASR::ttypeType::Character) {
+        } else if (x.m_type->type == ASR::ttypeType::String) {
             llvm::Constant *ptr = module->getOrInsertGlobal(x.m_name,
                     character_type);
             if (!external) {
@@ -2817,7 +2817,7 @@ public:
                     module->getNamedGlobal(x.m_name)->setInitializer(
                             llvm::Constant::getNullValue(character_type)
                         );
-                    ASR::Character_t *t = down_cast<ASR::Character_t>(x.m_type);
+                    ASR::String_t *t = down_cast<ASR::String_t>(x.m_type);
                     if( t->m_len >= 0 ) {
                         strings_to_be_allocated.insert(std::pair(ptr, llvm::ConstantInt::get(
                             context, llvm::APInt(32, t->m_len+1))));
@@ -3418,10 +3418,10 @@ public:
                 ASR::array_physical_typeType phy_type = ASRUtils::extract_physical_type(symbol_type);
                 bool is_data_only = (phy_type == ASR::array_physical_typeType::PointerToDataArray ||
                                      phy_type == ASR::array_physical_typeType::FixedSizeArray ||
-                                     (phy_type == ASR::array_physical_typeType::CharacterArraySinglePointer &&
+                                     (phy_type == ASR::array_physical_typeType::StringArraySinglePointer &&
                                      ASRUtils::is_fixed_size_array(symbol_type)));
                 if (phy_type == ASR::array_physical_typeType::DescriptorArray ||
-                    (phy_type == ASR::array_physical_typeType::CharacterArraySinglePointer &&
+                    (phy_type == ASR::array_physical_typeType::StringArraySinglePointer &&
                     ASRUtils::is_dimension_empty(m_dims, n_dims))) {
                     int n_dims = 0, a_kind=4;
                     ASR::dimension_t* m_dims = nullptr;
@@ -3739,7 +3739,7 @@ public:
             llvm_symtab[h] = ptr;
             if( (ASRUtils::is_array(v->m_type) &&
                 ((ASRUtils::extract_physical_type(v->m_type) == ASR::array_physical_typeType::DescriptorArray) ||
-                (ASRUtils::extract_physical_type(v->m_type) == ASR::array_physical_typeType::CharacterArraySinglePointer &&
+                (ASRUtils::extract_physical_type(v->m_type) == ASR::array_physical_typeType::StringArraySinglePointer &&
                 ASRUtils::is_dimension_empty(m_dims,n_dims))))
             ) {
                 fill_array_details_(ptr, type_, m_dims, n_dims,
@@ -3795,8 +3795,8 @@ public:
                     }
                 } else if (ASR::is_a<ASR::ArrayReshape_t>(*v->m_symbolic_value)) {
                     builder->CreateStore(llvm_utils->CreateLoad(init_value), target_var);
-                } else if (is_a<ASR::Character_t>(*v->m_type) && !is_array_type) {
-                    ASR::Character_t *t = down_cast<ASR::Character_t>(v->m_type);
+                } else if (is_a<ASR::String_t>(*v->m_type) && !is_array_type) {
+                    ASR::String_t *t = down_cast<ASR::String_t>(v->m_type);
                     llvm::Value *arg_size = llvm::ConstantInt::get(context,
                                 llvm::APInt(32, t->m_len+1));
                     llvm::Value *s_malloc = LLVM::lfortran_malloc(context, *module, *builder, arg_size);
@@ -3811,8 +3811,8 @@ public:
                     builder->CreateStore(init_value, target_var);
                 }
             } else {
-                if (is_a<ASR::Character_t>(*v->m_type) && !is_array_type && !is_list) {
-                    ASR::Character_t *t = down_cast<ASR::Character_t>(v->m_type);
+                if (is_a<ASR::String_t>(*v->m_type) && !is_array_type && !is_list) {
+                    ASR::String_t *t = down_cast<ASR::String_t>(v->m_type);
                     target_var = ptr;
                     int strlen = t->m_len;
                     if (strlen >= 0 || strlen == -3) {
@@ -3934,7 +3934,7 @@ public:
                     // but they are passed as i8** otherwise. Handle conversion
                     // from bindC convention back to regular convention here.
                     if (ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::BindC) {
-                      if (ASR::is_a<ASR::Character_t>(*arg->m_type)) {
+                      if (ASR::is_a<ASR::String_t>(*arg->m_type)) {
                         llvm_sym = llvm_utils->CreateAlloca(*builder, llvm_arg.getType());
                         builder->CreateStore(&llvm_arg, llvm_sym);
                       }
@@ -4592,9 +4592,9 @@ public:
         ASR::array_physical_typeType arr_physical_type = ASRUtils::extract_physical_type(array_type);
         if( arr_physical_type == ASR::array_physical_typeType::PointerToDataArray ||
             arr_physical_type == ASR::array_physical_typeType::FixedSizeArray ||
-            arr_physical_type == ASR::array_physical_typeType::CharacterArraySinglePointer) {
+            arr_physical_type == ASR::array_physical_typeType::StringArraySinglePointer) {
             if( arr_physical_type == ASR::array_physical_typeType::FixedSizeArray ||
-                arr_physical_type == ASR::array_physical_typeType::CharacterArraySinglePointer) {
+                arr_physical_type == ASR::array_physical_typeType::StringArraySinglePointer) {
                 llvm::Type *val_type = llvm_utils->get_type_from_ttype_t_util(
                     ASRUtils::type_get_past_allocatable(
                     ASRUtils::type_get_past_pointer(value_array_type)),
@@ -4641,7 +4641,7 @@ public:
             int n_dims = ASRUtils::extract_dimensions_from_ttype(target_type, m_dims);
             ASR::ttype_t *type = ASRUtils::get_contained_type(target_type);
             type = ASRUtils::type_get_past_allocatable(type);
-            if (ASR::is_a<ASR::Character_t>(*type)) {
+            if (ASR::is_a<ASR::String_t>(*type)) {
                 int dims = n_dims;
                 if (dims == 0) {
                     builder->CreateStore(llvm_utils->CreateLoad2(value_type, llvm_value),
@@ -4990,7 +4990,7 @@ public:
                 if (is_a<ASR::Var_t>(*asr_target0->m_v)) {
                     ASR::Variable_t *asr_target = ASRUtils::EXPR2VAR(asr_target0->m_v);
                     int n_dims = ASRUtils::extract_n_dims_from_ttype(asr_target->m_type);
-                    if ( is_a<ASR::Character_t>(*ASRUtils::type_get_past_array(asr_target->m_type)) ) {
+                    if ( is_a<ASR::String_t>(*ASRUtils::type_get_past_array(asr_target->m_type)) ) {
                         if (n_dims == 0) {
                             target = llvm_utils->CreateLoad(target);
                             lhs_is_string_arrayref = true;
@@ -5019,7 +5019,7 @@ public:
                 ASR::ArraySection_t *asr_target0 = ASR::down_cast<ASR::ArraySection_t>(x.m_target);
                 if (is_a<ASR::Var_t>(*asr_target0->m_v)) {
                     ASR::Variable_t *asr_target = ASRUtils::EXPR2VAR(asr_target0->m_v);
-                    if ( is_a<ASR::Character_t>(*ASRUtils::type_get_past_array(asr_target->m_type)) ) {
+                    if ( is_a<ASR::String_t>(*ASRUtils::type_get_past_array(asr_target->m_type)) ) {
                         int n_dims = ASRUtils::extract_n_dims_from_ttype(asr_target->m_type);
                         if (n_dims == 0) {
                             target = llvm_utils->CreateLoad(target);
@@ -5081,7 +5081,7 @@ public:
                                           list_data, llvm::MaybeAlign(), size);
                     return ;
                 }
-                if( asr_target->m_type->type == ASR::ttypeType::Character) {
+                if( asr_target->m_type->type == ASR::ttypeType::String) {
                     target = llvm_utils->CreateLoad(arr_descr->get_pointer_to_data(target));
                 }
             }
@@ -5397,7 +5397,7 @@ public:
             tmp = target;
         } else if (
             m_new == ASR::array_physical_typeType::PointerToDataArray &&
-            m_old == ASR::array_physical_typeType::CharacterArraySinglePointer) {
+            m_old == ASR::array_physical_typeType::StringArraySinglePointer) {
         //
             if (ASRUtils::is_fixed_size_array(m_type)) {
                 if( ((ASRUtils::expr_value(m_arg) &&
@@ -5410,7 +5410,7 @@ public:
                 tmp = llvm_utils->CreateLoad(arr_descr->get_pointer_to_data(tmp));
             }
         } else if (
-            m_new == ASR::array_physical_typeType::CharacterArraySinglePointer &&
+            m_new == ASR::array_physical_typeType::StringArraySinglePointer &&
             m_old == ASR::array_physical_typeType::DescriptorArray) {
             if (ASRUtils::is_fixed_size_array(m_type)) {
                 tmp = llvm_utils->CreateLoad(arr_descr->get_pointer_to_data(tmp));
@@ -6766,7 +6766,7 @@ public:
             }
         } else if (ASR::is_a<ASR::Logical_t>(*x_m_type)) {
             el_type = llvm::Type::getInt1Ty(context);
-        } else if (ASR::is_a<ASR::Character_t>(*x_m_type)) {
+        } else if (ASR::is_a<ASR::String_t>(*x_m_type)) {
             el_type = character_type;
         } else if (ASR::is_a<ASR::Complex_t>(*x_m_type)) {
             int complex_kind = ASR::down_cast<ASR::Complex_t>(x_m_type)->m_kind;
@@ -6814,7 +6814,7 @@ public:
             }
         } else if (ASR::is_a<ASR::Logical_t>(*x_m_type)) {
             el_type = llvm::Type::getInt1Ty(context);
-        } else if (ASR::is_a<ASR::Character_t>(*x_m_type)) {
+        } else if (ASR::is_a<ASR::String_t>(*x_m_type)) {
             el_type = character_type;
         } else if (ASR::is_a<ASR::Complex_t>(*x_m_type)) {
             int complex_kind = ASR::down_cast<ASR::Complex_t>(x_m_type)->m_kind;
@@ -7027,7 +7027,7 @@ public:
                     case ASR::ttypeType::Real:
                     case ASR::ttypeType::Complex:
                     case ASR::ttypeType::StructType:
-                    case ASR::ttypeType::Character:
+                    case ASR::ttypeType::String:
                     case ASR::ttypeType::Logical:
                     case ASR::ttypeType::ClassType: {
                         if( t2->type == ASR::ttypeType::StructType ) {
@@ -7381,13 +7381,13 @@ public:
                 tmp = builder->CreateFCmpUNE(tmp, zero);
                 break;
             }
-            case (ASR::cast_kindType::CharacterToLogical) : {
+            case (ASR::cast_kindType::StringToLogical) : {
                 llvm::AllocaInst *parg = llvm_utils->CreateAlloca(*builder, character_type);
                 builder->CreateStore(tmp, parg);
                 tmp = builder->CreateICmpNE(lfortran_str_len(parg), builder->getInt32(0));
                 break;
             }
-            case (ASR::cast_kindType::CharacterToInteger) : {
+            case (ASR::cast_kindType::StringToInteger) : {
                 llvm::AllocaInst *parg = llvm_utils->CreateAlloca(*builder, character_type);
                 builder->CreateStore(tmp, parg);
                 tmp = lfortran_str_to_int(parg);
@@ -7590,7 +7590,7 @@ public:
                 }
                 break;
              }
-            case (ASR::cast_kindType::RealToCharacter) : {
+            case (ASR::cast_kindType::RealToString) : {
                 llvm::Value *arg = tmp;
                 ASR::ttype_t* arg_type = extract_ttype_t_from_expr(x.m_arg);
                 LCOMPILERS_ASSERT(arg_type != nullptr)
@@ -7598,7 +7598,7 @@ public:
                 tmp = lfortran_type_to_str(arg, llvm_utils->getFPType(arg_kind), "float", arg_kind);
                 break;
             }
-            case (ASR::cast_kindType::IntegerToCharacter) : {
+            case (ASR::cast_kindType::IntegerToString) : {
                 llvm::Value *arg = tmp;
                 ASR::ttype_t* arg_type = extract_ttype_t_from_expr(x.m_arg);
                 LCOMPILERS_ASSERT(arg_type != nullptr)
@@ -7606,7 +7606,7 @@ public:
                 tmp = lfortran_type_to_str(arg, llvm_utils->getIntType(arg_kind), "int", arg_kind);
                 break;
             }
-            case (ASR::cast_kindType::LogicalToCharacter) : {
+            case (ASR::cast_kindType::LogicalToString) : {
                 llvm::Value *cmp = builder->CreateICmpEQ(tmp, builder->getInt1(0));
                 llvm::Value *zero_str = builder->CreateGlobalStringPtr("False");
                 llvm::Value *one_str = builder->CreateGlobalStringPtr("True");
@@ -7661,7 +7661,7 @@ public:
                 }
                 break;
             }
-            case (ASR::ttypeType::Character): {
+            case (ASR::ttypeType::String): {
                 std::string runtime_func_name = "_lfortran_read_char";
                 fn = module->getFunction(runtime_func_name);
                 if (!fn) {
@@ -7725,8 +7725,8 @@ public:
                         throw CodeGenError("Real arrays of kind 4 or 8 only supported for now. Found kind: "
                                             + std::to_string(a_kind));
                     }
-                } else if (ASR::is_a<ASR::Character_t>(*type)) {
-                    if (ASR::down_cast<ASR::Character_t>(type)->m_len != 1) {
+                } else if (ASR::is_a<ASR::String_t>(*type)) {
+                    if (ASR::down_cast<ASR::String_t>(type)->m_len != 1) {
                         throw CodeGenError("Only `character(len=1)` array "
                             "is supported for now");
                     }
@@ -8354,7 +8354,7 @@ public:
             } else {
                 args.push_back(d);
             }
-        } else if (t->type == ASR::ttypeType::Character) {
+        } else if (t->type == ASR::ttypeType::String) {
             fmt.push_back("%s");
             number_of_type = 15;
             if(add_type_as_int){
@@ -8521,11 +8521,11 @@ public:
         std::vector<std::string> fmt;
         std::vector<llvm::Value*> args;
         args.push_back(nullptr); // reserve space for fmt_str
-        ASR::ttype_t *str_type_len_msg = ASRUtils::TYPE(ASR::make_Character_t(
+        ASR::ttype_t *str_type_len_msg = ASRUtils::TYPE(ASR::make_String_t(
                     al, loc, 1, stop_msg.size(), nullptr, ASR::string_physical_typeType::PointerString));
         ASR::expr_t* STOP_MSG = ASRUtils::EXPR(ASR::make_StringConstant_t(al, loc,
             s2c(al, stop_msg), str_type_len_msg));
-        ASR::ttype_t *str_type_len_1 = ASRUtils::TYPE(ASR::make_Character_t(
+        ASR::ttype_t *str_type_len_1 = ASRUtils::TYPE(ASR::make_String_t(
                 al, loc, 1, 1, nullptr, ASR::string_physical_typeType::PointerString));
         ASR::expr_t* NEWLINE = ASRUtils::EXPR(ASR::make_StringConstant_t(al, loc,
             s2c(al, "\n"), str_type_len_1));
@@ -8725,7 +8725,7 @@ public:
                                     builder->CreateStore(tmp, target);
                                     tmp = target;
                                 }
-                                if (ASR::is_a<ASR::Character_t>(*arg->m_type)) {
+                                if (ASR::is_a<ASR::String_t>(*arg->m_type)) {
                                     tmp = llvm_utils->CreateLoad2(arg->m_type, tmp);
                                 }
                             } else {
@@ -8860,7 +8860,7 @@ public:
                         target_type = llvm_utils->getComplexType(a_kind);
                         break;
                     }
-                    case (ASR::ttypeType::Character) : {
+                    case (ASR::ttypeType::String) : {
                         ASR::Variable_t *orig_arg = nullptr;
                         if( func_subrout->type == ASR::symbolType::Function ) {
                             ASR::Function_t* func = down_cast<ASR::Function_t>(func_subrout);
@@ -8890,7 +8890,7 @@ public:
                     case (ASR::ttypeType::Pointer) : {
                         ASR::ttype_t* type_ = ASRUtils::get_contained_type(arg_type);
                         target_type = llvm_utils->get_type_from_ttype_t_util(type_, module.get());
-                        if( !ASR::is_a<ASR::Character_t>(*type_) ) {
+                        if( !ASR::is_a<ASR::String_t>(*type_) ) {
                             target_type = target_type->getPointerTo();
                         }
                         break;
@@ -9995,7 +9995,7 @@ public:
         }
 
         ASR::array_physical_typeType physical_type = ASRUtils::extract_physical_type(x_mv_type);
-        if (physical_type == ASR::array_physical_typeType::CharacterArraySinglePointer) {
+        if (physical_type == ASR::array_physical_typeType::StringArraySinglePointer) {
             if (ASRUtils::is_fixed_size_array(x_mv_type)) {
                 physical_type = ASR::array_physical_typeType::FixedSizeArray;
             } else {
@@ -10174,7 +10174,7 @@ public:
                 }
                 break;
             }
-            case ASR::array_physical_typeType::CharacterArraySinglePointer: {
+            case ASR::array_physical_typeType::StringArraySinglePointer: {
                 ASR::dimension_t* m_dims = nullptr;
                 int n_dims = ASRUtils::extract_dimensions_from_ttype(x_mv_type, m_dims);
                 if (ASRUtils::is_dimension_empty(m_dims, n_dims)) {

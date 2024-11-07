@@ -44,7 +44,7 @@
                                     ()
                                     Default
                                     (Allocatable
-                                        (Character 1 -2 () DescriptorString)
+                                        (String 1 -2 () DescriptorString)
                                     )
                                     ()
                                     Source
@@ -61,7 +61,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Character 1 20 () PointerString)
+                                    (String 1 20 () PointerString)
                                     ()
                                     Source
                                     Public
@@ -78,7 +78,7 @@
                                     ()
                                     Default
                                     (Allocatable
-                                        (Character 1 -2 () DescriptorString)
+                                        (String 1 -2 () DescriptorString)
                                     )
                                     ()
                                     Source
@@ -125,7 +125,7 @@
                         (Var 2 num)
                         (StringConstant
                             "lfortran"
-                            (Character 1 8 () PointerString)
+                            (String 1 8 () PointerString)
                         )
                         ()
                     )
@@ -136,13 +136,13 @@
                                 StringTrim
                                 [(Var 2 num)]
                                 0
-                                (Character 1 20 () PointerString)
+                                (String 1 20 () PointerString)
                                 ()
                             )
                             PointerString
                             DescriptorString
                             (Allocatable
-                                (Character 1 20 () DescriptorString)
+                                (String 1 20 () DescriptorString)
                             )
                             ()
                         )
@@ -155,14 +155,14 @@
                                 DescriptorString
                                 PointerString
                                 (Allocatable
-                                    (Character 1 -2 () PointerString)
+                                    (String 1 -2 () PointerString)
                                 )
                                 ()
                             )
                             NotEq
                             (StringConstant
                                 "lfortran"
-                                (Character 1 8 () PointerString)
+                                (String 1 8 () PointerString)
                             )
                             (Logical 4)
                             ()
@@ -176,7 +176,7 @@
                         (Var 2 num)
                         (StringConstant
                             "lfortran working"
-                            (Character 1 16 () PointerString)
+                            (String 1 16 () PointerString)
                         )
                         ()
                     )
@@ -206,7 +206,7 @@
                                     ()
                                 )
                                 (IntegerConstant 1 (Integer 4) Decimal)
-                                (Character 1 -3 (IntegerBinOp
+                                (String 1 -3 (IntegerBinOp
                                     (IntegerBinOp
                                         (IntrinsicElementalFunction
                                             StringLenTrim
@@ -236,7 +236,7 @@
                             PointerString
                             DescriptorString
                             (Allocatable
-                                (Character 1 -3 (IntegerBinOp
+                                (String 1 -3 (IntegerBinOp
                                     (IntegerBinOp
                                         (IntrinsicElementalFunction
                                             StringLenTrim
@@ -274,12 +274,12 @@
                                 DescriptorString
                                 PointerString
                                 (Allocatable
-                                    (Character 1 -2 () PointerString)
+                                    (String 1 -2 () PointerString)
                                 )
                                 ()
                             )]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )
                     )

@@ -1353,7 +1353,7 @@
                                             ()
                                             [(Var 16 sa)]
                                             FormatFortran
-                                            (Character -1 0 () PointerString)
+                                            (String -1 0 () PointerString)
                                             ()
                                         )
                                     )
@@ -1362,7 +1362,7 @@
                                             ()
                                             [(Var 16 sb)]
                                             FormatFortran
-                                            (Character -1 0 () PointerString)
+                                            (String -1 0 () PointerString)
                                             ()
                                         )
                                     )]
