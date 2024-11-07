@@ -41,7 +41,7 @@ public:
     std::string src;
 
     std::unique_ptr<mlir::MLIRContext> context;
-    std::unique_ptr<mlir::OpBuilder> b;
+    std::unique_ptr<mlir::OpBuilder> builder;
     std::unique_ptr<mlir::ModuleOp> module;
 
     mlir::Location loc; // UnknownLoc for now
@@ -54,18 +54,18 @@ public:
     ASRToMLIRVisitor(Allocator &al)
         : al{al},
         context(std::make_unique<mlir::MLIRContext>()),
-        b(std::make_unique<mlir::OpBuilder>(context.get())),
-        loc(b->getUnknownLoc())
+        builder(std::make_unique<mlir::OpBuilder>(context.get())),
+        loc(builder->getUnknownLoc())
         {
             // Load MLIR Dialects
             context->getOrLoadDialect<mlir::LLVM::LLVMDialect>();
 
             // Initialize values
-            llvmI8PtrTy = mlir::LLVM::LLVMPointerType::get(b->getI8Type());
+            llvmI8PtrTy = mlir::LLVM::LLVMPointerType::get(builder->getI8Type());
         }
 
     void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
-        module = std::make_unique<mlir::ModuleOp>(b->create<mlir::ModuleOp>(loc,
+        module = std::make_unique<mlir::ModuleOp>(builder->create<mlir::ModuleOp>(loc,
             llvm::StringRef("LFortran")));
 
         // Visit Program
@@ -77,17 +77,15 @@ public:
     }
 
     void visit_Program(const ASR::Program_t &x) {
-        // b->setInsertionPointToEnd(module->getBody());
         mlir::LLVM::LLVMFunctionType llvmFnType = mlir::LLVM::LLVMFunctionType::get(
-            b->getI32Type(), llvmI8PtrTy, true);
-        mlir::OpBuilder builder(module->getBodyRegion());
-        mlir::LLVM::LLVMFuncOp function = builder.create<mlir::LLVM::LLVMFuncOp>(
+            builder->getI32Type(), llvmI8PtrTy, true);
+        mlir::OpBuilder builder0(module->getBodyRegion());
+        mlir::LLVM::LLVMFuncOp function = builder0.create<mlir::LLVM::LLVMFuncOp>(
             loc, "main", llvmFnType);
 
         mlir::Block &entryBlock = *function.addEntryBlock();
-        b = std::make_unique<mlir::OpBuilder>(mlir::OpBuilder::atBlockBegin(
+        builder = std::make_unique<mlir::OpBuilder>(mlir::OpBuilder::atBlockBegin(
             &entryBlock));
-        // b->setInsertionPointToStart(&entryBlock);
 
         for (auto &item : x.m_symtab->get_scope()) {
             visit_symbol(*item.second);
@@ -97,9 +95,9 @@ public:
             visit_stmt(*x.m_body[i]);
         }
 
-        mlir::LLVM::ConstantOp zero = b->create<mlir::LLVM::ConstantOp>(
-            loc, b->getI32Type(), b->getI32IntegerAttr(0));
-        b->create<mlir::LLVM::ReturnOp>(loc, zero.getResult());
+        mlir::LLVM::ConstantOp zero = builder->create<mlir::LLVM::ConstantOp>(
+            loc, builder->getI32Type(), builder->getI32IntegerAttr(0));
+        builder->create<mlir::LLVM::ReturnOp>(loc, zero.getResult());
     }
 
     void visit_Variable(const ASR::Variable_t &x) {
@@ -107,15 +105,15 @@ public:
             case ASR::ttypeType::Integer: {
                 int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
                 if (kind == 4) {
-                    auto one = b->create<mlir::LLVM::ConstantOp>(
-                        loc, b->getI32Type(), b->getI32IntegerAttr(1));
-                    mlir::LLVM::AllocaOp alloc = b->create<mlir::LLVM::AllocaOp>(
-                        loc, mlir::LLVM::LLVMPointerType::get(b->getI32Type()), one, 4);
+                    auto one = builder->create<mlir::LLVM::ConstantOp>(
+                        loc, builder->getI32Type(), builder->getI32IntegerAttr(1));
+                    mlir::LLVM::AllocaOp alloc = builder->create<mlir::LLVM::AllocaOp>(
+                        loc, mlir::LLVM::LLVMPointerType::get(builder->getI32Type()), one, 4);
                     uint32_t h = get_hash((ASR::asr_t*) &x);
                     mlir_symtab[h] = alloc;
                     if (x.m_symbolic_value) {
                         this->visit_expr(*x.m_symbolic_value);
-                        b->create<mlir::LLVM::StoreOp>(loc, tmp, alloc);
+                        builder->create<mlir::LLVM::StoreOp>(loc, tmp, alloc);
                     }
                 } else {
                     throw CodeGenError("Integer of kind: `"+ std::to_string(kind)
@@ -140,16 +138,16 @@ public:
         mlir::Value target = mlir_symtab[h];
         this->visit_expr(*x.m_value);
         mlir::Value value = tmp;
-        b->create<mlir::LLVM::StoreOp>(loc, value, target);
+        builder->create<mlir::LLVM::StoreOp>(loc, value, target);
     }
 
     void visit_IntegerConstant(const ASR::IntegerConstant_t &x) {
         int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
         switch (kind) {
             case 4: {
-                tmp = b->create<mlir::LLVM::ConstantOp>(loc,
-                    b->getI32Type(),
-                    b->getI32IntegerAttr(x.m_n)).getResult();
+                tmp = builder->create<mlir::LLVM::ConstantOp>(loc,
+                    builder->getI32Type(),
+                    builder->getI32IntegerAttr(x.m_n)).getResult();
                 break;
             }
             default:
@@ -166,11 +164,11 @@ public:
         mlir::Value right = tmp;
         switch (x.m_op) {
             case ASR::binopType::Add: {
-                tmp = b->create<mlir::LLVM::AddOp>(loc, left, right);
+                tmp = builder->create<mlir::LLVM::AddOp>(loc, left, right);
                 break;
             }
             case ASR::binopType::Mul: {
-                tmp = b->create<mlir::LLVM::MulOp>(loc, left, right);
+                tmp = builder->create<mlir::LLVM::MulOp>(loc, left, right);
                 break;
             }
             default:
@@ -181,7 +179,7 @@ public:
 
     void visit_Print(const ASR::Print_t &x) {
         std::string fmt = "";
-        Vec<mlir::Value> args; 
+        Vec<mlir::Value> args;
         LCOMPILERS_ASSERT(x.m_text != nullptr &&
             ASR::is_a<ASR::Character_t>(*ASRUtils::expr_type(x.m_text)));
         if (ASR::is_a<ASR::StringFormat_t>(*x.m_text)) {
@@ -193,7 +191,7 @@ public:
                 if (ASRUtils::is_integer(*t)) {
                     fmt += " %d";
                     this->visit_expr(*sf->m_args[i]);
-                    args.push_back(al, b->create<mlir::LLVM::LoadOp>(loc, tmp));
+                    args.push_back(al, builder->create<mlir::LLVM::LoadOp>(loc, tmp));
                 } else {
                     throw CodeGenError("Unhandled type in print statement",
                         x.base.base.loc);
@@ -205,26 +203,26 @@ public:
         }
         fmt += "\n";
 
-        mlir::OpBuilder builder(module->getBodyRegion());
+        mlir::OpBuilder builder0(module->getBodyRegion());
         mlir::LLVM::LLVMArrayType arrayI8Ty = mlir::LLVM::LLVMArrayType::get(
-            b->getI8Type(), fmt.size());
-        mlir::LLVM::GlobalOp glocal_str = builder.create<mlir::LLVM::GlobalOp>(
+            builder->getI8Type(), fmt.size());
+        mlir::LLVM::GlobalOp glocal_str = builder0.create<mlir::LLVM::GlobalOp>(
             loc, arrayI8Ty, false, mlir::LLVM::Linkage::External, "printf_fmt",
-            b->getStringAttr(fmt));
+            builder->getStringAttr(fmt));
 
         mlir::LLVM::LLVMVoidType voidTy = mlir::LLVM::LLVMVoidType::get(context.get());
         mlir::LLVM::LLVMFunctionType llvmFnType = mlir::LLVM::LLVMFunctionType::get(
             voidTy, llvmI8PtrTy, true);
-        mlir::LLVM::LLVMFuncOp fn = builder.create<mlir::LLVM::LLVMFuncOp>(
+        mlir::LLVM::LLVMFuncOp fn = builder0.create<mlir::LLVM::LLVMFuncOp>(
             loc, "printf", llvmFnType);
 
-        mlir::Value zero = b->create<mlir::LLVM::ConstantOp>(loc,
-            b->getI64Type(), b->getIndexAttr(0));
-        mlir::Value globalPtr = b->create<mlir::LLVM::AddressOfOp>(
+        mlir::Value zero = builder->create<mlir::LLVM::ConstantOp>(loc,
+            builder->getI64Type(), builder->getIndexAttr(0));
+        mlir::Value globalPtr = builder->create<mlir::LLVM::AddressOfOp>(
             loc, glocal_str);
-        globalPtr = b->create<mlir::LLVM::GEPOp>(loc, llvmI8PtrTy,
+        globalPtr = builder->create<mlir::LLVM::GEPOp>(loc, llvmI8PtrTy,
             globalPtr, mlir::ValueRange{zero, zero});
-        b->create<mlir::LLVM::CallOp>(loc, fn, mlir::ValueRange{globalPtr, args[0]});
+        builder->create<mlir::LLVM::CallOp>(loc, fn, mlir::ValueRange{globalPtr, args[0]});
     }
 
 };
