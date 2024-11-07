@@ -5544,14 +5544,44 @@ public:
     }
 
     ASR::asr_t* create_ArrayReshape(const AST::FuncCallOrArray_t& x) {
-        if( x.n_args != 2 ) {
+        if( x.n_args + x.n_keywords != 2) {
             throw SemanticError("reshape accepts only 2 arguments, got " +
                                 std::to_string(x.n_args) + " arguments instead.",
                                 x.base.base.loc);
         }
-        this->visit_expr(*x.m_args[0].m_end);
+        AST::expr_t* source = nullptr;
+        AST::expr_t* shape = nullptr;
+        if ( x.n_args > 0 ) {
+            source = x.m_args[0].m_end;
+        }
+        if ( x.n_args > 1 ) {
+            shape = x.m_args[1].m_end;
+        }
+        if ( x.n_keywords > 0 ) {
+            if ( to_lower(x.m_keywords[0].m_arg) == "source" ) {
+                source = x.m_keywords[0].m_value;
+            } else if ( to_lower(x.m_keywords[0].m_arg) == "shape" ) {
+                shape = x.m_keywords[0].m_value;
+            } else {
+                throw SemanticError("Unrecognized keyword argument " +
+                                    std::string(x.m_keywords[0].m_arg) + " passed to reshape.",
+                                    x.base.base.loc);
+            }
+        }
+        if ( x.n_keywords > 1 ) {
+            if ( to_lower(x.m_keywords[1].m_arg) == "source" ) {
+                source = x.m_keywords[1].m_value;
+            } else if ( to_lower(x.m_keywords[1].m_arg) == "shape" ) {
+                shape = x.m_keywords[1].m_value;
+            } else {
+                throw SemanticError("Unrecognized keyword argument " +
+                                    std::string(x.m_keywords[1].m_arg) + " passed to reshape.",
+                                    x.base.base.loc);
+            }
+        }
+        this->visit_expr(*source);
         ASR::expr_t* array = ASRUtils::EXPR(tmp);
-        this->visit_expr(*x.m_args[1].m_end);
+        this->visit_expr(*shape);
         ASR::expr_t* newshape = ASRUtils::EXPR(tmp);
         if( !ASRUtils::is_array(ASRUtils::expr_type(newshape)) ) {
             throw SemanticError("reshape only accept arrays for shape "
