@@ -246,6 +246,9 @@ public:
                     import_struct_type.push_back(struct_name);
                 }
                 break;
+            } case ASR::ttypeType::CPtr: {
+                r = "type(c_ptr)";
+                break;
             }
             default:
                 throw LCompilersException("The type `"
