@@ -1202,12 +1202,14 @@ public:
         }
 
         // The symbol `v` must be a Variable
-        if (ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(v))) {
+        ASR::symbol_t *vpast = ASRUtils::symbol_get_past_external(v);
+        if (ASR::is_a<ASR::Variable_t>(*vpast)) {
             return ASR::make_Var_t(al, loc, v);
         } else {
             diag.semantic_error_label("Symbol '" + var_name
                 + "' must be a variable", {loc},
-                "'" + var_name + "' not a variable");
+                "'" + var_name + "' is a '" +
+                ASRUtils::symbol_type_name(*vpast) + "', not a variable");
             throw SemanticAbort();
         }
     }
