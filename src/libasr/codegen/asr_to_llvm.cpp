@@ -8634,7 +8634,7 @@ public:
                 }
             } else if( func_subrout->type == ASR::symbolType::Variable ) {
                 ASR::Variable_t* v = down_cast<ASR::Variable_t>(func_subrout);
-                ASR::Function_t* func = down_cast<ASR::Function_t>(v->m_type_declaration);
+                ASR::Function_t* func = down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(v->m_type_declaration));
                 set_func_subrout_params(func, x_abi, m_h, orig_arg, orig_arg_name, orig_arg_intent, i + is_method);
             } else {
                 LCOMPILERS_ASSERT(false)
@@ -8939,7 +8939,7 @@ public:
                                 }
                             } else if( func_subrout->type == ASR::symbolType::Variable ) {
                                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(func_subrout);
-                                ASR::Function_t* func = down_cast<ASR::Function_t>(v->m_type_declaration);
+                                ASR::Function_t* func = down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(v->m_type_declaration));
                                 orig_arg = EXPR2VAR(func->m_args[i]);
                             } else {
                                 LCOMPILERS_ASSERT(false)
@@ -9201,7 +9201,12 @@ public:
         } else if (ASR::is_a<ASR::Variable_t>(*proc_sym)) {
             ASR::symbol_t *type_decl = ASR::down_cast<ASR::Variable_t>(proc_sym)->m_type_declaration;
             LCOMPILERS_ASSERT(type_decl);
-            s = ASR::down_cast<ASR::Function_t>(type_decl);
+            if (ASR::is_a<ASR::Function_t>(*type_decl)) {
+                s = ASR::down_cast<ASR::Function_t>(type_decl);
+            } else {
+                proc_sym = ASRUtils::symbol_get_past_external(type_decl);
+                s = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(type_decl));
+            }
         } else {
             throw CodeGenError("SubroutineCall: Symbol type not supported");
         }
