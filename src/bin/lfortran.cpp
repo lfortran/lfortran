@@ -2416,8 +2416,10 @@ int main_app(int argc, char *argv[]) {
         }
     }
 
-    if (CLI::NonexistentPath(arg_file).empty())
-        throw LCompilers::LCompilersException("File does not exist: " + arg_file);
+    if (CLI::NonexistentPath(arg_file).empty()) {
+        std::cerr << "error: no such file or directory: '" << arg_file << "'" << std::endl;
+	return 1;
+    }
 
     // Decide if a file is fixed format based on the extension
     // Gfortran does the same thing
