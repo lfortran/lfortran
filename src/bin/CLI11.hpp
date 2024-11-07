@@ -4910,7 +4910,7 @@ class Option : public OptionBase<Option> {
         return this;
     }
 
-    /// Set a custom option TypeCharacter
+    /// Set a custom option typestring
     Option *type_name(std::string typeval) {
         type_name_fn([typeval]() { return typeval; });
         return this;
