@@ -2433,6 +2433,8 @@ static inline ASR::expr_t* extract_member_from_unaryop(ASR::expr_t* x) {
             LCOMPILERS_ASSERT(false)
         }
     }
+
+    return nullptr;
 }
 
 static inline ASR::expr_t* extract_member_from_binop(ASR::expr_t* x, int8_t member) {
@@ -2461,6 +2463,8 @@ static inline ASR::expr_t* extract_member_from_binop(ASR::expr_t* x, int8_t memb
             LCOMPILERS_ASSERT(false)
         }
     }
+
+    return nullptr;
 }
 
 static inline ASR::asr_t* make_ArraySize_t_util(
