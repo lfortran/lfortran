@@ -2467,6 +2467,14 @@ static inline ASR::expr_t* extract_member_from_binop(ASR::expr_t* x, int8_t memb
     return nullptr;
 }
 
+size_t get_constant_ArrayConstant_size(ASR::ArrayConstant_t* x);
+
+ASR::expr_t* get_ArrayConstant_size(Allocator& al, ASR::ArrayConstant_t* x);
+
+ASR::expr_t* get_ImpliedDoLoop_size(Allocator& al, ASR::ImpliedDoLoop_t* implied_doloop);
+
+ASR::expr_t* get_ArrayConstructor_size(Allocator& al, ASR::ArrayConstructor_t* x);
+
 static inline ASR::asr_t* make_ArraySize_t_util(
     Allocator &al, const Location &a_loc, ASR::expr_t* a_v,
     ASR::expr_t* a_dim, ASR::ttype_t* a_type, ASR::expr_t* a_value,
@@ -2560,6 +2568,10 @@ static inline ASR::asr_t* make_ArraySize_t_util(
         }
     } else if( is_unaryop_expr(a_v) && for_type ) {
         return make_ArraySize_t_util(al, a_loc, extract_member_from_unaryop(a_v), a_dim, a_type, a_value, for_type);
+    } else if( ASR::is_a<ASR::ArrayConstructor_t>(*a_v) && for_type ) {
+        ASR::ArrayConstructor_t* array_constructor = ASR::down_cast<ASR::ArrayConstructor_t>(a_v);
+        LCOMPILERS_ASSERT(a_dim == nullptr);
+        return &(get_ArrayConstructor_size(al, array_constructor)->base);
     } else {
         ASR::dimension_t* m_dims = nullptr;
         size_t n_dims = ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(a_v), m_dims);
