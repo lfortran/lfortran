@@ -4225,8 +4225,9 @@ public:
             ASR::String_t* char_type_spec = ASR::down_cast<ASR::String_t>(type);
             // e.g. [character(len=*) :: "a", "apple"], this isn't allowed
             if (char_type_spec->m_len == -1) {
-                throw SemanticError("Type-spec cannot contain an asterisk for a type "
-                    "parameter", char_type_spec->base.base.loc);
+                diag.add(Diagnostic("Type-spec cannot contain an asterisk for a type "
+                    "parameter", Level::Error, Stage::Semantic, {}));
+                throw SemanticAbort();
             }
         }
     }
