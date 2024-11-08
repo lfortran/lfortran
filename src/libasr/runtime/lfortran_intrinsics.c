@@ -1130,7 +1130,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(int count, const char* form
                 }
                 is_array = check_array_iteration(&count, &current_arg_type_int, &args,&array_state);
                 if (tolower(value[0]) == 'a') {
-                    // Character Editing (A[n])
+                    // String Editing (A[n])
                     count--;
                     char* arg = NULL;
                     if(is_array){
@@ -2008,26 +2008,100 @@ LFORTRAN_API void _lfortran_strcat(char** s1, char** s2, char** dest)
     dest_char[cntr] = trmn;
     *dest = &(dest_char[0]);
 }
+// Allocate_allocatable-strings + Extend String ----------------------------------------------------------- 
+
+void extend_string(char** ptr, int32_t new_size /*Null-Character Counted*/, int64_t* string_capacity){
+    ASSERT_MSG(string_capacity != NULL, "%s", "string capacity is NULL");
+    int64_t new_capacity;
+    if((*string_capacity)*2 < new_size){
+        new_capacity = new_size;
+    } else {
+        new_capacity = (*string_capacity)*2;
+    }
+
+    *ptr = realloc(*ptr, new_capacity);
+    ASSERT_MSG(*ptr != NULL, "%s", "pointer reallocation failed!");
+
+    *string_capacity = new_capacity;
+}
+
+LFORTRAN_API void _lfortran_alloc(char** ptr, int32_t desired_size /*Null-Character Counted*/
+    , int64_t* string_size, int64_t* string_capacity) {
+    if(*ptr == NULL && *string_size == 0 && *string_capacity == 0){
+        // Start off with (inital_capacity >= 100).
+        int32_t inital_capacity;
+        if(100 < desired_size){
+            inital_capacity = desired_size;
+        } else {
+            inital_capacity = 100; 
+        }
+        *ptr = (char*)malloc(inital_capacity);
+        *string_capacity = inital_capacity;
+        const int8_t null_terminated_char_len = 1;
+        *string_size = desired_size - null_terminated_char_len;
+    } else if(*ptr != NULL && *string_capacity != 0){
+        // printf("runtime error: Attempting to allocate already allocated variable\n");
+        // exit(1);
+        // A workaround till this issue is resolved : https://github.com/lfortran/lfortran/issues/5249
+        // after resolving the previous issue delete the code below.
+        int32_t inital_capacity;
+        if(100 < desired_size){
+            inital_capacity = desired_size;
+        } else {
+            inital_capacity = 100; 
+        }
+        *ptr = (char*)malloc(inital_capacity);
+        *string_capacity = inital_capacity;
+        const int8_t null_terminated_char_len = 1;
+        *string_size = desired_size - null_terminated_char_len;
+    } else {
+        printf("Compiler Internal Error :Invalid state of string descriptor\n");
+        exit(1);
+    }
+}
 
 // strcpy -----------------------------------------------------------
 
-LFORTRAN_API void _lfortran_strcpy(char** x, char *y, int8_t free_target, int64_t x_size, int64_t x_capacity)
+
+LFORTRAN_API void _lfortran_strcpy_descriptor_string(char** x, char *y, int64_t* x_string_size, int64_t* x_string_capacity)
 {
-    if (free_target) {
-        if (*x) {
-            // We should free `x` here, but cannot due to:
-            // https://github.com/lfortran/lfortran/issues/3787
-            //free((void *)*x);
+    ASSERT_MSG(x_string_size != NULL,"%s", "string size is NULL");
+    ASSERT_MSG(x_string_capacity != NULL, "%s", "string capacity is NULL");
+    ASSERT_MSG(((*x != NULL) && (*x_string_size <= (*x_string_capacity - 1))) ||
+        (*x == NULL && *x_string_size == 0 && *x_string_capacity == 0) , "%s",
+    "compiler-behavior error : string x_string_capacity < string size");
+    size_t y_len, x_len; 
+    y_len= strlen(y); 
+    x_len = y_len;
+
+    if (*x == NULL) {
+        _lfortran_alloc(x, y_len+1, x_string_size, x_string_capacity); // Allocate new memory for x.
+    } else {
+        int8_t null_char_len = 1;
+        if(*x_string_capacity < (y_len + null_char_len)){
+            extend_string(x, y_len+1, x_string_capacity);
+            *x_string_size = y_len;
         }
-        *x = (char*) malloc((strlen(y) + 1) * sizeof(char));
-        _lfortran_string_init(strlen(y) + 1, *x);
     }
+    int64_t null_character_index = x_len;
+    (*x)[null_character_index] = '\0'; 
+    for (size_t i = 0; i < x_len; i++) {
+        (*x)[i] = y[i];
+    }
+}
+
+LFORTRAN_API void _lfortran_strcpy_pointer_string(char** x, char *y)
+{
+    size_t y_len = strlen(y);
+    // A workaround :
+    // every LHS string that's not allocatable should have been
+    // allocated a fixed-size-memory space that stays there for the whole life time of the program.
     if( *x == NULL ) {
-        *x = (char*) malloc((strlen(y) + 1) * sizeof(char));
+        *x = (char*) malloc((y_len + 1) * sizeof(char));
         _lfortran_string_init(strlen(y) + 1, *x);
     }
     for (size_t i = 0; i < strlen(*x); i++) {
-        if (i < strlen(y)) {
+        if (i < y_len) {
             x[0][i] = y[i];
         } else {
             x[0][i] = ' ';
@@ -2395,9 +2469,6 @@ LFORTRAN_API void _lfortran_free(char* ptr) {
     free((void*)ptr);
 }
 
-LFORTRAN_API void _lfortran_alloc(char** ptr, int32_t size, int64_t* string_size, int64_t* string_capacity) {
-    *ptr = (char *) malloc(size);
-}
 
 // size_plus_one is the size of the string including the null character
 LFORTRAN_API void _lfortran_string_init(int size_plus_one, char *s) {
@@ -3370,11 +3441,21 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
     (void)!ftruncate(fileno(filep), ftell(filep));
 }
 
-LFORTRAN_API void _lfortran_string_write(char **str_holder, int64_t size, int64_t capacity, int32_t* iostat, const char *format, ...) {
+LFORTRAN_API void _lfortran_string_write(char **str_holder, int64_t* size, int64_t* capacity, int32_t* iostat, const char *format, ...) {
     va_list args;
     va_start(args, format);
-    char* str = va_arg(args, char*);
-    char *s = (char *) malloc(strlen(*str_holder)*sizeof(char));
+    char* str;
+    char* end = "";
+    if(strcmp(format, "%s%s") == 0){
+        str = va_arg(args, char*);
+        end = va_arg(args, char*);
+    } else if(strcmp(format, "%s") == 0){
+        str = va_arg(args, char*);
+    } else {
+        fprintf(stderr,"Compiler Error : Undefined Format");
+        exit(1);
+    }
+
     // Detect "\b" to raise error
     if(str[0] == '\b'){
         if(iostat == NULL){
@@ -3387,13 +3468,14 @@ LFORTRAN_API void _lfortran_string_write(char **str_holder, int64_t size, int64_
         }
     }
 
-    if(strcmp(format, "%s%s") == 0){
-        char* end = va_arg(args, char*);
-        sprintf(s, format, str, end);
+    char *s = (char *) malloc(strlen(str)*sizeof(char) + strlen(end)*sizeof(char));
+    sprintf(s, format, str, end);
+
+    if(((*size) == -1) && ((*capacity) == -1)){ 
+        _lfortran_strcpy_pointer_string(str_holder, s);
     } else {
-        sprintf(s, format, str);
+        _lfortran_strcpy_descriptor_string(str_holder, s, size, capacity);
     }
-    _lfortran_strcpy(str_holder, s, 0, size, capacity);
     free(s);
     va_end(args);
     if(iostat != NULL) *iostat = 0;

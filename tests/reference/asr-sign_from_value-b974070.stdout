@@ -214,7 +214,7 @@
                             ()
                             [(Var 2 rxsp)]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )
                     )
@@ -276,7 +276,7 @@
                             ()
                             [(Var 2 rxsp)]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )
                     )
@@ -334,7 +334,7 @@
                             ()
                             [(Var 2 rxdp)]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )
                     )
@@ -404,7 +404,7 @@
                             ()
                             [(Var 2 rxdp)]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )
                     )
@@ -467,7 +467,7 @@
                             ()
                             [(Var 2 ixsp)]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )
                     )
@@ -507,7 +507,7 @@
                             ()
                             [(Var 2 ixdp)]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )
                     )

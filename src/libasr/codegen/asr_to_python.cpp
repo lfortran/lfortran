@@ -144,7 +144,7 @@ public:
                 r += "c";
                 r += std::to_string(ASRUtils::extract_kind_from_ttype_t(t)*8);
                 break;
-            } case ASR::ttypeType::Character : {
+            } case ASR::ttypeType::String : {
                 r = "str";
                 break;
             } case ASR::ttypeType::Logical : {
@@ -261,7 +261,7 @@ public:
                 if (i < str_fmt.n_args-1)
                     r += ", ";
             }
-        } else if (ASR::is_a<ASR::Character_t>(*ASRUtils::expr_type(x.m_text))){
+        } else if (ASR::is_a<ASR::String_t>(*ASRUtils::expr_type(x.m_text))){
             visit_expr(*x.m_text);
             r += s;
         } else {

@@ -105,7 +105,7 @@ class ASRBuilder {
     #define complex32    ASRUtils::TYPE(ASR::make_Complex_t(al, loc, 4))
     #define complex64    ASRUtils::TYPE(ASR::make_Complex_t(al, loc, 8))
     #define logical      ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4))
-    #define character(x) ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, x, nullptr, ASR::string_physical_typeType::PointerString))
+    #define character(x) ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, x, nullptr, ASR::string_physical_typeType::PointerString))
     #define List(x)      ASRUtils::TYPE(ASR::make_List_t(al, loc, x))
 
     ASR::ttype_t *Tuple(std::vector<ASR::ttype_t*> tuple_type) {
@@ -307,19 +307,36 @@ class ASRBuilder {
     } \
 
     inline ASR::expr_t* r2i_t(ASR::expr_t* x, ASR::ttype_t* t) {
-        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::RealToInteger, t, nullptr));
+        ASR::expr_t* value = ASRUtils::expr_value(x);
+        if ( value != nullptr ) {
+            double val = ASR::down_cast<ASR::RealConstant_t>(value)->m_r;
+            value = i_t(val, t);
+        }
+        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::RealToInteger, t, value));
     }
 
     inline ASR::expr_t* c2i_t(ASR::expr_t* x, ASR::ttype_t* t) {
+        // TODO: handle value
         return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::ComplexToInteger, t, nullptr));
     }
 
     inline ASR::expr_t* i2r_t(ASR::expr_t* x, ASR::ttype_t* t) {
-        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::IntegerToReal, t, nullptr));
+        ASR::expr_t* value = ASRUtils::expr_value(x);
+        if ( value != nullptr ) {
+            int64_t val = ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n;
+            value = f_t(val, t);
+        }
+        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::IntegerToReal, t, value));
     }
 
     inline ASR::expr_t* i2i_t(ASR::expr_t* x, ASR::ttype_t* t) {
-        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::IntegerToInteger, t, nullptr));
+        // avoid_cast(x, t); // TODO: adding this makes intrinsics_61 fail, that shall not happen, add a flag for force casting
+        ASR::expr_t* value = ASRUtils::expr_value(x);
+        if ( value != nullptr ) {
+            int64_t val = ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n;
+            value = i_t(val, t);
+        }
+        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::IntegerToInteger, t, value));
     }
 
     inline ASR::expr_t* r2r_t(ASR::expr_t* x, ASR::ttype_t* t) {
@@ -328,11 +345,48 @@ class ASRBuilder {
         if (kind_x == kind_t) {
             return x;
         }
-        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::RealToReal, t, nullptr));
+        ASR::expr_t* value = ASRUtils::expr_value(x);
+        if ( value != nullptr ) {
+            double val = ASR::down_cast<ASR::RealConstant_t>(value)->m_r;
+            value = f_t(val, t);
+        }
+        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::RealToReal, t, value));
     }
 
     inline ASR::expr_t* c2r_t(ASR::expr_t* x, ASR::ttype_t* t) {
+        // TODO: handle value
         return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::ComplexToReal, t, nullptr));
+    }
+
+    inline ASR::expr_t* t2t(ASR::expr_t* x, ASR::ttype_t* t1, ASR::ttype_t* t2) {
+        // TODO: improve this function to handle all types
+        if (ASRUtils::is_real(*t1)) {
+            if (ASRUtils::is_real(*t2)) {
+                return r2r_t(x, t2);
+            } else if (ASRUtils::is_integer(*t2)) {
+                return r2i_t(x, t2);
+            } else {
+                throw LCompilersException("Type not supported");
+            }
+        } else if (ASRUtils::is_integer(*t1)) {
+            if (ASRUtils::is_real(*t2)) {
+                return i2r_t(x, t2);
+            } else if (ASRUtils::is_integer(*t2)) {
+                return i2i_t(x, t2);
+            } else {
+                throw LCompilersException("Type not supported");
+            }
+        } else if (ASRUtils::is_complex(*t1)) {
+            if (ASRUtils::is_real(*t2)) {
+                return c2r_t(x, t2);
+            } else if (ASRUtils::is_integer(*t2)) {
+                return c2i_t(x, t2);
+            } else {
+                throw LCompilersException("Type not supported");
+            }
+        } else {
+            throw LCompilersException("Type not supported");
+        }
     }
 
     // Binop -------------------------------------------------------------------
@@ -432,7 +486,7 @@ class ASRBuilder {
                 return EXPR(ASR::make_RealBinOp_t(al, loc, left,
                     ASR::binopType::Add, right, type, nullptr));
             }
-            case ASR::ttypeType::Character : {
+            case ASR::ttypeType::String : {
                 return EXPR(ASR::make_StringConcat_t(al, loc, left,
                     right, type, nullptr));
             }
@@ -599,7 +653,7 @@ class ASRBuilder {
             case ASR::ttypeType::Real: {
                 return EXPR(ASR::make_RealCompare_t(al, loc, left, ASR::cmpopType::Gt, right, logical, nullptr));
             }
-            case ASR::ttypeType::Character: {
+            case ASR::ttypeType::String: {
                 return EXPR(ASR::make_StringCompare_t(al, loc, left, ASR::cmpopType::Gt, right, logical, nullptr));
             }
             case ASR::ttypeType::Logical: {
@@ -623,7 +677,7 @@ class ASRBuilder {
             case ASR::ttypeType::Real: {
                 return EXPR(ASR::make_RealCompare_t(al, loc, left, ASR::cmpopType::Lt, right, logical, nullptr));
             }
-            case ASR::ttypeType::Character: {
+            case ASR::ttypeType::String: {
                 return EXPR(ASR::make_StringCompare_t(al, loc, left, ASR::cmpopType::Lt, right, logical, nullptr));
             }
             case ASR::ttypeType::Logical: {
@@ -647,7 +701,7 @@ class ASRBuilder {
             case ASR::ttypeType::Real: {
                 return EXPR(ASR::make_RealCompare_t(al, loc, left, ASR::cmpopType::GtE, right, logical, nullptr));
             }
-            case ASR::ttypeType::Character: {
+            case ASR::ttypeType::String: {
                 return EXPR(ASR::make_StringCompare_t(al, loc, left, ASR::cmpopType::GtE, right, logical, nullptr));
             }
             case ASR::ttypeType::Logical: {
@@ -671,7 +725,7 @@ class ASRBuilder {
             case ASR::ttypeType::Real: {
                 return EXPR(ASR::make_RealCompare_t(al, loc, left, ASR::cmpopType::LtE, right, logical, nullptr));
             }
-            case ASR::ttypeType::Character: {
+            case ASR::ttypeType::String: {
                 return EXPR(ASR::make_StringCompare_t(al, loc, left, ASR::cmpopType::LtE, right, logical, nullptr));
             }
             case ASR::ttypeType::Logical: {
@@ -695,7 +749,7 @@ class ASRBuilder {
             case ASR::ttypeType::Real: {
                 return EXPR(ASR::make_RealCompare_t(al, loc, left, ASR::cmpopType::Eq, right, logical, nullptr));
             }
-            case ASR::ttypeType::Character: {
+            case ASR::ttypeType::String: {
                 return EXPR(ASR::make_StringCompare_t(al, loc, left, ASR::cmpopType::Eq, right, logical, nullptr));
             }
             case ASR::ttypeType::Logical: {
@@ -719,7 +773,7 @@ class ASRBuilder {
             case ASR::ttypeType::Real: {
                 return EXPR(ASR::make_RealCompare_t(al, loc, left, ASR::cmpopType::NotEq, right, logical, nullptr));
             }
-            case ASR::ttypeType::Character: {
+            case ASR::ttypeType::String: {
                 return EXPR(ASR::make_StringCompare_t(al, loc, left, ASR::cmpopType::NotEq, right, logical, nullptr));
             }
             case ASR::ttypeType::Logical: {

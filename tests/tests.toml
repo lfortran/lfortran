@@ -3567,6 +3567,10 @@ filename = "errors/array_04.f90"
 asr = true
 
 [[test]]
+filename = "errors/array_04_cc.f90"
+continue_compilation = true
+
+[[test]]
 filename = "errors/array_05.f90"
 asr = true
 
@@ -3583,7 +3587,7 @@ filename = "errors/array_06_cc.f90"
 continue_compilation = true
 
 [[test]]
-filename = "errors/array_07.f90"
+filename = "errors/array_01_cc.f90"
 continue_compilation = true
 
 [[test]]
@@ -3710,6 +3714,18 @@ ast = true
 
 [[test]]
 filename = "parser/program_without_line_07.f90"
+ast = true
+
+[[test]]
+filename = "parser/derived_type_without_start_program.f90"
+ast = true
+
+[[test]]
+filename = "parser/enum_decl_without_start_program.f90"
+ast = true
+
+[[test]]
+filename = "parser/parameter_without_start_program.f90"
 ast = true
 
 # Parser errors
@@ -4276,4 +4292,8 @@ asr = true
 
 [[test]]
 filename = "errors/dimension_02.f90"
+asr = true
+
+[[test]]
+filename = "errors/program_variable.f90"
 asr = true

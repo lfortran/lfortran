@@ -283,11 +283,11 @@
                             ()
                             [(StringConstant
                                 "10.0 =="
-                                (Character 1 7 () PointerString)
+                                (String 1 7 () PointerString)
                             )
                             (Var 2 z)]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )
                     )
@@ -309,11 +309,11 @@
                             ()
                             [(StringConstant
                                 "49.0 =="
-                                (Character 1 7 () PointerString)
+                                (String 1 7 () PointerString)
                             )
                             (Var 2 z)]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )
                     )
@@ -335,11 +335,11 @@
                             ()
                             [(StringConstant
                                 "10.0 =="
-                                (Character 1 7 () PointerString)
+                                (String 1 7 () PointerString)
                             )
                             (Var 2 z)]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )
                     )]

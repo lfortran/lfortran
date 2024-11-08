@@ -85,33 +85,25 @@
         [(Assignment
             0
             title
-            (String
-                "Mr. "
-            )
+            (String "Mr. ")
             ()
         )
         (Assignment
             0
             firstname
-            (String
-                "Rowan "
-            )
+            (String "Rowan ")
             ()
         )
         (Assignment
             0
             surname
-            (String
-                "Atkinson"
-            )
+            (String "Atkinson")
             ()
         )
         (Assignment
             0
             greetings
-            (String
-                "A big hello from Mr. Bean"
-            )
+            (String "A big hello from Mr. Bean")
             (TriviaNode
                 []
                 [(EndOfLine)
@@ -121,9 +113,7 @@
         (Print
             0
             ()
-            [(String
-                "Here is "
-            )
+            [(String "Here is ")
             title
             firstname
             surname]

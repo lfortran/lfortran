@@ -106,7 +106,7 @@
                                                     Default
                                                     (Allocatable
                                                         (Array
-                                                            (Character 1 -2 () PointerString)
+                                                            (String 1 -2 () PointerString)
                                                             [(()
                                                             ())]
                                                             DescriptorArray
@@ -162,7 +162,7 @@
                                             160
                                             ["# ", "My cool new project!"]
                                             (Array
-                                                (Character 1 80 () PointerString)
+                                                (String 1 80 () PointerString)
                                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                                 (IntegerConstant 2 (Integer 4) Decimal))]
                                                 FixedSizeArray
@@ -179,14 +179,14 @@
                                                 (Var 8 settings)
                                                 8 1_fpm_new_settings_name
                                                 (Allocatable
-                                                    (Character 1 -2 () DescriptorString)
+                                                    (String 1 -2 () DescriptorString)
                                                 )
                                                 ()
                                             )
                                             DescriptorString
                                             PointerString
                                             (Allocatable
-                                                (Character 1 -2 () PointerString)
+                                                (String 1 -2 () PointerString)
                                             )
                                             ()
                                         ))
@@ -217,7 +217,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () DescriptorString)
+                                                        (String 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -252,7 +252,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () DescriptorString)
+                                                        (String 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -308,7 +308,7 @@
                                                     ()
                                                     Default
                                                     (Array
-                                                        (Character 1 -1 () PointerString)
+                                                        (String 1 -1 () PointerString)
                                                         [(()
                                                         ())]
                                                         DescriptorArray
@@ -328,7 +328,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () PointerString)
+                                                    (String 1 -1 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -338,9 +338,9 @@
                                         })
                                     warnwrite
                                     (FunctionType
-                                        [(Character 1 -1 () PointerString)
+                                        [(String 1 -1 () PointerString)
                                         (Array
-                                            (Character 1 -1 () PointerString)
+                                            (String 1 -1 () PointerString)
                                             [(()
                                             ())]
                                             DescriptorArray

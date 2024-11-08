@@ -650,11 +650,11 @@
                                             ()
                                             [(StringConstant
                                                 "The result is"
-                                                (Character 1 13 () PointerString)
+                                                (String 1 13 () PointerString)
                                             )
                                             (Var 8 n)]
                                             FormatFortran
-                                            (Character -1 0 () PointerString)
+                                            (String -1 0 () PointerString)
                                             ()
                                         )
                                     )]

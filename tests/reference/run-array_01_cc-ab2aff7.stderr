@@ -1,5 +1,5 @@
 semantic error: Empty array constructor is not allowed
- --> tests/errors/array_07.f90:5:5
+ --> tests/errors/array_01_cc.f90:5:5
   |
 5 | a = []
   |     ^^ 

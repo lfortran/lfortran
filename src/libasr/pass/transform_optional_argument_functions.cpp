@@ -333,6 +333,12 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
     }
 
     ASR::symbol_t* func_sym = ASRUtils::symbol_get_past_external(x.m_name);
+    if (ASR::is_a<ASR::Variable_t>(*x.m_name)) {
+        // possible it is a `procedure(cb) :: call_back`
+        ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(x.m_name);
+        LCOMPILERS_ASSERT(ASR::is_a<ASR::FunctionType_t>(*v->m_type));
+        func_sym = ASRUtils::symbol_get_past_external(v->m_type_declaration);
+    }
     bool is_nopass { false };
     bool is_class_procedure { false };
     if (ASR::is_a<ASR::ClassProcedure_t>(*func_sym)) {

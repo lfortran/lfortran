@@ -361,9 +361,7 @@
             [(Print
                 0
                 ()
-                [(String
-                    "sub1"
-                )
+                [(String "sub1")
                 i
                 b]
                 ()
@@ -843,9 +841,7 @@
         (Print
             0
             ()
-            [(String
-                "func1"
-            )
+            [(String "func1")
             (FuncCallOrArray
                 int
                 []
@@ -870,9 +866,7 @@
         (Print
             0
             ()
-            [(String
-                "func2"
-            )
+            [(String "func2")
             (FuncCallOrArray
                 pp3
                 [(c1

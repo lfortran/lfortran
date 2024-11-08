@@ -610,7 +610,7 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
         if(ASR::is_a<ASR::StringFormat_t>(*x.m_text)) {
             str_fmt = ASR::down_cast<ASR::StringFormat_t>(x.m_text);
             n_values = str_fmt->n_args;
-        } else if(ASR::is_a<ASR::Character_t>(*ASRUtils::expr_type(x.m_text))){
+        } else if(ASR::is_a<ASR::String_t>(*ASRUtils::expr_type(x.m_text))){
             this->visit_expr(*x.m_text);
             src = "std::cout<< " + src + "<<std::endl;\n";
             return;

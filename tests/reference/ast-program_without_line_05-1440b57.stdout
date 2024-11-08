@@ -50,9 +50,7 @@
         [(Print
             0
             ()
-            [(String
-                "x"
-            )]
+            [(String "x")]
             ()
         )]
         []

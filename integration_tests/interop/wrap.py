@@ -31,9 +31,9 @@ class Real(Intrinsic):
 class Complex(Intrinsic):
     def __repr__(self):
         return "Complex()"
-class Character(Intrinsic):
+class String(Intrinsic):
     def __repr__(self):
-        return "Character()"
+        return "String()"
 class Logical(Intrinsic):
     def __repr__(self):
         return "Logical()"

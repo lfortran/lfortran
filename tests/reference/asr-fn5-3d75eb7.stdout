@@ -37,7 +37,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () PointerString)
+                                                    (String 1 -1 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -53,7 +53,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () PointerString)
+                                                    (String 1 -1 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -70,7 +70,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -3 (IntrinsicElementalFunction
+                                                    (String 1 -3 (IntrinsicElementalFunction
                                                         Max
                                                         [(Var 3 length)
                                                         (StringLen
@@ -78,7 +78,7 @@
                                                                 StringTrim
                                                                 [(Var 3 line)]
                                                                 0
-                                                                (Character 1 -1 () PointerString)
+                                                                (String 1 -1 () PointerString)
                                                                 ()
                                                             )
                                                             (Integer 4)
@@ -97,10 +97,10 @@
                                         })
                                     atleast
                                     (FunctionType
-                                        [(Character 1 -1 () PointerString)
+                                        [(String 1 -1 () PointerString)
                                         (Integer 4)
-                                        (Character 1 -1 () PointerString)]
-                                        (Character 1 1 () PointerString)
+                                        (String 1 -1 () PointerString)]
+                                        (String 1 1 () PointerString)
                                         Source
                                         Implementation
                                         ()
@@ -153,10 +153,10 @@
                                                         ()
                                                     )]
                                                     0
-                                                    (Character 1 -1 () PointerString)
+                                                    (String 1 -1 () PointerString)
                                                     ()
                                                 )
-                                                (Character 1 -1 () PointerString)
+                                                (String 1 -1 () PointerString)
                                                 ()
                                             )
                                             ()
@@ -187,7 +187,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () PointerString)
+                                                    (String 1 -1 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -221,7 +221,7 @@
                                                     Save
                                                     (Allocatable
                                                         (Array
-                                                            (Character 1 -2 () PointerString)
+                                                            (String 1 -2 () PointerString)
                                                             [(()
                                                             ())]
                                                             DescriptorArray
@@ -267,7 +267,7 @@
                                                     Save
                                                     (Allocatable
                                                         (Array
-                                                            (Character 1 -2 () PointerString)
+                                                            (String 1 -2 () PointerString)
                                                             [(()
                                                             ())]
                                                             DescriptorArray
@@ -306,7 +306,7 @@
                                                     Save
                                                     (Allocatable
                                                         (Array
-                                                            (Character 1 -2 () PointerString)
+                                                            (String 1 -2 () PointerString)
                                                             [(()
                                                             ())]
                                                             DescriptorArray
@@ -321,7 +321,7 @@
                                         })
                                     print_dictionary
                                     (FunctionType
-                                        [(Character 1 -1 () PointerString)
+                                        [(String 1 -1 () PointerString)
                                         (Logical 4)]
                                         ()
                                         Source
@@ -347,14 +347,14 @@
                                         [(StringFormat
                                             (StringConstant
                                                 "(a,1x,a,1x,a,1x,a)"
-                                                (Character 1 18 () PointerString)
+                                                (String 1 18 () PointerString)
                                             )
                                             [(FunctionCall
                                                 2 atleast
                                                 ()
                                                 [((StringConstant
                                                     "KEYWORD"
-                                                    (Character 1 7 () PointerString)
+                                                    (String 1 7 () PointerString)
                                                 ))
                                                 ((IntrinsicElementalFunction
                                                     Max
@@ -370,7 +370,7 @@
                                                                 ()
                                                             )
                                                             ())]
-                                                            (Character 1 -2 () PointerString)
+                                                            (String 1 -2 () PointerString)
                                                             ColMajor
                                                             ()
                                                         )
@@ -383,7 +383,7 @@
                                                     ()
                                                 ))
                                                 (())]
-                                                (Character 1 -3 (IntrinsicElementalFunction
+                                                (String 1 -3 (IntrinsicElementalFunction
                                                     Max
                                                     [(IntrinsicElementalFunction
                                                         Max
@@ -399,7 +399,7 @@
                                                                     ()
                                                                 )
                                                                 ())]
-                                                                (Character 1 -2 () PointerString)
+                                                                (String 1 -2 () PointerString)
                                                                 ColMajor
                                                                 ()
                                                             )
@@ -416,10 +416,10 @@
                                                             StringTrim
                                                             [(StringConstant
                                                                 "KEYWORD"
-                                                                (Character 1 7 () PointerString)
+                                                                (String 1 7 () PointerString)
                                                             )]
                                                             0
-                                                            (Character 1 -1 () PointerString)
+                                                            (String 1 -1 () PointerString)
                                                             ()
                                                         )
                                                         (Integer 4)
@@ -434,18 +434,18 @@
                                             )
                                             (StringConstant
                                                 "SHORT"
-                                                (Character 1 5 () PointerString)
+                                                (String 1 5 () PointerString)
                                             )
                                             (StringConstant
                                                 "PRESENT"
-                                                (Character 1 7 () PointerString)
+                                                (String 1 7 () PointerString)
                                             )
                                             (StringConstant
                                                 "VALUE"
-                                                (Character 1 5 () PointerString)
+                                                (String 1 5 () PointerString)
                                             )]
                                             FormatFortran
-                                            (Character -1 0 () PointerString)
+                                            (String -1 0 () PointerString)
                                             ()
                                         )]
                                         ()
@@ -461,7 +461,7 @@
                                         [(StringFormat
                                             (StringConstant
                                                 "(*(a,1x,a5,1x,l1,8x,\"[\",a,\"]\",/))"
-                                                (Character 1 33 () PointerString)
+                                                (String 1 33 () PointerString)
                                             )
                                             [(ImpliedDoLoop
                                                 [(FunctionCall
@@ -472,7 +472,7 @@
                                                         [(()
                                                         (Var 4 i)
                                                         ())]
-                                                        (Character 1 -2 () PointerString)
+                                                        (String 1 -2 () PointerString)
                                                         ColMajor
                                                         ()
                                                     ))
@@ -490,7 +490,7 @@
                                                                     ()
                                                                 )
                                                                 ())]
-                                                                (Character 1 -2 () PointerString)
+                                                                (String 1 -2 () PointerString)
                                                                 ColMajor
                                                                 ()
                                                             )
@@ -503,7 +503,7 @@
                                                         ()
                                                     ))
                                                     (())]
-                                                    (Character 1 -3 (IntrinsicElementalFunction
+                                                    (String 1 -3 (IntrinsicElementalFunction
                                                         Max
                                                         [(IntrinsicElementalFunction
                                                             Max
@@ -519,7 +519,7 @@
                                                                         ()
                                                                     )
                                                                     ())]
-                                                                    (Character 1 -2 () PointerString)
+                                                                    (String 1 -2 () PointerString)
                                                                     ColMajor
                                                                     ()
                                                                 )
@@ -539,12 +539,12 @@
                                                                     [(()
                                                                     (Var 4 i)
                                                                     ())]
-                                                                    (Character 1 -2 () PointerString)
+                                                                    (String 1 -2 () PointerString)
                                                                     ColMajor
                                                                     ()
                                                                 )]
                                                                 0
-                                                                (Character 1 -1 () PointerString)
+                                                                (String 1 -1 () PointerString)
                                                                 ()
                                                             )
                                                             (Integer 4)
@@ -562,7 +562,7 @@
                                                     [(()
                                                     (Var 4 i)
                                                     ())]
-                                                    (Character 1 -2 () PointerString)
+                                                    (String 1 -2 () PointerString)
                                                     ColMajor
                                                     ()
                                                 )
@@ -581,14 +581,14 @@
                                                         [(()
                                                         (Var 4 i)
                                                         ())]
-                                                        (Character 1 -2 () PointerString)
+                                                        (String 1 -2 () PointerString)
                                                         ColMajor
                                                         ()
                                                     )
                                                     ()
                                                     ()
                                                     (IntegerConstant 1 (Integer 4) Decimal)
-                                                    (Character 1 -2 () PointerString)
+                                                    (String 1 -2 () PointerString)
                                                     ()
                                                 )]
                                                 (Var 4 i)
@@ -601,7 +601,7 @@
                                                 )
                                                 ()
                                                 (Tuple
-                                                    [(Character 1 -3 (IntrinsicElementalFunction
+                                                    [(String 1 -3 (IntrinsicElementalFunction
                                                         Max
                                                         [(IntrinsicElementalFunction
                                                             Max
@@ -617,7 +617,7 @@
                                                                         ()
                                                                     )
                                                                     ())]
-                                                                    (Character 1 -2 () PointerString)
+                                                                    (String 1 -2 () PointerString)
                                                                     ColMajor
                                                                     ()
                                                                 )
@@ -637,12 +637,12 @@
                                                                     [(()
                                                                     (Var 4 i)
                                                                     ())]
-                                                                    (Character 1 -2 () PointerString)
+                                                                    (String 1 -2 () PointerString)
                                                                     ColMajor
                                                                     ()
                                                                 )]
                                                                 0
-                                                                (Character 1 -1 () PointerString)
+                                                                (String 1 -1 () PointerString)
                                                                 ()
                                                             )
                                                             (Integer 4)
@@ -652,14 +652,14 @@
                                                         (Integer 4)
                                                         ()
                                                     ) PointerString)
-                                                    (Character 1 -2 () PointerString)
+                                                    (String 1 -2 () PointerString)
                                                     (Logical 4)
-                                                    (Character 1 -2 () PointerString)]
+                                                    (String 1 -2 () PointerString)]
                                                 )
                                                 ()
                                             )]
                                             FormatFortran
-                                            (Character -1 0 () PointerString)
+                                            (String -1 0 () PointerString)
                                             ()
                                         )]
                                         ()
