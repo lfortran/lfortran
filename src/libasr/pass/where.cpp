@@ -452,13 +452,20 @@ public:
         if (ASR::is_a<ASR::FunctionCall_t>(*left)) {
             // Create an assignment `return_var = left` and replace function call with return_var
             ASR::FunctionCall_t* fc = ASR::down_cast<ASR::FunctionCall_t>(left);
-            uint64_t h = get_hash((ASR::asr_t*) fc->m_name);
-            ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(fc->m_name);
+            ASR::symbol_t* fn_sym = ASRUtils::symbol_get_past_external(fc->m_name);
+            uint64_t h = get_hash((ASR::asr_t*) fn_sym);
+            ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(fn_sym);
+            ASR::FunctionType_t* fn_type = ASR::down_cast<ASR::FunctionType_t>(fn->m_function_signature);
             ASR::expr_t* return_var_expr = fn->m_return_var;
             ASR::Variable_t* return_var = ASRUtils::EXPR2VAR(return_var_expr);
+            ASR::ttype_t* var_type = return_var->m_type;
+            if (fn_type->m_elemental) {
+                // here var_type will be a scalar type, we need to convert it to an array type
+                var_type = fc->m_type;
+            }
             ASR::expr_t* new_return_var_expr = PassUtils::create_var(1,
                 return_var->m_name, return_var->base.base.loc,
-                return_var->m_type, al, current_scope);
+                var_type, al, current_scope);
             assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al, loc, new_return_var_expr, left, nullptr));
             opt_left = new_return_var_expr;
             return_var_hash[h] = opt_left;
