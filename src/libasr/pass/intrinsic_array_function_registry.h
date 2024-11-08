@@ -2025,11 +2025,15 @@ namespace Spread {
         ASR::expr_t *j = declare("j", int32, Local);
         ASR::expr_t *k = declare("k", int32, Local);
         ASR::expr_t *ele = nullptr;
-        if (is_integer(*arg_types[0])) ele = declare("ele", int32, Local);
-        else if (is_real(*arg_types[0])) ele = declare("ele", real32, Local);
-        else if (is_logical(*arg_types[0])) ele = declare("ele", logical, Local);
-        else if (is_complex(*arg_types[0])) ele = declare("ele", complex32 , Local);
-        else if (is_character(*arg_types[0])) ele = declare("ele", character(1), Local); // TODO: rectify this later
+        int arg0_kind = ASRUtils::extract_kind_from_ttype_t(arg_types[0]);
+        ASR::ttype_t* ele_type = nullptr;
+        if (is_integer(*arg_types[0])) ele_type = int32;
+        else if (is_real(*arg_types[0])) ele_type = real32;
+        else if (is_logical(*arg_types[0])) ele_type = logical;
+        else if (is_complex(*arg_types[0])) ele_type = complex32 ;
+        else if (is_character(*arg_types[0])) ele_type = character(1); // TODO: rectify this later
+        set_kind_to_ttype_t(ele_type, arg0_kind);
+        ele = declare("ele", ele_type, Local);
         body.push_back(al, b.Assignment(i, b.i32(1)));
         body.push_back(al, b.If(b.Eq(args[1], b.i32(1)), {
             b.DoLoop(j, b.i32(1), UBound(args[0], 1), {
