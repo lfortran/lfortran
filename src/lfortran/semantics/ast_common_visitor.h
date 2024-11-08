@@ -1206,10 +1206,13 @@ public:
         if (ASR::is_a<ASR::Variable_t>(*vpast) || ASR::is_a<ASR::Function_t>(*vpast)) {
             return ASR::make_Var_t(al, loc, v);
         } else {
-            diag.semantic_error_label("Symbol '" + var_name
-                + "' must be a variable or a function", {loc},
-                "'" + var_name + "' is a '" +
-                ASRUtils::symbol_type_name(*vpast) + "', not a variable or a function");
+            std::string sym_type = ASRUtils::symbol_type_name(*vpast);
+            diag.diagnostics.push_back(diag::Diagnostic(
+                "Symbol '" + var_name + "' must be a variable or a procedure",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("cannot use a '" + sym_type + "' as a variable", {loc}),
+                    diag::Label("'" + var_name + "' declared as a '" + sym_type + "' here", {vpast->base.loc}, false),
+                }));
             throw SemanticAbort();
         }
     }
