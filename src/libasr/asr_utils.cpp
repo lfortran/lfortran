@@ -202,7 +202,7 @@ void update_call_args(Allocator &al, SymbolTable *current_scope, bool implicit_i
                 ASR::symbol_t* arg_sym = arg_var->m_v;
                 ASR::symbol_t* arg_sym_underlying = ASRUtils::symbol_get_past_external(arg_sym);
                 ASR::symbol_t* sym = fetch_sym(arg_sym_underlying);
-                if (sym != arg_sym) {
+                if (sym != arg_sym_underlying) {
                     ASR::expr_t** current_expr_copy = current_expr;
                     current_expr = const_cast<ASR::expr_t**>((expr_to_replace));
                     this->call_replacer_(sym);
@@ -255,7 +255,7 @@ void update_call_args(Allocator &al, SymbolTable *current_scope, bool implicit_i
                     ASR::symbol_t* arg_sym = arg_var->m_v;
                     ASR::symbol_t* arg_sym_underlying = ASRUtils::symbol_get_past_external(arg_sym);
                     ASR::symbol_t* sym = fetch_sym(arg_sym_underlying);
-                    if (sym != arg_sym) {
+                    if (sym != arg_sym_underlying) {
                         ASR::expr_t** current_expr_copy = current_expr;
                         current_expr = const_cast<ASR::expr_t**>(&(func->m_args[i]));
                         this->call_replacer_(sym);
