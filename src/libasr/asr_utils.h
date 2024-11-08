@@ -348,6 +348,32 @@ static inline ASR::ttype_t* symbol_type(const ASR::symbol_t *f)
     return nullptr;
 }
 
+static inline std::string symbol_type_name(const ASR::symbol_t &s)
+{
+    switch( s.type ) {
+        case ASR::symbolType::Program: return "Program";
+        case ASR::symbolType::Module: return "Module";
+        case ASR::symbolType::Function: return "Function";
+        case ASR::symbolType::GenericProcedure: return "GenericProcedure";
+        case ASR::symbolType::CustomOperator: return "CustomOperator";
+        case ASR::symbolType::ExternalSymbol: return "ExternalSymbol";
+        case ASR::symbolType::Struct: return "Struct";
+        case ASR::symbolType::Enum: return "Enum";
+        case ASR::symbolType::UnionType: return "UnionType";
+        case ASR::symbolType::Variable: return "Variable";
+        case ASR::symbolType::Class: return "Class";
+        case ASR::symbolType::ClassProcedure: return "ClassProcedure";
+        case ASR::symbolType::AssociateBlock: return "AssociateBlock";
+        case ASR::symbolType::Block: return "Block";
+        case ASR::symbolType::Requirement: return "Requirement";
+        case ASR::symbolType::Template: return "Template";
+        default: {
+            LCOMPILERS_ASSERT(false);
+        }
+    }
+    return "";
+}
+
 static inline ASR::abiType symbol_abi(const ASR::symbol_t *f)
 {
     switch( f->type ) {

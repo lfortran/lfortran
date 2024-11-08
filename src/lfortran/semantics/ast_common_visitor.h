@@ -1109,6 +1109,9 @@ public:
             }
         }
 
+        // TODO: the code below should be simplified:
+        // https://github.com/lfortran/lfortran/issues/5290
+
         // Check for the variable in enum symtab, if enum is declared
         bool from_enum = false;
         {
@@ -1197,7 +1200,18 @@ public:
                 throw SemanticAbort();
             }
         }
-        return ASR::make_Var_t(al, loc, v);
+
+        // The symbol `v` must be a Variable
+        ASR::symbol_t *vpast = ASRUtils::symbol_get_past_external(v);
+        if (ASR::is_a<ASR::Variable_t>(*vpast) || ASR::is_a<ASR::Function_t>(*vpast)) {
+            return ASR::make_Var_t(al, loc, v);
+        } else {
+            diag.semantic_error_label("Symbol '" + var_name
+                + "' must be a variable or a function", {loc},
+                "'" + var_name + "' is a '" +
+                ASRUtils::symbol_type_name(*vpast) + "', not a variable or a function");
+            throw SemanticAbort();
+        }
     }
 
     std::string create_getter_function(const Location& loc, ASR::symbol_t* end_sym) {

@@ -2740,6 +2740,8 @@ static inline ASR::ttype_t* expr_type0(const ASR::expr_t *f)
             } else if( s->type == ASR::symbolType::Variable ) {
                 return ASR::down_cast<ASR::Variable_t>(s)->m_type;
             } else {
+                // ICE: only Function and Variable have types, this symbol
+                // does not have a type
                 LCOMPILERS_ASSERT_MSG(false, std::to_string(s->type));
             }
             return nullptr;
