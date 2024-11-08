@@ -1656,11 +1656,18 @@ public:
                                           size_t &value_index) {
         ASR::ImpliedDoLoop_t *implied_do_loop = ASR::down_cast<ASR::ImpliedDoLoop_t>(implied_do_loop_expr);
 
-        ASR::expr_t* loop_start_expr = ASRUtils::expr_value(implied_do_loop->m_start);
-        ASR::expr_t* loop_end_expr = ASRUtils::expr_value(implied_do_loop->m_end);
+        ASR::expr_t* loop_start_expr = implied_do_loop->m_start;
+        ASR::expr_t* loop_end_expr = implied_do_loop->m_end;
         ASR::expr_t* loop_increment_expr = implied_do_loop->m_increment;
-        if (loop_increment_expr) {
-            loop_increment_expr = ASRUtils::expr_value(loop_increment_expr);
+        ASR::expr_t* start_expr_value = ASRUtils::expr_value(loop_start_expr);
+        ASR::expr_t* end_expr_value = ASRUtils::expr_value(loop_end_expr);
+        if (!start_expr_value) {
+            throw SemanticError("The start variable of the data implied do loop must be constants",
+                loop_start_expr->base.loc);
+        }
+        if (!end_expr_value) {
+            throw SemanticError("The end variable of the data implied do loop must be constants",
+                loop_end_expr->base.loc);
         }
 
         ASR::ttype_t *integer_type = ASRUtils::TYPE(
@@ -1671,10 +1678,15 @@ public:
         if (!loop_increment_expr) {
             loop_increment_expr = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, data_stmt.base.base.loc, 1, integer_type));
         }
+        ASR::expr_t* increment_expr_value = ASRUtils::expr_value(loop_increment_expr);
+        if (!increment_expr_value) {
+            throw SemanticError("The increment variable of the data implied do loop must be a constant",
+                loop_increment_expr->base.loc);
+        }
 
-        int64_t loop_start = ASR::down_cast<ASR::IntegerConstant_t>(loop_start_expr)->m_n;
-        int64_t loop_end = ASR::down_cast<ASR::IntegerConstant_t>(loop_end_expr)->m_n;
-        int64_t loop_increment = ASR::down_cast<ASR::IntegerConstant_t>(loop_increment_expr)->m_n;
+        int64_t loop_start = ASR::down_cast<ASR::IntegerConstant_t>(start_expr_value)->m_n;
+        int64_t loop_end = ASR::down_cast<ASR::IntegerConstant_t>(end_expr_value)->m_n;
+        int64_t loop_increment = ASR::down_cast<ASR::IntegerConstant_t>(increment_expr_value)->m_n;
 
         ASRUtils::ExprStmtDuplicator exprDuplicator(al);
         for (int64_t loop_var = loop_start; loop_var <= loop_end; loop_var += loop_increment) {
