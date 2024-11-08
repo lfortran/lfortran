@@ -4293,3 +4293,15 @@ asr = true
 [[test]]
 filename = "errors/program_variable.f90"
 asr = true
+
+[[test]]
+filename = "errors/data_implied_do1.f90"
+asr = true
+
+[[test]]
+filename = "errors/data_implied_do2.f90"
+asr = true
+
+[[test]]
+filename = "errors/data_implied_do3.f90"
+asr = true
