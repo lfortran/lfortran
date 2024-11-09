@@ -1,1 +1,5 @@
 semantic error: Type-spec cannot contain an asterisk for a type parameter
+ --> tests/errors/array_constructor_with_asterisk_in_type_spec.f90:2:14
+  |
+2 |     print *, [character(*) :: "a", "b", "ball", "cat"]
+  |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 

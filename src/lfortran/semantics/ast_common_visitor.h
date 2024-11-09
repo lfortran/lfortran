@@ -4226,7 +4226,8 @@ public:
             // e.g. [character(len=*) :: "a", "apple"], this isn't allowed
             if (char_type_spec->m_len == -1) {
                 diag.add(Diagnostic("Type-spec cannot contain an asterisk for a type "
-                    "parameter", Level::Error, Stage::Semantic, {}));
+                    "parameter", Level::Error, Stage::Semantic, 
+                    {Label("",{char_type_spec->base.base.loc})}));
                 throw SemanticAbort();
             }
         }
