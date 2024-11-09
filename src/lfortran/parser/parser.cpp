@@ -261,7 +261,7 @@ enum LineType {
 
 // Determines the type of line in the fixed-form prescanner
 // `pos` points to the first character (column) of the line
-// The line ends with either `\n` or `\0`.
+// The line ends with either `\n` or `\0`.  Only used for fixed-form
 LineType determine_line_type(const unsigned char *pos)
 {
     int col=1;
@@ -292,7 +292,9 @@ LineType determine_line_type(const unsigned char *pos)
             pos++;
             col+=1;
         }
-        if (*pos == '\n' || *pos == '\0' || (*pos == '\r' && *(pos+1) == '\n')) return LineType::Comment;
+        if (*pos == '\n' || *pos == '\0' || (*pos == '\r' && *(pos+1) == '\n')
+	    || col > 72)
+	  return LineType::Comment;
         if (*pos == '!' && col != 6) return LineType::Comment;
         if (col == 6) {
             if (*pos == ' ' || *pos == '0') {
