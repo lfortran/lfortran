@@ -3277,6 +3277,9 @@ public:
             } catch (const SemanticError &e) {
                 if ( compiler_options.continue_compilation ) diag.add(e.d);
                 else throw e;
+            } catch (const SemanticAbort &a) {
+                if ( !compiler_options.continue_compilation ) throw a;
+                return;
             }
             // visit_expr(*x.m_values[i]);
             ASR::expr_t *expr = ASRUtils::EXPR(tmp);
