@@ -40,6 +40,12 @@
             [(String "test that we avoid double \"\" lookahead in col 73       ")]
             ()
         )
+        (Print
+            0
+            ()
+            [(String "                                  end-of-line double \"\"")]
+            ()
+        )
         (Assignment
             0
             a
