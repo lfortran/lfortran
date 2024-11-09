@@ -37,9 +37,6 @@ define i32 @main(i32 %0, i8** %1) {
   %__3_t = alloca i32, align 4
   %__3_u = alloca i32, align 4
   %__3_v = alloca i32, align 4
-  store i32 10, i32* @array_op_3.dim1, align 4
-  store i32 100, i32* @array_op_3.dim2, align 4
-  store i32 1, i32* @array_op_3.dim3, align 4
   %i = alloca i32, align 4
   %j = alloca i32, align 4
   %k = alloca i32, align 4
@@ -95,9 +92,6 @@ define i32 @main(i32 %0, i8** %1) {
   %19 = getelementptr %array, %array* %arr_desc11, i32 0, i32 0
   store i1* null, i1** %19, align 8
   store %array* %arr_desc11, %array** %c, align 8
-  store i32 10, i32* @array_op_3.dim1, align 4
-  store i32 100, i32* @array_op_3.dim2, align 4
-  store i32 1, i32* @array_op_3.dim3, align 4
   %i12 = alloca i32, align 4
   %j13 = alloca i32, align 4
   %k14 = alloca i32, align 4
