@@ -3674,7 +3674,16 @@ public:
                     ptr = module->getOrInsertGlobal(global_name, type);
                     llvm::GlobalVariable *gptr = module->getNamedGlobal(global_name);
                     gptr->setLinkage(llvm::GlobalValue::InternalLinkage);
-                    llvm::Constant *init_value = llvm::Constant::getNullValue(type);
+                    llvm::Constant *init_value;
+                    if (v->m_value
+                            && (ASR::is_a<ASR::Integer_t>(*v->m_type)
+                            || ASR::is_a<ASR::Real_t>(*v->m_type)
+                            || ASR::is_a<ASR::Logical_t>(*v->m_type))) {
+                        this->visit_expr(*v->m_value);
+                        init_value = llvm::dyn_cast<llvm::Constant>(tmp);
+                    } else {
+                        init_value = llvm::Constant::getNullValue(type);
+                    }
                     gptr->setInitializer(init_value);
 #if LLVM_VERSION_MAJOR > 16
                     ptr_type[ptr] = type;

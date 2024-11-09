@@ -3,8 +3,8 @@ source_filename = "LFortran"
 
 %complex_4 = type { float, float }
 
-@associate_02.t1 = internal global i32 0
-@associate_02.t2 = internal global double 0.000000e+00
+@associate_02.t1 = internal global i32 2
+@associate_02.t2 = internal global double 2.000000e+00
 @associate_02.t3 = internal global %complex_4 zeroinitializer
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @1 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1

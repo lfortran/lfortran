@@ -1,7 +1,7 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
 
-@bindc3.idx = internal global i32 0
+@bindc3.idx = internal global i32 1
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @1 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 @2 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1

@@ -3,7 +3,7 @@ source_filename = "LFortran"
 
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @1 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
-@main.x = internal global i32 0
+@main.x = internal global i32 5
 
 define void @__module_callback_05_px_call1(i32* %x) {
 .entry:

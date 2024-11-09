@@ -1,8 +1,8 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
 
-@associate_03.t1 = internal global i32 0
-@associate_03.t2 = internal global i32 0
+@associate_03.t1 = internal global i32 2
+@associate_03.t2 = internal global i32 1
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @1 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 @2 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1

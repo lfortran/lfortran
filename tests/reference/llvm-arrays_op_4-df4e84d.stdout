@@ -4,9 +4,9 @@ source_filename = "LFortran"
 %array = type { i1*, i32, %dimension_descriptor*, i1, i32 }
 %dimension_descriptor = type { i32, i32, i32 }
 
-@array_op_3.dim1 = internal global i32 0
-@array_op_3.dim2 = internal global i32 0
-@array_op_3.dim3 = internal global i32 0
+@array_op_3.dim1 = internal global i32 10
+@array_op_3.dim2 = internal global i32 100
+@array_op_3.dim3 = internal global i32 1
 @0 = private unnamed_addr constant [11 x i8] c"ERROR STOP\00", align 1
 @1 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @2 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1

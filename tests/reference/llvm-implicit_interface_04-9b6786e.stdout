@@ -1,7 +1,7 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
 
-@main.n = internal global i32 0
+@main.n = internal global i32 3
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @1 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 @2 = private unnamed_addr constant [11 x i8] c"ERROR STOP\00", align 1
