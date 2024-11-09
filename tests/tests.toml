@@ -3144,6 +3144,10 @@ filename = "errors/arithmetic_if1.f90"
 asr = true
 
 [[test]]
+filename = "errors/arithmetic_if1_cc.f90"
+continue_compilation = true
+
+[[test]]
 filename = "errors/assign_01.f90"
 asr = true
 continue_compilation = true
