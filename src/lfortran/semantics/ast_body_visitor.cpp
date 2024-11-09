@@ -3350,7 +3350,11 @@ public:
         bool is_int  = ASR::is_a<ASR::Integer_t>(*test_int_type);
         bool is_real = ASR::is_a<ASR::Real_t>(*test_int_type);
         if (!is_int && !is_real) {
-            throw SemanticError("Arithmetic if (x) requires an integer or real for `x`", test_int->base.loc);
+            diag.add(diag::Diagnostic(
+                "Arithmetic if (x) requires an integer or real for `x`",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {x.base.base.loc})}));
+           if (!compiler_options.continue_compilation) throw SemanticError("Arithmetic if (x) requires an integer or real for `x`", test_int->base.loc);
         }
         ASR::expr_t *test_lt, *test_gt;
         int kind = ASRUtils::extract_kind_from_ttype_t(test_int_type);
