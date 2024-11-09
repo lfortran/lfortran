@@ -2711,6 +2711,10 @@ filename = "fixed_form_interface.f"
 ast = true
 
 [[test]]
+filename = "fixed_form_line_limit.f"
+ast = true
+
+[[test]]
 filename = "../integration_tests/format_03.f"
 ast = true
 
