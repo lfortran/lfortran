@@ -1,4 +1,10 @@
 semantic error: Arithmetic if (x) requires an integer or real for `x`
+ --> tests/errors/arithmetic_if1.f90:5:1
+  |
+5 | if ("yy") 1, 2, 3
+  | ^^^^^^^^^^^^^^^^^ 
+
+semantic error: Arithmetic if (x) requires an integer or real for `x`
  --> tests/errors/arithmetic_if1.f90:5:5
   |
 5 | if ("yy") 1, 2, 3

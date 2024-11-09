@@ -1,0 +1,13 @@
+{
+    "basename": "run-arithmetic_if1_cc-87bcd45",
+    "cmd": "lfortran --continue-compilation --no-color {infile}",
+    "infile": "tests/errors/arithmetic_if1_cc.f90",
+    "infile_hash": "d43842d19860f048f4fed4bcf95f6f2a2fa8efa8b3292d8da86ce349",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "run-arithmetic_if1_cc-87bcd45.stdout",
+    "stdout_hash": "605554f0634876818c22a6dd5ecf4c230919c0ec9b1e18af30597d80",
+    "stderr": "run-arithmetic_if1_cc-87bcd45.stderr",
+    "stderr_hash": "5c4a85236775b3848107d1312a3ee059c7f27f38bfc23df194a26648",
+    "returncode": 2
+}
