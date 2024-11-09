@@ -3669,9 +3669,6 @@ public:
                 ptr = builder->CreateBitCast(ptr_i8, type->getPointerTo());
             } else {
                 if (v->m_storage == ASR::storage_typeType::Save) {
-                    ASR::ttype_t *v_type = ASRUtils::
-                        type_get_past_pointer(
-                        ASRUtils::type_get_past_allocatable(v->m_type));
                     std::string parent_function_name = std::string(x.m_name);
                     std::string global_name = parent_function_name+ "." + v->m_name;
                     ptr = module->getOrInsertGlobal(global_name, type);
@@ -3679,9 +3676,9 @@ public:
                     gptr->setLinkage(llvm::GlobalValue::InternalLinkage);
                     llvm::Constant *init_value;
                     if (v->m_value
-                            && (ASR::is_a<ASR::Integer_t>(*v_type)
-                            || ASR::is_a<ASR::Real_t>(*v_type)
-                            || ASR::is_a<ASR::Logical_t>(*v_type))) {
+                            && (ASR::is_a<ASR::Integer_t>(*v->m_type)
+                            || ASR::is_a<ASR::Real_t>(*v->m_type)
+                            || ASR::is_a<ASR::Logical_t>(*v->m_type))) {
                         this->visit_expr(*v->m_value);
                         init_value = llvm::dyn_cast<llvm::Constant>(tmp);
                     } else {
