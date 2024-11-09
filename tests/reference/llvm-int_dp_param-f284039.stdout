@@ -1,8 +1,8 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
 
-@int_dp_param.u = internal global i32 0
-@int_dp_param.v = internal global i64 0
+@int_dp_param.u = internal global i32 2147483647
+@int_dp_param.v = internal global i64 2147483647
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @1 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 

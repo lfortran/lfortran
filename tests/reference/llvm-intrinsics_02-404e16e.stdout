@@ -1,7 +1,7 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
 
-@intrinsics_02.x = internal global float 0.000000e+00
+@intrinsics_02.x = internal global float 0x3FEFEB7AA0000000
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @1 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 @2 = private unnamed_addr constant [11 x i8] c"ERROR STOP\00", align 1
