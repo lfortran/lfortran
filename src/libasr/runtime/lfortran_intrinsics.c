@@ -2040,20 +2040,8 @@ LFORTRAN_API void _lfortran_alloc(char** ptr, int32_t desired_size /*Null-Charac
         const int8_t null_terminated_char_len = 1;
         *string_size = desired_size - null_terminated_char_len;
     } else if(*ptr != NULL && *string_capacity != 0){
-        // printf("runtime error: Attempting to allocate already allocated variable\n");
-        // exit(1);
-        // A workaround till this issue is resolved : https://github.com/lfortran/lfortran/issues/5249
-        // after resolving the previous issue delete the code below.
-        int32_t inital_capacity;
-        if(100 < desired_size){
-            inital_capacity = desired_size;
-        } else {
-            inital_capacity = 100; 
-        }
-        *ptr = (char*)malloc(inital_capacity);
-        *string_capacity = inital_capacity;
-        const int8_t null_terminated_char_len = 1;
-        *string_size = desired_size - null_terminated_char_len;
+        printf("runtime error: Attempting to allocate already allocated variable\n");
+        exit(1);
     } else {
         printf("Compiler Internal Error :Invalid state of string descriptor\n");
         exit(1);
