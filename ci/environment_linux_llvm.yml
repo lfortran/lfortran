@@ -15,4 +15,4 @@ dependencies:
   - bison=3.4
   - rapidjson=1.1.0
   - ninja=1.11.1
-  - zlib=1.2.13
+  - zlib=1.3.1
