@@ -952,7 +952,6 @@ jobs:
             export WASMTIME_NEW_CLI=0
             cd integration_tests
             ./run_tests.py -b llvm_wasm llvm_wasm_emcc
-            ./run_tests.py -b llvm_wasm llvm_wasm_emcc --experimental-simplifier
 
       - name: Build Linux
         if: "!( (contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19')) )"
