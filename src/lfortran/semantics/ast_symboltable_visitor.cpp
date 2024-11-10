@@ -3432,15 +3432,8 @@ public:
     void visit_Enum(const AST::Enum_t &x) {
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
-        std::string sym_name = "_nameless_enum";
-        {
-            int i = 1;
-            while (parent_scope->get_symbol(std::to_string(i) +
-                    sym_name) != nullptr) {
-                i++;
-            }
-            sym_name = std::to_string(i) + sym_name;
-        }
+        std::string sym_name = "lcompilers__nameless_enum";
+        sym_name = parent_scope->get_unique_name(sym_name);
         Vec<char *> m_members;
         m_members.reserve(al, 4);
         ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al,
