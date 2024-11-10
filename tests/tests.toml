@@ -263,6 +263,10 @@ filename = "errors/array_size_01.f90"
 asr = true
 
 [[test]]
+filename = "errors/array_size_01_cc.f90"
+continue_compilation = true
+
+[[test]]
 filename = "errors/array_size_02.f90"
 asr = true
 
