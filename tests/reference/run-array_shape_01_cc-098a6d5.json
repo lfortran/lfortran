@@ -2,7 +2,7 @@
     "basename": "run-array_shape_01_cc-098a6d5",
     "cmd": "lfortran --continue-compilation --no-color {infile}",
     "infile": "tests/errors/array_shape_01_cc.f90",
-    "infile_hash": "2b1137cffda510c61749540ff4ba4792a3ca8b03d8f40d698c9154ce",
+    "infile_hash": "8ab5e8f474c71843a392d0600d763206280cdbd17e8513a40785b01b",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "run-array_shape_01_cc-098a6d5.stdout",

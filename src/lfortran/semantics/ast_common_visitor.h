@@ -5358,10 +5358,13 @@ public:
                 if( !raise_error ) {
                     return false;
                 }
-                throw SemanticError(curr_kwarg_name + " has already " +
-                                    "been specified as a positional/keyword " +
-                                    "argument to " + intrinsic_name + ".",
-                                    x.base.base.loc);
+                diag.add(diag::Diagnostic(
+                    curr_kwarg_name + " has already " +
+                    "been specified as a positional/keyword " +
+                    "argument to " + intrinsic_name,
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {x.base.base.loc})}));
+                throw SemanticAbort();
             }
             this->visit_expr(*x.m_keywords[i].m_value);
             args.p[kwarg_idx] = ASRUtils::EXPR(tmp);

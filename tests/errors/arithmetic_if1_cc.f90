@@ -1,4 +1,4 @@
-program arithmetic_if1
+program arithmetic_if1_cc
     integer :: x, c
     x = -3
     c = 0

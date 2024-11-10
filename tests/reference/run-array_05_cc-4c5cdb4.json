@@ -2,7 +2,7 @@
     "basename": "run-array_05_cc-4c5cdb4",
     "cmd": "lfortran --continue-compilation --no-color {infile}",
     "infile": "tests/errors/array_05_cc.f90",
-    "infile_hash": "9c6af3f3a5224c50b662958d2d3f1acb41def92f2b8873cfff2633ac",
+    "infile_hash": "1dcd170461f4cffa125a95ce54171512f99cf95947be6665ba56b021",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "run-array_05_cc-4c5cdb4.stdout",

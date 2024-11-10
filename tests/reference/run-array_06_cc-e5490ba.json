@@ -2,7 +2,7 @@
     "basename": "run-array_06_cc-e5490ba",
     "cmd": "lfortran --continue-compilation --no-color {infile}",
     "infile": "tests/errors/array_06_cc.f90",
-    "infile_hash": "a2934ed73b27bb33b6f812f17615780a23513b88cf68a4dcc98f0f72",
+    "infile_hash": "e0d7767f9540069c037db7df915852de24ee4ae57d346080d0392a83",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "run-array_06_cc-e5490ba.stdout",
