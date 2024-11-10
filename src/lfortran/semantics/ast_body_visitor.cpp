@@ -121,14 +121,15 @@ public:
                 } else {
                     tmp = nullptr;
                     tmp_vec.clear();
+                    return;
                 }
             } catch (const SemanticError &e) {
                 if (!compiler_options.continue_compilation) {
                     throw e;
                 } else {
-                    diag.add(e.d);
                     tmp = nullptr;
                     tmp_vec.clear();
+                    return;
                 }
             }
             if (tmp != nullptr) {
