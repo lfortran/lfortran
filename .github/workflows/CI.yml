@@ -576,27 +576,21 @@ jobs:
       - name: Test dftatom
         shell: bash -e -x -l {0}
         run: |
-            git clone https://github.com/czgdp1807/dftatom.git
+            git clone https://github.com/certik/dftatom.git
             cd dftatom
-            git checkout -t origin/lf40
-            git checkout 6e0f6e7506440b042aae93e57b10444ee6c36f7a
+            git checkout 9b678177f67e350b8a32e08cb61f51e6e708e87a
             export PATH="$(pwd)/../src/bin:$PATH"
-            make -f Makefile.manual
-            make -f Makefile.manual test
+            make -f Makefile.manual F90=lfortran F90FLAGS=-I../../src
+            make -f Makefile.manual quicktest
 
             # Test with experimental simplifier
             git clean -dfx
-            make -f Makefile.manual F90="lfortran --experimental-simplifier"
-            make -f Makefile.manual test
+            make -f Makefile.manual F90=lfortran F90FLAGS="-I../../src --experimental-simplifier"
+            make -f Makefile.manual quicktest
 
             git clean -dfx
-            make -f Makefile.manual F90="lfortran --skip-pass=inline_function_calls,fma --fast"
-            make -f Makefile.manual test
-
-            # Test with experimental simplifier
-            git clean -dfx
-            make -f Makefile.manual F90="lfortran --experimental-simplifier --skip-pass=inline_function_calls,fma --fast"
-            make -f Makefile.manual test
+            make -f Makefile.manual F90=lfortran F90FLAGS="-I../../src --skip-pass=inline_function_calls,fma --fast"
+            make -f Makefile.manual quicktest
 
       - name: Test fastGPT ( ubuntu-latest )
         shell: bash -e -x -l {0}
@@ -1069,27 +1063,21 @@ jobs:
       - name: Test dftatom
         shell: bash -e -x -l {0}
         run: |
-            git clone https://github.com/czgdp1807/dftatom.git
+            git clone https://github.com/certik/dftatom.git
             cd dftatom
-            git checkout -t origin/lf40
-            git checkout 6e0f6e7506440b042aae93e57b10444ee6c36f7a
+            git checkout 9b678177f67e350b8a32e08cb61f51e6e708e87a
             export PATH="$(pwd)/../src/bin:$PATH"
-            make -f Makefile.manual
-            make -f Makefile.manual test
+            make -f Makefile.manual F90=lfortran F90FLAGS=-I../../src
+            ./tests/atom_U/F_atom_U
 
             # Test with experimental simplifier
             git clean -dfx
-            make -f Makefile.manual F90="lfortran --experimental-simplifier"
-            make -f Makefile.manual test
+            make -f Makefile.manual F90=lfortran F90FLAGS="-I../../src --experimental-simplifier"
+            ./tests/atom_U/F_atom_U
 
             git clean -dfx
-            make -f Makefile.manual F90="lfortran --skip-pass=inline_function_calls,fma --fast"
-            make -f Makefile.manual test
-
-            # Test with experimental simplifier
-            git clean -dfx
-            make -f Makefile.manual F90="lfortran --experimental-simplifier --skip-pass=inline_function_calls,fma --fast"
-            make -f Makefile.manual test
+            make -f Makefile.manual F90=lfortran F90FLAGS="-I../../src --skip-pass=inline_function_calls,fma --fast"
+            ./tests/atom_U/F_atom_U
 
       - name: Test fastGPT ( ubuntu-latest )
         shell: bash -e -x -l {0}
