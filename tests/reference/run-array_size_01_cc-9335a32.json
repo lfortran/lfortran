@@ -1,0 +1,13 @@
+{
+    "basename": "run-array_size_01_cc-9335a32",
+    "cmd": "lfortran --continue-compilation --no-color {infile}",
+    "infile": "tests/errors/array_size_01_cc.f90",
+    "infile_hash": "e61579eb96943f206c9157ca626df80ce4ea7c32281c0e979b27d943",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "run-array_size_01_cc-9335a32.stdout",
+    "stdout_hash": "a779ee4f7341ddce58a41cee3d249ecf1b37216d7d4f16eb4e0f528e",
+    "stderr": "run-array_size_01_cc-9335a32.stderr",
+    "stderr_hash": "36f12657bb9f52a26ae1b18bca0578405c3f548f9793d07610781ae9",
+    "returncode": 1
+}
