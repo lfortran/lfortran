@@ -266,9 +266,6 @@
                             ()
                         ))]
                         ()
-                    )
-                    (ImplicitDeallocate
-                        [(Var 2 r_g)]
                     )]
                     ()
                     Public

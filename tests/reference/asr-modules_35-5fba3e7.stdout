@@ -208,9 +208,6 @@
                                             ()
                                         )]
                                         []
-                                    )
-                                    (ImplicitDeallocate
-                                        [(Var 3 strings_a)]
                                     )]
                                     ()
                                     Public
@@ -286,9 +283,6 @@
                         ()
                         [((Var 4 string))]
                         ()
-                    )
-                    (ImplicitDeallocate
-                        [(Var 4 string)]
                     )]
                 )
         })

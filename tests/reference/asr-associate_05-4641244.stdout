@@ -685,9 +685,6 @@
                             (String -1 0 () PointerString)
                             ()
                         )
-                    )
-                    (ImplicitDeallocate
-                        [(Var 2 myreal)]
                     )]
                 )
         })

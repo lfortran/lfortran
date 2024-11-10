@@ -123,11 +123,6 @@
                             ColMajor
                         )
                         ()
-                    )
-                    (ImplicitDeallocate
-                        [(Var 2 list_character)
-                        (Var 2 list_integer)
-                        (Var 2 list_logical)]
                     )]
                 )
         })

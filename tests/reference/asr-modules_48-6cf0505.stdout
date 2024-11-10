@@ -658,10 +658,6 @@
                             ()
                         )]
                         []
-                    )
-                    (ImplicitDeallocate
-                        [(Var 8 cat_str_alloc)
-                        (Var 8 char_str_alloc)]
                     )]
                 ),
             modules_48_fpm_strings:
@@ -1417,9 +1413,6 @@
                                             )
                                             ()
                                         )]
-                                    )
-                                    (ImplicitDeallocate
-                                        [(Var 6 name)]
                                     )]
                                     (Var 6 lout)
                                     Public
@@ -1730,9 +1723,6 @@
                                             ()
                                         )]
                                         []
-                                    )
-                                    (ImplicitDeallocate
-                                        [(Var 7 delim_str)]
                                     )]
                                     (Var 7 cat)
                                     Public

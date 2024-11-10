@@ -332,11 +332,6 @@
                             ()
                         )]
                         []
-                    )
-                    (ImplicitDeallocate
-                        [(Var 2 greetings)
-                        (Var 2 str)
-                        (Var 2 user_data)]
                     )]
                 )
         })

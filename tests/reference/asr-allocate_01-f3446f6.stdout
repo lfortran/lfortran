@@ -986,9 +986,6 @@
                                     )
                                     (ExplicitDeallocate
                                         [(Var 3 c_copy)]
-                                    )
-                                    (ImplicitDeallocate
-                                        [(Var 3 c_copy)]
                                     )]
                                     ()
                                     Public
@@ -1633,11 +1630,6 @@
                             ()
                         )]
                         []
-                    )
-                    (ImplicitDeallocate
-                        [(Var 2 a)
-                        (Var 2 b)
-                        (Var 2 c)]
                     )]
                 )
         })

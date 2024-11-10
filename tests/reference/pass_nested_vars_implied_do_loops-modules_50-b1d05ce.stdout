@@ -530,9 +530,6 @@
                                             ()
                                         )]
                                         []
-                                    )
-                                    (ImplicitDeallocate
-                                        [(Var 5 modules_used)]
                                     )]
                                     ()
                                     Public
