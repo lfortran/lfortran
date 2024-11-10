@@ -2440,10 +2440,13 @@ public:
                         ASRUtils::extract_value(ASRUtils::expr_value(dim_a.m_length), dim_a_int);
                         ASRUtils::extract_value(ASRUtils::expr_value(dim_b.m_length), dim_b_int);
                         if (dim_a_int > 0 && dim_b_int > 0 && dim_a_int != dim_b_int) {
-                            throw SemanticError("Different shape for array assignment on "
-                                "dimension " + std::to_string(i + 1) + "(" +
-                                std::to_string(dim_a_int) + " and " +
-                                std::to_string(dim_b_int) + ")", x.base.base.loc);
+                            diag.add(diag::Diagnostic(
+                                "Different shape for array assignment on dimension " 
+                                + std::to_string(i + 1) + "(" + std::to_string(dim_a_int) 
+                                + " and " + std::to_string(dim_b_int) + ")",
+                                diag::Level::Error, diag::Stage::Semantic, {
+                                    diag::Label("", {x.base.base.loc})}));
+                            throw SemanticAbort();
                         }
                     }
                 } else {
