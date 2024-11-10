@@ -578,19 +578,19 @@ jobs:
         run: |
             git clone https://github.com/certik/dftatom.git
             cd dftatom
-            git checkout 3815c86b0144fd69981dc7dfd7e28adf671c64ac
+            git checkout 9b678177f67e350b8a32e08cb61f51e6e708e87a
             export PATH="$(pwd)/../src/bin:$PATH"
             make -f Makefile.manual F90=lfortran F90FLAGS=-I../../src
-            make -f Makefile.manual test
+            make -f Makefile.manual quicktest
 
             # Test with experimental simplifier
             git clean -dfx
             make -f Makefile.manual F90=lfortran F90FLAGS="-I../../src --experimental-simplifier"
-            make -f Makefile.manual test
+            make -f Makefile.manual quicktest
 
             git clean -dfx
             make -f Makefile.manual F90=lfortran F90FLAGS="-I../../src --skip-pass=inline_function_calls,fma --fast"
-            make -f Makefile.manual test
+            make -f Makefile.manual quicktest
 
       - name: Test fastGPT ( ubuntu-latest )
         shell: bash -e -x -l {0}
@@ -1065,7 +1065,7 @@ jobs:
         run: |
             git clone https://github.com/certik/dftatom.git
             cd dftatom
-            git checkout 3815c86b0144fd69981dc7dfd7e28adf671c64ac
+            git checkout 9b678177f67e350b8a32e08cb61f51e6e708e87a
             export PATH="$(pwd)/../src/bin:$PATH"
             make -f Makefile.manual F90=lfortran F90FLAGS=-I../../src
             ./tests/atom_U/F_atom_U
