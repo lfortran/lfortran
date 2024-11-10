@@ -1183,30 +1183,6 @@ public:
                                     stat, errmsg, source);
     }
 
-// If there are allocatable variables in the local scope it inserts an ImplicitDeallocate node
-// with their list. The ImplicitDeallocate node will deallocate them if they are allocated,
-// otherwise does nothing.
-    ASR::stmt_t* create_implicit_deallocate(const Location& loc) {
-        Vec<ASR::expr_t*> del_syms;
-        del_syms.reserve(al, 0);
-        for( auto& item: current_scope->get_scope() ) {
-            if( item.second->type == ASR::symbolType::Variable ) {
-                const ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(item.second);
-                ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
-                if( ASR::is_a<ASR::Allocatable_t>(*var->m_type) &&
-                    var->m_intent == ASR::intentType::Local ) {
-                    del_syms.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, item.second)));
-                }
-            }
-        }
-        if( del_syms.size() == 0 ) {
-            return nullptr;
-        }
-
-        return ASRUtils::STMT(ASR::make_ImplicitDeallocate_t(al, loc,
-                    del_syms.p, del_syms.size()));
-    }
-
     inline void check_for_deallocation(ASR::symbol_t* tmp_sym, const Location& loc) {
         tmp_sym = ASRUtils::symbol_get_past_external(tmp_sym);
         if( !ASR::is_a<ASR::Variable_t>(*tmp_sym) ) {
@@ -1646,10 +1622,6 @@ public:
 
         transform_stmts(body, x.n_body, x.m_body);
         handle_format();
-        ASR::stmt_t* impl_del = create_implicit_deallocate(x.base.base.loc);
-        if( impl_del != nullptr ) {
-            body.push_back(al, impl_del);
-        }
         v->m_body = body.p;
         v->n_body = body.size();
 
@@ -2066,10 +2038,6 @@ public:
             func_deps.push_back(al, s2c(al, itr));
         }
         current_function_dependencies = current_function_dependencies_copy;
-        ASR::stmt_t* impl_del = create_implicit_deallocate(x.base.base.loc);
-        if( impl_del != nullptr ) {
-            body.push_back(al, impl_del);
-        }
         v->m_body = body.p;
         v->n_body = body.size();
         v->m_dependencies = func_deps.p;
@@ -2143,10 +2111,6 @@ public:
             func_deps.push_back(al, s2c(al, itr));
         }
         current_function_dependencies = current_function_dependencies_copy;
-        ASR::stmt_t* impl_del = create_implicit_deallocate(x.base.base.loc);
-        if( impl_del != nullptr ) {
-            body.push_back(al, impl_del);
-        }
         v->m_body = body.p;
         v->n_body = body.size();
         v->m_dependencies = func_deps.p;
