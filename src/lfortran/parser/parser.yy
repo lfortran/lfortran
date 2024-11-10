@@ -363,6 +363,8 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 
 // Nonterminal tokens
 
+%type <ast> designator
+%type <ast> signed_numeric_constant
 %type <ast> expr
 %type <vec_ast> expr_list
 %type <vec_ast> expr_list_opt
@@ -1404,24 +1406,27 @@ data_stmt_value_list
     ;
 
 data_stmt_repeat
-    : id { $$ = $1; }
+    : designator { $$ = $1; }
     | TK_INTEGER { $$ = INTEGER($1, @$); }
+    ;
+
+
+signed_numeric_constant
+    : TK_INTEGER { $$ = INTEGER($1, @$); }
     | TK_REAL { $$ = REAL($1, @$); }
-    | TK_STRING { $$ = STRING($1, @$); }
-    | TK_BOZ_CONSTANT { $$ = BOZ($1, @$); }
-    | ".true."  { $$ = TRUE(@$); }
-    | ".false." { $$ = FALSE(@$); }
+    | "-" signed_numeric_constant %prec UMINUS { $$ = UNARY_MINUS($2, @$); }
+    | "+" signed_numeric_constant %prec UMINUS { $$ = UNARY_PLUS ($2, @$); }
     ;
 
 data_stmt_constant
-    : id { $$ = $1; }
-    | TK_INTEGER { $$ = INTEGER($1, @$); }
-    | TK_REAL { $$ = REAL($1, @$); }
+    : designator { $$ = $1; }
+    | signed_numeric_constant { $$ = $1; }
     | TK_STRING { $$ = STRING($1, @$); }
     | TK_BOZ_CONSTANT { $$ = BOZ($1, @$); }
     | ".true."  { $$ = TRUE(@$); }
     | ".false." { $$ = FALSE(@$); }
-    | "-" expr %prec UMINUS { $$ = UNARY_MINUS($2, @$); }
+    | "(" signed_numeric_constant "," signed_numeric_constant ")" { $$ = COMPLEX($2, $4, @$); }
+
     ;
 
 integer_type
@@ -2337,8 +2342,8 @@ rbracket
     | "/)"
     ;
 
-expr
-// ### primary
+
+designator
     : id { $$ = $1; }
     | struct_member_star id { NAME1($$, $2, $1, @$); }
     | id "(" fnarray_arg_list_opt ")" { $$ = FUNCCALLORARRAY($1, $3, @$); }
@@ -2358,6 +2363,11 @@ expr
             $$ = COARRAY2($1, $3, $6, @$); }
     | struct_member_star id "(" fnarray_arg_list_opt ")" "[" coarray_arg_list "]" {
             $$ = COARRAY4($1, $2, $4, $7, @$); }
+    ;
+
+expr
+// ### primary
+    : designator { $$ = $1; }
     | "[" expr_list_opt rbracket { $$ = ARRAY_IN1($2, @$); }
     | "[" var_type "::" expr_list_opt rbracket %dprec 2 { $$ = ARRAY_IN2($2, $4, @$); }
     | "[" id "::" expr_list_opt rbracket %dprec 1 { $$ = ARRAY_IN3($2, $4, @$); }

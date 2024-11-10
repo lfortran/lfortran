@@ -3430,6 +3430,10 @@ filename = "data2.f90"
 asr = true
 
 [[test]]
+filename = "data3.f90"
+asr = true
+
+[[test]]
 filename = "special_chars_json.f90"
 ast_json = true
 asr_json = true
