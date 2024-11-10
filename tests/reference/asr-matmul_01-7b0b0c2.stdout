@@ -1267,12 +1267,6 @@
                             ()
                         )]
                         []
-                    )
-                    (ImplicitDeallocate
-                        [(Var 6 a)
-                        (Var 6 b)
-                        (Var 6 c)
-                        (Var 6 c2)]
                     )]
                 ),
             matmul_01_cpu:

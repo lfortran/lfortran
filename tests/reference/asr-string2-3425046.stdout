@@ -282,9 +282,6 @@
                                             )]
                                         )]
                                         []
-                                    )
-                                    (ImplicitDeallocate
-                                        [(Var 18 string_fortran)]
                                     )]
                                     ()
                                     Public

@@ -136,9 +136,6 @@
                             )
                         )]
                         []
-                    )
-                    (ImplicitDeallocate
-                        [(Var 2 array)]
                     )]
                 )
         })

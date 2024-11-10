@@ -1099,10 +1099,6 @@
                                             ()
                                         )]
                                         []
-                                    )
-                                    (ImplicitDeallocate
-                                        [(Var 5 indexarray)
-                                        (Var 5 sorted)]
                                     )]
                                     ()
                                     Public

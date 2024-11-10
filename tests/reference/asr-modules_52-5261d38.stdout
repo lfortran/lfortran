@@ -153,9 +153,6 @@
                                         ((Var 3 input))
                                         (())]
                                         ()
-                                    )
-                                    (ImplicitDeallocate
-                                        [(Var 3 table)]
                                     )]
                                     ()
                                     Public

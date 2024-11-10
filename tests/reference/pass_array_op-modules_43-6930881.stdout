@@ -70,9 +70,6 @@
                         ()
                         [((Var 5 sources))]
                         ()
-                    )
-                    (ImplicitDeallocate
-                        [(Var 5 sources)]
                     )]
                 ),
             modules_43_fpm_sources:
@@ -469,9 +466,6 @@
                                             )
                                             ()
                                         )]
-                                    )
-                                    (ImplicitDeallocate
-                                        [(Var 4 dir_sources)]
                                     )]
                                     ()
                                     Public

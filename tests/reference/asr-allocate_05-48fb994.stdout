@@ -141,9 +141,6 @@
                             ()
                         )]
                         []
-                    )
-                    (ImplicitDeallocate
-                        [(Var 2 string)]
                     )]
                 )
         })
