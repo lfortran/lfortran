@@ -3353,8 +3353,8 @@ public:
             diag.add(diag::Diagnostic(
                 "Arithmetic if (x) requires an integer or real for `x`",
                 diag::Level::Error, diag::Stage::Semantic, {
-                    diag::Label("", {x.base.base.loc})}));
-           if (!compiler_options.continue_compilation) throw SemanticError("Arithmetic if (x) requires an integer or real for `x`", test_int->base.loc);
+                    diag::Label("", {test_int->base.loc})}));
+            throw SemanticAbort();
         }
         ASR::expr_t *test_lt, *test_gt;
         int kind = ASRUtils::extract_kind_from_ttype_t(test_int_type);
