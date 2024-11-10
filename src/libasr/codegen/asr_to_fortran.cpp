@@ -616,7 +616,7 @@ public:
     void visit_ExternalSymbol(const ASR::ExternalSymbol_t &x) {
         ASR::symbol_t *sym = down_cast<ASR::symbol_t>(
             ASRUtils::symbol_parent_symtab(x.m_external)->asr_owner);
-        if (!is_a<ASR::Struct_t>(*sym)) {
+        if (!is_a<ASR::Struct_t>(*sym) && !is_a<ASR::Enum_t>(*sym)) {
             src = indent;
             src += "use ";
             src.append(x.m_module_name);
@@ -648,7 +648,25 @@ public:
         src = r;
     }
 
-    // void visit_Enum(const ASR::Enum_t &x) {}
+    void visit_Enum(const ASR::Enum_t &x) {
+        std::string r = indent;
+        r += "enum, bind(c)\n";
+        inc_indent();
+        for (auto it: x.m_symtab->get_scope()) {
+            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(it.second);
+            r += indent;
+            r += "enumerator :: ";
+            r.append(var->m_name);
+            r += " = ";
+            visit_expr(*var->m_value);
+            r += src;
+            r += "\n";
+        }
+        dec_indent();
+        r += indent;
+        r += "end enum\n";
+        src = r;
+    }
 
     // void visit_UnionType(const ASR::UnionType_t &x) {}
 
