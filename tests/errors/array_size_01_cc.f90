@@ -1,4 +1,4 @@
-program arrays_01
+program array_size_01_cc
     implicit none
     integer :: a(3)
     integer :: size_a

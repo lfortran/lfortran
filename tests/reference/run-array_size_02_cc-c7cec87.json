@@ -2,7 +2,7 @@
     "basename": "run-array_size_02_cc-c7cec87",
     "cmd": "lfortran --continue-compilation --no-color {infile}",
     "infile": "tests/errors/array_size_02_cc.f90",
-    "infile_hash": "19e1731eec10f3e78ca24c5ce8d7427a8da4f1ed7148ceadaba7c64e",
+    "infile_hash": "3c253a206cd87ae9fdc4687871d64d49997dcec6675bcb5846164644",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "run-array_size_02_cc-c7cec87.stdout",

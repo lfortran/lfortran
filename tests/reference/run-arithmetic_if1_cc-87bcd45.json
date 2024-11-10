@@ -2,7 +2,7 @@
     "basename": "run-arithmetic_if1_cc-87bcd45",
     "cmd": "lfortran --continue-compilation --no-color {infile}",
     "infile": "tests/errors/arithmetic_if1_cc.f90",
-    "infile_hash": "d43842d19860f048f4fed4bcf95f6f2a2fa8efa8b3292d8da86ce349",
+    "infile_hash": "1df3e248f4712f54b1c08e2fde3fa45044d656313b69a8abd18b8337",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "run-arithmetic_if1_cc-87bcd45.stdout",

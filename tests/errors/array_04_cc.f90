@@ -1,4 +1,4 @@
-program array_04
+program array_04_cc
 implicit none
 
 type :: t
