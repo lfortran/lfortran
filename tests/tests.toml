@@ -4042,6 +4042,10 @@ filename = "errors/array_constructor_with_different_char_lengths.f90"
 asr = true
 
 [[test]]
+filename = "errors/array_constructor_with_different_char_lengths_cc.f90"
+continue_compilation = true
+
+[[test]]
 filename = "errors/incompatible_ranks_allocatable_arr1.f90"
 asr = true
 
