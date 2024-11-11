@@ -1,5 +1,0 @@
-semantic error: Type member a is not an array so it cannot be indexed.
- --> tests/errors/array_04_cc.f90:8:1
-  |
-8 | b%a(:) = 1
-  | ^^^^^^ 

@@ -263,10 +263,6 @@ filename = "errors/array_size_01.f90"
 asr = true
 
 [[test]]
-filename = "errors/array_size_01_cc.f90"
-continue_compilation = true
-
-[[test]]
 filename = "errors/array_size_02.f90"
 asr = true
 
@@ -3152,10 +3148,6 @@ filename = "errors/arithmetic_if1.f90"
 asr = true
 
 [[test]]
-filename = "errors/arithmetic_if1_cc.f90"
-continue_compilation = true
-
-[[test]]
 filename = "errors/assign_01.f90"
 asr = true
 continue_compilation = true
@@ -3575,24 +3567,12 @@ filename = "errors/array_02.f90"
 asr = true
 
 [[test]]
-filename = "errors/array_02_cc.f90"
-continue_compilation = true
-
-[[test]]
 filename = "errors/array_03.f90"
 asr = true
 
 [[test]]
-filename = "errors/array_03_cc.f90"
-continue_compilation = true
-
-[[test]]
 filename = "errors/array_04.f90"
 asr = true
-
-[[test]]
-filename = "errors/array_04_cc.f90"
-continue_compilation = true
 
 [[test]]
 filename = "errors/array_05.f90"
@@ -3607,11 +3587,7 @@ filename = "errors/array_06.f90"
 asr = true
 
 [[test]]
-filename = "errors/array_06_cc.f90"
-continue_compilation = true
-
-[[test]]
-filename = "errors/array_01_cc.f90"
+filename = "errors/array_xx_cc.f90"
 continue_compilation = true
 
 [[test]]
@@ -4026,10 +4002,6 @@ filename = "errors/array_constructor_with_asterisk_in_type_spec.f90"
 asr = true
 
 [[test]]
-filename = "errors/array_constructor_with_asterisk_in_type_spec_cc.f90"
-continue_compilation = true
-
-[[test]]
 filename = "errors/array_constructor_with_different_char_lengths.f90"
 asr = true
 
@@ -4140,6 +4112,10 @@ asr = true
 [[test]]
 filename = "errors/atomic_01.f90"
 asr = true
+
+[[test]]
+filename = "errors/atomic_01_cc.f90"
+continue_compilation = true
 
 [[test]]
 filename = "errors/iostat_non_scalar_value.f90"
@@ -4281,10 +4257,6 @@ asr = true
 [[test]]
 filename = "errors/array_shape_01.f90"
 asr = true
-
-[[test]]
-filename = "errors/array_shape_01_cc.f90"
-continue_compilation = true
 
 [[test]]
 filename = "errors/array_shape_02.f90"

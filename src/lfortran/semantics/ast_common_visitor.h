@@ -6081,7 +6081,11 @@ public:
         if (std::find(coarray_intrinsics.begin(), coarray_intrinsics.end(), intrinsic_name) != coarray_intrinsics.end()) {
             throw SemanticError("Coarrays are not supported yet", loc);
         } else if (std::find(atomic_intrinsics.begin(), atomic_intrinsics.end(), intrinsic_name) != atomic_intrinsics.end()) {
-            throw SemanticError("Atomic operations are not supported yet", loc);
+            diag.add(diag::Diagnostic(
+                "Atomic operations are not supported yet",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {loc})}));
+                throw SemanticAbort();
         }
     }
 
