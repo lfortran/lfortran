@@ -4314,3 +4314,7 @@ asr = true
 [[test]]
 filename = "errors/data_implied_do3.f90"
 asr = true
+
+[[test]]
+filename = "errors/continue_compilation_3.f90"
+continue_compilation = true
