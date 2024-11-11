@@ -1519,6 +1519,8 @@ var_type
         Type, ATTR_TYPE_KIND(Integer, $5, @$), @$); }
     | KW_TYPE "(" KW_REAL "(" kind_arg_list ")" ")" { $$ = ATTR_TYPE_ATTR(
         Type, ATTR_TYPE_KIND(Real, $5, @$), @$); }
+    | KW_TYPE "(" KW_DOUBLE KW_PRECISION ")" { $$ = ATTR_TYPE_ATTR(
+        Type, ATTR_TYPE(DoublePrecision, @$), @$); }
     | KW_TYPE "(" KW_COMPLEX "(" kind_arg_list ")" ")" { $$ = ATTR_TYPE_ATTR(
         Type, ATTR_TYPE_KIND(Complex, $5, @$), @$); }
     | KW_TYPE "(" KW_LOGICAL "(" kind_arg_list ")" ")" { $$ = ATTR_TYPE_ATTR(
@@ -1527,6 +1529,13 @@ var_type
         Type, ATTR_TYPE_KIND(Character, $5, @$), @$); }
     | KW_TYPE "(" "*" ")" { $$ = ATTR_TYPE_STAR(Type, Asterisk, @$); }
     | KW_PROCEDURE "(" id ")" { $$ = ATTR_TYPE_NAME(Procedure, $3, @$); }
+    | KW_PROCEDURE "(" ")" { $$ = ATTR_TYPE(Procedure, @$); }
+    | KW_PROCEDURE "(" KW_INTEGER "(" kind_arg_list ")" ")" { $$ = ATTR_TYPE(Procedure, @$); }
+    | KW_PROCEDURE "(" KW_REAL "(" kind_arg_list ")" ")" { $$ = ATTR_TYPE(Procedure, @$); }
+    | KW_PROCEDURE "(" KW_DOUBLE KW_PRECISION ")" { $$ = ATTR_TYPE(Procedure, @$); }
+    | KW_PROCEDURE "(" KW_COMPLEX "(" kind_arg_list ")" ")" { $$ = ATTR_TYPE(Procedure, @$); }
+    | KW_PROCEDURE "(" KW_LOGICAL "(" kind_arg_list ")" ")" { $$ = ATTR_TYPE(Procedure, @$); }
+    | KW_PROCEDURE "(" KW_CHARACTER "(" kind_arg_list ")" ")" { $$ = ATTR_TYPE(Procedure, @$); }
     | KW_CLASS "(" id ")" { $$ = ATTR_TYPE_NAME(Class, $3, @$); }
     | KW_CLASS "(" "*" ")" { $$ = ATTR_TYPE_STAR(Class, Asterisk, @$); }
     ;
