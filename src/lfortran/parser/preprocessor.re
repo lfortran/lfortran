@@ -150,17 +150,21 @@ std::string parse_argument(unsigned char *string_start, unsigned char *old_cur, 
     return arg;
 }
 
-std::string match_parentheses(unsigned char *&cur) {
+std::string match_parentheses(unsigned char *string_start, unsigned char *&cur) {
     LCOMPILERS_ASSERT(*cur == '(')
+    unsigned char *old_cur = cur;
     std::string arg;
     arg += *cur;
     cur++;
     while (*cur != ')') {
         if (*cur == '\0') {
-            throw LCompilersException("C preprocessor: unmatched parentheses");
+            Location loc;
+            loc.first = old_cur - string_start;
+            loc.last = loc.first;
+            throw PreprocessorError("unmatched parentheses", loc);
         }
         if (*cur == '(') {
-            arg += match_parentheses(cur);
+            arg += match_parentheses(string_start, cur);
             LCOMPILERS_ASSERT(*cur == ')')
         } else {
             arg += *cur;
@@ -183,7 +187,7 @@ std::string parse_argument2(unsigned char *string_start, unsigned char *old_cur,
             throw PreprocessorError("Argument list is not closed with ')'", loc);
         }
         if (*cur == '(') {
-            arg += match_parentheses(cur);
+            arg += match_parentheses(string_start, cur);
             LCOMPILERS_ASSERT(*cur == ')')
         } else {
             arg += *cur;
@@ -417,7 +421,10 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
             }
             "#" whitespace? "else" whitespace? single_line_comment? newline  {
                 if (ifdef_stack.size() == 0) {
-                    throw LCompilersException("C preprocessor: #else encountered outside of #ifdef or #ifndef");
+                    Location loc;
+                    loc.first = cur - string_start;
+                    loc.last = loc.first;
+                    throw PreprocessorError("#else encountered outside of #ifdef or #ifndef", loc);
                 }
                 IfDef ifdef = ifdef_stack[ifdef_stack.size()-1];
                 if (ifdef.active) {
