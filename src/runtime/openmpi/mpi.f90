@@ -7,22 +7,31 @@ module mpi
     implicit none
 
     type, bind(C) :: MPI_Datatype
+        type(C_PTR) :: c_ptr
     end type MPI_Datatype
 
     type, bind(C) :: MPI_Comm
+        type(C_PTR) :: c_ptr
     end type MPI_Comm
 
     type, bind(C) :: MPI_Info
+        type(C_PTR) :: c_ptr
     end type MPI_Info
 
     type, bind(C) :: MPI_Op
+        type(C_PTR) :: c_ptr
     end type MPI_Op
 
     type, bind(C) :: MPI_Request
+        type(C_PTR) :: c_ptr
     end type MPI_Request
 
     type, bind(C) :: MPI_Status
+        integer(C_INT) :: MPI_SOURCE, MPI_TAG, MPI_ERROR
     end type MPI_Status
+
+    type(MPI_Comm) :: MPI_COMM_WORLD
+    type(MPI_Datatype), bind(C, name="MPI_INT") :: MPI_Integer
 
     contains
 
