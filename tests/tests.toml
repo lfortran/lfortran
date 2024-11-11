@@ -3728,6 +3728,10 @@ ast = true
 filename = "parser/parameter_without_start_program.f90"
 ast = true
 
+[[test]]
+filename = "parser/procedure_with_type.f90"
+ast = true
+
 # Parser errors
 
 [[test]]
