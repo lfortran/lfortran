@@ -1,6 +1,7 @@
 #include <mlir/IR/BuiltinOps.h>
 #include <mlir/IR/BuiltinTypes.h>
 #include <mlir/Dialect/LLVMIR/LLVMDialect.h>
+#include <mlir/IR/Verifier.h>
 #include <mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h>
 
 #include <libasr/codegen/asr_to_mlir.h>
@@ -292,6 +293,18 @@ Result<std::unique_ptr<MLIRModule>> asr_to_mlir(Allocator &al,
     }
 
     mlir::registerLLVMDialectTranslation(*v.context);
+
+    if (mlir::failed(mlir::verify(*v.module))) {
+        std::string mlir_str;
+        llvm::raw_string_ostream raw_os(mlir_str);
+        v.module->print(raw_os);
+        std::cout << "\n" << mlir_str << "\n";
+        std::string msg = "asr_to_mlir: module verification failed";
+        diagnostics.diagnostics.push_back(diag::Diagnostic(msg,
+            diag::Level::Error, diag::Stage::CodeGen));
+        Error error;
+        return error;
+    }
     return std::make_unique<MLIRModule>(std::move(v.module), std::move(v.context));
 }
 
