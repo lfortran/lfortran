@@ -380,6 +380,29 @@ class ReplaceFunctionCallReturningArray: public ASR::BaseExprReplacer<ReplaceFun
                 result_var_ = PassUtils::create_var(result_counter,
                     std::string(ASRUtils::symbol_name(x->m_name)) + "_res",
                     x->base.base.loc, x->m_type, al, current_scope);
+                if ( ASRUtils::is_allocatable(ASRUtils::expr_type(result_var_)) &&
+                    func2intrinsicid[x_m_name] == ASRUtils::IntrinsicArrayFunctions::Transpose) {
+                    // allocate result array
+                    int n_dims = ASRUtils::extract_n_dims_from_ttype(x->m_type);
+                    Vec<ASR::alloc_arg_t> alloc_args; alloc_args.reserve(al, 1);
+                    Vec<ASR::dimension_t> alloc_dims; alloc_dims.reserve(al, n_dims);
+                    ASR::alloc_arg_t alloc_arg; alloc_arg.loc = x->base.base.loc;
+                    for (int i = 2; i > 0; i--) {
+                        ASR::dimension_t dim; dim.loc = x->base.base.loc;
+                        dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x->base.base.loc, 1,
+                            ASRUtils::TYPE(ASR::make_Integer_t(al, x->base.base.loc, 4))));
+                        ASRUtils::ASRBuilder b(al, x->base.base.loc);
+                        dim.m_length = b.ArraySize(x->m_args[0].m_value, b.i32(i), ASRUtils::TYPE(ASR::make_Integer_t(al, x->base.base.loc, 4)));
+                        alloc_dims.push_back(al, dim);
+                    }
+                    alloc_arg.m_a = result_var_; alloc_arg.m_len_expr = nullptr;
+                    alloc_arg.m_type = nullptr; alloc_arg.m_dims = alloc_dims.p;
+                    alloc_arg.n_dims = alloc_dims.size();
+                    alloc_args.push_back(al, alloc_arg);
+                    ASR::stmt_t* allocate_stmt = ASRUtils::STMT(ASR::make_Allocate_t(al,
+                                            x->base.base.loc, alloc_args.p, alloc_args.n, nullptr, nullptr, nullptr));
+                    pass_result.push_back(al, allocate_stmt);
+                }
                 if (ASRUtils::is_allocatable(ASRUtils::expr_type(result_var_)) &&
                     func_call_count) {
                     // allocate result array
