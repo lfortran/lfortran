@@ -433,7 +433,7 @@ std::string CPreprocessor::run(const std::string &input, LocationManager &lm,
                 interval_end_type_0(lm, output.size(), cur-string_start);
                 continue;
             }
-            "#" whitespace? "include" whitespace '"' @t1 [^"\x00]* @t2 '"' [^\n\x00]* newline {
+            "#" whitespace? "include" whitespace ["<] @t1 [^">\x00]* @t2 [">] [^\n\x00]* newline {
                 if (!branch_enabled) continue;
                 std::string filename = token(t1, t2);
                 std::vector<std::filesystem::path> include_dirs;
