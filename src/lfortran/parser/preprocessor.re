@@ -127,19 +127,25 @@ void handle_continuation_lines(std::string &s, unsigned char *&cur) {
 
 // Parse a macro declaration argument, e.g. in:
 // f(a,b, c,  d  )
-std::string parse_argument(unsigned char *&cur) {
+std::string parse_argument(unsigned char *string_start, unsigned char *old_cur, unsigned char *&cur) {
     std::string arg;
     while (*cur == ' ' && *cur != '\0') cur++;
     while (*cur != ')' && *cur != ',' && *cur != ' ') {
         if (*cur == '\0') {
-            throw LCompilersException("C preprocessor: runaway argument");
+            Location loc;
+            loc.first = old_cur - string_start;
+            loc.last = loc.first;
+            throw PreprocessorError("Argument list is not closed with ')'", loc);
         }
         arg += *cur;
         cur++;
     }
     while (*cur == ' ' && *cur != '\0') cur++;
     if (*cur == '\0') {
-        throw LCompilersException("C preprocessor: runaway argument");
+        Location loc;
+        loc.first = old_cur - string_start;
+        loc.last = loc.first;
+        throw PreprocessorError("Argument list is not closed with ')'", loc);
     }
     return arg;
 }
@@ -167,11 +173,14 @@ std::string match_parentheses(unsigned char *&cur) {
 
 // Parse a macro call argument, e.g. in:
 // ASSERT(fn(3, 5))
-std::string parse_argument2(unsigned char *&cur) {
+std::string parse_argument2(unsigned char *string_start, unsigned char *old_cur, unsigned char *&cur) {
     std::string arg;
     while (*cur != ')' && *cur != ',') {
         if (*cur == '\0') {
-            throw LCompilersException("C preprocessor: runaway argument");
+            Location loc;
+            loc.first = old_cur - string_start;
+            loc.last = loc.first;
+            throw PreprocessorError("Argument list is not closed with ')'", loc);
         }
         if (*cur == '(') {
             arg += match_parentheses(cur);
@@ -184,15 +193,16 @@ std::string parse_argument2(unsigned char *&cur) {
     return arg;
 }
 
-std::vector<std::string> parse_arguments(unsigned char *&cur, bool skip_spaces) {
+std::vector<std::string> parse_arguments(unsigned char *string_start, unsigned char *&cur, bool skip_spaces) {
     std::vector<std::string> args;
     LCOMPILERS_ASSERT(*cur == '(');
+    unsigned char *old_cur = cur;
     cur++;
     while (*cur != ')') {
         if (skip_spaces) {
-            args.push_back(parse_argument(cur));
+            args.push_back(parse_argument(string_start, old_cur, cur));
         } else {
-            args.push_back(parse_argument2(cur));
+            args.push_back(parse_argument2(string_start, old_cur, cur));
         }
         if (*cur == ',') cur++;
     }
@@ -302,7 +312,7 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 std::string macro_name = token(t1, t2),
                         macro_subs = token(t3, t4);
                 handle_continuation_lines(macro_subs, cur);
-                std::vector<std::string> args = parse_arguments(t2, true);
+                std::vector<std::string> args = parse_arguments(string_start, t2, true);
                 CPPMacro fn;
                 fn.function_like = true;
                 fn.args = args;
@@ -533,7 +543,7 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                             throw LCompilersException("C preprocessor: function-like macro invocation must have argument list");
                         }
                         std::vector<std::string> args;
-                        args = parse_arguments(cur, false);
+                        args = parse_arguments(string_start, cur, false);
                         if (*cur != ')') {
                             throw LCompilersException("C preprocessor: expected )");
                         }
@@ -951,7 +961,7 @@ int parse_factor(unsigned char *string_start, unsigned char *&cur, const cpp_sym
                     throw LCompilersException("C preprocessor: function-like macro invocation must have argument list");
                 }
                 std::vector<std::string> args;
-                args = parse_arguments(cur, false);
+                args = parse_arguments(string_start, cur, false);
                 if (*cur != ')') {
                     throw LCompilersException("C preprocessor: expected )");
                 }
