@@ -1,0 +1,38 @@
+semantic error: shape argument specified in c_f_pointer even though fptr is not an array.
+  --> tests/errors/continue_compilation_2.f90:39:38
+   |
+39 |     call c_f_pointer(queries_1, y_1, [2])
+   |                                      ^^^ 
+
+semantic error: shape array passed to c_f_pointer must be of rank 1 but given rank is 2
+  --> tests/errors/continue_compilation_2.f90:44:38
+   |
+44 |     call c_f_pointer(queries_2, y_2, shape)
+   |                                      ^^^^^ 
+
+semantic error: Cannot assign to a constant variable
+  --> tests/errors/continue_compilation_2.f90:49:5
+   |
+49 |     x = 1
+   |     ^^^^^ assignment here
+   |
+32 |     integer, parameter :: x = 2
+   |                           ~~~~~ declared as constant
+
+semantic error: More actual than formal arguments in procedure call
+  --> tests/errors/continue_compilation_2.f90:56:33
+   |
+56 |     call myCircle%calculateArea(circleArea, 12)
+   |                                 ^^^^^^^^^^^^^^ 
+
+semantic error: Invalid argument `end` supplied
+  --> tests/errors/continue_compilation_2.f90:62:5
+   |
+62 |     CLOSE(end=200)
+   |     ^^^^^^^^^^^^^^ 
+
+semantic error: The first argument of `cmplx` intrinsic must be present
+  --> tests/errors/continue_compilation_2.f90:67:9
+   |
+67 |     a = cmplx(y = 2)
+   |         ^^^^^^^^^^^^ 
