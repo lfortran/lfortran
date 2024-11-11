@@ -537,12 +537,18 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                     std::string expansion;
                     if (macro_definitions[t].function_like) {
                         if (*cur != '(') {
-                            throw LCompilersException("C preprocessor: function-like macro invocation must have argument list");
+                            Location loc;
+                            loc.first = cur - string_start;
+                            loc.last = loc.first;
+                            throw PreprocessorError("function-like macro invocation must have argument list", loc);
                         }
                         std::vector<std::string> args;
                         args = parse_arguments(string_start, cur, false);
                         if (*cur != ')') {
-                            throw LCompilersException("C preprocessor: expected )");
+                            Location loc;
+                            loc.first = cur - string_start;
+                            loc.last = loc.first;
+                            throw PreprocessorError("expected ')'", loc);
                         }
                         cur++;
                         expansion = function_like_macro_expansion(
@@ -587,7 +593,10 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                         }
                         i++;
                         if (i == 40) {
-                            throw LCompilersException("C preprocessor: maximum recursion limit reached");
+                            Location loc;
+                            loc.first = cur - string_start;
+                            loc.last = loc.first;
+                            throw PreprocessorError("maximum recursion limit reached", loc);
                         }
                     }
 
@@ -751,7 +760,7 @@ std::string token_type_to_string(CPPTokenType type) {
     return "";
 }
 
-void get_next_token(unsigned char *&cur, CPPTokenType &type, std::string &str) {
+void get_next_token(unsigned char *string_start, unsigned char *&cur, CPPTokenType &type, std::string &str) {
     std::string output;
     for (;;) {
         unsigned char *tok = cur;
@@ -764,7 +773,10 @@ void get_next_token(unsigned char *&cur, CPPTokenType &type, std::string &str) {
 
             * {
                 std::string t = token(tok, cur);
-                throw LCompilersException("Unknown token: " + t);
+                Location loc;
+                loc.first = tok - string_start;
+                loc.last = cur-1 - string_start;
+                throw PreprocessorError("Unknown token '" + t + "'", loc);
             }
             end { type = CPPTokenType::TK_EOF; return; }
             newline { type = CPPTokenType::TK_EOF; return; }
@@ -821,26 +833,29 @@ void get_next_token(unsigned char *&cur, CPPTokenType &type, std::string &str) {
 
 namespace {
 
-void accept(unsigned char *&cur, CPPTokenType type_expected) {
+void accept(unsigned char *string_start, unsigned char *&cur, CPPTokenType type_expected) {
     CPPTokenType type;
     std::string str;
-    get_next_token(cur, type, str);
+    unsigned char *old_cur = cur;
+    get_next_token(string_start, cur, type, str);
     if (type != type_expected) {
-        throw LCompilersException("Unexpected token type "
-            + std::to_string((int)type)
-            + ", expected type "
-            + std::to_string((int)type_expected) );
+        Location loc;
+        loc.first = old_cur - string_start;
+        loc.last = cur - string_start;
+        throw PreprocessorError("Unexpected token type '" + token_type_to_string(type) + "', expected type '" + token_type_to_string(type_expected) + "'", loc);
     }
 }
 
-std::string accept_name(unsigned char *&cur) {
+std::string accept_name(unsigned char *string_start, unsigned char *&cur) {
     CPPTokenType type;
     std::string str;
-    get_next_token(cur, type, str);
+    unsigned char *old_cur = cur;
+    get_next_token(string_start, cur, type, str);
     if (type != CPPTokenType::TK_NAME) {
-        throw LCompilersException("Unexpected token type "
-            + std::to_string((int)type)
-            + ", expected TK_NAME");
+        Location loc;
+        loc.first = old_cur - string_start;
+        loc.last = cur - string_start;
+        throw PreprocessorError("Unexpected token type '" + token_type_to_string(type) + "', expected type '" + token_type_to_string(TK_NAME) + "'", loc);
     }
     return str;
 }
@@ -859,7 +874,7 @@ int parse_bexpr(unsigned char *string_start, unsigned char *&cur, const cpp_symt
     CPPTokenType type;
     std::string str;
     unsigned char *old_cur = cur;
-    get_next_token(cur, type, str);
+    get_next_token(string_start, cur, type, str);
     while (type == CPPTokenType::TK_AND || type == CPPTokenType::TK_OR) {
         bool factor = parse_bfactor(string_start, cur, macro_definitions) > 0;
         if (type == CPPTokenType::TK_AND) {
@@ -868,7 +883,7 @@ int parse_bexpr(unsigned char *string_start, unsigned char *&cur, const cpp_symt
             tmp = (int)( (tmp > 0) || (factor > 0) );
         }
         old_cur = cur;
-        get_next_token(cur, type, str);
+        get_next_token(string_start, cur, type, str);
     }
     cur = old_cur; // Revert the last token, as we will not consume it
     return tmp;
@@ -885,7 +900,7 @@ int parse_expr(unsigned char *string_start, unsigned char *&cur, const cpp_symta
     CPPTokenType type;
     std::string str;
     unsigned char *old_cur = cur;
-    get_next_token(cur, type, str);
+    get_next_token(string_start, cur, type, str);
     while (type == CPPTokenType::TK_PLUS || type == CPPTokenType::TK_MINUS) {
         int term = parse_term(string_start, cur, macro_definitions);
         if (type == CPPTokenType::TK_PLUS) {
@@ -894,7 +909,7 @@ int parse_expr(unsigned char *string_start, unsigned char *&cur, const cpp_symta
             tmp = tmp - term;
         }
         old_cur = cur;
-        get_next_token(cur, type, str);
+        get_next_token(string_start, cur, type, str);
     }
     cur = old_cur; // Revert the last token, as we will not consume it
     return tmp;
@@ -911,7 +926,7 @@ int parse_term(unsigned char *string_start, unsigned char *&cur, const cpp_symta
     CPPTokenType type;
     std::string str;
     unsigned char *old_cur = cur;
-    get_next_token(cur, type, str);
+    get_next_token(string_start, cur, type, str);
     while (type == CPPTokenType::TK_MUL ||
            type == CPPTokenType::TK_DIV ||
            type == CPPTokenType::TK_PERCENT ||
@@ -935,10 +950,13 @@ int parse_term(unsigned char *string_start, unsigned char *&cur, const cpp_symta
         } else if (type == CPPTokenType::TK_BITOR) {
             tmp = tmp | term;
         } else {
-            throw LCompilersException("Unknown operator type");
+            Location loc;
+            loc.first = old_cur - string_start;
+            loc.last = cur - string_start;
+            throw PreprocessorError("Unknown operator type '" + token_type_to_string(type) + "'", loc);
         }
         old_cur = cur;
-        get_next_token(cur, type, str);
+        get_next_token(string_start, cur, type, str);
     }
     cur = old_cur; // Revert the last token, as we will not consume it
     return tmp;
@@ -955,18 +973,24 @@ int parse_factor(unsigned char *string_start, unsigned char *&cur, const cpp_sym
     CPPTokenType type;
     std::string str;
     unsigned char *old_cur = cur;
-    get_next_token(cur, type, str);
+    get_next_token(string_start, cur, type, str);
     if (type == CPPTokenType::TK_NAME) {
         if (macro_definitions.find(str) != macro_definitions.end()) {
             std::string v;
             if (macro_definitions.at(str).function_like) {
                 if (*cur != '(') {
-                    throw LCompilersException("C preprocessor: function-like macro invocation must have argument list");
+                    Location loc;
+                    loc.first = cur - string_start;
+                    loc.last = loc.first;
+                    throw PreprocessorError("function-like macro invocation must have argument list", loc);
                 }
                 std::vector<std::string> args;
                 args = parse_arguments(string_start, cur, false);
                 if (*cur != ')') {
-                    throw LCompilersException("C preprocessor: expected )");
+                    Location loc;
+                    loc.first = cur - string_start;
+                    loc.last = loc.first;
+                    throw PreprocessorError("expected ')'", loc);
                 }
                 cur++;
                 std::vector<std::string> margs = macro_definitions.at(str).args;
@@ -996,7 +1020,7 @@ int parse_factor(unsigned char *string_start, unsigned char *&cur, const cpp_sym
         return +result;
     } else if (type == CPPTokenType::TK_LPAREN) {
         int result = parse_bexpr(string_start, cur, macro_definitions);
-        accept(cur, CPPTokenType::TK_RPAREN);
+        accept(string_start, cur, CPPTokenType::TK_RPAREN);
         return result;
 
     // This is the only place where we can get unexpected tokens. Let us
@@ -1027,7 +1051,7 @@ int parse_relation(unsigned char *string_start, unsigned char *&cur, const cpp_s
 
     CPPTokenType type;
     std::string str;
-    get_next_token(cur, type, str);
+    get_next_token(string_start, cur, type, str);
     if (type >= CPPTokenType::TK_LT && type <= CPPTokenType::TK_EQ) {
         int rhs = parse_expr(string_start, cur, macro_definitions);
         if (type == CPPTokenType::TK_LT) {
@@ -1043,7 +1067,10 @@ int parse_relation(unsigned char *string_start, unsigned char *&cur, const cpp_s
         } else if (type == CPPTokenType::TK_EQ) {
             return lhs == rhs;
         } else {
-            throw LCompilersException("Inconsistent ifs");
+            Location loc;
+            loc.first = cur - string_start;
+            loc.last = loc.first;
+            throw PreprocessorError("Unknown operator '" + token_type_to_string(type) + "' in if", loc);
         }
     } else {
         cur = old_cur; // Revert the last token, as we will not consume it
@@ -1062,19 +1089,22 @@ int parse_bfactor(unsigned char *string_start, unsigned char *&cur, const cpp_sy
     CPPTokenType type;
     std::string str;
     unsigned char *old_cur = cur;
-    get_next_token(cur, type, str);
+    get_next_token(string_start, cur, type, str);
     if (type == CPPTokenType::TK_NAME && str == "defined") {
         std::string macro_name;
-        get_next_token(cur, type, str);
+        get_next_token(string_start, cur, type, str);
         if (type == CPPTokenType::TK_LPAREN) {
-            macro_name = accept_name(cur);
-            accept(cur, CPPTokenType::TK_RPAREN);
+            macro_name = accept_name(string_start, cur);
+            accept(string_start, cur, CPPTokenType::TK_RPAREN);
         } else if (type == CPPTokenType::TK_NAME) {
             macro_name = str;
         } else {
-            throw LCompilersException("Unexpected token type "
-            + std::to_string((int)type)
-            + ", expected TK_LPAREN or TK_NAME");
+            Location loc;
+            loc.first = old_cur - string_start;
+            loc.last = loc.first;
+            throw PreprocessorError("Unexpected token type "
+                + token_type_to_string(type)
+                + ", expected TK_LPAREN or TK_NAME", loc);
         }
         if (macro_definitions.find(macro_name) != macro_definitions.end()) {
             return true;
