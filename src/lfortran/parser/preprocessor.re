@@ -708,6 +708,35 @@ enum CPPTokenType {
     TK_BITAND, TK_BITOR
 };
 
+std::string token_type_to_string(CPPTokenType type) {
+    switch (type) {
+        case (TK_EOF)     : return "end of line";
+        case (TK_NAME)    : return "name";
+        case (TK_INTEGER) : return "integer";
+        case (TK_STRING)  : return "string";
+        case (TK_AND)     : return "&&";
+        case (TK_OR)      : return "||";
+        case (TK_NEG)     : return "!";
+        case (TK_LPAREN)  : return "(";
+        case (TK_RPAREN)  : return ")";
+        case (TK_LT)      : return "<";
+        case (TK_GT)      : return ">";
+        case (TK_LTE)     : return "<=";
+        case (TK_GTE)     : return ">=";
+        case (TK_NE)      : return "/=";
+        case (TK_EQ)      : return "==";
+        case (TK_PLUS)    : return "+";
+        case (TK_MINUS)   : return "-";
+        case (TK_MUL)     : return "*";
+        case (TK_DIV)     : return "/";
+        case (TK_PERCENT) : return "%";
+        case (TK_LSHIFT)  : return "<<";
+        case (TK_RSHIFT)  : return ">>";
+        case (TK_BITAND)  : return "&";
+        case (TK_BITOR)   : return "|";
+    }
+    return "";
+}
 
 void get_next_token(unsigned char *&cur, CPPTokenType &type, std::string &str) {
     std::string output;
@@ -960,13 +989,16 @@ int parse_factor(unsigned char *string_start, unsigned char *&cur, const cpp_sym
     // This is the only place where we can get unexpected tokens. Let us
     // handle them here:
     } else if (type == CPPTokenType::TK_EOF) {
-        // EOF means the expression
+        // EOF means the expression is not complete
         Location loc;
         loc.first = old_cur - string_start;
         loc.last = loc.first;
         throw PreprocessorError("factor(): The expression is not complete, expecting integer, name, +, - or (", loc);
     } else {
-        throw LCompilersException("Unexpected token type " + std::to_string((int)type) + " in factor()");
+        Location loc;
+        loc.first = old_cur - string_start;
+        loc.last = cur - string_start;
+        throw PreprocessorError("Unexpected token '" + token_type_to_string(type) + "' in factor()", loc);
     }
 }
 
