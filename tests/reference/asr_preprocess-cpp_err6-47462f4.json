@@ -1,0 +1,13 @@
+{
+    "basename": "asr_preprocess-cpp_err6-47462f4",
+    "cmd": "lfortran --cpp --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/cpp_err6.f90",
+    "infile_hash": "ac85436de6965d6e21140cdd72302a260de0f86538d86bd9b064a919",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr_preprocess-cpp_err6-47462f4.stderr",
+    "stderr_hash": "57201cc657b2a6d7331f83df50256cb0e491df637b57695c86f546a2",
+    "returncode": 2
+}
