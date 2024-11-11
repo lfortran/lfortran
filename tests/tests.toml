@@ -381,6 +381,10 @@ filename = "errors/cpp_err1.f90"
 asr_preprocess = true
 
 [[test]]
+filename = "errors/cpp_err2.f90"
+asr_preprocess = true
+
+[[test]]
 filename = "errors/template_error_01a.f90"
 asr = true
 
