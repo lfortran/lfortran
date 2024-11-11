@@ -842,7 +842,7 @@ void accept(unsigned char *string_start, unsigned char *&cur, CPPTokenType type_
         Location loc;
         loc.first = old_cur - string_start;
         loc.last = cur - string_start;
-        throw PreprocessorError("Unexpected token type '" + token_type_to_string(type) + "', expected type '" + token_type_to_string(type_expected) + "'", loc);
+        throw PreprocessorError("Unexpected token '" + token_type_to_string(type) + "', expected '" + token_type_to_string(type_expected) + "'", loc);
     }
 }
 
@@ -855,7 +855,7 @@ std::string accept_name(unsigned char *string_start, unsigned char *&cur) {
         Location loc;
         loc.first = old_cur - string_start;
         loc.last = cur - string_start;
-        throw PreprocessorError("Unexpected token type '" + token_type_to_string(type) + "', expected type '" + token_type_to_string(TK_NAME) + "'", loc);
+        throw PreprocessorError("Unexpected token '" + token_type_to_string(type) + "', expected '" + token_type_to_string(TK_NAME) + "'", loc);
     }
     return str;
 }
@@ -953,7 +953,7 @@ int parse_term(unsigned char *string_start, unsigned char *&cur, const cpp_symta
             Location loc;
             loc.first = old_cur - string_start;
             loc.last = cur - string_start;
-            throw PreprocessorError("Unknown operator type '" + token_type_to_string(type) + "'", loc);
+            throw PreprocessorError("Unknown operator '" + token_type_to_string(type) + "'", loc);
         }
         old_cur = cur;
         get_next_token(string_start, cur, type, str);
@@ -1102,9 +1102,9 @@ int parse_bfactor(unsigned char *string_start, unsigned char *&cur, const cpp_sy
             Location loc;
             loc.first = old_cur - string_start;
             loc.last = loc.first;
-            throw PreprocessorError("Unexpected token type "
+            throw PreprocessorError("Unexpected token "
                 + token_type_to_string(type)
-                + ", expected TK_LPAREN or TK_NAME", loc);
+                + ", expected '(' or 'name'", loc);
         }
         if (macro_definitions.find(macro_name) != macro_definitions.end()) {
             return true;
