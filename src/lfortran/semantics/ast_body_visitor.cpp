@@ -320,7 +320,10 @@ public:
                 const std::unordered_set<std::string> unsupported_args {"iostat", "iomsg", "err", "blank", "access", \
                                                                         "recl", "fileopt", "action", "position", "pad"};
                 if (unsupported_args.find(m_arg_str) == unsupported_args.end()) {
-                    throw SemanticError("Invalid argument `" + m_arg_str + "` supplied", x.base.base.loc);
+                    diag.add(diag::Diagnostic("Invalid argument `" + m_arg_str + "` supplied",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {x.base.base.loc})}));
+                    throw SemanticAbort();
                 } else {
                     diag.semantic_warning_label(
                         "Argument `" + m_arg_str + "` isn't supported yet",
@@ -412,7 +415,10 @@ public:
                 this->visit_expr(*kwarg.m_value);
                 a_err = ASRUtils::EXPR(tmp);
             } else {
-                throw SemanticError("Invalid argument `" + m_arg_str + "` supplied", x.base.base.loc);
+                diag.add(diag::Diagnostic("Invalid argument `" + m_arg_str + "` supplied",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {x.base.base.loc})}));
+                throw SemanticAbort();
             }
         }
         if( a_unit == nullptr ) {
@@ -476,7 +482,10 @@ public:
                 this->visit_expr(*kwarg.m_value);
                 a_err = ASRUtils::EXPR(tmp);
             } else {
-                throw SemanticError("Invalid argument `" + m_arg_str + "` supplied", x.base.base.loc);
+                diag.add(diag::Diagnostic("Invalid argument `" + m_arg_str + "` supplied",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {x.base.base.loc})}));
+                throw SemanticAbort();
             }
         }
         if( a_unit == nullptr ) {
@@ -810,7 +819,10 @@ public:
             if( x.m_kwargs[i].m_value ) {
                 std::string m_arg_str = to_lower(std::string(x.m_kwargs[i].m_arg));
                 if (argname2idx.find(m_arg_str) == argname2idx.end()) {
-                    throw SemanticError("Invalid argument `" + m_arg_str + "` supplied", x.base.base.loc);
+                    diag.add(diag::Diagnostic("Invalid argument `" + m_arg_str + "` supplied",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {x.base.base.loc})}));
+                    throw SemanticAbort();
                 } else if (args[argname2idx[m_arg_str]]) {
                     throw SemanticError(m_arg_str + " has already been specified.", x.base.base.loc);
                 }
@@ -2684,9 +2696,12 @@ public:
             throw SemanticError("fptr is not a pointer.", fptr->base.loc);
         }
         if(!is_fptr_array && shape) {
-            throw SemanticError("shape argument specified in c_f_pointer "
+            diag.add(diag::Diagnostic(
+                                "shape argument specified in c_f_pointer "
                                 "even though fptr is not an array.",
-                                shape->base.loc);
+                                diag::Level::Error, diag::Stage::Semantic, {
+                                    diag::Label("", {shape->base.loc})}));
+            throw SemanticAbort();
         }
         if(is_fptr_array && !shape) {
             throw SemanticError("shape argument not specified in c_f_pointer "
@@ -2700,10 +2715,13 @@ public:
                                 ASRUtils::expr_type(shape),
                                 shape_dims);
             if( shape_rank != 1 ) {
-                throw SemanticError("shape array passed to c_f_pointer "
-                                    "must be of rank 1 but given rank is " +
-                                    std::to_string(shape_rank),
-                                    shape->base.loc);
+                diag.add(diag::Diagnostic(
+                                "shape array passed to c_f_pointer "
+                                "must be of rank 1 but given rank is " +
+                                std::to_string(shape_rank),
+                                diag::Level::Error, diag::Stage::Semantic, {
+                                    diag::Label("", {shape->base.loc})}));
+            throw SemanticAbort();
             }
 
             ASR::dimension_t* target_dims;
@@ -3217,7 +3235,11 @@ public:
             const int offset { (v_expr == nullptr || nopass) ? 0 : 1 };
             if (args.size() + offset > f->n_args) {
                 const Location args_loc { ASRUtils::get_vec_loc(args) };
-                throw SemanticError("More actual than formal arguments in procedure call", args_loc);
+                diag.add(diag::Diagnostic(
+                    "More actual than formal arguments in procedure call",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {args_loc})}));
+                    throw SemanticAbort();
             }
             ASRUtils::set_absent_optional_arguments_to_null(args, f, al, v_expr, nopass);
         }
