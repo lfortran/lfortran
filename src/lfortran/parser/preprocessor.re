@@ -463,6 +463,7 @@ std::string CPreprocessor::run(const std::string &input, LocationManager &lm,
                 }
 
                 LocationManager lm_tmp = lm; // Make a copy
+                if (include[include.size()-1] != '\n') include.append("\n");
                 include = run(include, lm_tmp, macro_definitions);
 
                 // Prepare the start of the interval
