@@ -8,6 +8,23 @@
 
 namespace LCompilers::LFortran {
 
+// This exception is only used internally for the preprocessor, nowhere else.
+
+class PreprocessorError
+{
+public:
+    diag::Diagnostic d;
+public:
+    PreprocessorError(const std::string &msg, const Location &loc)
+        : d{diag::Diagnostic(msg, diag::Level::Error, diag::Stage::CPreprocessor, {
+            diag::Label("", {loc})
+        })}
+    { }
+
+    PreprocessorError(const diag::Diagnostic &d) : d{d} { }
+};
+
+
 CPreprocessor::CPreprocessor(CompilerOptions &compiler_options)
     : compiler_options{compiler_options} {
     CPPMacro md;
@@ -214,8 +231,8 @@ int parse_bexpr(unsigned char *&cur, const cpp_symtab &macro_definitions);
 
 }
 
-std::string CPreprocessor::run(const std::string &input, LocationManager &lm,
-        cpp_symtab &macro_definitions) const {
+Result<std::string> CPreprocessor::run(const std::string &input, LocationManager &lm,
+        cpp_symtab &macro_definitions, diag::Diagnostics &diagnostics) const {
     LCOMPILERS_ASSERT(input[input.size()] == '\0');
     unsigned char *string_start=(unsigned char*)(&input[0]);
     unsigned char *cur = string_start;
@@ -352,7 +369,13 @@ std::string CPreprocessor::run(const std::string &input, LocationManager &lm,
                 IfDef ifdef;
                 ifdef.active = branch_enabled;
                 if (ifdef.active) {
-                    bool test_true = parse_bexpr(t1, macro_definitions) > 0;
+                    bool test_true;
+                    try {
+                        test_true = parse_bexpr(t1, macro_definitions) > 0;
+                    } catch (const LFortran::PreprocessorError &e) {
+                        diagnostics.add(e.d);
+                        return Error();
+                    }
                     cur = t1;
                     if (test_true) {
                         ifdef.branch_enabled = true;
@@ -466,7 +489,12 @@ std::string CPreprocessor::run(const std::string &input, LocationManager &lm,
                 if (include.size() == 0 || include[include.size()-1] != '\n') {
                     include.append("\n");
                 }
-                include = run(include, lm_tmp, macro_definitions);
+                Result<std::string> res = run(include, lm_tmp, macro_definitions, diagnostics);
+                if (res.ok) {
+                    include = res.result;
+                } else {
+                    return res.error;
+                }
 
                 // Prepare the start of the interval
                 interval_end_type_0(lm, output.size(), tok-string_start);
@@ -532,7 +560,12 @@ std::string CPreprocessor::run(const std::string &input, LocationManager &lm,
                         lm.pos_to_linecol(pos, line, col, filename);
                         lm_tmp.files.back().current_line = line;
 
-                        expansion = run(expansion2, lm_tmp, macro_definitions);
+                        Result<std::string> res = run(expansion2, lm_tmp, macro_definitions, diagnostics);
+                        if (res.ok) {
+                            expansion = res.result;
+                        } else {
+                            return res.error;
+                        }
                         i++;
                         if (i == 40) {
                             throw LCompilersException("C preprocessor: maximum recursion limit reached");
@@ -915,7 +948,9 @@ int parse_factor(unsigned char *&cur, const cpp_symtab &macro_definitions) {
     // handle them here:
     } else if (type == CPPTokenType::TK_EOF) {
         // EOF means the expression
-        throw LCompilersException("factor(): The expression is not complete, expecting integer, name, +, - or (");
+        Location loc;
+        // TODO location init
+        throw PreprocessorError("factor(): The expression is not complete, expecting integer, name, +, - or (", loc);
     } else {
         throw LCompilersException("Unexpected token type " + std::to_string((int)type) + " in factor()");
     }

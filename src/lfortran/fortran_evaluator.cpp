@@ -202,7 +202,13 @@ Result<LFortran::AST::TranslationUnit_t*> FortranEvaluator::get_ast2(
     if (compiler_options.c_preprocessor) {
         // Preprocessor
         LFortran::CPreprocessor cpp(compiler_options);
-        tmp = cpp.run(code_orig, lm, cpp.macro_definitions);
+        Result<std::string> res = cpp.run(code_orig, lm, cpp.macro_definitions, diagnostics);
+        if (res.ok) {
+            tmp = res.result;
+        } else {
+            LCOMPILERS_ASSERT(diagnostics.has_error())
+            return res.error;
+        }
         code = &tmp;
     }
     if (compiler_options.prescan || compiler_options.fixed_form) {
