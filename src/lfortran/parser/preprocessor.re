@@ -227,7 +227,7 @@ struct IfDef {
 
 namespace {
 
-int parse_bexpr(unsigned char *&cur, const cpp_symtab &macro_definitions);
+int parse_bexpr(unsigned char *string_start, unsigned char *&cur, const cpp_symtab &macro_definitions);
 
 }
 
@@ -371,7 +371,7 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 if (ifdef.active) {
                     bool test_true;
                     try {
-                        test_true = parse_bexpr(t1, macro_definitions) > 0;
+                        test_true = parse_bexpr(string_start, t1, macro_definitions) > 0;
                     } catch (const LFortran::PreprocessorError &e) {
                         diagnostics.add(e.d);
                         return Error();
@@ -421,7 +421,7 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 IfDef ifdef = ifdef_stack[ifdef_stack.size()-1];
                 if (ifdef.active) {
                     if (!ifdef.branch_enabled && !ifdef.enabled_branch_executed) {
-                        bool test_true = parse_bexpr(t1, macro_definitions) > 0;
+                        bool test_true = parse_bexpr(string_start, t1, macro_definitions) > 0;
                         cur = t1;
                         if (test_true) {
                             ifdef.branch_enabled = true;
@@ -791,23 +791,23 @@ std::string accept_name(unsigned char *&cur) {
     return str;
 }
 
-int parse_term(unsigned char *&cur, const cpp_symtab &macro_definitions);
-int parse_factor(unsigned char *&cur, const cpp_symtab &macro_definitions);
-int parse_bfactor(unsigned char *&cur, const cpp_symtab &macro_definitions);
+int parse_term(unsigned char *string_star, unsigned char *&cur, const cpp_symtab &macro_definitions);
+int parse_factor(unsigned char *string_start, unsigned char *&cur, const cpp_symtab &macro_definitions);
+int parse_bfactor(unsigned char *string_start, unsigned char *&cur, const cpp_symtab &macro_definitions);
 
 /*
 b-expr
     = b-factor (("&&"|"||") b-factor)*
 */
-int parse_bexpr(unsigned char *&cur, const cpp_symtab &macro_definitions) {
-    int tmp = parse_bfactor(cur, macro_definitions);
+int parse_bexpr(unsigned char *string_start, unsigned char *&cur, const cpp_symtab &macro_definitions) {
+    int tmp = parse_bfactor(string_start, cur, macro_definitions);
 
     CPPTokenType type;
     std::string str;
     unsigned char *old_cur = cur;
     get_next_token(cur, type, str);
     while (type == CPPTokenType::TK_AND || type == CPPTokenType::TK_OR) {
-        bool factor = parse_bfactor(cur, macro_definitions) > 0;
+        bool factor = parse_bfactor(string_start, cur, macro_definitions) > 0;
         if (type == CPPTokenType::TK_AND) {
             tmp = (int)( (tmp > 0) && (factor > 0) );
         } else {
@@ -824,16 +824,16 @@ int parse_bexpr(unsigned char *&cur, const cpp_symtab &macro_definitions) {
 expr
     = term ((+,-) term)*
 */
-int parse_expr(unsigned char *&cur, const cpp_symtab &macro_definitions) {
+int parse_expr(unsigned char *string_start, unsigned char *&cur, const cpp_symtab &macro_definitions) {
     int tmp;
-    tmp = parse_term(cur, macro_definitions);
+    tmp = parse_term(string_start, cur, macro_definitions);
 
     CPPTokenType type;
     std::string str;
     unsigned char *old_cur = cur;
     get_next_token(cur, type, str);
     while (type == CPPTokenType::TK_PLUS || type == CPPTokenType::TK_MINUS) {
-        int term = parse_term(cur, macro_definitions);
+        int term = parse_term(string_start, cur, macro_definitions);
         if (type == CPPTokenType::TK_PLUS) {
             tmp = tmp + term;
         } else {
@@ -850,9 +850,9 @@ int parse_expr(unsigned char *&cur, const cpp_symtab &macro_definitions) {
 term
     = factor ((*,/,%,<<,>>,&,|) factor)*
 */
-int parse_term(unsigned char *&cur, const cpp_symtab &macro_definitions) {
+int parse_term(unsigned char *string_start, unsigned char *&cur, const cpp_symtab &macro_definitions) {
     int tmp;
-    tmp = parse_factor(cur, macro_definitions);
+    tmp = parse_factor(string_start, cur, macro_definitions);
 
     CPPTokenType type;
     std::string str;
@@ -865,7 +865,7 @@ int parse_term(unsigned char *&cur, const cpp_symtab &macro_definitions) {
            type == CPPTokenType::TK_RSHIFT ||
            type == CPPTokenType::TK_BITAND ||
            type == CPPTokenType::TK_BITOR) {
-        int term = parse_factor(cur, macro_definitions);
+        int term = parse_factor(string_start, cur, macro_definitions);
         if (type == CPPTokenType::TK_MUL) {
             tmp = tmp * term;
         } else if (type == CPPTokenType::TK_DIV) {
@@ -897,9 +897,10 @@ factor
     | (-,+) factor
     | "(" b-expr ")"
 */
-int parse_factor(unsigned char *&cur, const cpp_symtab &macro_definitions) {
+int parse_factor(unsigned char *string_start, unsigned char *&cur, const cpp_symtab &macro_definitions) {
     CPPTokenType type;
     std::string str;
+    unsigned char *old_cur = cur;
     get_next_token(cur, type, str);
     if (type == CPPTokenType::TK_NAME) {
         if (macro_definitions.find(str) != macro_definitions.end()) {
@@ -924,7 +925,7 @@ int parse_factor(unsigned char *&cur, const cpp_symtab &macro_definitions) {
                 v = macro_definitions.at(str).expansion;
             }
             unsigned char *cur2 = (unsigned char*)(&v[0]);
-            int i = parse_expr(cur2, macro_definitions);
+            int i = parse_expr(string_start, cur2, macro_definitions);
             return i;
         } else {
             // If the variable/macro is not defined, we evaluate it as 0
@@ -934,13 +935,13 @@ int parse_factor(unsigned char *&cur, const cpp_symtab &macro_definitions) {
         int i = std::stoi(str);
         return i;
     } else if (type == CPPTokenType::TK_MINUS) {
-        int result = parse_factor(cur, macro_definitions);
+        int result = parse_factor(string_start, cur, macro_definitions);
         return -result;
     } else if (type == CPPTokenType::TK_PLUS) {
-        int result = parse_factor(cur, macro_definitions);
+        int result = parse_factor(string_start, cur, macro_definitions);
         return +result;
     } else if (type == CPPTokenType::TK_LPAREN) {
-        int result = parse_bexpr(cur, macro_definitions);
+        int result = parse_bexpr(string_start, cur, macro_definitions);
         accept(cur, CPPTokenType::TK_RPAREN);
         return result;
 
@@ -949,7 +950,8 @@ int parse_factor(unsigned char *&cur, const cpp_symtab &macro_definitions) {
     } else if (type == CPPTokenType::TK_EOF) {
         // EOF means the expression
         Location loc;
-        // TODO location init
+        loc.first = old_cur - string_start;
+        loc.last = loc.first;
         throw PreprocessorError("factor(): The expression is not complete, expecting integer, name, +, - or (", loc);
     } else {
         throw LCompilersException("Unexpected token type " + std::to_string((int)type) + " in factor()");
@@ -961,16 +963,16 @@ relation
     = expr
     | expr (<,>,>=,<=,/=,!=,==) expr
 */
-int parse_relation(unsigned char *&cur, const cpp_symtab &macro_definitions) {
+int parse_relation(unsigned char *string_start, unsigned char *&cur, const cpp_symtab &macro_definitions) {
     int lhs;
-    lhs = parse_expr(cur, macro_definitions);
+    lhs = parse_expr(string_start, cur, macro_definitions);
     unsigned char *old_cur = cur;
 
     CPPTokenType type;
     std::string str;
     get_next_token(cur, type, str);
     if (type >= CPPTokenType::TK_LT && type <= CPPTokenType::TK_EQ) {
-        int rhs = parse_expr(cur, macro_definitions);
+        int rhs = parse_expr(string_start, cur, macro_definitions);
         if (type == CPPTokenType::TK_LT) {
             return lhs < rhs;
         } else if (type == CPPTokenType::TK_GT) {
@@ -999,7 +1001,7 @@ b-factor
     | "!" b-factor
     | relation
 */
-int parse_bfactor(unsigned char *&cur, const cpp_symtab &macro_definitions) {
+int parse_bfactor(unsigned char *string_start, unsigned char *&cur, const cpp_symtab &macro_definitions) {
     CPPTokenType type;
     std::string str;
     unsigned char *old_cur = cur;
@@ -1023,13 +1025,13 @@ int parse_bfactor(unsigned char *&cur, const cpp_symtab &macro_definitions) {
             return false;
         }
     } else if (type == CPPTokenType::TK_NEG) {
-        bool bresult = parse_bfactor(cur, macro_definitions) > 0;
+        bool bresult = parse_bfactor(string_start, cur, macro_definitions) > 0;
         bresult = !bresult; // Apply "!"
         return (int) bresult;
     } else {
         // For everything else we commit to relation and handle any potential errors there:
         cur = old_cur; // Restore the token
-        int result = parse_relation(cur, macro_definitions);
+        int result = parse_relation(string_start, cur, macro_definitions);
         return result;
     }
 }
