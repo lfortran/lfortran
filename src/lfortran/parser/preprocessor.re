@@ -374,6 +374,18 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                         test_true = parse_bexpr(string_start, t1, macro_definitions) > 0;
                     } catch (const LFortran::PreprocessorError &e) {
                         diagnostics.add(e.d);
+                        // Finish the LocationManager info and exit
+                        // TODO: this does not work yet
+                        interval_end_type_0(lm, output.size(), cur-string_start);
+                        lm.files.back().out_start0.push_back(output.size());
+                        lm.files.back().in_start0.push_back(input.size());
+                        // The just created interval ID:
+                        size_t N = lm.files.back().out_start0.size()-2;
+                        lm.files.back().in_size0.push_back(
+                            lm.files.back().out_start0[N+1] - lm.files.back().out_start0[N]);
+                        lm.files.back().interval_type0.push_back(0);
+                        lm.init_simple(input);
+                        lm.files.back().preprocessor = false;
                         return Error();
                     }
                     cur = t1;
