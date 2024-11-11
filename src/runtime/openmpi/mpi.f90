@@ -148,15 +148,22 @@ module mpi
         INTEGER, OPTIONAL, INTENT(OUT) :: ierror
     end subroutine MPI_Waitall
 
-    subroutine MPI_Recv()
+    subroutine MPI_Recv(buf, count, datatype, source, tag, comm, status, ierror)
+        ! TYPE(*), DIMENSION(..) :: buf
+        TYPE(INTEGER), DIMENSION(..) :: buf
+        INTEGER, INTENT(IN) :: count, source, tag
+        TYPE(MPI_Datatype), INTENT(IN) :: datatype
+        TYPE(MPI_Comm), INTENT(IN) :: comm
+        TYPE(MPI_Status) :: status
+        INTEGER, OPTIONAL, INTENT(OUT) :: ierror
     end subroutine MPI_Recv
 
-    subroutine MPI_Ssend
+    subroutine MPI_Ssend(buf, count, datatype, dest, tag, comm, ierror)
+        ! TYPE(*), DIMENSION(..), INTENT(IN) :: buf
+        TYPE(INTEGER), DIMENSION(..), INTENT(IN) :: buf
+        INTEGER, INTENT(IN) :: count, dest, tag
+        TYPE(MPI_Datatype), INTENT(IN) :: datatype
+        TYPE(MPI_Comm), INTENT(IN) :: comm
+        INTEGER, OPTIONAL, INTENT(OUT) :: ierror
     end subroutine MPI_Ssend
-
-    subroutine MPI_Wtime()
-    end subroutine MPI_Wtime
 end module mpi
-
-program main
-end program main
