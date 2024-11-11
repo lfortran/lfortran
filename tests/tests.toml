@@ -377,6 +377,30 @@ filename = "errors/cpp8.f90"
 asr_preprocess = true
 
 [[test]]
+filename = "errors/cpp_err1.f90"
+asr_preprocess = true
+
+[[test]]
+filename = "errors/cpp_err2.f90"
+asr_preprocess = true
+
+[[test]]
+filename = "errors/cpp_err3.f90"
+asr_preprocess = true
+
+[[test]]
+filename = "errors/cpp_err4.f90"
+asr_preprocess = true
+
+[[test]]
+filename = "errors/cpp_err5.f90"
+asr_preprocess = true
+
+[[test]]
+filename = "errors/cpp_err6.f90"
+asr_preprocess = true
+
+[[test]]
 filename = "errors/template_error_01a.f90"
 asr = true
 
