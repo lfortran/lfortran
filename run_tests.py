@@ -136,14 +136,24 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                 extra_args)
         else:
             # Use free form
-            run_test(
-                filename,
-                "ast",
-                "lfortran --show-ast --no-color {infile} -o {outfile}",
-                filename,
-                update_reference,
-                verify_hash,
-                extra_args)
+            if (continue_compilation):
+                run_test(
+                    filename,
+                    "ast",
+                    "lfortran --continue-compilation --show-ast --no-color {infile} -o {outfile}",
+                    filename,
+                    update_reference,
+                    verify_hash,
+                    extra_args)
+            else:
+                run_test(
+                    filename,
+                    "ast",
+                    "lfortran --show-ast --no-color {infile} -o {outfile}",
+                    filename,
+                    update_reference,
+                    verify_hash,
+                    extra_args)
     if ast_indent:
         run_test(
             filename,
