@@ -258,6 +258,7 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
     std::vector<IfDef> ifdef_stack;
     bool branch_enabled = true;
     macro_definitions["__FILE__"].expansion = "\"" + lm.files.back().in_filename + "\"";
+    try {
     for (;;) {
         unsigned char *tok = cur;
         unsigned char *mar;
@@ -383,25 +384,7 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 IfDef ifdef;
                 ifdef.active = branch_enabled;
                 if (ifdef.active) {
-                    bool test_true;
-                    try {
-                        test_true = parse_bexpr(string_start, t1, macro_definitions) > 0;
-                    } catch (const LFortran::PreprocessorError &e) {
-                        diagnostics.add(e.d);
-                        // Finish the LocationManager info and exit
-                        // TODO: this does not work yet
-                        interval_end_type_0(lm, output.size(), cur-string_start);
-                        lm.files.back().out_start0.push_back(output.size());
-                        lm.files.back().in_start0.push_back(input.size());
-                        // The just created interval ID:
-                        size_t N = lm.files.back().out_start0.size()-2;
-                        lm.files.back().in_size0.push_back(
-                            lm.files.back().out_start0[N+1] - lm.files.back().out_start0[N]);
-                        lm.files.back().interval_type0.push_back(0);
-                        lm.init_simple(input);
-                        lm.files.back().preprocessor = false;
-                        return Error();
-                    }
+                    bool test_true = parse_bexpr(string_start, t1, macro_definitions) > 0;
                     cur = t1;
                     if (test_true) {
                         ifdef.branch_enabled = true;
@@ -445,7 +428,10 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
             }
             "#" whitespace? "elif" whitespace @t1 [^\n\x00]* @t2 newline  {
                 if (ifdef_stack.size() == 0) {
-                    throw LCompilersException("C preprocessor: #elif encountered outside of #ifdef or #ifndef");
+                    Location loc;
+                    loc.first = cur - string_start;
+                    loc.last = loc.first;
+                    throw PreprocessorError("#elif encountered outside of #ifdef or #ifndef", loc);
                 }
                 IfDef ifdef = ifdef_stack[ifdef_stack.size()-1];
                 if (ifdef.active) {
@@ -472,7 +458,10 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
             }
             "#" whitespace? "endif" whitespace? single_line_comment? newline  {
                 if (ifdef_stack.size() == 0) {
-                    throw LCompilersException("C preprocessor: #endif encountered outside of #ifdef or #ifndef");
+                    Location loc;
+                    loc.first = cur - string_start;
+                    loc.last = loc.first;
+                    throw PreprocessorError("#endif encountered outside of #ifdef or #ifndef", loc);
                 }
                 IfDef ifdef = ifdef_stack[ifdef_stack.size()-1];
                 ifdef_stack.pop_back();
@@ -509,9 +498,10 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 }
 
                 if (!file_found) {
-                    throw LCompilersException("C preprocessor: Include file '" + filename
-                        + "' not found. If an include path "
-                        "is available, please use the `-I` option to specify it.");
+                    Location loc;
+                    loc.first = t1 - string_start;
+                    loc.last = t2-1 - string_start;
+                    throw PreprocessorError("Include file '" + filename + "' not found. If an include path is available, please use the `-I` option to specify it.", loc);
                 }
 
                 LocationManager lm_tmp = lm; // Make a copy
@@ -633,6 +623,12 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 continue;
             }
         */
+    }
+    } catch (const LFortran::PreprocessorError &e) {
+        diagnostics.add(e.d);
+        lm.init_simple(input);
+        lm.files.back().preprocessor = false;
+        return Error();
     }
     lm.files.back().out_start0.push_back(output.size());
     lm.files.back().in_start0.push_back(input.size());
