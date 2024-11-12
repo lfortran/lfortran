@@ -790,9 +790,38 @@ struct FixedFormRecursiveDescent {
         return multiline;
     }
 
+    bool lex_possible_assignment(unsigned char *start, unsigned char *&cur) {
+        unsigned char *end = start;
+        if (!try_name(end)) return false;
+
+        // Try parsing array indices, if any
+        while (*end == '(') {
+            end++;  // Move past '('
+            if (!try_expr(end, true)) {
+                return false;  // Parsing failed, it’s not an assignment
+            }
+            if (*end != ')') {
+                return false;  // Expected closing ')', not an assignment
+            }
+            end++;  // Move past ')'
+        }
+
+        // After parsing identifier and indices, check if the next character is `=`
+        if (*end == '=') {
+            cur = start;  // Reset to the start to re-tokenize as an assignment
+            return true;
+        }
+        return false;  // Not an assignment if no '=' found
+    }
+
     bool lex_declaration(unsigned char *&cur) {
         unsigned char *start = cur;
         next_line(cur);
+
+        if (lex_possible_assignment(start, cur)) {
+            return false;
+        }
+
         if (lex_declarator(start)) {
             tokenize_line(start);
             return true;
