@@ -23,6 +23,22 @@
                                     Required
                                     .false.
                                 ),
+                            datap:
+                                (Variable
+                                    2
+                                    datap
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
                             integerx:
                                 (Variable
                                     2
@@ -49,6 +65,22 @@
                                     ()
                                     Default
                                     (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            realr:
+                                (Variable
+                                    2
+                                    realr
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -81,12 +113,30 @@
                         (IntegerConstant 12 (Integer 4) Decimal)
                         ()
                     )
+                    (Assignment
+                        (Var 2 datap)
+                        (RealConstant
+                            1.000000
+                            (Real 4)
+                        )
+                        ()
+                    )
+                    (Assignment
+                        (Var 2 realr)
+                        (RealConstant
+                            1.500000
+                            (Real 4)
+                        )
+                        ()
+                    )
                     (Print
                         (StringFormat
                             ()
                             [(Var 2 l)
                             (Var 2 a)
-                            (Var 2 integerx)]
+                            (Var 2 integerx)
+                            (Var 2 datap)
+                            (Var 2 realr)]
                             FormatFortran
                             (String -1 0 () PointerString)
                             ()
