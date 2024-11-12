@@ -2,12 +2,12 @@
     "basename": "run-array_xx_cc-858ee33",
     "cmd": "lfortran --continue-compilation --no-color {infile}",
     "infile": "tests/errors/array_xx_cc.f90",
-    "infile_hash": "6fb257042311d57514493479dd6cd0ccea2d922d070e572dd398dfae",
+    "infile_hash": "3bd0f64590f49180384f3f91a8588485c9b2ef8f16ef662454171ba2",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "run-array_xx_cc-858ee33.stdout",
-    "stdout_hash": "7c30da867d34c3f53085fa5826aac5eebd24829d11e7189553ee7d4a",
+    "stdout_hash": "7e1bb4baa436839ffe5cdbd2d252374abb90f2c7b786c728ac338c27",
     "stderr": "run-array_xx_cc-858ee33.stderr",
-    "stderr_hash": "118a37dda92a30d229d7a57a98eee08db8cbb8360560f0eddce4fbf0",
+    "stderr_hash": "383371a5872b128b86312da1a438188cf4cb4d7ed721c0c634e6ead1",
     "returncode": 1
 }

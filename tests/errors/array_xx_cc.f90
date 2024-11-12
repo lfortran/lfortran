@@ -9,6 +9,8 @@ integer :: x2, c
 integer :: a1(3)
 integer :: size_a
 integer, parameter :: x3 = 2
+integer :: k = 3
+integer :: i, iarx(3)
 
 type :: t
     integer :: x
@@ -67,6 +69,18 @@ print *, "compilation continued despite errors"
 !assign_01_cc
 x3 = 1
 print *, x3
+print *, "compilation continued despite errors"
+
+! data_implied_do1
+data(iarx(i), i=1, k) / 1, 2, 3 /
+print *, "compilation continued despite errors"
+
+! data_implied_do2
+data(iarx(i), i=1, 3, k) / 1, 2, 3 /
+print *, "compilation continued despite errors"
+
+! data_implied_do3
+data(iarx(i), i=k, 3) / 1, 2, 3 /
 print *, "compilation continued despite errors"
 
 end program
