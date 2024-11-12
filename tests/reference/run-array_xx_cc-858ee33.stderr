@@ -104,13 +104,13 @@ semantic error: The end variable of the data implied do loop must be constants
    |                    ^ 
 
 semantic error: The increment variable of the data implied do loop must be a constant
-  --> tests/errors/array_xx_cc.f90:79:23
+  --> tests/errors/array_xx_cc.f90:78:23
    |
-79 | data(iarx(i), i=1, 3, k) / 1, 2, 3 /
+78 | data(iarx(i), i=1, 3, k) / 1, 2, 3 /
    |                       ^ 
 
 semantic error: The start variable of the data implied do loop must be constants
-  --> tests/errors/array_xx_cc.f90:83:17
+  --> tests/errors/array_xx_cc.f90:81:17
    |
-83 | data(iarx(i), i=k, 3) / 1, 2, 3 /
+81 | data(iarx(i), i=k, 3) / 1, 2, 3 /
    |                 ^ 
