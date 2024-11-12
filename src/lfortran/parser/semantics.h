@@ -302,12 +302,35 @@ static inline ast_t* VAR_DECL_PRAGMA2(Allocator &al, Location &loc,
             import_modifierType::Import##x, \
             trivia_cast(trivia))
 
-
-#define VAR_DECL1(vartype, xattr, varsym, trivia, l) \
+ #define VAR_DECL1a(vartype, xattr, varsym, trivia, l) \
         make_Declaration_t(p.m_a, l, \
         down_cast<decl_attribute_t>(vartype), \
         VEC_CAST(xattr, decl_attribute), xattr.n, \
         varsym.p, varsym.n, trivia_cast(trivia))
+
+ #define VAR_DECL1b(vartype,  varsym, trivia, l) \
+        make_Declaration_t(p.m_a, l, \
+        down_cast<decl_attribute_t>(vartype), \
+        nullptr, 0, \
+        varsym.p, varsym.n, trivia_cast(trivia))
+
+ast_t* fn_VAR_DECL1c(Allocator &al,
+    ast_t *vartype, const Vec<var_sym_t> &varsym, ast_t *trivia,
+            Location l) {
+    for (size_t i=0; i<varsym.size(); i++) {
+        if (varsym[i].m_sym == symbolType::Equal) {
+            throw LCompilers::LFortran::parser_local::ParserError(
+                "Invalid syntax for variable initialization (try inserting '::' after the type)", l);
+        }
+    }
+    return make_Declaration_t(al, l,
+        down_cast<decl_attribute_t>(vartype),
+        nullptr, 0,
+        varsym.p, varsym.n, trivia_cast(trivia));
+}
+
+#define VAR_DECL1c(vartype, varsym, trivia, l) \
+    fn_VAR_DECL1c(p.m_a, vartype, varsym, trivia, l)
 
 decl_attribute_t** VAR_DECL2b(Allocator &al,
             ast_t *xattr0) {

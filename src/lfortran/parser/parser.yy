@@ -4,8 +4,8 @@
 %param {LCompilers::LFortran::Parser &p}
 %locations
 %glr-parser
-%expect    210 // shift/reduce conflicts
-%expect-rr 193 // reduce/reduce conflicts
+%expect    228 // shift/reduce conflicts
+%expect-rr 175 // reduce/reduce conflicts
 
 // Uncomment this to get verbose error messages
 //%define parse.error verbose
@@ -1318,8 +1318,12 @@ var_decl_star
     ;
 
 var_decl
-    : var_type var_modifiers var_sym_decl_list sep {
-        LLOC(@$, @3); $$ = VAR_DECL1($1, $2, $3, TRIVIA_AFTER($4, @$), @$); }
+    : var_type var_modifier_list "::" var_sym_decl_list sep {
+        LLOC(@$, @4); $$ = VAR_DECL1a($1, $2, $4, TRIVIA_AFTER($5, @$), @$); }
+    | var_type "::" var_sym_decl_list sep {
+        LLOC(@$, @3); $$ = VAR_DECL1b($1, $3, TRIVIA_AFTER($4, @$), @$); }
+    | var_type var_sym_decl_list sep {
+        LLOC(@$, @2); $$ = VAR_DECL1c($1, $2, TRIVIA_AFTER($3, @$), @$); }
     | var_modifier sep {
         LLOC(@$, @1); $$ = VAR_DECL2($1, TRIVIA_AFTER($2, @$), @$); }
     | var_modifier var_sym_decl_list sep {

@@ -4346,3 +4346,7 @@ asr = true
 [[test]]
 filename = "errors/data_implied_do3.f90"
 asr = true
+
+[[test]]
+filename = "errors/init1.f90"
+ast = true
