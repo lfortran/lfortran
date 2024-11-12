@@ -542,18 +542,21 @@ Result<std::string> FortranEvaluator::get_mlir(const std::string &code,
     symbol_table = nullptr;
     Result<ASR::TranslationUnit_t*> asr = get_asr2(code, lm, diagnostics);
     symbol_table = old_symbol_table;
-    if (asr.ok) {
-#ifdef HAVE_LFORTRAN_MLIR
-        Result<std::unique_ptr<MLIRModule>> res = asr_to_mlir(al, *asr.result,
-            diagnostics);
-        return res.result->str();
-#else
-        throw LCompilersException("MLIR is not enabled");
-#endif
-    } else {
-        LCOMPILERS_ASSERT(diagnostics.has_error())
+    if (!asr.ok) {
         return asr.error;
     }
+#ifdef HAVE_LFORTRAN_MLIR
+    Result<std::unique_ptr<MLIRModule>> res = asr_to_mlir(al, *asr.result,
+        diagnostics);
+    if (res.ok) {
+        return res.result->str();
+    } else {
+        LCOMPILERS_ASSERT(diagnostics.has_error())
+        return res.error;
+    }
+#else
+    throw LCompilersException("MLIR is not enabled");
+#endif
 }
 
 Result<std::unique_ptr<MLIRModule>> FortranEvaluator::get_mlir2(
