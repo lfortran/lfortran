@@ -2511,7 +2511,49 @@ static inline ASR::asr_t* make_ArraySize_t_util(
     if( ASR::is_a<ASR::ArrayPhysicalCast_t>(*a_v) ) {
         a_v = ASR::down_cast<ASR::ArrayPhysicalCast_t>(a_v)->m_arg;
     }
-
+    if ( ASR::is_a<ASR::IntrinsicArrayFunction_t>(*a_v) && for_type ) {
+        ASR::IntrinsicArrayFunction_t* af = ASR::down_cast<ASR::IntrinsicArrayFunction_t>(a_v);
+        for ( size_t i = 0; i < af->n_args; i++ ) {
+            if ( ASRUtils::is_array(ASRUtils::expr_type(af->m_args[i])) ) {
+                a_v = af->m_args[i];
+                if ( ASR::is_a<ASR::ArrayPhysicalCast_t>(*a_v)) {
+                    a_v = ASR::down_cast<ASR::ArrayPhysicalCast_t>(a_v)->m_arg;
+                }
+                break;
+            }
+        }
+    } else if( ASR::is_a<ASR::FunctionCall_t>(*a_v) && for_type ) {
+        ASR::FunctionCall_t* function_call = ASR::down_cast<ASR::FunctionCall_t>(a_v);
+        ASR::dimension_t* m_dims = nullptr;
+        size_t n_dims = ASRUtils::extract_dimensions_from_ttype(function_call->m_type, m_dims);
+        if( ASRUtils::is_fixed_size_array(function_call->m_type) ) {
+            if( a_dim == nullptr ) {
+                return ASR::make_IntegerConstant_t(al, a_loc,
+                    ASRUtils::get_fixed_size_of_array(function_call->m_type), a_type);
+            } else if( is_dimension_constant ) {
+                return &(m_dims[dim - 1].m_length->base);
+            }
+        } else {
+            if( a_dim == nullptr ) {
+                ASR::expr_t* result = m_dims[0].m_length;
+                for( size_t i = 1; i < n_dims; i++ ) {
+                    result = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, a_loc,
+                        result, ASR::binopType::Mul, m_dims[i].m_length, a_type, nullptr));
+                }
+                return &(result->base);
+            } else if( is_dimension_constant ) {
+                return &(m_dims[dim - 1].m_length->base);
+            }
+        }
+    } else if( ASR::is_a<ASR::IntrinsicElementalFunction_t>(*a_v) && for_type ) {
+        ASR::IntrinsicElementalFunction_t* elemental = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(a_v);
+        for( size_t i = 0; i < elemental->n_args; i++ ) {
+            if( ASRUtils::is_array(ASRUtils::expr_type(elemental->m_args[i])) ) {
+                a_v = elemental->m_args[i];
+                break;
+            }
+        }
+    } 
     if( ASR::is_a<ASR::ArraySection_t>(*a_v) ) {
         ASR::ArraySection_t* array_section_t = ASR::down_cast<ASR::ArraySection_t>(a_v);
         if( a_dim == nullptr ) {
@@ -2555,49 +2597,8 @@ static inline ASR::asr_t* make_ArraySize_t_util(
             return ASR::make_IntegerBinOp_t(al, a_loc, byd, ASR::binopType::Add,
                 ASRUtils::EXPR(const1), a_type, nullptr);
         }
-    } else if( ASR::is_a<ASR::FunctionCall_t>(*a_v) && for_type ) {
-        ASR::FunctionCall_t* function_call = ASR::down_cast<ASR::FunctionCall_t>(a_v);
-        ASR::dimension_t* m_dims = nullptr;
-        size_t n_dims = ASRUtils::extract_dimensions_from_ttype(function_call->m_type, m_dims);
-        if( ASRUtils::is_fixed_size_array(function_call->m_type) ) {
-            if( a_dim == nullptr ) {
-                return ASR::make_IntegerConstant_t(al, a_loc,
-                    ASRUtils::get_fixed_size_of_array(function_call->m_type), a_type);
-            } else if( is_dimension_constant ) {
-                return &(m_dims[dim - 1].m_length->base);
-            }
-        } else {
-            if( a_dim == nullptr ) {
-                ASR::expr_t* result = m_dims[0].m_length;
-                for( size_t i = 1; i < n_dims; i++ ) {
-                    result = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, a_loc,
-                        result, ASR::binopType::Mul, m_dims[i].m_length, a_type, nullptr));
-                }
-                return &(result->base);
-            } else if( is_dimension_constant ) {
-                return &(m_dims[dim - 1].m_length->base);
-            }
-        }
-    } else if( ASR::is_a<ASR::IntrinsicElementalFunction_t>(*a_v) && for_type ) {
-        ASR::IntrinsicElementalFunction_t* elemental = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(a_v);
-        for( size_t i = 0; i < elemental->n_args; i++ ) {
-            if( ASRUtils::is_array(ASRUtils::expr_type(elemental->m_args[i])) ) {
-                a_v = elemental->m_args[i];
-                break;
-            }
-        }
-    } else if ( ASR::is_a<ASR::IntrinsicArrayFunction_t>(*a_v) && for_type ) {
-        ASR::IntrinsicArrayFunction_t* af = ASR::down_cast<ASR::IntrinsicArrayFunction_t>(a_v);
-        for ( size_t i = 0; i < af->n_args; i++ ) {
-            if ( ASRUtils::is_array(ASRUtils::expr_type(af->m_args[i])) ) {
-                a_v = af->m_args[i];
-                if ( ASR::is_a<ASR::ArrayPhysicalCast_t>(*a_v)) {
-                    a_v = ASR::down_cast<ASR::ArrayPhysicalCast_t>(a_v)->m_arg;
-                }
-                break;
-            }
-        }
-    } else if( is_binop_expr(a_v) && for_type ) {
+    }
+    if( is_binop_expr(a_v) && for_type ) {
         if( ASR::is_a<ASR::Var_t>(*extract_member_from_binop(a_v, 1)) ) {
             return make_ArraySize_t_util(al, a_loc, extract_member_from_binop(a_v, 1), a_dim, a_type, a_value, for_type);
         } else {
@@ -2631,6 +2632,7 @@ static inline ASR::asr_t* make_ArraySize_t_util(
             }
         }
     }
+    
 
     if( for_type ) {
         LCOMPILERS_ASSERT_MSG(

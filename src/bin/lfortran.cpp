@@ -1927,7 +1927,14 @@ int emit_c_preprocessor(const std::string &infile, CompilerOptions &compiler_opt
         lm.files.push_back(fl);
         lm.file_ends.push_back(input.size());
     }
-    std::string s = cpp.run(input, lm, cpp.macro_definitions);
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::Result<std::string> res = cpp.run(input, lm, cpp.macro_definitions, diagnostics);
+    std::string s;
+    if (res.ok) {
+        s = res.result;
+    } else {
+        s = diagnostics.render(lm, compiler_options);
+    }
     if(!compiler_options.arg_o.empty()) {
         std::ofstream fout(compiler_options.arg_o);
         fout << s;

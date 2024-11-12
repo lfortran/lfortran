@@ -377,6 +377,30 @@ filename = "errors/cpp8.f90"
 asr_preprocess = true
 
 [[test]]
+filename = "errors/cpp_err1.f90"
+asr_preprocess = true
+
+[[test]]
+filename = "errors/cpp_err2.f90"
+asr_preprocess = true
+
+[[test]]
+filename = "errors/cpp_err3.f90"
+asr_preprocess = true
+
+[[test]]
+filename = "errors/cpp_err4.f90"
+asr_preprocess = true
+
+[[test]]
+filename = "errors/cpp_err5.f90"
+asr_preprocess = true
+
+[[test]]
+filename = "errors/cpp_err6.f90"
+asr_preprocess = true
+
+[[test]]
 filename = "errors/template_error_01a.f90"
 asr = true
 
@@ -3728,6 +3752,14 @@ ast = true
 filename = "parser/parameter_without_start_program.f90"
 ast = true
 
+[[test]]
+filename = "parser/procedure_with_type.f90"
+ast = true
+
+[[test]]
+filename = "parser/data_stmt_with_implied_do_loop.f"
+ast = true
+
 # Parser errors
 
 [[test]]
@@ -4314,3 +4346,7 @@ asr = true
 [[test]]
 filename = "errors/data_implied_do3.f90"
 asr = true
+
+[[test]]
+filename = "errors/init1.f90"
+ast = true
