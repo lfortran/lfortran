@@ -483,6 +483,17 @@ struct FixedFormRecursiveDescent {
         return false;
     }
 
+    bool contains2(unsigned char *start, unsigned char *end, const char ch[2]) {
+        unsigned char *cur = start;
+        while (*cur != '\0' && cur < end) {
+            if (*cur == ch[0] && *(cur+1) == ch[1]) {
+                return true;
+            }
+            cur++;
+        }
+        return false;
+    }
+
     std::string tostr(unsigned char *start, unsigned char *end) {
         return std::string((char *)start, end-start);
     }
@@ -793,6 +804,12 @@ struct FixedFormRecursiveDescent {
     bool lex_declaration(unsigned char *&cur) {
         unsigned char *start = cur;
         next_line(cur);
+        // TODO: this is fragile
+        if (contains(start, cur, '=') && !contains2(start, cur, "::")) {
+            // This must be an assignment
+            cur = start;
+            return false;
+        }
         if (lex_declarator(start)) {
             tokenize_line(start);
             return true;

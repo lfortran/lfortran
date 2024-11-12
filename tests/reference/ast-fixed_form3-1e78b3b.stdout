@@ -151,46 +151,22 @@
             None
             ())]
             ()
-        )
-        (Declaration
-            (AttrType
-                TypeInteger
-                []
-                ()
-                ()
-                None
-            )
-            []
-            [(x
-            []
-            []
-            ()
-            5
-            Equal
-            ())]
-            ()
-        )
-        (Declaration
-            (AttrType
-                TypeInteger
-                []
-                ()
-                ()
-                None
-            )
-            []
-            [(x
-            []
-            []
-            ()
-            5
-            Equal
-            ())]
-            ()
         )]
         [(Assignment
             0
+            integerx
+            5
+            ()
+        )
+        (Assignment
+            0
             x
+            5
+            ()
+        )
+        (Assignment
+            0
+            integerx
             5
             ()
         )]
@@ -248,28 +224,16 @@
             Equal
             ())]
             ()
-        )
-        (Declaration
-            (AttrType
-                TypeInteger
-                []
-                ()
-                ()
-                None
-            )
-            []
-            [(x
-            []
-            []
-            ()
-            5
-            Equal
-            ())]
-            ()
         )]
         [(Assignment
             0
             x
+            5
+            ()
+        )
+        (Assignment
+            0
+            integerx
             5
             ()
         )]
