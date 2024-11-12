@@ -23,6 +23,22 @@
                                     Required
                                     .false.
                                 ),
+                            integerx:
+                                (Variable
+                                    2
+                                    integerx
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
                             l:
                                 (Variable
                                     2
@@ -60,11 +76,17 @@
                         )
                         ()
                     )
+                    (Assignment
+                        (Var 2 integerx)
+                        (IntegerConstant 12 (Integer 4) Decimal)
+                        ()
+                    )
                     (Print
                         (StringFormat
                             ()
                             [(Var 2 l)
-                            (Var 2 a)]
+                            (Var 2 a)
+                            (Var 2 integerx)]
                             FormatFortran
                             (String -1 0 () PointerString)
                             ()
