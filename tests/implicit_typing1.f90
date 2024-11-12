@@ -1,5 +1,8 @@
 program X
 L = 3
 a = 3
-print *, L, a
+integerx = 12
+datap = 1.0
+realr = 1.5
+print *, L, a, integerx, datap, realr
 end program
