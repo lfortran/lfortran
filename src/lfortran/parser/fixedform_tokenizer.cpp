@@ -790,7 +790,18 @@ struct FixedFormRecursiveDescent {
         return multiline;
     }
 
-    bool lex_possible_assignment(unsigned char *start, unsigned char *&cur) {
+    // Determines if a line in Fortran code represents an assignment rather than a declaration.
+    // E.g. below are declarations
+    //      integer :: x = 1
+    //      DATA p(1), (c(i), i=1, 2) / 5, 10, 12 /
+    //
+    // while, below are assignments
+    //      i = 2
+    //      integerx = 12
+    //      datap = 5
+    // NOTE: this function doesn't actually lexes, but only determines if it's
+    // (possibly) an assignment or not
+    bool is_possible_assignment(unsigned char *start, unsigned char *&cur) {
         unsigned char *end = start;
         if (!try_name(end)) return false;
 
@@ -818,7 +829,7 @@ struct FixedFormRecursiveDescent {
         unsigned char *start = cur;
         next_line(cur);
 
-        if (lex_possible_assignment(start, cur)) {
+        if (is_possible_assignment(start, cur)) {
             return false;
         }
 
