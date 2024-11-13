@@ -5028,7 +5028,11 @@ public:
         ASRUtils::insert_module_dependency(v, al, current_module_dependencies);
         if (args.size() > func->n_args) {
             const Location args_loc { ASRUtils::get_vec_loc(args) };
-            throw SemanticError("More actual than formal arguments in procedure call", args_loc);
+            diag.add(diag::Diagnostic(
+                    "More actual than formal arguments in procedure call",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {args_loc})}));
+            throw SemanticAbort();
         }
         ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
         legacy_array_sections_helper(v, args, loc);
@@ -5710,16 +5714,20 @@ public:
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 3, "cmplx");
         ASR::expr_t *x_ = args[0], *y_ = args[1], *kind = args[2];
         if (x_ == nullptr) {
-            throw SemanticError("The first argument of `cmplx` intrinsic"
-                                " must be present",
-                                x.base.base.loc);
+            diag.add(diag::Diagnostic("The first argument of `cmplx` intrinsic"
+                    " must be present",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
         }
         if( ASR::is_a<ASR::Complex_t>(*ASRUtils::expr_type(x_)) ) {
             if( y_ != nullptr ) {
-                throw SemanticError("The first argument of `cmplx` intrinsic"
-                                    " is of complex type, the second argument "
-                                    "in this case must be absent",
-                                    x.base.base.loc);
+                diag.add(diag::Diagnostic("The first argument of `cmplx` intrinsic"
+                        " is of complex type, the second argument "
+                        "in this case must be absent",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {x.base.base.loc})}));
+                throw SemanticAbort();
             }
             if (!ASR::is_a<ASR::Var_t>(*x_)) {
                 const ASR::ComplexConstructor_t* complex_expr = ASR::down_cast<ASR::ComplexConstructor_t>(x_);
@@ -5727,9 +5735,15 @@ public:
                 const ASR::expr_t* imag_part_expr = complex_expr->m_im;
 
                 if (!ASR::is_a<ASR::RealConstant_t>(*real_part_expr)) {
-                    throw SemanticError("Expected a real constant for the real part", x.base.base.loc);
+                    diag.add(diag::Diagnostic("Expected a real constant for the real part",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {x.base.base.loc})}));
+                    throw SemanticAbort();
                 } else if (!ASR::is_a<ASR::RealConstant_t>(*imag_part_expr)) {
-                    throw SemanticError("Expected a real constant for the imaginary part", x.base.base.loc);
+                    diag.add(diag::Diagnostic("Expected a real constant for the imaginary part",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {x.base.base.loc})}));
+                    throw SemanticAbort();
                 }
             }
             return (ASR::asr_t*) x_;
