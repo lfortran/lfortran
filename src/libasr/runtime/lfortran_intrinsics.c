@@ -2068,7 +2068,6 @@ LFORTRAN_API void _lfortran_strcpy_descriptor_string(char** x, char *y, int64_t*
         int8_t null_char_len = 1;
         if(*x_string_capacity < (y_len + null_char_len)){
             extend_string(x, y_len+1, x_string_capacity);
-            *x_string_size = y_len;
         }
     }
     int64_t null_character_index = x_len;
@@ -2076,6 +2075,7 @@ LFORTRAN_API void _lfortran_strcpy_descriptor_string(char** x, char *y, int64_t*
     for (size_t i = 0; i < x_len; i++) {
         (*x)[i] = y[i];
     }
+    *x_string_size = y_len;
 }
 
 LFORTRAN_API void _lfortran_strcpy_pointer_string(char** x, char *y)
