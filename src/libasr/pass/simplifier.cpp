@@ -1734,8 +1734,7 @@ class TransformVariableInitialiser:
             ) || (
                 x.m_storage == ASR::storage_typeType::Save &&
                 value &&
-                ASRUtils::is_value_constant(value) &&
-                !ASRUtils::is_array(ASRUtils::expr_type(value))
+                ASRUtils::is_value_constant(value)
             )
         ) {
             return;
@@ -2118,8 +2117,7 @@ class VerifySimplifierASROutput:
             !(check_if_ASR_owner_is_enum(x.m_parent_symtab->asr_owner)) &&
             !(check_if_ASR_owner_is_struct(x.m_parent_symtab->asr_owner)) &&
             !(x.m_storage == ASR::storage_typeType::Save && x.m_symbolic_value &&
-                ASRUtils::is_value_constant(x.m_symbolic_value) &&
-                !ASRUtils::is_array(ASRUtils::expr_type(x.m_symbolic_value))
+                ASRUtils::is_value_constant(x.m_symbolic_value)
             ) &&
             x.m_storage != ASR::storage_typeType::Parameter ) {
             LCOMPILERS_ASSERT(x.m_symbolic_value == nullptr);

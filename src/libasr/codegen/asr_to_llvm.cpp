@@ -216,6 +216,11 @@ public:
         size_t n_dims;
     };
     std::vector<to_be_allocated_array> allocatable_array_details;
+    struct variable_inital_value { /* Saves information for variables that need to be initialized once. To be initialized in `program`*/
+        ASR::Variable_t* v;  
+        llvm::Value* target_var; // Corresponds to variable `v` in llvm IR.
+    };
+    std::vector<variable_inital_value> variable_inital_value_vec; /* Saves information for variables that need to be initialized once. To be initialized in `program`*/
     ASRToLLVMVisitor(Allocator &al, llvm::LLVMContext &context, std::string infile,
         CompilerOptions &compiler_options_, diag::Diagnostics &diagnostics) :
     diag{diagnostics},
@@ -3275,6 +3280,9 @@ public:
                 true, true, false, array.var_type);
         }
         declare_vars(x);
+        for(variable_inital_value var_to_initalize : variable_inital_value_vec){
+            set_VariableInital_value(var_to_initalize.v, var_to_initalize.target_var);
+        }
         for(auto &value: strings_to_be_allocated) {
             llvm::Value *init_value = LLVM::lfortran_malloc(context, *module,
                 *builder, value.second);
@@ -3585,6 +3593,60 @@ public:
         }
         collect_class_type_names_and_struct_types(class_type_names, struct_types, x_symtab->parent);
     }
+    void set_VariableInital_value(ASR::Variable_t* v, llvm::Value* target_var){
+        if (v->m_value != nullptr) {
+            this->visit_expr_wrapper(v->m_value, true);
+        } else {
+            this->visit_expr_wrapper(v->m_symbolic_value, true);
+        }
+        llvm::Value *init_value = tmp;
+        if( ASRUtils::is_array(v->m_type) &&
+            ASRUtils::is_array(ASRUtils::expr_type(v->m_symbolic_value)) &&
+            (ASR::is_a<ASR::ArrayConstant_t>(*v->m_symbolic_value) ||
+            (v->m_value && ASR::is_a<ASR::ArrayConstant_t>(*v->m_value)))) {
+            ASR::array_physical_typeType target_ptype = ASRUtils::extract_physical_type(v->m_type);
+            if( target_ptype == ASR::array_physical_typeType::DescriptorArray ) {
+                target_var = arr_descr->get_pointer_to_data(target_var);
+                builder->CreateStore(init_value, target_var);
+            } else if( target_ptype == ASR::array_physical_typeType::FixedSizeArray ) {
+                llvm::Value* arg_size = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context),
+                llvm::APInt(32, ASRUtils::get_fixed_size_of_array(ASR::down_cast<ASR::ArrayConstant_t>(v->m_value)->m_type)));
+                llvm::Type* llvm_data_type = llvm_utils->get_type_from_ttype_t_util(
+                    ASRUtils::type_get_past_array(ASRUtils::expr_type(v->m_value)), module.get());
+                llvm::DataLayout data_layout(module.get());
+                size_t dt_size = data_layout.getTypeAllocSize(llvm_data_type);
+                arg_size = builder->CreateMul(llvm::ConstantInt::get(
+                    llvm::Type::getInt32Ty(context), llvm::APInt(32, dt_size)), arg_size);
+                builder->CreateMemCpy(llvm_utils->create_gep(target_var, 0),
+                    llvm::MaybeAlign(), init_value, llvm::MaybeAlign(), arg_size);
+            }
+        } else if (ASR::is_a<ASR::ArrayReshape_t>(*v->m_symbolic_value)) {
+            builder->CreateStore(llvm_utils->CreateLoad(init_value), target_var);
+        } else if (is_a<ASR::String_t>(*v->m_type)) {
+            ASR::String_t *t = down_cast<ASR::String_t>(v->m_type);
+            llvm::Value *arg_size = llvm::ConstantInt::get(context,
+                        llvm::APInt(32, t->m_len+1));
+            llvm::Value *s_malloc = LLVM::lfortran_malloc(context, *module, *builder, arg_size);
+            string_init(context, *module, *builder, arg_size, s_malloc);
+            builder->CreateStore(s_malloc, target_var);
+            // target decides if the str_copy is performed on string descriptor or pointer.
+            tmp = lfortran_str_copy(target_var, init_value, ASRUtils::is_descriptorString(v->m_type)); 
+            if (v->m_intent == intent_local) {
+                strings_to_be_deallocated.push_back(al, llvm_utils->CreateLoad2(v->m_type, target_var));
+            }
+        } else {
+            if (v->m_storage == ASR::storage_typeType::Save
+                && v->m_value
+                && (ASR::is_a<ASR::Integer_t>(*v->m_type)
+                || ASR::is_a<ASR::Real_t>(*v->m_type)
+                || ASR::is_a<ASR::Logical_t>(*v->m_type))) {
+                // Do nothing, the value is already initialized
+                // in the global variable
+            } else {
+                builder->CreateStore(init_value, target_var);
+            }
+        }
+    }
 
     template<typename T>
     void process_Variable(ASR::symbol_t* var_sym, T& x, uint32_t &debug_arg_count) {
@@ -3774,61 +3836,14 @@ public:
                     }
                 }
             }
-            if( init_expr != nullptr &&
-                !is_list) {
+            if( init_expr != nullptr && !is_list) {
                 target_var = ptr;
-                tmp = nullptr;
-                if (v->m_value != nullptr) {
-                    this->visit_expr_wrapper(v->m_value, true);
+                if(v->m_storage == ASR::storage_typeType::Save && 
+                    ASR::is_a<ASR::Function_t>(
+                        *ASR::down_cast<ASR::symbol_t>(v->m_parent_symtab->asr_owner))){
+                    variable_inital_value_vec.push_back({v, target_var});   
                 } else {
-                    this->visit_expr_wrapper(v->m_symbolic_value, true);
-                }
-                llvm::Value *init_value = tmp;
-                if( ASRUtils::is_array(v->m_type) &&
-                    ASRUtils::is_array(ASRUtils::expr_type(v->m_symbolic_value)) &&
-                    (ASR::is_a<ASR::ArrayConstant_t>(*v->m_symbolic_value) ||
-                    (v->m_value && ASR::is_a<ASR::ArrayConstant_t>(*v->m_value))) ) {
-                    ASR::array_physical_typeType target_ptype = ASRUtils::extract_physical_type(v->m_type);
-                    if( target_ptype == ASR::array_physical_typeType::DescriptorArray ) {
-                        target_var = arr_descr->get_pointer_to_data(target_var);
-                        builder->CreateStore(init_value, target_var);
-                    } else if( target_ptype == ASR::array_physical_typeType::FixedSizeArray ) {
-                        llvm::Value* arg_size = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context),
-                        llvm::APInt(32, ASRUtils::get_fixed_size_of_array(ASR::down_cast<ASR::ArrayConstant_t>(v->m_value)->m_type)));
-                        llvm::Type* llvm_data_type = llvm_utils->get_type_from_ttype_t_util(
-                            ASRUtils::type_get_past_array(ASRUtils::expr_type(v->m_value)), module.get());
-                        llvm::DataLayout data_layout(module.get());
-                        size_t dt_size = data_layout.getTypeAllocSize(llvm_data_type);
-                        arg_size = builder->CreateMul(llvm::ConstantInt::get(
-                            llvm::Type::getInt32Ty(context), llvm::APInt(32, dt_size)), arg_size);
-                        builder->CreateMemCpy(llvm_utils->create_gep(target_var, 0),
-                            llvm::MaybeAlign(), init_value, llvm::MaybeAlign(), arg_size);
-                    }
-                } else if (ASR::is_a<ASR::ArrayReshape_t>(*v->m_symbolic_value)) {
-                    builder->CreateStore(llvm_utils->CreateLoad(init_value), target_var);
-                } else if (is_a<ASR::String_t>(*v->m_type) && !is_array_type) {
-                    ASR::String_t *t = down_cast<ASR::String_t>(v->m_type);
-                    llvm::Value *arg_size = llvm::ConstantInt::get(context,
-                                llvm::APInt(32, t->m_len+1));
-                    llvm::Value *s_malloc = LLVM::lfortran_malloc(context, *module, *builder, arg_size);
-                    string_init(context, *module, *builder, arg_size, s_malloc);
-                    builder->CreateStore(s_malloc, target_var);
-                    // target decides if the str_copy is performed on string descriptor or pointer.
-                    tmp = lfortran_str_copy(target_var, init_value, ASRUtils::is_descriptorString(v->m_type)); 
-                    if (v->m_intent == intent_local) {
-                        strings_to_be_deallocated.push_back(al, llvm_utils->CreateLoad2(v->m_type, target_var));
-                    }
-                } else {
-                    if (v->m_storage == ASR::storage_typeType::Save
-                        && v->m_value
-                        && (ASR::is_a<ASR::Integer_t>(*v->m_type)
-                        || ASR::is_a<ASR::Real_t>(*v->m_type)
-                        || ASR::is_a<ASR::Logical_t>(*v->m_type))) {
-                        // Do nothing, the value is already initialized
-                        // in the global variable
-                    } else {
-                        builder->CreateStore(init_value, target_var);
-                    }
+                    set_VariableInital_value(v, target_var);
                 }
             } else {
                 if (is_a<ASR::String_t>(*v->m_type) && !is_array_type && !is_list) {
