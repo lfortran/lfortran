@@ -1265,7 +1265,7 @@ static inline ASR::expr_t *instantiate_MaxMinLoc(Allocator &al,
         fill_func_arg("mask", ASRUtils::duplicate_type_with_empty_dims(
             al, arg_types[2], ASR::array_physical_typeType::DescriptorArray, true));
     } else {
-        fill_func_arg("mask", arg_types[2]);
+        fill_func_arg("mask", ASRUtils::duplicate_type_with_empty_dims(al, arg_types[2]));
     }
     fill_func_arg("kind", arg_types[3]);
     fill_func_arg("back", arg_types[4]);
