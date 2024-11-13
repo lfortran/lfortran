@@ -1279,15 +1279,7 @@
                                     (If
                                         (IntegerCompare
                                             (StringLen
-                                                (StringPhysicalCast
-                                                    (Var 6 name)
-                                                    DescriptorString
-                                                    PointerString
-                                                    (Allocatable
-                                                        (String 1 -2 () PointerString)
-                                                    )
-                                                    ()
-                                                )
+                                                (Var 6 name)
                                                 (Integer 4)
                                                 ()
                                             )
@@ -1403,15 +1395,7 @@
                                                 And
                                                 (IntegerCompare
                                                     (StringLen
-                                                        (StringPhysicalCast
-                                                            (Var 6 name)
-                                                            DescriptorString
-                                                            PointerString
-                                                            (Allocatable
-                                                                (String 1 -2 () PointerString)
-                                                            )
-                                                            ()
-                                                        )
+                                                        (Var 6 name)
                                                         (Integer 4)
                                                         ()
                                                     )
