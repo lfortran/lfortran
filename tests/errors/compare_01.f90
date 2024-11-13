@@ -8,5 +8,4 @@ program compare_01
     else
         print *, "New world"
     end if
-    print *, "Passed"
 end program
