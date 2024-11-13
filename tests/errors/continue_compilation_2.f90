@@ -40,45 +40,34 @@ program continue_compilation_2
 
     ! c_f_pointer_01
     call c_f_pointer(queries_1, y_1, [2])
-    print *, "First error skipped"
 
 
     ! c_f_pointer_02
     call c_f_pointer(queries_2, y_2, shape)
-    print *, "Second error skipped"
 
 
     ! assign_01
     x = 1
-    print *, x
-    print *, "Third error skipped"
-
 
     ! class_procedure_extra_args
     myCircle%radius = 5.0
     call myCircle%calculateArea(circleArea, 12)
-    print *, "Fourth error skipped"
 
 
     ! close_invalid_kwarg1
     CLOSE(end=200)
-    print *, "Fifth error skipped"
 
 
     ! cmplx_01
     a = cmplx(y = 2)
-    print *, a
-    print *, "Sixth error skipped"
 
 
     ! cmplx_02
     print*, cmplx((real(1, kind=4), 0.00000000), kind=8)
-    print *, "Seventh error skipped"
 
 
     ! cmplx_03
     print*, cmplx((1.00000000, real(0, kind=4)), kind=8)
-    print *, "Eighth error skipped"
 
 
     ! coarray_01
@@ -88,23 +77,16 @@ program continue_compilation_2
       write(*,*) "The sum is ", val ! prints (n**2 + n)/2,
                                     ! with n = num_images()
     end if
-    print *, "Nine error skipped"
 
 
     ! coarray_02
     call event_query(1, 1, 1)
-    print *, "Tenth error skipped"
 
 
     ! compare_01
     x_2 = 'u'
     i = 10
     if (i > x_2) then
-        print *, "Hello World"
     else
-        print *, "New world"
     end if
-    print *, "Eleventh error skipped"
-
-
 end program
