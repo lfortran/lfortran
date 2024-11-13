@@ -1922,8 +1922,11 @@ public:
             ASR::expr_t* array = array_item->m_v;
             var_ = ASRUtils::EXPR2VAR(array);
             if (ASRUtils::is_array(ASRUtils::expr_type(array))) {
-                throw SemanticError("Duplicate DIMENSION attribute specified",
-                    var_loc);
+                diag.add(diag::Diagnostic(
+                    "Duplicate DIMENSION attribute specified",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {var_loc})}));
+                throw SemanticAbort();
             } else {
                 if (array_item->n_args == 1) {
                     ASR::array_index_t arg = array_item->m_args[0];
@@ -5725,9 +5728,10 @@ public:
         }
         if( ASR::is_a<ASR::Complex_t>(*ASRUtils::expr_type(x_)) ) {
             if( y_ != nullptr ) {
-                diag.add(diag::Diagnostic("The first argument of `cmplx` intrinsic"
-                        " is of complex type, the second argument "
-                        "in this case must be absent",
+                diag.add(diag::Diagnostic(
+                    "The first argument of `cmplx` intrinsic"
+                    " is of complex type, the second argument "
+                    "in this case must be absent",
                     diag::Level::Error, diag::Stage::Semantic, {
                     diag::Label("", {x.base.base.loc})}));
                 throw SemanticAbort();
@@ -6096,7 +6100,11 @@ public:
         atomic_intrinsics = {"atomic_add", "atomic_and", "atomic_cas", "atomic_define", "atomic_fetch_add", "atomic_fetch_and",
             "atomic_fetch_or", "atomic_fetch_xor", "atomic_or", "atomic_ref", "atomic_xor"};
         if (std::find(coarray_intrinsics.begin(), coarray_intrinsics.end(), intrinsic_name) != coarray_intrinsics.end()) {
-            throw SemanticError("Coarrays are not supported yet", loc);
+            diag.add(diag::Diagnostic(
+                    "Coarrays are not supported yet",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {loc})}));
+            throw SemanticAbort();
         } else if (std::find(atomic_intrinsics.begin(), atomic_intrinsics.end(), intrinsic_name) != atomic_intrinsics.end()) {
             diag.add(diag::Diagnostic(
                 "Atomic operations are not supported yet",
