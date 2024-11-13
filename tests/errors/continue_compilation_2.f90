@@ -54,7 +54,6 @@ program continue_compilation_2
     ! class_procedure_extra_args
     myCircle%radius = 5.0
     call myCircle%calculateArea(circleArea, 12)
-    print *, "Circle Area:", circleArea
     print *, "Fourth error skipped"
 
 
@@ -76,7 +75,7 @@ program continue_compilation_2
 
     ! cmplx_03
     print*, cmplx((1.00000000, real(0, kind=4)), kind=8)
-    print*, cmplx((1.00000000, real(0, kind=4)), kind=8)
+    print *, "Eighth error skipped"
 
 
 end program

@@ -26,13 +26,13 @@ semantic error: More actual than formal arguments in procedure call
    |                                 ^^^^^^^^^^^^^^ 
 
 semantic error: Invalid argument `end` supplied
-  --> tests/errors/continue_compilation_2.f90:62:5
+  --> tests/errors/continue_compilation_2.f90:61:5
    |
-62 |     CLOSE(end=200)
+61 |     CLOSE(end=200)
    |     ^^^^^^^^^^^^^^ 
 
 semantic error: The first argument of `cmplx` intrinsic must be present
-  --> tests/errors/continue_compilation_2.f90:67:9
+  --> tests/errors/continue_compilation_2.f90:66:9
    |
-67 |     a = cmplx(y = 2)
+66 |     a = cmplx(y = 2)
    |         ^^^^^^^^^^^^ 
