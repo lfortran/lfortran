@@ -18,6 +18,7 @@ contains
 end module Geometry
 
 program continue_compilation_2
+    use iso_fortran_env
     use iso_c_binding, only: c_ptr, c_f_pointer
     use Geometry
     implicit none
@@ -36,6 +37,12 @@ program continue_compilation_2
     integer :: val
     character(1) :: x_2
     integer :: i
+    integer :: a_2(3)
+    integer :: size_a
+    integer :: a_3(3)
+    integer :: size_a_2
+    integer :: kindvar = 4
+    integer :: atom[*]
 
 
     ! c_f_pointer_01
@@ -89,4 +96,20 @@ program continue_compilation_2
     if (i > x_2) then
     else
     end if
+
+
+    !array_size_02
+    size_a = size(a_2, 1, dim=1)
+    size_a = size(a_2, dim = 1, 1)
+
+
+    !array_size_05
+    size_a_2 = size(a_3, kind=kindvar, dim=1)
+    size_a_2 = size(a_3, kind=kindvar)
+
+
+    !atomic_01
+    call atomic_add (atom[1], this_image())
+    call atomic_add (atom[2], this_image())
+
 end program
