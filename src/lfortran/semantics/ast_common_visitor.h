@@ -5338,7 +5338,7 @@ public:
             if(ASRUtils::is_descriptorString(ASRUtils::expr_type(args.p[i]))){
                 // Any compile-time intrinsic function doesn't need a cast from 
                 // descriptorString to pointerString. Only runtime ones need a cast.
-                if(intrinsic_name != "present"){
+                if(intrinsic_name != "present" && intrinsic_name != "len"){
                     args.p[i] = ASRUtils::cast_string_descriptor_to_pointer(al, args.p[i]);
                 }
             }
@@ -5534,9 +5534,6 @@ public:
         std::vector<std::string> kwarg_names = {"string", "kind"};
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 2, std::string("len"));
         ASR::expr_t *v_Var = args[0], *kind = args[1];
-        if(ASRUtils::is_descriptorString(ASRUtils::expr_type(v_Var))){
-            v_Var = ASRUtils::cast_string_descriptor_to_pointer(al, v_Var);
-        }
         int64_t kind_const = handle_kind(kind);
         ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, kind_const));
         if( ASRUtils::is_array(ASRUtils::expr_type(v_Var)) ) {
