@@ -6,4 +6,5 @@ program test
       write(*,*) "The sum is ", val ! prints (n**2 + n)/2,
                                     ! with n = num_images()
     end if
+    print *, "Hello, World!"
 end program test
