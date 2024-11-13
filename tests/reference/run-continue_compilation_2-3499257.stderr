@@ -1,38 +1,68 @@
 semantic error: shape argument specified in c_f_pointer even though fptr is not an array.
-  --> tests/errors/continue_compilation_2.f90:39:38
+  --> tests/errors/continue_compilation_2.f90:42:38
    |
-39 |     call c_f_pointer(queries_1, y_1, [2])
+42 |     call c_f_pointer(queries_1, y_1, [2])
    |                                      ^^^ 
 
 semantic error: shape array passed to c_f_pointer must be of rank 1 but given rank is 2
-  --> tests/errors/continue_compilation_2.f90:44:38
+  --> tests/errors/continue_compilation_2.f90:47:38
    |
-44 |     call c_f_pointer(queries_2, y_2, shape)
+47 |     call c_f_pointer(queries_2, y_2, shape)
    |                                      ^^^^^ 
 
 semantic error: Cannot assign to a constant variable
-  --> tests/errors/continue_compilation_2.f90:49:5
+  --> tests/errors/continue_compilation_2.f90:52:5
    |
-49 |     x = 1
+52 |     x = 1
    |     ^^^^^ assignment here
    |
 32 |     integer, parameter :: x = 2
    |                           ~~~~~ declared as constant
 
 semantic error: More actual than formal arguments in procedure call
-  --> tests/errors/continue_compilation_2.f90:56:33
+  --> tests/errors/continue_compilation_2.f90:59:33
    |
-56 |     call myCircle%calculateArea(circleArea, 12)
+59 |     call myCircle%calculateArea(circleArea, 12)
    |                                 ^^^^^^^^^^^^^^ 
 
 semantic error: Invalid argument `end` supplied
-  --> tests/errors/continue_compilation_2.f90:61:5
+  --> tests/errors/continue_compilation_2.f90:64:5
    |
-61 |     CLOSE(end=200)
+64 |     CLOSE(end=200)
    |     ^^^^^^^^^^^^^^ 
 
 semantic error: The first argument of `cmplx` intrinsic must be present
-  --> tests/errors/continue_compilation_2.f90:66:9
+  --> tests/errors/continue_compilation_2.f90:69:9
    |
-66 |     a = cmplx(y = 2)
+69 |     a = cmplx(y = 2)
    |         ^^^^^^^^^^^^ 
+
+semantic error: Coarrays are not supported yet
+  --> tests/errors/continue_compilation_2.f90:85:11
+   |
+85 |     val = this_image ()
+   |           ^^^^^^^^^^^^^ 
+
+semantic error: Coarrays are not supported yet
+  --> tests/errors/continue_compilation_2.f90:86:5
+   |
+86 |     call co_sum (val, result_image=1)
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Coarrays are not supported yet
+  --> tests/errors/continue_compilation_2.f90:87:9
+   |
+87 |     if (this_image() == 1) then
+   |         ^^^^^^^^^^^^ 
+
+semantic error: Coarrays are not supported yet
+  --> tests/errors/continue_compilation_2.f90:95:5
+   |
+95 |     call event_query(1, 1, 1)
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Operands of comparison operator are of different types
+   --> tests/errors/continue_compilation_2.f90:102:9
+    |
+102 |     if (i > x_2) then
+    |         ^^^^^^^ 

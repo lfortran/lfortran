@@ -33,6 +33,9 @@ program continue_compilation_2
     type(Circle) :: myCircle
     real :: circleArea
     complex :: a
+    integer :: val
+    character(1) :: x_2
+    integer :: i
 
 
     ! c_f_pointer_01
@@ -76,6 +79,32 @@ program continue_compilation_2
     ! cmplx_03
     print*, cmplx((1.00000000, real(0, kind=4)), kind=8)
     print *, "Eighth error skipped"
+
+
+    ! coarray_01
+    val = this_image ()
+    call co_sum (val, result_image=1)
+    if (this_image() == 1) then
+      write(*,*) "The sum is ", val ! prints (n**2 + n)/2,
+                                    ! with n = num_images()
+    end if
+    print *, "Nine error skipped"
+
+
+    ! coarray_02
+    call event_query(1, 1, 1)
+    print *, "Tenth error skipped"
+
+
+    ! compare_01
+    x_2 = 'u'
+    i = 10
+    if (i > x_2) then
+        print *, "Hello World"
+    else
+        print *, "New world"
+    end if
+    print *, "Eleventh error skipped"
 
 
 end program
