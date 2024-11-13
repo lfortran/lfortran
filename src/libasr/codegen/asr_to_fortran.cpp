@@ -1850,7 +1850,10 @@ public:
 
     // void visit_CLoc(const ASR::CLoc_t &x) {}
 
-    // void visit_PointerToCPtr(const ASR::PointerToCPtr_t &x) {}
+    void visit_PointerToCPtr(const ASR::PointerToCPtr_t &x) {
+        visit_expr(*x.m_arg);
+        src = "c_loc(" + src + ")";
+    }
 
     // void visit_GetPointer(const ASR::GetPointer_t &x) {}
 
