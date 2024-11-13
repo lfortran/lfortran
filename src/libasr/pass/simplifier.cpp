@@ -490,6 +490,26 @@ bool set_allocation_size(
                     }
                     break;
                 }
+                case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Transpose): {
+                    size_t n_dims = ASRUtils::extract_n_dims_from_ttype(intrinsic_array_function->m_type);
+                    LCOMPILERS_ASSERT(n_dims == 2);
+                    allocate_dims.reserve(al, n_dims);
+                    // Transpose swaps the dimensions
+                    for (size_t i = 0; i < n_dims; i++) {
+                        ASR::dimension_t allocate_dim;
+                        allocate_dim.loc = loc;
+                        allocate_dim.m_start = int32_one;
+                        ASR::expr_t* size_i = ASRUtils::EXPR(ASR::make_ArraySize_t(
+                            al, loc, intrinsic_array_function->m_args[0],
+                            ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                                al, loc, n_dims - i, ASRUtils::expr_type(int32_one))),
+                            ASRUtils::expr_type(int32_one), nullptr));
+
+                        allocate_dim.m_length = size_i;
+                        allocate_dims.push_back(al, allocate_dim);
+                    }
+                    break;
+                }
                 default: {
                     LCOMPILERS_ASSERT_MSG(false, "ASR::IntrinsicArrayFunctions::" +
                         ASRUtils::get_array_intrinsic_name(intrinsic_array_function->m_arr_intrinsic_id)
