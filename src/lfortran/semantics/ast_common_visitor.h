@@ -5384,10 +5384,13 @@ public:
 
         ASR::expr_t* kind_value = ASRUtils::expr_value(kind);
         if( kind_value == nullptr ) {
-            throw SemanticError(("Only Integer literals or expressions "
-                                "which reduce to constant Integer are "
-                                "accepted as kind parameters."),
-                                kind->base.loc);
+            diag.add(diag::Diagnostic(
+                "Only Integer literals or expressions "
+                "which reduce to constant Integer are "
+                "accepted as kind parameters.",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {kind->base.loc})}));
+                throw SemanticAbort();
         }
         return ASR::down_cast<ASR::IntegerConstant_t>(kind_value)->m_n;
     }
