@@ -3635,7 +3635,16 @@ public:
                 strings_to_be_deallocated.push_back(al, llvm_utils->CreateLoad2(v->m_type, target_var));
             }
         } else {
-            builder->CreateStore(init_value, target_var);
+            if (v->m_storage == ASR::storage_typeType::Save
+                && v->m_value
+                && (ASR::is_a<ASR::Integer_t>(*v->m_type)
+                || ASR::is_a<ASR::Real_t>(*v->m_type)
+                || ASR::is_a<ASR::Logical_t>(*v->m_type))) {
+                // Do nothing, the value is already initialized
+                // in the global variable
+            } else {
+                builder->CreateStore(init_value, target_var);
+            }
         }
     }
 
