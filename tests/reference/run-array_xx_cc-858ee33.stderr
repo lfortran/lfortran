@@ -1,0 +1,116 @@
+semantic error: Empty array constructor is not allowed
+  --> tests/errors/array_xx_cc.f90:21:5
+   |
+21 | a = []
+   |     ^^ 
+
+semantic error: Empty array constructor is not allowed
+  --> tests/errors/array_xx_cc.f90:25:12
+   |
+25 | print *, [[[], [[]]], [[]], []]
+   |            ^^ 
+
+semantic error: Empty array constructor is not allowed
+  --> tests/errors/array_xx_cc.f90:26:12
+   |
+26 | print *, [[[], [[]]], []]
+   |            ^^ 
+
+semantic error: Rank mismatch in array reference: the array `b` has rank `1`, but is referenced as rank `2`
+  --> tests/errors/array_xx_cc.f90:30:1
+   |
+30 | b(:,:) = 1
+   | ^^^^^^ 
+
+semantic error: Rank mismatch in array reference: the array `b` has rank `1`, but is referenced as rank `2`
+  --> tests/errors/array_xx_cc.f90:31:1
+   |
+31 | b(:,:) = 2
+   | ^^^^^^ 
+
+semantic error: Type member x is not an array so it cannot be indexed.
+  --> tests/errors/array_xx_cc.f90:35:1
+   |
+35 | y%x(:) = 1
+   | ^^^^^^ 
+
+semantic error: Rank mismatch in array reference: the array `str` has rank `1`, but is referenced as rank `2`
+  --> tests/errors/array_xx_cc.f90:39:1
+   |
+39 | str(1, 2)(:) = '1234'
+   | ^^^^^^^^^^^^ 
+
+semantic error: Rank mismatch in array reference: the array `str` has rank `1`, but is referenced as rank `3`
+  --> tests/errors/array_xx_cc.f90:40:1
+   |
+40 | str(1,2,3)(:) = '1234'
+   | ^^^^^^^^^^^^^ 
+
+semantic error: Type-spec cannot contain an asterisk for a type parameter
+  --> tests/errors/array_xx_cc.f90:44:10
+   |
+44 | print *, [character(*) :: "a", "b", "ball", "cat"]
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Type-spec cannot contain an asterisk for a type parameter
+  --> tests/errors/array_xx_cc.f90:45:10
+   |
+45 | print *, [character(*) :: "a2", "b2", "ball2", "cat2"]
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Different shape for array assignment on dimension 1(3 and 2)
+  --> tests/errors/array_xx_cc.f90:49:1
+   |
+49 | x1 = reshape([1,2,3,4],[2,2])
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Different shape for array assignment on dimension 1(3 and 1)
+  --> tests/errors/array_xx_cc.f90:50:1
+   |
+50 | x1 = reshape([1,2,3,4],[1,2])
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Arithmetic if (x) requires an integer or real for `x`
+  --> tests/errors/array_xx_cc.f90:56:5
+   |
+56 | if ("yy") 1, 2, 3
+   |     ^^^^ 
+
+semantic error: Incorrect number of arguments passed to the 'size' intrinsic. It accepts at least 1 and at most 3 arguments.
+  --> tests/errors/array_xx_cc.f90:65:10
+   |
+65 | size_a = size(a1, 1, 4, kind=4)
+   |          ^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Incorrect number of arguments passed to the 'size' intrinsic. It accepts at least 1 and at most 3 arguments.
+  --> tests/errors/array_xx_cc.f90:66:10
+   |
+66 | size_a = size()
+   |          ^^^^^^ 
+
+semantic error: Cannot assign to a constant variable
+  --> tests/errors/array_xx_cc.f90:70:1
+   |
+70 | x3 = 1
+   | ^^^^^^ assignment here
+   |
+11 | integer, parameter :: x3 = 2
+   |                       ~~~~~~ declared as constant
+
+semantic error: The end variable of the data implied do loop must be constants
+  --> tests/errors/array_xx_cc.f90:75:20
+   |
+75 | data(iarx(i), i=1, k) / 1, 2, 3 /
+   |                    ^ 
+
+semantic error: The increment variable of the data implied do loop must be a constant
+  --> tests/errors/array_xx_cc.f90:78:23
+   |
+78 | data(iarx(i), i=1, 3, k) / 1, 2, 3 /
+   |                       ^ 
+
+semantic error: The start variable of the data implied do loop must be constants
+  --> tests/errors/array_xx_cc.f90:81:17
+   |
+81 | data(iarx(i), i=k, 3) / 1, 2, 3 /
+   |                 ^ 

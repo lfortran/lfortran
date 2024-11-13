@@ -1,5 +1,0 @@
-semantic error: Arithmetic if (x) requires an integer or real for `x`
- --> tests/errors/arithmetic_if1_cc.f90:5:9
-  |
-5 |     if ("yy") 1, 2, 3
-  |         ^^^^ 

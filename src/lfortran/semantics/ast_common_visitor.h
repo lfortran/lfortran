@@ -1922,8 +1922,11 @@ public:
             ASR::expr_t* array = array_item->m_v;
             var_ = ASRUtils::EXPR2VAR(array);
             if (ASRUtils::is_array(ASRUtils::expr_type(array))) {
-                throw SemanticError("Duplicate DIMENSION attribute specified",
-                    var_loc);
+                diag.add(diag::Diagnostic(
+                    "Duplicate DIMENSION attribute specified",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {var_loc})}));
+                throw SemanticAbort();
             } else {
                 if (array_item->n_args == 1) {
                     ASR::array_index_t arg = array_item->m_args[0];
@@ -5028,7 +5031,11 @@ public:
         ASRUtils::insert_module_dependency(v, al, current_module_dependencies);
         if (args.size() > func->n_args) {
             const Location args_loc { ASRUtils::get_vec_loc(args) };
-            throw SemanticError("More actual than formal arguments in procedure call", args_loc);
+            diag.add(diag::Diagnostic(
+                    "More actual than formal arguments in procedure call",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {args_loc})}));
+            throw SemanticAbort();
         }
         ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
         legacy_array_sections_helper(v, args, loc);
@@ -5380,10 +5387,13 @@ public:
 
         ASR::expr_t* kind_value = ASRUtils::expr_value(kind);
         if( kind_value == nullptr ) {
-            throw SemanticError(("Only Integer literals or expressions "
-                                "which reduce to constant Integer are "
-                                "accepted as kind parameters."),
-                                kind->base.loc);
+            diag.add(diag::Diagnostic(
+                "Only Integer literals or expressions "
+                "which reduce to constant Integer are "
+                "accepted as kind parameters.",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {kind->base.loc})}));
+                throw SemanticAbort();
         }
         return ASR::down_cast<ASR::IntegerConstant_t>(kind_value)->m_n;
     }
@@ -5710,16 +5720,21 @@ public:
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 3, "cmplx");
         ASR::expr_t *x_ = args[0], *y_ = args[1], *kind = args[2];
         if (x_ == nullptr) {
-            throw SemanticError("The first argument of `cmplx` intrinsic"
-                                " must be present",
-                                x.base.base.loc);
+            diag.add(diag::Diagnostic("The first argument of `cmplx` intrinsic"
+                    " must be present",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
         }
         if( ASR::is_a<ASR::Complex_t>(*ASRUtils::expr_type(x_)) ) {
             if( y_ != nullptr ) {
-                throw SemanticError("The first argument of `cmplx` intrinsic"
-                                    " is of complex type, the second argument "
-                                    "in this case must be absent",
-                                    x.base.base.loc);
+                diag.add(diag::Diagnostic(
+                    "The first argument of `cmplx` intrinsic"
+                    " is of complex type, the second argument "
+                    "in this case must be absent",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {x.base.base.loc})}));
+                throw SemanticAbort();
             }
             if (!ASR::is_a<ASR::Var_t>(*x_)) {
                 const ASR::ComplexConstructor_t* complex_expr = ASR::down_cast<ASR::ComplexConstructor_t>(x_);
@@ -5727,9 +5742,15 @@ public:
                 const ASR::expr_t* imag_part_expr = complex_expr->m_im;
 
                 if (!ASR::is_a<ASR::RealConstant_t>(*real_part_expr)) {
-                    throw SemanticError("Expected a real constant for the real part", x.base.base.loc);
+                    diag.add(diag::Diagnostic("Expected a real constant for the real part",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {x.base.base.loc})}));
+                    throw SemanticAbort();
                 } else if (!ASR::is_a<ASR::RealConstant_t>(*imag_part_expr)) {
-                    throw SemanticError("Expected a real constant for the imaginary part", x.base.base.loc);
+                    diag.add(diag::Diagnostic("Expected a real constant for the imaginary part",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {x.base.base.loc})}));
+                    throw SemanticAbort();
                 }
             }
             return (ASR::asr_t*) x_;
@@ -6079,9 +6100,17 @@ public:
         atomic_intrinsics = {"atomic_add", "atomic_and", "atomic_cas", "atomic_define", "atomic_fetch_add", "atomic_fetch_and",
             "atomic_fetch_or", "atomic_fetch_xor", "atomic_or", "atomic_ref", "atomic_xor"};
         if (std::find(coarray_intrinsics.begin(), coarray_intrinsics.end(), intrinsic_name) != coarray_intrinsics.end()) {
-            throw SemanticError("Coarrays are not supported yet", loc);
+            diag.add(diag::Diagnostic(
+                    "Coarrays are not supported yet",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {loc})}));
+            throw SemanticAbort();
         } else if (std::find(atomic_intrinsics.begin(), atomic_intrinsics.end(), intrinsic_name) != atomic_intrinsics.end()) {
-            throw SemanticError("Atomic operations are not supported yet", loc);
+            diag.add(diag::Diagnostic(
+                "Atomic operations are not supported yet",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {loc})}));
+                throw SemanticAbort();
         }
     }
 

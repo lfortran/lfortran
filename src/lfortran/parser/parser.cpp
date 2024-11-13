@@ -119,7 +119,7 @@ void fix_program_without_program_line(Allocator &al, AST::TranslationUnit_t &ast
 Result<AST::TranslationUnit_t*> parse(Allocator &al, const std::string &s,
         diag::Diagnostics &diagnostics, const CompilerOptions &co)
 {
-    Parser p(al, diagnostics, co.fixed_form);
+    Parser p(al, diagnostics, co.fixed_form, co.continue_compilation);
     try {
         if (!p.parse(s)) {
             return Error();
@@ -181,7 +181,11 @@ bool Parser::parse(const std::string &input)
     }
 
     if (!diag.has_error()) {
-        diag.add(parser_local::ParserError("Parsing unsuccessful (internal compiler error)").d);
+        if (this->continue_compilation) {
+            diag.add(parser_local::ParserError("Parsing unsuccessful (internal compiler error)").d);
+        } else {
+            throw parser_local::ParserError("Parsing unsuccessful (internal compiler error)");
+        }
     }
     return false;
 }
@@ -955,7 +959,11 @@ void Parser::handle_yyerror(const Location &loc, const std::string &msg)
             unsigned int invalid_token = this->f_tokenizer.token_pos;
             if (invalid_token == 0 || invalid_token > f_tokenizer.tokens.size()) {
                 message = "unknown error";
-                diag.add(parser_local::ParserError(message, loc).d);
+                if (this->continue_compilation) {
+                    diag.add(parser_local::ParserError(message, loc).d);
+                } else {
+                    throw parser_local::ParserError(message, loc);
+                }
             }
             invalid_token--;
             LCOMPILERS_ASSERT(invalid_token < f_tokenizer.tokens.size())
@@ -986,7 +994,11 @@ void Parser::handle_yyerror(const Location &loc, const std::string &msg)
     } else {
         message = "Internal Compiler Error: parser returned unknown error";
     }
-    diag.add(parser_local::ParserError(message, loc).d);
+    if (this->continue_compilation) {
+        diag.add(parser_local::ParserError(message, loc).d);
+    } else {
+        throw parser_local::ParserError(message, loc);
+    }
 }
 
 } // namespace LCompilers::LFortran
