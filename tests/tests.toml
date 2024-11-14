@@ -3097,6 +3097,10 @@ filename = "allow_implicit_interface5.f90"
 asr_implicit_interface_and_typing = true
 
 [[test]]
+filename = "implicit_interface_allocatable_array.f90"
+asr_implicit_interface = true
+
+[[test]]
 filename = "implicit_interface2.f90"
 asr_implicit_interface = true
 
