@@ -1,6 +1,6 @@
 program intrinsics_288
 	implicit none
-    
+
     integer, dimension(3) :: source1 = [1, 2, 3]
 	real, dimension(3) :: source2 = [1.0, 2.0, 3.0]
 	logical, dimension(3) :: source3 = [.true., .false., .true.]
@@ -25,14 +25,14 @@ program intrinsics_288
     print *, result
     if (result(1, 1) /= 1 .or. result(1, 2) /= 1 .or. result(2, 1) /= 2 .or. &
         result(2, 2) /= 2 .or. result(3, 1) /= 3 .or. result(3, 2) /= 3) error stop
-    
+
 	print *, spread([1, 4, 5], 2, 2)
 	result = spread([1, 4, 5], 2, 2)
 	print *, result(1, 1)
 	! Does not work yet
-	
+
 	! if (result(1, 1) /= 1 .or. result(1, 2) /= 1 .or. result(2, 1) /= 4 .or. &
-	! 	result(2, 2) /= 4 .or. result(3, 1) /= 5 .or. result(3, 2) /= 5) error stop 
+	! 	result(2, 2) /= 4 .or. result(3, 1) /= 5 .or. result(3, 2) /= 5) error stop
 	print *, spread([1, 2, 3, 4, 5], 1, 2)
 	print *, spread([1.0, 2.0, 3.0], 1, 3)
 	print *, spread([(1, 2), (2, 3)], 1, 2)
@@ -72,9 +72,9 @@ program intrinsics_288
 	result7 = SPREAD(lo, 1, 2)
     print *, result7
     if ( (result7(1) .neqv. .true.) .or. (result7(2) .neqv. .true.) )  error stop
-	
+
 	result8 = SPREAD(rl, 1, 2)
     print *, result8
     if ( abs(result8(1) - 1.0) > 1e-6 .or. abs(result8(2) - 1.0) > 1e-6 ) error stop
-    
+
 end program
