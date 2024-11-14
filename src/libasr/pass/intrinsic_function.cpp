@@ -463,11 +463,11 @@ class ReplaceFunctionCallReturningArrayVisitor : public ASR::CallReplacerOnExpre
         ReplaceFunctionCallReturningArrayVisitor(Allocator& al_,
             std::map<ASR::symbol_t*, ASRUtils::IntrinsicArrayFunctions>& func2intrinsicid_) :
         al(al_),
-        replacer(al_, pass_result, func2intrinsicid_), 
+        replacer(al_, pass_result, func2intrinsicid_),
         parent_body(nullptr) {
             pass_result.n = 0;
         }
-        
+
 
         void call_replacer() {
             replacer.current_expr = current_expr;
@@ -532,6 +532,22 @@ class ReplaceFunctionCallReturningArrayVisitor : public ASR::CallReplacerOnExpre
                 if (x.m_overloaded) {
                     visit_stmt(*x.m_overloaded);
                 }
+
+                if( x.m_value && x.m_target ) {
+                    size_t target_rank = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(x.m_target));
+                    size_t value_rank = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(x.m_value));
+                    if( target_rank != value_rank && target_rank > 0 && value_rank > 0 ) {
+                        ASR::Assignment_t& xx = const_cast<ASR::Assignment_t&>(x);
+                        Vec<ASR::expr_t*> shape_args;
+                        shape_args.reserve(al, 2); shape_args.push_back(al, x.m_target);
+                        shape_args.push_back(al, nullptr);
+                        diag::Diagnostics diags;
+                        ASR::expr_t* target_shape = ASRUtils::EXPR(
+                            ASRUtils::Shape::create_Shape(al, x.m_value->base.loc, shape_args, diags));
+                        xx.m_value = ASRUtils::EXPR(ASR::make_ArrayReshape_t(al, x.m_value->base.loc,
+                            xx.m_value, target_shape, ASRUtils::expr_type(x.m_target), nullptr));
+                    }
+                }
             }
         }
 
@@ -539,13 +555,25 @@ class ReplaceFunctionCallReturningArrayVisitor : public ASR::CallReplacerOnExpre
 
 void pass_replace_intrinsic_function(Allocator &al, ASR::TranslationUnit_t &unit,
                             const LCompilers::PassOptions& /*pass_options*/) {
-    std::map<ASR::symbol_t*, ASRUtils::IntrinsicArrayFunctions> func2intrinsicid;
-    ReplaceIntrinsicFunctionsVisitor v(al, unit.m_symtab, func2intrinsicid);
-    v.visit_TranslationUnit(unit);
-    ReplaceFunctionCallReturningArrayVisitor u(al, func2intrinsicid);
-    u.visit_TranslationUnit(unit);
-    PassUtils::UpdateDependenciesVisitor w(al);
+    #define apply_intrinsic_function_pass_macro std::map<ASR::symbol_t*, ASRUtils::IntrinsicArrayFunctions> func2intrinsicid; \
+    ReplaceIntrinsicFunctionsVisitor v(al, unit.m_symtab, func2intrinsicid); \
+    v.visit_TranslationUnit(unit); \
+    ReplaceFunctionCallReturningArrayVisitor u(al, func2intrinsicid); \
+    u.visit_TranslationUnit(unit); \
+    PassUtils::UpdateDependenciesVisitor w(al); \
     w.visit_TranslationUnit(unit);
+
+    if( !ASRUtils::use_experimental_simplifier ) {
+        {
+            apply_intrinsic_function_pass_macro
+        }
+        {
+            apply_intrinsic_function_pass_macro
+        }
+    } else {
+        apply_intrinsic_function_pass_macro
+    }
+
 }
 
 

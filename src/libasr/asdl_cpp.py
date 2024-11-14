@@ -763,7 +763,10 @@ class CallReplacerOnExpressionsVisitor(ASDLVisitor):
         if is_stmt_present and name not in ("Assignment", "ForAllSingle", "FileRead", "FileWrite"):
             self.emit("    %s_t& xx = const_cast<%s_t&>(x);" % (name, name), 1)
         self.used = False
-        self.insert_call_replacer_on_value_check = True
+        if name != "call_arg":
+            self.insert_call_replacer_on_value_check = True
+        else:
+            self.insert_call_replacer_on_value_check = False
 
         if is_symtab_present:
             self.emit("SymbolTable* current_scope_copy = current_scope;", 2)
@@ -781,14 +784,14 @@ class CallReplacerOnExpressionsVisitor(ASDLVisitor):
         self.emit("}", 1)
 
     def insert_call_replacer_code(self, name, level, opt, index=""):
-        one_or_zero = (name == "value" or name == "symbolic_value") and opt
-        if (name == "value" or name == "symbolic_value") and opt:
+        one_or_zero = (name == "value" or name == "symbolic_value") and opt and self.insert_call_replacer_on_value_check
+        if one_or_zero:
             self.emit("if (call_replacer_on_value) {", level)
         self.emit("ASR::expr_t** current_expr_copy_%d = current_expr;" % (self.current_expr_copy_variable_count), level + one_or_zero)
         self.emit("current_expr = const_cast<ASR::expr_t**>(&(x.m_%s%s));" % (name, index), level + one_or_zero)
         self.emit("self().call_replacer();", level + one_or_zero)
         self.emit("current_expr = current_expr_copy_%d;" % (self.current_expr_copy_variable_count), level + one_or_zero)
-        if (name == "value" or name == "symbolic_value") and opt:
+        if one_or_zero:
             self.emit("}", level)
         self.current_expr_copy_variable_count += 1
 
@@ -1342,7 +1345,7 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
                     self.emit("    head.m_v = duplicate_expr(x->m_head[i].m_v);", level)
                     self.emit("    head.m_start = duplicate_expr(x->m_head[i].m_start);", level)
                     self.emit("    head.m_end = duplicate_expr(x->m_head[i].m_end);", level)
-                    self.emit("    head.m_increment = duplicate_expr(x->m_head[i].m_increment);", level) 
+                    self.emit("    head.m_increment = duplicate_expr(x->m_head[i].m_increment);", level)
                     self.emit("    m_%s.push_back(al, head);" % (field.name), level)
                 else:
                     self.emit("    m_%s.push_back(al, self().duplicate_%s(x->m_%s[i]));" % (field.name, field.type, field.name), level)
