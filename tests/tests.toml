@@ -4350,3 +4350,7 @@ asr = true
 [[test]]
 filename = "errors/init1.f90"
 ast = true
+
+[[test]]
+filename = "../integration_tests/enum_01.f90"
+fortran = true
