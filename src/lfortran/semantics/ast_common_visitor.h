@@ -6448,7 +6448,7 @@ public:
                     // For arrays like A(n, m) we use A(*) in BindC, so that
                     // the C ABI is just a pointer
                     ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(
-                        ASRUtils::type_get_past_allocatable(var_type)
+                        ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(var_type))
                     );
                     var_type = ASRUtils::duplicate_type_with_empty_dims(al, var_type,
                         ( array_type->m_physical_type == ASR::array_physical_typeType::UnboundedPointerToDataArray ) ?

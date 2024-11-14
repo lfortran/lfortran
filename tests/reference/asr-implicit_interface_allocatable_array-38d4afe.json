@@ -2,11 +2,11 @@
     "basename": "asr-implicit_interface_allocatable_array-38d4afe",
     "cmd": "lfortran --show-asr --implicit-interface --no-color {infile} -o {outfile}",
     "infile": "tests/implicit_interface_allocatable_array.f90",
-    "infile_hash": "6377d5c3ca768b2922097f929670903bdf047c2cfd355656dadfc6c5",
+    "infile_hash": "a9a653a2021fb69c16b0b6a01c642010adcbb420c5a2936c34ebd6a1",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "asr-implicit_interface_allocatable_array-38d4afe.stdout",
-    "stdout_hash": "b027c7a57e27b59c653e46b501d1ebf91724564fc8e8f3b65923ebf3",
+    "stdout_hash": "343fca4cbcf2785dbc298a35ef2b2d064a6e729c79800f3013bb700a",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0
