@@ -378,6 +378,9 @@ public:
 
     void visit_Module(const ASR::Module_t &x) {
         std::string r;
+        if (strcmp(x.m_name,"lfortran_intrinsic_iso_c_binding")==0) {
+            return;
+        }
         r = "module";
         r += " ";
         r.append(x.m_name);
@@ -619,7 +622,11 @@ public:
         if (!is_a<ASR::Struct_t>(*sym) && !is_a<ASR::Enum_t>(*sym)) {
             src = indent;
             src += "use ";
-            src.append(x.m_module_name);
+            if (strcmp(x.m_module_name,"lfortran_intrinsic_iso_c_binding")==0) {
+                src += "iso_c_binding";
+            } else {
+                src.append(x.m_module_name);
+            }
             src += ", only: ";
             src.append(x.m_original_name);
             src += "\n";
