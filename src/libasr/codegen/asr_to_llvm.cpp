@@ -6264,6 +6264,13 @@ public:
         ptr_loads = 2 - LLVM::is_llvm_pointer(*ASRUtils::expr_type(x.m_arg));
         this->visit_expr_wrapper(x.m_arg, true);
         ptr_loads = ptr_loads_copy;
+        if(ASRUtils::is_descriptorString(ASRUtils::expr_type(x.m_arg))){
+            llvm::Value* str_size = builder->CreateLoad(llvm::Type::getInt64Ty(context),
+                llvm_utils->create_gep2(string_descriptor, tmp, 1));
+            tmp = builder->CreateSExtOrTrunc(str_size,
+                llvm_utils->get_type_from_ttype_t_util(x.m_type, module.get()));
+            return;
+        }
         llvm::AllocaInst *parg = llvm_utils->CreateAlloca(*builder, character_type);
         builder->CreateStore(tmp, parg);
         ASR::ttype_t* arg_type = ASRUtils::get_contained_type(ASRUtils::expr_type(x.m_arg));
