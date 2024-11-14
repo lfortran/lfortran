@@ -310,6 +310,7 @@ namespace LCompilers {
                 "symbolic",
                 "intrinsic_function",
                 "intrinsic_subroutine",
+                "implied_do_loops",
                 "subroutine_from_function",
                 "array_op",
                 "pass_array_by_data",
