@@ -3481,6 +3481,9 @@ public:
             s2c(al, sym_name), nullptr, 0, m_members.p, m_members.n, abi_type,
             dflt_access, enum_value_type, type, nullptr);
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
+        // Expose all enumerators into the parent scope as ExternalSymbols pointing into the enumeration, which is the semantics of Fortran enums
+        // That way `resolve_variable()` can resolve the automatically.
+        // In ASR->Fortran we do not create any Fortran code for these ExternalSymbols, since they are implicit. But in ASR we need to represent them explicitly.
         for (auto it: current_scope->get_scope()) {
             ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(it.second);
             parent_scope->add_symbol(var->m_name, ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al,
