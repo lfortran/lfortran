@@ -217,7 +217,7 @@ public:
     };
     std::vector<to_be_allocated_array> allocatable_array_details;
     struct variable_inital_value { /* Saves information for variables that need to be initialized once. To be initialized in `program`*/
-        ASR::Variable_t* v;
+        ASR::Variable_t* v;  
         llvm::Value* target_var; // Corresponds to variable `v` in llvm IR.
     };
     std::vector<variable_inital_value> variable_inital_value_vec; /* Saves information for variables that need to be initialized once. To be initialized in `program`*/
@@ -767,9 +767,9 @@ public:
             llvm::Function *fn = module->getFunction(runtime_func_name);
             if (!fn) {
                 llvm::FunctionType *function_type = llvm::FunctionType::get(
-                        llvm::Type::getVoidTy(context),
+                        llvm::Type::getVoidTy(context), 
                         {
-                            llvm::Type::getInt8Ty(context)->getPointerTo()->getPointerTo(),
+                            llvm::Type::getInt8Ty(context)->getPointerTo()->getPointerTo(), 
                             llvm::Type::getInt8Ty(context)->getPointerTo()
                         }, false);
                 fn = llvm::Function::Create(function_type,
@@ -787,9 +787,9 @@ public:
             llvm::Function *fn = module->getFunction(runtime_func_name);
             if (!fn) {
                 llvm::FunctionType *function_type = llvm::FunctionType::get(
-                        llvm::Type::getVoidTy(context),
+                        llvm::Type::getVoidTy(context), 
                         {
-                            llvm::Type::getInt8Ty(context)->getPointerTo()->getPointerTo(),
+                            llvm::Type::getInt8Ty(context)->getPointerTo()->getPointerTo(), 
                             llvm::Type::getInt8Ty(context)->getPointerTo(),
                             llvm::Type::getInt64Ty(context)->getPointerTo(),
                             llvm::Type::getInt64Ty(context)->getPointerTo()
@@ -2911,10 +2911,10 @@ public:
                         type_,
                         x.m_type,
                         ASRUtils::extract_dimensions_from_ttype(x.m_type, m_dims)});
-            }
+            } 
             else if (ASRUtils::is_character(*x.m_type) && !init_value) {
                 // set all members of string_descriptor to null and zeroes.
-                init_value = llvm::ConstantAggregateZero::get(string_descriptor);
+                init_value = llvm::ConstantAggregateZero::get(string_descriptor); 
             }
             if (!external) {
                 if (init_value) {
@@ -3630,7 +3630,7 @@ public:
             string_init(context, *module, *builder, arg_size, s_malloc);
             builder->CreateStore(s_malloc, target_var);
             // target decides if the str_copy is performed on string descriptor or pointer.
-            tmp = lfortran_str_copy(target_var, init_value, ASRUtils::is_descriptorString(v->m_type));
+            tmp = lfortran_str_copy(target_var, init_value, ASRUtils::is_descriptorString(v->m_type)); 
             if (v->m_intent == intent_local) {
                 strings_to_be_deallocated.push_back(al, llvm_utils->CreateLoad2(v->m_type, target_var));
             }
@@ -3755,7 +3755,7 @@ public:
                     bool is_llvm_ptr = false;
                     if ( LLVM::is_llvm_pointer(*v->m_type) &&
                             !ASR::is_a<ASR::ClassType_t>(*ASRUtils::type_get_past_pointer(
-                            ASRUtils::type_get_past_allocatable(v->m_type))) &&
+                            ASRUtils::type_get_past_allocatable(v->m_type))) && 
                             !ASRUtils::is_descriptorString(v->m_type) ) {
                         is_llvm_ptr = true;
                     }
@@ -3838,10 +3838,10 @@ public:
             }
             if( init_expr != nullptr && !is_list) {
                 target_var = ptr;
-                if(v->m_storage == ASR::storage_typeType::Save &&
+                if(v->m_storage == ASR::storage_typeType::Save && 
                     ASR::is_a<ASR::Function_t>(
                         *ASR::down_cast<ASR::symbol_t>(v->m_parent_symtab->asr_owner))){
-                    variable_inital_value_vec.push_back({v, target_var});
+                    variable_inital_value_vec.push_back({v, target_var});   
                 } else {
                     set_VariableInital_value(v, target_var);
                 }
@@ -5047,7 +5047,7 @@ public:
                             lhs_is_string_arrayref = true;
                         }
                     }
-                } else if(is_a<ASR::StringPhysicalCast_t>(*asr_target0->m_arg)){ // implies that target is character + n_dim = 0.
+                } else if(is_a<ASR::StringPhysicalCast_t>(*asr_target0->m_arg)){ // implies that target is character + n_dim = 0.   
                     lhs_is_string_arrayref = true;
                 }
             } else if (is_a<ASR::ArraySection_t>(*x.m_target)) {
@@ -6362,7 +6362,7 @@ public:
                 llvm::APInt(32, 1));
         }
         int x_step_kind = (ASRUtils::extract_kind_from_ttype_t(down_cast<ASR::IntegerConstant_t>(x.m_step)->m_type));
-        if(!x.m_start && !x.m_end && !x.m_step){
+        if(!x.m_start && !x.m_end && !x.m_step){ 
             tmp = str; // no need for slicing
         } else {
             if (x_step_kind == 8) {
@@ -6375,7 +6375,7 @@ public:
 
     void visit_StringPhysicalCast(const ASR::StringPhysicalCast_t &x){
         int64_t ptr_loads_copy = ptr_loads;
-        if( x.m_old == ASR::string_physical_typeType::DescriptorString &&
+        if( x.m_old == ASR::string_physical_typeType::DescriptorString && 
             x.m_new == ASR::string_physical_typeType::PointerString){
             ptr_loads = 0;
             this->visit_expr(*x.m_arg);
@@ -6385,7 +6385,7 @@ public:
             } else {
                 tmp = fetched_ptr;
             }
-        } else if ( x.m_old == ASR::string_physical_typeType::PointerString &&
+        } else if ( x.m_old == ASR::string_physical_typeType::PointerString && 
             x.m_new == ASR::string_physical_typeType::DescriptorString){
             // Create string descriptor and fetch its char*, size, capacity
             llvm::Value* string_desc = llvm_utils->CreateAlloca(*builder, string_descriptor, nullptr,"casted_string_ptr_to_desc");
@@ -6399,8 +6399,8 @@ public:
             // Store char*, size, capacity
             builder->CreateStore(tmp, char_ptr);
             builder->CreateStore(llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), -1), string_size_ptr);
-            builder->CreateStore(llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), -1), string_capacity_ptr);
-            tmp = string_desc;
+            builder->CreateStore(llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), -1), string_capacity_ptr);            
+            tmp = string_desc; 
         }
         ptr_loads = ptr_loads_copy;
     }
@@ -6793,11 +6793,6 @@ public:
 
     template <typename T>
     void visit_ArrayConstructorUtil(const T& x) {
-        if (x.m_value) {
-            this->visit_expr_wrapper(x.m_value, true);
-            return;
-        }
-
         llvm::Type* el_type = nullptr;
         ASR::ttype_t* x_m_type = ASRUtils::type_get_past_array(x.m_type);
         if (ASR::is_a<ASR::Integer_t>(*x_m_type)) {
@@ -8157,7 +8152,7 @@ public:
         }
         this->visit_expr_wrapper(x.m_unit);
         ptr_loads = ptr_loads_copy;
-
+        
         // Set string_size, string_capacity to be used if lfortran_string_write will be used.
         llvm::Value* string_size, *string_capacity;
         if(!is_string){
@@ -8170,12 +8165,12 @@ public:
 
             } else {
                 unit = tmp;
-                llvm::Value* negative_one_constant = builder->CreateAlloca(llvm::Type::getInt64Ty(context), nullptr, "negative_one_constant");
+                llvm::Value* negative_one_constant = builder->CreateAlloca(llvm::Type::getInt64Ty(context), nullptr, "negative_one_constant"); 
                 builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(64, -1, true)), negative_one_constant);
                 string_size = negative_one_constant;
                 string_capacity = negative_one_constant;
             }
-        }
+        } 
 
         if (x.m_iostat) {
             int ptr_copy = ptr_loads;
@@ -9010,7 +9005,7 @@ public:
                                 if( !ASR::is_a<ASR::CPtr_t>(*arg_type) &&
                                     !(orig_arg && !LLVM::is_llvm_pointer(*orig_arg->m_type) &&
                                     LLVM::is_llvm_pointer(*arg_type) &&
-                                    !ASRUtils::is_character(*orig_arg->m_type) &&
+                                    !ASRUtils::is_character(*orig_arg->m_type) && 
                                     ASRUtils::is_descriptorString(arg_type)) && !ASR::is_a<ASR::StructInstanceMember_t>(*x.m_args[i].m_value) ) {
                                     llvm::AllocaInst *target = llvm_utils->CreateAlloca(
                                         target_type, nullptr, "call_arg_value");
