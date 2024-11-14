@@ -886,8 +886,7 @@ class ASRBuilder {
     }
 
     ASR::stmt_t *Assignment(ASR::expr_t *lhs, ASR::expr_t *rhs) {
-        LCOMPILERS_ASSERT_MSG(check_equal_type(expr_type(lhs), expr_type(rhs)),
-            type_to_str_python(expr_type(lhs)) + ", " + type_to_str_python(expr_type(rhs)));
+        LCOMPILERS_ASSERT(check_equal_type(expr_type(lhs), expr_type(rhs)));
         return STMT(ASR::make_Assignment_t(al, loc, lhs, rhs, nullptr));
     }
 
