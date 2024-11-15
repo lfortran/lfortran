@@ -2553,7 +2553,7 @@ static inline ASR::asr_t* make_ArraySize_t_util(
                 break;
             }
         }
-    } 
+    }
     if( ASR::is_a<ASR::ArraySection_t>(*a_v) ) {
         ASR::ArraySection_t* array_section_t = ASR::down_cast<ASR::ArraySection_t>(a_v);
         if( a_dim == nullptr ) {
@@ -2632,7 +2632,7 @@ static inline ASR::asr_t* make_ArraySize_t_util(
             }
         }
     }
-    
+
 
     if( for_type ) {
         LCOMPILERS_ASSERT_MSG(
@@ -2914,7 +2914,7 @@ static inline void set_absent_optional_arguments_to_null(
 static inline bool is_descriptorString(ASR::ttype_t* t){
     return is_character(*t) &&
         ASR::down_cast<ASR::String_t>(
-        ASRUtils::type_get_past_array_pointer_allocatable(t))->m_physical_type == ASR::string_physical_typeType::DescriptorString; 
+        ASRUtils::type_get_past_array_pointer_allocatable(t))->m_physical_type == ASR::string_physical_typeType::DescriptorString;
 }
 
 // Create `StringPhysicalCast` node from  `PointerString` --> `DescriptorString`.
@@ -5743,6 +5743,7 @@ inline ASR::asr_t* make_ArrayConstructor_t_util(Allocator &al, const Location &a
         }
         value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, a_loc, n_data, data, new_type, a_storage_format));
     }
+
     return is_array_item_constant && all_expr_evaluated ? (ASR::asr_t*) value :
             ASR::make_ArrayConstructor_t(al, a_loc, a_args, n_args, a_type,
             value, a_storage_format);

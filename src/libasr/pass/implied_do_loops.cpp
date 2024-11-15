@@ -35,9 +35,9 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
         bool realloc_lhs_, bool allocate_target_) :
     al(al_), pass_result(pass_result_),
     remove_original_statement(remove_original_statement_),
-    current_scope(nullptr), 
+    current_scope(nullptr),
     result_var(nullptr), result_counter(0),
-    resultvar2value(resultvar2value_), 
+    resultvar2value(resultvar2value_),
     realloc_lhs(realloc_lhs_), allocate_target(allocate_target_) {}
 
     ASR::expr_t* get_ImpliedDoLoop_size(ASR::ImpliedDoLoop_t* implied_doloop) {
@@ -564,7 +564,7 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                     args.reserve(al, 1);
                     args.push_back(al, x->m_values[i]);
                     ASR::expr_t* fmt_val = ASRUtils::EXPR(ASR::make_StringFormat_t(al,x->base.base.loc, nullptr,
-                        args.p, 1,ASR::string_format_kindType::FormatFortran, 
+                        args.p, 1,ASR::string_format_kindType::FormatFortran,
                         ASRUtils::TYPE(ASR::make_String_t(al,x->base.base.loc,-1,-1,nullptr, ASR::string_physical_typeType::PointerString)), nullptr));
                     print_values.push_back(al, fmt_val);
                     if ( print ) {

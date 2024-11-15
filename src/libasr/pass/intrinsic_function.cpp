@@ -463,11 +463,11 @@ class ReplaceFunctionCallReturningArrayVisitor : public ASR::CallReplacerOnExpre
         ReplaceFunctionCallReturningArrayVisitor(Allocator& al_,
             std::map<ASR::symbol_t*, ASRUtils::IntrinsicArrayFunctions>& func2intrinsicid_) :
         al(al_),
-        replacer(al_, pass_result, func2intrinsicid_), 
+        replacer(al_, pass_result, func2intrinsicid_),
         parent_body(nullptr) {
             pass_result.n = 0;
         }
-        
+
 
         void call_replacer() {
             replacer.current_expr = current_expr;
