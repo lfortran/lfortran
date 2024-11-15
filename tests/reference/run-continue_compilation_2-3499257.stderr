@@ -103,8 +103,26 @@ semantic error: Atomic operations are not supported yet
 86 |     call atomic_add (atom[2], this_image())
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: Element in `real(8)` array constructor is `real(4)`
-  --> tests/errors/continue_compilation_2.f90:89:20
+semantic error: Type-spec cannot contain an asterisk for a type parameter
+  --> tests/errors/continue_compilation_2.f90:88:14
    |
-89 |     print *, [x_3, [1., 2.]]
+88 |     print *, [character(*) :: "a", "b", "ball", "cat"]
+   |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Element in `real(8)` array constructor is `real(4)`
+  --> tests/errors/continue_compilation_2.f90:91:20
+   |
+91 |     print *, [x_3, [1., 2.]]
    |                    ^^^^^^^^ 
+
+semantic error: Element in `integer(4)` array constructor is `real(4)`
+  --> tests/errors/continue_compilation_2.f90:93:18
+   |
+93 |     print *, [1, 2.]
+   |                  ^^ 
+
+semantic error: Element in `integer(4)` array constructor is `real(4)`
+  --> tests/errors/continue_compilation_2.f90:95:18
+   |
+95 |     print *, [1, [1., 2.]]
+   |                  ^^^^^^^^ 

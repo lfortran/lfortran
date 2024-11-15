@@ -84,11 +84,14 @@ program continue_compilation_2
     !atomic_01
     call atomic_add (atom[1], this_image())
     call atomic_add (atom[2], this_image())
+    !array_constructor_with_asterisk_in_type_spec
+    print *, [character(*) :: "a", "b", "ball", "cat"]
     !array_constructor_with_different_kind
     allocate(x_3(4))
     print *, [x_3, [1., 2.]]
-
-
-
+    !array_constructor_with_different_types
+    print *, [1, 2.]
+    !array_constructor_with_integer_real_array_types
+    print *, [1, [1., 2.]]
 
 end program
