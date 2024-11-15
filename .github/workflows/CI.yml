@@ -1276,7 +1276,7 @@ jobs:
           environment-file: ci/environment_linux.yml
           create-args: >-
             llvm-openmp
-            nodejs=18.13.0
+            nodejs=18.20.4
             python=3.10
 
       - uses: hendrikmuhs/ccache-action@main
