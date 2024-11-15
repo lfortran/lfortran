@@ -7388,7 +7388,7 @@ public:
             } else {
                 is_coarray_or_atomic(remote_sym, loc);
                 throw SemanticError("Function '" + remote_sym + "' not found"
-                    " or not implemented yet (if it is intrinsic)",
+                    " (not user defined nor intrinsic)",
                     loc);
             }
         }
