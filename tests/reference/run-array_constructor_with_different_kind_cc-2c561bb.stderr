@@ -1,0 +1,5 @@
+semantic error: Element in `real(8)` array constructor is `real(4)`
+ --> tests/errors/array_constructor_with_different_kind_cc.f90:4:18
+  |
+4 |     print *, [x, [1., 2.]]
+  |                  ^^^^^^^^ 

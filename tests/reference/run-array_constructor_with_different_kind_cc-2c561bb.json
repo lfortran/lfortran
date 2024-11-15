@@ -1,0 +1,13 @@
+{
+    "basename": "run-array_constructor_with_different_kind_cc-2c561bb",
+    "cmd": "lfortran --continue-compilation --no-color {infile}",
+    "infile": "tests/errors/array_constructor_with_different_kind_cc.f90",
+    "infile_hash": "6761a9c655c840ee4f33cfcc29947e1c21378a7140f5591a57d19e33",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "run-array_constructor_with_different_kind_cc-2c561bb.stdout",
+    "stdout_hash": "a779ee4f7341ddce58a41cee3d249ecf1b37216d7d4f16eb4e0f528e",
+    "stderr": "run-array_constructor_with_different_kind_cc-2c561bb.stderr",
+    "stderr_hash": "3dc27727b8f0ae28f8337d0f14b99e56044f8f0b55dd557f8ab9d3d3",
+    "returncode": 1
+}
