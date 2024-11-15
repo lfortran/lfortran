@@ -4034,10 +4034,6 @@ filename = "errors/array_constructor_with_different_kind.f90"
 asr = true
 
 [[test]]
-filename = "errors/array_constructor_with_different_kind_cc.f90"
-continue_compilation = true
-
-[[test]]
 filename = "errors/array_constructor_with_asterisk_in_type_spec.f90"
 asr = true
 

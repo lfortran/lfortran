@@ -1,104 +1,110 @@
 semantic error: shape argument specified in c_f_pointer even though fptr is not an array.
-  --> tests/errors/continue_compilation_2.f90:47:38
+  --> tests/errors/continue_compilation_2.f90:48:38
    |
-47 |     call c_f_pointer(queries_1, y_1, [2])
+48 |     call c_f_pointer(queries_1, y_1, [2])
    |                                      ^^^ 
 
 semantic error: shape array passed to c_f_pointer must be of rank 1 but given rank is 2
-  --> tests/errors/continue_compilation_2.f90:49:38
+  --> tests/errors/continue_compilation_2.f90:50:38
    |
-49 |     call c_f_pointer(queries_2, y_2, shape)
+50 |     call c_f_pointer(queries_2, y_2, shape)
    |                                      ^^^^^ 
 
 semantic error: Cannot assign to a constant variable
-  --> tests/errors/continue_compilation_2.f90:51:5
+  --> tests/errors/continue_compilation_2.f90:52:5
    |
-51 |     x = 1
+52 |     x = 1
    |     ^^^^^ assignment here
    |
 32 |     integer, parameter :: x = 2
    |                           ~~~~~ declared as constant
 
 semantic error: More actual than formal arguments in procedure call
-  --> tests/errors/continue_compilation_2.f90:54:33
+  --> tests/errors/continue_compilation_2.f90:55:33
    |
-54 |     call myCircle%calculateArea(circleArea, 12)
+55 |     call myCircle%calculateArea(circleArea, 12)
    |                                 ^^^^^^^^^^^^^^ 
 
 semantic error: Invalid argument `end` supplied
-  --> tests/errors/continue_compilation_2.f90:56:5
+  --> tests/errors/continue_compilation_2.f90:57:5
    |
-56 |     CLOSE(end=200)
+57 |     CLOSE(end=200)
    |     ^^^^^^^^^^^^^^ 
 
 semantic error: The first argument of `cmplx` intrinsic must be present
-  --> tests/errors/continue_compilation_2.f90:58:9
+  --> tests/errors/continue_compilation_2.f90:59:9
    |
-58 |     a = cmplx(y = 2)
+59 |     a = cmplx(y = 2)
    |         ^^^^^^^^^^^^ 
 
 semantic error: Coarrays are not supported yet
-  --> tests/errors/continue_compilation_2.f90:64:11
+  --> tests/errors/continue_compilation_2.f90:65:11
    |
-64 |     val = this_image ()
+65 |     val = this_image ()
    |           ^^^^^^^^^^^^^ 
 
 semantic error: Coarrays are not supported yet
-  --> tests/errors/continue_compilation_2.f90:65:5
+  --> tests/errors/continue_compilation_2.f90:66:5
    |
-65 |     call co_sum (val, result_image=1)
+66 |     call co_sum (val, result_image=1)
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Coarrays are not supported yet
-  --> tests/errors/continue_compilation_2.f90:66:9
+  --> tests/errors/continue_compilation_2.f90:67:9
    |
-66 |     if (this_image() == 1) then
+67 |     if (this_image() == 1) then
    |         ^^^^^^^^^^^^ 
 
 semantic error: Coarrays are not supported yet
-  --> tests/errors/continue_compilation_2.f90:70:5
+  --> tests/errors/continue_compilation_2.f90:71:5
    |
-70 |     call event_query(1, 1, 1)
+71 |     call event_query(1, 1, 1)
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Operands of comparison operator are of different types
-  --> tests/errors/continue_compilation_2.f90:74:9
+  --> tests/errors/continue_compilation_2.f90:75:9
    |
-74 |     if (i > x_2) then
+75 |     if (i > x_2) then
    |         ^^^^^^^ 
-
-semantic error: dim has already been specified as a positional/keyword argument to size
-  --> tests/errors/continue_compilation_2.f90:78:14
-   |
-78 |     size_a = size(a_2, 1, dim=1)
-   |              ^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: dim has already been specified as a positional/keyword argument to size
   --> tests/errors/continue_compilation_2.f90:79:14
    |
-79 |     size_a = size(a_2, dim = 1, 1)
-   |              ^^^^^^^^^^^^^^^^^^^^^ 
+79 |     size_a = size(a_2, 1, dim=1)
+   |              ^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: Only Integer literals or expressions which reduce to constant Integer are accepted as kind parameters.
-  --> tests/errors/continue_compilation_2.f90:81:31
+semantic error: dim has already been specified as a positional/keyword argument to size
+  --> tests/errors/continue_compilation_2.f90:80:14
    |
-81 |     size_a_2 = size(a_3, kind=kindvar, dim=1)
-   |                               ^^^^^^^ 
+80 |     size_a = size(a_2, dim = 1, 1)
+   |              ^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Only Integer literals or expressions which reduce to constant Integer are accepted as kind parameters.
   --> tests/errors/continue_compilation_2.f90:82:31
    |
-82 |     size_a_2 = size(a_3, kind=kindvar)
+82 |     size_a_2 = size(a_3, kind=kindvar, dim=1)
    |                               ^^^^^^^ 
 
-semantic error: Atomic operations are not supported yet
-  --> tests/errors/continue_compilation_2.f90:84:5
+semantic error: Only Integer literals or expressions which reduce to constant Integer are accepted as kind parameters.
+  --> tests/errors/continue_compilation_2.f90:83:31
    |
-84 |     call atomic_add (atom[1], this_image())
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+83 |     size_a_2 = size(a_3, kind=kindvar)
+   |                               ^^^^^^^ 
 
 semantic error: Atomic operations are not supported yet
   --> tests/errors/continue_compilation_2.f90:85:5
    |
-85 |     call atomic_add (atom[2], this_image())
+85 |     call atomic_add (atom[1], this_image())
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Atomic operations are not supported yet
+  --> tests/errors/continue_compilation_2.f90:86:5
+   |
+86 |     call atomic_add (atom[2], this_image())
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Element in `real(8)` array constructor is `real(4)`
+  --> tests/errors/continue_compilation_2.f90:89:20
+   |
+89 |     print *, [x_3, [1., 2.]]
+   |                    ^^^^^^^^ 
