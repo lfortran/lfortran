@@ -378,7 +378,7 @@ public:
 
     void visit_Module(const ASR::Module_t &x) {
         std::string r;
-        if (strcmp(x.m_name,"lfortran_intrinsic_iso_c_binding")==0) {
+        if (strcmp(x.m_name,"lfortran_intrinsic_iso_c_binding")==0 && x.m_intrinsic) {
             return;
         }
         r = "module";
