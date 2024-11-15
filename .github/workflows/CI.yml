@@ -464,7 +464,6 @@ jobs:
             bison=3.4
             openblas=0.3.21
             llvm-openmp=14.0.4
-            cmake=3.26.4
             make=4.3
 
       - uses: hendrikmuhs/ccache-action@main
@@ -849,7 +848,6 @@ jobs:
             bison=3.4
             openblas=0.3.21
             llvm-openmp=14.0.4
-            cmake=3.26.4
             make=4.3
             nodejs=18.20.4
 
@@ -864,7 +862,6 @@ jobs:
             bison=3.4
             openblas=0.3.21
             llvm-openmp=14.0.4
-            cmake=3.26.4
             make=4.3
             nodejs=18.13.0
         
@@ -879,7 +876,6 @@ jobs:
             bison=3.4
             openblas=0.3.21
             llvm-openmp=14.0.4
-            cmake=3.26.4
             make=4.3
 
       - uses: hendrikmuhs/ccache-action@main
