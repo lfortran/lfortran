@@ -389,8 +389,12 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
 
     void replace_ArrayPhysicalCast(ASR::ArrayPhysicalCast_t* x) {
         ASR::BaseExprReplacer<ReplaceArrayConstant>::replace_ArrayPhysicalCast(x);
-        // TODO: Allow for DescriptorArray to DescriptorArray physical cast for allocatables
-        // later on
+        if( ASRUtils::use_experimental_simplifier ) {
+            if( x->m_old != ASRUtils::extract_physical_type(ASRUtils::expr_type(x->m_arg)) ) {
+                x->m_old = ASRUtils::extract_physical_type(ASRUtils::expr_type(x->m_arg));
+            }
+        }
+
         if( (x->m_old == x->m_new &&
              x->m_old != ASR::array_physical_typeType::DescriptorArray) ||
             (x->m_old == x->m_new && x->m_old == ASR::array_physical_typeType::DescriptorArray &&
@@ -432,6 +436,10 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
         replacer(al_, pass_result, remove_original_statement,
             resultvar2value, realloc_lhs_, allocate_target),
         parent_body(nullptr) {
+            if( ASRUtils::use_experimental_simplifier ) {
+                call_replacer_on_value = false;
+                replacer.call_replacer_on_value = false;
+            }
             pass_result.n = 0;
             pass_result.reserve(al, 0);
             print = false, file_write = false;

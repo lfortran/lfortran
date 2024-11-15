@@ -5711,6 +5711,9 @@ inline ASR::asr_t* make_ArrayConstructor_t_util(Allocator &al, const Location &a
                                 ASR::is_a<ASR::StringConstant_t>(*a_args[0]) ||
                                 ASR::is_a<ASR::IntegerUnaryMinus_t>(*a_args[0]) ||
                                 ASR::is_a<ASR::RealUnaryMinus_t>(*a_args[0]));
+    if( ASRUtils::use_experimental_simplifier && n_args > 0 ) {
+        is_array_item_constant = is_array_item_constant || ASR::is_a<ASR::ArrayConstant_t>(*a_args[0]);
+    }
     ASR::expr_t* value = nullptr;
     for (size_t i = 0; i < n_args; i++) {
         ASR::expr_t* a_value = ASRUtils::expr_value(a_args[i]);

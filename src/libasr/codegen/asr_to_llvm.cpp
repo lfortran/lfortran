@@ -6793,6 +6793,13 @@ public:
 
     template <typename T>
     void visit_ArrayConstructorUtil(const T& x) {
+        if( ASRUtils::use_experimental_simplifier ) {
+            if (x.m_value) {
+                this->visit_expr_wrapper(x.m_value, true);
+                return;
+            }
+        }
+
         llvm::Type* el_type = nullptr;
         ASR::ttype_t* x_m_type = ASRUtils::type_get_past_array(x.m_type);
         if (ASR::is_a<ASR::Integer_t>(*x_m_type)) {
