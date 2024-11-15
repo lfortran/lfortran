@@ -532,6 +532,26 @@ class ReplaceFunctionCallReturningArrayVisitor : public ASR::CallReplacerOnExpre
                 if (x.m_overloaded) {
                     visit_stmt(*x.m_overloaded);
                 }
+
+                /*
+                Uncomment in case we encounter a case where target and value ranks are different.
+                Can be used in a pass where expressions are replaced with their compile time values.
+                if( x.m_value && x.m_target ) {
+                    size_t target_rank = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(x.m_target));
+                    size_t value_rank = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(x.m_value));
+                    if( target_rank != value_rank && target_rank > 0 && value_rank > 0 ) {
+                        ASR::Assignment_t& xx = const_cast<ASR::Assignment_t&>(x);
+                        Vec<ASR::expr_t*> shape_args;
+                        shape_args.reserve(al, 2); shape_args.push_back(al, x.m_target);
+                        shape_args.push_back(al, nullptr);
+                        diag::Diagnostics diags;
+                        ASR::expr_t* target_shape = ASRUtils::EXPR(
+                            ASRUtils::Shape::create_Shape(al, x.m_value->base.loc, shape_args, diags));
+                        xx.m_value = ASRUtils::EXPR(ASR::make_ArrayReshape_t(al, x.m_value->base.loc,
+                            xx.m_value, target_shape, ASRUtils::expr_type(x.m_target), nullptr));
+                    }
+                }
+                */
             }
         }
 
