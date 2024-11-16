@@ -619,20 +619,23 @@ public:
     void visit_ExternalSymbol(const ASR::ExternalSymbol_t &x) {
         ASR::symbol_t *sym = down_cast<ASR::symbol_t>(
             ASRUtils::symbol_parent_symtab(x.m_external)->asr_owner);
+        if (strcmp(x.m_module_name,"lfortran_intrinsic_iso_c_binding")==0) {
+            SymbolTable* st = ASRUtils::symbol_parent_symtab(sym);
+            ASR::symbol_t *sym = st->resolve_symbol("iso_c_binding");
+            if ( sym && ASR::is_a<ASR::Module_t>(*sym) && ASR::down_cast<ASR::Module_t>(sym)->m_intrinsic) {
+                src = indent;
+                src += "use ";
+                src += "iso_c_binding";
+                src += ", only: ";
+                src.append(x.m_original_name);
+                src += "\n";
+                return;
+            }
+        }
         if (!is_a<ASR::Struct_t>(*sym) && !is_a<ASR::Enum_t>(*sym)) {
             src = indent;
             src += "use ";
-            if (strcmp(x.m_module_name,"lfortran_intrinsic_iso_c_binding")==0) {
-                SymbolTable* st = ASRUtils::symbol_parent_symtab(sym);
-                ASR::symbol_t *sym = st->resolve_symbol(x.m_original_name);
-                if (sym && ASR::is_a<ASR::Module_t>(*sym) && ASR::down_cast<ASR::Module_t>(sym)->m_intrinsic) {
-                    src += "iso_c_binding";
-                } else {
-                    src.append(x.m_module_name);
-                }
-        } else {
-                src.append(x.m_module_name);
-            }
+            src.append(x.m_module_name);
             src += ", only: ";
             src.append(x.m_original_name);
             src += "\n";
