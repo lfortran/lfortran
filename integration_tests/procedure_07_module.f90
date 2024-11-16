@@ -1,13 +1,14 @@
 ! test to ensure that class procedure without "deferred"
 ! and without implementation doesn't raise semantic error
-module procedure_without_deferred_impl
+! this is an MRE extracted from 'neural-fortran' repository
+module procedure_07_module
     implicit none
 
     private
 
     public :: layer
 
-    type, abstract :: layer
+    type :: layer
         real, allocatable :: weights(:)
         real :: learning_rate = 0.01
 
