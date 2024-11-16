@@ -35,9 +35,9 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
         bool realloc_lhs_, bool allocate_target_) :
     al(al_), pass_result(pass_result_),
     remove_original_statement(remove_original_statement_),
-    current_scope(nullptr), 
+    current_scope(nullptr),
     result_var(nullptr), result_counter(0),
-    resultvar2value(resultvar2value_), 
+    resultvar2value(resultvar2value_),
     realloc_lhs(realloc_lhs_), allocate_target(allocate_target_) {}
 
     ASR::expr_t* get_ImpliedDoLoop_size(ASR::ImpliedDoLoop_t* implied_doloop) {
@@ -389,8 +389,12 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
 
     void replace_ArrayPhysicalCast(ASR::ArrayPhysicalCast_t* x) {
         ASR::BaseExprReplacer<ReplaceArrayConstant>::replace_ArrayPhysicalCast(x);
-        // TODO: Allow for DescriptorArray to DescriptorArray physical cast for allocatables
-        // later on
+        if( ASRUtils::use_experimental_simplifier ) {
+            if( x->m_old != ASRUtils::extract_physical_type(ASRUtils::expr_type(x->m_arg)) ) {
+                x->m_old = ASRUtils::extract_physical_type(ASRUtils::expr_type(x->m_arg));
+            }
+        }
+
         if( (x->m_old == x->m_new &&
              x->m_old != ASR::array_physical_typeType::DescriptorArray) ||
             (x->m_old == x->m_new && x->m_old == ASR::array_physical_typeType::DescriptorArray &&
@@ -432,6 +436,10 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
         replacer(al_, pass_result, remove_original_statement,
             resultvar2value, realloc_lhs_, allocate_target),
         parent_body(nullptr) {
+            if( ASRUtils::use_experimental_simplifier ) {
+                call_replacer_on_value = false;
+                replacer.call_replacer_on_value = false;
+            }
             pass_result.n = 0;
             pass_result.reserve(al, 0);
             print = false, file_write = false;
@@ -556,7 +564,7 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                     args.reserve(al, 1);
                     args.push_back(al, x->m_values[i]);
                     ASR::expr_t* fmt_val = ASRUtils::EXPR(ASR::make_StringFormat_t(al,x->base.base.loc, nullptr,
-                        args.p, 1,ASR::string_format_kindType::FormatFortran, 
+                        args.p, 1,ASR::string_format_kindType::FormatFortran,
                         ASRUtils::TYPE(ASR::make_String_t(al,x->base.base.loc,-1,-1,nullptr, ASR::string_physical_typeType::PointerString)), nullptr));
                     print_values.push_back(al, fmt_val);
                     if ( print ) {

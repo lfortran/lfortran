@@ -1,10 +1,10 @@
-program intrinsics_326 
+program intrinsics_326
 integer :: A(3)
 A = [1, 9, -1]
 call temp(A)
 contains
 subroutine temp(xpt)
-    integer, intent(in) :: xpt(:) 
+    integer, intent(in) :: xpt(:)
     logical :: y(size(xpt))
     integer :: iubd
     real :: subd_test(size(xpt))
