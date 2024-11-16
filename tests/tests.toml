@@ -2645,6 +2645,10 @@ asr = true
 llvm = true
 
 [[test]]
+filename = "procedure_without_deferred_impl.f90"
+asr = true
+
+[[test]]
 filename = "print1.f90"
 ast = true
 ast_f90 = true

@@ -2135,10 +2135,6 @@ public:
                     }
                 }
                 ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(proc_sym);
-                if (!is_deferred &&
-                    ASRUtils::get_FunctionType(*func)->m_deftype == ASR::deftypeType::Interface) {
-                    throw SemanticError("PROCEDURE(interface) should be declared DEFERRED", loc);
-                }
                 Str s;
                 s.from_str_view(pname.first);
                 char *name = s.c_str(al);
