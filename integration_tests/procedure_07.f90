@@ -27,8 +27,8 @@ contains
 
 end submodule
 
-program test_backward_1d
-    use procedure_without_deferred_impl, only: layer
+program program_procedure_07
+    use procedure_07_module, only: layer
     implicit none
     type(layer) :: layer1, layer2
     real, allocatable :: gradient(:)
