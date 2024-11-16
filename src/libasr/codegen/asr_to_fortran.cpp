@@ -620,8 +620,6 @@ public:
         ASR::symbol_t *sym = down_cast<ASR::symbol_t>(
             ASRUtils::symbol_parent_symtab(x.m_external)->asr_owner);
         if (strcmp(x.m_module_name,"lfortran_intrinsic_iso_c_binding")==0) {
-            SymbolTable* st = ASRUtils::symbol_parent_symtab(sym);
-            ASR::symbol_t *sym = st->resolve_symbol("iso_c_binding");
             if ( sym && ASR::is_a<ASR::Module_t>(*sym) && ASR::down_cast<ASR::Module_t>(sym)->m_intrinsic) {
                 src = indent;
                 src += "use ";
