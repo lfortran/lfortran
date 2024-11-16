@@ -2,11 +2,11 @@
     "basename": "asr-procedure_without_deferred_impl-b53bce4",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/procedure_without_deferred_impl.f90",
-    "infile_hash": "406ceede1d8aaae2d21d307c51cdd0f1e807bb6b2ace67c16a936fda",
+    "infile_hash": "02a0ca6fe091b5a979d23c7b8914c120dd4f413b0404828c663c9ed8",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "asr-procedure_without_deferred_impl-b53bce4.stdout",
-    "stdout_hash": "704f0166f8975739a5ead5336f1ec43b3c5b50e931d4786595fad540",
+    "stdout_hash": "7d2a2bede9f58937ca0dc4e17ad636b98a19eace9b0f36911e0f1158",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0

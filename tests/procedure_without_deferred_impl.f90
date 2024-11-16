@@ -1,6 +1,6 @@
 ! test to ensure that class procedure without "deferred"
-! and without implementation doesn't rasie semantic error
-module nf_layer
+! and without implementation doesn't raise semantic error
+module procedure_without_deferred_impl
     implicit none
 
     private

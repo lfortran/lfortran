@@ -2,7 +2,7 @@
     (SymbolTable
         1
         {
-            nf_layer:
+            procedure_without_deferred_impl:
                 (Module
                     (SymbolTable
                         2
@@ -196,7 +196,7 @@
                                     ()
                                 )
                         })
-                    nf_layer
+                    procedure_without_deferred_impl
                     []
                     .false.
                     .false.
