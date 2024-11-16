@@ -27,9 +27,7 @@
             []
             []
             ()
-            (String
-                "B"
-            )
+            (String "B")
             Equal
             ())]
             (TriviaNode
@@ -44,17 +42,13 @@
             grade
             [(CaseStmt
                 [(CaseCondExpr
-                    (String
-                        "A"
-                    )
+                    (String "A")
                 )]
                 ()
                 [(Print
                     0
                     ()
-                    [(String
-                        "Excellent!"
-                    )]
+                    [(String "Excellent!")]
                     (TriviaNode
                         []
                         [(EndOfLine)
@@ -64,9 +58,7 @@
             )
             (CaseStmt
                 [(CaseCondExpr
-                    (String
-                        "B"
-                    )
+                    (String "B")
                 )]
                 (TriviaNode
                     []
@@ -77,17 +69,13 @@
             )
             (CaseStmt
                 [(CaseCondExpr
-                    (String
-                        "C"
-                    )
+                    (String "C")
                 )]
                 ()
                 [(Print
                     0
                     ()
-                    [(String
-                        "Well done"
-                    )]
+                    [(String "Well done")]
                     (TriviaNode
                         []
                         [(EndOfLine)
@@ -97,17 +85,13 @@
             )
             (CaseStmt
                 [(CaseCondExpr
-                    (String
-                        "D"
-                    )
+                    (String "D")
                 )]
                 ()
                 [(Print
                     0
                     ()
-                    [(String
-                        "You passed"
-                    )]
+                    [(String "You passed")]
                     (TriviaNode
                         []
                         [(EndOfLine)
@@ -117,17 +101,13 @@
             )
             (CaseStmt
                 [(CaseCondExpr
-                    (String
-                        "F"
-                    )
+                    (String "F")
                 )]
                 ()
                 [(Print
                     0
                     ()
-                    [(String
-                        "Better try again"
-                    )]
+                    [(String "Better try again")]
                     (TriviaNode
                         []
                         [(EndOfLine)
@@ -140,9 +120,7 @@
                 [(Print
                     0
                     ()
-                    [(String
-                        "Invalid grade"
-                    )]
+                    [(String "Invalid grade")]
                     (TriviaNode
                         []
                         [(EndOfLine)
@@ -164,9 +142,7 @@
         (Print
             0
             ()
-            [(String
-                "Your grade is "
-            )
+            [(String "Your grade is ")
             grade]
             (TriviaNode
                 []

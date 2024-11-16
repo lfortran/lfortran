@@ -172,9 +172,6 @@
                             ()
                         )]
                         []
-                    )
-                    (ImplicitDeallocate
-                        [(Var 5 settings)]
                     )]
                 ),
             fpm_command_line:

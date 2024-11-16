@@ -30,7 +30,9 @@ set(SRC
     codegen/wasm_utils.cpp
 
     pass/nested_vars.cpp
+    pass/simplifier.cpp
     pass/where.cpp
+    pass/where_simplifier.cpp
     pass/function_call_in_declaration.cpp
     pass/openmp.cpp
     pass/param_to_const.cpp
@@ -42,7 +44,9 @@ set(SRC
     pass/init_expr.cpp
     pass/implied_do_loops.cpp
     pass/array_op.cpp
+    pass/array_op_simplifier.cpp
     pass/subroutine_from_function.cpp
+    pass/subroutine_from_function_simplifier.cpp
     pass/transform_optional_argument_functions.cpp
     pass/class_constructor.cpp
     pass/arr_slice.cpp

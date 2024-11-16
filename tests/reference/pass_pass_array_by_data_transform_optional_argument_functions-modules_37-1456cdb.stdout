@@ -14,7 +14,7 @@
                     [(Print
                         (StringConstant
                             "executing modules_37"
-                            (Character 1 20 () PointerString)
+                            (String 1 20 () PointerString)
                         )
                     )]
                 ),
@@ -146,7 +146,7 @@
                                                             (Var 13 temp)
                                                             12 1_string_t_s
                                                             (Allocatable
-                                                                (Character 1 -2 () PointerString)
+                                                                (String 1 -2 () DescriptorString)
                                                             )
                                                             ()
                                                         )
@@ -154,7 +154,7 @@
                                                             (Var 14 target)
                                                             12 1_build_target_t_output_dir
                                                             (Allocatable
-                                                                (Character 1 -2 () PointerString)
+                                                                (String 1 -2 () DescriptorString)
                                                             )
                                                             ()
                                                         )
@@ -382,9 +382,6 @@
                                             13 associate_block
                                         )]
                                         []
-                                    )
-                                    (ImplicitDeallocate
-                                        [(Var 13 build_dirs)]
                                     )]
                                     ()
                                     Public
@@ -456,7 +453,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (String 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -612,9 +609,6 @@
                                             ()
                                         ))]
                                         ()
-                                    )
-                                    (ImplicitDeallocate
-                                        [(Var 10 targets)]
                                     )]
                                     ()
                                     Public
@@ -712,7 +706,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (String 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source

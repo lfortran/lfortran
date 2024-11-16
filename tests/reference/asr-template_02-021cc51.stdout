@@ -116,7 +116,7 @@
                                                     ()
                                                     Default
                                                     (Array
-                                                        (Character 1 1 () PointerString)
+                                                        (String 1 1 () PointerString)
                                                         [(()
                                                         ())]
                                                         DescriptorArray
@@ -131,7 +131,7 @@
                                     change_positions_chr
                                     (FunctionType
                                         [(Array
-                                            (Character 1 1 () PointerString)
+                                            (String 1 1 () PointerString)
                                             [(()
                                             ())]
                                             DescriptorArray
@@ -249,7 +249,7 @@
                                                     [(()
                                                     (Var 12 i)
                                                     ())]
-                                                    (Character 1 1 () PointerString)
+                                                    (String 1 1 () PointerString)
                                                     ColMajor
                                                     ()
                                                 ))
@@ -264,7 +264,7 @@
                                                         ()
                                                     )
                                                     ())]
-                                                    (Character 1 1 () PointerString)
+                                                    (String 1 1 () PointerString)
                                                     ColMajor
                                                     ()
                                                 ))]
@@ -338,9 +338,6 @@
                                             ()
                                         )]
                                         []
-                                    )
-                                    (ImplicitDeallocate
-                                        [(Var 12 pos)]
                                     )]
                                     (Var 12 mask)
                                     Public
@@ -679,9 +676,6 @@
                                             ()
                                         )]
                                         []
-                                    )
-                                    (ImplicitDeallocate
-                                        [(Var 10 pos)]
                                     )]
                                     (Var 10 mask)
                                     Public
@@ -821,7 +815,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 1 () PointerString)
+                                                    (String 1 1 () PointerString)
                                                     ()
                                                     Source
                                                     Private
@@ -837,7 +831,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 1 () PointerString)
+                                                    (String 1 1 () PointerString)
                                                     ()
                                                     Source
                                                     Private
@@ -863,8 +857,8 @@
                                         })
                                     ~neq_intrinsic1
                                     (FunctionType
-                                        [(Character 1 1 () PointerString)
-                                        (Character 1 1 () PointerString)]
+                                        [(String 1 1 () PointerString)
+                                        (String 1 1 () PointerString)]
                                         (Logical 4)
                                         Source
                                         Implementation
@@ -940,7 +934,7 @@
                                 ()
                             )]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )
                     )
@@ -955,7 +949,7 @@
                                         7
                                         ["a", "a", "b", ...., "p", "p", "o"]
                                         (Array
-                                            (Character 1 1 () PointerString)
+                                            (String 1 1 () PointerString)
                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                             (IntegerConstant 7 (Integer 4) Decimal))]
                                             FixedSizeArray
@@ -965,7 +959,7 @@
                                     FixedSizeArray
                                     DescriptorArray
                                     (Array
-                                        (Character 1 1 () PointerString)
+                                        (String 1 1 () PointerString)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 7 (Integer 4) Decimal))]
                                         DescriptorArray
@@ -984,7 +978,7 @@
                                 ()
                             )]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )
                     )]
@@ -1338,9 +1332,6 @@
                                                             ()
                                                         )]
                                                         []
-                                                    )
-                                                    (ImplicitDeallocate
-                                                        [(Var 7 pos)]
                                                     )]
                                                     (Var 7 mask)
                                                     Public

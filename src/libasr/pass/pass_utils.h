@@ -126,7 +126,7 @@ namespace LCompilers {
             std::vector<ASR::expr_t*> do_loop_variables, std::vector<ASR::expr_t*> res_idx,
             ASR::stmt_t* inner_most_do_loop, ASR::expr_t* c, ASR::expr_t* mask, ASR::expr_t* res,
             int curr_idx, int dim);
-        
+
         ASR::stmt_t* create_do_loop_helper_norm2(Allocator &al, const Location &loc,
             std::vector<ASR::expr_t*> do_loop_variables, ASR::expr_t* array, ASR::expr_t* res,
             int curr_idx);
@@ -135,7 +135,7 @@ namespace LCompilers {
             std::vector<ASR::expr_t*> do_loop_variables, std::vector<ASR::expr_t*> res_idx,
             ASR::stmt_t* inner_most_do_loop, ASR::expr_t* c, ASR::expr_t* array, ASR::expr_t* res,
             int curr_idx, int dim);
-        
+
         ASR::stmt_t* create_do_loop_helper_parity(Allocator &al, const Location &loc,
             std::vector<ASR::expr_t*> do_loop_variables, ASR::expr_t* array, ASR::expr_t* res,
             int curr_idx);
@@ -935,6 +935,29 @@ namespace LCompilers {
                     result_vec->push_back(replacer->al, assign_stmt);
                 }
             }
+        }
+
+        static inline void replace_ArrayConstructor_(Allocator& al, ASR::ArrayConstructor_t* x,
+            ASR::expr_t* result_var, Vec<ASR::stmt_t*>* result_vec, SymbolTable* current_scope,
+            bool perform_cast=false, ASR::cast_kindType cast_kind=ASR::cast_kindType::IntegerToInteger,
+            ASR::ttype_t* casted_type=nullptr) {
+            LCOMPILERS_ASSERT(result_var != nullptr);
+            const Location& loc = x->base.base.loc;
+            LCOMPILERS_ASSERT(ASR::is_a<ASR::Var_t>(*result_var));
+            [[maybe_unused]] ASR::ttype_t* result_var_type = ASRUtils::expr_type(result_var);
+            LCOMPILERS_ASSERT_MSG(ASRUtils::extract_n_dims_from_ttype(result_var_type) == 1,
+                                "Initialisation using ArrayConstructor is "
+                                "supported only for single dimensional arrays, found: " +
+                                std::to_string(ASRUtils::extract_n_dims_from_ttype(result_var_type)))
+            Vec<ASR::expr_t*> idx_vars;
+            PassUtils::create_idx_vars(idx_vars, 1, loc, al, current_scope, "__libasr_index_");
+            ASR::expr_t* idx_var = idx_vars[0];
+            ASR::expr_t* lb = PassUtils::get_bound(result_var, 1, "lbound", al);
+            ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al,
+                                            loc, idx_var, lb, nullptr));
+            result_vec->push_back(al, assign_stmt);
+            visit_ArrayConstructor(x, al, result_var, result_vec,
+                idx_var, current_scope, perform_cast, cast_kind, casted_type);
         }
 
         template <typename T>

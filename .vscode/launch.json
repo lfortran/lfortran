@@ -7,6 +7,14 @@
     "configurations": [
         {
             "name": "(lldb) Launch",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/bin/lfortran",
+            "args": ["examples/expr2.f90"],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "(lldb-mi) Launch",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/src/bin/lfortran",
@@ -19,5 +27,3 @@
         },
     ]
 }
-
-

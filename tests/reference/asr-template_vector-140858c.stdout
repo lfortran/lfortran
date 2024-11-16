@@ -518,9 +518,6 @@
                                                         )
                                                         (Var 10 tmp)
                                                         ()
-                                                    )
-                                                    (ImplicitDeallocate
-                                                        [(Var 10 tmp)]
                                                     )]
                                                     ()
                                                     Private
@@ -1180,9 +1177,6 @@
                                                         )
                                                         (Var 6 tmp)
                                                         ()
-                                                    )
-                                                    (ImplicitDeallocate
-                                                        [(Var 6 tmp)]
                                                     )]
                                                     ()
                                                     Private

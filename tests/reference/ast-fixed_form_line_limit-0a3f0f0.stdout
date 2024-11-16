@@ -1,0 +1,57 @@
+(TranslationUnit
+    [(Program
+        test
+        ()
+        []
+        []
+        [(Declaration
+            (AttrType
+                TypeInteger
+                []
+                ()
+                ()
+                None
+            )
+            []
+            [(a
+            []
+            []
+            ()
+            ()
+            None
+            ())]
+            ()
+        )]
+        [(Print
+            0
+            ()
+            [(String "this is a test to see if the fixed form parser properly ignores text past column 72")]
+            ()
+        )
+        (Print
+            0
+            ()
+            [(String "test that we can still see the quote in the last column")]
+            ()
+        )
+        (Print
+            0
+            ()
+            [(String "test that we avoid double \"\" lookahead in col 73       ")]
+            ()
+        )
+        (Print
+            0
+            ()
+            [(String "                                  end-of-line double \"\"")]
+            ()
+        )
+        (Assignment
+            0
+            a
+            (+ 5 3)
+            ()
+        )]
+        []
+    )]
+)

@@ -21,7 +21,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 1 () PointerString)
+                                                    (String 1 1 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -37,7 +37,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 10 () PointerString)
+                                                    (String 1 10 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -47,8 +47,8 @@
                                         })
                                     test_case
                                     (FunctionType
-                                        [(Character 1 1 () PointerString)]
-                                        (Character 1 10 () PointerString)
+                                        [(String 1 1 () PointerString)]
+                                        (String 1 10 () PointerString)
                                         Source
                                         Implementation
                                         ()
@@ -67,7 +67,7 @@
                                             (StringCompare
                                                 (StringConstant
                                                     "a"
-                                                    (Character 1 1 () PointerString)
+                                                    (String 1 1 () PointerString)
                                                 )
                                                 LtE
                                                 (Var 3 c)
@@ -80,7 +80,7 @@
                                                 LtE
                                                 (StringConstant
                                                     "j"
-                                                    (Character 1 1 () PointerString)
+                                                    (String 1 1 () PointerString)
                                                 )
                                                 (Logical 4)
                                                 ()
@@ -92,14 +92,14 @@
                                             (Var 3 res)
                                             (StringConstant
                                                 "a:j"
-                                                (Character 1 3 () PointerString)
+                                                (String 1 3 () PointerString)
                                             )
                                             ()
                                         )
                                         (Print
                                             (StringConstant
                                                 "one of the first ten letters"
-                                                (Character 1 28 () PointerString)
+                                                (String 1 28 () PointerString)
                                             )
                                         )]
                                         [(If
@@ -107,7 +107,7 @@
                                                 (StringCompare
                                                     (StringConstant
                                                         "l"
-                                                        (Character 1 1 () PointerString)
+                                                        (String 1 1 () PointerString)
                                                     )
                                                     LtE
                                                     (Var 3 c)
@@ -120,7 +120,7 @@
                                                     LtE
                                                     (StringConstant
                                                         "p"
-                                                        (Character 1 1 () PointerString)
+                                                        (String 1 1 () PointerString)
                                                     )
                                                     (Logical 4)
                                                     ()
@@ -132,14 +132,14 @@
                                                 (Var 3 res)
                                                 (StringConstant
                                                     "l:p"
-                                                    (Character 1 3 () PointerString)
+                                                    (String 1 3 () PointerString)
                                                 )
                                                 ()
                                             )
                                             (Print
                                                 (StringConstant
                                                     "one of l, m, n, o, p"
-                                                    (Character 1 20 () PointerString)
+                                                    (String 1 20 () PointerString)
                                                 )
                                             )]
                                             [(If
@@ -148,7 +148,7 @@
                                                     Eq
                                                     (StringConstant
                                                         "z"
-                                                        (Character 1 1 () PointerString)
+                                                        (String 1 1 () PointerString)
                                                     )
                                                     (Logical 4)
                                                     ()
@@ -157,28 +157,28 @@
                                                     (Var 3 res)
                                                     (StringConstant
                                                         "z"
-                                                        (Character 1 1 () PointerString)
+                                                        (String 1 1 () PointerString)
                                                     )
                                                     ()
                                                 )
                                                 (Print
                                                     (StringConstant
                                                         "one of z"
-                                                        (Character 1 8 () PointerString)
+                                                        (String 1 8 () PointerString)
                                                     )
                                                 )]
                                                 [(Assignment
                                                     (Var 3 res)
                                                     (StringConstant
                                                         "not found"
-                                                        (Character 1 9 () PointerString)
+                                                        (String 1 9 () PointerString)
                                                     )
                                                     ()
                                                 )
                                                 (Print
                                                     (StringConstant
                                                         "other characters, which may not be letters"
-                                                        (Character 1 42 () PointerString)
+                                                        (String 1 42 () PointerString)
                                                     )
                                                 )]
                                             )]
@@ -200,16 +200,16 @@
                                 ()
                                 [((StringConstant
                                     "a"
-                                    (Character 1 1 () PointerString)
+                                    (String 1 1 () PointerString)
                                 ))]
-                                (Character 1 10 () PointerString)
+                                (String 1 10 () PointerString)
                                 ()
                                 ()
                             )
                             NotEq
                             (StringConstant
                                 "a:j"
-                                (Character 1 3 () PointerString)
+                                (String 1 3 () PointerString)
                             )
                             (Logical 4)
                             ()
@@ -226,16 +226,16 @@
                                 ()
                                 [((StringConstant
                                     "d"
-                                    (Character 1 1 () PointerString)
+                                    (String 1 1 () PointerString)
                                 ))]
-                                (Character 1 10 () PointerString)
+                                (String 1 10 () PointerString)
                                 ()
                                 ()
                             )
                             NotEq
                             (StringConstant
                                 "a:j"
-                                (Character 1 3 () PointerString)
+                                (String 1 3 () PointerString)
                             )
                             (Logical 4)
                             ()
@@ -252,16 +252,16 @@
                                 ()
                                 [((StringConstant
                                     "l"
-                                    (Character 1 1 () PointerString)
+                                    (String 1 1 () PointerString)
                                 ))]
-                                (Character 1 10 () PointerString)
+                                (String 1 10 () PointerString)
                                 ()
                                 ()
                             )
                             NotEq
                             (StringConstant
                                 "l:p"
-                                (Character 1 3 () PointerString)
+                                (String 1 3 () PointerString)
                             )
                             (Logical 4)
                             ()
@@ -278,16 +278,16 @@
                                 ()
                                 [((StringConstant
                                     "p"
-                                    (Character 1 1 () PointerString)
+                                    (String 1 1 () PointerString)
                                 ))]
-                                (Character 1 10 () PointerString)
+                                (String 1 10 () PointerString)
                                 ()
                                 ()
                             )
                             NotEq
                             (StringConstant
                                 "l:p"
-                                (Character 1 3 () PointerString)
+                                (String 1 3 () PointerString)
                             )
                             (Logical 4)
                             ()
@@ -304,16 +304,16 @@
                                 ()
                                 [((StringConstant
                                     "z"
-                                    (Character 1 1 () PointerString)
+                                    (String 1 1 () PointerString)
                                 ))]
-                                (Character 1 10 () PointerString)
+                                (String 1 10 () PointerString)
                                 ()
                                 ()
                             )
                             NotEq
                             (StringConstant
                                 "z"
-                                (Character 1 1 () PointerString)
+                                (String 1 1 () PointerString)
                             )
                             (Logical 4)
                             ()
@@ -330,16 +330,16 @@
                                 ()
                                 [((StringConstant
                                     "k"
-                                    (Character 1 1 () PointerString)
+                                    (String 1 1 () PointerString)
                                 ))]
-                                (Character 1 10 () PointerString)
+                                (String 1 10 () PointerString)
                                 ()
                                 ()
                             )
                             NotEq
                             (StringConstant
                                 "not found"
-                                (Character 1 9 () PointerString)
+                                (String 1 9 () PointerString)
                             )
                             (Logical 4)
                             ()
@@ -356,16 +356,16 @@
                                 ()
                                 [((StringConstant
                                     "r"
-                                    (Character 1 1 () PointerString)
+                                    (String 1 1 () PointerString)
                                 ))]
-                                (Character 1 10 () PointerString)
+                                (String 1 10 () PointerString)
                                 ()
                                 ()
                             )
                             NotEq
                             (StringConstant
                                 "not found"
-                                (Character 1 9 () PointerString)
+                                (String 1 9 () PointerString)
                             )
                             (Logical 4)
                             ()

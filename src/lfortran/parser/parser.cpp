@@ -29,8 +29,8 @@ bool is_program_end(AST::Name_t* name) {
     // "end program" should not be a name. Ideally, it should be a special entity.
     // It is used as a Name_t here, so that `end`, `endprogram` and `end program`
     // can all be handled together and this simplifies the code logic.
-    return (strcmp(name->m_id, "end") == 0 || strcmp(name->m_id, "endprogram") == 0
-            || strcmp(name->m_id, "end program") == 0);
+    return (to_lower(name->m_id) == "end" || to_lower(name->m_id) == "endprogram"
+            || to_lower(name->m_id) == "end program");
 }
 
 void fix_program_without_program_line(Allocator &al, AST::TranslationUnit_t &ast) {
@@ -87,7 +87,7 @@ void fix_program_without_program_line(Allocator &al, AST::TranslationUnit_t &ast
             AST::expr_t* expr = AST::down_cast<AST::expr_t>(ast.m_items[i]);
             if (AST::is_a<AST::Name_t>(*expr)) {
                 AST::Name_t* name = AST::down_cast<AST::Name_t>(expr);
-                if (strcmp(name->m_id, "stop") == 0) {
+                if (to_lower(name->m_id) == "stop") {
                     AST::ast_t* stop_ast = AST::make_Stop_t(al, name->base.base.loc, 0, nullptr, nullptr, nullptr);
                     body.push_back(al, AST::down_cast<AST::stmt_t>(stop_ast));
                 } else if (is_program_end(name)) {
@@ -97,7 +97,7 @@ void fix_program_without_program_line(Allocator &al, AST::TranslationUnit_t &ast
 
                     global_items.push_back(al, program_ast);
                     program_added = true;
-                } else if (strcmp(name->m_id, "contains") == 0) {
+                } else if (to_lower(name->m_id) == "contains") {
                     contains = true;
                 } else {
                     throw parser_local::ParserError("Statement or Declaration expected inside program, found Variable name", ast.m_items[i]->loc);
@@ -119,7 +119,7 @@ void fix_program_without_program_line(Allocator &al, AST::TranslationUnit_t &ast
 Result<AST::TranslationUnit_t*> parse(Allocator &al, const std::string &s,
         diag::Diagnostics &diagnostics, const CompilerOptions &co)
 {
-    Parser p(al, diagnostics, co.fixed_form);
+    Parser p(al, diagnostics, co.fixed_form, co.continue_compilation);
     try {
         if (!p.parse(s)) {
             return Error();
@@ -181,7 +181,11 @@ bool Parser::parse(const std::string &input)
     }
 
     if (!diag.has_error()) {
-        diag.add(parser_local::ParserError("Parsing unsuccessful (internal compiler error)").d);
+        if (this->continue_compilation) {
+            diag.add(parser_local::ParserError("Parsing unsuccessful (internal compiler error)").d);
+        } else {
+            throw parser_local::ParserError("Parsing unsuccessful (internal compiler error)");
+        }
     }
     return false;
 }
@@ -261,7 +265,7 @@ enum LineType {
 
 // Determines the type of line in the fixed-form prescanner
 // `pos` points to the first character (column) of the line
-// The line ends with either `\n` or `\0`.
+// The line ends with either `\n` or `\0`.  Only used for fixed-form
 LineType determine_line_type(const unsigned char *pos)
 {
     int col=1;
@@ -292,7 +296,9 @@ LineType determine_line_type(const unsigned char *pos)
             pos++;
             col+=1;
         }
-        if (*pos == '\n' || *pos == '\0' || (*pos == '\r' && *(pos+1) == '\n')) return LineType::Comment;
+        if (*pos == '\n' || *pos == '\0' || (*pos == '\r' && *(pos+1) == '\n')
+	    || col > 72)
+	  return LineType::Comment;
         if (*pos == '!' && col != 6) return LineType::Comment;
         if (col == 6) {
             if (*pos == ' ' || *pos == '0') {
@@ -321,27 +327,52 @@ void skip_rest_of_line(const std::string &s, size_t &pos)
 
 // Parses string, including possible continuation lines
 void parse_string(std::string &out, const std::string &s, size_t &pos,
-    bool fixed_form)
+    bool fixed_form, int &col)
 {
     char quote = s[pos];
     LCOMPILERS_ASSERT(quote == '"' || quote == '\'');
     out += s[pos];
     pos++;
-    while (pos < s.size() && ! (s[pos] == quote && s[pos+1] != quote)) {
+    col++;
+
+    while (pos < s.size()) {
+        if (fixed_form) {
+	    if (col > 72) {
+		skip_rest_of_line(s, pos);
+		col = 7;
+		pos += 6;
+		continue;
+	    } else if (s[pos] == quote && (col == 72 || s[pos+1] != quote)) {
+		break;
+	    }
+        } else {
+	    if (s[pos] == quote && s[pos+1] != quote) break;
+	}
         if (s[pos] == '\n') {
             pos++;
-            if (fixed_form) pos += 6;
+            if (fixed_form) {
+                col = 7;
+                pos += 6;
+            } else {
+                col = 1;
+            }
             continue;
         }
-        if (s[pos] == quote && s[pos+1] == quote) {
+        if (s[pos] == quote && s[pos+1] == quote && (!fixed_form || col < 72)) {
+	    // Emit a doubled quote
             out += s[pos];
             pos++;
+            col++;
         }
         out += s[pos];
         pos++;
+        col++;
     }
-    out += s[pos]; // Copy the last quote
-    pos++;
+    if (pos < s.size()) {
+	out += s[pos]; // Copy the last quote
+	pos++;
+	col++;
+    }
 }
 
 bool is_num(char c)
@@ -361,11 +392,16 @@ void copy_label(std::string &out, const std::string &s, size_t &pos)
 
 // Only used in fixed-form
 void copy_rest_of_line(std::string &out, const std::string &s, size_t &pos,
-    LocationManager &lm)
+		       LocationManager &lm, int &col)
 {
     while (pos < s.size() && s[pos] != '\n') {
+        if (col > 72) {
+            skip_rest_of_line(s, pos);
+            out += '\n';
+            return;
+        }
         if (s[pos] == '"' || s[pos] == '\'') {
-            parse_string(out, s, pos, true);
+            parse_string(out, s, pos, true, col);
         } else if (s[pos] == '!') {
             skip_rest_of_line(s, pos);
             out += '\n';
@@ -373,17 +409,20 @@ void copy_rest_of_line(std::string &out, const std::string &s, size_t &pos,
         } else if (s[pos] == ' ') {
             // Skip white space in a fixed-form parser
             pos++;
+            col++;
             lm.files.back().out_start.push_back(out.size());
             lm.files.back().in_start.push_back(pos);
         } else if (s[pos] == '\r') {
             // Skip CR in a fixed-form parser
             pos++;
+            // Don't advance the column count here
             lm.files.back().out_start.push_back(out.size());
             lm.files.back().in_start.push_back(pos);
         } else {
             // Copy the character, but covert to lowercase
             out += tolower(s[pos]);
             pos++;
+            col++;
         }
     }
     // not always a program end's with '\n', but when it does, copy it
@@ -408,10 +447,11 @@ bool check_newlines(const std::string &s, const std::vector<uint32_t> &newlines)
 
 void process_include(std::string& out, const std::string& s,
                      LocationManager& lm, size_t& pos, bool fixed_form,
-                     std::vector<std::filesystem::path> &include_dirs)
+                     std::vector<std::filesystem::path> &include_dirs,
+                     int &col)
 {
     std::string include_filename;
-    parse_string(include_filename, s, pos, false);
+    parse_string(include_filename, s, pos, fixed_form, col);
     include_filename = include_filename.substr(1, include_filename.size() - 2);
 
     bool file_found = false;
@@ -491,7 +531,6 @@ std::string prescan(const std::string &s, LocationManager &lm,
          *
          *   * Continuation lines after comment(s) or empty lines (they will be
          *     appended to the previous comment, and thus skipped)
-         *   * Characters after column 72 are included, but should be ignored
          *
          * After the prescanner, the tokenizer is itself a recursive descent
          * parser that correctly identifies tokens so that the Bison
@@ -499,6 +538,7 @@ std::string prescan(const std::string &s, LocationManager &lm,
          */
         while (true) {
             const char *p = &s[pos];
+            int col = 7;  // Valid after p is advanced to code begin
             LineType lt = determine_line_type((const unsigned char*)p);
             switch (lt) {
                 case LineType::Comment : {
@@ -513,7 +553,7 @@ std::string prescan(const std::string &s, LocationManager &lm,
                     pos += 6;
                     lm.files.back().out_start.push_back(out.size());
                     lm.files.back().in_start.push_back(pos);
-                    copy_rest_of_line(out, s, pos, lm);
+                    copy_rest_of_line(out, s, pos, lm, col);
                     break;
                 }
                 case LineType::StatementTab : {
@@ -521,7 +561,7 @@ std::string prescan(const std::string &s, LocationManager &lm,
                     pos += 1;
                     lm.files.back().out_start.push_back(out.size());
                     lm.files.back().in_start.push_back(pos);
-                    copy_rest_of_line(out, s, pos, lm);
+                    copy_rest_of_line(out, s, pos, lm, col);
                     break;
                 }
                 case LineType::LabeledStatement : {
@@ -530,7 +570,7 @@ std::string prescan(const std::string &s, LocationManager &lm,
                     // Copy from column 7
                     lm.files.back().out_start.push_back(out.size());
                     lm.files.back().in_start.push_back(pos);
-                    copy_rest_of_line(out, s, pos, lm);
+                    copy_rest_of_line(out, s, pos, lm, col);
                     break;
                 }
                 case LineType::Continuation : {
@@ -539,7 +579,7 @@ std::string prescan(const std::string &s, LocationManager &lm,
                     pos += 6;
                     lm.files.back().out_start.push_back(out.size());
                     lm.files.back().in_start.push_back(pos);
-                    copy_rest_of_line(out, s, pos, lm);
+                    copy_rest_of_line(out, s, pos, lm, col);
                     break;
                 }
                 case LineType::ContinuationTab : {
@@ -548,7 +588,7 @@ std::string prescan(const std::string &s, LocationManager &lm,
                     pos += 2;
                     lm.files.back().out_start.push_back(out.size());
                     lm.files.back().in_start.push_back(pos);
-                    copy_rest_of_line(out, s, pos, lm);
+                    copy_rest_of_line(out, s, pos, lm, col);
                     break;
                 }
                 case LineType::Include: {
@@ -558,7 +598,7 @@ std::string prescan(const std::string &s, LocationManager &lm,
                     while (pos < s.size() && s[pos] == ' ') pos++;
                     if ((s[pos] == '"') || (s[pos] == '\'')) {
                         process_include(out, s, lm, pos, fixed_form,
-                            include_dirs);
+                            include_dirs, col);
                     }
                     break;
                 }
@@ -581,12 +621,13 @@ std::string prescan(const std::string &s, LocationManager &lm,
         bool in_comment = false, newline = true;
         while (pos < s.size()) {
             if (newline && is_include(s, pos)) {
+                int col = 0; // doesn't matter
                 while (pos < s.size() && s[pos] == ' ') pos++;
                 LCOMPILERS_ASSERT(pos + 6 < s.size() && s.substr(pos, 7) == "include")
                 pos += 7;
                 while (pos < s.size() && s[pos] == ' ') pos++;
                 LCOMPILERS_ASSERT(pos < s.size() && ((s[pos] == '"') || (s[pos] == '\'')));
-                process_include(out, s, lm, pos, fixed_form, include_dirs);
+                process_include(out, s, lm, pos, fixed_form, include_dirs, col);
             }
             newline = false;
             if (s[pos] == '!') in_comment = true;
@@ -918,7 +959,11 @@ void Parser::handle_yyerror(const Location &loc, const std::string &msg)
             unsigned int invalid_token = this->f_tokenizer.token_pos;
             if (invalid_token == 0 || invalid_token > f_tokenizer.tokens.size()) {
                 message = "unknown error";
-                diag.add(parser_local::ParserError(message, loc).d);
+                if (this->continue_compilation) {
+                    diag.add(parser_local::ParserError(message, loc).d);
+                } else {
+                    throw parser_local::ParserError(message, loc);
+                }
             }
             invalid_token--;
             LCOMPILERS_ASSERT(invalid_token < f_tokenizer.tokens.size())
@@ -949,7 +994,11 @@ void Parser::handle_yyerror(const Location &loc, const std::string &msg)
     } else {
         message = "Internal Compiler Error: parser returned unknown error";
     }
-    diag.add(parser_local::ParserError(message, loc).d);
+    if (this->continue_compilation) {
+        diag.add(parser_local::ParserError(message, loc).d);
+    } else {
+        throw parser_local::ParserError(message, loc);
+    }
 }
 
 } // namespace LCompilers::LFortran

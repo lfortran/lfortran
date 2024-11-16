@@ -64,7 +64,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (String 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -203,7 +203,7 @@
                                                             ()
                                                             [(Var 6 ii)]
                                                             FormatFortran
-                                                            (Character -1 0 () PointerString)
+                                                            (String -1 0 () PointerString)
                                                             ()
                                                         )
                                                     )
@@ -265,7 +265,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (String 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -295,9 +295,6 @@
                                     [(Var 5 package)]
                                     [(AssociateBlockCall
                                         5 associate_block
-                                    )
-                                    (ImplicitDeallocate
-                                        [(Var 5 version)]
                                     )]
                                     ()
                                     Public
@@ -370,7 +367,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (String 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -385,7 +382,7 @@
                                             10 version_t
                                         )]
                                         (Allocatable
-                                            (Character 1 -2 () PointerString)
+                                            (String 1 -2 () DescriptorString)
                                         )
                                         Source
                                         Implementation
@@ -452,7 +449,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (String 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -467,7 +464,7 @@
                                             10 version_t
                                         )
                                         (Allocatable
-                                            (Character 1 -2 () PointerString)
+                                            (String 1 -2 () DescriptorString)
                                         )]
                                         ()
                                         Source
@@ -560,7 +557,7 @@
                     [(Print
                         (StringConstant
                             "running modules_34 program"
-                            (Character 1 26 () PointerString)
+                            (String 1 26 () PointerString)
                         )
                     )]
                 )

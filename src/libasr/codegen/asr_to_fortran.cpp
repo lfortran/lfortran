@@ -177,8 +177,8 @@ public:
                 r += std::to_string(down_cast<ASR::Complex_t>(t)->m_kind);
                 r += ")";
                 break;
-            } case ASR::ttypeType::Character: {
-                ASR::Character_t *c = down_cast<ASR::Character_t>(t);
+            } case ASR::ttypeType::String: {
+                ASR::String_t *c = down_cast<ASR::String_t>(t);
                 r = "character(len=";
                 if(c->m_len > 0) {
                     r += std::to_string(c->m_len);
@@ -245,6 +245,9 @@ public:
                     // Push unique struct names;
                     import_struct_type.push_back(struct_name);
                 }
+                break;
+            } case ASR::ttypeType::CPtr: {
+                r = "type(c_ptr)";
                 break;
             }
             default:
@@ -613,7 +616,7 @@ public:
     void visit_ExternalSymbol(const ASR::ExternalSymbol_t &x) {
         ASR::symbol_t *sym = down_cast<ASR::symbol_t>(
             ASRUtils::symbol_parent_symtab(x.m_external)->asr_owner);
-        if (!is_a<ASR::Struct_t>(*sym)) {
+        if (!is_a<ASR::Struct_t>(*sym) && !is_a<ASR::Enum_t>(*sym)) {
             src = indent;
             src += "use ";
             src.append(x.m_module_name);
@@ -645,7 +648,25 @@ public:
         src = r;
     }
 
-    // void visit_Enum(const ASR::Enum_t &x) {}
+    void visit_Enum(const ASR::Enum_t &x) {
+        std::string r = indent;
+        r += "enum, bind(c)\n";
+        inc_indent();
+        for (auto it: x.m_symtab->get_scope()) {
+            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(it.second);
+            r += indent;
+            r += "enumerator :: ";
+            r.append(var->m_name);
+            r += " = ";
+            visit_expr(*var->m_value);
+            r += src;
+            r += "\n";
+        }
+        dec_indent();
+        r += indent;
+        r += "end enum\n";
+        src = r;
+    }
 
     // void visit_UnionType(const ASR::UnionType_t &x) {}
 
@@ -931,7 +952,12 @@ public:
             } else {
                 r += "*";
             }
-        } else if (ASR::is_a<ASR::Character_t>(*ASRUtils::expr_type(x.m_text))) {
+            for (size_t i = 0; i < sf->n_args; i++) {
+                r += ", ";
+                visit_expr(*sf->m_args[i]);
+                r += src;
+            }
+        } else if (ASR::is_a<ASR::String_t>(*ASRUtils::expr_type(x.m_text))) {
             r += "*";
             r += ", ";
             visit_expr(*x.m_text);
@@ -1599,6 +1625,10 @@ public:
             if (i < x.n_args-1) r += ", ";
         }
         src = r;
+    }
+
+    void visit_StringPhysicalCast(const ASR::StringPhysicalCast_t &x) {
+        visit_expr(*x.m_arg);
     }
 
     // void visit_CPtrCompare(const ASR::CPtrCompare_t &x) {}

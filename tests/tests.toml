@@ -154,6 +154,18 @@ filename = "../integration_tests/openmp_36.f90"
 asr = true
 
 [[test]]
+filename = "../integration_tests/openmp_37.f90"
+asr_openmp = true
+
+[[test]]
+filename = "../integration_tests/openmp_38.f90"
+asr_openmp = true
+
+[[test]]
+filename = "../integration_tests/openmp_39.f90"
+asr_openmp = true
+
+[[test]]
 filename = "subroutine2.f90"
 ast = true
 
@@ -361,6 +373,30 @@ filename = "errors/cpp8.f90"
 asr_preprocess = true
 
 [[test]]
+filename = "errors/cpp_err1.f90"
+asr_preprocess = true
+
+[[test]]
+filename = "errors/cpp_err2.f90"
+asr_preprocess = true
+
+[[test]]
+filename = "errors/cpp_err3.f90"
+asr_preprocess = true
+
+[[test]]
+filename = "errors/cpp_err4.f90"
+asr_preprocess = true
+
+[[test]]
+filename = "errors/cpp_err5.f90"
+asr_preprocess = true
+
+[[test]]
+filename = "errors/cpp_err6.f90"
+asr_preprocess = true
+
+[[test]]
 filename = "errors/template_error_01a.f90"
 asr = true
 
@@ -516,6 +552,10 @@ asr_preprocess = true
 filename = "preprocessor17.F90"
 cpp_infer = true
 asr = true
+
+[[test]]
+filename = "preprocessor18.f90"
+asr_preprocess = true
 
 [[test]]
 filename = "expr1.f90"
@@ -1457,6 +1497,10 @@ asr = true
 filename = "allocate1.f90"
 ast = true
 ast_f90 = true
+
+[[test]]
+filename = "errors/allocate_01.f90"
+run = true
 
 
 [[test]]
@@ -2691,6 +2735,14 @@ filename = "fixedform_module.f"
 ast = true
 
 [[test]]
+filename = "fixed_form_interface.f"
+ast = true
+
+[[test]]
+filename = "fixed_form_line_limit.f"
+ast = true
+
+[[test]]
 filename = "../integration_tests/format_03.f"
 ast = true
 
@@ -2949,6 +3001,10 @@ filename = "errors/c_f_pointer_02.f90"
 asr = true
 
 [[test]]
+filename = "errors/continue_compilation_2.f90"
+continue_compilation = true
+
+[[test]]
 filename = "../integration_tests/rewind_inquire_flush.f90"
 asr = true
 
@@ -3041,6 +3097,10 @@ filename = "allow_implicit_interface5.f90"
 asr_implicit_interface_and_typing = true
 
 [[test]]
+filename = "implicit_interface_allocatable_array.f90"
+asr_implicit_interface = true
+
+[[test]]
 filename = "implicit_interface2.f90"
 asr_implicit_interface = true
 
@@ -3118,6 +3178,7 @@ asr = true
 [[test]]
 filename = "errors/assign_01.f90"
 asr = true
+continue_compilation = true
 
 [[test]]
 filename = "fixed_form_if_variations.f"
@@ -3401,6 +3462,10 @@ filename = "data2.f90"
 asr = true
 
 [[test]]
+filename = "data3.f90"
+asr = true
+
+[[test]]
 filename = "special_chars_json.f90"
 ast_json = true
 asr_json = true
@@ -3542,8 +3607,16 @@ filename = "errors/array_05.f90"
 asr = true
 
 [[test]]
+filename = "errors/array_05_cc.f90"
+continue_compilation = true
+
+[[test]]
 filename = "errors/array_06.f90"
 asr = true
+
+[[test]]
+filename = "errors/array_xx_cc.f90"
+continue_compilation = true
 
 [[test]]
 filename = "../integration_tests/where_02.f90"
@@ -3669,6 +3742,26 @@ ast = true
 
 [[test]]
 filename = "parser/program_without_line_07.f90"
+ast = true
+
+[[test]]
+filename = "parser/derived_type_without_start_program.f90"
+ast = true
+
+[[test]]
+filename = "parser/enum_decl_without_start_program.f90"
+ast = true
+
+[[test]]
+filename = "parser/parameter_without_start_program.f90"
+ast = true
+
+[[test]]
+filename = "parser/procedure_with_type.f90"
+ast = true
+
+[[test]]
+filename = "parser/data_stmt_with_implied_do_loop.f"
 ast = true
 
 # Parser errors
@@ -4186,7 +4279,8 @@ run = true
 
 [[test]]
 filename = "multi_error1.f90"
-ast = true
+ast = true # TODO: remove this and only use continue compilation
+continue_compilation = true
 
 [[test]]
 filename = "errors/incompatible_rank_assign.f90"
@@ -4222,5 +4316,41 @@ filename = "errors/func_arg_array.f90"
 asr = true
 
 [[test]]
+filename = "errors/duplicate_module_procedures.f90"
+asr = true
+
+[[test]]
 filename = "errors/string_negative_start_index.f90"
 asr = true
+
+[[test]]
+filename = "errors/dimension_01.f90"
+asr = true
+
+[[test]]
+filename = "errors/dimension_02.f90"
+asr = true
+
+[[test]]
+filename = "errors/program_variable.f90"
+asr = true
+
+[[test]]
+filename = "errors/data_implied_do1.f90"
+asr = true
+
+[[test]]
+filename = "errors/data_implied_do2.f90"
+asr = true
+
+[[test]]
+filename = "errors/data_implied_do3.f90"
+asr = true
+
+[[test]]
+filename = "errors/init1.f90"
+ast = true
+
+[[test]]
+filename = "../integration_tests/enum_01.f90"
+fortran = true

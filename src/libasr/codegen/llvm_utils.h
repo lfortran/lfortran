@@ -94,22 +94,51 @@ namespace LCompilers {
     }
 
     static inline llvm::Value* lfortran_str_copy(llvm::Value* dest, llvm::Value *src, bool is_allocatable,
-        llvm::Module &module, llvm::IRBuilder<> &builder, llvm::LLVMContext &context) {
-        std::string runtime_func_name = "_lfortran_strcpy";
-        llvm::Function *fn = module.getFunction(runtime_func_name);
-        if (!fn) {
-            llvm::FunctionType *function_type = llvm::FunctionType::get(
-                     llvm::Type::getVoidTy(context), {
-                        llvm::Type::getInt8Ty(context)->getPointerTo()->getPointerTo(),
-                        llvm::Type::getInt8Ty(context)->getPointerTo(),
-                        llvm::Type::getInt8Ty(context)
-                    }, false);
-            fn = llvm::Function::Create(function_type,
-                    llvm::Function::ExternalLinkage, runtime_func_name, module);
+        llvm::Module &module, llvm::IRBuilder<> &builder, llvm::LLVMContext &context, llvm::Type* string_descriptor ) {
+        if(!is_allocatable){ 
+            std::string runtime_func_name = "_lfortran_strcpy_pointer_string";
+            llvm::Function *fn = module.getFunction(runtime_func_name);
+            if (!fn) {
+                llvm::FunctionType *function_type = llvm::FunctionType::get(
+                        llvm::Type::getVoidTy(context),
+                        {
+                            llvm::Type::getInt8Ty(context)->getPointerTo()->getPointerTo(), 
+                            llvm::Type::getInt8Ty(context)->getPointerTo()
+                        }, false);
+                fn = llvm::Function::Create(function_type,
+                        llvm::Function::ExternalLinkage, runtime_func_name, module);
+            }
+            return builder.CreateCall(fn, {dest, src});
+        } else {
+            std::string runtime_func_name = "_lfortran_strcpy_descriptor_string";
+            llvm::Value *src_char_ptr, *dest_char_ptr, *string_size, *string_capacity;
+            std::vector<llvm::Value*> idx {
+                llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
+                llvm::ConstantInt::get(context, llvm::APInt(32, 0))};
+            // Fetch char* from `src` and `dest` + Fetch string_size, string_capacity from `dest`
+            dest_char_ptr = builder.CreateGEP(string_descriptor, dest, idx);
+            src_char_ptr = builder.CreateLoad(llvm::Type::getInt8Ty(context)->getPointerTo(),
+                builder.CreateGEP(string_descriptor, src, idx));
+            idx[1] = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
+            string_size = builder.CreateGEP(string_descriptor, dest, idx);
+            idx[1] = llvm::ConstantInt::get(context, llvm::APInt(32, 2));
+            string_capacity =  builder.CreateGEP(string_descriptor, dest, idx);
+            llvm::Function *fn = module.getFunction(runtime_func_name);
+            if (!fn) {
+                llvm::FunctionType *function_type = llvm::FunctionType::get(
+                        llvm::Type::getVoidTy(context),
+                        {
+                            llvm::Type::getInt8Ty(context)->getPointerTo()->getPointerTo(), 
+                            llvm::Type::getInt8Ty(context)->getPointerTo(),
+                            llvm::Type::getInt64Ty(context)->getPointerTo(),
+                            llvm::Type::getInt64Ty(context)->getPointerTo()
+                        }, false);
+                fn = llvm::Function::Create(function_type,
+                        llvm::Function::ExternalLinkage, runtime_func_name, module);
+            }
+            return builder.CreateCall(fn, {dest_char_ptr, src_char_ptr, string_size, string_capacity});
         }
-        llvm::Value* free_string = llvm::ConstantInt::get(
-            llvm::Type::getInt8Ty(context), llvm::APInt(8, is_allocatable));
-        return builder.CreateCall(fn, {dest, src, free_string});
+        
     }
 
     static inline void print_error(llvm::LLVMContext &context, llvm::Module &module,
@@ -225,6 +254,7 @@ namespace LCompilers {
             llvm::StructType *complex_type_4, *complex_type_8;
             llvm::StructType *complex_type_4_ptr, *complex_type_8_ptr;
             llvm::PointerType *character_type;
+            llvm::Type* string_descriptor;
 
             LLVMUtils(llvm::LLVMContext& context,
                 llvm::IRBuilder<>* _builder, std::string& der_type_name_,

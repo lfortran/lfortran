@@ -617,7 +617,7 @@
                             ()
                             [(Var 2 a1)]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )
                     )
@@ -642,7 +642,7 @@
                             ()
                             [(Var 2 a2)]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )
                     )
@@ -667,7 +667,7 @@
                             ()
                             [(Var 2 a3)]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )
                     )
@@ -692,7 +692,7 @@
                             ()
                             [(Var 2 ar1)]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )
                     )
@@ -717,7 +717,7 @@
                             ()
                             [(Var 2 ar2)]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )
                     )
@@ -742,7 +742,7 @@
                             ()
                             [(Var 2 ar3)]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )
                     )
@@ -773,7 +773,7 @@
                                 (IntegerConstant 9 (Integer 4) Decimal)
                             )]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )
                     )
@@ -804,7 +804,7 @@
                                 (IntegerConstant 9 (Integer 4) Decimal)
                             )]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )
                     )
@@ -835,7 +835,7 @@
                                 (IntegerConstant 9 (Integer 4) Decimal)
                             )]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )
                     )
@@ -872,7 +872,7 @@
                                 (IntegerConstant 18 (Integer 4) Decimal)
                             )]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )
                     )
@@ -909,7 +909,7 @@
                                 (IntegerConstant 37 (Integer 4) Decimal)
                             )]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )
                     )
@@ -946,7 +946,7 @@
                                 (IntegerConstant 307 (Integer 4) Decimal)
                             )]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )
                     )
@@ -983,7 +983,7 @@
                                 (IntegerConstant 37 (Integer 4) Decimal)
                             )]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )
                     )
@@ -1020,7 +1020,7 @@
                                 (IntegerConstant 307 (Integer 4) Decimal)
                             )]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )
                     )
@@ -1062,7 +1062,7 @@
                                 (IntegerConstant 9 (Integer 4) Decimal)
                             )]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )
                     )
@@ -1109,7 +1109,7 @@
                                 (IntegerConstant 307 (Integer 4) Decimal)
                             )]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )
                     )
@@ -1156,7 +1156,7 @@
                                 (IntegerConstant 37 (Integer 4) Decimal)
                             )]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )
                     )

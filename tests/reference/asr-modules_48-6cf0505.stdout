@@ -27,7 +27,7 @@
                                     ()
                                     Default
                                     (Allocatable
-                                        (Character 1 -2 () PointerString)
+                                        (String 1 -2 () DescriptorString)
                                     )
                                     ()
                                     Source
@@ -44,7 +44,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Character 1 40 () PointerString)
+                                    (String 1 40 () PointerString)
                                     ()
                                     Source
                                     Public
@@ -61,7 +61,7 @@
                                     ()
                                     Default
                                     (Allocatable
-                                        (Character 1 -2 () PointerString)
+                                        (String 1 -2 () DescriptorString)
                                     )
                                     ()
                                     Source
@@ -240,9 +240,17 @@
                     )
                     (Assignment
                         (Var 8 char_str_alloc)
-                        (StringConstant
-                            "runningmodules_48_1"
-                            (Character 1 19 () PointerString)
+                        (StringPhysicalCast
+                            (StringConstant
+                                "runningmodules_48_1"
+                                (String 1 19 () PointerString)
+                            )
+                            PointerString
+                            DescriptorString
+                            (Allocatable
+                                (String 1 19 () DescriptorString)
+                            )
+                            ()
                         )
                         ()
                     )
@@ -261,7 +269,7 @@
                             )
                             8 1_string_t_s
                             (Allocatable
-                                (Character 1 -2 () PointerString)
+                                (String 1 -2 () DescriptorString)
                             )
                             ()
                         )
@@ -272,7 +280,7 @@
                         (Var 8 char_str)
                         (StringConstant
                             "runningmodules_48_2"
-                            (Character 1 19 () PointerString)
+                            (String 1 19 () PointerString)
                         )
                         ()
                     )
@@ -291,11 +299,19 @@
                             )
                             8 1_string_t_s
                             (Allocatable
-                                (Character 1 -2 () PointerString)
+                                (String 1 -2 () DescriptorString)
                             )
                             ()
                         )
-                        (Var 8 char_str)
+                        (StringPhysicalCast
+                            (Var 8 char_str)
+                            PointerString
+                            DescriptorString
+                            (Allocatable
+                                (String 1 40 () DescriptorString)
+                            )
+                            ()
+                        )
                         ()
                     )
                     (Assignment
@@ -330,7 +346,7 @@
                             [(Var 8 char_str_hash1)
                             (Var 8 char_str_hash2)]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )
                     )
@@ -405,7 +421,7 @@
                             [(Var 8 char_str_hash3)
                             (Var 8 char_str_hash4)]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )
                     )
@@ -443,10 +459,10 @@
                             ))
                             ((StringConstant
                                 ":"
-                                (Character 1 1 () PointerString)
+                                (String 1 1 () PointerString)
                             ))]
                             (Allocatable
-                                (Character 1 -2 () PointerString)
+                                (String 1 -2 () DescriptorString)
                             )
                             ()
                             ()
@@ -456,27 +472,51 @@
                     (Print
                         (StringFormat
                             ()
-                            [(Var 8 cat_str_alloc)
+                            [(StringPhysicalCast
+                                (Var 8 cat_str_alloc)
+                                DescriptorString
+                                PointerString
+                                (Allocatable
+                                    (String 1 -2 () PointerString)
+                                )
+                                ()
+                            )
                             (FunctionCall
                                 8 is_fortran_name
                                 ()
-                                [((Var 8 cat_str_alloc))]
+                                [((StringPhysicalCast
+                                    (Var 8 cat_str_alloc)
+                                    DescriptorString
+                                    PointerString
+                                    (Allocatable
+                                        (String 1 -2 () PointerString)
+                                    )
+                                    ()
+                                ))]
                                 (Logical 4)
                                 ()
                                 ()
                             )]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )
                     )
                     (If
                         (StringCompare
-                            (Var 8 cat_str_alloc)
+                            (StringPhysicalCast
+                                (Var 8 cat_str_alloc)
+                                DescriptorString
+                                PointerString
+                                (Allocatable
+                                    (String 1 -2 () PointerString)
+                                )
+                                ()
+                            )
                             NotEq
                             (StringConstant
                                 "runningmodules_48_1:runningmodules_48_2"
-                                (Character 1 39 () PointerString)
+                                (String 1 39 () PointerString)
                             )
                             (Logical 4)
                             ()
@@ -490,7 +530,15 @@
                         (FunctionCall
                             8 is_fortran_name
                             ()
-                            [((Var 8 cat_str_alloc))]
+                            [((StringPhysicalCast
+                                (Var 8 cat_str_alloc)
+                                DescriptorString
+                                PointerString
+                                (Allocatable
+                                    (String 1 -2 () PointerString)
+                                )
+                                ()
+                            ))]
                             (Logical 4)
                             ()
                             ()
@@ -521,7 +569,7 @@
                             ))
                             (())]
                             (Allocatable
-                                (Character 1 -2 () PointerString)
+                                (String 1 -2 () DescriptorString)
                             )
                             ()
                             ()
@@ -531,27 +579,51 @@
                     (Print
                         (StringFormat
                             ()
-                            [(Var 8 cat_str_alloc)
+                            [(StringPhysicalCast
+                                (Var 8 cat_str_alloc)
+                                DescriptorString
+                                PointerString
+                                (Allocatable
+                                    (String 1 -2 () PointerString)
+                                )
+                                ()
+                            )
                             (FunctionCall
                                 8 is_fortran_name
                                 ()
-                                [((Var 8 cat_str_alloc))]
+                                [((StringPhysicalCast
+                                    (Var 8 cat_str_alloc)
+                                    DescriptorString
+                                    PointerString
+                                    (Allocatable
+                                        (String 1 -2 () PointerString)
+                                    )
+                                    ()
+                                ))]
                                 (Logical 4)
                                 ()
                                 ()
                             )]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )
                     )
                     (If
                         (StringCompare
-                            (Var 8 cat_str_alloc)
+                            (StringPhysicalCast
+                                (Var 8 cat_str_alloc)
+                                DescriptorString
+                                PointerString
+                                (Allocatable
+                                    (String 1 -2 () PointerString)
+                                )
+                                ()
+                            )
                             NotEq
                             (StringConstant
                                 "runningmodules_48_1runningmodules_48_2"
-                                (Character 1 38 () PointerString)
+                                (String 1 38 () PointerString)
                             )
                             (Logical 4)
                             ()
@@ -566,7 +638,15 @@
                             (FunctionCall
                                 8 is_fortran_name
                                 ()
-                                [((Var 8 cat_str_alloc))]
+                                [((StringPhysicalCast
+                                    (Var 8 cat_str_alloc)
+                                    DescriptorString
+                                    PointerString
+                                    (Allocatable
+                                        (String 1 -2 () PointerString)
+                                    )
+                                    ()
+                                ))]
                                 (Logical 4)
                                 ()
                                 ()
@@ -578,10 +658,6 @@
                             ()
                         )]
                         []
-                    )
-                    (ImplicitDeallocate
-                        [(Var 8 cat_str_alloc)
-                        (Var 8 char_str_alloc)]
                     )]
                 ),
             modules_48_fpm_strings:
@@ -675,7 +751,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () PointerString)
+                                                    (String 1 -1 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -701,7 +777,7 @@
                                         })
                                     fnv_1a_char
                                     (FunctionType
-                                        [(Character 1 -1 () PointerString)
+                                        [(String 1 -1 () PointerString)
                                         (Integer 8)]
                                         (Integer 8)
                                         Source
@@ -757,7 +833,7 @@
                                                         (StringItem
                                                             (Var 4 input)
                                                             (Var 4 i)
-                                                            (Character 1 1 () PointerString)
+                                                            (String 1 1 () PointerString)
                                                             ()
                                                         )
                                                         (Integer 8)
@@ -900,21 +976,29 @@
                                         (FunctionCall
                                             2 fnv_1a_char
                                             2 fnv_1a
-                                            [((StructInstanceMember
-                                                (ArrayItem
-                                                    (Var 5 input)
-                                                    [(()
-                                                    (IntegerConstant 1 (Integer 4) Decimal)
-                                                    ())]
-                                                    (StructType
-                                                        2 string_t
+                                            [((StringPhysicalCast
+                                                (StructInstanceMember
+                                                    (ArrayItem
+                                                        (Var 5 input)
+                                                        [(()
+                                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                                        ())]
+                                                        (StructType
+                                                            2 string_t
+                                                        )
+                                                        ColMajor
+                                                        ()
                                                     )
-                                                    ColMajor
+                                                    5 1_string_t_s
+                                                    (Allocatable
+                                                        (String 1 -2 () DescriptorString)
+                                                    )
                                                     ()
                                                 )
-                                                5 1_string_t_s
+                                                DescriptorString
+                                                PointerString
                                                 (Allocatable
-                                                    (Character 1 -2 () PointerString)
+                                                    (String 1 -2 () PointerString)
                                                 )
                                                 ()
                                             ))
@@ -941,21 +1025,29 @@
                                             (FunctionCall
                                                 2 fnv_1a_char
                                                 2 fnv_1a
-                                                [((StructInstanceMember
-                                                    (ArrayItem
-                                                        (Var 5 input)
-                                                        [(()
-                                                        (Var 5 i)
-                                                        ())]
-                                                        (StructType
-                                                            2 string_t
+                                                [((StringPhysicalCast
+                                                    (StructInstanceMember
+                                                        (ArrayItem
+                                                            (Var 5 input)
+                                                            [(()
+                                                            (Var 5 i)
+                                                            ())]
+                                                            (StructType
+                                                                2 string_t
+                                                            )
+                                                            ColMajor
+                                                            ()
                                                         )
-                                                        ColMajor
+                                                        5 1_string_t_s
+                                                        (Allocatable
+                                                            (String 1 -2 () DescriptorString)
+                                                        )
                                                         ()
                                                     )
-                                                    5 1_string_t_s
+                                                    DescriptorString
+                                                    PointerString
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (String 1 -2 () PointerString)
                                                     )
                                                     ()
                                                 ))
@@ -992,35 +1084,35 @@
                                                             (StringConcat
                                                                 (Var 6 upper)
                                                                 (Var 6 lower)
-                                                                (Character 1 52 () PointerString)
+                                                                (String 1 52 () PointerString)
                                                                 (StringConstant
                                                                     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-                                                                    (Character 1 52 () PointerString)
+                                                                    (String 1 52 () PointerString)
                                                                 )
                                                             )
                                                             (Var 6 int)
-                                                            (Character 1 62 () PointerString)
+                                                            (String 1 62 () PointerString)
                                                             (StringConstant
                                                                 "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
-                                                                (Character 1 62 () PointerString)
+                                                                (String 1 62 () PointerString)
                                                             )
                                                         )
                                                         (StringConstant
                                                             "_"
-                                                            (Character 1 1 () PointerString)
+                                                            (String 1 1 () PointerString)
                                                         )
-                                                        (Character 1 63 () PointerString)
+                                                        (String 1 63 () PointerString)
                                                         (StringConstant
                                                             "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"
-                                                            (Character 1 63 () PointerString)
+                                                            (String 1 63 () PointerString)
                                                         )
                                                     )
                                                     (StringConstant
                                                         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"
-                                                        (Character 1 63 () PointerString)
+                                                        (String 1 63 () PointerString)
                                                     )
                                                     Parameter
-                                                    (Character 1 63 () PointerString)
+                                                    (String 1 63 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -1035,14 +1127,14 @@
                                                     Local
                                                     (StringConstant
                                                         "0123456789"
-                                                        (Character 1 10 () PointerString)
+                                                        (String 1 10 () PointerString)
                                                     )
                                                     (StringConstant
                                                         "0123456789"
-                                                        (Character 1 10 () PointerString)
+                                                        (String 1 10 () PointerString)
                                                     )
                                                     Parameter
-                                                    (Character 1 10 () PointerString)
+                                                    (String 1 10 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -1058,7 +1150,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () PointerString)
+                                                    (String 1 -1 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -1089,14 +1181,14 @@
                                                     Local
                                                     (StringConstant
                                                         "abcdefghijklmnopqrstuvwxyz"
-                                                        (Character 1 26 () PointerString)
+                                                        (String 1 26 () PointerString)
                                                     )
                                                     (StringConstant
                                                         "abcdefghijklmnopqrstuvwxyz"
-                                                        (Character 1 26 () PointerString)
+                                                        (String 1 26 () PointerString)
                                                     )
                                                     Parameter
-                                                    (Character 1 26 () PointerString)
+                                                    (String 1 26 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -1113,7 +1205,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (String 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -1129,14 +1221,14 @@
                                                     Local
                                                     (StringConstant
                                                         "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-                                                        (Character 1 26 () PointerString)
+                                                        (String 1 26 () PointerString)
                                                     )
                                                     (StringConstant
                                                         "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-                                                        (Character 1 26 () PointerString)
+                                                        (String 1 26 () PointerString)
                                                     )
                                                     Parameter
-                                                    (Character 1 26 () PointerString)
+                                                    (String 1 26 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -1146,7 +1238,7 @@
                                         })
                                     is_fortran_name
                                     (FunctionType
-                                        [(Character 1 -1 () PointerString)]
+                                        [(String 1 -1 () PointerString)]
                                         (Logical 4)
                                         Source
                                         Implementation
@@ -1163,11 +1255,19 @@
                                     [(Var 6 line)]
                                     [(Assignment
                                         (Var 6 name)
-                                        (IntrinsicElementalFunction
-                                            StringTrim
-                                            [(Var 6 line)]
-                                            0
-                                            (Character 1 -1 () PointerString)
+                                        (StringPhysicalCast
+                                            (IntrinsicElementalFunction
+                                                StringTrim
+                                                [(Var 6 line)]
+                                                0
+                                                (String 1 -1 () PointerString)
+                                                ()
+                                            )
+                                            PointerString
+                                            DescriptorString
+                                            (Allocatable
+                                                (String 1 -1 () DescriptorString)
+                                            )
                                             ()
                                         )
                                         ()
@@ -1198,7 +1298,15 @@
                                                             (IntrinsicElementalFunction
                                                                 StringContainsSet
                                                                 [(StringSection
-                                                                    (Var 6 name)
+                                                                    (StringPhysicalCast
+                                                                        (Var 6 name)
+                                                                        DescriptorString
+                                                                        PointerString
+                                                                        (Allocatable
+                                                                            (String 1 -2 () PointerString)
+                                                                        )
+                                                                        ()
+                                                                    )
                                                                     (IntegerBinOp
                                                                         (IntegerConstant 1 (Integer 4) Decimal)
                                                                         Sub
@@ -1208,7 +1316,7 @@
                                                                     )
                                                                     (IntegerConstant 1 (Integer 4) Decimal)
                                                                     (IntegerConstant 1 (Integer 4) Decimal)
-                                                                    (Character 1 -3 (IntegerBinOp
+                                                                    (String 1 -3 (IntegerBinOp
                                                                         (IntegerConstant 1 (Integer 4) Decimal)
                                                                         Sub
                                                                         (IntegerBinOp
@@ -1226,10 +1334,10 @@
                                                                 (StringConcat
                                                                     (Var 6 lower)
                                                                     (Var 6 upper)
-                                                                    (Character 1 52 () PointerString)
+                                                                    (String 1 52 () PointerString)
                                                                     (StringConstant
                                                                         "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-                                                                        (Character 1 52 () PointerString)
+                                                                        (String 1 52 () PointerString)
                                                                     )
                                                                 )
                                                                 (LogicalConstant
@@ -1253,7 +1361,15 @@
                                                     (IntegerCompare
                                                         (IntrinsicElementalFunction
                                                             StringContainsSet
-                                                            [(Var 6 name)
+                                                            [(StringPhysicalCast
+                                                                (Var 6 name)
+                                                                DescriptorString
+                                                                PointerString
+                                                                (Allocatable
+                                                                    (String 1 -2 () PointerString)
+                                                                )
+                                                                ()
+                                                            )
                                                             (Var 6 allowed)
                                                             (LogicalConstant
                                                                 .false.
@@ -1297,9 +1413,6 @@
                                             )
                                             ()
                                         )]
-                                    )
-                                    (ImplicitDeallocate
-                                        [(Var 6 name)]
                                     )]
                                     (Var 6 lout)
                                     Public
@@ -1332,7 +1445,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (String 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -1349,7 +1462,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () PointerString)
+                                                    (String 1 -1 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -1366,7 +1479,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (String 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -1424,9 +1537,9 @@
                                             ())]
                                             DescriptorArray
                                         )
-                                        (Character 1 -1 () PointerString)]
+                                        (String 1 -1 () PointerString)]
                                         (Allocatable
-                                            (Character 1 -2 () PointerString)
+                                            (String 1 -2 () DescriptorString)
                                         )
                                         Source
                                         Implementation
@@ -1457,9 +1570,17 @@
                                         )
                                         [(Assignment
                                             (Var 7 cat)
-                                            (StringConstant
-                                                ""
-                                                (Character 1 0 () PointerString)
+                                            (StringPhysicalCast
+                                                (StringConstant
+                                                    ""
+                                                    (String 1 0 () PointerString)
+                                                )
+                                                PointerString
+                                                DescriptorString
+                                                (Allocatable
+                                                    (String 1 0 () DescriptorString)
+                                                )
+                                                ()
                                             )
                                             ()
                                         )
@@ -1476,14 +1597,30 @@
                                         )
                                         [(Assignment
                                             (Var 7 delim_str)
-                                            (Var 7 delim)
+                                            (StringPhysicalCast
+                                                (Var 7 delim)
+                                                PointerString
+                                                DescriptorString
+                                                (Allocatable
+                                                    (String 1 -1 () DescriptorString)
+                                                )
+                                                ()
+                                            )
                                             ()
                                         )]
                                         [(Assignment
                                             (Var 7 delim_str)
-                                            (StringConstant
-                                                ""
-                                                (Character 1 0 () PointerString)
+                                            (StringPhysicalCast
+                                                (StringConstant
+                                                    ""
+                                                    (String 1 0 () PointerString)
+                                                )
+                                                PointerString
+                                                DescriptorString
+                                                (Allocatable
+                                                    (String 1 0 () DescriptorString)
+                                                )
+                                                ()
                                             )
                                             ()
                                         )]
@@ -1504,7 +1641,7 @@
                                             )
                                             7 1_string_t_s
                                             (Allocatable
-                                                (Character 1 -2 () PointerString)
+                                                (String 1 -2 () DescriptorString)
                                             )
                                             ()
                                         )
@@ -1523,40 +1660,69 @@
                                         ())
                                         [(Assignment
                                             (Var 7 cat)
-                                            (StringConcat
+                                            (StringPhysicalCast
                                                 (StringConcat
-                                                    (Var 7 cat)
-                                                    (Var 7 delim_str)
-                                                    (Character 1 -1 () PointerString)
-                                                    ()
-                                                )
-                                                (StructInstanceMember
-                                                    (ArrayItem
-                                                        (Var 7 strings)
-                                                        [(()
-                                                        (Var 7 i)
-                                                        ())]
-                                                        (StructType
-                                                            2 string_t
+                                                    (StringConcat
+                                                        (StringPhysicalCast
+                                                            (Var 7 cat)
+                                                            DescriptorString
+                                                            PointerString
+                                                            (Allocatable
+                                                                (String 1 -2 () PointerString)
+                                                            )
+                                                            ()
                                                         )
-                                                        ColMajor
+                                                        (StringPhysicalCast
+                                                            (Var 7 delim_str)
+                                                            DescriptorString
+                                                            PointerString
+                                                            (Allocatable
+                                                                (String 1 -2 () PointerString)
+                                                            )
+                                                            ()
+                                                        )
+                                                        (String 1 -1 () PointerString)
                                                         ()
                                                     )
-                                                    7 1_string_t_s
-                                                    (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                    (StringPhysicalCast
+                                                        (StructInstanceMember
+                                                            (ArrayItem
+                                                                (Var 7 strings)
+                                                                [(()
+                                                                (Var 7 i)
+                                                                ())]
+                                                                (StructType
+                                                                    2 string_t
+                                                                )
+                                                                ColMajor
+                                                                ()
+                                                            )
+                                                            7 1_string_t_s
+                                                            (Allocatable
+                                                                (String 1 -2 () DescriptorString)
+                                                            )
+                                                            ()
+                                                        )
+                                                        DescriptorString
+                                                        PointerString
+                                                        (Allocatable
+                                                            (String 1 -2 () PointerString)
+                                                        )
+                                                        ()
                                                     )
+                                                    (String 1 -1 () PointerString)
                                                     ()
                                                 )
-                                                (Character 1 -1 () PointerString)
+                                                PointerString
+                                                DescriptorString
+                                                (Allocatable
+                                                    (String 1 -1 () DescriptorString)
+                                                )
                                                 ()
                                             )
                                             ()
                                         )]
                                         []
-                                    )
-                                    (ImplicitDeallocate
-                                        [(Var 7 delim_str)]
                                     )]
                                     (Var 7 cat)
                                     Public
@@ -1579,7 +1745,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (String 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source

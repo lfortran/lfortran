@@ -200,7 +200,7 @@
                                     [(Print
                                         (StringConstant
                                             "default class"
-                                            (Character 1 13 () PointerString)
+                                            (String 1 13 () PointerString)
                                         )
                                     )]
                                     ()
@@ -243,7 +243,7 @@
                                     [(Print
                                         (StringConstant
                                             "not ok"
-                                            (Character 1 6 () PointerString)
+                                            (String 1 6 () PointerString)
                                         )
                                     )]
                                     ()
@@ -267,7 +267,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (String 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -362,7 +362,7 @@
                     [(Print
                         (StringConstant
                             "running derived_types_19 main program"
-                            (Character 1 37 () PointerString)
+                            (String 1 37 () PointerString)
                         )
                     )]
                 )

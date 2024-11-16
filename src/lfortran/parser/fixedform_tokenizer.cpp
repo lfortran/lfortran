@@ -790,9 +790,49 @@ struct FixedFormRecursiveDescent {
         return multiline;
     }
 
+    // Determines if a line in Fortran code represents an assignment rather than a declaration.
+    // E.g. below are declarations
+    //      integer :: x = 1
+    //      DATA p(1), (c(i), i=1, 2) / 5, 10, 12 /
+    //
+    // while, below are assignments
+    //      i = 2
+    //      integerx = 12
+    //      datap = 5
+    // NOTE: this function doesn't actually lexes, but only determines if it's
+    // (possibly) an assignment or not
+    bool is_possible_assignment(unsigned char *start, unsigned char *&cur) {
+        unsigned char *end = start;
+        if (!try_name(end)) return false;
+
+        // Try parsing array indices, if any
+        while (*end == '(') {
+            end++;  // Move past '('
+            if (!try_expr(end, true)) {
+                return false;  // Parsing failed, it’s not an assignment
+            }
+            if (*end != ')') {
+                return false;  // Expected closing ')', not an assignment
+            }
+            end++;  // Move past ')'
+        }
+
+        // After parsing identifier and indices, check if the next character is `=`
+        if (*end == '=') {
+            cur = start;  // Reset to the start to re-tokenize as an assignment
+            return true;
+        }
+        return false;  // Not an assignment if no '=' found
+    }
+
     bool lex_declaration(unsigned char *&cur) {
         unsigned char *start = cur;
         next_line(cur);
+
+        if (is_possible_assignment(start, cur)) {
+            return false;
+        }
+
         if (lex_declarator(start)) {
             tokenize_line(start);
             return true;
@@ -940,11 +980,33 @@ struct FixedFormRecursiveDescent {
         return true;
     }
 
+    void lex_derived_type(unsigned char *&cur) {
+        push_token_advance(cur, "type");
+        tokenize_line(cur);
+        while (true) {
+            if (next_is(cur, "endtype")) {
+                push_token_advance(cur, "endtype");
+                tokenize_line(cur);
+                break;
+            } else {
+                lex_declaration(cur);
+            }
+        }
+    }
+
     bool lex_body_statement(unsigned char *&cur) {
         int64_t l = eat_label(cur);
+        // handle derived type tokenization
+        // this needs to be done before 'lex_declaration'
+        if (next_is(cur, "type::")) {
+            lex_derived_type(cur);
+            return true;
+        }
+
         if (lex_declaration(cur)) {
             return true;
         }
+
         if (lex_io(cur)) return true;
         if (next_is(cur, "if(")) {
             lex_cond(cur);
@@ -953,6 +1015,11 @@ struct FixedFormRecursiveDescent {
         unsigned char *nline = cur; next_line(nline);
         if (is_do_loop(cur)) {
             lex_do(cur);
+            return true;
+        }
+
+        if (next_is(cur, "doconcurrent(")) {
+            lex_do_concurrent(cur);
             return true;
         }
 
@@ -994,8 +1061,31 @@ struct FixedFormRecursiveDescent {
             return true;
         }
 
+        if (next_is(cur, "interface")) {
+            lex_interface(cur);
+            return true;
+        }
+
         if (next_is(cur, "exit")) {
             push_token_advance(cur, "exit");
+            tokenize_line(cur);
+            return true;
+        }
+
+        if (next_is(cur, "flush")) {
+            push_token_advance(cur, "flush");
+            tokenize_line(cur);
+            return true;
+        }
+
+        if (next_is(cur, "allocate")) {
+            push_token_advance(cur, "allocate");
+            tokenize_line(cur);
+            return true;
+        }
+
+        if (next_is(cur, "deallocate")) {
+            push_token_advance(cur, "deallocate");
             tokenize_line(cur);
             return true;
         }
@@ -1250,6 +1340,27 @@ struct FixedFormRecursiveDescent {
         return false;
     }
 
+    void lex_do_concurrent(unsigned char *&cur) {
+        push_token_advance(cur, "do");
+        push_token_advance(cur, "concurrent");
+        tokenize_line(cur);
+
+        while (true) {
+            if (next_is(cur, "enddo")) {
+                push_token_no_advance(cur, "enddo");
+                push_token_no_advance(cur, "\n");
+                next_line(cur);
+                break;
+            } else if (!lex_body_statement(cur)) {
+                Location loc;
+                loc.first = cur - string_start;
+                loc.last = cur - string_start;
+                throw parser_local::TokenizerError("Expected an executable "
+                    "statement inside do concurrent loop", loc);
+            }
+        }
+    }
+
     void lex_do(unsigned char *&cur) {
         auto end = cur; next_line(end);
         push_token_advance(cur, "do");
@@ -1475,6 +1586,26 @@ struct FixedFormRecursiveDescent {
         }
     }
 
+    void lex_interface(unsigned char *&cur) {
+        push_token_advance(cur, "interface");
+        tokenize_line(cur);
+
+        while (true) {
+            if (next_is(cur, "endinterface")) {
+                push_token_advance(cur, "endinterface");
+                tokenize_line(cur);
+                break;
+            } else if (next_is(cur, "subroutine") || next_is(cur, "function")) {
+                // Handle procedure declaration within the interface
+                lex_procedure(cur);
+            } else if (next_is(cur, "moduleprocedure")) {
+                // TODO: handle module procedure
+            } else {
+                error(cur, "Unexpected token in interface block");
+            }
+        }
+    }
+
     void lex_block_data(unsigned char *&cur) {
         push_token_advance(cur, "block");
         push_token_advance(cur, "data");
@@ -1584,6 +1715,8 @@ struct FixedFormRecursiveDescent {
         }
         if (is_program(cur)) {
             lex_program(cur, true);
+        } else if (next_is(cur, "interface")) {
+            lex_interface(cur);
         } else if (is_module(cur)) {
             lex_module(cur);
         } else if (lex_procedure(cur)) {

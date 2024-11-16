@@ -1,7 +1,7 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
 
-@intrinsics_02.x = internal global float 0.000000e+00
+@intrinsics_02.x = internal global float 0x3FEFEB7AA0000000
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @1 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 @2 = private unnamed_addr constant [11 x i8] c"ERROR STOP\00", align 1
@@ -111,7 +111,6 @@ define i32 @main(i32 %0, i8** %1) {
   %call_arg_value1 = alloca float, align 4
   %call_arg_value = alloca float, align 4
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
-  store float 0x3FEFEB7AA0000000, float* @intrinsics_02.x, align 4
   %y = alloca double, align 8
   store double 0x3FEFEB7A9B2C6D8B, double* %y, align 8
   %2 = load float, float* @intrinsics_02.x, align 4

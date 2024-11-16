@@ -27,6 +27,7 @@
 #include <libasr/pass/wrap_global_stmts.h>
 #include <libasr/pass/replace_implied_do_loops.h>
 #include <libasr/pass/replace_array_op.h>
+#include <libasr/pass/replace_array_op_simplifier.h>
 #include <libasr/pass/replace_class_constructor.h>
 #include <libasr/pass/replace_arr_slice.h>
 #include <libasr/pass/replace_print_arr.h>
@@ -610,7 +611,7 @@ int python_wrapper(const std::string &infile, std::string array_order,
     return 0;
 }
 
-int emit_asr(const std::string &infile,
+[[maybe_unused]] int emit_asr(const std::string &infile,
     LCompilers::PassManager& pass_manager,
     CompilerOptions &compiler_options)
 {
@@ -627,6 +628,7 @@ int emit_asr(const std::string &infile,
     LCompilers::diag::Diagnostics diagnostics;
     LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
         r = fe.get_asr2(input, lm, diagnostics);
+    bool has_error_w_cc = compiler_options.continue_compilation && diagnostics.has_error();
     std::cerr << diagnostics.render(lm, compiler_options);
     if (!r.ok) {
         LCOMPILERS_ASSERT(diagnostics.has_error())
@@ -662,7 +664,7 @@ int emit_asr(const std::string &infile,
         std::cout << LCompilers::pickle(*asr, compiler_options.use_colors, compiler_options.indent,
                 compiler_options.po.with_intrinsic_mods) << std::endl;
     }
-    return 0;
+    return has_error_w_cc;
 }
 
 int emit_cpp(const std::string &infile, CompilerOptions &compiler_options)
@@ -765,7 +767,7 @@ int emit_fortran(const std::string &infile, CompilerOptions &compiler_options) {
     std::cerr << diagnostics.render(lm, compiler_options);
     if (src.ok) {
         std::cout << src.result;
-        return 0;
+        return compiler_options.continue_compilation && diagnostics.has_error();
     } else {
         LCOMPILERS_ASSERT(diagnostics.has_error())
         return 1;
@@ -941,7 +943,7 @@ int emit_llvm(const std::string &infile, LCompilers::PassManager& pass_manager,
     std::cerr << diagnostics.render(lm, compiler_options);
     if (llvm.ok) {
         std::cout << llvm.result;
-        return 0;
+        return compiler_options.continue_compilation && diagnostics.has_error();
     } else {
         LCOMPILERS_ASSERT(diagnostics.has_error())
         return 1;
@@ -998,6 +1000,7 @@ int compile_src_to_object_file(const std::string &infile,
     LCompilers::diag::Diagnostics diagnostics;
     LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
         result = fe.get_asr2(input, lm, diagnostics);
+    bool has_error_w_cc = compiler_options.continue_compilation && diagnostics.has_error();
     std::cerr << diagnostics.render(lm, compiler_options);
     if (result.ok) {
         asr = result.result;
@@ -1058,8 +1061,8 @@ int compile_src_to_object_file(const std::string &infile,
     } else {
         e.save_object_file(*(m->m_m), outfile);
     }
-    
-    return 0;
+
+    return has_error_w_cc;
 }
 
 int compile_llvm_to_object_file(const std::string& infile,
@@ -1924,7 +1927,14 @@ int emit_c_preprocessor(const std::string &infile, CompilerOptions &compiler_opt
         lm.files.push_back(fl);
         lm.file_ends.push_back(input.size());
     }
-    std::string s = cpp.run(input, lm, cpp.macro_definitions);
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::Result<std::string> res = cpp.run(input, lm, cpp.macro_definitions, diagnostics);
+    std::string s;
+    if (res.ok) {
+        s = res.result;
+    } else {
+        s = diagnostics.render(lm, compiler_options);
+    }
     if(!compiler_options.arg_o.empty()) {
         std::ofstream fout(compiler_options.arg_o);
         fout << s;
@@ -2196,6 +2206,7 @@ int main_app(int argc, char *argv[]) {
     app.add_flag("--lookup-name", compiler_options.lookup_name, "Lookup a name specified by --line & --column in the ASR");
     app.add_option("--line", compiler_options.line, "Line number for --lookup-name")->capture_default_str();
     app.add_option("--column", compiler_options.column, "Column number for --lookup-name")->capture_default_str();
+    app.add_flag("--continue-compilation", compiler_options.continue_compilation, "collect error message and continue compilation");
     app.add_flag("--generate-object-code", compiler_options.generate_object_code, "Generate object code into .o files");
     app.add_flag("--rtlib", compiler_options.rtlib, "Include the full runtime library in the LLVM output");
     app.add_flag("--use-loop-variable-after-loop", compiler_options.po.use_loop_variable_after_loop, "Allow using loop variable after the loop");
@@ -2224,6 +2235,7 @@ int main_app(int argc, char *argv[]) {
     app.add_flag("--ignore-pragma", compiler_options.ignore_pragma, "Ignores all the pragmas");
     app.add_flag("--stack-arrays", compiler_options.stack_arrays, "Allocate memory for arrays on stack");
     app.add_flag("--wasm-html", compiler_options.wasm_html, "Generate HTML file using emscripten for LLVM->WASM");
+    app.add_flag("--experimental-simplifier", compiler_options.po.experimental_simplifier, "Use experimental simplifier pass");
     app.add_option("--emcc-embed", compiler_options.emcc_embed, "Embed a given file/directory using emscripten for LLVM->WASM");
 
     // LSP specific options
@@ -2262,6 +2274,7 @@ int main_app(int argc, char *argv[]) {
     app.get_formatter()->column_width(25);
     app.require_subcommand(0, 1);
     CLI11_PARSE(app, argc, argv);
+    LCompilers::ASRUtils::use_experimental_simplifier = compiler_options.po.experimental_simplifier;
     lcompilers_unique_ID = compiler_options.generate_object_code ? get_unique_ID() : "";
 
     if (arg_version) {
@@ -2269,6 +2282,7 @@ int main_app(int argc, char *argv[]) {
         std::cout << "LFortran version: " << version << std::endl;
         std::cout << "Platform: " << pf2s(compiler_options.platform) << std::endl;
 #ifdef HAVE_LFORTRAN_LLVM
+        std::cout << "LLVM: " << LCompilers::LLVMEvaluator::llvm_version() << std::endl;
         std::cout << "Default target: " << LCompilers::LLVMEvaluator::get_default_target_triple() << std::endl;
 #endif
         return 0;
@@ -2411,8 +2425,10 @@ int main_app(int argc, char *argv[]) {
         }
     }
 
-    if (CLI::NonexistentPath(arg_file).empty())
-        throw LCompilers::LCompilersException("File does not exist: " + arg_file);
+    if (CLI::NonexistentPath(arg_file).empty()) {
+        std::cerr << "error: no such file or directory: '" << arg_file << "'" << std::endl;
+	return 1;
+    }
 
     // Decide if a file is fixed format based on the extension
     // Gfortran does the same thing
@@ -2598,6 +2614,7 @@ int main_app(int argc, char *argv[]) {
         }
     }
 
+    int err_ = 0;
     std::vector<std::string> object_files;
     for (const auto &arg_file : arg_files) {
         int err = 0;
@@ -2652,11 +2669,12 @@ int main_app(int argc, char *argv[]) {
             // assume it's an object file
             tmp_o = arg_file;
         }
-        if (err) return err;
+        if (err && !compiler_options.continue_compilation) return err;
+        err_ = err;
         object_files.push_back(tmp_o);
     }
 
-    return link_executable(object_files, outfile, runtime_library_dir, backend, static_link, shared_link,
+    return err_ + link_executable(object_files, outfile, runtime_library_dir, backend, static_link, shared_link,
                            link_with_gcc, true, arg_v, arg_L, arg_l, linker_flags, compiler_options);
 }
 

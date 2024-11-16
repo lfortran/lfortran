@@ -18,7 +18,7 @@
                                     Default
                                     (Allocatable
                                         (Array
-                                            (Character 1 5 () PointerString)
+                                            (String 1 5 () PointerString)
                                             [(()
                                             ())]
                                             DescriptorArray
@@ -114,7 +114,7 @@
                         (ArrayConstructor
                             []
                             (Array
-                                (Character 1 1 () PointerString)
+                                (String 1 1 () PointerString)
                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                 (IntegerConstant 0 (Integer 4) Decimal))]
                                 FixedSizeArray
@@ -123,11 +123,6 @@
                             ColMajor
                         )
                         ()
-                    )
-                    (ImplicitDeallocate
-                        [(Var 2 list_character)
-                        (Var 2 list_integer)
-                        (Var 2 list_logical)]
                     )]
                 )
         })

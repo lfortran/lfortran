@@ -1475,16 +1475,32 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
     }
 
     void replace_IntrinsicArrayFunction(ASR::IntrinsicArrayFunction_t* x) {
-        if(!ASRUtils::IntrinsicArrayFunctionRegistry::is_elemental(x->m_arr_intrinsic_id)) {
-            // ASR::BaseExprReplacer<ReplaceArrayOp>::replace_IntrinsicArrayFunction(x);
-            if( op_expr == &(x->base) ) {
-                op_dims = nullptr;
-                op_n_dims = ASRUtils::extract_dimensions_from_ttype(
-                    ASRUtils::expr_type(*current_expr), op_dims);
-            }
-            return ;
+        if (op_expr == &(x->base)) {
+            op_dims = nullptr;
+            op_n_dims = ASRUtils::extract_dimensions_from_ttype(
+                ASRUtils::expr_type(*current_expr), op_dims);
         }
-        replace_intrinsic_function(x);
+
+        for (size_t i = 0; i < x->n_args; i++){
+            ASR::expr_t* arg = x->m_args[i];
+
+            if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*arg)) {
+                arg = ASR::down_cast<ASR::ArrayPhysicalCast_t>(arg)->m_arg;
+            }
+
+            if (ASR::is_a<ASR::IntrinsicElementalFunction_t>(*arg)) {
+                ASR::expr_t** current_expr_copy_9 = current_expr;
+                current_expr = &(x->m_args[i]);
+                ASR::dimension_t* op_dims_copy = op_dims;
+                size_t op_n_dims_copy = op_n_dims;
+                self().replace_expr(x->m_args[i]);
+                x->m_args[i] = *current_expr;
+                op_dims = op_dims_copy;
+                op_n_dims = op_n_dims_copy;
+                current_expr = current_expr_copy_9;
+            }
+        }
+        return ;
     }
 
     void replace_ArrayPhysicalCast(ASR::ArrayPhysicalCast_t* x) {

@@ -12,9 +12,13 @@
 #include <libasr/pass/intrinsic_subroutine_registry.h>
 #include <libasr/pass/intrinsic_array_function_registry.h>
 
+#include <libasr/asr_builder.h>
+
 namespace LCompilers {
 
     namespace ASRUtils  {
+
+        bool use_experimental_simplifier = false;
 
 // depth-first graph traversal
 void visit(
@@ -558,7 +562,7 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
         }
 
         if( ASR::is_a<ASR::Allocatable_t>(*member_variable->m_type) ) {
-            member_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al,
+            member_type = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al,
             member_variable->base.base.loc, member_type));
         } else if( ASR::is_a<ASR::Pointer_t>(*member_variable->m_type) ) {
             member_type = ASRUtils::TYPE(ASR::make_Pointer_t(al,
@@ -1556,7 +1560,7 @@ ASR::asr_t* make_Cmpop_util(Allocator &al, const Location& loc, ASR::cmpopType c
         case ASR::ttypeType::Complex: {
             return ASR::make_ComplexCompare_t(al, loc, lexpr, cmpop, rexpr, expr_type, nullptr);
         }
-        case ASR::ttypeType::Character: {
+        case ASR::ttypeType::String: {
             return ASR::make_StringCompare_t(al, loc, lexpr, cmpop, rexpr, expr_type, nullptr);
         }
         default:
@@ -1584,7 +1588,7 @@ void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,
     dims.push_back(al, dim);
     ASR::ttype_t* dest_shape_type = ASRUtils::TYPE(ASR::make_Array_t(al, loc,
         ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), dims.p, dims.size(),
-        is_value_character_array && !is_value_constant(expr2) ? ASR::array_physical_typeType::CharacterArraySinglePointer: ASR::array_physical_typeType::FixedSizeArray));
+        is_value_character_array && !is_value_constant(expr2) ? ASR::array_physical_typeType::StringArraySinglePointer: ASR::array_physical_typeType::FixedSizeArray));
 
     ASR::expr_t* dest_shape = nullptr;
     ASR::expr_t* value = nullptr;
@@ -1611,7 +1615,7 @@ void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,
             ASRUtils::get_fixed_size_of_array(expr1_mdims, expr1_ndims) <= 256 ) {
             ASR::ttype_t* value_type = ASRUtils::TYPE(ASR::make_Array_t(al, loc,
                 ASRUtils::type_get_past_array(ASRUtils::expr_type(expr2)), dims.p, dims.size(),
-                is_value_character_array && !ASRUtils::is_value_constant(expr2) ? ASR::array_physical_typeType::CharacterArraySinglePointer: ASR::array_physical_typeType::FixedSizeArray));
+                is_value_character_array && !ASRUtils::is_value_constant(expr2) ? ASR::array_physical_typeType::StringArraySinglePointer: ASR::array_physical_typeType::FixedSizeArray));
             Vec<ASR::expr_t*> values;
             values.reserve(al, ASRUtils::get_fixed_size_of_array(expr1_mdims, expr1_ndims));
             for( int64_t i = 0; i < ASRUtils::get_fixed_size_of_array(expr1_mdims, expr1_ndims); i++ ) {
@@ -1709,6 +1713,176 @@ void append_error(diag::Diagnostics& diag, const std::string& msg,
                 const Location& loc) {
     diag.add(diag::Diagnostic(msg, diag::Level::Error,
         diag::Stage::Semantic, {diag::Label("", { loc })}));
+}
+
+size_t get_constant_ArrayConstant_size(ASR::ArrayConstant_t* x) {
+    return ASRUtils::get_fixed_size_of_array(x->m_type);
+}
+
+ASR::expr_t* get_ArrayConstant_size(Allocator& al, ASR::ArrayConstant_t* x) {
+    ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x->base.base.loc, 4));
+    return make_ConstantWithType(make_IntegerConstant_t,
+            ASRUtils::get_fixed_size_of_array(x->m_type), int_type, x->base.base.loc);
+}
+
+ASR::expr_t* get_ImpliedDoLoop_size(Allocator& al, ASR::ImpliedDoLoop_t* implied_doloop) {
+    const Location& loc = implied_doloop->base.base.loc;
+    ASRUtils::ASRBuilder builder(al, loc);
+    ASR::expr_t* start = implied_doloop->m_start;
+    ASR::expr_t* end = implied_doloop->m_end;
+    ASR::expr_t* d = implied_doloop->m_increment;
+    ASR::expr_t* implied_doloop_size = nullptr;
+    int kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(end));
+    start = builder.i2i_t(start, ASRUtils::expr_type(end));
+    if( d == nullptr ) {
+        implied_doloop_size = builder.Add(
+            builder.Sub(end, start),
+            make_ConstantWithKind(make_IntegerConstant_t, make_Integer_t, 1, kind, loc));
+    } else {
+        implied_doloop_size = builder.Add(builder.Div(
+            builder.Sub(end, start), d),
+            make_ConstantWithKind(make_IntegerConstant_t, make_Integer_t, 1, kind, loc));
+    }
+    int const_elements = 0;
+    ASR::expr_t* implied_doloop_size_ = nullptr;
+    for( size_t i = 0; i < implied_doloop->n_values; i++ ) {
+        if( ASR::is_a<ASR::ImpliedDoLoop_t>(*implied_doloop->m_values[i]) ) {
+            if( implied_doloop_size_ == nullptr ) {
+                implied_doloop_size_ = get_ImpliedDoLoop_size(al,
+                    ASR::down_cast<ASR::ImpliedDoLoop_t>(implied_doloop->m_values[i]));
+            } else {
+                implied_doloop_size_ = builder.Add(get_ImpliedDoLoop_size(al,
+                    ASR::down_cast<ASR::ImpliedDoLoop_t>(implied_doloop->m_values[i])),
+                    implied_doloop_size_);
+            }
+        } else {
+            const_elements += 1;
+        }
+    }
+    if( const_elements > 1 ) {
+        if( implied_doloop_size_ == nullptr ) {
+            implied_doloop_size_ = make_ConstantWithKind(make_IntegerConstant_t,
+                make_Integer_t, const_elements, kind, loc);
+        } else {
+            implied_doloop_size_ = builder.Add(
+                make_ConstantWithKind(make_IntegerConstant_t,
+                    make_Integer_t, const_elements, kind, loc),
+                implied_doloop_size_);
+        }
+    }
+    if( implied_doloop_size_ ) {
+        implied_doloop_size = builder.Mul(implied_doloop_size_, implied_doloop_size);
+    }
+    return implied_doloop_size;
+}
+
+ASR::expr_t* get_ArrayConstructor_size(Allocator& al, ASR::ArrayConstructor_t* x) {
+    ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x->base.base.loc, 4));
+    ASR::expr_t* array_size = nullptr;
+    int64_t constant_size = 0;
+    const Location& loc = x->base.base.loc;
+    ASRUtils::ASRBuilder builder(al, loc);
+    for( size_t i = 0; i < x->n_args; i++ ) {
+        ASR::expr_t* element = x->m_args[i];
+        if( ASR::is_a<ASR::ArrayConstant_t>(*element) ) {
+            if( ASRUtils::is_value_constant(element) ) {
+                constant_size += get_constant_ArrayConstant_size(
+                    ASR::down_cast<ASR::ArrayConstant_t>(element));
+            } else {
+                ASR::expr_t* element_array_size = get_ArrayConstant_size(al,
+                    ASR::down_cast<ASR::ArrayConstant_t>(element));
+                if( array_size == nullptr ) {
+                    array_size = element_array_size;
+                } else {
+                    array_size = builder.Add(array_size,
+                                    element_array_size);
+                }
+            }
+        } else if( ASR::is_a<ASR::ArrayConstructor_t>(*element) ) {
+            ASR::expr_t* element_array_size = get_ArrayConstructor_size(al,
+                ASR::down_cast<ASR::ArrayConstructor_t>(element));
+            if( array_size == nullptr ) {
+                array_size = element_array_size;
+            } else {
+                array_size = builder.Add(array_size,
+                                element_array_size);
+            }
+        } else if( ASR::is_a<ASR::Var_t>(*element) ) {
+            ASR::ttype_t* element_type = ASRUtils::type_get_past_allocatable(
+                ASRUtils::expr_type(element));
+            if( ASRUtils::is_array(element_type) ) {
+                if( ASRUtils::is_fixed_size_array(element_type) ) {
+                    ASR::dimension_t* m_dims = nullptr;
+                    size_t n_dims = ASRUtils::extract_dimensions_from_ttype(element_type, m_dims);
+                    constant_size += ASRUtils::get_fixed_size_of_array(m_dims, n_dims);
+                } else {
+                    ASR::expr_t* element_array_size = ASRUtils::get_size(element, al);
+                    if( array_size == nullptr ) {
+                        array_size = element_array_size;
+                    } else {
+                        array_size = builder.Add(array_size,
+                                        element_array_size);
+                    }
+                }
+            } else {
+                constant_size += 1;
+            }
+        } else if( ASR::is_a<ASR::ImpliedDoLoop_t>(*element) ) {
+            ASR::expr_t* implied_doloop_size = get_ImpliedDoLoop_size(al,
+                ASR::down_cast<ASR::ImpliedDoLoop_t>(element));
+            if( array_size ) {
+                array_size = builder.Add(implied_doloop_size, array_size);
+            } else {
+                array_size = implied_doloop_size;
+            }
+        } else if( ASR::is_a<ASR::ArraySection_t>(*element) ) {
+            ASR::ArraySection_t* array_section_t = ASR::down_cast<ASR::ArraySection_t>(element);
+            ASR::expr_t* array_section_size = nullptr;
+            for( size_t j = 0; j < array_section_t->n_args; j++ ) {
+                ASR::expr_t* start = array_section_t->m_args[j].m_left;
+                ASR::expr_t* end = array_section_t->m_args[j].m_right;
+                ASR::expr_t* d = array_section_t->m_args[j].m_step;
+                if( d == nullptr ) {
+                    continue;
+                }
+                ASR::expr_t* dim_size = builder.Add(builder.Div(
+                    builder.Sub(end, start), d),
+                    make_ConstantWithKind(make_IntegerConstant_t, make_Integer_t, 1, 4, loc));
+                if( array_section_size == nullptr ) {
+                    array_section_size = dim_size;
+                } else {
+                    array_section_size = builder.Mul(array_section_size, dim_size);
+                }
+            }
+            if( array_size == nullptr ) {
+                array_size = array_section_size;
+            } else {
+                builder.Add(array_section_size, array_size);
+            }
+        } else {
+            constant_size += 1;
+        }
+    }
+    ASR::expr_t* constant_size_asr = nullptr;
+    if (constant_size == 0 && array_size == nullptr) {
+        constant_size = ASRUtils::get_fixed_size_of_array(x->m_type);
+    }
+    if( constant_size > 0 ) {
+        constant_size_asr = make_ConstantWithType(make_IntegerConstant_t,
+                                constant_size, int_type, x->base.base.loc);
+        if( array_size == nullptr ) {
+            return constant_size_asr;
+        }
+    }
+    if( constant_size_asr ) {
+        array_size = builder.Add(array_size, constant_size_asr);
+    }
+
+    if( array_size == nullptr ) {
+        array_size = make_ConstantWithKind(make_IntegerConstant_t,
+            make_Integer_t, 0, 4, x->base.base.loc);
+    }
+    return array_size;
 }
 
 

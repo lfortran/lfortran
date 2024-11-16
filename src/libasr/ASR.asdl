@@ -133,6 +133,7 @@ expr
     | StringOrd(expr arg, ttype type, expr? value)
     | StringChr(expr arg, ttype type, expr? value)
     | StringFormat(expr? fmt, expr* args, string_format_kind kind, ttype type, expr? value)
+    | StringPhysicalCast(expr arg, string_physical_type old, string_physical_type new, ttype type, expr? value)
     | CPtrCompare(expr left, cmpop op, expr right, ttype type, expr? value)
     | SymbolicCompare(expr left, cmpop op, expr right, ttype type, expr? value)
     | DictConstant(expr* keys, expr* values, ttype type)
@@ -187,7 +188,7 @@ ttype
     | UnsignedInteger(int kind)
     | Real(int kind)
     | Complex(int kind)
-    | Character(int kind, int len, expr? len_expr, string_physical_type physical_type)
+    | String(int kind, int len, expr? len_expr, string_physical_type physical_type)
     | Logical(int kind)
     | Set(ttype type)
     | List(ttype type)
@@ -205,7 +206,7 @@ ttype
     | Array(ttype type, dimension* dims, array_physical_type physical_type)
     | FunctionType(ttype* arg_types, ttype? return_var_type, abi abi, deftype deftype, string? bindc_name, bool elemental, bool pure, bool module, bool inline, bool static, symbol* restrictions, bool is_restriction)
 
-cast_kind = RealToInteger | IntegerToReal | LogicalToReal | RealToReal | IntegerToInteger | RealToComplex | IntegerToComplex | IntegerToLogical | RealToLogical | CharacterToLogical | CharacterToInteger | CharacterToList | ComplexToLogical | ComplexToComplex | ComplexToReal | ComplexToInteger | LogicalToInteger | RealToCharacter | IntegerToCharacter | LogicalToCharacter | UnsignedIntegerToInteger | UnsignedIntegerToUnsignedInteger | UnsignedIntegerToReal | UnsignedIntegerToLogical | IntegerToUnsignedInteger | RealToUnsignedInteger | CPtrToUnsignedInteger | UnsignedIntegerToCPtr | IntegerToSymbolicExpression | ListToArray
+cast_kind = RealToInteger | IntegerToReal | LogicalToReal | RealToReal | IntegerToInteger | RealToComplex | IntegerToComplex | IntegerToLogical | RealToLogical | StringToLogical | StringToInteger | StringToList | ComplexToLogical | ComplexToComplex | ComplexToReal | ComplexToInteger | LogicalToInteger | RealToString | IntegerToString | LogicalToString | UnsignedIntegerToInteger | UnsignedIntegerToUnsignedInteger | UnsignedIntegerToReal | UnsignedIntegerToLogical | IntegerToUnsignedInteger | RealToUnsignedInteger | CPtrToUnsignedInteger | UnsignedIntegerToCPtr | IntegerToSymbolicExpression | ListToArray
 storage_type = Default | Save | Parameter
 access = Public | Private
 intent = Local | In | Out | InOut | ReturnVar | Unspecified
@@ -225,7 +226,7 @@ case_stmt = CaseStmt(expr* test, stmt* body, bool fall_through) | CaseStmt_Range
 type_stmt = TypeStmtName(symbol sym, stmt* body) | ClassStmt(symbol sym, stmt* body) | TypeStmtType(ttype type, stmt* body)
 enumtype = IntegerConsecutiveFromZero | IntegerUnique | IntegerNotUnique | NonInteger
 require_instantiation = Require(identifier name, identifier* args)
-array_physical_type = DescriptorArray | PointerToDataArray | UnboundedPointerToDataArray | FixedSizeArray | CharacterArraySinglePointer | NumPyArray | ISODescriptorArray | SIMDArray
+array_physical_type = DescriptorArray | PointerToDataArray | UnboundedPointerToDataArray | FixedSizeArray | StringArraySinglePointer | NumPyArray | ISODescriptorArray | SIMDArray
 string_physical_type = PointerString | DescriptorString
 binop = Add | Sub | Mul | Div | Pow | BitAnd | BitOr | BitXor | BitLShift | BitRShift
 reduction_op = ReduceAdd | ReduceSub | ReduceMul | ReduceMIN | ReduceMAX

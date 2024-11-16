@@ -21,7 +21,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 10 () PointerString)
+                                                    (String 1 10 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -31,7 +31,7 @@
                                         })
                                     optional_argument
                                     (FunctionType
-                                        [(Character 1 10 () PointerString)]
+                                        [(String 1 10 () PointerString)]
                                         ()
                                         Source
                                         Implementation
@@ -58,17 +58,17 @@
                                             (StringConcat
                                                 (StringConstant
                                                     "Hello "
-                                                    (Character 1 6 () PointerString)
+                                                    (String 1 6 () PointerString)
                                                 )
                                                 (Var 3 name)
-                                                (Character 1 16 () PointerString)
+                                                (String 1 16 () PointerString)
                                                 ()
                                             )
                                         )]
                                         [(Print
                                             (StringConstant
                                                 "Hello world!"
-                                                (Character 1 12 () PointerString)
+                                                (String 1 12 () PointerString)
                                             )
                                         )]
                                     )]

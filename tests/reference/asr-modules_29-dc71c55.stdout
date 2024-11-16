@@ -41,7 +41,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () PointerString)
+                                                    (String 1 -1 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -75,7 +75,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () PointerString)
+                                                    (String 1 -1 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -85,8 +85,8 @@
                                         })
                                     git_target_branch
                                     (FunctionType
-                                        [(Character 1 -1 () PointerString)
-                                        (Character 1 -1 () PointerString)]
+                                        [(String 1 -1 () PointerString)
+                                        (String 1 -1 () PointerString)]
                                         (StructType
                                             15 git_target_t
                                         )
@@ -109,11 +109,19 @@
                                             (Var 17 self)
                                             17 1_git_target_t_url
                                             (Allocatable
-                                                (Character 1 -2 () PointerString)
+                                                (String 1 -2 () DescriptorString)
                                             )
                                             ()
                                         )
-                                        (Var 17 url)
+                                        (StringPhysicalCast
+                                            (Var 17 url)
+                                            PointerString
+                                            DescriptorString
+                                            (Allocatable
+                                                (String 1 -1 () DescriptorString)
+                                            )
+                                            ()
+                                        )
                                         ()
                                     )
                                     (Assignment
@@ -121,11 +129,19 @@
                                             (Var 17 self)
                                             17 1_git_target_t_object
                                             (Allocatable
-                                                (Character 1 -2 () PointerString)
+                                                (String 1 -2 () DescriptorString)
                                             )
                                             ()
                                         )
-                                        (Var 17 branch)
+                                        (StringPhysicalCast
+                                            (Var 17 branch)
+                                            PointerString
+                                            DescriptorString
+                                            (Allocatable
+                                                (String 1 -1 () DescriptorString)
+                                            )
+                                            ()
+                                        )
                                         ()
                                     )]
                                     (Var 17 self)
@@ -149,7 +165,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (String 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -167,7 +183,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (String 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -234,7 +250,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (String 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -252,7 +268,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (String 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -289,7 +305,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (String 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -388,7 +404,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () PointerString)
+                                                    (String 1 -1 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -429,7 +445,7 @@
                                         (StructType
                                             8 toml_table
                                         )
-                                        (Character 1 -1 () PointerString)
+                                        (String 1 -1 () PointerString)
                                         (Allocatable
                                             (StructType
                                                 8 error_t
@@ -484,7 +500,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (String 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -520,7 +536,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (String 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -562,8 +578,24 @@
                                         (FunctionCall
                                             8 git_target_branch
                                             ()
-                                            [((Var 13 url))
-                                            ((Var 13 obj))]
+                                            [((StringPhysicalCast
+                                                (Var 13 url)
+                                                DescriptorString
+                                                PointerString
+                                                (Allocatable
+                                                    (String 1 -2 () PointerString)
+                                                )
+                                                ()
+                                            ))
+                                            ((StringPhysicalCast
+                                                (Var 13 obj)
+                                                DescriptorString
+                                                PointerString
+                                                (Allocatable
+                                                    (String 1 -2 () PointerString)
+                                                )
+                                                ()
+                                            ))]
                                             (StructType
                                                 8 git_target_t
                                             )
@@ -571,10 +603,6 @@
                                             ()
                                         )
                                         ()
-                                    )
-                                    (ImplicitDeallocate
-                                        [(Var 13 obj)
-                                        (Var 13 url)]
                                     )]
                                     ()
                                     Public
@@ -692,7 +720,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (String 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -710,7 +738,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (String 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -728,7 +756,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (String 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -1001,7 +1029,7 @@
                     [(Print
                         (StringConstant
                             "running modules_29 program"
-                            (Character 1 26 () PointerString)
+                            (String 1 26 () PointerString)
                         )
                     )]
                 )

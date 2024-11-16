@@ -23,7 +23,7 @@
                                                     Default
                                                     (Allocatable
                                                         (Array
-                                                            (Character 1 -2 () PointerString)
+                                                            (String 1 -2 () PointerString)
                                                             [(()
                                                             ())]
                                                             DescriptorArray
@@ -110,7 +110,7 @@
                                     (FunctionType
                                         [(Allocatable
                                             (Array
-                                                (Character 1 -2 () PointerString)
+                                                (String 1 -2 () PointerString)
                                                 [(()
                                                 ())]
                                                 DescriptorArray
@@ -153,9 +153,6 @@
                                         ((Var 3 input))
                                         (())]
                                         ()
-                                    )
-                                    (ImplicitDeallocate
-                                        [(Var 3 table)]
                                     )]
                                     ()
                                     Public
@@ -208,7 +205,7 @@
                                                     ()
                                                     Default
                                                     (Array
-                                                        (Character 1 -1 () PointerString)
+                                                        (String 1 -1 () PointerString)
                                                         [(()
                                                         ())]
                                                         DescriptorArray
@@ -268,7 +265,7 @@
                                             )
                                         )
                                         (Array
-                                            (Character 1 -1 () PointerString)
+                                            (String 1 -1 () PointerString)
                                             [(()
                                             ())]
                                             DescriptorArray
@@ -436,7 +433,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (String 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source

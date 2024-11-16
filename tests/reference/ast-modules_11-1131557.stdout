@@ -69,9 +69,7 @@
             [(Print
                 0
                 ()
-                [(String
-                    "i = "
-                )
+                [(String "i = ")
                 i]
                 ()
             )]
@@ -97,9 +95,7 @@
         [(Print
             0
             ()
-            [(String
-                "j = "
-            )
+            [(String "j = ")
             j]
             ()
         )

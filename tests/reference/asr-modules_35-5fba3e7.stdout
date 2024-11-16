@@ -39,7 +39,7 @@
                                                     Default
                                                     (Allocatable
                                                         (Array
-                                                            (Character 1 -1 () PointerString)
+                                                            (String 1 -1 () PointerString)
                                                             [(()
                                                             ())]
                                                             DescriptorArray
@@ -62,7 +62,7 @@
                                                     Default
                                                     (Allocatable
                                                         (Array
-                                                            (Character 1 -2 () PointerString)
+                                                            (String 1 -2 () PointerString)
                                                             [(()
                                                             ())]
                                                             DescriptorArray
@@ -79,7 +79,7 @@
                                     (FunctionType
                                         [(Allocatable
                                             (Array
-                                                (Character 1 -1 () PointerString)
+                                                (String 1 -1 () PointerString)
                                                 [(()
                                                 ())]
                                                 DescriptorArray
@@ -131,7 +131,7 @@
                                                             ()
                                                         )
                                                         ())]
-                                                        (Character 1 -2 () PointerString)
+                                                        (String 1 -2 () PointerString)
                                                         ColMajor
                                                         ()
                                                     )
@@ -151,7 +151,7 @@
                                                             ()
                                                         )
                                                         ())]
-                                                        (Character 1 -1 () PointerString)
+                                                        (String 1 -1 () PointerString)
                                                         ColMajor
                                                         ()
                                                     )
@@ -171,7 +171,7 @@
                                                 (ArrayConstructor
                                                     []
                                                     (Array
-                                                        (Character 1 1 () PointerString)
+                                                        (String 1 1 () PointerString)
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 0 (Integer 4) Decimal))]
                                                         FixedSizeArray
@@ -197,7 +197,7 @@
                                             (ArrayConstructor
                                                 []
                                                 (Array
-                                                    (Character 1 1 () PointerString)
+                                                    (String 1 1 () PointerString)
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 0 (Integer 4) Decimal))]
                                                     FixedSizeArray
@@ -208,9 +208,6 @@
                                             ()
                                         )]
                                         []
-                                    )
-                                    (ImplicitDeallocate
-                                        [(Var 3 strings_a)]
                                     )]
                                     ()
                                     Public
@@ -250,7 +247,7 @@
                                     Default
                                     (Allocatable
                                         (Array
-                                            (Character 1 5 () PointerString)
+                                            (String 1 5 () PointerString)
                                             [(()
                                             ())]
                                             DescriptorArray
@@ -278,7 +275,7 @@
                     (Print
                         (StringConstant
                             "executing modules_35"
-                            (Character 1 20 () PointerString)
+                            (String 1 20 () PointerString)
                         )
                     )
                     (SubroutineCall
@@ -286,9 +283,6 @@
                         ()
                         [((Var 4 string))]
                         ()
-                    )
-                    (ImplicitDeallocate
-                        [(Var 4 string)]
                     )]
                 )
         })

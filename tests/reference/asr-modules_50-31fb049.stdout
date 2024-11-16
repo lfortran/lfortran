@@ -273,7 +273,7 @@
                                             ()
                                             [(Var 5 modules_used)]
                                             FormatFortran
-                                            (Character -1 0 () PointerString)
+                                            (String -1 0 () PointerString)
                                             ()
                                         )
                                     )
@@ -297,7 +297,7 @@
                                                 ()
                                             )]
                                             FormatFortran
-                                            (Character -1 0 () PointerString)
+                                            (String -1 0 () PointerString)
                                             ()
                                         )
                                     )
@@ -328,9 +328,6 @@
                                             ()
                                         )]
                                         []
-                                    )
-                                    (ImplicitDeallocate
-                                        [(Var 5 modules_used)]
                                     )]
                                     ()
                                     Public

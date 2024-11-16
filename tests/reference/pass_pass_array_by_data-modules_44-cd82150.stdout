@@ -96,7 +96,7 @@
                                                     Default
                                                     (Allocatable
                                                         (Array
-                                                            (Character 1 -2 () PointerString)
+                                                            (String 1 -2 () PointerString)
                                                             [(()
                                                             ())]
                                                             DescriptorArray
@@ -152,7 +152,7 @@
                                             160
                                             ["# ", "My cool new project!"]
                                             (Array
-                                                (Character 1 80 () PointerString)
+                                                (String 1 80 () PointerString)
                                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                                 (IntegerConstant 2 (Integer 4) Decimal))]
                                                 FixedSizeArray
@@ -162,13 +162,21 @@
                                         ()
                                     )
                                     (SubroutineCall
-                                        2 warnwrite_character____1
-                                        2 warnwrite_character____1
-                                        [((StructInstanceMember
-                                            (Var 8 settings)
-                                            8 1_fpm_new_settings_name
+                                        2 warnwrite_string____1
+                                        2 warnwrite_string____1
+                                        [((StringPhysicalCast
+                                            (StructInstanceMember
+                                                (Var 8 settings)
+                                                8 1_fpm_new_settings_name
+                                                (Allocatable
+                                                    (String 1 -2 () DescriptorString)
+                                                )
+                                                ()
+                                            )
+                                            DescriptorString
+                                            PointerString
                                             (Allocatable
-                                                (Character 1 -2 () PointerString)
+                                                (String 1 -2 () PointerString)
                                             )
                                             ()
                                         ))
@@ -178,7 +186,7 @@
                                             PointerToDataArray
                                             (Allocatable
                                                 (Array
-                                                    (Character 1 -2 () PointerString)
+                                                    (String 1 -2 () PointerString)
                                                     [(()
                                                     ())]
                                                     PointerToDataArray
@@ -200,9 +208,6 @@
                                             ()
                                         ))]
                                         ()
-                                    )
-                                    (ImplicitDeallocate
-                                        [(Var 8 littlefile)]
                                     )]
                                     ()
                                     Public
@@ -225,7 +230,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (String 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -260,7 +265,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (String 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -280,14 +285,14 @@
                                     ()
                                     2 fpm_cmd_settings
                                 ),
-                            warnwrite_character____1:
+                            warnwrite_string____1:
                                 (ExternalSymbol
                                     2
-                                    warnwrite_character____1
-                                    4 warnwrite_character____1
+                                    warnwrite_string____1
+                                    4 warnwrite_string____1
                                     modules_44_module_fpm_filesystem
                                     []
-                                    warnwrite_character____1
+                                    warnwrite_string____1
                                     Public
                                 )
                         })
@@ -301,7 +306,7 @@
                     (SymbolTable
                         4
                         {
-                            warnwrite_character____1:
+                            warnwrite_string____1:
                                 (Function
                                     (SymbolTable
                                         10
@@ -349,7 +354,7 @@
                                                     ()
                                                     Default
                                                     (Array
-                                                        (Character 1 -1 () PointerString)
+                                                        (String 1 -1 () PointerString)
                                                         [((Var 10 __1data)
                                                         (Var 10 __2data))]
                                                         PointerToDataArray
@@ -369,7 +374,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () PointerString)
+                                                    (String 1 -1 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -377,11 +382,11 @@
                                                     .false.
                                                 )
                                         })
-                                    warnwrite_character____1
+                                    warnwrite_string____1
                                     (FunctionType
-                                        [(Character 1 -1 () PointerString)
+                                        [(String 1 -1 () PointerString)
                                         (Array
-                                            (Character 1 -1 () PointerString)
+                                            (String 1 -1 () PointerString)
                                             [((FunctionParam
                                                 2
                                                 (Integer 4)

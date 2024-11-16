@@ -4,9 +4,9 @@ source_filename = "LFortran"
 %array = type { i1*, i32, %dimension_descriptor*, i1, i32 }
 %dimension_descriptor = type { i32, i32, i32 }
 
-@array_op_3.dim1 = internal global i32 0
-@array_op_3.dim2 = internal global i32 0
-@array_op_3.dim3 = internal global i32 0
+@array_op_3.dim1 = internal global i32 10
+@array_op_3.dim2 = internal global i32 100
+@array_op_3.dim3 = internal global i32 1
 @0 = private unnamed_addr constant [11 x i8] c"ERROR STOP\00", align 1
 @1 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @2 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
@@ -37,9 +37,6 @@ define i32 @main(i32 %0, i8** %1) {
   %__3_t = alloca i32, align 4
   %__3_u = alloca i32, align 4
   %__3_v = alloca i32, align 4
-  store i32 10, i32* @array_op_3.dim1, align 4
-  store i32 100, i32* @array_op_3.dim2, align 4
-  store i32 1, i32* @array_op_3.dim3, align 4
   %i = alloca i32, align 4
   %j = alloca i32, align 4
   %k = alloca i32, align 4
@@ -95,9 +92,6 @@ define i32 @main(i32 %0, i8** %1) {
   %19 = getelementptr %array, %array* %arr_desc11, i32 0, i32 0
   store i1* null, i1** %19, align 8
   store %array* %arr_desc11, %array** %c, align 8
-  store i32 10, i32* @array_op_3.dim1, align 4
-  store i32 100, i32* @array_op_3.dim2, align 4
-  store i32 1, i32* @array_op_3.dim3, align 4
   %i12 = alloca i32, align 4
   %j13 = alloca i32, align 4
   %k14 = alloca i32, align 4
@@ -1598,78 +1592,9 @@ else75:                                           ; preds = %ifcont73
   br label %ifcont76
 
 ifcont76:                                         ; preds = %else75, %then74
-  %1177 = load %array*, %array** %a, align 8
-  %1178 = getelementptr %array, %array* %1177, i32 0, i32 0
-  %1179 = load i1*, i1** %1178, align 8
-  %1180 = ptrtoint i1* %1179 to i64
-  %1181 = icmp ne i64 %1180, 0
-  br i1 %1181, label %then77, label %else78
-
-then77:                                           ; preds = %ifcont76
-  %1182 = getelementptr %array, %array* %1177, i32 0, i32 0
-  %1183 = load i1*, i1** %1182, align 8
-  %1184 = alloca i8*, align 8
-  %1185 = bitcast i1* %1183 to i8*
-  store i8* %1185, i8** %1184, align 8
-  %1186 = load i8*, i8** %1184, align 8
-  call void @_lfortran_free(i8* %1186)
-  %1187 = getelementptr %array, %array* %1177, i32 0, i32 0
-  store i1* null, i1** %1187, align 8
-  br label %ifcont79
-
-else78:                                           ; preds = %ifcont76
-  br label %ifcont79
-
-ifcont79:                                         ; preds = %else78, %then77
-  %1188 = load %array*, %array** %b, align 8
-  %1189 = getelementptr %array, %array* %1188, i32 0, i32 0
-  %1190 = load i1*, i1** %1189, align 8
-  %1191 = ptrtoint i1* %1190 to i64
-  %1192 = icmp ne i64 %1191, 0
-  br i1 %1192, label %then80, label %else81
-
-then80:                                           ; preds = %ifcont79
-  %1193 = getelementptr %array, %array* %1188, i32 0, i32 0
-  %1194 = load i1*, i1** %1193, align 8
-  %1195 = alloca i8*, align 8
-  %1196 = bitcast i1* %1194 to i8*
-  store i8* %1196, i8** %1195, align 8
-  %1197 = load i8*, i8** %1195, align 8
-  call void @_lfortran_free(i8* %1197)
-  %1198 = getelementptr %array, %array* %1188, i32 0, i32 0
-  store i1* null, i1** %1198, align 8
-  br label %ifcont82
-
-else81:                                           ; preds = %ifcont79
-  br label %ifcont82
-
-ifcont82:                                         ; preds = %else81, %then80
-  %1199 = load %array*, %array** %c, align 8
-  %1200 = getelementptr %array, %array* %1199, i32 0, i32 0
-  %1201 = load i1*, i1** %1200, align 8
-  %1202 = ptrtoint i1* %1201 to i64
-  %1203 = icmp ne i64 %1202, 0
-  br i1 %1203, label %then83, label %else84
-
-then83:                                           ; preds = %ifcont82
-  %1204 = getelementptr %array, %array* %1199, i32 0, i32 0
-  %1205 = load i1*, i1** %1204, align 8
-  %1206 = alloca i8*, align 8
-  %1207 = bitcast i1* %1205 to i8*
-  store i8* %1207, i8** %1206, align 8
-  %1208 = load i8*, i8** %1206, align 8
-  call void @_lfortran_free(i8* %1208)
-  %1209 = getelementptr %array, %array* %1199, i32 0, i32 0
-  store i1* null, i1** %1209, align 8
-  br label %ifcont85
-
-else84:                                           ; preds = %ifcont82
-  br label %ifcont85
-
-ifcont85:                                         ; preds = %else84, %then83
   br label %return
 
-return:                                           ; preds = %ifcont85
+return:                                           ; preds = %ifcont76
   ret i32 0
 }
 

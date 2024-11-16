@@ -673,8 +673,8 @@ public:
             // For now restrict this check only to variables which are present
             // inside symbols which have a body.
             require( (x.m_symbolic_value == nullptr && x.m_value == nullptr) ||
-                     (x.m_symbolic_value != nullptr && x.m_value != nullptr) ||
-                     (x.m_symbolic_value != nullptr && ASRUtils::is_value_constant(x.m_symbolic_value)),
+                    (x.m_symbolic_value != nullptr && x.m_value != nullptr) ||
+                    (x.m_symbolic_value != nullptr && ASRUtils::is_value_constant(x.m_symbolic_value)),
                     "Initialisation of " + std::string(x.m_name) +
                     " must reduce to a compile time constant.");
         }
@@ -840,7 +840,7 @@ public:
             check_var_external(*x.m_v);
             int n_dims = ASRUtils::extract_n_dims_from_ttype(
                     ASRUtils::expr_type(x.m_v));
-            if (ASR::is_a<ASR::Character_t>(*x.m_type) && n_dims == 0) {
+            if (ASR::is_a<ASR::String_t>(*x.m_type) && n_dims == 0) {
                 // TODO: This seems like a bug, we should not use ArrayItem with
                 // strings but StringItem. For now we ignore it, but we should
                 // fix it
@@ -852,7 +852,21 @@ public:
     }
 
     void visit_ArrayItem(const ArrayItem_t &x) {
+        if (ASRUtils::use_experimental_simplifier) {
+            require(!ASRUtils::is_array(x.m_type),
+                "ArrayItem::m_type cannot be array.")
+        }
         handle_ArrayItemSection(x);
+    }
+
+    void visit_ArraySize(const ArraySize_t& x) {
+        if (ASRUtils::use_experimental_simplifier) {
+            if (check_external) {
+                require(ASRUtils::is_array(ASRUtils::expr_type(x.m_v)),
+                    "ArraySize::m_v must be an array");
+            }
+        }
+        BaseWalkVisitor<VerifyVisitor>::visit_ArraySize(x);
     }
 
     void visit_ArraySection(const ArraySection_t &x) {
@@ -916,7 +930,7 @@ public:
             ASR::symbol_t *s = ASRUtils::symbol_get_past_external(x.m_name);
             if (ASR::is_a<ASR::Variable_t>(*s)) {
                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(s);
-                require(v->m_type_declaration && ASR::is_a<ASR::Function_t>(*v->m_type_declaration),
+                require(v->m_type_declaration && ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(v->m_type_declaration)),
                     "SubroutineCall::m_name '" + std::string(symbol_name(x.m_name)) + "' is a Variable, but does not point to Function");
                 require(ASR::is_a<ASR::FunctionType_t>(*v->m_type),
                     "SubroutineCall::m_name '" + std::string(symbol_name(x.m_name)) + "' is a Variable, but the type is not FunctionType");
@@ -1165,7 +1179,7 @@ public:
         int64_t n_data = ASRUtils::get_fixed_size_of_array(x.m_type) * ASRUtils::extract_kind_from_ttype_t(x.m_type);
         if (ASRUtils::is_character(*x.m_type)) {
             ASR::ttype_t* t = ASRUtils::type_get_past_array(x.m_type);
-            n_data = ASRUtils::get_fixed_size_of_array(x.m_type) * ASR::down_cast<ASR::Character_t>(t)->m_len;
+            n_data = ASRUtils::get_fixed_size_of_array(x.m_type) * ASR::down_cast<ASR::String_t>(t)->m_len;
         }
         require(n_data == x.m_n_data, "ArrayConstant::m_n_data must match the byte size of the array");
         visit_ttype(*x.m_type);
@@ -1221,6 +1235,14 @@ public:
     void visit_Allocatable(const Allocatable_t &x) {
         require(!ASR::is_a<ASR::Pointer_t>(*x.m_type),
             "Allocatable type conflicts with Pointer type");
+        if (ASRUtils::use_experimental_simplifier) {
+            ASR::dimension_t* m_dims = nullptr;
+            size_t n_dims = ASRUtils::extract_dimensions_from_ttype(x.m_type, m_dims);
+            for( size_t i = 0; i < n_dims; i++ ) {
+                require(m_dims[i].m_length == nullptr,
+                    "Length of allocatable should be deferred (empty).");
+            }
+        }
         visit_ttype(*x.m_type);
     }
 

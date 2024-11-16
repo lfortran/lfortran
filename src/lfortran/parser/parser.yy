@@ -4,8 +4,8 @@
 %param {LCompilers::LFortran::Parser &p}
 %locations
 %glr-parser
-%expect    210 // shift/reduce conflicts
-%expect-rr 189 // reduce/reduce conflicts
+%expect    228 // shift/reduce conflicts
+%expect-rr 175 // reduce/reduce conflicts
 
 // Uncomment this to get verbose error messages
 //%define parse.error verbose
@@ -363,6 +363,8 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 
 // Nonterminal tokens
 
+%type <ast> designator
+%type <ast> signed_numeric_constant
 %type <ast> expr
 %type <vec_ast> expr_list
 %type <vec_ast> expr_list_opt
@@ -609,7 +611,9 @@ script_unit
     | function
     | use_statement
     | implicit_statement
-    | var_decl
+    | var_decl           %dprec 9
+    | derived_type_decl
+    | enum_decl
     | statement          %dprec 7
     | expr sep           %dprec 8
     | KW_END_PROGRAM sep { $$ = SYMBOL($1, @$); }
@@ -1314,8 +1318,12 @@ var_decl_star
     ;
 
 var_decl
-    : var_type var_modifiers var_sym_decl_list sep {
-        LLOC(@$, @3); $$ = VAR_DECL1($1, $2, $3, TRIVIA_AFTER($4, @$), @$); }
+    : var_type var_modifier_list "::" var_sym_decl_list sep {
+        LLOC(@$, @4); $$ = VAR_DECL1a($1, $2, $4, TRIVIA_AFTER($5, @$), @$); }
+    | var_type "::" var_sym_decl_list sep {
+        LLOC(@$, @3); $$ = VAR_DECL1b($1, $3, TRIVIA_AFTER($4, @$), @$); }
+    | var_type var_sym_decl_list sep {
+        LLOC(@$, @2); $$ = VAR_DECL1c($1, $2, TRIVIA_AFTER($3, @$), @$); }
     | var_modifier sep {
         LLOC(@$, @1); $$ = VAR_DECL2($1, TRIVIA_AFTER($2, @$), @$); }
     | var_modifier var_sym_decl_list sep {
@@ -1402,24 +1410,27 @@ data_stmt_value_list
     ;
 
 data_stmt_repeat
-    : id { $$ = $1; }
+    : designator { $$ = $1; }
     | TK_INTEGER { $$ = INTEGER($1, @$); }
+    ;
+
+
+signed_numeric_constant
+    : TK_INTEGER { $$ = INTEGER($1, @$); }
     | TK_REAL { $$ = REAL($1, @$); }
-    | TK_STRING { $$ = STRING($1, @$); }
-    | TK_BOZ_CONSTANT { $$ = BOZ($1, @$); }
-    | ".true."  { $$ = TRUE(@$); }
-    | ".false." { $$ = FALSE(@$); }
+    | "-" signed_numeric_constant %prec UMINUS { $$ = UNARY_MINUS($2, @$); }
+    | "+" signed_numeric_constant %prec UMINUS { $$ = UNARY_PLUS ($2, @$); }
     ;
 
 data_stmt_constant
-    : id { $$ = $1; }
-    | TK_INTEGER { $$ = INTEGER($1, @$); }
-    | TK_REAL { $$ = REAL($1, @$); }
+    : designator { $$ = $1; }
+    | signed_numeric_constant { $$ = $1; }
     | TK_STRING { $$ = STRING($1, @$); }
     | TK_BOZ_CONSTANT { $$ = BOZ($1, @$); }
     | ".true."  { $$ = TRUE(@$); }
     | ".false." { $$ = FALSE(@$); }
-    | "-" expr %prec UMINUS { $$ = UNARY_MINUS($2, @$); }
+    | "(" signed_numeric_constant "," signed_numeric_constant ")" { $$ = COMPLEX($2, $4, @$); }
+
     ;
 
 integer_type
@@ -1512,6 +1523,8 @@ var_type
         Type, ATTR_TYPE_KIND(Integer, $5, @$), @$); }
     | KW_TYPE "(" KW_REAL "(" kind_arg_list ")" ")" { $$ = ATTR_TYPE_ATTR(
         Type, ATTR_TYPE_KIND(Real, $5, @$), @$); }
+    | KW_TYPE "(" KW_DOUBLE KW_PRECISION ")" { $$ = ATTR_TYPE_ATTR(
+        Type, ATTR_TYPE(DoublePrecision, @$), @$); }
     | KW_TYPE "(" KW_COMPLEX "(" kind_arg_list ")" ")" { $$ = ATTR_TYPE_ATTR(
         Type, ATTR_TYPE_KIND(Complex, $5, @$), @$); }
     | KW_TYPE "(" KW_LOGICAL "(" kind_arg_list ")" ")" { $$ = ATTR_TYPE_ATTR(
@@ -1520,6 +1533,13 @@ var_type
         Type, ATTR_TYPE_KIND(Character, $5, @$), @$); }
     | KW_TYPE "(" "*" ")" { $$ = ATTR_TYPE_STAR(Type, Asterisk, @$); }
     | KW_PROCEDURE "(" id ")" { $$ = ATTR_TYPE_NAME(Procedure, $3, @$); }
+    | KW_PROCEDURE "(" ")" { $$ = ATTR_TYPE(Procedure, @$); }
+    | KW_PROCEDURE "(" KW_INTEGER "(" kind_arg_list ")" ")" { $$ = ATTR_TYPE(Procedure, @$); }
+    | KW_PROCEDURE "(" KW_REAL "(" kind_arg_list ")" ")" { $$ = ATTR_TYPE(Procedure, @$); }
+    | KW_PROCEDURE "(" KW_DOUBLE KW_PRECISION ")" { $$ = ATTR_TYPE(Procedure, @$); }
+    | KW_PROCEDURE "(" KW_COMPLEX "(" kind_arg_list ")" ")" { $$ = ATTR_TYPE(Procedure, @$); }
+    | KW_PROCEDURE "(" KW_LOGICAL "(" kind_arg_list ")" ")" { $$ = ATTR_TYPE(Procedure, @$); }
+    | KW_PROCEDURE "(" KW_CHARACTER "(" kind_arg_list ")" ")" { $$ = ATTR_TYPE(Procedure, @$); }
     | KW_CLASS "(" id ")" { $$ = ATTR_TYPE_NAME(Class, $3, @$); }
     | KW_CLASS "(" "*" ")" { $$ = ATTR_TYPE_STAR(Class, Asterisk, @$); }
     ;
@@ -2335,8 +2355,8 @@ rbracket
     | "/)"
     ;
 
-expr
-// ### primary
+
+designator
     : id { $$ = $1; }
     | struct_member_star id { NAME1($$, $2, $1, @$); }
     | id "(" fnarray_arg_list_opt ")" { $$ = FUNCCALLORARRAY($1, $3, @$); }
@@ -2356,6 +2376,11 @@ expr
             $$ = COARRAY2($1, $3, $6, @$); }
     | struct_member_star id "(" fnarray_arg_list_opt ")" "[" coarray_arg_list "]" {
             $$ = COARRAY4($1, $2, $4, $7, @$); }
+    ;
+
+expr
+// ### primary
+    : designator { $$ = $1; }
     | "[" expr_list_opt rbracket { $$ = ARRAY_IN1($2, @$); }
     | "[" var_type "::" expr_list_opt rbracket %dprec 2 { $$ = ARRAY_IN2($2, $4, @$); }
     | "[" id "::" expr_list_opt rbracket %dprec 1 { $$ = ARRAY_IN3($2, $4, @$); }

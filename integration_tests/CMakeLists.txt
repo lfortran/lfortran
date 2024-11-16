@@ -9,6 +9,7 @@ endif ()
 
 set(LFORTRAN_BACKEND no CACHE STRING "Only compile the LFortran subset for the given backend")
 set(FAST no CACHE BOOL "Run supported tests with --fast")
+set(EXPERIMENTAL_SIMPLIFIER no CACHE BOOL "Run supported tests with simplifier pass")
 
 enable_testing()
 
@@ -24,6 +25,7 @@ message("C compiler flags      : ${CMAKE_C_FLAGS_${BTYPE}}")
 message("Installation prefix: ${CMAKE_INSTALL_PREFIX}")
 message("LFORTRAN_BACKEND: ${LFORTRAN_BACKEND}")
 message("FAST: ${FAST}")
+message("EXPERIMENTAL_SIMPLIFIER: ${EXPERIMENTAL_SIMPLIFIER}")
 
 
 macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXTRA_ARGS RUN_COPY_TO_BIN RUN_GFORTRAN_ARGS)
@@ -134,7 +136,7 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
             add_test(${name} ${CURRENT_BINARY_DIR}/${name})
         elseif (LFORTRAN_BACKEND STREQUAL "llvm")
             add_executable(${name} ${file_name}.f90 ${extra_files})
-            target_compile_options(${name} PUBLIC ${extra_args})
+            target_compile_options(${name} PUBLIC $<$<COMPILE_LANGUAGE:Fortran>:${extra_args}>)
             add_test(${name} ${CURRENT_BINARY_DIR}/${name})
         elseif (LFORTRAN_BACKEND STREQUAL "llvm_omp")
             add_executable(${name} ${file_name}.f90 ${extra_files})
@@ -166,7 +168,7 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
 endmacro(RUN_UTIL)
 
 macro(RUN)
-    set(options FAIL NOFAST)
+    set(options FAIL NOFAST NO_EXPERIMENTAL_SIMPLIFIER)
     set(oneValueArgs NAME INCLUDE_PATH  COPY_TO_BIN)
     set(multiValueArgs LABELS EXTRAFILES EXTRA_ARGS GFORTRAN_ARGS)
     cmake_parse_arguments(RUN "${options}" "${oneValueArgs}"
@@ -185,6 +187,11 @@ macro(RUN)
         # Later add support for multiple include paths by looping over and appending to extra args
         set(RUN_EXTRA_ARGS ${RUN_EXTRA_ARGS} -I${CMAKE_CURRENT_SOURCE_DIR}/${RUN_INCLUDE_PATH})
         set(RUN_GFORTRAN_ARGS ${RUN_GFORTRAN_ARGS} -I${CMAKE_CURRENT_SOURCE_DIR}/${RUN_INCLUDE_PATH})
+    endif()
+
+    if (EXPERIMENTAL_SIMPLIFIER AND (NOT RUN_NO_EXPERIMENTAL_SIMPLIFIER))
+        set(RUN_EXTRA_ARGS ${RUN_EXTRA_ARGS} --experimental-simplifier)
+        set(RUN_NAME "${RUN_NAME}_simplifier")
     endif()
 
     if (NOT FAST)
@@ -284,7 +291,7 @@ RUN(NAME expr_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc cpp x86 wasm c fo
 RUN(NAME expr_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc cpp wasm c fortran)
 RUN(NAME expr_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc cpp c fortran) # it contains pow, wasm supports only x**2
 RUN(NAME expr_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm c fortran mlir)
-RUN(NAME expr_07 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm c fortran)
+RUN(NAME expr_07 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm c fortran mlir)
 RUN(NAME expr_08 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm c fortran)
 RUN(NAME expr_09 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm c fortran)
 RUN(NAME expr_10 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm c fortran)
@@ -310,6 +317,7 @@ RUN(NAME data_09 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c)
 RUN(NAME data_10 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME data_11 LABELS gfortran llvmImplicit)
 RUN(NAME data_12 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
+RUN(NAME data_13 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 
 RUN(NAME minmax_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm c fortran)
 RUN(NAME arithmetic_if_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c) # arithmetic tests use goto
@@ -462,6 +470,7 @@ RUN(NAME arrays_reshape_14 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmSta
 RUN(NAME arrays_reshape_15 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME arrays_reshape_16 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
 RUN(NAME arrays_reshape_17 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
+RUN(NAME arrays_reshape_18 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME arrays_elemental_15 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran)
 RUN(NAME arrays_03_func LABELS gfortran cpp llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm)
 RUN(NAME arrays_03_func_pass_arr_dims LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm)
@@ -471,7 +480,7 @@ RUN(NAME arrays_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray 
 RUN(NAME arrays_17 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm)
 RUN(NAME arrays_18_func LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
 RUN(NAME arrays_19 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
-RUN(NAME arrays_20 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
+RUN(NAME arrays_20 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray EXTRA_ARGS --realloc-lhs)
 RUN(NAME arrays_22 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
 RUN(NAME arrays_23 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm)
 RUN(NAME arrays_24 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
@@ -483,7 +492,9 @@ RUN(NAME arrays_29 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
 RUN(NAME arrays_30 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray) # maxloc
 RUN(NAME arrays_31 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm) # init expr with fixed size arr as dependency
 RUN(NAME arrays_32 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
-RUN(NAME arrays_33 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
+# The test `arrays_33` below has `NO_EXPERIMENTAL_SIMPLIFIER` label because it fails when the `--fast` flag is used
+# with the `--experimental-simplifier` flag. It executes correctly with `--experimental-simplifier`
+RUN(NAME arrays_33 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray NO_EXPERIMENTAL_SIMPLIFIER)
 RUN(NAME arrays_34 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
 RUN(NAME arrays_35 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME arrays_36 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -494,7 +505,7 @@ RUN(NAME arrays_40 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME arrays_41 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME arrays_42 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME arrays_43 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME arrays_44 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran NOFAST)
+RUN(NAME arrays_44 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran NOFAST NO_EXPERIMENTAL_SIMPLIFIER)
 RUN(NAME arrays_45 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME arrays_46 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME arrays_47 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -504,6 +515,15 @@ RUN(NAME arrays_50 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRAFILES arra
 RUN(NAME arrays_51 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME arrays_52 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME arrays_53 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+# TODO: the below test case doesn't work unless "EXPERIMENTAL SIMPLIFIER"
+# is enabled i.e. works on `simplifier_pass` branch
+# RUN(NAME arrays_54 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME arrays_55 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+# TODO: the below test case doesn't work unless "EXPERIMENTAL SIMPLIFIER"
+# is enabled i.e. works on `simplifier_pass` branch
+# RUN(NAME arrays_56 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME arrays_57 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME arrays_58 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME global_allocatable_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME global_allocatable_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME global_array_pointer_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -617,7 +637,7 @@ RUN(NAME intrinsics_30 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # 
 RUN(NAME intrinsics_31 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm) # ceiling
 RUN(NAME intrinsics_32 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # merge
 RUN(NAME intrinsics_33 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # new_line
-RUN(NAME intrinsics_34 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran) # epsilon
+RUN(NAME intrinsics_34 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm) # epsilon refer: #5222
 RUN(NAME intrinsics_35 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # any
 RUN(NAME intrinsics_36 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # adjustl
 RUN(NAME intrinsics_37 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # merge
@@ -743,7 +763,9 @@ RUN(NAME intrinsics_155 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) #
 RUN(NAME intrinsics_156 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # blt
 RUN(NAME intrinsics_157 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # ble
 RUN(NAME intrinsics_158 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # bge
-RUN(NAME intrinsics_159 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # matmul
+# The test `intrinsics_159` below has `NO_EXPERIMENTAL_SIMPLIFIER` label because it fails when the `--fast` flag is used
+# with the `--experimental-simplifier` flag. It executes correctly with `--experimental-simplifier`
+RUN(NAME intrinsics_159 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_EXPERIMENTAL_SIMPLIFIER) # matmul
 RUN(NAME intrinsics_160 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # ior
 RUN(NAME intrinsics_161 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # ieor
 RUN(NAME intrinsics_162 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # Not
@@ -784,7 +806,7 @@ RUN(NAME intrinsics_196 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # bessel_
 RUN(NAME intrinsics_197 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # bessel_y0
 RUN(NAME intrinsics_198 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # sum
 RUN(NAME intrinsics_199 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # count
-RUN(NAME intrinsics_200 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # pack
+RUN(NAME intrinsics_200 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran NO_EXPERIMENTAL_SIMPLIFIER) # pack
 RUN(NAME intrinsics_201 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # any
 RUN(NAME intrinsics_202 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) #parameter
 RUN(NAME intrinsics_203 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # asind
@@ -858,7 +880,7 @@ RUN(NAME intrinsics_270 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # atan
 RUN(NAME intrinsics_271 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # leadz
 RUN(NAME intrinsics_272 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # trailz
 RUN(NAME intrinsics_273 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # dprod
-RUN(NAME intrinsics_274 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # epsilon
+RUN(NAME intrinsics_274 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # epsilon refer: #5222
 RUN(NAME intrinsics_275 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # and
 RUN(NAME intrinsics_276 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # or
 RUN(NAME intrinsics_277 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # xor
@@ -871,7 +893,7 @@ RUN(NAME intrinsics_283 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # asinh
 RUN(NAME intrinsics_284 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # acosh
 RUN(NAME intrinsics_285 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # real
 RUN(NAME intrinsics_286 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # atanh
-RUN(NAME intrinsics_288 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # spread
+RUN(NAME intrinsics_288 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran NO_EXPERIMENTAL_SIMPLIFIER) # spread
 RUN(NAME intrinsics_289 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # ishftc
 RUN(NAME intrinsics_290 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # log10
 RUN(NAME intrinsics_291 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # gamma
@@ -894,7 +916,7 @@ RUN(NAME intrinsics_307 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) #
 RUN(NAME intrinsics_308 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # dgamma
 RUN(NAME intrinsics_309 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # pack
 RUN(NAME intrinsics_310 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # digits
-RUN(NAME intrinsics_311 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # minloc
+RUN(NAME intrinsics_311 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_EXPERIMENTAL_SIMPLIFIER) # minloc
 RUN(NAME intrinsics_312 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # minloc
 RUN(NAME intrinsics_313 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # maxloc
 RUN(NAME intrinsics_314 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # dshift
@@ -906,6 +928,12 @@ RUN(NAME intrinsics_319 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # system_
 RUN(NAME intrinsics_320 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # len_trim
 RUN(NAME intrinsics_321 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # trim
 RUN(NAME intrinsics_322 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # index
+RUN(NAME intrinsics_323 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # dot_product
+RUN(NAME intrinsics_324 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # max
+RUN(NAME intrinsics_325 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # spread
+RUN(NAME intrinsics_326 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # minloc
+RUN(NAME intrinsics_327 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # transpose
+
 
 RUN(NAME la_constants LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NOFAST) # LAPACK constants
 
@@ -989,13 +1017,13 @@ RUN(NAME modules_44 LABELS gfortran EXTRAFILES
         modules_44_module.f90)
 RUN(NAME modules_40 LABELS gfortran llvm)
 RUN(NAME modules_41 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME modules_42 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME modules_42 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_EXPERIMENTAL_SIMPLIFIER)
 RUN(NAME modules_43 LABELS gfortran)
 RUN(NAME modules_45 LABELS gfortran)
 RUN(NAME modules_47 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME modules_48 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME modules_49 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME modules_50 LABELS gfortran llvm NOFAST)
+RUN(NAME modules_50 LABELS gfortran llvm NOFAST NO_EXPERIMENTAL_SIMPLIFIER)
 RUN(NAME modules_51 LABELS gfortran llvmImplicit)
 RUN(NAME modules_53 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME modules_54 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -1049,6 +1077,7 @@ RUN(NAME where_09 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME where_10 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME where_11 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME where_12 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
+RUN(NAME where_13 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 
 RUN(NAME forallloop_01 LABELS gfortran)
 RUN(NAME forall_01 LABELS gfortran llvm NOFAST)
@@ -1093,6 +1122,8 @@ RUN(NAME implicit_interface_17 LABELS gfortran llvm2 EXTRA_ARGS --implicit-inter
 
 RUN(NAME implicit_typing_01 LABELS gfortran llvmImplicit)
 RUN(NAME implicit_typing_02 LABELS gfortran llvmImplicit)
+RUN(NAME implicit_typing_03 LABELS gfortran llvmImplicit)
+
 
 RUN(NAME generic_name_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME generic_name_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -1235,6 +1266,7 @@ RUN(NAME associate_10 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME associate_11 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME associate_12 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME associate_13 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME associate_14 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME real_dp_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME real_dp_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
@@ -1313,6 +1345,7 @@ RUN(NAME nested_vars3 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm c)
 RUN(NAME nbody LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME intent_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME intent_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME callback_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME callback_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -1477,6 +1510,7 @@ RUN(NAME external_05 LABELS gfortran llvmImplicit)
 RUN(NAME external_06 LABELS gfortran llvmImplicit)
 RUN(NAME external_07 LABELS gfortran llvmImplicit)
 RUN(NAME external_08 LABELS gfortran llvmImplicit)
+RUN(NAME external_09 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 
 
 RUN(NAME interface_12 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -1485,13 +1519,14 @@ RUN(NAME private1 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME modules_26 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
-RUN(NAME enum_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME enum_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME enum_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRAFILES
          enum_02_module.f90)
-RUN(NAME enum_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME enum_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 
 RUN(NAME array_section_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran)
 RUN(NAME array_section_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran)
+RUN(NAME array_section_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran)
 
 RUN(NAME pass_array_by_data_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm)
 RUN(NAME pass_array_by_data_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
@@ -1530,6 +1565,7 @@ RUN(NAME array_op_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArra
 RUN(NAME array_op_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
 RUN(NAME array_op_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME array_op_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran NOFAST)
+RUN(NAME array_op_07 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME array_slice_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray c)
 RUN(NAME array_slice_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
 RUN(NAME array_slice_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray c)
@@ -1542,6 +1578,7 @@ RUN(NAME procedure_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME procedure_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME procedure_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME procedure_05 LABELS gfortran llvmImplicit)
+RUN(NAME procedure_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME allocated_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME allocated_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -1586,6 +1623,9 @@ RUN(NAME save_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME save_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME save_07 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME save_08 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME save_09 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME save_10 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME save_11 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 
 RUN(NAME entry_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -1662,7 +1702,7 @@ RUN(NAME precision_02 LABELS gfortran) # TODO fix this test
 RUN(NAME array_unbounded_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
 RUN(NAME array_unbounded_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
 
-RUN(NAME matmul_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c llvm_nopragma c_nopragma NOFAST)
+RUN(NAME matmul_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c llvm_nopragma c_nopragma NOFAST NO_EXPERIMENTAL_SIMPLIFIER) # experimental_simplifier fails with `C` backend.
 RUN(NAME matmul_02 LABELS gfortran)
 RUN(NAME simd_01 LABELS gfortran c llvm llvm_nopragma c_nopragma)
 RUN(NAME simd_02 LABELS gfortran c llvm llvm_nopragma c_nopragma)
@@ -1708,10 +1748,10 @@ RUN(NAME do_concurrent_06 LABELS llvm_omp)
 RUN(NAME do_concurrent_07 LABELS llvm_omp)
 RUN(NAME do_concurrent_08 LABELS llvm_omp)
 RUN(NAME do_concurrent_09 LABELS llvm_omp)
-RUN(NAME do_concurrent_10 LABELS llvm_omp)
-RUN(NAME do_concurrent_11 LABELS llvm_omp llvm) # every other `do_concurrent` test can work with llvm, the only reason
-RUN(NAME do_concurrent_12 LABELS llvm_omp llvm) # to not include is that we do a `omp_set_num_threads(xx)` call
-RUN(NAME do_concurrent_13 LABELS llvm_omp llvm) # to not include is that we do a `omp_set_num_threads(xx)` call
+RUN(NAME do_concurrent_10 LABELS llvm_omp NO_EXPERIMENTAL_SIMPLIFIER)
+RUN(NAME do_concurrent_11 LABELS llvm_omp llvm NO_EXPERIMENTAL_SIMPLIFIER) # every other `do_concurrent` test can work with llvm, the only reason
+RUN(NAME do_concurrent_12 LABELS llvm_omp llvm NO_EXPERIMENTAL_SIMPLIFIER) # to not include is that we do a `omp_set_num_threads(xx)` call
+RUN(NAME do_concurrent_13 LABELS llvm_omp llvm NO_EXPERIMENTAL_SIMPLIFIER) # to not include is that we do a `omp_set_num_threads(xx)` call
 
 
 RUN(NAME transfer_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -1774,7 +1814,7 @@ RUN(NAME openmp_12 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_13 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_14 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_15 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
-RUN(NAME openmp_16 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
+RUN(NAME openmp_16 LABELS gfortran llvm_omp NO_EXPERIMENTAL_SIMPLIFIER GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_17 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_18 LABELS gfortran llvm_omp EXTRA_ARGS --fast GFORTRAN_ARGS -fopenmp) # compute pi
 RUN(NAME openmp_19 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
@@ -1786,15 +1826,20 @@ RUN(NAME openmp_24 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_25 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_26 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_27 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
-RUN(NAME openmp_28 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
+RUN(NAME openmp_28 LABELS gfortran llvm_omp NO_EXPERIMENTAL_SIMPLIFIER GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_29 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
-RUN(NAME openmp_30 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp) # matmul
+RUN(NAME openmp_30 LABELS gfortran llvm_omp NO_EXPERIMENTAL_SIMPLIFIER GFORTRAN_ARGS -fopenmp) # matmul
 RUN(NAME openmp_31 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_32 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
-RUN(NAME openmp_33 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp) # mandelbrot
+RUN(NAME openmp_33 LABELS gfortran llvm_omp NO_EXPERIMENTAL_SIMPLIFIER GFORTRAN_ARGS -fopenmp) # mandelbrot
 RUN(NAME openmp_34 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp) # Ensure uniform load distribution over threads
 RUN(NAME openmp_35 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_36 LABELS gfortran GFORTRAN_ARGS -fopenmp)
+RUN(NAME openmp_37 LABELS gfortran GFORTRAN_ARGS -fopenmp)
+RUN(NAME openmp_38 LABELS gfortran GFORTRAN_ARGS -fopenmp)
+RUN(NAME openmp_39 LABELS gfortran GFORTRAN_ARGS -fopenmp)
+
+RUN(NAME fortran_01 LABELS gfortran llvm fortran)
 
 RUN(NAME compiler_version_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
@@ -1805,7 +1850,13 @@ RUN(NAME struct_type_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME func_parameter_type_02 LABELS gfortran) # function passed in other argument of function
 RUN(NAME logical_not_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME generic_interface_function_call_of_function_call LABELS gfortran llvm llvm_wasm llvm_wasm_emcc
+RUN(NAME assign_allocatable_array_of_struct_instances LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NOFAST
     EXTRA_ARGS --realloc-lhs)
+RUN(NAME generic_interface_function_call_of_function_call LABELS gfortran llvm
+    llvm_wasm llvm_wasm_emcc EXTRA_ARGS --realloc-lhs)
+RUN(NAME elemental_function_scalar_array_arg LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME elemental_function_overloaded_compare LABELS gfortran llvm llvm_wasm llvm_wasm_emcc
     EXTRA_ARGS --realloc-lhs)
+
+RUN(NAME procedure_decl_01_a LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRAFILES  procedure_decl_01_b)
+RUN(NAME array_concat LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # array passed in ArrayInitializer

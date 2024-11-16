@@ -77,7 +77,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () PointerString)
+                                                    (String 1 -1 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -128,7 +128,7 @@
                                         [(ClassType
                                             9 toml_vector
                                         )
-                                        (Character 1 -1 () PointerString)
+                                        (String 1 -1 () PointerString)
                                         (Pointer
                                             (ClassType
                                                 9 toml_value
@@ -620,11 +620,19 @@
                                     [(If
                                         (IntrinsicImpureFunction
                                             Allocated
-                                            [(StructInstanceMember
-                                                (Var 8 self)
-                                                8 1_toml_value_key
+                                            [(StringPhysicalCast
+                                                (StructInstanceMember
+                                                    (Var 8 self)
+                                                    8 1_toml_value_key
+                                                    (Allocatable
+                                                        (String 1 -2 () DescriptorString)
+                                                    )
+                                                    ()
+                                                )
+                                                DescriptorString
+                                                PointerString
                                                 (Allocatable
-                                                    (Character 1 -2 () PointerString)
+                                                    (String 1 -2 () PointerString)
                                                 )
                                                 ()
                                             )]
@@ -637,7 +645,7 @@
                                                 (Var 8 self)
                                                 8 1_toml_value_key
                                                 (Allocatable
-                                                    (Character 1 -2 () PointerString)
+                                                    (String 1 -2 () DescriptorString)
                                                 )
                                                 ()
                                             )]
@@ -647,11 +655,19 @@
                                     (If
                                         (IntrinsicImpureFunction
                                             Allocated
-                                            [(StructInstanceMember
-                                                (Var 8 self)
-                                                8 1_toml_keyval_raw
+                                            [(StringPhysicalCast
+                                                (StructInstanceMember
+                                                    (Var 8 self)
+                                                    8 1_toml_keyval_raw
+                                                    (Allocatable
+                                                        (String 1 -2 () DescriptorString)
+                                                    )
+                                                    ()
+                                                )
+                                                DescriptorString
+                                                PointerString
                                                 (Allocatable
-                                                    (Character 1 -2 () PointerString)
+                                                    (String 1 -2 () PointerString)
                                                 )
                                                 ()
                                             )]
@@ -664,7 +680,7 @@
                                                 (Var 8 self)
                                                 8 1_toml_keyval_raw
                                                 (Allocatable
-                                                    (Character 1 -2 () PointerString)
+                                                    (String 1 -2 () DescriptorString)
                                                 )
                                                 ()
                                             )]
@@ -703,7 +719,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (String 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -818,7 +834,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () PointerString)
+                                                    (String 1 -1 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -865,7 +881,7 @@
                                         [(ClassType
                                             2 toml_value
                                         )
-                                        (Character 1 -1 () PointerString)]
+                                        (String 1 -1 () PointerString)]
                                         (Logical 4)
                                         Source
                                         Implementation
@@ -884,11 +900,19 @@
                                     [(If
                                         (IntrinsicImpureFunction
                                             Allocated
-                                            [(StructInstanceMember
-                                                (Var 5 self)
-                                                5 1_toml_value_key
+                                            [(StringPhysicalCast
+                                                (StructInstanceMember
+                                                    (Var 5 self)
+                                                    5 1_toml_value_key
+                                                    (Allocatable
+                                                        (String 1 -2 () DescriptorString)
+                                                    )
+                                                    ()
+                                                )
+                                                DescriptorString
+                                                PointerString
                                                 (Allocatable
-                                                    (Character 1 -2 () PointerString)
+                                                    (String 1 -2 () PointerString)
                                                 )
                                                 ()
                                             )]
@@ -901,11 +925,19 @@
                                             (StringCompare
                                                 (Var 5 key)
                                                 Eq
-                                                (StructInstanceMember
-                                                    (Var 5 self)
-                                                    5 1_toml_value_key
+                                                (StringPhysicalCast
+                                                    (StructInstanceMember
+                                                        (Var 5 self)
+                                                        5 1_toml_value_key
+                                                        (Allocatable
+                                                            (String 1 -2 () DescriptorString)
+                                                        )
+                                                        ()
+                                                    )
+                                                    DescriptorString
+                                                    PointerString
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (String 1 -2 () PointerString)
                                                     )
                                                     ()
                                                 )
@@ -955,7 +987,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (String 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source

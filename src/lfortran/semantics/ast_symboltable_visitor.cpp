@@ -169,8 +169,8 @@ public:
             }
             if( expr ) {
                 switch( data->type->type ) {
-                    case ASR::ttypeType::Character: {
-                        ASR::Character_t* char_type = ASR::down_cast<ASR::Character_t>(data->type);
+                    case ASR::ttypeType::String: {
+                        ASR::String_t* char_type = ASR::down_cast<ASR::String_t>(data->type);
                         char_type->m_len_expr = expr;
                         char_type->m_len = -3;
                         if( expr->type == ASR::exprType::FunctionCall ) {
@@ -196,7 +196,7 @@ public:
                         break;
                     }
                     default: {
-                        throw SemanticError("Only Character type is supported as of now.", data->type->base.loc);
+                        throw SemanticError("Only String type is supported as of now.", data->type->base.loc);
                     }
                 }
             }
@@ -357,7 +357,7 @@ public:
                         break;
                     }
                     case (AST::decl_typeType::TypeCharacter) : {
-                        type = ASRUtils::TYPE(ASR::make_Character_t(al, x.base.base.loc, 1, a_len, nullptr, ASR::string_physical_typeType::PointerString));
+                        type = ASRUtils::TYPE(ASR::make_String_t(al, x.base.base.loc, 1, a_len, nullptr, ASR::string_physical_typeType::PointerString));
                         break;
                     }
                     default :
@@ -1092,6 +1092,7 @@ public:
         // populate the external_procedures_mapping
         uint64_t hash = get_hash(tmp);
         external_procedures_mapping[hash] = external_procedures;
+        external_procedures.clear();
         if (subroutine_contains_entry_function(sym_name, x.m_body, x.n_body)) {
             /*
                 This subroutine contains an entry function, create
@@ -1168,7 +1169,7 @@ public:
                     ttype = AST::decl_typeType::TypeLogical;
                     break;
                 }
-                case ASR::ttypeType::Character: {
+                case ASR::ttypeType::String: {
                     ttype = AST::decl_typeType::TypeCharacter;
                     break;
                 }
@@ -1388,7 +1389,7 @@ public:
                     break;
                 }
                 case (AST::decl_typeType::TypeCharacter) : {
-                    type = ASRUtils::TYPE(ASR::make_Character_t(al, x.base.base.loc, 1, a_len, nullptr, ASR::string_physical_typeType::PointerString));
+                    type = ASRUtils::TYPE(ASR::make_String_t(al, x.base.base.loc, 1, a_len, nullptr, ASR::string_physical_typeType::PointerString));
                     break;
                 }
                 case (AST::decl_typeType::TypeType) : {
@@ -1770,13 +1771,24 @@ public:
             if (AST::is_a<AST::InterfaceModuleProcedure_t>(*item)) {
                 AST::InterfaceModuleProcedure_t *proc
                     = AST::down_cast<AST::InterfaceModuleProcedure_t>(item);
+                std::set<std::string> items_set;
                 for (size_t i = 0; i < proc->n_names; i++) {
                     /* Check signatures of procedures
                     * to ensure there are no two procedures
                     * with same signatures.
                     */
                     char *proc_name = proc->m_names[i];
-                    proc_names.push_back(std::string(proc_name));
+                    std::string item_proc_name = std::string(proc_name);
+                    if (items_set.find(item_proc_name) == items_set.end()) {
+                        proc_names.push_back(item_proc_name);
+                        items_set.insert(item_proc_name);
+                    } else {
+                        diag.semantic_error_label("Entity " + item_proc_name
+                                                      + " is already present in the interface",
+                                                  { item->base.loc },
+                                                  " ");
+                        throw SemanticAbort();
+                    }
                 }
             } else if(AST::is_a<AST::InterfaceProc_t>(*item)) {
                 visit_interface_item(*item);
@@ -3420,15 +3432,8 @@ public:
     void visit_Enum(const AST::Enum_t &x) {
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
-        std::string sym_name = "_nameless_enum";
-        {
-            int i = 1;
-            while (parent_scope->get_symbol(std::to_string(i) +
-                    sym_name) != nullptr) {
-                i++;
-            }
-            sym_name = std::to_string(i) + sym_name;
-        }
+        std::string sym_name = "lcompilers__nameless_enum";
+        sym_name = parent_scope->get_unique_name(sym_name);
         Vec<char *> m_members;
         m_members.reserve(al, 4);
         ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al,
@@ -3476,6 +3481,15 @@ public:
             s2c(al, sym_name), nullptr, 0, m_members.p, m_members.n, abi_type,
             dflt_access, enum_value_type, type, nullptr);
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
+        // Expose all enumerators into the parent scope as ExternalSymbols pointing into the enumeration, which is the semantics of Fortran enums.
+        // That way `resolve_variable()` can resolve them automatically.
+        // In ASR->Fortran we do not create any Fortran code for these ExternalSymbols, since they are implicit. But in ASR we need to represent them explicitly.
+        for (auto it: current_scope->get_scope()) {
+            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(it.second);
+            parent_scope->add_symbol(var->m_name, ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al,
+                        var->base.base.loc, parent_scope, s2c(al, var->m_name), it.second,
+                        s2c(al, sym_name), nullptr, 0, var->m_name, var->m_access)));
+        }
         current_scope = parent_scope;
     }
 

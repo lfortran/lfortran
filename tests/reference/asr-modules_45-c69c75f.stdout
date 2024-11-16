@@ -17,7 +17,7 @@
                                     ()
                                     Default
                                     (Allocatable
-                                        (Character 1 -2 () PointerString)
+                                        (String 1 -2 () DescriptorString)
                                     )
                                     ()
                                     Source
@@ -107,7 +107,7 @@
                                     ()
                                     Default
                                     (Allocatable
-                                        (Character 1 -2 () PointerString)
+                                        (String 1 -2 () DescriptorString)
                                     )
                                     ()
                                     Source
@@ -197,11 +197,6 @@
                         ((Var 7 profindex))
                         ((Var 7 os_valid))]
                         ()
-                    )
-                    (ImplicitDeallocate
-                        [(Var 7 compiler_name)
-                        (Var 7 profile_name)
-                        (Var 7 profiles)]
                     )]
                 ),
             modules_45_fpm_manifest_profile:
@@ -242,7 +237,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (String 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -260,7 +255,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (String 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -278,7 +273,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (String 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -296,7 +291,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (String 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -314,7 +309,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (String 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -332,7 +327,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (String 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -375,7 +370,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (String 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -441,7 +436,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (String 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -459,7 +454,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (String 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -509,7 +504,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (String 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -578,10 +573,10 @@
                                     get_flags
                                     (FunctionType
                                         [(Allocatable
-                                            (Character 1 -2 () PointerString)
+                                            (String 1 -2 () DescriptorString)
                                         )
                                         (Allocatable
-                                            (Character 1 -2 () PointerString)
+                                            (String 1 -2 () DescriptorString)
                                         )
                                         (Integer 4)
                                         (Allocatable
@@ -630,13 +625,61 @@
                                         (FunctionCall
                                             2 new_profile
                                             ()
-                                            [((Var 6 profile_name))
-                                            ((Var 6 compiler_name))
+                                            [((StringPhysicalCast
+                                                (Var 6 profile_name)
+                                                DescriptorString
+                                                PointerString
+                                                (Allocatable
+                                                    (String 1 -2 () PointerString)
+                                                )
+                                                ()
+                                            ))
+                                            ((StringPhysicalCast
+                                                (Var 6 compiler_name)
+                                                DescriptorString
+                                                PointerString
+                                                (Allocatable
+                                                    (String 1 -2 () PointerString)
+                                                )
+                                                ()
+                                            ))
                                             ((Var 6 os_type))
-                                            ((Var 6 flags))
-                                            ((Var 6 c_flags))
-                                            ((Var 6 cxx_flags))
-                                            ((Var 6 link_time_flags))
+                                            ((StringPhysicalCast
+                                                (Var 6 flags)
+                                                DescriptorString
+                                                PointerString
+                                                (Allocatable
+                                                    (String 1 -2 () PointerString)
+                                                )
+                                                ()
+                                            ))
+                                            ((StringPhysicalCast
+                                                (Var 6 c_flags)
+                                                DescriptorString
+                                                PointerString
+                                                (Allocatable
+                                                    (String 1 -2 () PointerString)
+                                                )
+                                                ()
+                                            ))
+                                            ((StringPhysicalCast
+                                                (Var 6 cxx_flags)
+                                                DescriptorString
+                                                PointerString
+                                                (Allocatable
+                                                    (String 1 -2 () PointerString)
+                                                )
+                                                ()
+                                            ))
+                                            ((StringPhysicalCast
+                                                (Var 6 link_time_flags)
+                                                DescriptorString
+                                                PointerString
+                                                (Allocatable
+                                                    (String 1 -2 () PointerString)
+                                                )
+                                                ()
+                                            ))
                                             ((Var 6 file_scope_flags))
                                             (())]
                                             (StructType
@@ -657,17 +700,6 @@
                                             ()
                                         )
                                         ()
-                                    )
-                                    (ImplicitDeallocate
-                                        [(Var 6 c_flags)
-                                        (Var 6 cxx_flags)
-                                        (Var 6 err_message)
-                                        (Var 6 file_flags)
-                                        (Var 6 file_name)
-                                        (Var 6 file_scope_flags)
-                                        (Var 6 flags)
-                                        (Var 6 key_name)
-                                        (Var 6 link_time_flags)]
                                     )]
                                     ()
                                     Public
@@ -689,7 +721,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () PointerString)
+                                                    (String 1 -1 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -705,7 +737,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () PointerString)
+                                                    (String 1 -1 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -721,7 +753,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () PointerString)
+                                                    (String 1 -1 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -760,7 +792,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () PointerString)
+                                                    (String 1 -1 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -792,7 +824,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () PointerString)
+                                                    (String 1 -1 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -842,7 +874,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () PointerString)
+                                                    (String 1 -1 () PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -852,13 +884,13 @@
                                         })
                                     new_profile
                                     (FunctionType
-                                        [(Character 1 -1 () PointerString)
-                                        (Character 1 -1 () PointerString)
+                                        [(String 1 -1 () PointerString)
+                                        (String 1 -1 () PointerString)
                                         (Integer 4)
-                                        (Character 1 -1 () PointerString)
-                                        (Character 1 -1 () PointerString)
-                                        (Character 1 -1 () PointerString)
-                                        (Character 1 -1 () PointerString)
+                                        (String 1 -1 () PointerString)
+                                        (String 1 -1 () PointerString)
+                                        (String 1 -1 () PointerString)
+                                        (String 1 -1 () PointerString)
                                         (Array
                                             (StructType
                                                 2 file_scope_flag
@@ -914,7 +946,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (String 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -932,7 +964,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (String 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -950,7 +982,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (String 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -993,7 +1025,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (String 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -1027,7 +1059,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (String 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -1061,7 +1093,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 () PointerString)
+                                                        (String 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                     Source

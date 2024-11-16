@@ -37,7 +37,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 1 () PointerString)
+                                                    (String 1 1 () PointerString)
                                                     ()
                                                     BindC
                                                     Public
@@ -53,7 +53,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 1 () PointerString)
+                                                    (String 1 1 () PointerString)
                                                     ()
                                                     BindC
                                                     Public
@@ -79,8 +79,8 @@
                                         })
                                     lsame
                                     (FunctionType
-                                        [(Character 1 1 () PointerString)
-                                        (Character 1 1 () PointerString)]
+                                        [(String 1 1 () PointerString)
+                                        (String 1 1 () PointerString)]
                                         (Logical 4)
                                         BindC
                                         Interface
@@ -112,7 +112,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Character 1 1 () PointerString)
+                                    (String 1 1 () PointerString)
                                     ()
                                     Source
                                     Public
@@ -122,7 +122,7 @@
                         })
                     ssyr2
                     (FunctionType
-                        [(Character 1 1 () PointerString)]
+                        [(String 1 1 () PointerString)]
                         ()
                         Source
                         Implementation
@@ -151,7 +151,7 @@
                                     [((Var 2 uplo))
                                     ((StringConstant
                                         "U"
-                                        (Character 1 1 () PointerString)
+                                        (String 1 1 () PointerString)
                                     ))]
                                     (Logical 4)
                                     ()
@@ -168,7 +168,7 @@
                                     [((Var 2 uplo))
                                     ((StringConstant
                                         "L"
-                                        (Character 1 1 () PointerString)
+                                        (String 1 1 () PointerString)
                                     ))]
                                     (Logical 4)
                                     ()

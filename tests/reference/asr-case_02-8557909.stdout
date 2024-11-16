@@ -60,7 +60,7 @@
                             (Print
                                 (StringConstant
                                     "Excellent!"
-                                    (Character 1 10 () PointerString)
+                                    (String 1 10 () PointerString)
                                 )
                             )]
                         )
@@ -75,7 +75,7 @@
                             (Print
                                 (StringConstant
                                     "Very good!"
-                                    (Character 1 10 () PointerString)
+                                    (String 1 10 () PointerString)
                                 )
                             )]
                         )
@@ -90,7 +90,7 @@
                             (Print
                                 (StringConstant
                                     "Well done!"
-                                    (Character 1 10 () PointerString)
+                                    (String 1 10 () PointerString)
                                 )
                             )]
                         )
@@ -105,7 +105,7 @@
                             (Print
                                 (StringConstant
                                     "Not bad!"
-                                    (Character 1 8 () PointerString)
+                                    (String 1 8 () PointerString)
                                 )
                             )]
                         )
@@ -120,7 +120,7 @@
                             (Print
                                 (StringConstant
                                     "You passed!"
-                                    (Character 1 11 () PointerString)
+                                    (String 1 11 () PointerString)
                                 )
                             )]
                         )
@@ -135,7 +135,7 @@
                             (Print
                                 (StringConstant
                                     "Better try again!"
-                                    (Character 1 17 () PointerString)
+                                    (String 1 17 () PointerString)
                                 )
                             )]
                         )]
@@ -147,7 +147,7 @@
                         (Print
                             (StringConstant
                                 "Invalid marks"
-                                (Character 1 13 () PointerString)
+                                (String 1 13 () PointerString)
                             )
                         )]
                         .false.
@@ -157,11 +157,11 @@
                             ()
                             [(StringConstant
                                 "Your marks are "
-                                (Character 1 15 () PointerString)
+                                (String 1 15 () PointerString)
                             )
                             (Var 2 marks)]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )
                     )
@@ -186,7 +186,7 @@
                             [(Print
                                 (StringConstant
                                     "Excellent!"
-                                    (Character 1 10 () PointerString)
+                                    (String 1 10 () PointerString)
                                 )
                             )]
                         )
@@ -196,7 +196,7 @@
                             [(Print
                                 (StringConstant
                                     "Very good!"
-                                    (Character 1 10 () PointerString)
+                                    (String 1 10 () PointerString)
                                 )
                             )]
                         )
@@ -206,7 +206,7 @@
                             [(Print
                                 (StringConstant
                                     "Well done!"
-                                    (Character 1 10 () PointerString)
+                                    (String 1 10 () PointerString)
                                 )
                             )]
                         )
@@ -216,7 +216,7 @@
                             [(Print
                                 (StringConstant
                                     "Not bad!"
-                                    (Character 1 8 () PointerString)
+                                    (String 1 8 () PointerString)
                                 )
                             )]
                         )
@@ -226,7 +226,7 @@
                             [(Print
                                 (StringConstant
                                     "You passed!"
-                                    (Character 1 11 () PointerString)
+                                    (String 1 11 () PointerString)
                                 )
                             )]
                         )
@@ -236,14 +236,14 @@
                             [(Print
                                 (StringConstant
                                     "Better try again!"
-                                    (Character 1 17 () PointerString)
+                                    (String 1 17 () PointerString)
                                 )
                             )]
                         )]
                         [(Print
                             (StringConstant
                                 "Invalid marks"
-                                (Character 1 13 () PointerString)
+                                (String 1 13 () PointerString)
                             )
                         )]
                         .false.
@@ -253,11 +253,11 @@
                             ()
                             [(StringConstant
                                 "Your marks are "
-                                (Character 1 15 () PointerString)
+                                (String 1 15 () PointerString)
                             )
                             (Var 2 marks)]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )
                     )
@@ -269,7 +269,7 @@
                             [(Print
                                 (StringConstant
                                     "Excellent!"
-                                    (Character 1 10 () PointerString)
+                                    (String 1 10 () PointerString)
                                 )
                             )]
                         )
@@ -279,7 +279,7 @@
                             [(Print
                                 (StringConstant
                                     "Very good!"
-                                    (Character 1 10 () PointerString)
+                                    (String 1 10 () PointerString)
                                 )
                             )]
                         )
@@ -289,7 +289,7 @@
                             [(Print
                                 (StringConstant
                                     "Well done!"
-                                    (Character 1 10 () PointerString)
+                                    (String 1 10 () PointerString)
                                 )
                             )]
                         )
@@ -299,7 +299,7 @@
                             [(Print
                                 (StringConstant
                                     "Not bad!"
-                                    (Character 1 8 () PointerString)
+                                    (String 1 8 () PointerString)
                                 )
                             )]
                         )
@@ -309,7 +309,7 @@
                             [(Print
                                 (StringConstant
                                     "You passed!"
-                                    (Character 1 11 () PointerString)
+                                    (String 1 11 () PointerString)
                                 )
                             )]
                         )
@@ -319,14 +319,14 @@
                             [(Print
                                 (StringConstant
                                     "Better try again!"
-                                    (Character 1 17 () PointerString)
+                                    (String 1 17 () PointerString)
                                 )
                             )]
                         )]
                         [(Print
                             (StringConstant
                                 "Invalid marks"
-                                (Character 1 13 () PointerString)
+                                (String 1 13 () PointerString)
                             )
                         )]
                         .false.
@@ -336,11 +336,11 @@
                             ()
                             [(StringConstant
                                 "Your marks are "
-                                (Character 1 15 () PointerString)
+                                (String 1 15 () PointerString)
                             )
                             (Var 2 marks)]
                             FormatFortran
-                            (Character -1 0 () PointerString)
+                            (String -1 0 () PointerString)
                             ()
                         )
                     )]

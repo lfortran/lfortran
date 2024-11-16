@@ -1140,7 +1140,7 @@
                                             ()
                                             [(Var 9 y)]
                                             FormatFortran
-                                            (Character -1 0 () PointerString)
+                                            (String -1 0 () PointerString)
                                             ()
                                         )
                                     )]
