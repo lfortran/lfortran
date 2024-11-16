@@ -623,8 +623,14 @@ public:
             src = indent;
             src += "use ";
             if (strcmp(x.m_module_name,"lfortran_intrinsic_iso_c_binding")==0) {
-                src += "iso_c_binding";
-            } else {
+                SymbolTable* st = ASRUtils::symbol_parent_symtab(sym);
+                ASR::symbol_t *sym = st->resolve_symbol(x.m_original_name);
+                if (sym && ASR::is_a<ASR::Module_t>(*sym) && ASR::down_cast<ASR::Module_t>(sym)->m_intrinsic) {
+                    src += "iso_c_binding";
+                } else {
+                    src.append(x.m_module_name);
+                }
+        } else {
                 src.append(x.m_module_name);
             }
             src += ", only: ";
