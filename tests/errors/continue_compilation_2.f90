@@ -42,6 +42,7 @@ program continue_compilation_2
     integer :: size_a_2
     integer :: kindvar = 4
     integer :: atom[*]
+    real(8), allocatable :: x_3(:)
 
     ! c_f_pointer_01
     call c_f_pointer(queries_1, y_1, [2])
@@ -83,5 +84,14 @@ program continue_compilation_2
     !atomic_01
     call atomic_add (atom[1], this_image())
     call atomic_add (atom[2], this_image())
+    !array_constructor_with_asterisk_in_type_spec
+    print *, [character(*) :: "a", "b", "ball", "cat"]
+    !array_constructor_with_different_kind
+    allocate(x_3(4))
+    print *, [x_3, [1., 2.]]
+    !array_constructor_with_different_types
+    print *, [1, 2.]
+    !array_constructor_with_integer_real_array_types
+    print *, [1, [1., 2.]]
 
 end program

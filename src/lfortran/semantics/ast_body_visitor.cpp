@@ -3740,16 +3740,7 @@ public:
         }
 
         for (size_t i=0; i<x.n_values; i++) {
-            try {
-                this->visit_expr(*x.m_values[i]);
-            } catch (const SemanticError &e) {
-                if ( compiler_options.continue_compilation ) diag.add(e.d);
-                else throw e;
-            } catch (const SemanticAbort &a) {
-                if ( !compiler_options.continue_compilation ) throw a;
-                return;
-            }
-            // visit_expr(*x.m_values[i]);
+            this->visit_expr(*x.m_values[i]);
             ASR::expr_t *expr = ASRUtils::EXPR(tmp);
             if(ASRUtils::is_descriptorString(ASRUtils::expr_type(expr))){
                 expr = ASRUtils::cast_string_descriptor_to_pointer(al, expr);
