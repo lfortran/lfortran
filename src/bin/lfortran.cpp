@@ -2350,8 +2350,10 @@ int main_app(int argc, char *argv[]) {
     }
 
     if (fmt) {
-        if (CLI::NonexistentPath(arg_fmt_file).empty())
-            throw LCompilers::LCompilersException("File does not exist: " + arg_fmt_file);
+        if (CLI::NonexistentPath(arg_fmt_file).empty()) {
+            std:: cerr << "error: no such file or directory: " << "'" << arg_fmt_file << "'" << std::endl;
+            return 1;
+        }
 
         return format(arg_fmt_file, arg_fmt_inplace, !arg_fmt_no_color,
             arg_fmt_indent, arg_fmt_indent_unit, compiler_options);
