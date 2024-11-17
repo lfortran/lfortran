@@ -97,7 +97,7 @@ class CommonVisitorMethods {
 public:
 
 
-static inline ASR::expr_t* compare_helper(Allocator &al, ASR::expr_t* left_value, ASR::expr_t* right_value, ASR::cmpopType asr_op, const Location loc) {
+static inline ASR::expr_t* compare_helper(Allocator &al, ASR::expr_t* left_value, ASR::expr_t* right_value, ASR::cmpopType asr_op, const Location loc, diag::Diagnostics &diag) {
     if (ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(left_value))) {
         int64_t left_val = ASR::down_cast<ASR::IntegerConstant_t>(left_value)->m_n;
         int64_t right_val = ASR::down_cast<ASR::IntegerConstant_t>(right_value)->m_n;
@@ -110,8 +110,11 @@ static inline ASR::expr_t* compare_helper(Allocator &al, ASR::expr_t* left_value
             case (ASR::cmpopType::LtE): { result = result && (left_val <= right_val); break; }
             case (ASR::cmpopType::NotEq): { result = result && (left_val != right_val); break; }
             default: {
-                throw SemanticError("Comparison operator not implemented",
-                                    loc);
+                diag.add(diag::Diagnostic(
+                    "Comparison operator not implemented",
+                    Level::Error, Stage::Semantic, {
+                    diag::Label("", {loc})}));
+                throw SemanticAbort();
             }
         }
         return ASRUtils::EXPR(ASR::make_LogicalConstant_t(
@@ -129,8 +132,11 @@ static inline ASR::expr_t* compare_helper(Allocator &al, ASR::expr_t* left_value
             case (ASR::cmpopType::LtE): { result = result && (left_val <= right_val); break; }
             case (ASR::cmpopType::NotEq): { result = result && (left_val != right_val); break; }
             default: {
-                throw SemanticError("Comparison operator not implemented",
-                                    loc);
+                diag.add(diag::Diagnostic(
+                    "Comparison operator not implemented",
+                    Level::Error, Stage::Semantic, {
+                    diag::Label("", {loc})}));
+                throw SemanticAbort();
             }
         }
         return ASRUtils::EXPR(ASR::make_LogicalConstant_t(
@@ -156,9 +162,12 @@ static inline ASR::expr_t* compare_helper(Allocator &al, ASR::expr_t* left_value
                 break;
             }
             default: {
-                throw SemanticError("'" + ASRUtils::cmpop_to_str(asr_op) +
-                                    "' comparison is not supported between complex numbers",
-                                    loc);
+                diag.add(diag::Diagnostic(
+                    "'" + ASRUtils::cmpop_to_str(asr_op) +
+                    "' comparison is not supported between complex numbers",
+                    Level::Error, Stage::Semantic, {
+                    diag::Label("", {loc})}));
+                throw SemanticAbort();
             }
         }
         return ASRUtils::EXPR(ASR::make_LogicalConstant_t(
@@ -179,8 +188,11 @@ static inline ASR::expr_t* compare_helper(Allocator &al, ASR::expr_t* left_value
             case (ASR::cmpopType::LtE): { result = result && (left_val <= right_val); break; }
             case (ASR::cmpopType::NotEq): { result = result && (left_val != right_val); break; }
             default: {
-                throw SemanticError("Comparison operator not implemented",
-                                    loc);
+                diag.add(diag::Diagnostic(
+                    "Comparison operator not implemented",
+                    Level::Error, Stage::Semantic, {
+                    diag::Label("", {loc})}));
+                throw SemanticAbort();
             }
         }
         return ASRUtils::EXPR(ASR::make_LogicalConstant_t(
@@ -224,24 +236,27 @@ static inline ASR::expr_t* compare_helper(Allocator &al, ASR::expr_t* left_value
         return ASR::down_cast<ASR::expr_t>(ASR::make_LogicalConstant_t(
             al, loc, result, ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4))));
     } else {
-        throw SemanticError("Comparison operator not implemented",
-                            loc);
+        diag.add(diag::Diagnostic(
+            "Comparison operator not implemented",
+            Level::Error, Stage::Semantic, {
+            diag::Label("", {loc})}));
+        throw SemanticAbort();
         return nullptr;
     }
 }
 
 
 static inline ASR::expr_t* evaluate_compiletime_values(Allocator &al, std::vector<std::pair<ASR::expr_t*, ASR::expr_t*>> &compiletime_values,
-                            ASR::expr_t* left, ASR::expr_t* right, ASR::cmpopType asr_op, ASR::ttype_t* type, const Location loc) {
+                            ASR::expr_t* left, ASR::expr_t* right, ASR::cmpopType asr_op, ASR::ttype_t* type, const Location loc, diag::Diagnostics &diag) {
 
     if (compiletime_values.size() == 0) {
-        return compare_helper(al, ASRUtils::expr_value(left), ASRUtils::expr_value(right), asr_op, loc);
+        return compare_helper(al, ASRUtils::expr_value(left), ASRUtils::expr_value(right), asr_op, loc, diag);
     } else {
         Vec<ASR::expr_t*> args; args.reserve(al, compiletime_values.size());
         for (size_t i = 0; i < compiletime_values.size(); i++) {
             ASR::expr_t* left_val = compiletime_values[i].first;
             ASR::expr_t* right_val = compiletime_values[i].second;
-            args.push_back(al, compare_helper(al, left_val, right_val, asr_op, loc));
+            args.push_back(al, compare_helper(al, left_val, right_val, asr_op, loc, diag));
         }
         return ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, loc, args.p, args.size(), type, ASR::arraystorageType::ColMajor));
     }
@@ -289,7 +304,7 @@ inline static void visit_Compare(Allocator &al, const AST::Compare_t &x,
                                    SymbolTable* curr_scope,
                                    SetChar& current_function_dependencies,
                                    SetChar& current_module_dependencies,
-                                   const CompilerOptions &compiler_options) {
+                                   const CompilerOptions &compiler_options, diag::Diagnostics &diag) {
     if(ASRUtils::is_descriptorString(ASRUtils::expr_type(left))){
         left = ASRUtils::cast_string_descriptor_to_pointer(al, left);
     }                                
@@ -323,8 +338,11 @@ inline static void visit_Compare(Allocator &al, const AST::Compare_t &x,
         break;
         }
         default: {
-        throw SemanticError("Comparison operator not implemented",
-                            x.base.base.loc);
+        diag.add(diag::Diagnostic(
+            "Comparison operator not implemented",
+            Level::Error, Stage::Semantic, {
+            diag::Label("", {x.base.base.loc})}));
+        throw SemanticAbort();
         }
     }
     // Cast LHS or RHS if necessary
@@ -338,7 +356,13 @@ inline static void visit_Compare(Allocator &al, const AST::Compare_t &x,
         intrinsic_op_name, curr_scope, asr, al,
         x.base.base.loc, current_function_dependencies,
         current_module_dependencies,
-        [&](const std::string &msg, const Location &loc) { throw SemanticError(msg, loc); }) ) {
+        [&](const std::string &msg, const Location &loc) { 
+                diag.add(diag::Diagnostic(
+                    msg,
+                    Level::Error, Stage::Semantic, {
+                    diag::Label("", {loc})}));
+                throw SemanticAbort();
+            }) ) {
         overloaded = ASRUtils::EXPR(asr);
     }
     ASR::ttype_t *source_type = nullptr;
@@ -354,10 +378,12 @@ inline static void visit_Compare(Allocator &al, const AST::Compare_t &x,
          (left_type2->type != ASR::ttypeType::String ||
           right_type2->type != ASR::ttypeType::String))
          && overloaded == nullptr) {
-      throw SemanticError(
-          "Compare: only Integer or Real can be on the LHS and RHS. "
-          "If operator is .eq. or .neq. then Complex type is also acceptable",
-          x.base.base.loc);
+        diag.add(diag::Diagnostic(
+            "Compare: only Integer or Real can be on the LHS and RHS. "
+            "If operator is .eq. or .neq. then Complex type is also acceptable",
+            Level::Error, Stage::Semantic, {
+            diag::Label("", {x.base.base.loc})}));
+        throw SemanticAbort();
     } else {
       dest_type = right_type;
       source_type = left_type;
@@ -375,8 +401,11 @@ inline static void visit_Compare(Allocator &al, const AST::Compare_t &x,
     if( overloaded == nullptr ) {
         if (!ASRUtils::check_equal_type(ASRUtils::expr_type(left),
                                     ASRUtils::expr_type(right))) {
-            throw SemanticError("Operands of comparison operator are of different types",
-                                x.base.base.loc);
+            diag.add(diag::Diagnostic(
+                "Operands of comparison operator are of different types",
+                Level::Error, Stage::Semantic, {
+                diag::Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
         }
     }
     size_t left_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(left));
@@ -405,7 +434,7 @@ inline static void visit_Compare(Allocator &al, const AST::Compare_t &x,
     if (ASRUtils::expr_value(left) != nullptr && ASRUtils::expr_value(right) != nullptr) {
         std::vector<std::pair<ASR::expr_t*, ASR::expr_t*>> comptime_values;
         populate_compiletime_values(al, comptime_values, left, right);
-        value = evaluate_compiletime_values(al, comptime_values, left, right, asr_op, type, x.base.base.loc);
+        value = evaluate_compiletime_values(al, comptime_values, left, right, asr_op, type, x.base.base.loc, diag);
     }
     if (ASRUtils::is_integer(*dest_type)) {
         asr = ASR::make_IntegerCompare_t(al, x.base.base.loc, left, asr_op, right, type, value);
@@ -430,7 +459,7 @@ inline static void visit_Compare(Allocator &al, const AST::Compare_t &x,
 }
 
 inline static bool get_boolean_comparison_value(Location loc, ASR::logicalbinopType op,
-                                                bool left_value, bool right_value) {
+                                                bool left_value, bool right_value, diag::Diagnostics &diag) {
     bool result;
     switch (op) {
         case (ASR::And):
@@ -446,9 +475,12 @@ inline static bool get_boolean_comparison_value(Location loc, ASR::logicalbinopT
             result = left_value == right_value;
             break;
         default:
-            throw SemanticError(R"""(Only .and., .or., .neqv., .eqv.
-                                implemented for logical type operands.)""",
-                                loc);
+            diag.add(diag::Diagnostic(
+                R"""(Only .and., .or., .neqv., .eqv.
+                implemented for logical type operands.)""",
+                Level::Error, Stage::Semantic, {
+                diag::Label("", {loc})}));
+            throw SemanticAbort();
     }
     return result;
 }
@@ -458,13 +490,13 @@ static inline ASR::expr_t* create_boolean_result_array(Allocator &al, Location l
                                                         size_t arr_size,
                                                         ASR::ArrayConstant_t* left,
                                                         T right,
-                                                        bool is_right_logical_constant) {
+                                                        bool is_right_logical_constant, diag::Diagnostics &diag) {
     void* arr_data = nullptr;
     bool* array = al.allocate<bool>(arr_size);
 
     for (size_t i = 0; i < arr_size; i++) {
         bool right_value = is_right_logical_constant ? (bool) right : (bool) (((bool*) ((ASR::ArrayConstant_t*)right)->m_data)[i]);
-        array[i] = get_boolean_comparison_value(loc, op, ((bool*) left->m_data)[i], right_value);
+        array[i] = get_boolean_comparison_value(loc, op, ((bool*) left->m_data)[i], right_value, diag);
     }
 
     arr_data = array;
@@ -500,9 +532,12 @@ inline static void visit_BoolOp(Allocator &al, const AST::BoolOp_t &x,
             op = ASR::Eqv;
             break;
         default:
-            throw SemanticError(R"""(Only .and., .or., .xor., .neqv., .eqv.
+            diag.add(diag::Diagnostic(
+                R"""(Only .and., .or., .xor., .neqv., .eqv.
                                     implemented for logical type operands.)""",
-                                x.base.base.loc);
+                Level::Error, Stage::Semantic, {
+                diag::Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
     }
 
     ASR::ttype_t *left_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(left));
@@ -536,7 +571,7 @@ inline static void visit_BoolOp(Allocator &al, const AST::BoolOp_t &x,
             logical_const = ASR::down_cast<ASR::LogicalConstant_t>(right_expr_value)->m_value;
 
             size_t arr_size = ASRUtils::get_fixed_size_of_array(left_type);
-            value = create_boolean_result_array(al, x.base.base.loc, op, arr_size, arr_const, logical_const, true);
+            value = create_boolean_result_array(al, x.base.base.loc, op, arr_size, arr_const, logical_const, true, diag);
 
         } else if (!ASRUtils::is_array(left_type) && ASRUtils::is_array(right_type)) {
             ASR::ArrayConstant_t* arr_const;
@@ -545,7 +580,7 @@ inline static void visit_BoolOp(Allocator &al, const AST::BoolOp_t &x,
             logical_const = ASR::down_cast<ASR::LogicalConstant_t>(left_expr_value)->m_value;
 
             size_t arr_size = ASRUtils::get_fixed_size_of_array(right_type);
-            value = create_boolean_result_array(al, x.base.base.loc, op, arr_size, arr_const, logical_const, true);
+            value = create_boolean_result_array(al, x.base.base.loc, op, arr_size, arr_const, logical_const, true, diag);
 
         } else if (ASRUtils::is_array(left_type) && ASRUtils::is_array(right_type)) {
             ASR::ArrayConstant_t* left_arr_const = ASR::down_cast<ASR::ArrayConstant_t>(
@@ -563,13 +598,13 @@ inline static void visit_BoolOp(Allocator &al, const AST::BoolOp_t &x,
             }
 
             size_t arr_size = ASRUtils::get_fixed_size_of_array(left_type);
-            value = create_boolean_result_array(al, x.base.base.loc, op, arr_size, left_arr_const, right_arr_const, false);
+            value = create_boolean_result_array(al, x.base.base.loc, op, arr_size, left_arr_const, right_arr_const, false, diag);
 
         } else {
             bool left_value = ASR::down_cast<ASR::LogicalConstant_t>(left_expr_value)->m_value;
             bool right_value = ASR::down_cast<ASR::LogicalConstant_t>(right_expr_value)->m_value;
 
-            bool result = get_boolean_comparison_value(x.base.base.loc, op, left_value, right_value);
+            bool result = get_boolean_comparison_value(x.base.base.loc, op, left_value, right_value, diag);
 
             value = ASR::down_cast<ASR::expr_t>(ASR::make_LogicalConstant_t(
                 al, x.base.base.loc, result, left_type));
@@ -588,7 +623,7 @@ inline static void visit_BoolOp(Allocator &al, const AST::BoolOp_t &x,
                                    ASR::expr_t *&operand, ASR::asr_t *&asr,
                                    SymbolTable* current_scope,
                                    SetChar& current_function_dependencies,
-                                   SetChar& current_module_dependencies) {
+                                   SetChar& current_module_dependencies, diag::Diagnostics &diag) {
 
     ASR::ttype_t *operand_type = ASRUtils::expr_type(operand);
     ASR::expr_t *value = nullptr;
@@ -653,7 +688,13 @@ inline static void visit_BoolOp(Allocator &al, const AST::BoolOp_t &x,
                 x.base.base.loc, current_function_dependencies,
                 current_module_dependencies,
                 [&](const std::string &msg, const Location &loc)
-                { throw SemanticError(msg, loc); }) ) {
+                { 
+                    diag.add(diag::Diagnostic(
+                        msg,
+                        Level::Error, Stage::Semantic, {
+                        diag::Label("", {loc})}));
+                    throw SemanticAbort();
+                }) ) {
                 overloaded_uminus = ASRUtils::EXPR(asr);
             }
             LCOMPILERS_ASSERT(overloaded_uminus != nullptr);
@@ -678,7 +719,11 @@ inline static void visit_BoolOp(Allocator &al, const AST::BoolOp_t &x,
             return;
         }
         else {
-            throw SemanticError("Argument of `not` intrinsic must be INTEGER", x.base.base.loc);
+            diag.add(diag::Diagnostic(
+                "Argument of `not` intrinsic must be INTEGER",
+                Level::Error, Stage::Semantic, {
+                diag::Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
         }
 
     } else if (x.m_op == AST::unaryopType::Not) {
@@ -693,8 +738,12 @@ inline static void visit_BoolOp(Allocator &al, const AST::BoolOp_t &x,
             return;
         }
         else {
-            throw SemanticError("Operand of .not. operator is "+
-                std::string(ASRUtils::type_to_str(operand_type)), x.base.base.loc);
+            diag.add(diag::Diagnostic(
+                "Operand of .not. operator is "+
+                std::string(ASRUtils::type_to_str(operand_type)),
+                Level::Error, Stage::Semantic, {
+                diag::Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
         }
     }
   }
@@ -7469,10 +7518,9 @@ public:
         if (ASR::is_a<ASR::Function_t>(*v)){
             ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(v);
             if (func->m_return_var == nullptr){
-                throw SemanticError("Subroutine `" + var_name + "` called as a function ", x.base.base.loc);
-                // diag.add(Diagnostic("Subroutine `" + var_name + "` called as a function",
-                //                     Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
-                // throw SemanticAbort();
+                diag.add(Diagnostic("Subroutine `" + var_name + "` called as a function",
+                                    Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+                throw SemanticAbort();
             }
         }
         if (!is_common_variable
@@ -7773,13 +7821,10 @@ public:
                 return nullptr;
             } else {
                 is_coarray_or_atomic(remote_sym, loc);
-                throw SemanticError("Function '" + remote_sym + "' not found"
+                diag.add(Diagnostic("Function '" + remote_sym + "' not found"
                     " (not user defined nor intrinsic)",
-                    loc);
-                // diag.add(Diagnostic("Function '" + remote_sym + "' not found"
-                //     " (not user defined nor intrinsic)",
-                //     Level::Error, Stage::Semantic, {Label("", {loc})}));
-                // throw SemanticAbort();
+                    Level::Error, Stage::Semantic, {Label("", {loc})}));
+                throw SemanticAbort();
             }
         }
         std::string module_name = intrinsic_procedures.get_module(remote_sym, loc);
@@ -8635,7 +8680,7 @@ public:
         ASR::expr_t *operand = ASRUtils::EXPR(tmp);
         CommonVisitorMethods::visit_UnaryOp(al, x, operand, tmp,
             current_scope, current_function_dependencies,
-            current_module_dependencies);
+            current_module_dependencies, diag);
     }
 
     void visit_Compare(const AST::Compare_t &x) {
@@ -8647,7 +8692,7 @@ public:
                                             cmpop2str[x.m_op], current_scope,
                                             current_function_dependencies,
                                             current_module_dependencies,
-                                            compiler_options);
+                                            compiler_options, diag);
     }
 
     void visit_Parenthesis(const AST::Parenthesis_t &x) {
