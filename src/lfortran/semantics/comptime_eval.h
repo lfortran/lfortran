@@ -93,15 +93,18 @@ struct IntrinsicProcedures {
         }
     }
 
-    std::string get_module(std::string name, const Location &loc) const {
+    std::string get_module(std::string name, const Location &loc, diag::Diagnostics &diag) const {
         auto search = comptime_eval_map.find(name);
         if (search != comptime_eval_map.end()) {
             std::string module_name = std::get<0>(search->second);
             return module_name;
         } else {
-            throw SemanticError("Function '" + name
+            diag.add(diag::Diagnostic(
+                "Function '" + name
                 + "' not found among intrinsic procedures",
-                loc);
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {loc})}));
+            throw SemanticAbort();
         }
     }
 
@@ -137,11 +140,15 @@ struct IntrinsicProcedures {
     static ASR::expr_t *eval_trig(Allocator &al, const Location &loc,
             Vec<ASR::expr_t*> &args, const CompilerOptions &,
             trig_eval_callback_double trig_double,
-            trig_eval_callback_complex_double trig_complex_double
-            ) {
+            trig_eval_callback_complex_double trig_complex_double,
+            diag::Diagnostics &diag) {
         LCOMPILERS_ASSERT(ASRUtils::all_args_evaluated(args));
         if (args.size() != 1) {
-            throw SemanticError("Intrinsic trig function accepts exactly 1 argument", loc);
+            diag.add(diag::Diagnostic(
+                "Intrinsic trig function accepts exactly 1 argument",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {loc})}));
+            throw SemanticAbort();
         }
         ASR::expr_t* trig_arg = args[0];
         ASR::ttype_t* t = ASRUtils::expr_type(args[0]);
@@ -162,18 +169,25 @@ struct IntrinsicProcedures {
                 return nullptr;
             }
         } else {
-            throw SemanticError("Argument for trig function must be Real or Complex", loc);
+            diag.add(diag::Diagnostic(
+                "Argument for trig function must be Real or Complex",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {loc})}));
+            throw SemanticAbort();
         }
     }
 
     typedef double (*eval2_callback_double)(double, double);
     static ASR::expr_t *eval_2args(Allocator &al, const Location &loc,
             Vec<ASR::expr_t*> &args, const CompilerOptions &,
-            eval2_callback_double eval2_double
-            ) {
+            eval2_callback_double eval2_double, diag::Diagnostics &diag) {
         LCOMPILERS_ASSERT(ASRUtils::all_args_evaluated(args));
         if (args.size() != 2) {
-            throw SemanticError("This intrinsic function accepts exactly 2 arguments", loc);
+            diag.add(diag::Diagnostic(
+                "This intrinsic function accepts exactly 2 arguments",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {loc})}));
+            throw SemanticAbort();
         }
         ASR::expr_t* trig_arg1 = args[0];
         ASR::ttype_t* t1 = ASRUtils::expr_type(args[0]);
@@ -185,7 +199,11 @@ struct IntrinsicProcedures {
             double val = eval2_double(rv1, rv2);
             return ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(al, loc, val, t1));
         } else {
-            throw SemanticError("Arguments for this intrinsic function must be Real", loc);
+            diag.add(diag::Diagnostic(
+                "Arguments for this intrinsic function must be Real",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {loc})}));
+            throw SemanticAbort();
         }
     }
 
@@ -193,10 +211,14 @@ struct IntrinsicProcedures {
     static ASR::expr_t *eval_2args_ri(Allocator &al, const Location &loc,
             Vec<ASR::expr_t*> &args, const CompilerOptions &compiler_options,
             eval2_callback_double eval2_double,
-            eval2_callback_int eval2_int) {
+            eval2_callback_int eval2_int, diag::Diagnostics &diag) {
         LCOMPILERS_ASSERT(ASRUtils::all_args_evaluated(args));
         if (args.size() != 2) {
-            throw SemanticError("This intrinsic function accepts exactly 2 arguments", loc);
+            diag.add(diag::Diagnostic(
+                "This intrinsic function accepts exactly 2 arguments",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {loc})}));
+            throw SemanticAbort();
         }
         ASR::expr_t* trig_arg1 = args[0];
         ASR::ttype_t* t1 = ASRUtils::expr_type(args[0]);
@@ -215,7 +237,11 @@ struct IntrinsicProcedures {
                     ASR::make_Integer_t(al, loc, compiler_options.po.default_integer_kind));
             return ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(al, loc, val, type));
         } else {
-            throw SemanticError("Arguments for this intrinsic function must be Real or Integer", loc);
+            diag.add(diag::Diagnostic(
+                "Arguments for this intrinsic function must be Real or Integer",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {loc})}));
+            throw SemanticAbort();
         }
     }
 

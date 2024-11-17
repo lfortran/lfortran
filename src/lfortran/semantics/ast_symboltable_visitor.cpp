@@ -356,9 +356,9 @@ public:
                         visit_expr(*attr_type->m_kind->m_value);
                         ASR::expr_t* kind_expr = ASRUtils::EXPR(tmp);
                         if (attr_type->m_type == AST::decl_typeType::TypeCharacter) {
-                            a_len = ASRUtils::extract_len<SemanticError>(kind_expr, x.base.base.loc);
+                            a_len = ASRUtils::extract_len<SemanticAbort>(kind_expr, x.base.base.loc, diag);
                         } else {
-                            a_kind = ASRUtils::extract_kind<SemanticError>(kind_expr, x.base.base.loc);
+                            a_kind = ASRUtils::extract_kind<SemanticAbort>(kind_expr, x.base.base.loc, diag);
                             i_kind = a_kind;
                         }
                     } else {
@@ -1471,9 +1471,9 @@ public:
                     visit_expr(*return_type->m_kind->m_value);
                     ASR::expr_t* kind_expr = ASRUtils::EXPR(tmp);
                     if (return_type->m_type == AST::decl_typeType::TypeCharacter) {
-                        a_len = ASRUtils::extract_len<SemanticError>(kind_expr, x.base.base.loc);
+                        a_len = ASRUtils::extract_len<SemanticAbort>(kind_expr, x.base.base.loc, diag);
                     } else {
-                        a_kind = ASRUtils::extract_kind<SemanticError>(kind_expr, x.base.base.loc);
+                        a_kind = ASRUtils::extract_kind<SemanticAbort>(kind_expr, x.base.base.loc, diag);
                         i_kind = a_kind;
                     }
                 } else {
@@ -3481,7 +3481,7 @@ public:
                                                                      right_type, conversion_cand,
                                                                      &source_type, &dest_type);
                         ImplicitCastRules::set_converted_value(al, x.base.base.loc, conversion_cand,
-                                                               source_type, dest_type);
+                                                               source_type, dest_type, diag);
                         return_type = ASRUtils::duplicate_type(al, ftype);
                         value = ASRUtils::EXPR(ASRUtils::make_Binop_util(al, x.base.base.loc, binop, left, right, dest_type));
                         if (!ASRUtils::check_equal_type(dest_type, return_type)) {

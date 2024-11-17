@@ -2665,7 +2665,7 @@ public:
         this->visit_expr(*x.m_value);
         ASR::expr_t *value = ASRUtils::EXPR(tmp);
         ImplicitCastRules::set_converted_value(al, x.base.base.loc, &value,
-                                        ASRUtils::expr_type(value),ASRUtils::expr_type(to_return));
+                                        ASRUtils::expr_type(value),ASRUtils::expr_type(to_return), diag);
         if (!ASRUtils::check_equal_type(ASRUtils::expr_type(to_return),
                                     ASRUtils::expr_type(value))) {
             std::string ltype = ASRUtils::type_to_str(ASRUtils::expr_type(to_return));
@@ -2959,7 +2959,7 @@ public:
                         ASR::expr_t* arg = ASRUtils::fetch_ArrayConstant_value(al, ac, i);
                         ImplicitCastRules::set_converted_value(al, x.base.base.loc, &arg,
                                                 ASRUtils::expr_type(arg),
-                                                ASRUtils::type_get_past_allocatable(target_type));
+                                                ASRUtils::type_get_past_allocatable(target_type), diag);
                         // ASRUtils::set_ArrayConstant_value(ac, arg, i);
                         args.push_back(al, arg);
                     }
@@ -2976,7 +2976,7 @@ public:
                     }
                 } else {
                     ImplicitCastRules::set_converted_value(al, x.base.base.loc, &value,
-                                        value_type, target_type);
+                                        value_type, target_type, diag);
                 }
             }
             if (!ASRUtils::check_equal_type(ASRUtils::expr_type(target),
@@ -3924,7 +3924,7 @@ public:
     #define cast_as_loop_var(conv_candidate) \
         ASR::ttype_t *des_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(var)); \
         ASR::ttype_t *src_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(*conv_candidate)); \
-        ImplicitCastRules::set_converted_value(al, x.base.base.loc, conv_candidate, src_type, des_type);
+        ImplicitCastRules::set_converted_value(al, x.base.base.loc, conv_candidate, src_type, des_type, diag);
 
     void visit_DoLoop(const AST::DoLoop_t &x) {
         loop_nesting += 1;

@@ -394,7 +394,7 @@ inline static void visit_Compare(Allocator &al, const AST::Compare_t &x,
                                                     &source_type, &dest_type);
 
         ImplicitCastRules::set_converted_value(
-            al, x.base.base.loc, conversion_cand, source_type, dest_type);
+            al, x.base.base.loc, conversion_cand, source_type, dest_type, diag);
       }
     }
 
@@ -1794,7 +1794,7 @@ public:
         // which must be a `Var_t` pointing to a `Variable_t`,
         // so no checks are needed:
         ImplicitCastRules::set_converted_value(al, x.base.base.loc, &value,
-                                ASRUtils::expr_type(value), ASRUtils::expr_type(object));
+                                ASRUtils::expr_type(value), ASRUtils::expr_type(object), diag);
         ASR::expr_t* expression_value = ASRUtils::expr_value(value);
         if (!expression_value) {
             diag.add(Diagnostic(
@@ -3276,7 +3276,7 @@ public:
                         ImplicitCastRules::set_converted_value(
                             al, x.base.base.loc, &tmp_init,
                             ASRUtils::expr_type(tmp_init),
-                            ASRUtils::type_get_past_allocatable(type)
+                            ASRUtils::type_get_past_allocatable(type), diag
                         );
                         for (int64_t i = 0; i < size; i++) {
                             args.push_back(al, tmp_init);
@@ -3361,7 +3361,7 @@ public:
                         value = nullptr;
                         init_expr = nullptr;
                     } else if (!is_char_type) {
-                        ImplicitCastRules::set_converted_value(al, x.base.base.loc, &init_expr, init_type, type);
+                        ImplicitCastRules::set_converted_value(al, x.base.base.loc, &init_expr, init_type, type, diag);
                         LCOMPILERS_ASSERT(init_expr != nullptr);
                         value = ASRUtils::expr_value(init_expr);
                         if ( init_expr && !ASR::is_a<ASR::FunctionType_t>(*
@@ -3660,7 +3660,7 @@ public:
             if (sym_type->m_kind->m_value) {
                 this->visit_expr(*sym_type->m_kind->m_value);
                 ASR::expr_t* kind_expr = ASRUtils::EXPR(tmp);
-                a_kind = ASRUtils::extract_kind<SemanticError>(kind_expr, sym_type->m_kind->loc);
+                a_kind = ASRUtils::extract_kind<SemanticAbort>(kind_expr, sym_type->m_kind->loc, diag);
             }
             // kind=* only allowed for "Character"
             else if (sym_type->m_kind->m_type == AST::kind_item_typeType::Star) {
@@ -3800,7 +3800,7 @@ public:
                         } else {
                             this->visit_expr(*sym_type->m_kind[i].m_value);
                             ASR::expr_t* len_expr0 = ASRUtils::EXPR(tmp);
-                            a_len = ASRUtils::extract_len<SemanticError>(len_expr0, loc);
+                            a_len = ASRUtils::extract_len<SemanticAbort>(len_expr0, loc, diag);
                             if (a_len == -3) {
                                 len_expr = len_expr0;
                             }
@@ -4238,7 +4238,7 @@ public:
                         }
                     } else {
                         if (ASR::is_a<ASR::Array_t>(*root_v_type)) {
-                            m_end = ASRUtils::get_bound<SemanticError>(v_Var, i + 1, "ubound", al);
+                            m_end = ASRUtils::get_bound<SemanticAbort>(v_Var, i + 1, "ubound", al, diag);
                         } else {
                             m_end = ASRUtils::EXPR(ASR::make_StringLen_t(al, loc,
                                         v_Var, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, compiler_options.po.default_integer_kind)),
@@ -4246,7 +4246,7 @@ public:
                         }
                     }
                 } else {
-                    m_end = ASRUtils::get_bound<SemanticError>(v_Var, i + 1, "ubound", al);
+                    m_end = ASRUtils::get_bound<SemanticAbort>(v_Var, i + 1, "ubound", al, diag);
                 }
             }
             if (m_args[i].m_step != nullptr) {
@@ -4512,7 +4512,7 @@ public:
             for( size_t i = 0; i < n_args; i++ ) {
                 if( args.p[i].m_step != nullptr &&
                     args.p[i].m_left == nullptr ) {
-                    args.p[i].m_left = ASRUtils::get_bound<SemanticError>(v_Var, i + 1, "lbound", al);
+                    args.p[i].m_left = ASRUtils::get_bound<SemanticAbort>(v_Var, i + 1, "lbound", al, diag);
                 }
                 if( args.p[i].m_step != nullptr ) {
                     ASR::dimension_t empty_dim;
@@ -4605,7 +4605,7 @@ public:
                 }
             } else if (!ASRUtils::check_equal_type(expr_type, type)) {
                 ImplicitCastRules::set_converted_value(al, expr->base.loc,
-                    &expr, expr_type, type);
+                    &expr, expr_type, type, diag);
             }
             body.push_back(al, expr);
         }
@@ -4707,7 +4707,7 @@ public:
                 fix_exprs_ttype_t(func_calls, args, f);
                 int64_t a_len = t->m_len;
                 if( func_calls[0] ) {
-                    a_len = ASRUtils::extract_len<SemanticError>(func_calls[0], loc);
+                    a_len = ASRUtils::extract_len<SemanticAbort>(func_calls[0], loc, diag);
                 }
                 return ASRUtils::TYPE(ASR::make_String_t(al, loc, t->m_kind, a_len, func_calls[0], t->m_physical_type));
             }
@@ -5273,7 +5273,7 @@ public:
                         ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, compiler_options.po.default_integer_kind));
                         ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, int_type));
 
-                        ASR::expr_t* array_bound = ASRUtils::get_bound<SemanticError>(array_expr, array_item->n_args, "ubound", al);
+                        ASR::expr_t* array_bound = ASRUtils::get_bound<SemanticAbort>(array_expr, array_item->n_args, "ubound", al, diag);
 
                         ASR::array_index_t array_idx;
                         array_idx.loc = array_item->base.base.loc;
@@ -5461,13 +5461,13 @@ public:
                     this->visit_expr(*struct_m_args[j].m_start);
                     index.m_left = ASRUtils::EXPR(tmp);
                 } else {
-                    index.m_left = ASRUtils::get_bound<SemanticError>(expr, j + 1, "lbound", al);
+                    index.m_left = ASRUtils::get_bound<SemanticAbort>(expr, j + 1, "lbound", al, diag);
                 }
                 if( struct_m_args[j].m_end ) {
                     this->visit_expr(*struct_m_args[j].m_end);
                     index.m_right = ASRUtils::EXPR(tmp);
                 } else {
-                    index.m_right = ASRUtils::get_bound<SemanticError>(expr, j + 1, "ubound", al);
+                    index.m_right = ASRUtils::get_bound<SemanticAbort>(expr, j + 1, "ubound", al, diag);
                 }
                 this->visit_expr(*struct_m_args[j].m_step);
                 index.m_step = ASRUtils::EXPR(tmp);
@@ -5597,7 +5597,7 @@ public:
                     int kind = ASRUtils::extract_kind_from_ttype_t(v_variable_m_type);
                     ASR::ttype_t *dest_type = ASR::down_cast<ASR::ttype_t>(ASR::make_Real_t(al, loc, kind));
                     ImplicitCastRules::set_converted_value(
-                        al, loc, &val, v_variable_m_type, dest_type);
+                        al, loc, &val, v_variable_m_type, dest_type, diag);
                     return (ASR::asr_t*)val;
                 } else {
                     ASR::ttype_t *real_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc,
@@ -5908,7 +5908,7 @@ public:
                 ASR::array_index_t index;
                 index.loc = x.base.base.loc;
                 index.m_left = nullptr;
-                index.m_right = ASRUtils::get_bound<SemanticError>(v_Var, i + 1, "lbound", al);
+                index.m_right = ASRUtils::get_bound<SemanticAbort>(v_Var, i + 1, "lbound", al, diag);
                 index.m_step = nullptr;
                 lbs.push_back(al, index);
             }
@@ -6141,9 +6141,9 @@ public:
         }
         // Cast x_ or y_ as necessary
         ImplicitCastRules::set_converted_value(al, x.base.base.loc, &x_,
-                                            ASRUtils::expr_type(x_), real_type);
+                                            ASRUtils::expr_type(x_), real_type, diag);
         ImplicitCastRules::set_converted_value(al, x.base.base.loc, &y_,
-                                            ASRUtils::expr_type(y_), real_type);
+                                            ASRUtils::expr_type(y_), real_type, diag);
         return ASR::make_ComplexConstructor_t(al, x.base.base.loc, x_, y_, type, cc_expr);
     }
 
@@ -6664,12 +6664,12 @@ public:
                             (ASRUtils::is_complex(*type_b) && ASRUtils::is_integer(*type_a)) || 
                             (ASRUtils::is_complex(*type_b) && ASRUtils::is_real(*type_a)) ){
                             ImplicitCastRules::set_converted_value(al, x.base.base.loc, &matrix_a,
-                                            type_a, ASRUtils::type_get_past_allocatable(type_b));
+                                            type_a, ASRUtils::type_get_past_allocatable(type_b), diag);
                         } else if((ASRUtils::is_real(*type_a) && ASRUtils::is_integer(*type_b)) || 
                                    (ASRUtils::is_complex(*type_a) && ASRUtils::is_integer(*type_b)) || 
                                     (ASRUtils::is_complex(*type_a) && ASRUtils::is_real(*type_b)) ){
                             ImplicitCastRules::set_converted_value(al, x.base.base.loc, &matrix_b,
-                                            type_b, ASRUtils::type_get_past_allocatable(type_a));
+                                            type_b, ASRUtils::type_get_past_allocatable(type_a), diag);
                         }
                         args.p[0] = matrix_a;
                         args.p[1] = matrix_b;
@@ -7827,7 +7827,7 @@ public:
                 throw SemanticAbort();
             }
         }
-        std::string module_name = intrinsic_procedures.get_module(remote_sym, loc);
+        std::string module_name = intrinsic_procedures.get_module(remote_sym, loc, diag);
 
         SymbolTable *tu_symtab = ASRUtils::get_tu_symtab(current_scope);
 
@@ -8047,7 +8047,7 @@ public:
           }
 
             ImplicitCastRules::set_converted_value(al, x.base.base.loc, conversion_cand,
-                                                source_type, dest_type);
+                                                source_type, dest_type, diag);
         }
 
         if( (ASRUtils::is_array(right_type) || ASRUtils::is_array(left_type)) &&
@@ -8362,7 +8362,7 @@ public:
                                                                      right_type, conversion_cand,
                                                                      &source_type, &dest_type);
                         ImplicitCastRules::set_converted_value(al, loc, conversion_cand,
-                                                               source_type, dest_type);
+                                                               source_type, dest_type, diag);
                         return_type = ASRUtils::duplicate_type(al, ftype);
                         value = ASRUtils::EXPR(ASRUtils::make_Binop_util(al, loc, binop, left, right, dest_type));
                         if (!ASRUtils::check_equal_type(dest_type, return_type)) {
@@ -9119,7 +9119,7 @@ public:
                 ASR::ttype_t* arg_type = ASRUtils::type_get_past_allocatable(
                     ASRUtils::expr_type(args[i].m_value));
                 ImplicitCastRules::set_converted_value(al, loc,
-                    &args.p[i].m_value, arg_type, member_type);
+                    &args.p[i].m_value, arg_type, member_type, diag);
             }
         }
 
