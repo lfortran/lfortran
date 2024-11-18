@@ -9,6 +9,10 @@
 
 #define num_types 7
 
+using LCompilers::diag::Level;
+using LCompilers::diag::Stage;
+using LCompilers::diag::Label;
+using LCompilers::diag::Diagnostic;
 namespace LCompilers::LFortran {
 class ImplicitCastRules {
 private:
@@ -106,7 +110,7 @@ public:
   static void set_converted_value(Allocator &al, const Location &a_loc,
                                   ASR::expr_t **convert_can,
                                   ASR::ttype_t *source_type,
-                                  ASR::ttype_t *dest_type) {
+                                  ASR::ttype_t *dest_type, diag::Diagnostics &diag) {
     if( ASRUtils::types_equal(source_type, dest_type, true) ) {
         return;
     }
@@ -139,7 +143,9 @@ public:
       std::string allowed_types_str = type_names[dest_type2->type][1];
       std::string dest_type_str = type_names[dest_type2->type][0];
       std::string error_msg = "Only " + allowed_types_str + " can be assigned to " + dest_type_str;
-      throw SemanticError(error_msg, a_loc);
+      diag.add(Diagnostic(error_msg,
+          Level::Error, Stage::Semantic, {Label("", {a_loc})}));
+      throw SemanticAbort();
     } else if (cast_kind != no_cast_required) {
         ASR::expr_t *value=nullptr;
         if ((ASR::cast_kindType)cast_kind == ASR::cast_kindType::RealToInteger) {
