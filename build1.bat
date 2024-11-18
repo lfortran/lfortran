@@ -5,6 +5,5 @@ cmake ^
     -DWITH_STACKTRACE=no ^
     -DCMAKE_PREFIX_PATH="%CONDA_PREFIX%" ^
     -DCMAKE_INSTALL_PREFIX=%cd%/inst ^
-    -DCMAKE_EXPORT_COMPILE_COMMANDS=yes ^
     .
 cmake --build . --config Release -j2 --target install
