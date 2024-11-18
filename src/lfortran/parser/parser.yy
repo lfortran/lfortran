@@ -426,6 +426,8 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <vec_coarrayarg> coarray_arg_list
 %type <dim> array_comp_decl
 %type <codim> coarray_comp_decl
+%type <ast> intrinsic_type_spec
+%type <ast> declaration_type_spec
 %type <ast> var_type
 %type <ast> fn_mod
 %type <vec_ast> fn_mod_plus
@@ -1473,7 +1475,8 @@ var_modifier
     | KW_LEN { $$ = SIMPLE_ATTR(Len, @$); }
     ;
 
-var_type
+
+intrinsic_type_spec
     : KW_INTEGER { $$ = ATTR_TYPE(Integer, @$); }
     | KW_INTEGER "(" kind_arg_list ")" { $$ = ATTR_TYPE_KIND(Integer, $3, @$); }
     | KW_INTEGER "*" TK_INTEGER { $$ = ATTR_TYPE_INT(Integer, $3, @$); WARN_INTEGERSTAR($3, @$); }
@@ -1495,6 +1498,10 @@ var_type
     | KW_DOUBLE_PRECISION { $$ = ATTR_TYPE(DoublePrecision, @$); }
     | KW_DOUBLE KW_COMPLEX { $$ = ATTR_TYPE(DoubleComplex, @$); }
     | KW_DOUBLE_COMPLEX { $$ = ATTR_TYPE(DoubleComplex, @$); }
+    ;
+
+declaration_type_spec
+    : intrinsic_type_spec { $$ = $1; }
     | KW_TYPE "(" id ")" { $$ = ATTR_TYPE_NAME(Type, $3, @$); }
     | KW_TYPE "(" KW_INTEGER "(" kind_arg_list ")" ")" { $$ = ATTR_TYPE_ATTR(
         Type, ATTR_TYPE_KIND(Integer, $5, @$), @$); }
@@ -1509,6 +1516,12 @@ var_type
     | KW_TYPE "(" KW_CHARACTER "(" kind_arg_list ")" ")" { $$ = ATTR_TYPE_ATTR(
         Type, ATTR_TYPE_KIND(Character, $5, @$), @$); }
     | KW_TYPE "(" "*" ")" { $$ = ATTR_TYPE_STAR(Type, Asterisk, @$); }
+    | KW_CLASS "(" id ")" { $$ = ATTR_TYPE_NAME(Class, $3, @$); }
+    | KW_CLASS "(" "*" ")" { $$ = ATTR_TYPE_STAR(Class, Asterisk, @$); }
+    ;
+
+var_type
+    : declaration_type_spec { $$ = $1; }
     | KW_PROCEDURE "(" id ")" { $$ = ATTR_TYPE_NAME(Procedure, $3, @$); }
     | KW_PROCEDURE "(" ")" { $$ = ATTR_TYPE(Procedure, @$); }
     | KW_PROCEDURE "(" KW_INTEGER "(" kind_arg_list ")" ")" { $$ = ATTR_TYPE(Procedure, @$); }
@@ -1517,8 +1530,6 @@ var_type
     | KW_PROCEDURE "(" KW_COMPLEX "(" kind_arg_list ")" ")" { $$ = ATTR_TYPE(Procedure, @$); }
     | KW_PROCEDURE "(" KW_LOGICAL "(" kind_arg_list ")" ")" { $$ = ATTR_TYPE(Procedure, @$); }
     | KW_PROCEDURE "(" KW_CHARACTER "(" kind_arg_list ")" ")" { $$ = ATTR_TYPE(Procedure, @$); }
-    | KW_CLASS "(" id ")" { $$ = ATTR_TYPE_NAME(Class, $3, @$); }
-    | KW_CLASS "(" "*" ")" { $$ = ATTR_TYPE_STAR(Class, Asterisk, @$); }
     ;
 
 var_sym_decl_list
