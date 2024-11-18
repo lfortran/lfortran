@@ -1502,19 +1502,9 @@ intrinsic_type_spec
 
 declaration_type_spec
     : intrinsic_type_spec { $$ = $1; }
+    | KW_TYPE "(" intrinsic_type_spec ")" { $$ = ATTR_TYPE_ATTR(
+        Type, $3, @$); }
     | KW_TYPE "(" id ")" { $$ = ATTR_TYPE_NAME(Type, $3, @$); }
-    | KW_TYPE "(" KW_INTEGER "(" kind_arg_list ")" ")" { $$ = ATTR_TYPE_ATTR(
-        Type, ATTR_TYPE_KIND(Integer, $5, @$), @$); }
-    | KW_TYPE "(" KW_REAL "(" kind_arg_list ")" ")" { $$ = ATTR_TYPE_ATTR(
-        Type, ATTR_TYPE_KIND(Real, $5, @$), @$); }
-    | KW_TYPE "(" KW_DOUBLE KW_PRECISION ")" { $$ = ATTR_TYPE_ATTR(
-        Type, ATTR_TYPE(DoublePrecision, @$), @$); }
-    | KW_TYPE "(" KW_COMPLEX "(" kind_arg_list ")" ")" { $$ = ATTR_TYPE_ATTR(
-        Type, ATTR_TYPE_KIND(Complex, $5, @$), @$); }
-    | KW_TYPE "(" KW_LOGICAL "(" kind_arg_list ")" ")" { $$ = ATTR_TYPE_ATTR(
-        Type, ATTR_TYPE_KIND(Logical, $5, @$), @$); }
-    | KW_TYPE "(" KW_CHARACTER "(" kind_arg_list ")" ")" { $$ = ATTR_TYPE_ATTR(
-        Type, ATTR_TYPE_KIND(Character, $5, @$), @$); }
     | KW_TYPE "(" "*" ")" { $$ = ATTR_TYPE_STAR(Type, Asterisk, @$); }
     | KW_CLASS "(" id ")" { $$ = ATTR_TYPE_NAME(Class, $3, @$); }
     | KW_CLASS "(" "*" ")" { $$ = ATTR_TYPE_STAR(Class, Asterisk, @$); }
