@@ -9,6 +9,7 @@ cmake \
     -DWITH_STACKTRACE=no \
     -DCMAKE_PREFIX_PATH="$CMAKE_PREFIX_PATH_LFORTRAN;$CONDA_PREFIX" \
     -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
+    -DCMAKE_EXPORT_COMPILE_COMMANDS=yes \
     .
 cmake --build . -j16 --target install
 
@@ -27,5 +28,6 @@ emcmake cmake \
     -DWITH_LSP=no \
     -DCMAKE_PREFIX_PATH="$CMAKE_PREFIX_PATH_LFORTRAN;$CONDA_PREFIX" \
     -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
+    -DCMAKE_EXPORT_COMPILE_COMMANDS=yes \
     .
 cmake --build . -j16
