@@ -43,6 +43,12 @@ program continue_compilation_2
     integer :: kindvar = 4
     integer :: atom[*]
     real(8), allocatable :: x_3(:)
+    real :: y_3
+    integer, parameter :: Nx = 600, Ny = 450
+    integer :: i_1, j, image(Nx, Ny)
+    integer :: i_2, j_1
+    integer :: i_3
+    complex :: a_4
 
     ! c_f_pointer_01
     call c_f_pointer(queries_1, y_1, [2])
@@ -93,5 +99,43 @@ program continue_compilation_2
     print *, [1, 2.]
     !array_constructor_with_integer_real_array_types
     print *, [1, [1., 2.]]
+    !dfloat1
+    print *, dfloat(y_3)
+    !dim_float_01
+    print *, sum([1, 2, 3], 1.1)
+    !dim_float_02
+    print *, sum([1, 2, 3], 1, 1.1)
+    !dim_float_03
+    print *, sum([1, 2, 3], .true., 1.1)
+    !dint_args
+    print*, dint(1.0_8, 8)
+    if (abs(dint(1.0_8, 8) - 1.0_8) > 10e-5 ) error stop
+    !dlgama
+    print *, dlgama(2.7)
+    !dnint_args
+    print*, dnint(1.0_8, 8)
+    if (abs(dnint(1.0_8, 8) - 1.0_8) > 10e-5 ) error stop
+    !do_concurrent_01
+    do concurrent (j = 1:Ny) local(i_1, j)
+        do i_1 = 1, Nx
+        end do
+    end do
+    !do_loop_01
+    do i_2 = 1, 10
+        do j_1 = 1, 2
+        i_2 = j_1 + 1
+        end do
+        j_1 = i_2 + 1
+        print *, i_2, j_1
+    end do
+    !do_zero_increment
+    do i_2 = 1, 5, 0
+        write(*,*) i_3
+    end do
+    !dprod
+    print*, dprod(4.23_8, 4.3_8)
+    !dreal_arg_error
+    a_4 = (1.0, 2.0)
+    print *, dreal(a_4)
 
 end program
