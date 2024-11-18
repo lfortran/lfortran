@@ -2,7 +2,7 @@
     "basename": "run-multiple_objects_args-fe9abdd",
     "cmd": "lfortran --no-color {infile}",
     "infile": "tests/multiple_objects_args.f90",
-    "infile_hash": "26c53b719648205bc2a0fa996667a7aeba9da9c057e7cac044cfb59a",
+    "infile_hash": "5baae1f90ed90aba23dd4670da5e02cfd58f16ef36281bb758e22638",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "run-multiple_objects_args-fe9abdd.stdout",

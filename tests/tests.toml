@@ -4286,6 +4286,7 @@ continue_compilation = true
 filename = "multiple_objects_args.f90"
 run =true
 pass = "class_constructor"
+
 [[test]]
 filename = "errors/incompatible_rank_assign.f90"
 asr = true
