@@ -49,6 +49,8 @@ program continue_compilation_2
     integer :: i_2, j_1
     integer :: i_3
     complex :: a_4
+    complex :: a_5
+    real :: y_4
 
     ! c_f_pointer_01
     call c_f_pointer(queries_1, y_1, [2])
@@ -140,5 +142,19 @@ program continue_compilation_2
     !dreal_arg_error
     a_4 = (1.0, 2.0)
     print *, dreal(a_4)
+    !fixed_number_of_args
+    a_5 = complex(1)
+    !float1
+    print *, float(y_4)
+    !flush_invalid_kwarg
+    FLUSH(unit=10, start=100)
+    !func_parameter_type
+    print *, f(42.9)
+
+    CONTAINS
+    LOGICAL FUNCTION f(x)
+        INTEGER, INTENT(IN), OPTIONAL :: x
+        f = PRESENT(x)
+    END FUNCTION
 
 end program
