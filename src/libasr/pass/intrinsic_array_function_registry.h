@@ -1935,19 +1935,36 @@ namespace Spread {
         ASR::dimension_t* source_dims = nullptr;
         int source_rank = extract_dimensions_from_ttype(type_source, source_dims);
         ASRUtils::require_impl(source_rank > 0, "The argument `source` in `spread` must be of rank > 0", source->base.loc, diag);
-        int dim1 = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(args[1]))->m_n;
         if( is_scalar ){
             Vec<ASR::dimension_t> result_dims; result_dims.reserve(al, 1);
             result_dims.push_back(al, b.set_dim(source_dims[0].m_start, ncopies));
             ret_type = ASRUtils::duplicate_type(al, ret_type, &result_dims);
         } else {
-            Vec<ASR::dimension_t> result_dims; result_dims.reserve(al, 2);
-            if (dim1 == 1) {
-                result_dims.push_back(al, b.set_dim(source_dims[0].m_start, ncopies));
-                result_dims.push_back(al, b.set_dim(source_dims[0].m_start, source_dims[0].m_length));
-            } else {
-                result_dims.push_back(al, b.set_dim(source_dims[0].m_start, source_dims[0].m_length));
-                result_dims.push_back(al, b.set_dim(source_dims[0].m_start, ncopies));
+            Vec<ASR::dimension_t> result_dims;
+            size_t n_dims = ASRUtils::extract_n_dims_from_ttype(type_source);
+            result_dims.reserve(al, (int) n_dims + 1);
+            Vec<ASR::expr_t*> args_merge; args_merge.reserve(al, 3);
+            ASRUtils::ASRBuilder b(al, loc);
+            args_merge.push_back(al, ncopies);
+            args_merge.push_back(al, b.ArraySize(args[0], b.i32(1), int32));
+            args_merge.push_back(al, b.Eq(dim, b.i32(1)));
+            ASR::expr_t* merge = EXPR(Merge::create_Merge(al, loc, args_merge, diag));
+            ASR::dimension_t dim_;
+            dim_.loc = source->base.loc;
+            dim_.m_start = b.i32(1);
+            dim_.m_length = merge;
+            result_dims.push_back(al, dim_);
+            for( int it = 0; it < (int) n_dims; it++ ) {
+                Vec<ASR::expr_t*> args_merge; args_merge.reserve(al, 3);
+                args_merge.push_back(al, ncopies);
+                args_merge.push_back(al, b.ArraySize(args[0], b.i32(it+1), int32));
+                args_merge.push_back(al, b.Eq(dim, b.i32(it+2)));
+                ASR::expr_t* merge = EXPR(Merge::create_Merge(al, loc, args_merge, diag));
+                ASR::dimension_t dim;
+                dim.loc = source->base.loc;
+                dim.m_start = b.i32(1);
+                dim.m_length = merge;
+                result_dims.push_back(al, dim);
             }
             ret_type = ASRUtils::duplicate_type(al, ret_type, &result_dims);
         }
@@ -1978,6 +1995,7 @@ namespace Spread {
         fill_func_arg("source", duplicate_type_with_empty_dims(al, arg_types[0]));
         fill_func_arg("dim", arg_types[1]);
         fill_func_arg("ncopies", arg_types[2]);
+        // TODO: this logic is incorrect, fix it.
         /*
             spread(source, dim, ncopies)
             if (dim == 1) then
