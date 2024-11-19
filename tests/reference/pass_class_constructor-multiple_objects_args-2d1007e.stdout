@@ -150,6 +150,14 @@
                                             (String -1 0 () PointerString)
                                             ()
                                         )
+                                    )
+                                    (Assignment
+                                        (Var 2 was_called)
+                                        (LogicalConstant
+                                            .true.
+                                            (Logical 4)
+                                        )
+                                        ()
                                     )]
                                     ()
                                     Public
@@ -192,6 +200,28 @@
                                     Public
                                     Required
                                     .false.
+                                ),
+                            was_called:
+                                (Variable
+                                    2
+                                    was_called
+                                    []
+                                    Local
+                                    (LogicalConstant
+                                        .false.
+                                        (Logical 4)
+                                    )
+                                    (LogicalConstant
+                                        .false.
+                                        (Logical 4)
+                                    )
+                                    Save
+                                    (Logical 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
                                 )
                         })
                     main
@@ -215,6 +245,17 @@
                         [((Var 2 temp_struct_var__))
                         ((Var 2 temp_struct_var__1))]
                         ()
+                    )
+                    (If
+                        (LogicalNot
+                            (Var 2 was_called)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
                     )]
                 )
         })

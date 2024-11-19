@@ -4283,8 +4283,7 @@ ast = true # TODO: remove this and only use continue compilation
 continue_compilation = true
 
 [[test]]
-filename = "multiple_objects_args.f90"
-run =true
+filename = "../integration_tests/multiple_objects_args.f90"
 pass = "class_constructor"
 
 [[test]]
