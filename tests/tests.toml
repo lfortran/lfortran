@@ -4283,6 +4283,10 @@ ast = true # TODO: remove this and only use continue compilation
 continue_compilation = true
 
 [[test]]
+filename = "../integration_tests/multiple_objects_args.f90"
+pass = "class_constructor"
+
+[[test]]
 filename = "errors/incompatible_rank_assign.f90"
 asr = true
 
