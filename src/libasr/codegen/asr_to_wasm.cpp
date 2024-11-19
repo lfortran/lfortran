@@ -1,8 +1,6 @@
 #include <iostream>
-#include <memory>
 #include <chrono>
 #include <iomanip>
-#include <fstream>
 #include <climits>
 
 #include <libasr/asr.h>

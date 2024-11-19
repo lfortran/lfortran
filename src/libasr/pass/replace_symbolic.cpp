@@ -8,6 +8,8 @@
 #include <libasr/pass/intrinsic_function_registry.h>
 #include <libasr/asr_builder.h>
 
+#include <set>
+
 namespace LCompilers {
 
 using ASR::down_cast;

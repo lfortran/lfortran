@@ -9,7 +9,6 @@
 #include <libasr/pass/pass_utils.h>
 
 #include <vector>
-#include <utility>
 
 
 namespace LCompilers {

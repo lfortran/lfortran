@@ -1,8 +1,6 @@
 #ifndef LFORTRAN_LLVM_UTILS_H
 #define LFORTRAN_LLVM_UTILS_H
 
-#include <memory>
-
 #include <llvm/IR/Value.h>
 #include <llvm/IR/Module.h>
 #include <llvm/IR/IRBuilder.h>

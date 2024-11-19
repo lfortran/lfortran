@@ -7,7 +7,6 @@
 #include <libasr/pass/replace_arr_slice.h>
 
 #include <vector>
-#include <utility>
 
 
 namespace LCompilers {

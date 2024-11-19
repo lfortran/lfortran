@@ -3,7 +3,6 @@
 #include <iterator>
 #include <vector>
 #include <map>
-#include <memory>
 
 #ifdef HAVE_ZLIB
     #include <zlib.h>

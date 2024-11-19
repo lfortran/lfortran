@@ -5,9 +5,6 @@
 #include <libasr/asr_verify.h>
 #include <libasr/pass/insert_deallocate.h>
 
-#include <vector>
-#include <utility>
-
 
 namespace LCompilers {
 

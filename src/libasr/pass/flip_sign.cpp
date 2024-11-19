@@ -7,9 +7,6 @@
 #include <libasr/pass/pass_utils.h>
 #include <libasr/pass/intrinsic_function_registry.h>
 
-#include <vector>
-#include <utility>
-
 
 namespace LCompilers {
 

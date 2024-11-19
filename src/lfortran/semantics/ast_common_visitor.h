@@ -14,8 +14,6 @@
 #include <lfortran/semantics/comptime_eval.h>
 #include <libasr/pass/instantiate_template.h>
 #include <string>
-#include <unordered_set>
-#include <queue>
 #include <set>
 #include <map>
 

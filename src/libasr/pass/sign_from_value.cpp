@@ -6,7 +6,6 @@
 #include <libasr/pass/replace_sign_from_value.h>
 #include <libasr/pass/pass_utils.h>
 
-#include <vector>
 #include <string>
 
 
