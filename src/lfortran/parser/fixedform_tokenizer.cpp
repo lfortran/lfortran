@@ -6,7 +6,6 @@ fed into our Bison parser, that is shared with the free-form parser.
 
 Note: The prescanner removes CR, so we only handle LF here.
 */
-#include <limits>
 #include <utility>
 
 #include <lfortran/parser/parser_exception.h>

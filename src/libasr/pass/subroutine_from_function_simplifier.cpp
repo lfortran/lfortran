@@ -8,9 +8,6 @@
 #include <libasr/pass/intrinsic_array_function_registry.h>
 #include <libasr/pass/pass_utils.h>
 
-#include <vector>
-#include <string>
-
 
 namespace LCompilers {
 

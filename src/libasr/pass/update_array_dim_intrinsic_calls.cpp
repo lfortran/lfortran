@@ -6,9 +6,6 @@
 #include <libasr/pass/pass_utils.h>
 #include <libasr/pass/update_array_dim_intrinsic_calls.h>
 
-#include <vector>
-#include <utility>
-
 
 namespace LCompilers {
 

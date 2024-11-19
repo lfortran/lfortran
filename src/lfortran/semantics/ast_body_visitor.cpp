@@ -1,11 +1,7 @@
-#include <fstream>
-#include <iostream>
-#include <limits>
-#include <map>
-#include <memory>
 #include <string>
 #include <cmath>
 #include <set>
+#include <unordered_set>
 
 #include <lfortran/ast.h>
 #include <libasr/asr.h>

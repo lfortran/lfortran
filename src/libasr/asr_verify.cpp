@@ -6,6 +6,8 @@
 #include <libasr/pass/intrinsic_function_registry.h>
 #include <libasr/pass/intrinsic_array_function_registry.h>
 
+#include <set>
+
 namespace LCompilers {
 
 namespace ASR {

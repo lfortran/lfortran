@@ -4,7 +4,7 @@
 #include <libasr/asr.h>
 #include <libasr/containers.h>
 
-#include <queue>
+#include <deque>
 
 namespace LCompilers {
 

@@ -11,7 +11,6 @@
 #include <libasr/asr_builder.h>
 
 #include <vector>
-#include <utility>
 
 namespace LCompilers {
 

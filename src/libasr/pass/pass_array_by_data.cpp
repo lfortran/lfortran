@@ -9,6 +9,7 @@
 #include <vector>
 #include <utility>
 #include <deque>
+#include <set>
 
 /*
 This ASR to ASR pass can be called whenever you want to avoid

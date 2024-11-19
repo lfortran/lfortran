@@ -11,7 +11,6 @@
  * for both C and C++ code generation.
  */
 
-#include <iostream>
 #include <memory>
 #include <set>
 
@@ -28,7 +27,6 @@
 
 
 #include <map>
-#include <tuple>
 
 #define CHECK_FAST_C_CPP(compiler_options, x)                   \
         if (compiler_options.po.fast && x.m_value != nullptr) { \

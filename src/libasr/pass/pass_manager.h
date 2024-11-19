@@ -1,6 +1,8 @@
 #ifndef LCOMPILERS_PASS_MANAGER_H
 #define LCOMPILERS_PASS_MANAGER_H
 
+#include <iostream>
+
 #include <libasr/asr.h>
 #include <libasr/string_utils.h>
 #include <libasr/alloc.h>
