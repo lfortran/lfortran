@@ -2608,7 +2608,6 @@ static inline ASR::asr_t* make_ArraySize_t_util(
         return make_ArraySize_t_util(al, a_loc, extract_member_from_unaryop(a_v), a_dim, a_type, a_value, for_type);
     } else if( ASR::is_a<ASR::ArrayConstructor_t>(*a_v) && for_type ) {
         ASR::ArrayConstructor_t* array_constructor = ASR::down_cast<ASR::ArrayConstructor_t>(a_v);
-        LCOMPILERS_ASSERT(a_dim == nullptr);
         return &(get_ArrayConstructor_size(al, array_constructor)->base);
     } else {
         ASR::dimension_t* m_dims = nullptr;
