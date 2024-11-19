@@ -109,104 +109,116 @@ semantic error: Type-spec cannot contain an asterisk for a type parameter
 94 |     print *, [character(*) :: "a", "b", "ball", "cat"]
    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: Different `character` lengths 1 and 4 in array constructor
+  --> tests/errors/continue_compilation_2.f90:96:25
+   |
+96 |     print *, ["a", "b", "ball", "cat"]
+   |                         ^^^^^^ 
+
+semantic error: Different `character` lengths 2 and 5 in array constructor
+  --> tests/errors/continue_compilation_2.f90:97:27
+   |
+97 |     print *, ["a1", "b1", "ball1", "cat1"]
+   |                           ^^^^^^^ 
+
 semantic error: Element in `real(8)` array constructor is `real(4)`
-  --> tests/errors/continue_compilation_2.f90:97:20
-   |
-97 |     print *, [x_3, [1., 2.]]
-   |                    ^^^^^^^^ 
-
-semantic error: Element in `integer(4)` array constructor is `real(4)`
-  --> tests/errors/continue_compilation_2.f90:99:18
-   |
-99 |     print *, [1, 2.]
-   |                  ^^ 
-
-semantic error: Element in `integer(4)` array constructor is `real(4)`
-   --> tests/errors/continue_compilation_2.f90:101:18
+   --> tests/errors/continue_compilation_2.f90:100:20
     |
-101 |     print *, [1, [1., 2.]]
+100 |     print *, [x_3, [1., 2.]]
+    |                    ^^^^^^^^ 
+
+semantic error: Element in `integer(4)` array constructor is `real(4)`
+   --> tests/errors/continue_compilation_2.f90:102:18
+    |
+102 |     print *, [1, 2.]
+    |                  ^^ 
+
+semantic error: Element in `integer(4)` array constructor is `real(4)`
+   --> tests/errors/continue_compilation_2.f90:104:18
+    |
+104 |     print *, [1, [1., 2.]]
     |                  ^^^^^^^^ 
 
 semantic error: Argument of intrinsic must be an integer
-   --> tests/errors/continue_compilation_2.f90:103:14
+   --> tests/errors/continue_compilation_2.f90:106:14
     |
-103 |     print *, dfloat(y_3)
+106 |     print *, dfloat(y_3)
     |              ^^^^^^^^^^^ 
 
 semantic error: Invalid argument type for `dim` or `mask`
-   --> tests/errors/continue_compilation_2.f90:105:29
+   --> tests/errors/continue_compilation_2.f90:108:29
     |
-105 |     print *, sum([1, 2, 3], 1.1)
+108 |     print *, sum([1, 2, 3], 1.1)
     |                             ^^^ 
 
 semantic error: `mask` argument to `Sum` must be a scalar or array of logical type
-   --> tests/errors/continue_compilation_2.f90:107:32
+   --> tests/errors/continue_compilation_2.f90:110:32
     |
-107 |     print *, sum([1, 2, 3], 1, 1.1)
+110 |     print *, sum([1, 2, 3], 1, 1.1)
     |                                ^^^ 
 
 semantic error: `dim` argument to `Sum` must be a scalar and of integer type
-   --> tests/errors/continue_compilation_2.f90:109:37
+   --> tests/errors/continue_compilation_2.f90:112:37
     |
-109 |     print *, sum([1, 2, 3], .true., 1.1)
+112 |     print *, sum([1, 2, 3], .true., 1.1)
     |                                     ^^^ 
 
 semantic error: Too many arguments to call `dint`
-   --> tests/errors/continue_compilation_2.f90:111:13
+   --> tests/errors/continue_compilation_2.f90:114:13
     |
-111 |     print*, dint(1.0_8, 8)
+114 |     print*, dint(1.0_8, 8)
     |             ^^^^^^^^^^^^^^ 
 
 semantic error: Too many arguments to call `dint`
-   --> tests/errors/continue_compilation_2.f90:112:13
+   --> tests/errors/continue_compilation_2.f90:115:13
     |
-112 |     if (abs(dint(1.0_8, 8) - 1.0_8) > 10e-5 ) error stop
+115 |     if (abs(dint(1.0_8, 8) - 1.0_8) > 10e-5 ) error stop
     |             ^^^^^^^^^^^^^^ 
 
 semantic error: Argument 1 of dlgama must be of double precision real type
-   --> tests/errors/continue_compilation_2.f90:114:14
+   --> tests/errors/continue_compilation_2.f90:117:14
     |
-114 |     print *, dlgama(2.7)
+117 |     print *, dlgama(2.7)
     |              ^^^^^^^^^^^ 
 
 semantic error: Too many arguments to call `dnint`
-   --> tests/errors/continue_compilation_2.f90:116:13
+   --> tests/errors/continue_compilation_2.f90:119:13
     |
-116 |     print*, dnint(1.0_8, 8)
+119 |     print*, dnint(1.0_8, 8)
     |             ^^^^^^^^^^^^^^^ 
 
 semantic error: Too many arguments to call `dnint`
-   --> tests/errors/continue_compilation_2.f90:117:13
+   --> tests/errors/continue_compilation_2.f90:120:13
     |
-117 |     if (abs(dnint(1.0_8, 8) - 1.0_8) > 10e-5 ) error stop
+120 |     if (abs(dnint(1.0_8, 8) - 1.0_8) > 10e-5 ) error stop
     |             ^^^^^^^^^^^^^^^ 
 
 semantic error: Do concurrent loop variable `j` cannot be part of local expression
-   --> tests/errors/continue_compilation_2.f90:119:30
+   --> tests/errors/continue_compilation_2.f90:122:30
     |
-119 |     do concurrent (j = 1:Ny) local(i_1, j)
+122 |     do concurrent (j = 1:Ny) local(i_1, j)
     |                              ^^^^^^^^^^^^^ 
 
 semantic error: Assignment to loop variable `i_2` is not allowed
-   --> tests/errors/continue_compilation_2.f90:126:9
+   --> tests/errors/continue_compilation_2.f90:129:9
     |
-126 |         i_2 = j_1 + 1
+129 |         i_2 = j_1 + 1
     |         ^^^ 
 
 semantic error: Step expression (Increment) in DO loop cannot be zero
-   --> tests/errors/continue_compilation_2.f90:132:20
+   --> tests/errors/continue_compilation_2.f90:135:20
     |
-132 |     do i_2 = 1, 5, 0
+135 |     do i_2 = 1, 5, 0
     |                    ^ 
 
 semantic error: Arguments to dprod must be real(4)
-   --> tests/errors/continue_compilation_2.f90:136:13
+   --> tests/errors/continue_compilation_2.f90:139:13
     |
-136 |     print*, dprod(4.23_8, 4.3_8)
+139 |     print*, dprod(4.23_8, 4.3_8)
     |             ^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Unexpected args, Dreal expects (complex64) as arguments
-   --> tests/errors/continue_compilation_2.f90:139:14
+   --> tests/errors/continue_compilation_2.f90:142:14
     |
-139 |     print *, dreal(a_4)
+142 |     print *, dreal(a_4)
     |              ^^^^^^^^^^ 
