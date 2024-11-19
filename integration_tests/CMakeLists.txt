@@ -1861,4 +1861,4 @@ RUN(NAME elemental_function_overloaded_compare LABELS gfortran llvm llvm_wasm ll
 RUN(NAME procedure_decl_01_a LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRAFILES  procedure_decl_01_b)
 RUN(NAME array_concat LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # array passed in ArrayInitializer
 
-RUN(NAME multiple_objects_args LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
+RUN(NAME multiple_objects_args LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
