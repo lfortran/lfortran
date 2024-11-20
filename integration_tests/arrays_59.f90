@@ -2,6 +2,7 @@ program arrays_59
     real :: A(2,2) = reshape([1.0,2.0,3.0,4.0], [2,2])
     call trans(A)
     print *, A 
+    if ( any(abs( A - 12.91 ) > 1e-6) ) error stop 
 
     contains
     
