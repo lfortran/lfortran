@@ -485,8 +485,26 @@ class ReplaceFunctionCallReturningArray: public ASR::BaseExprReplacer<ReplaceFun
             pass_result.push_back(al, ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(
                 al, x->base.base.loc, x->m_name, x->m_original_name, new_args.p,
                 new_args.size(), x->m_dt, nullptr, false, false)));
-
-            *current_expr = new_args.p[new_args.size() - 1].m_value;
+            ASR::expr_t* subroutineCall_res = new_args.p[new_args.size() - 1].m_value;
+            // Avoid ArrayPhysicalCasting. Use actual argument.
+            // intrinsicArrayFunction has a return that's handled be the super expression. Don't use casted expr created by `make_SubroutineCall_t_uti()`. 
+            while(ASR::is_a<ASR::ArrayPhysicalCast_t>(*subroutineCall_res)){
+                subroutineCall_res = ASRUtils::get_past_array_physical_cast(subroutineCall_res);
+            }
+            // Superexpression acts upon the replaced functionCall(Which we remove in this replace function).
+            // we have to make the subroutineCall_res match the phytical type of the original-removed-functionCall expression.
+            ASR::array_physical_typeType original_functionCall_array_ret_phsyical_type = ASRUtils::extract_physical_type(x->m_type);
+            ASR::array_physical_typeType subroutineCall_res_array__physical_type = ASRUtils::extract_physical_type(ASRUtils::expr_type(subroutineCall_res));
+            if(original_functionCall_array_ret_phsyical_type == subroutineCall_res_array__physical_type){
+                // Do Nothing
+            } else {
+                ASR::ttype_t* arrayPhysicalCast_type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(subroutineCall_res));
+                ASR::down_cast<ASR::Array_t>(arrayPhysicalCast_type)->m_physical_type = original_functionCall_array_ret_phsyical_type; 
+                subroutineCall_res = ASRUtils::EXPR(ASR::make_ArrayPhysicalCast_t(al, x->base.base.loc, subroutineCall_res,
+                    subroutineCall_res_array__physical_type, original_functionCall_array_ret_phsyical_type,
+                    arrayPhysicalCast_type, nullptr));
+            }
+            *current_expr = subroutineCall_res;
         }
     }
 };
