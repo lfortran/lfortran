@@ -3833,10 +3833,6 @@ Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &
                          instantiate_types, instantiate_symbols, entry_functions, entry_function_arguments_mapping, data_structure);
     try {
         v.visit_TranslationUnit(ast);
-    } catch (const SemanticError &e) {
-        Error error;
-        diagnostics.diagnostics.push_back(e.d);
-        return error;
     } catch (const SemanticAbort &) {
         Error error;
         return error;
