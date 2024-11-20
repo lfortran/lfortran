@@ -250,14 +250,11 @@ int get_definitions(const std::string &infile, LCompilers::CompilerOptions &comp
             uint64_t pos = lm.linecol_to_pos(l, c);
             LCompilers::ASR::asr_t* asr = fe.handle_lookup_name(x.result, pos);
             LCompilers::document_symbols loc;
-            // TODO: make sure it returns us the symbol name
-            std::string symbol_name;
-            try {
-                ASR::symbol_t* s = ASR::down_cast<ASR::symbol_t>(asr);
-                symbol_name = ASRUtils::symbol_name( s );
-            } catch (std::exception &e) {
-                symbol_name = "a.first";
+            if (!ASR::is_a<ASR::symbol_t>(*asr)) {
+                return 0;
             }
+            ASR::symbol_t* s = ASR::down_cast<ASR::symbol_t>(asr);
+            std::string symbol_name = ASRUtils::symbol_name( s );
             uint32_t first_line;
             uint32_t last_line;
             uint32_t first_column;
