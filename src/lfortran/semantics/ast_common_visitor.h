@@ -9129,10 +9129,6 @@ public:
             try {
                 ASR::expr_t* expr = ASRUtils::EXPR(resolve_variable(loc, to_lower(x_m_id)));
                 tmp = (ASR::asr_t*) replace_with_common_block_variables(expr);
-            } catch (const SemanticError &e) {
-                // TODO: remove this once we replace SemanticError with diag.add + throw SemanticAbort
-                if ( compiler_options.continue_compilation ) diag.add(e.d);
-                else throw e;
             } catch (const SemanticAbort &a) {
                 if (!compiler_options.continue_compilation) throw a;
             }

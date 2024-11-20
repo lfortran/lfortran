@@ -122,14 +122,6 @@ public:
                     tmp = nullptr;
                     tmp_vec.clear();
                 }
-            } catch (const SemanticError &e) {
-                if (!compiler_options.continue_compilation) {
-                    throw e;
-                } else {
-                    diag.add(e.d);
-                    tmp = nullptr;
-                    tmp_vec.clear();
-                }
             }
             if (tmp != nullptr) {
                 ASR::stmt_t* tmp_stmt = ASRUtils::STMT(tmp);
@@ -2800,10 +2792,6 @@ public:
         ASR::expr_t *target = ASRUtils::EXPR(tmp);
         try {
             this->visit_expr(*x.m_value);
-        } catch (const SemanticError &e) {
-            // TODO: remove this once we replace SemanticError with diag.add + throw SemanticAbort
-            if ( compiler_options.continue_compilation ) diag.add(e.d);
-            else throw e;
         } catch (const SemanticAbort &e) {
             if (!compiler_options.continue_compilation) throw e;
         }
@@ -4629,10 +4617,6 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         b.is_body_visitor = true;
         b.visit_TranslationUnit(ast);
         b.is_body_visitor = false;
-    } catch (const SemanticError &e) {
-        Error error;
-        diagnostics.diagnostics.push_back(e.d);
-        return error;
     } catch (const SemanticAbort &) {
         Error error;
         return error;
