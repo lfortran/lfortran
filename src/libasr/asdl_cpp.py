@@ -354,7 +354,7 @@ class DefaultLookupNameVisitor(ASDLVisitor):
         self.emit("uint32_t last = loc.last;", 2)
         self.emit("if (first <= pos && pos <= last) {", 2)
         self.emit("uint32_t span = last - first;", 3)
-        self.emit("if (span < min_span) {", 3)
+        self.emit("if (span <= min_span) {", 3)
         self.emit("min_span = span;", 4)
         self.emit("return true;", 4)
         self.emit("}", 3)
