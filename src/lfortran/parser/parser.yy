@@ -4,7 +4,7 @@
 %param {LCompilers::LFortran::Parser &p}
 %locations
 %glr-parser
-%expect    227 // shift/reduce conflicts
+%expect    232 // shift/reduce conflicts
 %expect-rr 175 // reduce/reduce conflicts
 
 // Uncomment this to get verbose error messages
@@ -1162,86 +1162,9 @@ implicit_spec_list
     | implicit_spec { LIST_NEW($$); LIST_ADD($$, $1); }
     ;
 
-/*
-   HERE BE DRAGONS!
-
-   The standard gives the rule:
-
-       _implicit-spec_ := _declaration-type-spec_ ( _letter-spec-list_ )
-
-   which allows for full `KIND` specifications on any
-   _intrinsic_type_spec_.  The following grammar rule attempts to
-   approximate that in three ways:
-
-      1. If no KIND parameter is given, an IMPLICIT_SPEC is constructed
-         with an ATTR_TYPE as the first parameter; or
-      2. If an integer is given as an (unlabelled) KIND parameter, then
-         an IMPLICIT_SPEC is constructed with an ATTR_TYPE_INT as the
-	 first parameter; or
-      3. If an expression that matches `letter_spec_list` is passed as
-         an (unlabelled) KIND parameter, then an IMPLICIT_SPEC_KIND
-	 is constructed with an ATTR_TYPE as the first parameter and
-	 the `letter_spec_list` result as the second.
-
-    Note that #3 accepts `id` (and `id - id`), because `letter_spec_list`
-    itself accepts an `id`, rather than just `letter`.
-
-    So, this rule accepts only a portion of the full KIND specification.
-    We should just be using the grammar `declaration_type_spec` rule
-    instead of all of these special cases, but that leads to a fundamental
-    shift/reduce conflict due to the overlap between `( kind_arg_list )`
-    and `( letter_spec_list )`.
-*/
-
 implicit_spec
-    : KW_INTEGER "(" letter_spec_list ")" {
-            $$ = IMPLICIT_SPEC(ATTR_TYPE(Integer, @$), $3, @$); }
-    | KW_INTEGER "*" TK_INTEGER "(" letter_spec_list ")" {
-            $$ = IMPLICIT_SPEC(ATTR_TYPE_INT(Integer, $3, @$), $5, @$); }
-    | KW_INTEGER "(" TK_INTEGER ")" "(" letter_spec_list ")" {
-            $$ = IMPLICIT_SPEC(ATTR_TYPE_INT(Integer, $3, @$), $6, @$); }
-    | KW_INTEGER "(" letter_spec_list ")" "(" letter_spec_list ")" {
-            $$ = IMPLICIT_SPEC_KIND(ATTR_TYPE(Integer, @$), $3, $6, @$); }
-    | KW_CHARACTER "(" letter_spec_list ")" {
-            $$ = IMPLICIT_SPEC(ATTR_TYPE(Character, @$), $3, @$); }
-    | KW_CHARACTER "*" TK_INTEGER "(" letter_spec_list ")" {
-            $$ = IMPLICIT_SPEC(ATTR_TYPE_INT(Character, $3, @$), $5, @$); }
-    | KW_CHARACTER "(" TK_INTEGER ")" "(" letter_spec_list ")" {
-            $$ = IMPLICIT_SPEC(ATTR_TYPE_INT(Character, $3, @$), $6, @$); }
-    | KW_CHARACTER "(" letter_spec_list ")" "(" letter_spec_list ")" {
-            $$ = IMPLICIT_SPEC_KIND(ATTR_TYPE(Character, @$), $3, $6, @$); }
-    | KW_REAL "(" letter_spec_list ")" {
-            $$ = IMPLICIT_SPEC(ATTR_TYPE(Real, @$), $3, @$); }
-    | KW_REAL "*" TK_INTEGER "(" letter_spec_list ")" {
-            $$ = IMPLICIT_SPEC(ATTR_TYPE_INT(Real, $3, @$), $5, @$); }
-    | KW_REAL "(" TK_INTEGER ")" "(" letter_spec_list ")" {
-            $$ = IMPLICIT_SPEC(ATTR_TYPE_INT(Real, $3, @$), $6, @$); }
-    | KW_REAL "(" letter_spec_list ")" "(" letter_spec_list ")" {
-            $$ = IMPLICIT_SPEC_KIND(ATTR_TYPE(Real, @$), $3, $6, @$); }
-    | KW_COMPLEX "(" letter_spec_list ")" {
-            $$ = IMPLICIT_SPEC(ATTR_TYPE(Complex, @$), $3, @$); }
-    | KW_COMPLEX "*" TK_INTEGER "(" letter_spec_list ")" {
-            $$ = IMPLICIT_SPEC(ATTR_TYPE_INT(Complex, DIV2($3), @$), $5, @$); }
-    | KW_COMPLEX "(" TK_INTEGER ")" "(" letter_spec_list ")" {
-            $$ = IMPLICIT_SPEC(ATTR_TYPE_INT(Complex, $3, @$), $6, @$); }
-    | KW_COMPLEX "(" letter_spec_list ")" "(" letter_spec_list ")" {
-            $$ = IMPLICIT_SPEC_KIND(ATTR_TYPE(Complex, @$), $3, $6, @$); }
-    | KW_LOGICAL "(" letter_spec_list ")" {
-            $$ = IMPLICIT_SPEC(ATTR_TYPE(Logical, @$), $3, @$); }
-    | KW_LOGICAL "*" TK_INTEGER "(" letter_spec_list ")" {
-            $$ = IMPLICIT_SPEC(ATTR_TYPE_INT(Logical, $3, @$), $5, @$); }
-    | KW_LOGICAL "(" TK_INTEGER ")" "(" letter_spec_list ")" {
-            $$ = IMPLICIT_SPEC(ATTR_TYPE_INT(Logical, $3, @$), $6, @$); }
-    | KW_LOGICAL "(" letter_spec_list ")" "(" letter_spec_list ")" {
-            $$ = IMPLICIT_SPEC_KIND(ATTR_TYPE(Logical, @$), $3, $6, @$); }
-    | KW_DOUBLE KW_PRECISION "(" letter_spec_list ")" {
-            $$ = IMPLICIT_SPEC(ATTR_TYPE(DoublePrecision, @$), $4, @$); }
-    | KW_TYPE "(" id ")" "(" letter_spec_list ")" {
-            $$ = IMPLICIT_SPEC(ATTR_TYPE_NAME(Type, $3, @$), $6, @$); }
-    | KW_PROCEDURE "(" id ")" "(" letter_spec_list ")" {
-            $$ = IMPLICIT_SPEC(ATTR_TYPE_NAME(Procedure, $3, @$), $6, @$); }
-    | KW_CLASS "(" id ")" "(" letter_spec_list ")" {
-            $$ = IMPLICIT_SPEC(ATTR_TYPE_NAME(Class, $3, @$), $6, @$); }
+    : declaration_type_spec "(" letter_spec_list ")" {
+           $$ = IMPLICIT_SPEC($1, $3, @$); }
     ;
 
 // IMPLICIT NONE [ ( [implicit-none-spec-list] ) ]

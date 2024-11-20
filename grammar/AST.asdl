@@ -102,7 +102,7 @@ implicit_statement
     | Implicit(implicit_spec* specs, trivia? trivia)
 
 implicit_spec
-    = ImplicitSpec(decl_attribute type, letter_spec* kind, letter_spec* specs)
+    = ImplicitSpec(decl_attribute type, letter_spec* specs)
 
 implicit_none_spec
     = ImplicitNoneExternal(int dummy)
