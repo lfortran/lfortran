@@ -4,7 +4,7 @@
 %param {LCompilers::LFortran::Parser &p}
 %locations
 %glr-parser
-%expect    228 // shift/reduce conflicts
+%expect    227 // shift/reduce conflicts
 %expect-rr 175 // reduce/reduce conflicts
 
 // Uncomment this to get verbose error messages
@@ -536,7 +536,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <ast> data_stmt_repeat
 %type <ast> data_stmt_constant
 %type <ast> data_object
-%type <ast> integer_type
+%type <ast> integer_type_spec
 %type <vec_kind_arg> kind_arg_list
 %type <kind_arg> kind_arg2
 %type <vec_ast> interface_body
@@ -1373,12 +1373,12 @@ data_object
     | id "(" fnarray_arg_list_opt ")" { $$ = FUNCCALLORARRAY($1, $3, @$); }
     | "(" data_object_list "," id "=" expr "," expr ")" {
             $$ = DATA_IMPLIED_DO1($2, nullptr, $4, $6, $8, @$); }
-    | "(" data_object_list "," integer_type id "=" expr "," expr ")" {
-            $$ = DATA_IMPLIED_DO1($2, $4, $5, $7, $9, @$); }
+    | "(" data_object_list "," integer_type_spec "::" id "=" expr "," expr ")" {
+            $$ = DATA_IMPLIED_DO1($2, $4, $6, $8, $10, @$); }
     | "(" data_object_list "," id "=" expr "," expr "," expr ")" {
             $$ = DATA_IMPLIED_DO2($2, nullptr, $4, $6, $8, $10, @$); }
-    | "(" data_object_list "," integer_type id "=" expr "," expr "," expr ")" {
-            $$ = DATA_IMPLIED_DO2($2, $4, $5, $7, $9, $11, @$); }
+    | "(" data_object_list "," integer_type_spec "::" id "=" expr "," expr "," expr ")" {
+            $$ = DATA_IMPLIED_DO2($2, $4, $6, $8, $10, $12, @$); }
     ;
 
 data_stmt_value_list
@@ -1411,11 +1411,6 @@ data_stmt_constant
     | ".false." { $$ = FALSE(@$); }
     | "(" signed_numeric_constant "," signed_numeric_constant ")" { $$ = COMPLEX($2, $4, @$); }
 
-    ;
-
-integer_type
-    : KW_INTEGER "(" kind_arg_list ")" "::" {
-            $$ = ATTR_TYPE_KIND(Integer, $3, @$); }
     ;
 
 kind_arg_list
@@ -1476,10 +1471,14 @@ var_modifier
     ;
 
 
-intrinsic_type_spec
+integer_type_spec
     : KW_INTEGER { $$ = ATTR_TYPE(Integer, @$); }
     | KW_INTEGER "(" kind_arg_list ")" { $$ = ATTR_TYPE_KIND(Integer, $3, @$); }
     | KW_INTEGER "*" TK_INTEGER { $$ = ATTR_TYPE_INT(Integer, $3, @$); WARN_INTEGERSTAR($3, @$); }
+    ;
+
+intrinsic_type_spec
+    : integer_type_spec { $$ = $1; }
     | KW_CHARACTER { $$ = ATTR_TYPE(Character, @$); }
     | KW_CHARACTER "(" kind_arg_list ")" { $$ = ATTR_TYPE_KIND(Character, $3, @$); }
     | KW_CHARACTER "*" TK_INTEGER { $$ = ATTR_TYPE_INT(Character, $3, @$); WARN_CHARACTERSTAR($3, @$);}
