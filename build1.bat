@@ -7,4 +7,4 @@ cmake ^
     -DCMAKE_INSTALL_PREFIX=%cd%/inst ^
     -DCMAKE_EXPORT_COMPILE_COMMANDS=yes ^
     .
-cmake --build . --config Release -j2 --target install
+cmake --build . --config Release --target install
