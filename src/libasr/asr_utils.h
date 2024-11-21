@@ -4469,6 +4469,12 @@ class SymbolDuplicator {
                 new_symbol_name = struct_type->m_name;
                 break;
             }
+            case ASR::symbolType::GenericProcedure: {
+                ASR::GenericProcedure_t* generic_procedure = ASR::down_cast<ASR::GenericProcedure_t>(symbol);
+                new_symbol = duplicate_GenericProcedure(generic_procedure, destination_symtab);
+                new_symbol_name = generic_procedure->m_name;
+                break;
+            }
             default: {
                 throw LCompilersException("Duplicating ASR::symbolType::" +
                         std::to_string(symbol->type) + " is not supported yet.");
@@ -4649,6 +4655,12 @@ class SymbolDuplicator {
             struct_type_t->m_access, struct_type_t->m_is_packed, struct_type_t->m_is_abstract,
             struct_type_t->m_initializers, struct_type_t->n_initializers, struct_type_t->m_alignment,
             struct_type_t->m_parent));
+    }
+    ASR::symbol_t* duplicate_GenericProcedure(ASR::GenericProcedure_t* genericProcedure, SymbolTable* destination_symtab){
+        return ASR::down_cast<ASR::symbol_t>(ASR::make_GenericProcedure_t(
+            al, genericProcedure->base.base.loc, destination_symtab,
+            genericProcedure->m_name, genericProcedure->m_procs,
+            genericProcedure->n_procs, genericProcedure->m_access));
     }
 
 };
