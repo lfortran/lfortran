@@ -2498,13 +2498,20 @@ int main_app(int argc, char *argv[]) {
         return emit_ast_f90(arg_file, compiler_options);
     }
     lfortran_pass_manager.parse_pass_arg(arg_pass, skip_pass);
-    if (show_asr || compiler_options.lookup_name) {
+    if (compiler_options.rename_symbol) {
+        return LCompilers::get_all_occurences(arg_file, compiler_options);
+    }
+    if (compiler_options.lookup_name) {
 #ifdef HAVE_LFORTRAN_RAPIDJSON
         return get_definitions(arg_file, compiler_options);
 #else
         return emit_asr(arg_file, lfortran_pass_manager,
                 compiler_options);
 #endif
+    }
+    if (show_asr) {
+        return emit_asr(arg_file, lfortran_pass_manager,
+                compiler_options);
     }
     if (show_document_symbols) {
 #ifdef HAVE_LFORTRAN_RAPIDJSON
