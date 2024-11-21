@@ -1593,7 +1593,6 @@ coarray_comp_decl
 statements
     : statements statement { $$ = $1; LIST_ADD($$, $2); }
     | %empty { LIST_NEW($$); }
-    | statements error { $$ = $1; }
     ;
 
 sep
@@ -1611,7 +1610,7 @@ sep_one
 decl_statements
     : decl_statements decl_statement { $$ = $1; LIST_ADD($$, $2); }
     | %empty { LIST_NEW($$); }
-    | decl_statements error { $$ = $1; }
+    | decl_statements error sep_one { $$ = $1; yyerrok; }
     ;
 
 decl_statement
