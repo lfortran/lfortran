@@ -361,10 +361,6 @@ int get_all_occurences(const std::string &infile, LCompilers::CompilerOptions &c
             std::string symbol_name = ASRUtils::symbol_name(ASR::down_cast<ASR::symbol_t>(asr));
             LCompilers::LFortran::OccurenceCollector occ(symbol_name, symbol_lists, lm);
             occ.visit_TranslationUnit(*x.result);
-            std::cout<<"symbol_lists.size() = "<<symbol_lists.size()<<std::endl;
-            for (auto symbol : symbol_lists) {
-                std::cout<<"symbol_name = "<<symbol.symbol_name<<std::endl;
-            }
         } else {
             std::cout << "{}";
             return 0;
