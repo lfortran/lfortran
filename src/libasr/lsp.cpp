@@ -8,6 +8,7 @@
 #include <libasr/asr_builder.h>
 #include <libasr/location.h>
 #include <lfortran/fortran_evaluator.h>
+#include "libasr/asr_lookup_name.cpp"
 
 
 #ifdef HAVE_LFORTRAN_RAPIDJSON
@@ -250,8 +251,12 @@ int get_definitions(const std::string &infile, LCompilers::CompilerOptions &comp
             uint64_t pos = lm.linecol_to_pos(l, c);
             LCompilers::ASR::asr_t* asr = fe.handle_lookup_name(x.result, pos);
             LCompilers::document_symbols loc;
+            if (!ASR::is_a<ASR::symbol_t>(*asr)) {
+                std::cout << "{}";
+                return 0;
+            }
             // TODO: make sure it returns us the symbol name
-            std::string symbol_name = "a.first";
+            std::string symbol_name = ASRUtils::symbol_name(ASR::down_cast<ASR::symbol_t>(asr));
             uint32_t first_line;
             uint32_t last_line;
             uint32_t first_column;
@@ -268,6 +273,98 @@ int get_definitions(const std::string &infile, LCompilers::CompilerOptions &comp
             loc.symbol_name = symbol_name;
             loc.filename = filename;
             symbol_lists.push_back(loc);
+        } else {
+            std::cout << "{}";
+            return 0;
+        }
+    }
+
+    rapidjson::Document test_output(rapidjson::kArrayType);
+    rapidjson::Document range_object(rapidjson::kObjectType);
+    rapidjson::Document start_detail(rapidjson::kObjectType);
+    rapidjson::Document end_detail(rapidjson::kObjectType);
+    rapidjson::Document location_object(rapidjson::kObjectType);
+    rapidjson::Document test_capture(rapidjson::kObjectType);
+
+    test_output.SetArray();
+
+    for (auto symbol : symbol_lists) {
+        uint32_t start_character = symbol.first_column;
+        uint32_t start_line = symbol.first_line;
+        uint32_t end_character = symbol.last_column;
+        uint32_t end_line = symbol.last_line;
+        std::string name = symbol.symbol_name;
+
+        range_object.SetObject();
+        rapidjson::Document::AllocatorType &allocator = range_object.GetAllocator();
+
+        start_detail.SetObject();
+        start_detail.AddMember("character", rapidjson::Value().SetInt(start_character), allocator);
+        start_detail.AddMember("line", rapidjson::Value().SetInt(start_line), allocator);
+        range_object.AddMember("start", start_detail, allocator);
+
+        end_detail.SetObject();
+        end_detail.AddMember("character", rapidjson::Value().SetInt(end_character), allocator);
+        end_detail.AddMember("line", rapidjson::Value().SetInt(end_line), allocator);
+        range_object.AddMember("end", end_detail, allocator);
+
+        location_object.SetObject();
+        location_object.AddMember("range", range_object, allocator);
+        location_object.AddMember("uri", rapidjson::Value().SetString("uri", allocator), allocator);
+
+        test_capture.SetObject();
+        test_capture.AddMember("kind", rapidjson::Value().SetInt(1), allocator);
+        test_capture.AddMember("location", location_object, allocator);
+        test_capture.AddMember("name", rapidjson::Value().SetString(name.c_str(), allocator), allocator);
+        test_output.PushBack(test_capture, test_output.GetAllocator());
+    }
+    rapidjson::StringBuffer buffer;
+    buffer.Clear();
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+    test_output.Accept(writer);
+    std::string resp_str( buffer.GetString() );
+
+    std::cout << resp_str;
+
+    return 0;
+}
+
+int get_all_occurences(const std::string &infile, LCompilers::CompilerOptions &compiler_options)
+{
+    std::string input = read_file(infile);
+    LCompilers::FortranEvaluator fe(compiler_options);
+    std::vector<LCompilers::document_symbols> symbol_lists;
+
+    LCompilers::LocationManager lm;
+    {
+        LCompilers::LocationManager::FileLocations fl;
+        fl.in_filename = infile;
+        lm.files.push_back(fl);
+        lm.file_ends.push_back(input.size());
+    }
+    {
+        LCompilers::diag::Diagnostics diagnostics;
+        LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
+            x = fe.get_asr2(input, lm, diagnostics);
+        if (x.ok) {
+            // populate_symbol_lists(x.result, lm, symbol_lists);
+            uint16_t l = std::stoi(compiler_options.line);
+            uint16_t c = std::stoi(compiler_options.column);
+            uint64_t pos = lm.linecol_to_pos(l, c);
+            LCompilers::ASR::asr_t* asr = fe.handle_lookup_name(x.result, pos);
+            LCompilers::document_symbols loc;
+            if (!ASR::is_a<ASR::symbol_t>(*asr)) {
+                std::cout << "{}";
+                return 0;
+            }
+            // TODO: make sure it returns us the symbol name
+            std::string symbol_name = ASRUtils::symbol_name(ASR::down_cast<ASR::symbol_t>(asr));
+            LCompilers::LFortran::OccurenceCollector occ(symbol_name, symbol_lists, lm);
+            occ.visit_TranslationUnit(*x.result);
+            std::cout<<"symbol_lists.size() = "<<symbol_lists.size()<<std::endl;
+            for (auto symbol : symbol_lists) {
+                std::cout<<"symbol_name = "<<symbol.symbol_name<<std::endl;
+            }
         } else {
             std::cout << "{}";
             return 0;
