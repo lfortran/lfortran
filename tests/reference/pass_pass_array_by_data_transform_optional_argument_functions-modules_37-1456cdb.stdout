@@ -382,9 +382,6 @@
                                             13 associate_block
                                         )]
                                         []
-                                    )
-                                    (ImplicitDeallocate
-                                        [(Var 13 build_dirs)]
                                     )]
                                     ()
                                     Public
@@ -612,9 +609,6 @@
                                             ()
                                         ))]
                                         ()
-                                    )
-                                    (ImplicitDeallocate
-                                        [(Var 10 targets)]
                                     )]
                                     ()
                                     Public

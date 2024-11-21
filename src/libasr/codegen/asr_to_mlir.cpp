@@ -1,6 +1,7 @@
 #include <mlir/IR/BuiltinOps.h>
 #include <mlir/IR/BuiltinTypes.h>
 #include <mlir/Dialect/LLVMIR/LLVMDialect.h>
+#include <mlir/IR/Verifier.h>
 #include <mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h>
 
 #include <libasr/codegen/asr_to_mlir.h>
@@ -101,28 +102,40 @@ public:
     }
 
     void visit_Variable(const ASR::Variable_t &x) {
+        uint32_t h = get_hash((ASR::asr_t*) &x);
+        int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+        if (kind != 4) {
+            throw CodeGenError("Integer of kind: `"+ std::to_string(kind)
+                +"` is not supported yet", x.base.base.loc);
+        }
+        // Used by scalar variables
+        mlir::Value size = builder->create<mlir::LLVM::ConstantOp>(loc,
+            builder->getI32Type(), builder->getI32IntegerAttr(1));
+        mlir::Type var_type;
         switch (x.m_type->type) {
             case ASR::ttypeType::Integer: {
-                int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
                 if (kind == 4) {
-                    auto one = builder->create<mlir::LLVM::ConstantOp>(
-                        loc, builder->getI32Type(), builder->getI32IntegerAttr(1));
-                    mlir::LLVM::AllocaOp alloc = builder->create<mlir::LLVM::AllocaOp>(
-                        loc, mlir::LLVM::LLVMPointerType::get(builder->getI32Type()), one, 4);
-                    uint32_t h = get_hash((ASR::asr_t*) &x);
-                    mlir_symtab[h] = alloc;
-                    if (x.m_symbolic_value) {
-                        this->visit_expr(*x.m_symbolic_value);
-                        builder->create<mlir::LLVM::StoreOp>(loc, tmp, alloc);
-                    }
-                } else {
-                    throw CodeGenError("Integer of kind: `"+ std::to_string(kind)
-                        +"` is not supported yet", x.base.base.loc);
+                    var_type = mlir::LLVM::LLVMPointerType::get(
+                        builder->getI32Type());
+                }
+                break;
+            } case ASR::ttypeType::Real: {
+                if (kind == 4) {
+                    var_type = mlir::LLVM::LLVMPointerType::get(
+                        builder->getF32Type());
                 }
                 break;
             }
             default:
-                throw LCompilersException("Type not implemented");
+                throw LCompilersException("Variable type '"+
+                    ASRUtils::type_to_str_python(x.m_type) +
+                    "' is not supported yet");
+        }
+        mlir_symtab[h] = builder->create<mlir::LLVM::AllocaOp>(loc, var_type,
+            size);
+        if (x.m_symbolic_value) {
+            this->visit_expr(*x.m_symbolic_value);
+            builder->create<mlir::LLVM::StoreOp>(loc, tmp, mlir_symtab[h]);
         }
     }
 
@@ -157,6 +170,22 @@ public:
         }
     }
 
+    void visit_RealConstant(const ASR::RealConstant_t &x) {
+        int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+        switch (kind) {
+            case 4: {
+                tmp = builder->create<mlir::LLVM::ConstantOp>(loc,
+                    builder->getF32Type(),
+                    builder->getF32FloatAttr(x.m_r)).getResult();
+                break;
+            }
+            default:
+                throw CodeGenError("Integer constant of kind: `"+
+                    std::to_string(kind) +"` is not supported yet",
+                    x.base.base.loc);
+        }
+    }
+
     void visit_IntegerBinOp(const ASR::IntegerBinOp_t &x) {
         this->visit_expr(*x.m_left);
         mlir::Value left = tmp;
@@ -172,7 +201,27 @@ public:
                 break;
             }
             default:
-                throw CodeGenError("Integer BinOp not supported yet",
+                throw CodeGenError("BinOp operator not supported yet",
+                    x.base.base.loc);
+        }
+    }
+
+    void visit_RealBinOp(const ASR::RealBinOp_t &x) {
+        this->visit_expr(*x.m_left);
+        mlir::Value left = tmp;
+        this->visit_expr(*x.m_right);
+        mlir::Value right = tmp;
+        switch (x.m_op) {
+            case ASR::binopType::Add: {
+                tmp = builder->create<mlir::LLVM::FAddOp>(loc, left, right);
+                break;
+            }
+            case ASR::binopType::Mul: {
+                tmp = builder->create<mlir::LLVM::FMulOp>(loc, left, right);
+                break;
+            }
+            default:
+                throw CodeGenError("BinOp operator not supported yet",
                     x.base.base.loc);
         }
     }
@@ -188,10 +237,15 @@ public:
             args.reserve(al, sf->n_args);
             for (size_t i=0; i<sf->n_args; i++) {
                 ASR::ttype_t *t = ASRUtils::expr_type(sf->m_args[i]);
+                this->visit_expr(*sf->m_args[i]);
                 if (ASRUtils::is_integer(*t)) {
                     fmt += " %d";
-                    this->visit_expr(*sf->m_args[i]);
-                    args.push_back(al, builder->create<mlir::LLVM::LoadOp>(loc, tmp));
+                    args.push_back(al, builder->create<mlir::LLVM::LoadOp>(loc,
+                        tmp));
+                } else if (ASRUtils::is_real(*t)) {
+                    fmt += " %f";
+                    args.push_back(al, builder->create<mlir::LLVM::LoadOp>(loc,
+                        tmp));
                 } else {
                     throw CodeGenError("Unhandled type in print statement",
                         x.base.base.loc);
@@ -222,7 +276,8 @@ public:
             loc, glocal_str);
         globalPtr = builder->create<mlir::LLVM::GEPOp>(loc, llvmI8PtrTy,
             globalPtr, mlir::ValueRange{zero, zero});
-        builder->create<mlir::LLVM::CallOp>(loc, fn, mlir::ValueRange{globalPtr, args[0]});
+        builder->create<mlir::LLVM::CallOp>(loc, fn, mlir::ValueRange{globalPtr,
+            args[0]});
     }
 
 };
@@ -238,6 +293,18 @@ Result<std::unique_ptr<MLIRModule>> asr_to_mlir(Allocator &al,
     }
 
     mlir::registerLLVMDialectTranslation(*v.context);
+
+    if (mlir::failed(mlir::verify(*v.module))) {
+        std::string mlir_str;
+        llvm::raw_string_ostream raw_os(mlir_str);
+        v.module->print(raw_os);
+        std::cout << "\n" << mlir_str << "\n";
+        std::string msg = "asr_to_mlir: module verification failed";
+        diagnostics.diagnostics.push_back(diag::Diagnostic(msg,
+            diag::Level::Error, diag::Stage::CodeGen));
+        Error error;
+        return error;
+    }
     return std::make_unique<MLIRModule>(std::move(v.module), std::move(v.context));
 }
 

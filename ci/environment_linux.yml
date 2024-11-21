@@ -18,3 +18,4 @@ dependencies:
   - ninja=1.11.1
   - pandoc=3.1.13
   - kokkos=4.4.01
+  - cmake=3.29.1

@@ -6,7 +6,6 @@ fed into our Bison parser, that is shared with the free-form parser.
 
 Note: The prescanner removes CR, so we only handle LF here.
 */
-#include <limits>
 #include <utility>
 
 #include <lfortran/parser/parser_exception.h>
@@ -790,9 +789,49 @@ struct FixedFormRecursiveDescent {
         return multiline;
     }
 
+    // Determines if a line in Fortran code represents an assignment rather than a declaration.
+    // E.g. below are declarations
+    //      integer :: x = 1
+    //      DATA p(1), (c(i), i=1, 2) / 5, 10, 12 /
+    //
+    // while, below are assignments
+    //      i = 2
+    //      integerx = 12
+    //      datap = 5
+    // NOTE: this function doesn't actually lexes, but only determines if it's
+    // (possibly) an assignment or not
+    bool is_possible_assignment(unsigned char *start, unsigned char *&cur) {
+        unsigned char *end = start;
+        if (!try_name(end)) return false;
+
+        // Try parsing array indices, if any
+        while (*end == '(') {
+            end++;  // Move past '('
+            if (!try_expr(end, true)) {
+                return false;  // Parsing failed, it’s not an assignment
+            }
+            if (*end != ')') {
+                return false;  // Expected closing ')', not an assignment
+            }
+            end++;  // Move past ')'
+        }
+
+        // After parsing identifier and indices, check if the next character is `=`
+        if (*end == '=') {
+            cur = start;  // Reset to the start to re-tokenize as an assignment
+            return true;
+        }
+        return false;  // Not an assignment if no '=' found
+    }
+
     bool lex_declaration(unsigned char *&cur) {
         unsigned char *start = cur;
         next_line(cur);
+
+        if (is_possible_assignment(start, cur)) {
+            return false;
+        }
+
         if (lex_declarator(start)) {
             tokenize_line(start);
             return true;

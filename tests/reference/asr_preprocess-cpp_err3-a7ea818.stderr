@@ -1,0 +1,5 @@
+C preprocessor error: Argument list is not closed with ')'
+ --> tests/errors/cpp_err3.f90:3:6
+  |
+3 | #if f(2 < 1+2
+  |      ^ 

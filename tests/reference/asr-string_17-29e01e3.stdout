@@ -109,19 +109,11 @@
                                         [(Assignment
                                             (Var 4 length)
                                             (StringLen
-                                                (StringPhysicalCast
-                                                    (StructInstanceMember
-                                                        (Var 4 string)
-                                                        4 1_string_type_raw
-                                                        (Allocatable
-                                                            (String 1 -2 () DescriptorString)
-                                                        )
-                                                        ()
-                                                    )
-                                                    DescriptorString
-                                                    PointerString
+                                                (StructInstanceMember
+                                                    (Var 4 string)
+                                                    4 1_string_type_raw
                                                     (Allocatable
-                                                        (String 1 -2 () PointerString)
+                                                        (String 1 -2 () DescriptorString)
                                                     )
                                                     ()
                                                 )

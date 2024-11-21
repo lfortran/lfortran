@@ -16,3 +16,4 @@ dependencies:
   - rapidjson=1.1.0
   - ninja=1.11.1
   - zlib
+  - cmake=3.29.1

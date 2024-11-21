@@ -246,6 +246,9 @@ public:
                     import_struct_type.push_back(struct_name);
                 }
                 break;
+            } case ASR::ttypeType::CPtr: {
+                r = "type(c_ptr)";
+                break;
             }
             default:
                 throw LCompilersException("The type `"
@@ -375,6 +378,9 @@ public:
 
     void visit_Module(const ASR::Module_t &x) {
         std::string r;
+        if (strcmp(x.m_name,"lfortran_intrinsic_iso_c_binding")==0 && x.m_intrinsic) {
+            return;
+        }
         r = "module";
         r += " ";
         r.append(x.m_name);
@@ -613,7 +619,17 @@ public:
     void visit_ExternalSymbol(const ASR::ExternalSymbol_t &x) {
         ASR::symbol_t *sym = down_cast<ASR::symbol_t>(
             ASRUtils::symbol_parent_symtab(x.m_external)->asr_owner);
-        if (!is_a<ASR::Struct_t>(*sym)) {
+        if (strcmp(x.m_module_name,"lfortran_intrinsic_iso_c_binding")==0 &&
+            sym && ASR::is_a<ASR::Module_t>(*sym) && ASR::down_cast<ASR::Module_t>(sym)->m_intrinsic) {
+            src = indent;
+            src += "use ";
+            src += "iso_c_binding";
+            src += ", only: ";
+            src.append(x.m_original_name);
+            src += "\n";
+            return;
+        }
+        if (!is_a<ASR::Struct_t>(*sym) && !is_a<ASR::Enum_t>(*sym)) {
             src = indent;
             src += "use ";
             src.append(x.m_module_name);
@@ -645,7 +661,25 @@ public:
         src = r;
     }
 
-    // void visit_Enum(const ASR::Enum_t &x) {}
+    void visit_Enum(const ASR::Enum_t &x) {
+        std::string r = indent;
+        r += "enum, bind(c)\n";
+        inc_indent();
+        for (auto it: x.m_symtab->get_scope()) {
+            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(it.second);
+            r += indent;
+            r += "enumerator :: ";
+            r.append(var->m_name);
+            r += " = ";
+            visit_expr(*var->m_value);
+            r += src;
+            r += "\n";
+        }
+        dec_indent();
+        r += indent;
+        r += "end enum\n";
+        src = r;
+    }
 
     // void visit_UnionType(const ASR::UnionType_t &x) {}
 
@@ -1829,7 +1863,10 @@ public:
 
     // void visit_CLoc(const ASR::CLoc_t &x) {}
 
-    // void visit_PointerToCPtr(const ASR::PointerToCPtr_t &x) {}
+    void visit_PointerToCPtr(const ASR::PointerToCPtr_t &x) {
+        visit_expr(*x.m_arg);
+        src = "c_loc(" + src + ")";
+    }
 
     // void visit_GetPointer(const ASR::GetPointer_t &x) {}
 

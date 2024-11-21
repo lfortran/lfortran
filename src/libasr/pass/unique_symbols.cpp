@@ -6,7 +6,6 @@
 #include <libasr/pass/unique_symbols.h>
 #include <libasr/pass/pass_utils.h>
 #include <unordered_map>
-#include <set>
 #include<unordered_set>
 
 

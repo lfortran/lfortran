@@ -3,7 +3,6 @@
 
 #include <functional>
 #include <map>
-#include <set>
 #include <limits>
 
 #include <libasr/assert.h>
@@ -2511,7 +2510,49 @@ static inline ASR::asr_t* make_ArraySize_t_util(
     if( ASR::is_a<ASR::ArrayPhysicalCast_t>(*a_v) ) {
         a_v = ASR::down_cast<ASR::ArrayPhysicalCast_t>(a_v)->m_arg;
     }
-
+    if ( ASR::is_a<ASR::IntrinsicArrayFunction_t>(*a_v) && for_type ) {
+        ASR::IntrinsicArrayFunction_t* af = ASR::down_cast<ASR::IntrinsicArrayFunction_t>(a_v);
+        for ( size_t i = 0; i < af->n_args; i++ ) {
+            if ( ASRUtils::is_array(ASRUtils::expr_type(af->m_args[i])) ) {
+                a_v = af->m_args[i];
+                if ( ASR::is_a<ASR::ArrayPhysicalCast_t>(*a_v)) {
+                    a_v = ASR::down_cast<ASR::ArrayPhysicalCast_t>(a_v)->m_arg;
+                }
+                break;
+            }
+        }
+    } else if( ASR::is_a<ASR::FunctionCall_t>(*a_v) && for_type ) {
+        ASR::FunctionCall_t* function_call = ASR::down_cast<ASR::FunctionCall_t>(a_v);
+        ASR::dimension_t* m_dims = nullptr;
+        size_t n_dims = ASRUtils::extract_dimensions_from_ttype(function_call->m_type, m_dims);
+        if( ASRUtils::is_fixed_size_array(function_call->m_type) ) {
+            if( a_dim == nullptr ) {
+                return ASR::make_IntegerConstant_t(al, a_loc,
+                    ASRUtils::get_fixed_size_of_array(function_call->m_type), a_type);
+            } else if( is_dimension_constant ) {
+                return &(m_dims[dim - 1].m_length->base);
+            }
+        } else {
+            if( a_dim == nullptr ) {
+                ASR::expr_t* result = m_dims[0].m_length;
+                for( size_t i = 1; i < n_dims; i++ ) {
+                    result = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, a_loc,
+                        result, ASR::binopType::Mul, m_dims[i].m_length, a_type, nullptr));
+                }
+                return &(result->base);
+            } else if( is_dimension_constant ) {
+                return &(m_dims[dim - 1].m_length->base);
+            }
+        }
+    } else if( ASR::is_a<ASR::IntrinsicElementalFunction_t>(*a_v) && for_type ) {
+        ASR::IntrinsicElementalFunction_t* elemental = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(a_v);
+        for( size_t i = 0; i < elemental->n_args; i++ ) {
+            if( ASRUtils::is_array(ASRUtils::expr_type(elemental->m_args[i])) ) {
+                a_v = elemental->m_args[i];
+                break;
+            }
+        }
+    }
     if( ASR::is_a<ASR::ArraySection_t>(*a_v) ) {
         ASR::ArraySection_t* array_section_t = ASR::down_cast<ASR::ArraySection_t>(a_v);
         if( a_dim == nullptr ) {
@@ -2555,38 +2596,8 @@ static inline ASR::asr_t* make_ArraySize_t_util(
             return ASR::make_IntegerBinOp_t(al, a_loc, byd, ASR::binopType::Add,
                 ASRUtils::EXPR(const1), a_type, nullptr);
         }
-    } else if( ASR::is_a<ASR::FunctionCall_t>(*a_v) && for_type ) {
-        ASR::FunctionCall_t* function_call = ASR::down_cast<ASR::FunctionCall_t>(a_v);
-        ASR::dimension_t* m_dims = nullptr;
-        size_t n_dims = ASRUtils::extract_dimensions_from_ttype(function_call->m_type, m_dims);
-        if( ASRUtils::is_fixed_size_array(function_call->m_type) ) {
-            if( a_dim == nullptr ) {
-                return ASR::make_IntegerConstant_t(al, a_loc,
-                    ASRUtils::get_fixed_size_of_array(function_call->m_type), a_type);
-            } else if( is_dimension_constant ) {
-                return &(m_dims[dim - 1].m_length->base);
-            }
-        } else {
-            if( a_dim == nullptr ) {
-                ASR::expr_t* result = m_dims[0].m_length;
-                for( size_t i = 1; i < n_dims; i++ ) {
-                    result = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, a_loc,
-                        result, ASR::binopType::Mul, m_dims[i].m_length, a_type, nullptr));
-                }
-                return &(result->base);
-            } else if( is_dimension_constant ) {
-                return &(m_dims[dim - 1].m_length->base);
-            }
-        }
-    } else if( ASR::is_a<ASR::IntrinsicElementalFunction_t>(*a_v) && for_type ) {
-        ASR::IntrinsicElementalFunction_t* elemental = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(a_v);
-        for( size_t i = 0; i < elemental->n_args; i++ ) {
-            if( ASRUtils::is_array(ASRUtils::expr_type(elemental->m_args[i])) ) {
-                a_v = elemental->m_args[i];
-                break;
-            }
-        }
-    } else if( is_binop_expr(a_v) && for_type ) {
+    }
+    if( is_binop_expr(a_v) && for_type ) {
         if( ASR::is_a<ASR::Var_t>(*extract_member_from_binop(a_v, 1)) ) {
             return make_ArraySize_t_util(al, a_loc, extract_member_from_binop(a_v, 1), a_dim, a_type, a_value, for_type);
         } else {
@@ -2596,7 +2607,6 @@ static inline ASR::asr_t* make_ArraySize_t_util(
         return make_ArraySize_t_util(al, a_loc, extract_member_from_unaryop(a_v), a_dim, a_type, a_value, for_type);
     } else if( ASR::is_a<ASR::ArrayConstructor_t>(*a_v) && for_type ) {
         ASR::ArrayConstructor_t* array_constructor = ASR::down_cast<ASR::ArrayConstructor_t>(a_v);
-        LCOMPILERS_ASSERT(a_dim == nullptr);
         return &(get_ArrayConstructor_size(al, array_constructor)->base);
     } else {
         ASR::dimension_t* m_dims = nullptr;
@@ -2620,6 +2630,7 @@ static inline ASR::asr_t* make_ArraySize_t_util(
             }
         }
     }
+
 
     if( for_type ) {
         LCOMPILERS_ASSERT_MSG(
@@ -2901,7 +2912,7 @@ static inline void set_absent_optional_arguments_to_null(
 static inline bool is_descriptorString(ASR::ttype_t* t){
     return is_character(*t) &&
         ASR::down_cast<ASR::String_t>(
-        ASRUtils::type_get_past_array_pointer_allocatable(t))->m_physical_type == ASR::string_physical_typeType::DescriptorString; 
+        ASRUtils::type_get_past_array_pointer_allocatable(t))->m_physical_type == ASR::string_physical_typeType::DescriptorString;
 }
 
 // Create `StringPhysicalCast` node from  `PointerString` --> `DescriptorString`.
@@ -3066,8 +3077,8 @@ inline int extract_kind_str(char* m_n, char *&kind_str) {
 // this function only extract's the 'kind' and raises an error when it's of
 // inappropriate type (e.g. float), but doesn't ensure 'kind' is appropriate
 // for whose kind it is
-template <typename SemanticError>
-inline int extract_kind(ASR::expr_t* kind_expr, const Location& loc) {
+template <typename SemanticAbort>
+inline int extract_kind(ASR::expr_t* kind_expr, const Location& loc, diag::Diagnostics &diag) {
     switch( kind_expr->type ) {
         case ASR::exprType::Var: {
             ASR::Var_t* kind_var = ASR::down_cast<ASR::Var_t>(kind_expr);
@@ -3086,14 +3097,20 @@ inline int extract_kind(ASR::expr_t* kind_expr, const Location& loc) {
                     LCOMPILERS_ASSERT( kind_variable->m_value != nullptr );
                     return ASR::down_cast<ASR::IntegerConstant_t>(kind_variable->m_value)->m_n;
                 } else {
-                    std::string msg = "Integer variable required. " + std::string(kind_variable->m_name) +
-                                    " is not an Integer variable.";
-                    throw SemanticError(msg, loc);
+                    diag.add(diag::Diagnostic(
+                        "Integer variable required. " + std::string(kind_variable->m_name) +
+                                    " is not an Integer variable.",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {loc})}));
+                    throw SemanticAbort();
                 }
             } else {
-                std::string msg = "Parameter '" + std::string(kind_variable->m_name) +
-                                "' is a variable, which does not reduce to a constant expression";
-                throw SemanticError(msg, loc);
+                diag.add(diag::Diagnostic(
+                    "Parameter '" + std::string(kind_variable->m_name) +
+                    "' is a variable, which does not reduce to a constant expression",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {loc})}));
+                throw SemanticAbort();
             }
         }
         case ASR::exprType::IntrinsicElementalFunction: {
@@ -3103,10 +3120,14 @@ inline int extract_kind(ASR::expr_t* kind_expr, const Location& loc) {
                     ASR::is_a<ASR::IntegerConstant_t>(*kind_isf->m_value) ) {
                 return ASR::down_cast<ASR::IntegerConstant_t>(kind_isf->m_value)->m_n;
             } else {
-                throw SemanticError("Only Integer literals or expressions which "
-                    "reduce to constant Integer are accepted as kind parameters.",
-                    loc);
+                diag.add(diag::Diagnostic(
+                    "Only Integer literals or expressions which "
+                    "reduce to constant Integer are accepted as kind parameters",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {loc})}));
+                throw SemanticAbort();
             }
+            break;
         }
         case ASR::exprType::TypeInquiry: {
             ASR::TypeInquiry_t* kind_ti =
@@ -3114,10 +3135,14 @@ inline int extract_kind(ASR::expr_t* kind_expr, const Location& loc) {
             if (kind_ti->m_value) {
                 return ASR::down_cast<ASR::IntegerConstant_t>(kind_ti->m_value)->m_n;
             } else {
-                throw SemanticError("Only Integer literals or expressions which "
-                    "reduce to constant Integer are accepted as kind parameters.",
-                    loc);
+                diag.add(diag::Diagnostic(
+                    "Only Integer literals or expressions which "
+                    "reduce to constant Integer are accepted as kind parameters",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {loc})}));
+                throw SemanticAbort();
             }
+            break;
         }
         // allow integer binary operator kinds (e.g. '1 + 7')
         case ASR::exprType::IntegerBinOp:
@@ -3130,26 +3155,30 @@ inline int extract_kind(ASR::expr_t* kind_expr, const Location& loc) {
                 // as 'a' isn't a constant.
                 // ToDo: we should raise a better error, by "locating" just
                 // 'a' as well, instead of the whole '1*a'
-                throw SemanticError("Only Integer literals or expressions which "
-                    "reduce to constant Integer are accepted as kind parameters.",
-                    loc);
+                diag.add(diag::Diagnostic(
+                    "Only Integer literals or expressions which "
+                    "reduce to constant Integer are accepted as kind parameters",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {loc})}));
+                throw SemanticAbort();
             }
             return a_kind;
         }
         // make sure not to allow kind having "RealConstant" (e.g. 4.0),
         // and everything else
         default: {
-            throw SemanticError(
+            diag.add(diag::Diagnostic(
                 "Only Integer literals or expressions which "
-                "reduce to constant Integer are accepted as kind parameters.",
-                loc
-            );
+                "reduce to constant Integer are accepted as kind parameters",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {loc})}));
+            throw SemanticAbort();
         }
     }
 }
 
-template <typename SemanticError>
-inline int extract_len(ASR::expr_t* len_expr, const Location& loc) {
+template <typename SemanticAbort>
+inline int extract_len(ASR::expr_t* len_expr, const Location& loc, diag::Diagnostics &diag) {
     int a_len = -10;
     switch( len_expr->type ) {
         case ASR::exprType::IntegerConstant: {
@@ -3168,9 +3197,12 @@ inline int extract_len(ASR::expr_t* len_expr, const Location& loc) {
                     LCOMPILERS_ASSERT( len_variable->m_value != nullptr );
                     a_len = ASR::down_cast<ASR::IntegerConstant_t>(len_variable->m_value)->m_n;
                 } else {
-                    std::string msg = "Integer variable required. " + std::string(len_variable->m_name) +
-                                    " is not an Integer variable.";
-                    throw SemanticError(msg, loc);
+                    diag.add(diag::Diagnostic(
+                        "Integer variable required. " + std::string(len_variable->m_name) +
+                        " is not an Integer variable",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {loc})}));
+                    throw SemanticAbort();
                 }
             } else {
                 // An expression is being used for `len` that cannot be evaluated
@@ -3193,8 +3225,11 @@ inline int extract_len(ASR::expr_t* len_expr, const Location& loc) {
             break;
         }
         default: {
-            throw SemanticError("Only Integers or variables implemented so far for `len` expressions, found: " + ASRUtils::type_to_str_python(ASRUtils::expr_type(len_expr)),
-                                loc);
+            diag.add(diag::Diagnostic(
+                "Only Integers or variables implemented so far for `len` expressions, found: " + ASRUtils::type_to_str_python(ASRUtils::expr_type(len_expr)),
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {loc})}));
+            throw SemanticAbort();
         }
     }
     LCOMPILERS_ASSERT(a_len != -10)
@@ -4878,9 +4913,9 @@ static inline bool is_pass_array_by_data_possible(ASR::Function_t* x, std::vecto
     return v.size() > 0;
 }
 
-template <typename SemanticError>
+template <typename SemanticAbort>
 static inline ASR::expr_t* get_bound(ASR::expr_t* arr_expr, int dim,
-                                     std::string bound, Allocator& al) {
+                                     std::string bound, Allocator& al, diag::Diagnostics &diag) {
     ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, arr_expr->base.loc, 4));
     ASR::expr_t* dim_expr = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, arr_expr->base.loc,
                                                                        dim, int32_type));
@@ -4905,7 +4940,10 @@ static inline ASR::expr_t* get_bound(ASR::expr_t* arr_expr, int dim,
                 msg = "Variable " + std::string(non_array_variable->m_name) +
                             " does not have enough dimensions.";
             }
-            throw SemanticError(msg, arr_expr->base.loc);
+            diag.add(diag::Diagnostic(
+                msg, diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {arr_expr->base.loc})}));
+            throw SemanticAbort();
         } else if ( ASR::is_a<ASR::StructInstanceMember_t>(*arr_expr )) {
             ASR::StructInstanceMember_t* non_array_struct_inst_mem = ASR::down_cast<ASR::StructInstanceMember_t>(arr_expr);
             ASR::Variable_t* non_array_variable = ASR::down_cast<ASR::Variable_t>(
@@ -4918,9 +4956,16 @@ static inline ASR::expr_t* get_bound(ASR::expr_t* arr_expr, int dim,
                 msg = "Type member " + std::string(non_array_variable->m_name) +
                             " does not have enough dimensions.";
             }
-            throw SemanticError(msg, arr_expr->base.loc);
+            diag.add(diag::Diagnostic(
+                msg, diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {arr_expr->base.loc})}));
+            throw SemanticAbort();
         } else {
-            throw SemanticError("Expression cannot be indexed.", arr_expr->base.loc);
+            diag.add(diag::Diagnostic(
+                "Expression cannot be indexed",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {arr_expr->base.loc})}));
+            throw SemanticAbort();
         }
     }
     dim = dim - 1;
@@ -5698,6 +5743,9 @@ inline ASR::asr_t* make_ArrayConstructor_t_util(Allocator &al, const Location &a
                                 ASR::is_a<ASR::StringConstant_t>(*a_args[0]) ||
                                 ASR::is_a<ASR::IntegerUnaryMinus_t>(*a_args[0]) ||
                                 ASR::is_a<ASR::RealUnaryMinus_t>(*a_args[0]));
+    if( ASRUtils::use_experimental_simplifier && n_args > 0 ) {
+        is_array_item_constant = is_array_item_constant || ASR::is_a<ASR::ArrayConstant_t>(*a_args[0]);
+    }
     ASR::expr_t* value = nullptr;
     for (size_t i = 0; i < n_args; i++) {
         ASR::expr_t* a_value = ASRUtils::expr_value(a_args[i]);
@@ -5727,6 +5775,7 @@ inline ASR::asr_t* make_ArrayConstructor_t_util(Allocator &al, const Location &a
         }
         value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, a_loc, n_data, data, new_type, a_storage_format));
     }
+
     return is_array_item_constant && all_expr_evaluated ? (ASR::asr_t*) value :
             ASR::make_ArrayConstructor_t(al, a_loc, a_args, n_args, a_type,
             value, a_storage_format);

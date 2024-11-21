@@ -288,32 +288,9 @@ else13:                                           ; preds = %ifcont11
   br label %ifcont14
 
 ifcont14:                                         ; preds = %else13, %then12
-  %167 = load %array*, %array** %c, align 8
-  %168 = getelementptr %array, %array* %167, i32 0, i32 0
-  %169 = load i32*, i32** %168, align 8
-  %170 = ptrtoint i32* %169 to i64
-  %171 = icmp ne i64 %170, 0
-  br i1 %171, label %then15, label %else16
-
-then15:                                           ; preds = %ifcont14
-  %172 = getelementptr %array, %array* %167, i32 0, i32 0
-  %173 = load i32*, i32** %172, align 8
-  %174 = alloca i8*, align 8
-  %175 = bitcast i32* %173 to i8*
-  store i8* %175, i8** %174, align 8
-  %176 = load i8*, i8** %174, align 8
-  call void @_lfortran_free(i8* %176)
-  %177 = getelementptr %array, %array* %167, i32 0, i32 0
-  store i32* null, i32** %177, align 8
-  br label %ifcont17
-
-else16:                                           ; preds = %ifcont14
-  br label %ifcont17
-
-ifcont17:                                         ; preds = %else16, %then15
   br label %return
 
-return:                                           ; preds = %ifcont17
+return:                                           ; preds = %ifcont14
   ret i32 0
 }
 

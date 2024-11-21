@@ -21,7 +21,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          
+
       - name: Check for Added Binary Files
         run: python3 check_binary_file_in_git_history.py
 
@@ -464,7 +464,6 @@ jobs:
             bison=3.4
             openblas=0.3.21
             llvm-openmp=14.0.4
-            cmake=3.26.4
             make=4.3
 
       - uses: hendrikmuhs/ccache-action@main
@@ -849,7 +848,6 @@ jobs:
             bison=3.4
             openblas=0.3.21
             llvm-openmp=14.0.4
-            cmake=3.26.4
             make=4.3
             nodejs=18.20.4
 
@@ -864,10 +862,9 @@ jobs:
             bison=3.4
             openblas=0.3.21
             llvm-openmp=14.0.4
-            cmake=3.26.4
             make=4.3
-            nodejs=18.13.0
-        
+            nodejs=18.20.2
+
       - uses: mamba-org/setup-micromamba@v1.8.0
         if: "!(contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19'))"
         with:
@@ -879,7 +876,6 @@ jobs:
             bison=3.4
             openblas=0.3.21
             llvm-openmp=14.0.4
-            cmake=3.26.4
             make=4.3
 
       - uses: hendrikmuhs/ccache-action@main
@@ -1280,7 +1276,7 @@ jobs:
           environment-file: ci/environment_linux.yml
           create-args: >-
             llvm-openmp
-            nodejs=18.13.0
+            nodejs=18.20.4
             python=3.10
 
       - uses: hendrikmuhs/ccache-action@main

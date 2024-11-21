@@ -1,7 +1,6 @@
 #ifndef LFORTRAN_FORTRAN_EVALUATOR_H
 #define LFORTRAN_FORTRAN_EVALUATOR_H
 
-#include <iostream>
 #include <memory>
 
 #include <libasr/alloc.h>

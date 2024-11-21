@@ -712,6 +712,13 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
                     "help: use the '--cpp' command line option to preprocess it");
                 line_num++; cur_line=cur; continue;
             }
+            "#" whitespace? "include" whitespace ignore_till_newline {
+                Location loc; token_loc(loc);
+                diagnostics.tokenizer_warning_label(
+                    "#include ignored", {loc},
+                    "help: use the '--cpp' command line option to preprocess it");
+                line_num++; cur_line=cur; continue;
+            }
             // Rest of the Macros are ignored with warning:
             "#" ignore_till_newline {
                 Location loc; token_loc(loc);

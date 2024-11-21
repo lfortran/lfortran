@@ -683,9 +683,6 @@
                         ()
                         [((Var 2 cmd_settings))]
                         ()
-                    )
-                    (ImplicitDeallocate
-                        [(Var 2 cmd_settings)]
                     )]
                 )
         })

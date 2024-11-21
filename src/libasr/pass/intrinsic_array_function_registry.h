@@ -617,7 +617,7 @@ static inline ASR::asr_t* create_ArrIntrinsic(
                 append_error(diag, "`mask` argument to `" + intrinsic_func_name + "` must be a scalar or array of logical type",
                     args[2]->base.loc);
                 return nullptr;
-            } 
+            }
         } else if (is_logical(*ASRUtils::expr_type(args[1]))) {
             mask = args[1];
             if (args[2] && is_integer(*ASRUtils::expr_type(args[2]))) {
@@ -626,7 +626,7 @@ static inline ASR::asr_t* create_ArrIntrinsic(
                 append_error(diag, "`dim` argument to `" + intrinsic_func_name + "` must be a scalar and of integer type",
                     args[2]->base.loc);
                 return nullptr;
-            } 
+            }
         } else {
             append_error(diag, "Invalid argument type for `dim` or `mask`",
                 args[1]->base.loc);
@@ -1265,7 +1265,7 @@ static inline ASR::expr_t *instantiate_MaxMinLoc(Allocator &al,
         fill_func_arg("mask", ASRUtils::duplicate_type_with_empty_dims(
             al, arg_types[2], ASR::array_physical_typeType::DescriptorArray, true));
     } else {
-        fill_func_arg("mask", arg_types[2]);
+        fill_func_arg("mask", ASRUtils::duplicate_type_with_empty_dims(al, arg_types[2]));
     }
     fill_func_arg("kind", arg_types[3]);
     fill_func_arg("back", arg_types[4]);
@@ -1907,14 +1907,14 @@ namespace Spread {
 
         ASRBuilder b(al, loc);
         int overload_id = 2;
-        if(ASR::is_a<ASR::Integer_t>(*type_source) || ASR::is_a<ASR::Real_t>(*type_source) || 
+        if(ASR::is_a<ASR::Integer_t>(*type_source) || ASR::is_a<ASR::Real_t>(*type_source) ||
             ASR::is_a<ASR::String_t>(*type_source) || ASR::is_a<ASR::Logical_t>(*type_source) ){
-            // Case : When Scalar is passed as source in Spread() 
+            // Case : When Scalar is passed as source in Spread()
             is_scalar = true;
             Vec<ASR::expr_t *> m_eles; m_eles.reserve(al, 1);
             m_eles.push_back(al, source);
             ASR::ttype_t *fixed_size_type = b.Array({(int64_t) 1}, type_source);
-            source = EXPR(ASRUtils::make_ArrayConstructor_t_util(al, loc,m_eles.p, 
+            source = EXPR(ASRUtils::make_ArrayConstructor_t_util(al, loc,m_eles.p,
                           m_eles.n, fixed_size_type, ASR::arraystorageType::ColMajor));
             type_source = ASRUtils::expr_type(source);
             overload_id = -1;
@@ -1935,19 +1935,36 @@ namespace Spread {
         ASR::dimension_t* source_dims = nullptr;
         int source_rank = extract_dimensions_from_ttype(type_source, source_dims);
         ASRUtils::require_impl(source_rank > 0, "The argument `source` in `spread` must be of rank > 0", source->base.loc, diag);
-        int dim1 = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(args[1]))->m_n;
         if( is_scalar ){
             Vec<ASR::dimension_t> result_dims; result_dims.reserve(al, 1);
             result_dims.push_back(al, b.set_dim(source_dims[0].m_start, ncopies));
             ret_type = ASRUtils::duplicate_type(al, ret_type, &result_dims);
         } else {
-            Vec<ASR::dimension_t> result_dims; result_dims.reserve(al, 2);
-            if (dim1 == 1) {
-                result_dims.push_back(al, b.set_dim(source_dims[0].m_start, ncopies));
-                result_dims.push_back(al, b.set_dim(source_dims[0].m_start, source_dims[0].m_length));
-            } else {
-                result_dims.push_back(al, b.set_dim(source_dims[0].m_start, source_dims[0].m_length));
-                result_dims.push_back(al, b.set_dim(source_dims[0].m_start, ncopies));
+            Vec<ASR::dimension_t> result_dims;
+            size_t n_dims = ASRUtils::extract_n_dims_from_ttype(type_source);
+            result_dims.reserve(al, (int) n_dims + 1);
+            Vec<ASR::expr_t*> args_merge; args_merge.reserve(al, 3);
+            ASRUtils::ASRBuilder b(al, loc);
+            args_merge.push_back(al, ncopies);
+            args_merge.push_back(al, b.ArraySize(args[0], b.i32(1), int32));
+            args_merge.push_back(al, b.Eq(dim, b.i32(1)));
+            ASR::expr_t* merge = EXPR(Merge::create_Merge(al, loc, args_merge, diag));
+            ASR::dimension_t dim_;
+            dim_.loc = source->base.loc;
+            dim_.m_start = b.i32(1);
+            dim_.m_length = merge;
+            result_dims.push_back(al, dim_);
+            for( int it = 0; it < (int) n_dims; it++ ) {
+                Vec<ASR::expr_t*> args_merge; args_merge.reserve(al, 3);
+                args_merge.push_back(al, ncopies);
+                args_merge.push_back(al, b.ArraySize(args[0], b.i32(it+1), int32));
+                args_merge.push_back(al, b.Eq(dim, b.i32(it+2)));
+                ASR::expr_t* merge = EXPR(Merge::create_Merge(al, loc, args_merge, diag));
+                ASR::dimension_t dim;
+                dim.loc = source->base.loc;
+                dim.m_start = b.i32(1);
+                dim.m_length = merge;
+                result_dims.push_back(al, dim);
             }
             ret_type = ASRUtils::duplicate_type(al, ret_type, &result_dims);
         }
@@ -1978,6 +1995,7 @@ namespace Spread {
         fill_func_arg("source", duplicate_type_with_empty_dims(al, arg_types[0]));
         fill_func_arg("dim", arg_types[1]);
         fill_func_arg("ncopies", arg_types[2]);
+        // TODO: this logic is incorrect, fix it.
         /*
             spread(source, dim, ncopies)
             if (dim == 1) then
@@ -3272,9 +3290,9 @@ namespace FindLoc {
             diag::Diagnostics& diagnostics) {
         require_impl(x.n_args >= 2 && x.n_args <= 6, "`findloc` intrinsic "
             "takes at least two arguments", x.base.base.loc, diagnostics);
-        require_impl(x.m_args[0] != nullptr, "`array` argument of `findloc` " 
+        require_impl(x.m_args[0] != nullptr, "`array` argument of `findloc` "
             "intrinsic cannot be nullptr", x.base.base.loc, diagnostics);
-        require_impl(x.m_args[1] != nullptr, "`value` argument of `findloc` " 
+        require_impl(x.m_args[1] != nullptr, "`value` argument of `findloc` "
             "intrinsic cannot be nullptr", x.base.base.loc, diagnostics);
     }
 
@@ -3344,7 +3362,7 @@ namespace FindLoc {
                             }
                         }
                     }
-                } 
+                }
             }
             if (element_found == 0) element_idx = -1;
             if (ASR::down_cast<ASR::IntegerConstant_t>(dim) -> m_n != -1) {
@@ -3385,17 +3403,17 @@ namespace FindLoc {
         int dim = 0, kind = 4; // default kind
         ASR::expr_t *dim_expr = nullptr;
         ASR::expr_t *mask_expr = nullptr;
-        
+
         // Checking for type findLoc(Array, value, mask)
         if( args[2] && !args[3] && is_logical(*expr_type(args[2])) ){
             dim_expr = nullptr;
-            mask_expr = args[2]; 
+            mask_expr = args[2];
         }
-        else { 
-            dim_expr = args[2]; 
-            mask_expr = args[3]; 
+        else {
+            dim_expr = args[2];
+            mask_expr = args[3];
         }
-       
+
         if (dim_expr) {
             if ( !ASR::is_a<ASR::Integer_t>(*expr_type(dim_expr)) ) {
                 dim = ASR::down_cast<ASR::IntegerConstant_t>(dim_expr) -> m_n;

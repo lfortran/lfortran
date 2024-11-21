@@ -197,11 +197,6 @@
                         ((Var 7 profindex))
                         ((Var 7 os_valid))]
                         ()
-                    )
-                    (ImplicitDeallocate
-                        [(Var 7 compiler_name)
-                        (Var 7 profile_name)
-                        (Var 7 profiles)]
                     )]
                 ),
             modules_45_fpm_manifest_profile:
@@ -705,17 +700,6 @@
                                             ()
                                         )
                                         ()
-                                    )
-                                    (ImplicitDeallocate
-                                        [(Var 6 c_flags)
-                                        (Var 6 cxx_flags)
-                                        (Var 6 err_message)
-                                        (Var 6 file_flags)
-                                        (Var 6 file_name)
-                                        (Var 6 file_scope_flags)
-                                        (Var 6 flags)
-                                        (Var 6 key_name)
-                                        (Var 6 link_time_flags)]
                                     )]
                                     ()
                                     Public

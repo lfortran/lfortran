@@ -1,0 +1,248 @@
+semantic error: shape argument specified in c_f_pointer even though fptr is not an array.
+  --> tests/errors/continue_compilation_2.f90:56:38
+   |
+56 |     call c_f_pointer(queries_1, y_1, [2])
+   |                                      ^^^ 
+
+semantic error: shape array passed to c_f_pointer must be of rank 1 but given rank is 2
+  --> tests/errors/continue_compilation_2.f90:58:38
+   |
+58 |     call c_f_pointer(queries_2, y_2, shape)
+   |                                      ^^^^^ 
+
+semantic error: Cannot assign to a constant variable
+  --> tests/errors/continue_compilation_2.f90:60:5
+   |
+60 |     x = 1
+   |     ^^^^^ assignment here
+   |
+32 |     integer, parameter :: x = 2
+   |                           ~~~~~ declared as constant
+
+semantic error: More actual than formal arguments in procedure call
+  --> tests/errors/continue_compilation_2.f90:63:33
+   |
+63 |     call myCircle%calculateArea(circleArea, 12)
+   |                                 ^^^^^^^^^^^^^^ 
+
+semantic error: Invalid argument `end` supplied
+  --> tests/errors/continue_compilation_2.f90:65:5
+   |
+65 |     CLOSE(end=200)
+   |     ^^^^^^^^^^^^^^ 
+
+semantic error: The first argument of `cmplx` intrinsic must be present
+  --> tests/errors/continue_compilation_2.f90:67:9
+   |
+67 |     a = cmplx(y = 2)
+   |         ^^^^^^^^^^^^ 
+
+semantic error: Coarrays are not supported yet
+  --> tests/errors/continue_compilation_2.f90:73:11
+   |
+73 |     val = this_image ()
+   |           ^^^^^^^^^^^^^ 
+
+semantic error: Coarrays are not supported yet
+  --> tests/errors/continue_compilation_2.f90:74:5
+   |
+74 |     call co_sum (val, result_image=1)
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Coarrays are not supported yet
+  --> tests/errors/continue_compilation_2.f90:75:9
+   |
+75 |     if (this_image() == 1) then
+   |         ^^^^^^^^^^^^ 
+
+semantic error: Coarrays are not supported yet
+  --> tests/errors/continue_compilation_2.f90:79:5
+   |
+79 |     call event_query(1, 1, 1)
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Operands of comparison operator are of different types
+  --> tests/errors/continue_compilation_2.f90:83:9
+   |
+83 |     if (i > x_2) then
+   |         ^^^^^^^ 
+
+semantic error: dim has already been specified as a positional/keyword argument to size
+  --> tests/errors/continue_compilation_2.f90:87:14
+   |
+87 |     size_a = size(a_2, 1, dim=1)
+   |              ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: dim has already been specified as a positional/keyword argument to size
+  --> tests/errors/continue_compilation_2.f90:88:14
+   |
+88 |     size_a = size(a_2, dim = 1, 1)
+   |              ^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Only Integer literals or expressions which reduce to constant Integer are accepted as kind parameters.
+  --> tests/errors/continue_compilation_2.f90:90:31
+   |
+90 |     size_a_2 = size(a_3, kind=kindvar, dim=1)
+   |                               ^^^^^^^ 
+
+semantic error: Only Integer literals or expressions which reduce to constant Integer are accepted as kind parameters.
+  --> tests/errors/continue_compilation_2.f90:91:31
+   |
+91 |     size_a_2 = size(a_3, kind=kindvar)
+   |                               ^^^^^^^ 
+
+semantic error: Atomic operations are not supported yet
+  --> tests/errors/continue_compilation_2.f90:93:5
+   |
+93 |     call atomic_add (atom[1], this_image())
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Atomic operations are not supported yet
+  --> tests/errors/continue_compilation_2.f90:94:5
+   |
+94 |     call atomic_add (atom[2], this_image())
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Type-spec cannot contain an asterisk for a type parameter
+  --> tests/errors/continue_compilation_2.f90:96:14
+   |
+96 |     print *, [character(*) :: "a", "b", "ball", "cat"]
+   |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Different `character` lengths 1 and 4 in array constructor
+  --> tests/errors/continue_compilation_2.f90:98:25
+   |
+98 |     print *, ["a", "b", "ball", "cat"]
+   |                         ^^^^^^ 
+
+semantic error: Different `character` lengths 2 and 5 in array constructor
+  --> tests/errors/continue_compilation_2.f90:99:27
+   |
+99 |     print *, ["a1", "b1", "ball1", "cat1"]
+   |                           ^^^^^^^ 
+
+semantic error: Element in `real(8)` array constructor is `real(4)`
+   --> tests/errors/continue_compilation_2.f90:102:20
+    |
+102 |     print *, [x_3, [1., 2.]]
+    |                    ^^^^^^^^ 
+
+semantic error: Element in `integer(4)` array constructor is `real(4)`
+   --> tests/errors/continue_compilation_2.f90:104:18
+    |
+104 |     print *, [1, 2.]
+    |                  ^^ 
+
+semantic error: Element in `integer(4)` array constructor is `real(4)`
+   --> tests/errors/continue_compilation_2.f90:106:18
+    |
+106 |     print *, [1, [1., 2.]]
+    |                  ^^^^^^^^ 
+
+semantic error: Argument of intrinsic must be an integer
+   --> tests/errors/continue_compilation_2.f90:108:14
+    |
+108 |     print *, dfloat(y_3)
+    |              ^^^^^^^^^^^ 
+
+semantic error: Invalid argument type for `dim` or `mask`
+   --> tests/errors/continue_compilation_2.f90:110:29
+    |
+110 |     print *, sum([1, 2, 3], 1.1)
+    |                             ^^^ 
+
+semantic error: `mask` argument to `Sum` must be a scalar or array of logical type
+   --> tests/errors/continue_compilation_2.f90:112:32
+    |
+112 |     print *, sum([1, 2, 3], 1, 1.1)
+    |                                ^^^ 
+
+semantic error: `dim` argument to `Sum` must be a scalar and of integer type
+   --> tests/errors/continue_compilation_2.f90:114:37
+    |
+114 |     print *, sum([1, 2, 3], .true., 1.1)
+    |                                     ^^^ 
+
+semantic error: Too many arguments to call `dint`
+   --> tests/errors/continue_compilation_2.f90:116:13
+    |
+116 |     print*, dint(1.0_8, 8)
+    |             ^^^^^^^^^^^^^^ 
+
+semantic error: Too many arguments to call `dint`
+   --> tests/errors/continue_compilation_2.f90:117:13
+    |
+117 |     if (abs(dint(1.0_8, 8) - 1.0_8) > 10e-5 ) error stop
+    |             ^^^^^^^^^^^^^^ 
+
+semantic error: Argument 1 of dlgama must be of double precision real type
+   --> tests/errors/continue_compilation_2.f90:119:14
+    |
+119 |     print *, dlgama(2.7)
+    |              ^^^^^^^^^^^ 
+
+semantic error: Too many arguments to call `dnint`
+   --> tests/errors/continue_compilation_2.f90:121:13
+    |
+121 |     print*, dnint(1.0_8, 8)
+    |             ^^^^^^^^^^^^^^^ 
+
+semantic error: Too many arguments to call `dnint`
+   --> tests/errors/continue_compilation_2.f90:122:13
+    |
+122 |     if (abs(dnint(1.0_8, 8) - 1.0_8) > 10e-5 ) error stop
+    |             ^^^^^^^^^^^^^^^ 
+
+semantic error: Do concurrent loop variable `j` cannot be part of local expression
+   --> tests/errors/continue_compilation_2.f90:124:30
+    |
+124 |     do concurrent (j = 1:Ny) local(i_1, j)
+    |                              ^^^^^^^^^^^^^ 
+
+semantic error: Assignment to loop variable `i_2` is not allowed
+   --> tests/errors/continue_compilation_2.f90:131:9
+    |
+131 |         i_2 = j_1 + 1
+    |         ^^^ 
+
+semantic error: Step expression (Increment) in DO loop cannot be zero
+   --> tests/errors/continue_compilation_2.f90:137:20
+    |
+137 |     do i_2 = 1, 5, 0
+    |                    ^ 
+
+semantic error: Arguments to dprod must be real(4)
+   --> tests/errors/continue_compilation_2.f90:141:13
+    |
+141 |     print*, dprod(4.23_8, 4.3_8)
+    |             ^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Unexpected args, Dreal expects (complex64) as arguments
+   --> tests/errors/continue_compilation_2.f90:144:14
+    |
+144 |     print *, dreal(a_4)
+    |              ^^^^^^^^^^ 
+
+semantic error: Incorrect number of arguments passed to the 'complex' intrinsic. It accepts exactly 2 arguments.
+   --> tests/errors/continue_compilation_2.f90:146:11
+    |
+146 |     a_5 = complex(1)
+    |           ^^^^^^^^^^ 
+
+semantic error: Argument of intrinsic must be an integer
+   --> tests/errors/continue_compilation_2.f90:148:14
+    |
+148 |     print *, float(y_4)
+    |              ^^^^^^^^^^ 
+
+semantic error: Invalid argument `start` supplied
+   --> tests/errors/continue_compilation_2.f90:150:5
+    |
+150 |     FLUSH(unit=10, start=100)
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Type mismatch in argument at argument (1); passed `real` to `integer`.
+   --> tests/errors/continue_compilation_2.f90:152:16
+    |
+152 |     print *, f(42.9)
+    |                ^^^^ 

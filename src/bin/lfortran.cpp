@@ -1927,7 +1927,14 @@ int emit_c_preprocessor(const std::string &infile, CompilerOptions &compiler_opt
         lm.files.push_back(fl);
         lm.file_ends.push_back(input.size());
     }
-    std::string s = cpp.run(input, lm, cpp.macro_definitions);
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::Result<std::string> res = cpp.run(input, lm, cpp.macro_definitions, diagnostics);
+    std::string s;
+    if (res.ok) {
+        s = res.result;
+    } else {
+        s = diagnostics.render(lm, compiler_options);
+    }
     if(!compiler_options.arg_o.empty()) {
         std::ofstream fout(compiler_options.arg_o);
         fout << s;
@@ -2343,8 +2350,10 @@ int main_app(int argc, char *argv[]) {
     }
 
     if (fmt) {
-        if (CLI::NonexistentPath(arg_fmt_file).empty())
-            throw LCompilers::LCompilersException("File does not exist: " + arg_fmt_file);
+        if (CLI::NonexistentPath(arg_fmt_file).empty()) {
+            std:: cerr << "error: no such file or directory: " << "'" << arg_fmt_file << "'" << std::endl;
+            return 1;
+        }
 
         return format(arg_fmt_file, arg_fmt_inplace, !arg_fmt_no_color,
             arg_fmt_indent, arg_fmt_indent_unit, compiler_options);

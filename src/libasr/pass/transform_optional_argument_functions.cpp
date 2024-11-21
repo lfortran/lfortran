@@ -9,6 +9,7 @@
 
 #include <vector>
 #include <string>
+#include <set>
 
 /*
 Need for the pass

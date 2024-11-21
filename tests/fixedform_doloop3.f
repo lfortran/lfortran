@@ -4,7 +4,8 @@ C       ALGORITHM AS 93.1 APPL. STATIST. (1976) VOL.25, NO.1
 C
 C       GENERATES A 1,N ANSARI-BRADLEY DISTRIBUTION IN F.
 C
-      REAL F(L), ONE=1, TWO=2
+      REAL F(L), ONE, TWO
+      DATA ONE, TWO /1.0, 2.0/
       LOUT = 1 + N / 2
       DO 1 I = 1, LOUT
 1     F(I) = TWO

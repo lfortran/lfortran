@@ -263,16 +263,8 @@ filename = "errors/array_size_01.f90"
 asr = true
 
 [[test]]
-filename = "errors/array_size_01_cc.f90"
-continue_compilation = true
-
-[[test]]
 filename = "errors/array_size_02.f90"
 asr = true
-
-[[test]]
-filename = "errors/array_size_02_cc.f90"
-continue_compilation = true
 
 [[test]]
 filename = "errors/array_size_03.f90"
@@ -378,6 +370,30 @@ asr_preprocess = true
 
 [[test]]
 filename = "errors/cpp8.f90"
+asr_preprocess = true
+
+[[test]]
+filename = "errors/cpp_err1.f90"
+asr_preprocess = true
+
+[[test]]
+filename = "errors/cpp_err2.f90"
+asr_preprocess = true
+
+[[test]]
+filename = "errors/cpp_err3.f90"
+asr_preprocess = true
+
+[[test]]
+filename = "errors/cpp_err4.f90"
+asr_preprocess = true
+
+[[test]]
+filename = "errors/cpp_err5.f90"
+asr_preprocess = true
+
+[[test]]
+filename = "errors/cpp_err6.f90"
 asr_preprocess = true
 
 [[test]]
@@ -2985,6 +3001,10 @@ filename = "errors/c_f_pointer_02.f90"
 asr = true
 
 [[test]]
+filename = "errors/continue_compilation_2.f90"
+continue_compilation = true
+
+[[test]]
 filename = "../integration_tests/rewind_inquire_flush.f90"
 asr = true
 
@@ -3077,6 +3097,10 @@ filename = "allow_implicit_interface5.f90"
 asr_implicit_interface_and_typing = true
 
 [[test]]
+filename = "implicit_interface_allocatable_array.f90"
+asr_implicit_interface = true
+
+[[test]]
 filename = "implicit_interface2.f90"
 asr_implicit_interface = true
 
@@ -3150,10 +3174,6 @@ ast = true
 [[test]]
 filename = "errors/arithmetic_if1.f90"
 asr = true
-
-[[test]]
-filename = "errors/arithmetic_if1_cc.f90"
-continue_compilation = true
 
 [[test]]
 filename = "errors/assign_01.f90"
@@ -3575,24 +3595,12 @@ filename = "errors/array_02.f90"
 asr = true
 
 [[test]]
-filename = "errors/array_02_cc.f90"
-continue_compilation = true
-
-[[test]]
 filename = "errors/array_03.f90"
 asr = true
 
 [[test]]
-filename = "errors/array_03_cc.f90"
-continue_compilation = true
-
-[[test]]
 filename = "errors/array_04.f90"
 asr = true
-
-[[test]]
-filename = "errors/array_04_cc.f90"
-continue_compilation = true
 
 [[test]]
 filename = "errors/array_05.f90"
@@ -3607,11 +3615,7 @@ filename = "errors/array_06.f90"
 asr = true
 
 [[test]]
-filename = "errors/array_06_cc.f90"
-continue_compilation = true
-
-[[test]]
-filename = "errors/array_01_cc.f90"
+filename = "errors/array_xx_cc.f90"
 continue_compilation = true
 
 [[test]]
@@ -3750,6 +3754,14 @@ ast = true
 
 [[test]]
 filename = "parser/parameter_without_start_program.f90"
+ast = true
+
+[[test]]
+filename = "parser/procedure_with_type.f90"
+ast = true
+
+[[test]]
+filename = "parser/data_stmt_with_implied_do_loop.f"
 ast = true
 
 # Parser errors
@@ -4026,10 +4038,6 @@ filename = "errors/array_constructor_with_asterisk_in_type_spec.f90"
 asr = true
 
 [[test]]
-filename = "errors/array_constructor_with_asterisk_in_type_spec_cc.f90"
-continue_compilation = true
-
-[[test]]
 filename = "errors/array_constructor_with_different_char_lengths.f90"
 asr = true
 
@@ -4271,7 +4279,12 @@ run = true
 
 [[test]]
 filename = "multi_error1.f90"
-ast = true
+ast = true # TODO: remove this and only use continue compilation
+continue_compilation = true
+
+[[test]]
+filename = "../integration_tests/multiple_objects_args.f90"
+pass = "class_constructor"
 
 [[test]]
 filename = "errors/incompatible_rank_assign.f90"
@@ -4282,15 +4295,14 @@ filename = "errors/array_shape_01.f90"
 asr = true
 
 [[test]]
-filename = "errors/array_shape_01_cc.f90"
-continue_compilation = true
-
-[[test]]
 filename = "errors/array_shape_02.f90"
 asr = true
 [[test]]
 filename = "function_call1.f90"
 asr = true
+lookup_name = true
+line = 18
+column = 22
 
 [[test]]
 filename = "lookup_name1.f90"
@@ -4341,3 +4353,11 @@ asr = true
 [[test]]
 filename = "errors/data_implied_do3.f90"
 asr = true
+
+[[test]]
+filename = "errors/init1.f90"
+ast = true
+
+[[test]]
+filename = "../integration_tests/enum_01.f90"
+fortran = true

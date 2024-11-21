@@ -208,9 +208,6 @@
                                             ()
                                         ))]
                                         ()
-                                    )
-                                    (ImplicitDeallocate
-                                        [(Var 8 littlefile)]
                                     )]
                                     ()
                                     Public

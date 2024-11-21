@@ -9,7 +9,6 @@
 #include <libasr/pass/pass_utils.h>
 
 #include <vector>
-#include <utility>
 
 
 namespace LCompilers {
@@ -380,6 +379,72 @@ class ReplaceFunctionCallReturningArray: public ASR::BaseExprReplacer<ReplaceFun
                 result_var_ = PassUtils::create_var(result_counter,
                     std::string(ASRUtils::symbol_name(x->m_name)) + "_res",
                     x->base.base.loc, x->m_type, al, current_scope);
+                if ( ASRUtils::is_allocatable(ASRUtils::expr_type(result_var_)) &&
+                    func2intrinsicid[x_m_name] == ASRUtils::IntrinsicArrayFunctions::Transpose) {
+                    // allocate result array
+                    int n_dims = ASRUtils::extract_n_dims_from_ttype(x->m_type);
+                    Vec<ASR::alloc_arg_t> alloc_args; alloc_args.reserve(al, 1);
+                    Vec<ASR::dimension_t> alloc_dims; alloc_dims.reserve(al, n_dims);
+                    ASR::alloc_arg_t alloc_arg; alloc_arg.loc = x->base.base.loc;
+                    for (int i = 2; i > 0; i--) {
+                        ASR::dimension_t dim; dim.loc = x->base.base.loc;
+                        dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x->base.base.loc, 1,
+                            ASRUtils::TYPE(ASR::make_Integer_t(al, x->base.base.loc, 4))));
+                        ASRUtils::ASRBuilder b(al, x->base.base.loc);
+                        dim.m_length = b.ArraySize(x->m_args[0].m_value, b.i32(i), ASRUtils::TYPE(ASR::make_Integer_t(al, x->base.base.loc, 4)));
+                        alloc_dims.push_back(al, dim);
+                    }
+                    alloc_arg.m_a = result_var_; alloc_arg.m_len_expr = nullptr;
+                    alloc_arg.m_type = nullptr; alloc_arg.m_dims = alloc_dims.p;
+                    alloc_arg.n_dims = alloc_dims.size();
+                    alloc_args.push_back(al, alloc_arg);
+                    ASR::stmt_t* allocate_stmt = ASRUtils::STMT(ASR::make_Allocate_t(al,
+                                            x->base.base.loc, alloc_args.p, alloc_args.n, nullptr, nullptr, nullptr));
+                    pass_result.push_back(al, allocate_stmt);
+                }
+                if ( ASRUtils::is_allocatable(ASRUtils::expr_type(result_var_)) &&
+                    func2intrinsicid[x_m_name] == ASRUtils::IntrinsicArrayFunctions::Spread) {
+                    // TODO: simplify this
+                    Vec<ASR::alloc_arg_t> alloc_args; alloc_args.reserve(al, 1);
+                    Vec<ASR::dimension_t> result_dims;
+                    ASR::alloc_arg_t alloc_arg; alloc_arg.loc = x->base.base.loc;
+                    size_t n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(x->m_args[0].m_value));
+                    result_dims.reserve(al, (int) n_dims + 1);
+                    // result(merge(ncopies, size(source, 1), dim == 1), merge(ncopies, size(source, 2-1), dim == 2), merge(ncopies, size(source, 3-1), dim == 3))
+                    ASRUtils::ASRBuilder b(al, x->base.base.loc);
+                    const Location& loc = x->base.base.loc;
+                    ASR::symbol_t* merge_function = ASRUtils::symbol_parent_symtab(x_m_name)->resolve_symbol("_lcompilers_merge_i32");
+                    LCOMPILERS_ASSERT(merge_function != nullptr); // can be assured by implementation of `create_Spread`
+                    Vec<ASR::call_arg_t> merge_function_call_args; merge_function_call_args.reserve(al, 3);
+                    ASR::call_arg_t call_arg; call_arg.loc = x->m_args[0].m_value->base.loc; call_arg.m_value = x->m_args[2].m_value; merge_function_call_args.push_back(al, call_arg);
+                    ASR::call_arg_t call_arg2; call_arg2.loc = x->m_args[0].m_value->base.loc; call_arg2.m_value = b.ArraySize(x->m_args[0].m_value, b.i32(1), int32); merge_function_call_args.push_back(al, call_arg2);
+                    ASR::call_arg_t call_arg3; call_arg3.loc = x->m_args[0].m_value->base.loc; call_arg3.m_value = b.Eq(x->m_args[1].m_value, b.i32(1)); merge_function_call_args.push_back(al, call_arg3);
+                    ASR::expr_t* merge = ASRUtils::EXPR(ASR::make_FunctionCall_t(al, x->base.base.loc, merge_function, merge_function, merge_function_call_args.p, merge_function_call_args.n, int32, nullptr, nullptr));
+                    ASR::dimension_t dim_;
+                    dim_.loc = x->m_args[0].m_value->base.loc;
+                    dim_.m_start = b.i32(1);
+                    dim_.m_length = merge;
+                    result_dims.push_back(al, dim_);
+                    for( int it = 0; it < (int) n_dims; it++ ) {
+                        Vec<ASR::call_arg_t> merge_function_call_args; merge_function_call_args.reserve(al, 3);
+                        ASR::call_arg_t call_arg; call_arg.loc = x->m_args[0].m_value->base.loc; call_arg.m_value = x->m_args[2].m_value; merge_function_call_args.push_back(al, call_arg);
+                        ASR::call_arg_t call_arg2; call_arg2.loc = x->m_args[0].m_value->base.loc; call_arg2.m_value = b.ArraySize(x->m_args[0].m_value, b.i32(it+1), int32); merge_function_call_args.push_back(al, call_arg2);
+                        ASR::call_arg_t call_arg3; call_arg3.loc = x->m_args[0].m_value->base.loc; call_arg3.m_value = b.Eq(x->m_args[1].m_value, b.i32(it+2)); merge_function_call_args.push_back(al, call_arg3);
+                        ASR::expr_t* merge = ASRUtils::EXPR(ASR::make_FunctionCall_t(al, x->base.base.loc, merge_function, merge_function, merge_function_call_args.p, merge_function_call_args.n, int32, nullptr, nullptr));
+                        ASR::dimension_t dim;
+                        dim.loc = x->m_args[0].m_value->base.loc;
+                        dim.m_start = b.i32(1);
+                        dim.m_length = merge;
+                        result_dims.push_back(al, dim);
+                    }
+                    alloc_arg.m_a = result_var_; alloc_arg.m_len_expr = nullptr;
+                    alloc_arg.m_type = nullptr; alloc_arg.m_dims = result_dims.p;
+                    alloc_arg.n_dims = result_dims.size();
+                    alloc_args.push_back(al, alloc_arg);
+                    ASR::stmt_t* allocate_stmt = ASRUtils::STMT(ASR::make_Allocate_t(al,
+                                            x->base.base.loc, alloc_args.p, alloc_args.n, nullptr, nullptr, nullptr));
+                    pass_result.push_back(al, allocate_stmt);
+                }
                 if (ASRUtils::is_allocatable(ASRUtils::expr_type(result_var_)) &&
                     func_call_count) {
                     // allocate result array
@@ -420,8 +485,26 @@ class ReplaceFunctionCallReturningArray: public ASR::BaseExprReplacer<ReplaceFun
             pass_result.push_back(al, ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(
                 al, x->base.base.loc, x->m_name, x->m_original_name, new_args.p,
                 new_args.size(), x->m_dt, nullptr, false, false)));
-
-            *current_expr = new_args.p[new_args.size() - 1].m_value;
+            ASR::expr_t* subroutineCall_res = new_args.p[new_args.size() - 1].m_value;
+            // Avoid ArrayPhysicalCasting. Use actual argument.
+            // intrinsicArrayFunction has a return that's handled be the super expression. Don't use casted expr created by `make_SubroutineCall_t_uti()`. 
+            while(ASR::is_a<ASR::ArrayPhysicalCast_t>(*subroutineCall_res)){
+                subroutineCall_res = ASRUtils::get_past_array_physical_cast(subroutineCall_res);
+            }
+            // Superexpression acts upon the replaced functionCall(Which we remove in this replace function).
+            // we have to make the subroutineCall_res match the phytical type of the original-removed-functionCall expression.
+            ASR::array_physical_typeType original_functionCall_array_ret_phsyical_type = ASRUtils::extract_physical_type(x->m_type);
+            ASR::array_physical_typeType subroutineCall_res_array__physical_type = ASRUtils::extract_physical_type(ASRUtils::expr_type(subroutineCall_res));
+            if(original_functionCall_array_ret_phsyical_type == subroutineCall_res_array__physical_type){
+                // Do Nothing
+            } else {
+                ASR::ttype_t* arrayPhysicalCast_type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(subroutineCall_res));
+                ASR::down_cast<ASR::Array_t>(arrayPhysicalCast_type)->m_physical_type = original_functionCall_array_ret_phsyical_type; 
+                subroutineCall_res = ASRUtils::EXPR(ASR::make_ArrayPhysicalCast_t(al, x->base.base.loc, subroutineCall_res,
+                    subroutineCall_res_array__physical_type, original_functionCall_array_ret_phsyical_type,
+                    arrayPhysicalCast_type, nullptr));
+            }
+            *current_expr = subroutineCall_res;
         }
     }
 };
@@ -440,11 +523,11 @@ class ReplaceFunctionCallReturningArrayVisitor : public ASR::CallReplacerOnExpre
         ReplaceFunctionCallReturningArrayVisitor(Allocator& al_,
             std::map<ASR::symbol_t*, ASRUtils::IntrinsicArrayFunctions>& func2intrinsicid_) :
         al(al_),
-        replacer(al_, pass_result, func2intrinsicid_), 
+        replacer(al_, pass_result, func2intrinsicid_),
         parent_body(nullptr) {
             pass_result.n = 0;
         }
-        
+
 
         void call_replacer() {
             replacer.current_expr = current_expr;
@@ -509,6 +592,26 @@ class ReplaceFunctionCallReturningArrayVisitor : public ASR::CallReplacerOnExpre
                 if (x.m_overloaded) {
                     visit_stmt(*x.m_overloaded);
                 }
+
+                /*
+                Uncomment in case we encounter a case where target and value ranks are different.
+                Can be used in a pass where expressions are replaced with their compile time values.
+                if( x.m_value && x.m_target ) {
+                    size_t target_rank = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(x.m_target));
+                    size_t value_rank = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(x.m_value));
+                    if( target_rank != value_rank && target_rank > 0 && value_rank > 0 ) {
+                        ASR::Assignment_t& xx = const_cast<ASR::Assignment_t&>(x);
+                        Vec<ASR::expr_t*> shape_args;
+                        shape_args.reserve(al, 2); shape_args.push_back(al, x.m_target);
+                        shape_args.push_back(al, nullptr);
+                        diag::Diagnostics diags;
+                        ASR::expr_t* target_shape = ASRUtils::EXPR(
+                            ASRUtils::Shape::create_Shape(al, x.m_value->base.loc, shape_args, diags));
+                        xx.m_value = ASRUtils::EXPR(ASR::make_ArrayReshape_t(al, x.m_value->base.loc,
+                            xx.m_value, target_shape, ASRUtils::expr_type(x.m_target), nullptr));
+                    }
+                }
+                */
             }
         }
 

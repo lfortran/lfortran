@@ -6,8 +6,6 @@
 #include <libasr/pass/compare.h>
 #include <libasr/pass/pass_utils.h>
 
-#include <vector>
-#include <utility>
 
 
 namespace LCompilers {
