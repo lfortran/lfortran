@@ -1610,7 +1610,7 @@ sep_one
 decl_statements
     : decl_statements decl_statement { $$ = $1; LIST_ADD($$, $2); }
     | %empty { LIST_NEW($$); }
-    | decl_statements error sep_one { $$ = $1; yyerrok; }
+    | decl_statements error sep_one { $$ = $1; }
     ;
 
 decl_statement
