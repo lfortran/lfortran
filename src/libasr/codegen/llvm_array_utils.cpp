@@ -385,6 +385,7 @@ namespace LCompilers {
             } else {
                 ptr_as_char_ptr = lfortran_malloc(context, *module,
                     *builder, llvm_utils->CreateLoad(arg_size));
+                heap_arrays.push_back(ptr_as_char_ptr);
             }
             llvm::Value* first_ptr = builder->CreateBitCast(ptr_as_char_ptr, ptr_type);
             builder->CreateStore(first_ptr, ptr2firstptr);
@@ -405,6 +406,7 @@ namespace LCompilers {
                     llvm::Value* size_mul_ndim = builder->CreateMul(size_of_dim_des_struct_casted, llvm::ConstantInt::get(context, llvm::APInt(32, n_dims)));
                     llvm::Value* struct_ptr = LLVMArrUtils::lfortran_malloc(
                         context, *module, *builder, size_mul_ndim);
+                    heap_arrays.push_back(struct_ptr);
                     dim_des_first = builder->CreateBitCast(struct_ptr, dim_des->getPointerTo());
             } else {
                 dim_des_first = llvm_utils->CreateAlloca(*builder, dim_des,

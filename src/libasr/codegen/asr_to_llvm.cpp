@@ -1036,6 +1036,7 @@ public:
                     ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)));
                     llvm::Value* malloc_ptr = LLVMArrUtils::lfortran_malloc(
                         context, *module, *builder, malloc_size);
+                    heap_arrays.push_back(malloc_ptr);
                     builder->CreateMemSet(malloc_ptr, llvm::ConstantInt::get(context, llvm::APInt(8, 0)), malloc_size, llvm::MaybeAlign());
                     llvm::Type* llvm_arg_type = llvm_utils->get_type_from_ttype_t_util(curr_arg_m_a_type, module.get());
                     builder->CreateStore(builder->CreateBitCast(
@@ -1067,6 +1068,7 @@ public:
                             llvm::Value* size_of_array_struct_casted = builder->CreatePtrToInt(size_of_array_struct, llvm::Type::getInt32Ty(context)); //cast to int32
                             llvm::Value* struct_ptr = LLVMArrUtils::lfortran_malloc(
                                 context, *module, *builder, size_of_array_struct_casted);
+                            heap_arrays.push_back(struct_ptr);
                             ptr_ = builder->CreateBitCast(struct_ptr, type->getPointerTo());
 #if LLVM_VERSION_MAJOR > 16
                             ptr_type[ptr_] = type;
