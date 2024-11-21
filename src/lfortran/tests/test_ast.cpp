@@ -169,7 +169,7 @@ end program
         fl.in_filename = "input.f90";
         lm.files.push_back(fl);
     }
-#ifdef HAVE_LFORTRAN_RAPIDJSON
+#ifdef WITH_LSP
     std::string json = get_definitions_source_code(src, compiler_options);
     std::string expected_json = R"""([{"kind":1,"location":{"range":{"start":{"character":1,"line":1},"end":{"character":11,"line":6}},"uri":"uri"},"name":"expr2"}])""";
     LCOMPILERS_ASSERT(json == expected_json)
