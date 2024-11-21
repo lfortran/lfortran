@@ -340,6 +340,9 @@ public:
         current_scope = x.m_symtab;
         this->visit_ttype(*x.m_function_signature);
         current_scope = nullptr;
+        for( auto sym: x.m_symtab->get_scope() ) {
+            visit_symbol(*sym.second);
+        }
     }
 
 };
