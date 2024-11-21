@@ -119,19 +119,7 @@ Result<AST::TranslationUnit_t*> parse(Allocator &al, const std::string &s,
         diag::Diagnostics &diagnostics, const CompilerOptions &co)
 {
     Parser p(al, diagnostics, co.fixed_form, co.continue_compilation);
-    try {
-        if (!p.parse(s)) {
-            return Error();
-        };
-    } catch (const parser_local::TokenizerError &e) {
-        Error error;
-        diagnostics.diagnostics.push_back(e.d);
-        return error;
-    } catch (const parser_local::ParserError &e) {
-        Error error;
-        diagnostics.diagnostics.push_back(e.d);
-        return error;
-    }
+    p.parse(s);
     Location l;
     if (p.result.size() == 0) {
         l.first=0;

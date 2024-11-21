@@ -866,7 +866,14 @@ char *str2str_null(Allocator &al, const LCompilers::Str &s) {
     }
 }
 
+LCompilers::Str error_string(Allocator &al) {
+	LCompilers::Str s;
+	s.from_str(al, "error");
+	return s;
+}
+
 #define SYMBOL(x, l) make_Name_t(p.m_a, l, x.c_str(p.m_a), nullptr, 0)
+#define SYMBOL2(l) make_Name_t(p.m_a, l, "error", nullptr, 0)
 // `x.int_n` is of type BigInt but we store the int64_t directly in AST
 #define INTEGER(x, l) make_Num_t(p.m_a, l, x.int_n.n, str2str_null(p.m_a, x.int_kind))
 #define INT1(l) make_Num_t(p.m_a, l, 1, nullptr)

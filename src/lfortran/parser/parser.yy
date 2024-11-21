@@ -3,9 +3,7 @@
 %define api.value.type {LCompilers::LFortran::YYSTYPE}
 %param {LCompilers::LFortran::Parser &p}
 %locations
-%glr-parser
-%expect    228 // shift/reduce conflicts
-%expect-rr 175 // reduce/reduce conflicts
+%expect    0
 
 // Uncomment this to get verbose error messages
 //%define parse.error verbose
@@ -681,7 +679,6 @@ endinterface
     | endinterface0 KW_OPERATOR "(" operator_type ")"
     | endinterface0 KW_OPERATOR "(" "/)"
     | endinterface0 KW_OPERATOR "(" TK_DEF_OP ")"
-    | error
     ;
 
 endinterface0
@@ -723,7 +720,6 @@ endenum
 enum_var_modifiers
     : %empty { LIST_NEW($$); }
     | var_modifier_list { $$ = $1; }
-    | error { LIST_NEW($$); }
     ;
 
 derived_type_decl
@@ -757,7 +753,6 @@ require_decl
 unit_require_plus
     : unit_require_plus "," unit_require { $$ = $1; LIST_ADD($$, $3); }
     | unit_require { LIST_NEW($$); LIST_ADD($$, $1); }
-    | error { LIST_NEW($$); }
     ;
 
 unit_require
@@ -818,19 +813,16 @@ procedure_decl
             $$ = GENERIC_READ($2, $5, $8, TRIVIA_AFTER($9, @$), @$); }
     | KW_FINAL "::" id sep { $$ = FINAL_NAME($3, TRIVIA_AFTER($4, @$), @$); }
     | KW_PRIVATE sep { $$ = PRIVATE(Private, TRIVIA_AFTER($2, @$), @$); }
-    | error { $$ = nullptr; }
     ;
 
 access_spec_list
     : "::" { LIST_NEW($$); }
     | access_spec "::" { LIST_NEW($$); LIST_ADD($$, $1); }
-    | error { LIST_NEW($$); }
     ;
 
 access_spec
     : "," KW_PRIVATE  { $$ = SIMPLE_ATTR(Private, @$); }
     | "," KW_PUBLIC { $$ = SIMPLE_ATTR(Public, @$); }
-    | error { $$ = SIMPLE_ATTR_INVALID(@$); }
     ;
 
 operator_type
@@ -852,7 +844,6 @@ operator_type
     | ".xor."  { $$ = OPERATOR(XOR, @$); }
     | ".eqv."  { $$ = OPERATOR(EQV, @$); }
     | ".neqv." { $$ = OPERATOR(NEQV, @$); }
-    | error { $$ = OPERATOR_INVALID(@$); }
     ;
 
 proc_modifiers
@@ -874,7 +865,6 @@ proc_modifier
     | KW_NOPASS { $$ = SIMPLE_ATTR(NoPass, @$); }
     | KW_DEFERRED { $$ = SIMPLE_ATTR(Deferred, @$); }
     | KW_NON_OVERRIDABLE { $$ = SIMPLE_ATTR(NonDeferred, @$); }
-    | error { $$ = SIMPLE_ATTR_INVALID(@$); }
     ;
 
 
@@ -910,7 +900,6 @@ end_blockdata
     : KW_END_BLOCK_DATA id_opt
     | KW_ENDBLOCKDATA id_opt
     | KW_END
-    | error
     ;
 
 end_subroutine
@@ -934,13 +923,11 @@ end_function
 end_associate
     : KW_END_ASSOCIATE
     | KW_ENDASSOCIATE
-    | error
     ;
 
 end_block
     : KW_END_BLOCK
     | KW_ENDBLOCK
-    | error
     ;
 
 end_select
@@ -951,7 +938,6 @@ end_select
 end_critical
     : KW_END_CRITICAL
     | KW_ENDCRITICAL
-    | error
     ;
 
 end_team
@@ -1057,7 +1043,6 @@ function
 fn_mod_plus
     : fn_mod_plus fn_mod { $$ = $1; LIST_ADD($$, $2); }
     | fn_mod { LIST_NEW($$); LIST_ADD($$, $1); }
-    | error { LIST_NEW($$); }
     ;
 
 fn_mod
@@ -1102,13 +1087,11 @@ contains_block_opt
     : KW_CONTAINS sep sub_or_func_plus { $$ = $3; }
     | KW_CONTAINS sep { LIST_NEW($$); }
     | %empty { LIST_NEW($$); }
-    | error { LIST_NEW($$); }
     ;
 
 sub_or_func_star
     : sub_or_func_plus
     | %empty { LIST_NEW($$); }
-    | error { LIST_NEW($$); }
 
 sub_or_func_plus
     : sub_or_func_plus sub_or_func { LIST_ADD($$, $2); }
@@ -1124,7 +1107,6 @@ sub_or_func
 sub_args
     : "(" id_or_star_list ")" { $$ = $2; }
     | %empty { LIST_NEW($$); }
-    | error { LIST_NEW($$); }
     ;
 
 id_or_star_list
@@ -1150,7 +1132,6 @@ bind
 result_opt
     : result { $$ = $1; }
     | %empty { $$ = nullptr; }
-    | error { $$ = nullptr; }
     ;
 
 result
@@ -1224,7 +1205,6 @@ implicit_statement
 implicit_none_spec_list
     : implicit_none_spec_list "," implicit_none_spec { $$ = $1; LIST_ADD($$, $3); }
     | implicit_none_spec { LIST_NEW($$); LIST_ADD($$, $1); }
-    | error { LIST_NEW($$); }
     ;
 
 implicit_none_spec
@@ -1307,14 +1287,12 @@ use_modifier_list
 use_modifier
     : KW_INTRINSIC { $$ = SIMPLE_ATTR(Intrinsic, @$); }
     | KW_NON_INTRINSIC { $$ = SIMPLE_ATTR(Non_Intrinsic, @$); }
-    | error { $$ = SIMPLE_ATTR_INVALID(@$); }
     ;
 
 // var_decl*
 var_decl_star
     : var_decl_star var_decl { $$ = $1; LIST_ADD($$, $2); }
     | %empty { LIST_NEW($$); }
-    | error { LIST_NEW($$); }
     ;
 
 var_decl
@@ -1345,7 +1323,6 @@ var_decl
 equivalence_set_list
     : equivalence_set_list "," equivalence_set { $$ = $1; PLIST_ADD($$, $3); }
     | equivalence_set { LIST_NEW($$); PLIST_ADD($$, $1); }
-    | error { LIST_NEW($$); }
     ;
 
 equivalence_set
@@ -1356,7 +1333,6 @@ named_constant_def_list
     : named_constant_def_list "," named_constant_def {
             $$ = $1; PLIST_ADD($$, $3); }
     | named_constant_def { LIST_NEW($$); PLIST_ADD($$, $1); }
-    | error { LIST_NEW($$); }
     ;
 
 named_constant_def
@@ -1436,7 +1412,6 @@ data_stmt_constant
 integer_type
     : KW_INTEGER "(" kind_arg_list ")" "::" {
             $$ = ATTR_TYPE_KIND(Integer, $3, @$); }
-    | error { $$ = nullptr; }
     ;
 
 kind_arg_list
@@ -1915,7 +1890,6 @@ elseif_block
             $$ = IF3($3, TRIVIA_AFTER($7, @$), $8, $10, @$); }
     | KW_ELSEIF "(" expr ")" KW_THEN id_opt sep statements elseif_block {
             $$ = IF3($3, TRIVIA_AFTER($7, @$), $8, $9, @$); }
-    | error { $$ = nullptr; }
     ;
 
 where_statement
@@ -1954,7 +1928,6 @@ elsewhere_block
             $$ = WHERE1($3, TRIVIA_AFTER($5, @$), $6, @$); }
     | KW_ELSE KW_WHERE "(" expr ")" sep statements {
             $$ = WHERE1($4, TRIVIA_AFTER($6, @$), $7, @$); }
-    | error { $$ = nullptr; }
     ;
 
 select_statement
@@ -1967,7 +1940,6 @@ select_statement
 case_statements
     : case_statements case_statement { $$ = $1; LIST_ADD($$, $2); }
     | %empty { LIST_NEW($$); }
-    | error { LIST_NEW($$); }
     ;
 
 case_statement
@@ -2003,7 +1975,6 @@ select_rank
 select_rank_case_stmts
     : select_rank_case_stmts select_rank_case_stmt { $$ = $1; LIST_ADD($$, $2); }
     | %empty { LIST_NEW($$); }
-    | error { LIST_NEW($$); }
     ;
 
 select_rank_case_stmt
@@ -2030,7 +2001,6 @@ select_type_body_statements
     : select_type_body_statements select_type_body_statement {
                         $$ = $1; LIST_ADD($$, $2); }
     | %empty { LIST_NEW($$); }
-    | error { LIST_NEW($$); }
     ;
 
 select_type_body_statement
@@ -2071,7 +2041,6 @@ concurrent_control_list
     : concurrent_control_list "," concurrent_control {
         $$ = $1; LIST_ADD($$, $3); }
     | concurrent_control { LIST_NEW($$); LIST_ADD($$, $1); }
-    | error { LIST_NEW($$); }
     ;
 
 concurrent_control
@@ -2085,7 +2054,6 @@ concurrent_locality_star
     : concurrent_locality_star concurrent_locality {
         $$ = $1; LIST_ADD($$, $2); }
     | %empty { LIST_NEW($$); }
-    | error { LIST_NEW($$); }
     ;
 
 concurrent_locality
@@ -2153,13 +2121,11 @@ enddo
     | TK_LABEL KW_END_DO
     | KW_ENDDO { WARN_ENDDO(@$); }
     | TK_LABEL KW_ENDDO {}
-    | error
     ;
 
 endforall
     : KW_END_FORALL
     | KW_ENDFORALL
-    | error
     ;
 
 endif
@@ -2273,7 +2239,6 @@ event_wait_spec_list
     : event_wait_spec_list "," sync_stat { $$ = $1; LIST_ADD($$, $3); }
     | event_wait_spec { LIST_NEW($$); LIST_ADD($$, $1); }
     | %empty { LIST_NEW($$); }
-    | error { LIST_NEW($$); }
     ;
 
 event_wait_spec
@@ -2282,7 +2247,6 @@ event_wait_spec
 
 event_post_stat_list
     : sync_stat { LIST_NEW($$); LIST_ADD($$, $1); }
-    | error { LIST_NEW($$); }
     ;
 
 sync_stat_list
@@ -2325,7 +2289,6 @@ coarray_association_list
     : coarray_association_list "," coarray_association { $$ = $1; LIST_ADD($$, $3); }
     | coarray_association { LIST_NEW($$); LIST_ADD($$, $1); }
     | %empty { LIST_NEW($$); }
-    | error { LIST_NEW($$);}
     ;
 
 coarray_association
@@ -2517,174 +2480,5 @@ id_opt
 
 id
     : TK_NAME { $$ = SYMBOL($1, @$); }
-    | KW_ABSTRACT { $$ = SYMBOL($1, @$); }
-    | KW_ALL { $$ = SYMBOL($1, @$); }
-    | KW_ALLOCATABLE { $$ = SYMBOL($1, @$); }
-    | KW_ALLOCATE { $$ = SYMBOL($1, @$); }
-    | KW_ASSIGN { $$ = SYMBOL($1, @$); }
-    | KW_ASSIGNMENT { $$ = SYMBOL($1, @$); }
-    | KW_ASSOCIATE { $$ = SYMBOL($1, @$); }
-    | KW_ASYNCHRONOUS { $$ = SYMBOL($1, @$); }
-    | KW_BACKSPACE { $$ = SYMBOL($1, @$); }
-    | KW_BIND { $$ = SYMBOL($1, @$); }
-    | KW_BLOCK { $$ = SYMBOL($1, @$); }
-    | KW_CALL { $$ = SYMBOL($1, @$); }
-    | KW_CASE { $$ = SYMBOL($1, @$); }
-    | KW_CHANGE { $$ = SYMBOL($1, @$); }
-    | KW_CHARACTER { $$ = SYMBOL($1, @$); }
-    | KW_CLASS { $$ = SYMBOL($1, @$); }
-    | KW_CLOSE { $$ = SYMBOL($1, @$); }
-    | KW_CODIMENSION { $$ = SYMBOL($1, @$); }
-    | KW_COMMON { $$ = SYMBOL($1, @$); }
-    | KW_COMPLEX { $$ = SYMBOL($1, @$); }
-    | KW_CONCURRENT { $$ = SYMBOL($1, @$); }
-    | KW_CONTAINS { $$ = SYMBOL($1, @$); }
-    | KW_CONTIGUOUS { $$ = SYMBOL($1, @$); }
-    | KW_CONTINUE { $$ = SYMBOL($1, @$); }
-    | KW_CRITICAL { $$ = SYMBOL($1, @$); }
-    | KW_CYCLE { $$ = SYMBOL($1, @$); }
-    | KW_DATA { $$ = SYMBOL($1, @$); }
-    | KW_DEALLOCATE { $$ = SYMBOL($1, @$); }
-    | KW_DEFAULT { $$ = SYMBOL($1, @$); }
-    | KW_DEFERRED { $$ = SYMBOL($1, @$); }
-    | KW_DIMENSION { $$ = SYMBOL($1, @$); }
-    | KW_DO { $$ = SYMBOL($1, @$); }
-    | KW_DOWHILE { $$ = SYMBOL($1, @$); }
-    | KW_DOUBLE { $$ = SYMBOL($1, @$); }
-    | KW_DOUBLE_PRECISION { $$ = SYMBOL($1, @$); }
-    | KW_DOUBLE_COMPLEX { $$ = SYMBOL($1, @$); }
-    | KW_ELEMENTAL { $$ = SYMBOL($1, @$); }
-    | KW_ELSE { $$ = SYMBOL($1, @$); }
-    | KW_ELSEIF { $$ = SYMBOL($1, @$); }
-    | KW_ELSEWHERE { $$ = SYMBOL($1, @$); }
-    | KW_END { $$ = SYMBOL($1, @$); }
-    | KW_ENDDO { $$ = SYMBOL($1, @$); }
-    | KW_ENDIF { $$ = SYMBOL($1, @$); }
-    | KW_ENDINTERFACE { $$ = SYMBOL($1, @$); }
-    | KW_ENDTYPE { $$ = SYMBOL($1, @$); }
-    | KW_ENDPROGRAM { $$ = SYMBOL($1, @$); }
-    | KW_ENDMODULE { $$ = SYMBOL($1, @$); }
-    | KW_ENDSUBMODULE { $$ = SYMBOL($1, @$); }
-    | KW_ENDBLOCK { $$ = SYMBOL($1, @$); }
-    | KW_ENDBLOCKDATA { $$ = SYMBOL($1, @$); }
-    | KW_ENDSUBROUTINE { $$ = SYMBOL($1, @$); }
-    | KW_ENDFUNCTION { $$ = SYMBOL($1, @$); }
-    | KW_ENDPROCEDURE { $$ = SYMBOL($1, @$); }
-    | KW_ENDENUM { $$ = SYMBOL($1, @$); }
-    | KW_ENDSELECT { $$ = SYMBOL($1, @$); }
-    | KW_ENDASSOCIATE { $$ = SYMBOL($1, @$); }
-    | KW_ENDFORALL { $$ = SYMBOL($1, @$); }
-    | KW_ENDWHERE { $$ = SYMBOL($1, @$); }
-    | KW_ENDCRITICAL { $$ = SYMBOL($1, @$); }
-    | KW_ENDFILE { $$ = SYMBOL($1, @$); }
-    | KW_ENTRY { $$ = SYMBOL($1, @$); }
-    | KW_ENUM { $$ = SYMBOL($1, @$); }
-    | KW_ENUMERATOR { $$ = SYMBOL($1, @$); }
-    | KW_EQUIVALENCE { $$ = SYMBOL($1, @$); }
-    | KW_ERRMSG { $$ = SYMBOL($1, @$); }
-    | KW_ERROR { $$ = SYMBOL($1, @$); }
-    | KW_EVENT { $$ = SYMBOL($1, @$); }
-    | KW_EXIT { $$ = SYMBOL($1, @$); }
-    | KW_EXTENDS { $$ = SYMBOL($1, @$); }
-    | KW_EXTERNAL { $$ = SYMBOL($1, @$); }
-    | KW_FILE { $$ = SYMBOL($1, @$); }
-    | KW_FINAL { $$ = SYMBOL($1, @$); }
-    | KW_FLUSH { $$ = SYMBOL($1, @$); }
-    | KW_FORALL { $$ = SYMBOL($1, @$); }
-    | KW_FORMATTED { $$ = SYMBOL($1, @$); }
-    | KW_FORM { $$ = SYMBOL($1, @$); }
-    | KW_FORM_TEAM { $$ = SYMBOL($1, @$); }
-    | KW_FUNCTION { $$ = SYMBOL($1, @$); }
-    | KW_GENERIC { $$ = SYMBOL($1, @$); }
-    | KW_GO { $$ = SYMBOL($1, @$); }
-    | KW_GOTO { $$ = SYMBOL($1, @$); }
-    | KW_IF { $$ = SYMBOL($1, @$); }
-    | KW_IMAGES { $$ = SYMBOL($1, @$); }
-    | KW_IMPLICIT { $$ = SYMBOL($1, @$); }
-    | KW_IMPORT { $$ = SYMBOL($1, @$); }
-    | KW_IMPURE { $$ = SYMBOL($1, @$); }
-    | KW_IN { $$ = SYMBOL($1, @$); }
-    | KW_INCLUDE { $$ = SYMBOL($1, @$); }
-    | KW_INOUT { $$ = SYMBOL($1, @$); }
-    | KW_INQUIRE { $$ = SYMBOL($1, @$); }
-    | KW_INSTANTIATE { $$ = SYMBOL($1, @$); }
-    | KW_INTEGER { $$ = SYMBOL($1, @$); }
-    | KW_INTENT { $$ = SYMBOL($1, @$); }
-    | KW_INTERFACE { $$ = SYMBOL($1, @$); }
-    | KW_INTRINSIC { $$ = SYMBOL($1, @$); }
-    | KW_IS { $$ = SYMBOL($1, @$); }
-    | KW_KIND { $$ = SYMBOL($1, @$); }
-    | KW_LEN { $$ = SYMBOL($1, @$); }
-    | KW_LOCAL { $$ = SYMBOL($1, @$); }
-    | KW_LOCAL_INIT { $$ = SYMBOL($1, @$); }
-    | KW_LOGICAL { $$ = SYMBOL($1, @$); }
-    | KW_MEMORY { $$ = SYMBOL($1, @$); }
-    | KW_MODULE { $$ = SYMBOL($1, @$); }
-    | KW_MOLD { $$ = SYMBOL($1, @$); }
-    | KW_NAME { $$ = SYMBOL($1, @$); }
-    | KW_NAMELIST { $$ = SYMBOL($1, @$); }
-    | KW_NEW_INDEX { $$ = SYMBOL($1, @$); }
-    | KW_NOPASS { $$ = SYMBOL($1, @$); }
-    | KW_NON_INTRINSIC { $$ = SYMBOL($1, @$); }
-    | KW_NON_OVERRIDABLE { $$ = SYMBOL($1, @$); }
-    | KW_NON_RECURSIVE { $$ = SYMBOL($1, @$); }
-    | KW_NONE { $$ = SYMBOL($1, @$); }
-    | KW_NULLIFY { $$ = SYMBOL($1, @$); }
-    | KW_ONLY { $$ = SYMBOL($1, @$); }
-    | KW_OPEN { $$ = SYMBOL($1, @$); }
-    | KW_OPERATOR { $$ = SYMBOL($1, @$); }
-    | KW_OPTIONAL { $$ = SYMBOL($1, @$); }
-    | KW_OUT { $$ = SYMBOL($1, @$); }
-    | KW_PARAMETER { $$ = SYMBOL($1, @$); }
-    | KW_PASS { $$ = SYMBOL($1, @$); }
-    | KW_POINTER { $$ = SYMBOL($1, @$); }
-    | KW_POST { $$ = SYMBOL($1, @$); }
-    | KW_PRECISION { $$ = SYMBOL($1, @$); }
-    | KW_PRINT { $$ = SYMBOL($1, @$); }
-    | KW_PRIVATE { $$ = SYMBOL($1, @$); }
-    | KW_PROCEDURE { $$ = SYMBOL($1, @$); }
-    | KW_PROGRAM { $$ = SYMBOL($1, @$); }
-    | KW_PROTECTED { $$ = SYMBOL($1, @$); }
-    | KW_PUBLIC { $$ = SYMBOL($1, @$); }
-    | KW_PURE { $$ = SYMBOL($1, @$); }
-    | KW_QUIET { $$ = SYMBOL($1, @$); }
-    | KW_RANK { $$ = SYMBOL($1, @$); }
-    | KW_READ { $$ = SYMBOL($1, @$); }
-    | KW_REAL { $$ = SYMBOL($1, @$); }
-    | KW_RECURSIVE { $$ = SYMBOL($1, @$); }
-    | KW_REDUCE { $$ = SYMBOL($1, @$); }
-    | KW_REQUIREMENT { $$ = SYMBOL($1, @$); }
-    | KW_REQUIRE { $$ = SYMBOL($1, @$); }
-    | KW_RESULT { $$ = SYMBOL($1, @$); }
-    | KW_RETURN { $$ = SYMBOL($1, @$); }
-    | KW_REWIND { $$ = SYMBOL($1, @$); }
-    | KW_SAVE { $$ = SYMBOL($1, @$); }
-    | KW_SELECT { $$ = SYMBOL($1, @$); }
-    | KW_SELECT_CASE { $$ = SYMBOL($1, @$); }
-    | KW_SELECT_RANK { $$ = SYMBOL($1, @$); }
-    | KW_SELECT_TYPE { $$ = SYMBOL($1, @$); }
-    | KW_SEQUENCE { $$ = SYMBOL($1, @$); }
-    | KW_SHARED { $$ = SYMBOL($1, @$); }
-    | KW_SOURCE { $$ = SYMBOL($1, @$); }
-    | KW_STAT { $$ = SYMBOL($1, @$); }
-    | KW_STOP { $$ = SYMBOL($1, @$); }
-    | KW_SUBMODULE { $$ = SYMBOL($1, @$); }
-    | KW_SUBROUTINE { $$ = SYMBOL($1, @$); }
-    | KW_SYNC { $$ = SYMBOL($1, @$); }
-    | KW_TARGET { $$ = SYMBOL($1, @$); }
-    | KW_TEAM { $$ = SYMBOL($1, @$); }
-    | KW_TEAM_NUMBER { $$ = SYMBOL($1, @$); }
-    | KW_TEMPLATE { $$ = SYMBOL($1, @$); }
-    | KW_THEN { $$ = SYMBOL($1, @$); }
-    | KW_TO { $$ = SYMBOL($1, @$); }
-    | KW_TYPE { $$ = SYMBOL($1, @$); }
-    | KW_UNFORMATTED { $$ = SYMBOL($1, @$); }
-    | KW_USE { $$ = SYMBOL($1, @$); }
-    | KW_VALUE { $$ = SYMBOL($1, @$); }
-    | KW_VOLATILE { $$ = SYMBOL($1, @$); }
-    | KW_WAIT { $$ = SYMBOL($1, @$); }
-    | KW_WHERE { $$ = SYMBOL($1, @$); }
-    | KW_WHILE { $$ = SYMBOL($1, @$); }
-    | KW_WRITE { $$ = SYMBOL($1, @$); }
-    | error { $$ = SYMBOL(LCompilers::Str(), @$); }
+    | error { $$ = SYMBOL2(@$); }
     ;
