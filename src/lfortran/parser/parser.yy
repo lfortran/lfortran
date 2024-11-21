@@ -1593,6 +1593,7 @@ coarray_comp_decl
 statements
     : statements statement { $$ = $1; LIST_ADD($$, $2); }
     | %empty { LIST_NEW($$); }
+    | statements error { $$ = $1; }
     ;
 
 sep
@@ -1610,6 +1611,7 @@ sep_one
 decl_statements
     : decl_statements decl_statement { $$ = $1; LIST_ADD($$, $2); }
     | %empty { LIST_NEW($$); }
+    | decl_statements error { $$ = $1; }
     ;
 
 decl_statement
@@ -2480,5 +2482,4 @@ id_opt
 
 id
     : TK_NAME { $$ = SYMBOL($1, @$); }
-    | error { $$ = SYMBOL2(@$); }
     ;
