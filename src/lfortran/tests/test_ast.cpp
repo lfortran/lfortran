@@ -3,7 +3,7 @@
 #include <sstream>
 
 #include <iostream>
-
+#include <libasr/lsp.cpp>
 #include <lfortran/fortran_evaluator.h>
 #include <libasr/codegen/evaluator.h>
 #include <libasr/alloc.h>
@@ -169,22 +169,9 @@ end program
         fl.in_filename = "input.f90";
         lm.files.push_back(fl);
     }
-    FortranEvaluator e(compiler_options);
-    LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
-        r = e.get_asr2(src, lm, diagnostics);
-    ASR::asr_t* asr2 = e.handle_lookup_name(r.result, lm.linecol_to_pos(2, 12));
-    LCOMPILERS_ASSERT(ASR::is_a<ASR::symbol_t>(*asr2));
-    ASR::symbol_t* sym = ASR::down_cast<ASR::symbol_t>(asr2);
-    std::string symbol_name = ASRUtils::symbol_name(sym);
-    LCOMPILERS_ASSERT(symbol_name == "expr2");
-    std::vector<diag::Span> spans2 = diag::Label("", {asr2->loc}).spans;
-    for( auto it: spans2 ) {
-        populate_span(it, lm);
-        CHECK(it.first_line == 2);
-        CHECK(it.first_column == 1);
-        CHECK(it.last_line == 7);
-        CHECK(it.last_column == 11);
-    }
+    std::string json = get_definitions_source_code(src, compiler_options);
+    std::string expected_json = R"""([{"kind":1,"location":{"range":{"start":{"character":1,"line":1},"end":{"character":11,"line":6}},"uri":"uri"},"name":"expr2"}])""";
+    LCOMPILERS_ASSERT(json == expected_json)
 }
 
 
