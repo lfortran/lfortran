@@ -288,6 +288,7 @@ else13:                                           ; preds = %ifcont11
   br label %ifcont14
 
 ifcont14:                                         ; preds = %else13, %then12
+  call void @_lfortran_free(i8* %36)
   br label %return
 
 return:                                           ; preds = %ifcont14
@@ -388,6 +389,7 @@ ifcont:                                           ; preds = %else, %then
   br label %return
 
 return:                                           ; preds = %ifcont
+  call void @_lfortran_free(i8* %28)
   ret void
 }
 
@@ -793,6 +795,8 @@ return:                                           ; preds = %ifcont6
 
 declare i8* @_lfortran_malloc(i32)
 
+declare void @_lfortran_free(i8*)
+
 declare i8* @_lcompilers_string_format_fortran(i32, i8*, ...)
 
 declare void @_lfortran_printf(i8*, ...)
@@ -800,7 +804,5 @@ declare void @_lfortran_printf(i8*, ...)
 declare void @_lcompilers_print_error(i8*, ...)
 
 declare void @exit(i32)
-
-declare void @_lfortran_free(i8*)
 
 declare void @_lpython_call_initial_functions(i32, i8**)

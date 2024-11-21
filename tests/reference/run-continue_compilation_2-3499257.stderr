@@ -246,3 +246,5 @@ semantic error: Type mismatch in argument at argument (1); passed `real` to `int
     |
 152 |     print *, f(42.9)
     |                ^^^^ 
+free(): double free detected in tcache 2
+Aborted (core dumped)

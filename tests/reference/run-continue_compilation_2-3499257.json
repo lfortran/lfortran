@@ -8,6 +8,6 @@
     "stdout": "run-continue_compilation_2-3499257.stdout",
     "stdout_hash": "b7eae5604e0995d64144c2c9bba15acfe8d9f41ffb0154a086ca1057",
     "stderr": "run-continue_compilation_2-3499257.stderr",
-    "stderr_hash": "b55dfac1f5fb0de65a303377824ba6f81377b24958bfe7297154e9e2",
-    "returncode": 1
+    "stderr_hash": "4b8efb7c79724a8c1e8e976e9ad662a6a4c5a888abb7452434767b76",
+    "returncode": 135
 }

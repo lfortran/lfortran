@@ -1592,6 +1592,9 @@ else75:                                           ; preds = %ifcont73
   br label %ifcont76
 
 ifcont76:                                         ; preds = %else75, %then74
+  call void @_lfortran_free(i8* %55)
+  call void @_lfortran_free(i8* %92)
+  call void @_lfortran_free(i8* %129)
   br label %return
 
 return:                                           ; preds = %ifcont76
