@@ -2498,24 +2498,14 @@ int main_app(int argc, char *argv[]) {
     }
     lfortran_pass_manager.parse_pass_arg(arg_pass, skip_pass);
     if (compiler_options.lookup_name) {
-#ifdef HAVE_LFORTRAN_RAPIDJSON
         return get_definitions(arg_file, compiler_options);
-#else
-        return emit_asr(arg_file, lfortran_pass_manager,
-                compiler_options);
-#endif
     }
     if (show_asr) {
         return emit_asr(arg_file, lfortran_pass_manager,
                 compiler_options);
     }
     if (show_document_symbols) {
-#ifdef HAVE_LFORTRAN_RAPIDJSON
         return get_symbols(arg_file, compiler_options);
-#else
-        std::cerr << "Compiler was not built with LSP support (-DWITH_LSP), please build it again." << std::endl;
-        return 1;
-#endif
     }
 
     if (show_errors) {
