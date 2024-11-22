@@ -542,7 +542,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
     ASR::expr_t** get_array_place_in_structInstaceMember(ASR::expr_t* structInstanceMember_expr){
             ASR::expr_t** array_ref_container_node = nullptr;
             // If array in first depth, return nullptr.
-            if (ASRUtils::is_array(ASRUtils::symbol_type(ASR::down_cast<ASR::StructInstanceMember_t>(structInstanceMember_expr)->m_m))){ 
+            if (ASRUtils::is_array(ASRUtils::symbol_type(ASR::down_cast<ASR::StructInstanceMember_t>(structInstanceMember_expr)->m_m))){
                 return nullptr;
             }
 
@@ -551,7 +551,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
             while(ASR::is_a<ASR::StructInstanceMember_t>(*structInstanceMember_expr) && !array_ref_container_node ){
                 ASR::StructInstanceMember_t* tmp = ASR::down_cast<ASR::StructInstanceMember_t>(structInstanceMember_expr);
                 if(ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(tmp->m_v)))){
-                    array_ref_container_node = &(tmp->m_v); 
+                    array_ref_container_node = &(tmp->m_v);
                 } else if(ASR::is_a<ASR::StructInstanceMember_t>(*tmp->m_v)){
                     structInstanceMember_expr = tmp->m_v; // Go deep.
                 } else if (ASR::is_a<ASR::ArrayItem_t>(*tmp->m_v)){
@@ -593,7 +593,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
             ASR::expr_t* res = PassUtils::create_array_ref(result_var, idx_vars, al, current_scope);
             ASR::expr_t* target;
             if(array_place_in_structInstaceMember){
-                *array_place_in_structInstaceMember = res; // Replace the array with its ArrayItem expression. 
+                *array_place_in_structInstaceMember = res; // Replace the array with its ArrayItem expression.
                 target = result_var_origial;
                 // Use type of array.
                 ASR::StructInstanceMember_t* tmp = ASR::down_cast<ASR::StructInstanceMember_t>(target);
@@ -1786,17 +1786,30 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
 
         inline void visit_AssignmentUtil(const ASR::Assignment_t& x) {
             ASR::expr_t** current_expr_copy_9 = current_expr;
+            current_expr = const_cast<ASR::expr_t**>(&(x.m_value));
             ASR::expr_t* original_value = x.m_value;
             if( ASR::is_a<ASR::ArrayBroadcast_t>(*x.m_value) ) {
                 ASR::ArrayBroadcast_t* array_broadcast = ASR::down_cast<ASR::ArrayBroadcast_t>(x.m_value);
                 if ( ASR::is_a<ASR::TypeInquiry_t>(*array_broadcast->m_array) ) {
                     array_broadcast->m_array = ASR::down_cast<ASR::TypeInquiry_t>(array_broadcast->m_array)->m_value;
                 }
-                resultvar2value[replacer.result_var] = array_broadcast->m_array;
+                if( !ASRUtils::is_array(ASRUtils::expr_type(array_broadcast->m_array)) &&
+                    ASR::is_a<ASR::FunctionCall_t>(
+                        *ASRUtils::get_past_array_physical_cast(array_broadcast->m_array)) ) {
+                    ASR::stmt_t* auxiliary_assign_stmt_ = nullptr;
+                    std::string name = current_scope->get_unique_name(
+                        "__libasr_created_scalar_auxiliary_variable");
+                    *current_expr = PassUtils::create_auxiliary_variable_for_expr(
+                        array_broadcast->m_array, name, al, current_scope, auxiliary_assign_stmt_);
+                    LCOMPILERS_ASSERT(auxiliary_assign_stmt_ != nullptr);
+                    pass_result.push_back(al, auxiliary_assign_stmt_);
+                    resultvar2value[replacer.result_var] = *current_expr;
+                } else {
+                    resultvar2value[replacer.result_var] = array_broadcast->m_array;
+                }
             } else {
                 resultvar2value[replacer.result_var] = original_value;
             }
-            current_expr = const_cast<ASR::expr_t**>(&(x.m_value));
             this->call_replacer();
             current_expr = current_expr_copy_9;
             if( x.m_value == original_value ) {
