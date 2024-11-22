@@ -186,7 +186,7 @@ intrinsic_funcs_args = {
     "Logical": [
         {
             "args": [("bool", )],
-            "ret_type_arg_idx": 0, 
+            "ret_type_arg_idx": 0,
             "kind_arg": True
         }
     ],
@@ -767,7 +767,7 @@ intrinsic_funcs_args = {
             "ret_type_arg_idx": 0,
             "same_kind_arg": 3
         }
-    ], 
+    ],
     "Ishftc": [
         {
             "args": [("int", "int", "int")],
@@ -1045,7 +1045,7 @@ def add_create_func_return_src(func_name):
         else:
             src += indent * 2 + "ASR::ttype_t* type_ = nullptr;\n"
             src += indent * 2 + "if (use_experimental_simplifier) {\n"
-            src += indent * 3 +     f"type_ = expr_duplicator.duplicate_ttype(ASRUtils::type_get_past_array_pointer_allocatable(expr_type(args[{ret_type_arg_idx}])));\n"
+            src += indent * 2 +     f"type_ = expr_duplicator.duplicate_ttype(ASRUtils::type_get_past_array_pointer_allocatable(expr_type(args[{ret_type_arg_idx}])));\n"
             src += indent * 2 + "} else {\n"
             src += indent * 3 +     f"type_ = expr_duplicator.duplicate_ttype(expr_type(args[{ret_type_arg_idx}]));\n"
             src += indent * 2 + "}\n"
@@ -1060,7 +1060,7 @@ def add_create_func_return_src(func_name):
         src += indent * 4 +         "return nullptr;\n"
         src += indent * 3 +     "}\n"
         src += indent * 3 +     "set_kind_to_ttype_t(return_type, kind);\n"
-        src += indent * 2 + "}\n"        
+        src += indent * 2 + "}\n"
     src += indent * 2 + "ASR::expr_t *m_value = nullptr;\n"
     src += indent * 2 + f"Vec<ASR::expr_t*> m_args; m_args.reserve(al, {no_of_args});\n"
     for _i in range(no_of_args):
