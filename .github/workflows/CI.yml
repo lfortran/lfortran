@@ -142,6 +142,7 @@ jobs:
             cmake . -GNinja \
               -DCMAKE_BUILD_TYPE=Debug \
               -DWITH_LLVM=yes \
+              -DWITH_LSP=yes \
               -DLFORTRAN_BUILD_ALL=yes \
               -DWITH_STACKTRACE=no \
               -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
@@ -345,6 +346,7 @@ jobs:
             cmake -S src -B builddir -GNinja \
               -DCMAKE_BUILD_TYPE=RelWithDebInfo \
               -DWITH_LLVM=yes \
+              -DWITH_LSP=yes \
               -DWITH_KOKKOS=yes \
               -DLFORTRAN_BUILD_ALL=yes \
               -DWITH_STACKTRACE=no \
@@ -403,6 +405,7 @@ jobs:
             cmake . -GNinja \
               -DCMAKE_BUILD_TYPE=Release \
               -DWITH_LLVM=yes \
+              -DWITH_LSP=yes \
               -DCMAKE_VERBOSE_MAKEFILE= yes \
               -DLFORTRAN_BUILD_ALL=yes \
               -DWITH_STACKTRACE=no \
@@ -479,6 +482,7 @@ jobs:
             cmake . -GNinja \
               -DCMAKE_BUILD_TYPE=Debug \
               -DWITH_LLVM=yes \
+              -DWITH_LSP=yes \
               -DLFORTRAN_BUILD_ALL=yes \
               -DWITH_STACKTRACE=no \
               -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
@@ -927,6 +931,7 @@ jobs:
             cmake . -GNinja \
               -DCMAKE_BUILD_TYPE=Debug \
               -DWITH_LLVM=yes \
+              -DWITH_LSP=yes \
               -DWITH_TARGET_WASM=yes \
               -DLFORTRAN_BUILD_ALL=yes \
               -DWITH_STACKTRACE=no \
@@ -957,6 +962,7 @@ jobs:
             cmake . -GNinja \
               -DCMAKE_BUILD_TYPE=Debug \
               -DWITH_LLVM=yes \
+              -DWITH_LSP=yes \
               -DLFORTRAN_BUILD_ALL=yes \
               -DWITH_STACKTRACE=no \
               -DWITH_LIBUNWIND=yes \
@@ -1318,6 +1324,7 @@ jobs:
             cmake . -GNinja \
               -DCMAKE_BUILD_TYPE=Debug \
               -DWITH_LLVM=yes \
+              -DWITH_LSP=yes \
               -DCMAKE_VERBOSE_MAKEFILE= yes \
               -DLFORTRAN_BUILD_ALL=yes \
               -DWITH_STACKTRACE=no \
@@ -1451,6 +1458,7 @@ jobs:
             cmake . -GNinja \
               -DCMAKE_BUILD_TYPE=Debug \
               -DWITH_LLVM=yes \
+              -DWITH_LSP=yes \
               -DWITH_MLIR=yes \
               -DLFORTRAN_BUILD_ALL=yes \
               -DWITH_STACKTRACE=no \
@@ -1496,6 +1504,7 @@ jobs:
           cmake . -GNinja \
             -DCMAKE_BUILD_TYPE=Debug \
             -DWITH_LLVM=yes \
+            -DWITH_LSP=yes \
             -DWITH_XEUS=yes \
             -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
             -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \

@@ -7,7 +7,7 @@ import os
 os.environ['CXXFLAGS'] = "-Werror"
 
 ./build0.sh
-cmake -DCMAKE_BUILD_TYPE=Debug .
+cmake -DWITH_LSP=yes -DWITH_JSON=yes -DCMAKE_BUILD_TYPE=Debug .
 make -j16
 
 ctest --output-on-failure

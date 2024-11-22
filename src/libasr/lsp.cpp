@@ -8,17 +8,101 @@
 #include <libasr/asr_builder.h>
 #include <libasr/location.h>
 #include <lfortran/fortran_evaluator.h>
+#include <libasr/lsp_interface.h>
 
-
-#ifdef HAVE_LFORTRAN_RAPIDJSON
-    #include <libasr/lsp_interface.h>
-    #include <rapidjson/document.h>
-    #include <rapidjson/stringbuffer.h>
-    #include <rapidjson/writer.h>
-#endif
 
 namespace LCompilers {
-#ifdef HAVE_LFORTRAN_RAPIDJSON
+
+enum LFortranJSONType {
+    kArrayType, kObjectType
+};
+
+class LFortranJSON {
+    public:
+        std::string value;
+        LFortranJSONType type;
+
+        LFortranJSON(LFortranJSONType type) : type(type) {}
+
+        void SetObject() {
+            if (type == LFortranJSONType::kArrayType) {
+                value = "[";
+            } else {
+                value = "{";
+            }
+        }
+
+        void SetArray() {
+            value = "[";
+        }
+
+        void AddMember(std::string key, int v) {
+            // find `{` and add key value pair
+            int end_pos = value.find_last_of("}");
+            // If '}' is not found, then add key value pair at the end and add '}'
+            // If '}' is found, then add `, "key": value` before '}'
+            if (end_pos == -1) {
+                value.insert(value.length(), "\"" + key + "\":" + std::to_string(v) + "}");
+            } else {
+                value.insert(end_pos, ",\"" + key + "\":" + std::to_string(v));
+            }
+        }
+
+        void AddMember(std::string key, uint32_t v) {
+            // find `{` and add key value pair
+            int end_pos = value.find_last_of("}");
+            // If '}' is not found, then add key value pair at the end and add '}'
+            // If '}' is found, then add `, "key": value` before '}'
+            if (end_pos == -1) {
+                value.insert(value.length(), "\"" + key + "\":" + std::to_string(v) + "}");
+            } else {
+                value.insert(end_pos, ",\"" + key + "\":" + std::to_string(v));
+            }
+        }
+
+        void AddMember(std::string key, std::string v) {
+            // find `{` and add key value pair
+            int end_pos = value.find_last_of("}");
+            // If '}' is not found, then add key value pair at the end and add '}'
+            // If '}' is found, then add `, "key": value` before '}'
+            if (end_pos == -1) {
+                value.insert(value.length(), "\"" + key + "\":\"" + v + "\"}");
+            } else {
+                value.insert(end_pos, ",\"" + key + "\":\"" + v + "\"");
+            }
+        }
+
+        void AddMember(std::string key, LFortranJSON v) {
+            // find `{` and add key value pair
+            int end_pos = value.find_last_of("}");
+            // If '}' is not found, then add key value pair at the end and add '}'
+            // If '}' is found, then add `, "key": value` before '}'
+            if (end_pos == -1) {
+                value.insert(value.length(), "\"" + key + "\":" + v.GetValue() + "}");
+            } else {
+                value.insert(end_pos, ",\"" + key + "\":" + v.GetValue());
+            }
+        }
+
+        void PushBack(LFortranJSON v) {
+            // find `[` and add value
+            int end_pos = value.find_last_of("]");
+            // If ']' is not found, then add value at the end and add ']'
+            // If ']' is found, then add `, value` before ']'
+            if (end_pos == -1) {
+                value.insert(value.length(), v.GetValue() + "]");
+            } else {
+                value.insert(end_pos, "," + v.GetValue());
+            }
+        }
+
+        std::string GetValue() {
+            return value;
+        }
+
+
+};
+
 template <typename T>
 void populate_symbol_lists(T* x, LCompilers::LocationManager lm, std::vector<LCompilers::document_symbols> &symbol_lists) {
     LCompilers::document_symbols loc;
@@ -78,12 +162,12 @@ int get_symbols(const std::string &infile, CompilerOptions &compiler_options)
         }
     }
 
-    rapidjson::Document test_output(rapidjson::kArrayType);
-    rapidjson::Document range_object(rapidjson::kObjectType);
-    rapidjson::Document start_detail(rapidjson::kObjectType);
-    rapidjson::Document end_detail(rapidjson::kObjectType);
-    rapidjson::Document location_object(rapidjson::kObjectType);
-    rapidjson::Document test_capture(rapidjson::kObjectType);
+    LFortranJSON test_output(LFortranJSONType::kArrayType);
+    LFortranJSON range_object(LFortranJSONType::kObjectType);
+    LFortranJSON start_detail(LFortranJSONType::kObjectType);
+    LFortranJSON end_detail(LFortranJSONType::kObjectType);
+    LFortranJSON location_object(LFortranJSONType::kObjectType);
+    LFortranJSON test_capture(LFortranJSONType::kObjectType);
 
     test_output.SetArray();
 
@@ -95,35 +179,28 @@ int get_symbols(const std::string &infile, CompilerOptions &compiler_options)
         std::string name = symbol.symbol_name;
 
         range_object.SetObject();
-        rapidjson::Document::AllocatorType &allocator = range_object.GetAllocator();
 
         start_detail.SetObject();
-        start_detail.AddMember("character", rapidjson::Value().SetInt(start_character), allocator);
-        start_detail.AddMember("line", rapidjson::Value().SetInt(start_line), allocator);
-        range_object.AddMember("start", start_detail, allocator);
+        start_detail.AddMember("character", start_character);
+        start_detail.AddMember("line", start_line);
+        range_object.AddMember("start", start_detail);
 
         end_detail.SetObject();
-        end_detail.AddMember("character", rapidjson::Value().SetInt(end_character), allocator);
-        end_detail.AddMember("line", rapidjson::Value().SetInt(end_line), allocator);
-        range_object.AddMember("end", end_detail, allocator);
+        end_detail.AddMember("character", end_character);
+        end_detail.AddMember("line", end_line);
+        range_object.AddMember("end", end_detail);
 
         location_object.SetObject();
-        location_object.AddMember("range", range_object, allocator);
-        location_object.AddMember("uri", rapidjson::Value().SetString("uri", allocator), allocator);
+        location_object.AddMember("range", range_object);
+        location_object.AddMember("uri", "uri");
 
         test_capture.SetObject();
-        test_capture.AddMember("kind", rapidjson::Value().SetInt(1), allocator);
-        test_capture.AddMember("location", location_object, allocator);
-        test_capture.AddMember("name", rapidjson::Value().SetString(name.c_str(), allocator), allocator);
-        test_output.PushBack(test_capture, test_output.GetAllocator());
+        test_capture.AddMember("kind", 1);
+        test_capture.AddMember("location", location_object);
+        test_capture.AddMember("name", name);
+        test_output.PushBack(test_capture);
     }
-    rapidjson::StringBuffer buffer;
-    buffer.Clear();
-    rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
-    test_output.Accept(writer);
-    std::string resp_str( buffer.GetString() );
-
-    std::cout << resp_str;
+    std::cout << test_output.GetValue();
 
     return 0;
 }
@@ -175,12 +252,12 @@ int get_errors(const std::string &infile, CompilerOptions &compiler_options)
         }
     }
 
-    rapidjson::Document range_obj(rapidjson::kObjectType);
-    rapidjson::Document start_detail(rapidjson::kObjectType);
-    rapidjson::Document end_detail(rapidjson::kObjectType);
-    rapidjson::Document diag_results(rapidjson::kArrayType);
-    rapidjson::Document diag_capture(rapidjson::kObjectType);
-    rapidjson::Document message_send(rapidjson::kObjectType);
+    LFortranJSON range_obj(LFortranJSONType::kObjectType);
+    LFortranJSON start_detail(LFortranJSONType::kObjectType);
+    LFortranJSON end_detail(LFortranJSONType::kObjectType);
+    LFortranJSON diag_results(LFortranJSONType::kArrayType);
+    LFortranJSON diag_capture(LFortranJSONType::kObjectType);
+    LFortranJSON message_send(LFortranJSONType::kObjectType);
 
     for (auto diag : diag_lists) {
         uint32_t start_line = diag.first_line;
@@ -191,37 +268,30 @@ int get_errors(const std::string &infile, CompilerOptions &compiler_options)
         std::string msg = diag.message;
 
         range_obj.SetObject();
-        rapidjson::Document::AllocatorType &allocator = range_obj.GetAllocator();
 
         start_detail.SetObject();
-        start_detail.AddMember("line", rapidjson::Value().SetInt(start_line), allocator);
-        start_detail.AddMember("character", rapidjson::Value().SetInt(start_column), allocator);
-        range_obj.AddMember("start", start_detail, allocator);
+        start_detail.AddMember("line", start_line);
+        start_detail.AddMember("character", start_column);
+        range_obj.AddMember("start", start_detail);
 
         end_detail.SetObject();
-        end_detail.AddMember("line", rapidjson::Value().SetInt(end_line), allocator);
-        end_detail.AddMember("character", rapidjson::Value().SetInt(end_column), allocator);
-        range_obj.AddMember("end", end_detail, allocator);
+        end_detail.AddMember("line", end_line);
+        end_detail.AddMember("character", end_column);
+        range_obj.AddMember("end", end_detail);
 
         diag_results.SetArray();
 
-        diag_capture.AddMember("source", rapidjson::Value().SetString("lpyth", allocator), allocator);
-        diag_capture.AddMember("range", range_obj, allocator);
-        diag_capture.AddMember("message", rapidjson::Value().SetString(msg.c_str(), allocator), allocator);
-        diag_capture.AddMember("severity", rapidjson::Value().SetInt(severity), allocator);
-        diag_results.PushBack(diag_capture, allocator);
+        diag_capture.AddMember("source", "lpyth");
+        diag_capture.AddMember("range", range_obj);
+        diag_capture.AddMember("message", msg);
+        diag_capture.AddMember("severity", severity);
+        diag_results.PushBack(diag_capture);
 
         message_send.SetObject();
-        message_send.AddMember("uri", rapidjson::Value().SetString("uri", allocator), allocator);
-        message_send.AddMember("diagnostics", diag_results, allocator);
+        message_send.AddMember("uri", "uri");
+        message_send.AddMember("diagnostics", diag_results);
     }
-
-    rapidjson::StringBuffer buffer;
-    buffer.Clear();
-    rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
-    message_send.Accept(writer);
-    std::string resp_str( buffer.GetString() );
-    std::cout << resp_str;
+    std::cout << message_send.GetValue();
 
     return 0;
 }
@@ -274,12 +344,12 @@ int get_definitions(const std::string &infile, LCompilers::CompilerOptions &comp
         }
     }
 
-    rapidjson::Document test_output(rapidjson::kArrayType);
-    rapidjson::Document range_object(rapidjson::kObjectType);
-    rapidjson::Document start_detail(rapidjson::kObjectType);
-    rapidjson::Document end_detail(rapidjson::kObjectType);
-    rapidjson::Document location_object(rapidjson::kObjectType);
-    rapidjson::Document test_capture(rapidjson::kObjectType);
+    LFortranJSON start_detail(LFortranJSONType::kObjectType);
+    LFortranJSON range_object(LFortranJSONType::kObjectType);
+    LFortranJSON end_detail(LFortranJSONType::kObjectType);
+    LFortranJSON location_object(LFortranJSONType::kObjectType);
+    LFortranJSON test_capture(LFortranJSONType::kObjectType);
+    LFortranJSON test_output(LFortranJSONType::kArrayType);
 
     test_output.SetArray();
 
@@ -291,38 +361,31 @@ int get_definitions(const std::string &infile, LCompilers::CompilerOptions &comp
         std::string name = symbol.symbol_name;
 
         range_object.SetObject();
-        rapidjson::Document::AllocatorType &allocator = range_object.GetAllocator();
 
         start_detail.SetObject();
-        start_detail.AddMember("character", rapidjson::Value().SetInt(start_character), allocator);
-        start_detail.AddMember("line", rapidjson::Value().SetInt(start_line), allocator);
-        range_object.AddMember("start", start_detail, allocator);
+        start_detail.AddMember("character", start_character);
+        start_detail.AddMember("line", start_line);
+        range_object.AddMember("start", start_detail);
 
         end_detail.SetObject();
-        end_detail.AddMember("character", rapidjson::Value().SetInt(end_character), allocator);
-        end_detail.AddMember("line", rapidjson::Value().SetInt(end_line), allocator);
-        range_object.AddMember("end", end_detail, allocator);
+        end_detail.AddMember("character", end_character);
+        end_detail.AddMember("line", end_line);
+        range_object.AddMember("end", end_detail);
 
         location_object.SetObject();
-        location_object.AddMember("range", range_object, allocator);
-        location_object.AddMember("uri", rapidjson::Value().SetString("uri", allocator), allocator);
+        location_object.AddMember("range", range_object);
+        location_object.AddMember("uri", "uri");
 
         test_capture.SetObject();
-        test_capture.AddMember("kind", rapidjson::Value().SetInt(1), allocator);
-        test_capture.AddMember("location", location_object, allocator);
-        test_capture.AddMember("name", rapidjson::Value().SetString(name.c_str(), allocator), allocator);
-        test_output.PushBack(test_capture, test_output.GetAllocator());
+        test_capture.AddMember("kind", 1);
+        test_capture.AddMember("location", location_object);
+        test_capture.AddMember("name", name);
+        test_output.PushBack(test_capture);
     }
-    rapidjson::StringBuffer buffer;
-    buffer.Clear();
-    rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
-    test_output.Accept(writer);
-    std::string resp_str( buffer.GetString() );
 
-    std::cout << resp_str;
+    std::cout << test_output.GetValue();
 
     return 0;
 }
-#endif
 }
 
