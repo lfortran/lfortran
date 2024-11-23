@@ -85,6 +85,7 @@ struct CompilerOptions {
     bool openmp = false;
     std::string openmp_lib_dir = "";
     bool lookup_name = false;
+    bool rename_symbol = false;
     std::string line = "";
     std::string column = "";
     bool continue_compilation = false;

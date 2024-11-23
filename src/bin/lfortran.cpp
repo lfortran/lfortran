@@ -2204,6 +2204,7 @@ int main_app(int argc, char *argv[]) {
     app.add_flag("--openmp", compiler_options.openmp, "Enable openmp");
     app.add_flag("--openmp-lib-dir", compiler_options.openmp_lib_dir, "Pass path to openmp library")->capture_default_str();
     app.add_flag("--lookup-name", compiler_options.lookup_name, "Lookup a name specified by --line & --column in the ASR");
+    app.add_flag("--rename-symbol", compiler_options.rename_symbol, "Returns list of locations where symbol specified by --line & --column appears in the ASR");
     app.add_option("--line", compiler_options.line, "Line number for --lookup-name")->capture_default_str();
     app.add_option("--column", compiler_options.column, "Column number for --lookup-name")->capture_default_str();
     app.add_flag("--continue-compilation", compiler_options.continue_compilation, "collect error message and continue compilation");
@@ -2497,6 +2498,9 @@ int main_app(int argc, char *argv[]) {
         return emit_ast_f90(arg_file, compiler_options);
     }
     lfortran_pass_manager.parse_pass_arg(arg_pass, skip_pass);
+    if (compiler_options.rename_symbol) {
+        return LCompilers::get_all_occurences(arg_file, compiler_options);
+    }
     if (compiler_options.lookup_name) {
         return get_definitions(arg_file, compiler_options);
     }
