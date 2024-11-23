@@ -4279,6 +4279,7 @@ run = true
 
 [[test]]
 filename = "multi_error1.f90"
+ast = true
 continue_compilation = true
 
 [[test]]
