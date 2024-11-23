@@ -150,6 +150,35 @@ program continue_compilation_2
     FLUSH(unit=10, start=100)
     !func_parameter_type
     print *, f(42.9)
+    !ichar_01
+    print*, ichar("okay")
+    !idint_real4
+    print *, idint(4.5)
+    !ifix_01
+    print *, ifix(4.23_8)
+    !incompatible_dimension_assignment_arr1
+    integer :: arr1(1)
+    arr1 = [1, 2, 3]
+    !incompatible_dimension_assignment_arr2
+    integer :: idaa2_x(1:2,1:2,1:2)
+    integer :: idaa2_y(1:2,1:2,1:1)
+    idaa2_x = reshape([1, 2, 3, 4, 5, 6, 7, 8], [2, 2, 2])
+    idaa2_y = reshape([1, 2, 3, 4], [2, 2, 1])
+    idaa2_y = idaa2_x
+    !incompatible_dimension_logical_arrays_logical_binop_01
+    logical, parameter :: idlalb1_x(3) = [.true., .false., .false.]
+    print *, idlalb1_x .neqv. [.true., .true.]
+    !incompatible_dimension_logical_arrays_logical_binop_02
+    logical, parameter :: idlalb2_x1(3) = [.true., .false., .false.]
+    logical, parameter :: idlalb2_x2(2) = [.true., .true.]
+    print *, idlalb2_x1 .neqv. idlalb2_x2
+    !incompatible_rank_allocatable_arr1
+    integer, allocatable :: iraa1_arr1(:, :)
+    iraa1_arr1 = [1, 2, 3]
+    !incompatible_rank_allocatable_arr2
+    integer, allocatable :: iraa2_arr1(:, :, :)
+    integer, allocatable :: iraa2_arr3(:)
+    iraa2_arr3 = iraa2_arr1
 
     CONTAINS
     LOGICAL FUNCTION f(x)
