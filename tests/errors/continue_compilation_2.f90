@@ -179,6 +179,88 @@ program continue_compilation_2
     integer, allocatable :: iraa2_arr1(:, :, :)
     integer, allocatable :: iraa2_arr3(:)
     iraa2_arr3 = iraa2_arr1
+    !incorrect_array_type_where_01
+    integer :: iatw1_b(5)
+    where([1, 2, 3, 4, 5]) iatw1_b = 1
+    print *, iatw1_b
+    if (all(iatw1_b /= [1, 0, 1, 0, 1])) error stop
+    !incorrect_array_type_where_02
+    integer :: iatw2_i1(5)
+    integer :: iatw2_b(5)
+    iatw2_i1 = [1, 2, 3, 4, 5]
+    where(iatw2_i1) iatw2_b = 1
+    print *, iatw2_b
+    if (all(iatw2_b /= [1, 0, 1, 0, 1])) error stop
+    !incorrect_type_where_01
+    integer  :: itw1_b(5)
+    where(.true.) itw1_b = 12121
+    print *, itw1_b
+    !incorrect_type_where_02
+    integer  :: itw2_b(5)
+    where(1) itw2_b = 12121
+    print *, itw2_b
+    !incorrect_type_where_03
+    integer  :: itw3_b(5)
+    where(max(1.33, 2.67)) itw3_b = 12121
+    print *, itw3_b
+    !intent1
+    INTEGER :: intent_x
+    intent_x = 42
+    CALL try_to_change(intent_x)
+    !intrinsics1
+    print *, radix((2.4, 1.0))
+    !intrinsics2
+    real(8) :: intr2_x, intr2_y, datan2
+    intr2_x = 2.33D0
+    intr2_y = 3.41D0
+    print *, datan2(x,y)
+    if(abs(datan2(x,y) - 0.59941916594660438) > 1d-6) error stop
+    !intrinsics3
+    print *, ibclr(1, -2)
+    !intrinsics4
+    print *, dshiftl(1, 1_8, 1)
+    !intrinsics5
+    print *, ior(1, 1_8)
+    !intrinsics6
+    print *, ieor(1, 1_8)
+    !intrinsics7
+    print *, hypot(1.0, 2.7_8)
+    !intrinsics8
+    integer(4) :: intr8_x = 1
+    integer(8) :: intr8_y = 2
+    print *, ior(intr8_x, intr8_y)
+    !intrinsics9
+    integer(4) :: intr9_x = 1
+    integer(8) :: intr9_y = 2
+    print *, iand(intr9_x, intr9_y)
+    !intrinsics10
+    integer(4) :: intr10_x = 1
+    integer(8) :: intr10_y = 2
+    print *, ieor(intr10_x, intr10_y)
+    !intrinsics11
+    real(4) :: intr11_x = 1
+    real(8) :: intr11_y = 2
+    print *, hypot(intr11_x, intr11_y)
+    !intrinsics12
+    print *, max(12, 13.94)
+    !intrinsics13
+    print *, min(12, 13.94)
+    !intrinsics14
+    print *, scale([1, 2, 3], 2)
+    !intrinsics15
+    print *, set_exponent([1, 2, 3], 2)
+    !iostat_constant_integer
+    integer, parameter :: ici_ios = 1
+    character(len=100) :: ici_buffer
+    ici_buffer = 'Temporary date for testing purpose'
+    read(ici_buffer, *, iostat=ici_ios)
+    !iostat_non_scalar_value
+    integer :: insv_ios(2) = 1
+    character(len=100) :: insv_buffer
+    insv_buffer = 'Temporary date for testing purpose'
+    read(insv_buffer, *, iostat=insv_ios(1:1))
+    !ishftc_size
+    print *, ishftc(10, 6, 4)
 
     CONTAINS
     LOGICAL FUNCTION f(x)
@@ -187,3 +269,9 @@ program continue_compilation_2
     END FUNCTION
 
 end program
+
+
+SUBROUTINE try_to_change(y)
+    INTEGER, INTENT(IN) :: y
+    y = 99  
+END SUBROUTINE
