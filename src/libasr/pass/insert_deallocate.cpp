@@ -25,7 +25,7 @@ class InsertDeallocate: public ASR::CallReplacerOnExpressionsVisitor<InsertDeall
             for( auto& itr: x.m_symtab->get_scope() ) {
                 if( ASR::is_a<ASR::Variable_t>(*itr.second) &&
                     ASR::is_a<ASR::Allocatable_t>(*ASRUtils::symbol_type(itr.second)) &&
-                    ASRUtils::is_array(ASRUtils::symbol_type(itr.second)) &&
+                    ASRUtils::is_allocatable(ASRUtils::symbol_type(itr.second)) &&
                     ASRUtils::symbol_intent(itr.second) == ASRUtils::intent_local ) {
                     to_be_deallocated.push_back(al, ASRUtils::EXPR(
                         ASR::make_Var_t(al, x.base.base.loc, itr.second)));
