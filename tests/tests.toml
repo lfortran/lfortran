@@ -4279,7 +4279,6 @@ run = true
 
 [[test]]
 filename = "multi_error1.f90"
-ast = true # TODO: remove this and only use continue compilation
 continue_compilation = true
 
 [[test]]
