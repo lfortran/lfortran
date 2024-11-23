@@ -300,3 +300,153 @@ semantic error: Incompatible ranks 1 and 3 in assignment
     |
 181 |     iraa2_arr3 = iraa2_arr1
     |     ^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: the first array argument to `where` must be of type logical
+   --> tests/errors/continue_compilation_2.f90:184:11
+    |
+184 |     where([1, 2, 3, 4, 5]) iatw1_b = 1
+    |           ^^^^^^^^^^^^^^^ 
+
+semantic error: the first array argument to `where` must be of type logical
+   --> tests/errors/continue_compilation_2.f90:191:11
+    |
+191 |     where(iatw2_i1) iatw2_b = 1
+    |           ^^^^^^^^ 
+
+semantic error: the argument to `where` must be an array
+   --> tests/errors/continue_compilation_2.f90:196:11
+    |
+196 |     where(.true.) itw1_b = 12121
+    |           ^^^^^^ 
+
+semantic error: the argument to `where` must be an array
+   --> tests/errors/continue_compilation_2.f90:200:11
+    |
+200 |     where(1) itw2_b = 12121
+    |           ^ 
+
+semantic error: the argument to `where` must be an array
+   --> tests/errors/continue_compilation_2.f90:204:11
+    |
+204 |     where(max(1.33, 2.67)) itw3_b = 12121
+    |           ^^^^^^^^^^^^^^^ 
+
+semantic error: Unexpected args, Radix expects (int) or (real) as arguments
+   --> tests/errors/continue_compilation_2.f90:211:14
+    |
+211 |     print *, radix((2.4, 1.0))
+    |              ^^^^^^^^^^^^^^^^^ 
+
+semantic error: datan2 was declared as a variable, it can't be called as a function
+   --> tests/errors/continue_compilation_2.f90:216:14
+    |
+216 |     print *, datan2(x,y)
+    |              ^^^^^^^^^^^ help: use the compiler option "--implicit-interface" to use intrinsic functions
+
+semantic error: datan2 was declared as a variable, it can't be called as a function
+   --> tests/errors/continue_compilation_2.f90:217:12
+    |
+217 |     if(abs(datan2(x,y) - 0.59941916594660438) > 1d-6) error stop
+    |            ^^^^^^^^^^^ help: use the compiler option "--implicit-interface" to use intrinsic functions
+
+semantic error: `pos` argument of `ibclr` intrinsic must be non-negative
+   --> tests/errors/continue_compilation_2.f90:219:14
+    |
+219 |     print *, ibclr(1, -2)
+    |              ^^^^^^^^^^^^ 
+
+semantic error: Kind of all the arguments of Dshiftl must be the same
+   --> tests/errors/continue_compilation_2.f90:221:14
+    |
+221 |     print *, dshiftl(1, 1_8, 1)
+    |              ^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Kind of all the arguments of Ior must be the same
+   --> tests/errors/continue_compilation_2.f90:223:14
+    |
+223 |     print *, ior(1, 1_8)
+    |              ^^^^^^^^^^^ 
+
+semantic error: Kind of all the arguments of Ieor must be the same
+   --> tests/errors/continue_compilation_2.f90:225:14
+    |
+225 |     print *, ieor(1, 1_8)
+    |              ^^^^^^^^^^^^ 
+
+semantic error: Kind of all the arguments of Hypot must be the same
+   --> tests/errors/continue_compilation_2.f90:227:14
+    |
+227 |     print *, hypot(1.0, 2.7_8)
+    |              ^^^^^^^^^^^^^^^^^ 
+
+semantic error: Kind of all the arguments of Ior must be the same
+   --> tests/errors/continue_compilation_2.f90:231:14
+    |
+231 |     print *, ior(intr8_x, intr8_y)
+    |              ^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Kind of all the arguments of Iand must be the same
+   --> tests/errors/continue_compilation_2.f90:235:14
+    |
+235 |     print *, iand(intr9_x, intr9_y)
+    |              ^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Kind of all the arguments of Ieor must be the same
+   --> tests/errors/continue_compilation_2.f90:239:14
+    |
+239 |     print *, ieor(intr10_x, intr10_y)
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Kind of all the arguments of Hypot must be the same
+   --> tests/errors/continue_compilation_2.f90:243:14
+    |
+243 |     print *, hypot(intr11_x, intr11_y)
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: All arguments to max0 must be of the same type
+   --> tests/errors/continue_compilation_2.f90:245:14
+    |
+245 |     print *, max(12, 13.94)
+    |              ^^^^^^^^^^^^^^ 
+
+semantic error: All arguments to min0 must be of the same type
+   --> tests/errors/continue_compilation_2.f90:247:14
+    |
+247 |     print *, min(12, 13.94)
+    |              ^^^^^^^^^^^^^^ 
+
+semantic error: Unexpected args, Scale expects (real, int) as arguments
+   --> tests/errors/continue_compilation_2.f90:249:14
+    |
+249 |     print *, scale([1, 2, 3], 2)
+    |              ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Unexpected args, SetExponent expects (real, int) as arguments
+   --> tests/errors/continue_compilation_2.f90:251:14
+    |
+251 |     print *, set_exponent([1, 2, 3], 2)
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Non-variable expression for `iostat`
+   --> tests/errors/continue_compilation_2.f90:256:5
+    |
+256 |     read(ici_buffer, *, iostat=ici_ios)
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `iostat` must be scalar
+   --> tests/errors/continue_compilation_2.f90:261:5
+    |
+261 |     read(insv_buffer, *, iostat=insv_ios(1:1))
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: The SHIFT argument must be less than or equal to the of SIZE argument
+   --> tests/errors/continue_compilation_2.f90:263:14
+    |
+263 |     print *, ishftc(10, 6, 4)
+    |              ^^^^^^^^^^^^^^^^ 
+
+semantic error: Cannot assign to an intent(in) variable `y`
+   --> tests/errors/continue_compilation_2.f90:276:5
+    |
+276 |     y = 99  
+    |     ^ 
