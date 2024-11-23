@@ -5,19 +5,19 @@ syntax error: Newline is unexpected here
   |               ^ 
 
 syntax error: Newline is unexpected here
- --> tests/multi_error1.f90:4:15
+ --> tests/multi_error1.f90:5:15
   |
-4 | integer :: y =
+5 | integer :: y =
   |               ^ 
 
 syntax error: Newline is unexpected here
- --> tests/multi_error1.f90:5:13
+ --> tests/multi_error1.f90:6:13
   |
-5 | print *, x +
+6 | print *, x +
   |             ^ 
 
 syntax error: Token 'y' (of type 'identifier') is unexpected here
- --> tests/multi_error1.f90:6:12
+ --> tests/multi_error1.f90:7:12
   |
-6 | print *, x y
+7 | print *, x y
   |            ^ 

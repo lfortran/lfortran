@@ -1,1 +1,1 @@
-The command 'clang -o multi_error1.out tests/multi_error1.tmp.o  -L"$DIR/src/bin/../runtime" -Wl,-rpath,"$DIR/src/bin/../runtime" -llfortran_runtime -lm' failed.
+1
