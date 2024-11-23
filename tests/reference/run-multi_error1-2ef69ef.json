@@ -2,12 +2,12 @@
     "basename": "run-multi_error1-2ef69ef",
     "cmd": "lfortran --continue-compilation --no-color {infile}",
     "infile": "tests/multi_error1.f90",
-    "infile_hash": "a57ce445f38eb5f9256682c83d805e91d0474b5f86937b248a02d441",
+    "infile_hash": "aae363b17603b231b2a906564a03365ce9a53952c754ea31187f352c",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "run-multi_error1-2ef69ef.stdout",
-    "stdout_hash": "a8ac7ea96c93db37f4c0d974a1bd5b762c8a9f95d5a544071061677c",
+    "stdout_hash": "b265f33f6fe99bd366dae49c45d2c3d288fdd852024103e85c07002d",
     "stderr": "run-multi_error1-2ef69ef.stderr",
-    "stderr_hash": "0479c8b894b7f7064abb4cdbfddda1af3fe6092776edbd8210c90e04",
-    "returncode": 11
+    "stderr_hash": "8e354c62a28f565b652876a84c5e566842065a5429ce01c56fea19e1",
+    "returncode": 1
 }
