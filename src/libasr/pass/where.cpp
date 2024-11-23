@@ -86,7 +86,7 @@ public:
         ASR::expr_t* right = *current_expr; \
         current_expr = current_expr_copy; \
         ASR::ttype_t* return_type;\
-        /* Both sides are primtives, OR one side is primitve and the other is ArrayBroadCast, OR both arrays*/ \
+        /* Both sides are primitives, OR one side is primitive and the other is ArrayBroadCast, OR both arrays*/ \
         bool return_is_primitve =!ASRUtils::is_array(ASRUtils::expr_type(x->m_left)) || \
             !ASRUtils::is_array(ASRUtils::expr_type(x->m_right)); \
         return_type = return_is_primitve? ASRUtils::type_get_past_array(ASRUtils::expr_type(x->m_left)) : x->m_type;\
