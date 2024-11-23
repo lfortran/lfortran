@@ -246,3 +246,57 @@ semantic error: Type mismatch in argument at argument (1); passed `real` to `int
     |
 152 |     print *, f(42.9)
     |                ^^^^ 
+
+semantic error: Argument to Ichar must have length one
+   --> tests/errors/continue_compilation_2.f90:154:13
+    |
+154 |     print*, ichar("okay")
+    |             ^^^^^^^^^^^^^ 
+
+semantic error: first argument of `idint` must have kind equals to 8
+   --> tests/errors/continue_compilation_2.f90:156:14
+    |
+156 |     print *, idint(4.5)
+    |              ^^^^^^^^^^ 
+
+semantic error: first argument of `ifix` must have kind equals to 4
+   --> tests/errors/continue_compilation_2.f90:158:14
+    |
+158 |     print *, ifix(4.23_8)
+    |              ^^^^^^^^^^^^ 
+
+semantic error: Different shape for array assignment on dimension 1(1 and 3)
+   --> tests/errors/continue_compilation_2.f90:161:5
+    |
+161 |     arr1 = [1, 2, 3]
+    |     ^^^^^^^^^^^^^^^^ 
+
+semantic error: Different shape for array assignment on dimension 3(1 and 2)
+   --> tests/errors/continue_compilation_2.f90:167:5
+    |
+167 |     idaa2_y = idaa2_x
+    |     ^^^^^^^^^^^^^^^^^ 
+
+semantic error: Shapes for operands are not conformable
+   --> tests/errors/continue_compilation_2.f90:170:14
+    |
+170 |     print *, idlalb1_x .neqv. [.true., .true.]
+    |              ^^^^^^^^^        ^^^^^^^^^^^^^^^^ 
+
+semantic error: Shapes for operands are not conformable
+   --> tests/errors/continue_compilation_2.f90:174:14
+    |
+174 |     print *, idlalb2_x1 .neqv. idlalb2_x2
+    |              ^^^^^^^^^^        ^^^^^^^^^^ 
+
+semantic error: Incompatible ranks 2 and 1 in assignment
+   --> tests/errors/continue_compilation_2.f90:177:5
+    |
+177 |     iraa1_arr1 = [1, 2, 3]
+    |     ^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Incompatible ranks 1 and 3 in assignment
+   --> tests/errors/continue_compilation_2.f90:181:5
+    |
+181 |     iraa2_arr3 = iraa2_arr1
+    |     ^^^^^^^^^^^^^^^^^^^^^^^ 
