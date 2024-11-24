@@ -4,7 +4,7 @@
 %param {LCompilers::LFortran::Parser &p}
 %locations
 %glr-parser
-%expect    228 // shift/reduce conflicts
+%expect    227 // shift/reduce conflicts
 %expect-rr 175 // reduce/reduce conflicts
 
 // Uncomment this to get verbose error messages
@@ -426,6 +426,8 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <vec_coarrayarg> coarray_arg_list
 %type <dim> array_comp_decl
 %type <codim> coarray_comp_decl
+%type <ast> intrinsic_type_spec
+%type <ast> declaration_type_spec
 %type <ast> var_type
 %type <ast> fn_mod
 %type <vec_ast> fn_mod_plus
@@ -534,7 +536,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <ast> data_stmt_repeat
 %type <ast> data_stmt_constant
 %type <ast> data_object
-%type <ast> integer_type
+%type <ast> integer_type_spec
 %type <vec_kind_arg> kind_arg_list
 %type <kind_arg> kind_arg2
 %type <vec_ast> interface_body
@@ -1371,12 +1373,12 @@ data_object
     | id "(" fnarray_arg_list_opt ")" { $$ = FUNCCALLORARRAY($1, $3, @$); }
     | "(" data_object_list "," id "=" expr "," expr ")" {
             $$ = DATA_IMPLIED_DO1($2, nullptr, $4, $6, $8, @$); }
-    | "(" data_object_list "," integer_type id "=" expr "," expr ")" {
-            $$ = DATA_IMPLIED_DO1($2, $4, $5, $7, $9, @$); }
+    | "(" data_object_list "," integer_type_spec "::" id "=" expr "," expr ")" {
+            $$ = DATA_IMPLIED_DO1($2, $4, $6, $8, $10, @$); }
     | "(" data_object_list "," id "=" expr "," expr "," expr ")" {
             $$ = DATA_IMPLIED_DO2($2, nullptr, $4, $6, $8, $10, @$); }
-    | "(" data_object_list "," integer_type id "=" expr "," expr "," expr ")" {
-            $$ = DATA_IMPLIED_DO2($2, $4, $5, $7, $9, $11, @$); }
+    | "(" data_object_list "," integer_type_spec "::" id "=" expr "," expr "," expr ")" {
+            $$ = DATA_IMPLIED_DO2($2, $4, $6, $8, $10, $12, @$); }
     ;
 
 data_stmt_value_list
@@ -1409,11 +1411,6 @@ data_stmt_constant
     | ".false." { $$ = FALSE(@$); }
     | "(" signed_numeric_constant "," signed_numeric_constant ")" { $$ = COMPLEX($2, $4, @$); }
 
-    ;
-
-integer_type
-    : KW_INTEGER "(" kind_arg_list ")" "::" {
-            $$ = ATTR_TYPE_KIND(Integer, $3, @$); }
     ;
 
 kind_arg_list
@@ -1473,10 +1470,15 @@ var_modifier
     | KW_LEN { $$ = SIMPLE_ATTR(Len, @$); }
     ;
 
-var_type
+
+integer_type_spec
     : KW_INTEGER { $$ = ATTR_TYPE(Integer, @$); }
     | KW_INTEGER "(" kind_arg_list ")" { $$ = ATTR_TYPE_KIND(Integer, $3, @$); }
     | KW_INTEGER "*" TK_INTEGER { $$ = ATTR_TYPE_INT(Integer, $3, @$); WARN_INTEGERSTAR($3, @$); }
+    ;
+
+intrinsic_type_spec
+    : integer_type_spec { $$ = $1; }
     | KW_CHARACTER { $$ = ATTR_TYPE(Character, @$); }
     | KW_CHARACTER "(" kind_arg_list ")" { $$ = ATTR_TYPE_KIND(Character, $3, @$); }
     | KW_CHARACTER "*" TK_INTEGER { $$ = ATTR_TYPE_INT(Character, $3, @$); WARN_CHARACTERSTAR($3, @$);}
@@ -1495,20 +1497,20 @@ var_type
     | KW_DOUBLE_PRECISION { $$ = ATTR_TYPE(DoublePrecision, @$); }
     | KW_DOUBLE KW_COMPLEX { $$ = ATTR_TYPE(DoubleComplex, @$); }
     | KW_DOUBLE_COMPLEX { $$ = ATTR_TYPE(DoubleComplex, @$); }
-    | KW_TYPE "(" id ")" { $$ = ATTR_TYPE_NAME(Type, $3, @$); }
-    | KW_TYPE "(" KW_INTEGER "(" kind_arg_list ")" ")" { $$ = ATTR_TYPE_ATTR(
-        Type, ATTR_TYPE_KIND(Integer, $5, @$), @$); }
-    | KW_TYPE "(" KW_REAL "(" kind_arg_list ")" ")" { $$ = ATTR_TYPE_ATTR(
-        Type, ATTR_TYPE_KIND(Real, $5, @$), @$); }
-    | KW_TYPE "(" KW_DOUBLE KW_PRECISION ")" { $$ = ATTR_TYPE_ATTR(
-        Type, ATTR_TYPE(DoublePrecision, @$), @$); }
-    | KW_TYPE "(" KW_COMPLEX "(" kind_arg_list ")" ")" { $$ = ATTR_TYPE_ATTR(
-        Type, ATTR_TYPE_KIND(Complex, $5, @$), @$); }
-    | KW_TYPE "(" KW_LOGICAL "(" kind_arg_list ")" ")" { $$ = ATTR_TYPE_ATTR(
-        Type, ATTR_TYPE_KIND(Logical, $5, @$), @$); }
-    | KW_TYPE "(" KW_CHARACTER "(" kind_arg_list ")" ")" { $$ = ATTR_TYPE_ATTR(
-        Type, ATTR_TYPE_KIND(Character, $5, @$), @$); }
+    ;
+
+declaration_type_spec
+    : intrinsic_type_spec { $$ = $1; }
+    | KW_TYPE "(" intrinsic_type_spec ")" %dprec 2 { $$ = ATTR_TYPE_ATTR(
+        Type, $3, @$); }
+    | KW_TYPE "(" id ")" %dprec 1 { $$ = ATTR_TYPE_NAME(Type, $3, @$); }
     | KW_TYPE "(" "*" ")" { $$ = ATTR_TYPE_STAR(Type, Asterisk, @$); }
+    | KW_CLASS "(" id ")" { $$ = ATTR_TYPE_NAME(Class, $3, @$); }
+    | KW_CLASS "(" "*" ")" { $$ = ATTR_TYPE_STAR(Class, Asterisk, @$); }
+    ;
+
+var_type
+    : declaration_type_spec { $$ = $1; }
     | KW_PROCEDURE "(" id ")" { $$ = ATTR_TYPE_NAME(Procedure, $3, @$); }
     | KW_PROCEDURE "(" ")" { $$ = ATTR_TYPE(Procedure, @$); }
     | KW_PROCEDURE "(" KW_INTEGER "(" kind_arg_list ")" ")" { $$ = ATTR_TYPE(Procedure, @$); }
@@ -1517,8 +1519,6 @@ var_type
     | KW_PROCEDURE "(" KW_COMPLEX "(" kind_arg_list ")" ")" { $$ = ATTR_TYPE(Procedure, @$); }
     | KW_PROCEDURE "(" KW_LOGICAL "(" kind_arg_list ")" ")" { $$ = ATTR_TYPE(Procedure, @$); }
     | KW_PROCEDURE "(" KW_CHARACTER "(" kind_arg_list ")" ")" { $$ = ATTR_TYPE(Procedure, @$); }
-    | KW_CLASS "(" id ")" { $$ = ATTR_TYPE_NAME(Class, $3, @$); }
-    | KW_CLASS "(" "*" ")" { $$ = ATTR_TYPE_STAR(Class, Asterisk, @$); }
     ;
 
 var_sym_decl_list
