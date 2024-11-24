@@ -3859,7 +3859,17 @@ ASR::asr_t* symbol_resolve_external_generic_procedure_without_eval(
             ASR::symbol_t *v, Vec<ASR::call_arg_t>& args,
             SymbolTable* current_scope, Allocator& al,
             const std::function<void (const std::string &, const Location &)> err);
-
+static inline ASR::storage_typeType symbol_StorageType(const ASR::symbol_t* s){
+    switch( s->type ) {
+        case ASR::symbolType::Variable: {
+            return ASR::down_cast<ASR::Variable_t>(s)->m_storage;
+        }
+        default: {
+            throw LCompilersException("Cannot return storage type of, " +
+                                    std::to_string(s->type) + " symbol.");
+        }
+    }
+}
 static inline ASR::intentType symbol_intent(const ASR::symbol_t *f)
 {
     switch( f->type ) {
