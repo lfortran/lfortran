@@ -220,6 +220,35 @@
                                     Required
                                     .false.
                                 ),
+                            complex_z:
+                                (Variable
+                                    5
+                                    complex_z
+                                    []
+                                    Local
+                                    (ComplexConstructor
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 2 (Integer 4) Decimal)
+                                        (Complex 4)
+                                        (ComplexConstant
+                                            1.000000
+                                            2.000000
+                                            (Complex 4)
+                                        )
+                                    )
+                                    (ComplexConstant
+                                        1.000000
+                                        2.000000
+                                        (Complex 4)
+                                    )
+                                    Save
+                                    (Complex 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
                             datan2:
                                 (Variable
                                     5
@@ -1384,6 +1413,38 @@
                                 (Variable
                                     5
                                     size_a_2
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            tm1_x:
+                                (Variable
+                                    5
+                                    tm1_x
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            tm2_x:
+                                (Variable
+                                    5
+                                    tm2_x
                                     []
                                     Local
                                     ()

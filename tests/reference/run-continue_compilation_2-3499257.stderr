@@ -445,8 +445,38 @@ semantic error: The SHIFT argument must be less than or equal to the of SIZE arg
 263 |     print *, ishftc(10, 6, 4)
     |              ^^^^^^^^^^^^^^^^ 
 
-semantic error: Cannot assign to an intent(in) variable `y`
-   --> tests/errors/continue_compilation_2.f90:276:5
+semantic error: The first argument of `cmplx` intrinsic is of complex type, the second argument in this case must be absent
+   --> tests/errors/continue_compilation_2.f90:266:14
     |
-276 |     y = 99  
+266 |     print *, cmplx(complex_z , 1)
+    |              ^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: kind argument of `aint` intrinsic must be a scalar
+   --> tests/errors/continue_compilation_2.f90:268:36
+    |
+268 |     print *, aint([1.0, 2.0, 3.0], [4, 4])
+    |                                    ^^^^^^ 
+
+semantic error: Type mismatch in assignment, the types must be compatible
+   --> tests/errors/continue_compilation_2.f90:271:5
+    |
+271 |     tm1_x = "x"
+    |     ^^^^^   ^^^ type mismatch (integer and string)
+
+semantic error: Type mismatch in binary operator, the types must be compatible
+   --> tests/errors/continue_compilation_2.f90:274:13
+    |
+274 |     tm2_x = 5 + "x"
+    |             ^   ^^^ type mismatch (integer and string)
+
+semantic error: Type mismatch in assignment, the types must be compatible
+   --> tests/errors/continue_compilation_2.f90:274:5
+    |
+274 |     tm2_x = 5 + "x"
+    |     ^^^^^       ^^^ type mismatch (integer and string)
+
+semantic error: Cannot assign to an intent(in) variable `y`
+   --> tests/errors/continue_compilation_2.f90:288:5
+    |
+288 |     y = 99  
     |     ^ 
