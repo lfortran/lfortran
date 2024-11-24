@@ -94,7 +94,7 @@ program continue_compilation_2
     call atomic_add (atom[2], this_image())
     !array_constructor_with_asterisk_in_type_spec
     print *, [character(*) :: "a", "b", "ball", "cat"]
-    !array_constructor_with_different_kind
+    !array_constructor_with_different_char_length
     print *, ["a", "b", "ball", "cat"]
     print *, ["a1", "b1", "ball1", "cat1"]
     !array_constructor_with_different_kind
@@ -261,17 +261,29 @@ program continue_compilation_2
     read(insv_buffer, *, iostat=insv_ios(1:1))
     !ishftc_size
     print *, ishftc(10, 6, 4)
+    !complex_01
+    complex :: complex_z = (1, 2)
+    print *, cmplx(complex_z , 1)
+    !kind_01
+    print *, aint([1.0, 2.0, 3.0], [4, 4])
+    !type_mismatch_1
+    integer :: tm1_x
+    tm1_x = "x"
+    !type_mismatch_2
+    integer :: tm2_x
+    tm2_x = 5 + "x"
 
-    CONTAINS
-    LOGICAL FUNCTION f(x)
-        INTEGER, INTENT(IN), OPTIONAL :: x
+
+    contains
+    logical function f(x)
+        integer, intent(in), optional :: x
         f = PRESENT(x)
-    END FUNCTION
+    end function
 
 end program
 
 
-SUBROUTINE try_to_change(y)
-    INTEGER, INTENT(IN) :: y
+subroutine try_to_change(y)
+    integer, intent(in) :: y
     y = 99  
-END SUBROUTINE
+end subroutine
