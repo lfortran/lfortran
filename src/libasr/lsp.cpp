@@ -9,7 +9,7 @@
 #include <libasr/location.h>
 #include <lfortran/fortran_evaluator.h>
 #include <libasr/lsp_interface.h>
-#include "libasr/asr_lookup_name.cpp"
+#include <libasr/asr_lookup_name.h>
 
 namespace LCompilers {
 
