@@ -2500,7 +2500,7 @@ int main_app(int argc, char *argv[]) {
     if (compiler_options.lookup_name) {
         return get_definitions(arg_file, compiler_options);
     }
-    if (show_asr) {
+    if (show_asr || compiler_options.continue_compilation) {
         return emit_asr(arg_file, lfortran_pass_manager,
                 compiler_options);
     }
