@@ -2,7 +2,7 @@
     "basename": "asr-string_negative_start_index-643e9c0",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/errors/string_negative_start_index.f90",
-    "infile_hash": "0279910089d8b57cca5a676046f74ee9dc432e36f5211d2f7f5a6b50",
+    "infile_hash": "09f10d0a9225824440f331a87871a73e5536466c5984c305fbd1f982",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,

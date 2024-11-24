@@ -3013,6 +3013,10 @@ filename = "errors/continue_compilation_2.f90"
 continue_compilation = true
 
 [[test]]
+filename = "errors/continue_compilation_3.f90"
+continue_compilation = true
+
+[[test]]
 filename = "../integration_tests/rewind_inquire_flush.f90"
 asr = true
 
@@ -3621,10 +3625,6 @@ continue_compilation = true
 [[test]]
 filename = "errors/array_06.f90"
 asr = true
-
-[[test]]
-filename = "errors/array_xx_cc.f90"
-continue_compilation = true
 
 [[test]]
 filename = "../integration_tests/where_02.f90"

@@ -2,19 +2,19 @@
     (SymbolTable
         1
         {
-            array_xx_cc:
+            continue_compilation_3:
                 (Program
                     (SymbolTable
                         2
                         {
-                            1_t_x:
+                            1_t_xx:
                                 (ExternalSymbol
                                     2
-                                    1_t_x
-                                    3 x
+                                    1_t_xx
+                                    3 xx
                                     t
                                     []
-                                    x
+                                    xx
                                     Public
                                 ),
                             a:
@@ -80,6 +80,37 @@
                                     Required
                                     .false.
                                 ),
+                            bpe:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            
+                                        })
+                                    bpe
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
                             c:
                                 (Variable
                                     2
@@ -112,27 +143,6 @@
                                     Required
                                     .false.
                                 ),
-                            iarx:
-                                (Variable
-                                    2
-                                    iarx
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Array
-                                        (Integer 4)
-                                        [((IntegerConstant 1 (Integer 4) Decimal)
-                                        (IntegerConstant 3 (Integer 4) Decimal))]
-                                        FixedSizeArray
-                                    )
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                ),
                             k:
                                 (Variable
                                     2
@@ -149,16 +159,38 @@
                                     Required
                                     .false.
                                 ),
-                            size_a:
+                            s:
                                 (Variable
                                     2
-                                    size_a
+                                    s
                                     []
                                     Local
                                     ()
                                     ()
                                     Default
-                                    (Integer 4)
+                                    (String 1 8 () PointerString)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            s1:
+                                (Variable
+                                    2
+                                    s1
+                                    []
+                                    Local
+                                    (StringConstant
+                                        "lfortran"
+                                        (String 1 8 () PointerString)
+                                    )
+                                    (StringConstant
+                                        "lfortran"
+                                        (String 1 8 () PointerString)
+                                    )
+                                    Save
+                                    (String 1 8 () PointerString)
                                     ()
                                     Source
                                     Public
@@ -191,10 +223,10 @@
                                     (SymbolTable
                                         3
                                         {
-                                            x:
+                                            xx:
                                                 (Variable
                                                     3
-                                                    x
+                                                    xx
                                                     []
                                                     Local
                                                     ()
@@ -210,7 +242,7 @@
                                         })
                                     t
                                     []
-                                    [x]
+                                    [xx]
                                     Source
                                     Public
                                     .false.
@@ -218,6 +250,22 @@
                                     []
                                     ()
                                     ()
+                                ),
+                            x:
+                                (Variable
+                                    2
+                                    x
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
                                 ),
                             x1:
                                 (Variable
@@ -236,22 +284,6 @@
                                         (IntegerConstant 2 (Integer 4) Decimal))]
                                         FixedSizeArray
                                     )
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                ),
-                            x2:
-                                (Variable
-                                    2
-                                    x2
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -293,7 +325,7 @@
                                     .false.
                                 )
                         })
-                    array_xx_cc
+                    continue_compilation_3
                     []
                     [(Assignment
                         (Var 2 a)
@@ -301,7 +333,7 @@
                         ()
                     )
                     (Assignment
-                        (Var 2 x2)
+                        (Var 2 i)
                         (IntegerUnaryMinus
                             (IntegerConstant 3 (Integer 4) Decimal)
                             (Integer 4)
@@ -382,13 +414,13 @@
                         []
                     )
                     (Assignment
-                        (Var 2 size_a)
-                        (Var 2 size_a)
+                        (Var 2 i)
+                        (Var 2 i)
                         ()
                     )
                     (Assignment
-                        (Var 2 size_a)
-                        (Var 2 size_a)
+                        (Var 2 i)
+                        (Var 2 i)
                         ()
                     )
                     (Assignment
@@ -404,6 +436,47 @@
                             (String -1 0 () PointerString)
                             ()
                         )
+                    )
+                    (Assignment
+                        (Var 2 i)
+                        (Var 2 i)
+                        ()
+                    )
+                    (Assignment
+                        (Var 2 s)
+                        (StringConstant
+                            "lfortran"
+                            (String 1 8 () PointerString)
+                        )
+                        ()
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(StringConstant
+                                "Length of s:"
+                                (String 1 12 () PointerString)
+                            )
+                            (StringLen
+                                (Var 2 s)
+                                (Integer 4)
+                                ()
+                            )]
+                            FormatFortran
+                            (String -1 0 () PointerString)
+                            ()
+                        )
+                    )
+                    (SubroutineCall
+                        2 bpe
+                        ()
+                        []
+                        ()
+                    )
+                    (Assignment
+                        (Var 2 i)
+                        (Var 2 i)
+                        ()
                     )]
                 )
         })
