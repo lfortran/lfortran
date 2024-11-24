@@ -2665,11 +2665,14 @@ int main_app(int argc, char *argv[]) {
         }
         if (err && !compiler_options.continue_compilation) return err;
         err_ = err;
-        object_files.push_back(tmp_o);
+        if (!err) object_files.push_back(tmp_o);
     }
-
-    return err_ + link_executable(object_files, outfile, runtime_library_dir, backend, static_link, shared_link,
+    if (object_files.size() == 0) { 
+        return err_;
+    } else {
+        return err_ + link_executable(object_files, outfile, runtime_library_dir, backend, static_link, shared_link,
                            link_with_gcc, true, arg_v, arg_L, arg_l, linker_flags, compiler_options);
+    }
 }
 
 int main(int argc, char *argv[])
