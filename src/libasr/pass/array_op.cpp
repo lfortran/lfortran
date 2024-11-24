@@ -835,10 +835,11 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                             ASR::expr_t* m_left = x->m_args[j].m_left;
                             ASR::expr_t* m_right = x->m_args[j].m_right;
 
-                            if (m_left)
+                            if (m_left) {
                               m_left = CastingUtil::perform_casting(m_left, int32_type, al, loc);
-                            else
+                            } else {
                               m_left = i32_one;
+                            }
 
                             res_dims_vec.p[j].m_start = m_left;
                             if (m_right) {
@@ -892,16 +893,21 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                                 ASR::expr_t* m_step = x->m_args[j].m_step;
                                 if (m_right) m_right = CastingUtil::perform_casting(m_right, int32_type, al, loc);
                                 if (m_left) m_left = CastingUtil::perform_casting(m_left, int32_type, al, loc);
-                                if (m_step)
+                                
+                                if (m_step) {
                                   m_step = CastingUtil::perform_casting(m_step, int32_type, al, loc);
-                                else
+                                } else {
                                   m_step = i32_one;
+                                }
+
                                 x->m_args[j].loc = idx_vars[j]->base.loc;
-                                if (m_left)
+                                if (m_left) {
                                   x->m_args[j].m_right = builder.Add(m_left, builder.Mul(
                                           builder.Sub(idx_vars[j], i32_one), m_step));
-                                else
+                                } else {
                                   x->m_args[j].m_right = builder.Mul(idx_vars[j], m_step);
+                                }
+
                                 x->m_args[j].m_step = nullptr;
                             }
                         }
