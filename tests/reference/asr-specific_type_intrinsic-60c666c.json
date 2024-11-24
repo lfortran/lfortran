@@ -2,7 +2,7 @@
     "basename": "asr-specific_type_intrinsic-60c666c",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/errors/specific_type_intrinsic.f90",
-    "infile_hash": "7bc8cb53c935cbdc8c7c6544a22887322fd640118ffdb608879bed87",
+    "infile_hash": "442e8580aa683980ba51d19893cf7a3c1add2254bf3099797f242fe8",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
