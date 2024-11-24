@@ -1,3 +1,6 @@
+#ifndef ASR_LOOKUP_NAME_H
+#define ASR_LOOKUP_NAME_H
+
 #include <iostream>
 #include <stdint.h>
 #include <libasr/asr.h>
@@ -138,3 +141,5 @@ namespace LCompilers::LFortran {
     };
 
 }
+
+#endif // ASR_LOOKUP_NAME_H
