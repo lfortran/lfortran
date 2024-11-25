@@ -2535,8 +2535,6 @@ int main_app(int argc, char *argv[]) {
         return get_definitions(arg_file, compiler_options);
     }
     if ( compiler_options.semantics_only ) {
-        // to avoid multiple changes in parser / ast_to_asr set `compiler_options.continue_compilation` to true
-        compiler_options.continue_compilation = true;
         return run_parser_and_semantics(arg_file, lfortran_pass_manager,
                 compiler_options);
     }
