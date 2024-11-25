@@ -150,6 +150,7 @@ loop.end:                                         ; preds = %loop.head
   %47 = load i8*, i8** %46, align 8
   %48 = call i8* (i32, i8*, ...) @_lcompilers_string_format_fortran(i32 2, i8* null, i32 7, i8* %47)
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %48, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
+  call void @_lpython_free_argv()
   br label %return
 
 return:                                           ; preds = %loop.end
@@ -165,3 +166,5 @@ declare void @_lfortran_string_init(i32, i8*)
 declare i8* @_lcompilers_string_format_fortran(i32, i8*, ...)
 
 declare void @_lfortran_printf(i8*, ...)
+
+declare void @_lpython_free_argv()

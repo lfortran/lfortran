@@ -67,6 +67,7 @@ ifcont:                                           ; preds = %else, %then
   %23 = add i32 %22, 1
   store i32 %23, i32* %__1_k1, align 4
   call void @driver(void (i32*, i32*, i32*)* @implicit_interface_check, i32* getelementptr inbounds ([3 x i32], [3 x i32]* @main.b, i32 0, i32 0), i32* @main.n)
+  call void @_lpython_free_argv()
   br label %return
 
 return:                                           ; preds = %ifcont
@@ -180,3 +181,5 @@ declare void @_lcompilers_print_error(i8*, ...)
 declare void @exit(i32)
 
 declare void @_lpython_call_initial_functions(i32, i8**)
+
+declare void @_lpython_free_argv()

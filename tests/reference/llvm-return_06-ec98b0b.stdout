@@ -7,6 +7,7 @@ define i32 @main(i32 %0, i8** %1) {
   br label %return
 
 unreachable_after_return:                         ; No predecessors!
+  call void @_lpython_free_argv()
   br label %return
 
 return:                                           ; preds = %unreachable_after_return, %.entry
@@ -14,3 +15,5 @@ return:                                           ; preds = %unreachable_after_r
 }
 
 declare void @_lpython_call_initial_functions(i32, i8**)
+
+declare void @_lpython_free_argv()

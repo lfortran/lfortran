@@ -76,6 +76,7 @@ define i32 @main(i32 %0, i8** %1) {
   store float 2.000000e+00, float* %call_arg_value1, align 4
   %2 = call float @__module_callback_02_foo(float* %call_arg_value, float* %call_arg_value1, float* @main.res)
   store float %2, float* @main.res, align 4
+  call void @_lpython_free_argv()
   br label %return
 
 return:                                           ; preds = %.entry
@@ -83,3 +84,5 @@ return:                                           ; preds = %.entry
 }
 
 declare void @_lpython_call_initial_functions(i32, i8**)
+
+declare void @_lpython_free_argv()
