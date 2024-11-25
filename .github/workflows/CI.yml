@@ -38,7 +38,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v2.0.0
+      - uses: mamba-org/setup-micromamba@v2.0.2
         with:
           environment-file: ci/environment.yml
           create-args: >-
@@ -122,7 +122,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v2.0.0
+      - uses: mamba-org/setup-micromamba@v2.0.2
         with:
           environment-file: ci/environment_linux.yml
           create-args: >-
@@ -242,7 +242,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v2.0.0
+      - uses: mamba-org/setup-micromamba@v2.0.2
         with:
           environment-file: ci/environment_linux.yml
           create-args: >-
@@ -322,7 +322,7 @@ jobs:
           fetch-depth: 0
           path: src
 
-      - uses: mamba-org/setup-micromamba@v2.0.0
+      - uses: mamba-org/setup-micromamba@v2.0.2
         with:
           environment-file: src/ci/environment_linux.yml
           create-args: >-
@@ -378,7 +378,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v2.0.0
+      - uses: mamba-org/setup-micromamba@v2.0.2
         with:
           environment-file: ci/environment_linux.yml
           create-args: >-
@@ -449,7 +449,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v2.0.0
+      - uses: mamba-org/setup-micromamba@v2.0.2
         with:
           environment-file: ci/environment_linux_llvm.yml
           create-args: >-
@@ -831,7 +831,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v2.0.0
+      - uses: mamba-org/setup-micromamba@v2.0.2
         if: contains(matrix.llvm-version, '19')
         with:
           environment-file: ci/environment_linux_llvm.yml
@@ -844,7 +844,7 @@ jobs:
             make=4.3
             nodejs=18.20.4
 
-      - uses: mamba-org/setup-micromamba@v2.0.0
+      - uses: mamba-org/setup-micromamba@v2.0.2
         if: contains(matrix.llvm-version, '10')
         with:
           environment-file: ci/environment_linux_llvm.yml
@@ -857,7 +857,7 @@ jobs:
             make=4.3
             nodejs=18.20.2
 
-      - uses: mamba-org/setup-micromamba@v2.0.0
+      - uses: mamba-org/setup-micromamba@v2.0.2
         if: "!(contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19'))"
         with:
           environment-file: ci/environment_linux_llvm.yml
@@ -1261,7 +1261,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v2.0.0
+      - uses: mamba-org/setup-micromamba@v2.0.2
         with:
           environment-file: ci/environment_linux.yml
           create-args: >-
@@ -1400,7 +1400,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v2.0.0
+      - uses: mamba-org/setup-micromamba@v2.0.2
         with:
           environment-file: ci/environment_linux.yml
           create-args: >-
@@ -1419,7 +1419,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v2.0.0
+      - uses: mamba-org/setup-micromamba@v2.0.2
         with:
           environment-file: ci/environment_linux_llvm.yml
           create-args: >-
@@ -1466,7 +1466,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v2.0.0
+      - uses: mamba-org/setup-micromamba@v2.0.2
         with:
           environment-file: ci/environment_docs_linux.yml
 
