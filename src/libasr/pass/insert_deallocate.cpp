@@ -71,7 +71,7 @@ class InsertDeallocate: public ASR::CallReplacerOnExpressionsVisitor<InsertDeall
                       ASR::is_a<ASR::Exit_t>(*m_body[i]) ) &&
                     !return_or_exit_encounterd){
                     new_body.push_back(al, implicitDeallocate_stmt_stack.top());
-                    return_or_exit_encounterd = true; // No need to insert finaliztion node once we encounter a return stmt in signle body.
+                    return_or_exit_encounterd = true; // No need to insert finaliztion node once we encounter a return or exit stmt in signle body (dead code).
                 }
                 if(!return_or_exit_encounterd) { visit_stmt(*(m_body[i])); }
                 new_body.push_back(al, m_body[i]);
