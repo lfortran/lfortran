@@ -88,6 +88,7 @@ struct CompilerOptions {
     std::string line = "";
     std::string column = "";
     bool continue_compilation = false;
+    bool semantics_only = false;
     bool generate_object_code = false;
     bool no_warnings = false;
     bool disable_style = false;
