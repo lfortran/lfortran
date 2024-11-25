@@ -9,6 +9,7 @@ platforms = ["osx-arm64", "win-64", "linux-64"]
 [tasks]
 start = "src/bin/lfortran"
 test = "cmake --build . --parallel --target test && ./run_tests.py && cd integration_tests && ./run_tests.py -j16"
+clean = "git clean -dfx -e '.pixi'"
 
 [feature.host.tasks]
 # an empty task to make sure the dependencies are installed
