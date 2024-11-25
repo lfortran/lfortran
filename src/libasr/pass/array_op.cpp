@@ -1,3 +1,4 @@
+#include "libasr/assert.h"
 #include <libasr/asr.h>
 #include <libasr/containers.h>
 #include <libasr/exception.h>
@@ -425,40 +426,48 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         for ( size_t i = 0; i < x->n_args; i++ ) {
             ASR::expr_t* arg = x->m_args[i].m_right;
             if (ASRUtils::is_array(ASRUtils::expr_type(arg))) {
-                ASR::expr_t* arg = x->m_args[i].m_right;
                 Vec<ASR::expr_t*> idx_vars;
                 Vec<ASR::expr_t*> idx_vars_value, loop_vars;
                 std::vector<int> loop_var_indices;
                 Vec<ASR::stmt_t*> doloop_body;
+                const Location& loc = x->base.base.loc;
+                int res_rank = 0;
                 
-                ASR::dimension_t* arr_expr_dims = nullptr; int arr_expr_n_dims;
-                arr_expr_n_dims = ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(x->m_v), arr_expr_dims);
-
                 if( result_var == nullptr ) {
                     bool allocate = false;
-                    ASR::ttype_t* result_var_type = get_result_type(ASRUtils::expr_type(x->m_v),
-                        arr_expr_dims, arr_expr_n_dims, x->base.base.loc, x->class_type, allocate);
-                    if( allocate ) {
-                        result_var_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, x->base.base.loc,
-                        ASRUtils::type_get_past_allocatable(result_var_type)));
+                    Vec<ASR::dimension_t> res_dims_vec;
+                    res_dims_vec.reserve(al, x->n_args);
+                    for (size_t j = 0; j < x->n_args; j++) {
+                        if (ASRUtils::is_array(ASRUtils::expr_type(x->m_args[j].m_right))) {
+                            ASR::dimension_t* arg_dim = nullptr;
+                            LCOMPILERS_ASSERT(
+                                ASRUtils::extract_dimensions_from_ttype(
+                                    ASRUtils::expr_type(x->m_args[j].m_right), arg_dim) == 1);
+                            res_dims_vec.push_back(al, arg_dim[0]);
+                            res_rank++;
+                        }
                     }
-                    result_var = PassUtils::create_var(
-                        result_counter, "_array_item", x->base.base.loc,
-                        result_var_type, al, current_scope);
+                    ASR::ttype_t* result_var_type = get_result_type(ASRUtils::expr_type(x->m_v),
+                        res_dims_vec.p, (int)res_dims_vec.size(), loc, x->class_type, allocate);
+                    if( allocate ) {
+                        result_var_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc,
+                           ASRUtils::type_get_past_allocatable(result_var_type)));
+                    }
+                    result_var = PassUtils::create_var(result_counter, "array_item", loc,
+                                    result_var_type, al, current_scope);
                     result_counter += 1;
                     if( allocate ) {
-                        Location loc = x->base.base.loc;
-                        allocate_result_var(arg, arr_expr_dims, arr_expr_n_dims, true, false);
+                        allocate_result_var(x->m_v, res_dims_vec.p, (int)res_dims_vec.size(), true, true);
                     }
                 }
 
                 create_do_loop(
-                    x->base.base.loc, PassUtils::get_rank(x->m_v),
+                    x->base.base.loc, res_rank,
                     idx_vars, idx_vars_value, loop_vars, loop_var_indices, doloop_body, arg,
-                    [=, &idx_vars, &doloop_body] {
+                    [=, this, &idx_vars, &doloop_body] {
                         ASR::expr_t* res = PassUtils::create_array_ref(result_var, idx_vars, al, current_scope);
 
-                        for (size_t j = 0; j < x->n_args; j++) {
+                        for (int j = 0; j < res_rank; j++) {
                             if (ASRUtils::is_array(ASRUtils::expr_type(x->m_args[j].m_right))) {
                                 Vec<ASR::array_index_t> arr_dims;
                                 arr_dims.reserve(al, idx_vars.size());
