@@ -324,7 +324,7 @@ jobs:
 
       - uses: mamba-org/setup-micromamba@v2.0.2
         with:
-          environment-file: src/ci/environment_linux.yml
+          environment-file: ci/environment_linux.yml
           create-args: >-
             python=3.10
 
