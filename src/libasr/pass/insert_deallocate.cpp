@@ -4,6 +4,7 @@
 #include <libasr/asr_utils.h>
 #include <libasr/asr_verify.h>
 #include <libasr/pass/insert_deallocate.h>
+#include<stack>
 
 
 namespace LCompilers {
@@ -13,6 +14,18 @@ class InsertDeallocate: public ASR::CallReplacerOnExpressionsVisitor<InsertDeall
     private:
 
         Allocator& al;
+        std::stack<ASR::stmt_t*> implicitDeallocate_stmt_stack; // A stack to hold implicit_deallocate statement node due to nested visiting.
+
+        void push_implicitDeallocate_into_stack(SymbolTable* symtab, Location &loc){
+            Vec<ASR::expr_t*> default_storage_variables_to_deallocate = get_allocatable_default_storage_variables(symtab);
+            if(default_storage_variables_to_deallocate.empty()){
+                implicitDeallocate_stmt_stack.push(nullptr);
+            } else {
+                ASR::stmt_t* implicit_deallocation_node = ASRUtils::STMT(ASR::make_ImplicitDeallocate_t(
+                    al, loc, default_storage_variables_to_deallocate.p, default_storage_variables_to_deallocate.size()));
+                implicitDeallocate_stmt_stack.push(implicit_deallocation_node);
+            }
+        }
 
         inline bool is_deallocatable(ASR::symbol_t* s){
             if( ASR::is_a<ASR::Variable_t>(*s) && 
@@ -44,66 +57,107 @@ class InsertDeallocate: public ASR::CallReplacerOnExpressionsVisitor<InsertDeall
             return Vec<ASR::expr_t*>();
         }
 
+        void visit_body_and_insert_ImplicitDeallocate(ASR::stmt_t** &m_body, size_t &n_body){ // Insert `ImplicitDeallocate` before return.
+            if(implicitDeallocate_stmt_stack.top() == nullptr){
+                return;
+            }
+
+            Vec<ASR::stmt_t*> new_body; // Final body after inserting finalization nodes.
+            new_body.reserve(al, 1);
+            bool return_or_exit_encounterd = false; 
+
+            for(size_t i = 0; i < n_body; i++){
+                if( ( ASR::is_a<ASR::Return_t>(*m_body[i]) || 
+                      ASR::is_a<ASR::Exit_t>(*m_body[i]) ) &&
+                    !return_or_exit_encounterd){
+                    new_body.push_back(al, implicitDeallocate_stmt_stack.top());
+                    return_or_exit_encounterd = true; // No need to insert finaliztion node once we encounter a return or exit stmt in signle body (dead code).
+                }
+                if(!return_or_exit_encounterd) { visit_stmt(*(m_body[i])); }
+                new_body.push_back(al, m_body[i]);
+            }
+            m_body = new_body.p;
+            n_body = new_body.size();
+        }
+
+        template <typename T>
+        void insert_ImplicitDeallocate_at_end(T& x){
+            LCOMPILERS_ASSERT_MSG(
+                x.class_type == ASR::symbolType::Program  ||
+                x.class_type == ASR::symbolType::Function ||
+                x.class_type == ASR::symbolType::Block, "Only use with ASR::Program_t, Function_t or Block_t");
+            if(implicitDeallocate_stmt_stack.top() == nullptr){
+                return;
+            }
+            for(size_t i = 0; i < x.n_body; i++){
+                if( ASR::is_a<ASR::Return_t>(*x.m_body[i]) || 
+                    ASR::is_a<ASR::Exit_t>(*x.m_body[i])){
+                    return; // already handled, and no need to insert at end.
+                }
+            }
+            Vec<ASR::stmt_t*> new_body;
+            new_body.from_pointer_n_copy(al, x.m_body, x.n_body);
+            new_body.push_back(al, implicitDeallocate_stmt_stack.top());
+            x.m_body = new_body.p;
+            x.n_body = new_body.size();
+        }
+
+
 
     public:
 
         InsertDeallocate(Allocator& al_) : al(al_) {}
 
-        template <typename T>
-        void visit_Symbol(const T& x) {
-            Vec<ASR::expr_t*> to_be_deallocated;
-            to_be_deallocated.reserve(al, 1);
-            for( auto& itr: x.m_symtab->get_scope() ) {
-                if( is_deallocatable(itr.second) && 
-                    ASRUtils::symbol_StorageType(itr.second) == ASR::storage_typeType::Default) {
-                    to_be_deallocated.push_back(al, ASRUtils::EXPR(
-                        ASR::make_Var_t(al, x.base.base.loc, itr.second)));
-                }
-            }
-            if( to_be_deallocated.size() > 0 ) {
-                T& xx = const_cast<T&>(x);
-                Vec<ASR::stmt_t*> body;
-                body.from_pointer_n_copy(al, xx.m_body, xx.n_body);
-                body.push_back(al, ASRUtils::STMT(ASR::make_ImplicitDeallocate_t(
-                    al, x.base.base.loc, to_be_deallocated.p, to_be_deallocated.size())));
-                xx.m_body = body.p;
-                xx.n_body = body.size();
-            }
-        }
-
         void visit_Function(const ASR::Function_t& x) {
-            visit_Symbol(x);
-            ASR::CallReplacerOnExpressionsVisitor<InsertDeallocate>::visit_Function(x);
+            ASR::Function_t &xx = const_cast<ASR::Function_t&>(x);
+            push_implicitDeallocate_into_stack(xx.m_symtab, xx.base.base.loc);
+            for (auto &a : x.m_symtab->get_scope()) {
+                visit_symbol(*a.second);
+            }
+            visit_body_and_insert_ImplicitDeallocate(xx.m_body,xx.n_body);
+            insert_ImplicitDeallocate_at_end(xx);
+            implicitDeallocate_stmt_stack.pop(); 
         }
 
         void visit_Program(const ASR::Program_t& x) {
-            Vec<ASR::expr_t*> default_storage_variables_to_deallocate = get_allocatable_default_storage_variables(x.m_symtab);
-            if(default_storage_variables_to_deallocate.empty()){
-                ASR::CallReplacerOnExpressionsVisitor<InsertDeallocate>::visit_Program(x);
-            } else {
-                ASR::stmt_t* implicit_deallocation_node = ASRUtils::STMT(ASR::make_ImplicitDeallocate_t(
-                    al, x.base.base.loc, default_storage_variables_to_deallocate.p,
-                    default_storage_variables_to_deallocate.size()));
-                for (auto &a : x.m_symtab->get_scope()) {
-                    ASR::CallReplacerOnExpressionsVisitor<InsertDeallocate>::visit_symbol(*a.second);
-                }
-                Vec<ASR::stmt_t*> new_body; // Body after inserting finalization nodes.
-                new_body.reserve(al, 1);
-                bool return_encounterd = false; 
-                for(size_t stmt_ind = 0; (stmt_ind < x.n_body); stmt_ind++){
-                    if(ASR::is_a<ASR::Return_t>(*x.m_body[stmt_ind]) && !return_encounterd ){
-                        new_body.push_back(al, implicit_deallocation_node);
-                        return_encounterd = true; // No need to insert finaliztion node once we encounter a return stmt in program.
-                    }
-                    visit_stmt(*(x.m_body[stmt_ind]));
-                    new_body.push_back(al, x.m_body[stmt_ind]);
-                }
-                if(!return_encounterd){
-                    new_body.push_back(al, implicit_deallocation_node); // Add dealloction at the ending of program.
-                }
-                const_cast<ASR::Program_t&>(x).m_body = new_body.p;
-                const_cast<ASR::Program_t&>(x).n_body = new_body.size();
+            ASR::Program_t &xx = const_cast<ASR::Program_t&>(x);
+            push_implicitDeallocate_into_stack(xx.m_symtab, xx.base.base.loc);
+
+            for (auto &a : x.m_symtab->get_scope()) {
+                visit_symbol(*a.second);
             }
+            visit_body_and_insert_ImplicitDeallocate(xx.m_body, xx.n_body);
+            insert_ImplicitDeallocate_at_end(xx);
+            implicitDeallocate_stmt_stack.pop(); 
+        }
+
+        void visit_Block(const ASR::Block_t& x){
+            ASR::Block_t& xx = const_cast<ASR::Block_t&>(x);
+            push_implicitDeallocate_into_stack(xx.m_symtab, xx.base.base.loc);
+            for (auto &a : x.m_symtab->get_scope()) {
+                visit_symbol(*a.second);
+            }
+            visit_body_and_insert_ImplicitDeallocate(xx.m_body, xx.n_body);
+            insert_ImplicitDeallocate_at_end(xx);
+            implicitDeallocate_stmt_stack.pop(); 
+        }
+
+        void visit_If(const ASR::If_t& x){
+            ASR::If_t &xx = const_cast<ASR::If_t&>(x);
+            visit_body_and_insert_ImplicitDeallocate(xx.m_body, xx.n_body);
+            visit_body_and_insert_ImplicitDeallocate(xx.m_orelse, xx.n_orelse);
+        }
+        
+        void visit_WhileLoop(const ASR::WhileLoop_t &x){
+            ASR::WhileLoop_t &xx = const_cast<ASR::WhileLoop_t&>(x);
+            visit_body_and_insert_ImplicitDeallocate(xx.m_body, xx.n_body);
+            visit_body_and_insert_ImplicitDeallocate(xx.m_orelse, xx.n_orelse);
+        }
+
+        void visit_DoLoop(const ASR::DoLoop_t &x){
+            ASR::DoLoop_t &xx = const_cast<ASR::DoLoop_t&>(x);
+            visit_body_and_insert_ImplicitDeallocate(xx.m_body, xx.n_body);
+            visit_body_and_insert_ImplicitDeallocate(xx.m_orelse, xx.n_orelse);
         }
 
 };
