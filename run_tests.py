@@ -53,6 +53,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     asr_implicit_argument_casting = is_included("asr_implicit_argument_casting")
     asr_implicit_interface_and_typing_with_llvm = is_included("asr_implicit_interface_and_typing_with_llvm")
     continue_compilation = is_included("continue_compilation")
+    semantics_only = is_included("semantics_only")
     asr_use_loop_variable_after_loop = is_included("asr_use_loop_variable_after_loop")
     asr_preprocess = is_included("asr_preprocess")
     asr_indent = is_included("asr_indent")
@@ -337,6 +338,16 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                 filename,
                 "llvm",
                 "lfortran --show-llvm --implicit-typing --implicit-interface {infile} -o {outfile}",
+                filename,
+                update_reference,
+                verify_hash,
+                extra_args)
+            
+    if semantics_only:
+        if no_llvm:
+            log.info(f"{filename} * obj    SKIPPED as requested")
+        else:
+            run_test(filename, "asr", "lfortran --semantics-only --no-color {infile}",
                 filename,
                 update_reference,
                 verify_hash,
