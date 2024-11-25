@@ -41,6 +41,7 @@ class InsertDeallocate: public ASR::CallReplacerOnExpressionsVisitor<InsertDeall
 
         Vec<ASR::expr_t*> get_allocatable_save_storage_variables(SymbolTable* /*symtab*/){
             LCOMPILERS_ASSERT_MSG(false, "Not implemented");
+            return Vec<ASR::expr_t*>();
         }
 
 
