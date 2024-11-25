@@ -60,6 +60,44 @@
                                                     Required
                                                     .false.
                                                 ),
+                                            bl:
+                                                (Block
+                                                    (SymbolTable
+                                                        7
+                                                        {
+                                                            arr_in_block:
+                                                                (Variable
+                                                                    7
+                                                                    arr_in_block
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Allocatable
+                                                                        (Array
+                                                                            (Integer 4)
+                                                                            [(()
+                                                                            ())]
+                                                                            DescriptorArray
+                                                                        )
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    bl
+                                                    [(ImplicitDeallocate
+                                                        [(Var 7 arr_in_block)]
+                                                    )
+                                                    (Exit
+                                                        bl
+                                                    )
+                                                    (Return)]
+                                                ),
                                             str:
                                                 (Variable
                                                     6
@@ -96,7 +134,24 @@
                                     )
                                     []
                                     []
-                                    [(ImplicitDeallocate
+                                    [(BlockCall
+                                        -1
+                                        6 bl
+                                    )
+                                    (WhileLoop
+                                        ()
+                                        (LogicalConstant
+                                            .true.
+                                            (Logical 4)
+                                        )
+                                        [(ImplicitDeallocate
+                                            [(Var 6 arr_real)
+                                            (Var 6 str)]
+                                        )
+                                        (Return)]
+                                        []
+                                    )
+                                    (ImplicitDeallocate
                                         [(Var 6 arr_real)
                                         (Var 6 str)]
                                     )]
@@ -235,6 +290,20 @@
                                         ()
                                         ()
                                     )
+                                    (If
+                                        (LogicalConstant
+                                            .true.
+                                            (Logical 4)
+                                        )
+                                        [(ImplicitDeallocate
+                                            [(Var 4 arr)]
+                                        )
+                                        (Return)]
+                                        [(ImplicitDeallocate
+                                            [(Var 4 arr)]
+                                        )
+                                        (Return)]
+                                    )
                                     (ImplicitDeallocate
                                         [(Var 4 arr)]
                                     )]
@@ -249,6 +318,22 @@
                                     (SymbolTable
                                         3
                                         {
+                                            i:
+                                                (Variable
+                                                    3
+                                                    i
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
                                             str:
                                                 (Variable
                                                     3
@@ -296,6 +381,16 @@
                                     )
                                     (ImplicitDeallocate
                                         [(Var 3 str)]
+                                    )
+                                    (Return)
+                                    (DoLoop
+                                        ()
+                                        ((Var 3 i)
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 2 (Integer 4) Decimal)
+                                        ())
+                                        [(Return)]
+                                        []
                                     )]
                                     ()
                                     Public
