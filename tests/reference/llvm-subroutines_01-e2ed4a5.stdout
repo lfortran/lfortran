@@ -196,6 +196,7 @@ else27:                                           ; preds = %ifcont24
   br label %ifcont28
 
 ifcont28:                                         ; preds = %else27, %then26
+  call void @_lpython_free_argv()
   br label %return
 
 return:                                           ; preds = %ifcont28
@@ -222,3 +223,5 @@ declare void @exit(i32)
 declare i8* @_lcompilers_string_format_fortran(i32, i8*, ...)
 
 declare void @_lfortran_printf(i8*, ...)
+
+declare void @_lpython_free_argv()

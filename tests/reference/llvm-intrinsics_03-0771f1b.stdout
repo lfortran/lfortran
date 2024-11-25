@@ -220,6 +220,7 @@ else16:                                           ; preds = %ifcont14
   br label %ifcont17
 
 ifcont17:                                         ; preds = %else16, %then15
+  call void @_lpython_free_argv()
   br label %return
 
 return:                                           ; preds = %ifcont17
@@ -235,3 +236,5 @@ declare void @exit(i32)
 declare i8* @_lcompilers_string_format_fortran(i32, i8*, ...)
 
 declare void @_lfortran_printf(i8*, ...)
+
+declare void @_lpython_free_argv()

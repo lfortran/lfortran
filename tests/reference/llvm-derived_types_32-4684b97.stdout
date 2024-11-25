@@ -192,6 +192,7 @@ else:                                             ; preds = %.entry
   br label %ifcont
 
 ifcont:                                           ; preds = %else, %then
+  call void @_lpython_free_argv()
   br label %return
 
 return:                                           ; preds = %ifcont
@@ -207,3 +208,5 @@ declare i1 @_lpython_str_compare_noteq(i8**, i8**)
 declare void @_lcompilers_print_error(i8*, ...)
 
 declare void @exit(i32)
+
+declare void @_lpython_free_argv()
