@@ -39,6 +39,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     ast_cpp_hip = is_included("ast_cpp_hip")
     ast_openmp = is_included("ast_openmp")
     lookup_name = is_included("lookup_name")
+    rename_symbol = is_included("rename_symbol")
     line = "-1"
     if is_included("line"):
         line = str(test["line"])
@@ -232,6 +233,15 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             filename,
             "lookup_name",
             "lfortran --lookup-name --no-color {infile} -o {outfile}",
+            filename,
+            update_reference,
+            verify_hash,
+            extra_args)
+    if rename_symbol:
+        run_test(
+            filename,
+            "rename_symbol",
+            "lfortran --rename-symbol --no-color {infile} -o {outfile}",
             filename,
             update_reference,
             verify_hash,

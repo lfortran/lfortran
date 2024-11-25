@@ -4294,6 +4294,13 @@ ast = true
 continue_compilation = true
 
 [[test]]
+filename = "collect_occurence1.f90"
+rename_symbol = true
+line = 10
+column = 8
+
+
+[[test]]
 filename = "../integration_tests/multiple_objects_args.f90"
 pass = "class_constructor"
 

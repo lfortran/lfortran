@@ -9,7 +9,7 @@
 #include <libasr/location.h>
 #include <lfortran/fortran_evaluator.h>
 #include <libasr/lsp_interface.h>
-
+#include <libasr/asr_lookup_name.h>
 
 namespace LCompilers {
 
@@ -391,5 +391,88 @@ int get_definitions(const std::string &infile, LCompilers::CompilerOptions &comp
 
     return 0;
 }
+
+int get_all_occurences(const std::string &infile, LCompilers::CompilerOptions &compiler_options)
+{
+    std::string input = read_file(infile);
+    LCompilers::FortranEvaluator fe(compiler_options);
+    std::vector<LCompilers::document_symbols> symbol_lists;
+
+    LCompilers::LocationManager lm;
+    {
+        LCompilers::LocationManager::FileLocations fl;
+        fl.in_filename = infile;
+        lm.files.push_back(fl);
+        lm.file_ends.push_back(input.size());
+    }
+    {
+        LCompilers::diag::Diagnostics diagnostics;
+        LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
+            x = fe.get_asr2(input, lm, diagnostics);
+        if (x.ok) {
+            // populate_symbol_lists(x.result, lm, symbol_lists);
+            uint16_t l = std::stoi(compiler_options.line);
+            uint16_t c = std::stoi(compiler_options.column);
+            uint64_t pos = lm.linecol_to_pos(l, c);
+            LCompilers::ASR::asr_t* asr = fe.handle_lookup_name(x.result, pos);
+            LCompilers::document_symbols loc;
+            if (!ASR::is_a<ASR::symbol_t>(*asr)) {
+                std::cout << "[]";
+                return 0;
+            }
+            ASR::symbol_t* s = ASR::down_cast<ASR::symbol_t>(asr);
+            std::string symbol_name = ASRUtils::symbol_name( s );
+            LCompilers::LFortran::OccurenceCollector occ(symbol_name, symbol_lists, lm);
+            occ.visit_TranslationUnit(*x.result);
+        } else {
+            std::cout << "[]";
+            return 0;
+        }
+    }
+
+    LFortranJSON start_detail(LFortranJSONType::kObjectType);
+    LFortranJSON range_object(LFortranJSONType::kObjectType);
+    LFortranJSON end_detail(LFortranJSONType::kObjectType);
+    LFortranJSON location_object(LFortranJSONType::kObjectType);
+    LFortranJSON test_capture(LFortranJSONType::kObjectType);
+    LFortranJSON test_output(LFortranJSONType::kArrayType);
+
+    test_output.SetArray();
+
+    for (auto symbol : symbol_lists) {
+        uint32_t start_character = symbol.first_column;
+        uint32_t start_line = symbol.first_line;
+        uint32_t end_character = symbol.last_column;
+        uint32_t end_line = symbol.last_line;
+        std::string name = symbol.symbol_name;
+
+        range_object.SetObject();
+
+        start_detail.SetObject();
+        start_detail.AddMember("character", start_character);
+        start_detail.AddMember("line", start_line);
+        range_object.AddMember("start", start_detail);
+
+        end_detail.SetObject();
+        end_detail.AddMember("character", end_character);
+        end_detail.AddMember("line", end_line);
+        range_object.AddMember("end", end_detail);
+
+        location_object.SetObject();
+        location_object.AddMember("range", range_object);
+        location_object.AddMember("uri", "uri");
+
+        test_capture.SetObject();
+        test_capture.AddMember("kind", 1);
+        test_capture.AddMember("location", location_object);
+        test_capture.AddMember("name", name);
+        test_output.PushBack(test_capture);
+    }
+
+    std::cout << test_output.GetValue();
+
+    return 0;
+}
+
 }
 
