@@ -53,10 +53,10 @@ toml = "0.10.2"
 cmake = "3.29.1"
 ninja = "1.11.1"
 
-[target.unix.build-dependencies]
+[feature.build.target.unix.build-dependencies]
 bison = "3.4"
 
-[target.win.build-dependencies]
+[feature.build.target.win.build-dependencies]
 m2-bison = "3.0.4"
 
 [feature.build.tasks]
