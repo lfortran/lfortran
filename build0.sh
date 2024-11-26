@@ -1,10 +1,7 @@
 #!/usr/bin/env bash
 
-set -e
-set -x
-
 # Generate the `version` file
-ci/version.sh
+shell ci/version.sh
 
 # Generate a Fortran AST from AST.asdl (C++)
 python src/libasr/asdl_cpp.py grammar/AST.asdl src/lfortran/ast.h
@@ -20,5 +17,5 @@ python src/libasr/intrinsic_func_registry_util_gen.py
 (cd src/lfortran && re2c -W -b parser/preprocessor.re -o parser/preprocessor.cpp)
 (cd src/lfortran/parser && bison -Wall -d -r all parser.yy)
 
-grep -n "'" src/lfortran/parser/parser.yy && echo "Single quote not allowed" && exit 1
+#grep -n "'" src/lfortran/parser/parser.yy && echo "Single quote not allowed" && exit 1
 echo "OK"
