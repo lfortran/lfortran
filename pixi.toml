@@ -36,6 +36,8 @@ llvmdev = "17.0.6"
 llvmdev = "18.1.8"
 [feature.llvm19.host-dependencies]
 llvmdev = "19.1.4"
+[feature.llvm19.target.linux.host-dependencies]
+libunwind = "1.7.2"
 
 # Dependencies to build the project to be installed for the target architecture.
 # host == target
