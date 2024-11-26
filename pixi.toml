@@ -12,7 +12,9 @@ start = "src/bin/lfortran"
 clean = "git clean -dfx -e '.pixi'"
 
 [feature.test.tasks]
-test = "cmake --build . --parallel --target test && ./run_tests.py && cd integration_tests && ./run_tests.py -j16"
+ctest = "cmake --build . --parallel --target test"
+tests = "./run_tests.py"
+integration_tests = "cd integration_tests && ./run_tests.py -j16"
 
 [feature.llvm10.host-dependencies]
 llvmdev = "10.0.1"
