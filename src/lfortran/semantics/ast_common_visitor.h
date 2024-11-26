@@ -4284,6 +4284,9 @@ public:
         type = ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(f2));
         ASR::expr_t *arr_ref_val = nullptr;
         bool all_args_eval = ASRUtils::all_args_evaluated(args);
+        Vec<ASR::dimension_t> res_dims_vec;
+        res_dims_vec.reserve(al, n_args);
+        bool is_arg_array = false;
         for( auto& a : args ) {
             // Assume that indices are constant integers
             int64_t start = 1, end = -1, step = 1;
@@ -4301,6 +4304,16 @@ public:
                 }
             }
             if( a.m_right ) {
+                if (ASRUtils::is_array(ASRUtils::expr_type(a.m_right))) {
+                    is_arg_array = true;
+                    if (ASRUtils::is_array(ASRUtils::expr_type(a.m_right))) {
+                        ASR::dimension_t* arg_dim = nullptr;
+                        LCOMPILERS_ASSERT(
+                            ASRUtils::extract_dimensions_from_ttype(
+                                ASRUtils::expr_type(a.m_right), arg_dim) == 1);
+                        res_dims_vec.push_back(al, arg_dim[0]);
+                    }
+                }
                 if( all_args_eval ) {
                     flag = true;
                     ASR::expr_t* m_right_expr = ASRUtils::expr_value(a.m_right);
@@ -4427,9 +4440,16 @@ public:
                 return ASR::make_StringSection_t(al, loc, array_item, l,
                         r, ASRUtils::EXPR(tmp), char_type, arr_ref_val);
             } else {
+                ASR::ttype_t* final_type;
+                if (is_arg_array) {
+                  ASR::ttype_t *op_type = ASRUtils::type_get_past_pointer(ASRUtils::expr_type(v_Var));
+                  final_type = ASRUtils::duplicate_type(al, op_type, &res_dims_vec);
+                } else {
+                  final_type = ASRUtils::type_get_past_pointer(
+                        ASRUtils::type_get_past_allocatable(type));
+                }
                 return (ASR::asr_t*) replace_with_common_block_variables(ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al, loc,
-                    v_Var, args.p, args.size(), ASRUtils::type_get_past_pointer(
-                        ASRUtils::type_get_past_allocatable(type)),
+                    v_Var, args.p, args.size(), final_type,
                     ASR::arraystorageType::ColMajor, arr_ref_val)));
             }
         } else {
