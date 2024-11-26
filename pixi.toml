@@ -64,4 +64,6 @@ build = { cmd = "bash ./build1.sh", env = { CMAKE_PREFIX_PATH_LFORTRAN = "$PIXI_
 
 [environments]
 build = {features = ["llvm11", "build"]}
+llvm11 = {features = ["llvm11", "build"]}
+llvm19 = {features = ["llvm19", "build"]}
 test = {features = ["test"]}
