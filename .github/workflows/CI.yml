@@ -819,25 +819,43 @@ jobs:
             make -j8 FORTRAN=lfortran FFLAGS="--fast --skip-pass=promote_allocatable_to_nonallocatable --experimental-simplifier" MPI=no OPENMP=no
             ./gsnap ../qasnap/sample/inp out
 
-# Commented out to save CI runners:
-#  test-pixi:
-#    name: Pixi Build (${{ matrix.os }})
-#    runs-on: ${{ matrix.os }}
-#    strategy:
-#      fail-fast: false
-#      matrix:
-#        os: ["macos-latest", "ubuntu-latest"]
-#    steps:
-#      - uses: actions/checkout@v4
-#        with:
-#          fetch-depth: 0
-#      - uses: prefix-dev/setup-pixi@v0.5.1
-#      - name: Run tasks
-#        run: |
-#          pixi run build
-#          pixi run start --version
-#          pixi run start examples/expr2.f90
-#          pixi run test
+  test-pixi:
+    name: Pixi Build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ["ubuntu-latest"]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: prefix-dev/setup-pixi@v0.8.1
+        with:
+          pixi-version: v0.37.0
+          cache: true
+      - name: LLVM 10
+        run: |
+          pixi run -e llvm10 build
+          pixi run start --version
+          pixi run ctest
+          pixi run integration_tests
+          pixi run clean
+      - name: LLVM 11
+        run: |
+          pixi run -e llvm11 build
+          pixi run start --version
+          pixi run ctest
+          pixi run tests # Only run for LLVM 11
+          pixi run integration_tests
+          pixi run clean
+      - name: LLVM 19
+        run: |
+          pixi run -e llvm19 build
+          pixi run start --version
+          pixi run ctest
+          pixi run integration_tests
+          pixi run clean
 
   test_llvm:
     name: Test LLVM ${{ matrix.llvm-version }}
