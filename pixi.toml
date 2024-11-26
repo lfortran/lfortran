@@ -6,17 +6,46 @@ authors = ["LFortran Maintainers <lfortran@groups.io>"]
 channels = ["conda-forge"]
 platforms = ["osx-arm64", "win-64", "linux-64"]
 
+# feature.default.tasks
 [tasks]
 start = "src/bin/lfortran"
-test = "cmake --build . --parallel --target test && ./run_tests.py && cd integration_tests && ./run_tests.py -j16"
+clean = "git clean -dfx -e '.pixi'"
 
-[feature.host.tasks]
-# an empty task to make sure the dependencies are installed
-setup = "echo 'host dependencies installed'"
+[feature.test.tasks]
+ctest = "cmake --build . --parallel --target test"
+tests = "./run_tests.py"
+integration_tests = "cd integration_tests && ./run_tests.py -j16"
 
-[host-dependencies]
+[feature.llvm10.host-dependencies]
+llvmdev = "10.0.1"
+[feature.llvm11.host-dependencies]
 llvmdev = "11.1.0"
-toml = "0.10.2"
+[feature.llvm12.host-dependencies]
+llvmdev = "12.0.1"
+[feature.llvm13.host-dependencies]
+llvmdev = "13.0.1"
+[feature.llvm14.host-dependencies]
+llvmdev = "14.0.6"
+[feature.llvm15.host-dependencies]
+llvmdev = "15.0.7"
+[feature.llvm16.host-dependencies]
+llvmdev = "16.0.6"
+[feature.llvm17.host-dependencies]
+llvmdev = "17.0.6"
+[feature.llvm18.host-dependencies]
+llvmdev = "18.1.8"
+[feature.llvm19.host-dependencies]
+llvmdev = "19.1.4"
+[feature.llvm17.target.linux.host-dependencies]
+libunwind = "1.7.2"
+[feature.llvm18.target.linux.host-dependencies]
+libunwind = "1.7.2"
+[feature.llvm19.target.linux.host-dependencies]
+libunwind = "1.7.2"
+
+# Dependencies to build the project to be installed for the target architecture.
+# host == target
+[feature.build.host-dependencies]
 pytest = "8.1.1"
 jupyter = "1.0.0"
 xeus = "5.1.0"
@@ -29,22 +58,42 @@ rapidjson = "1.1.0"
 zlib = "*"
 zstd-static = ">=1.5.6,<2"
 
+# Dependencies to build the project to be installed on the build machine.
+# feature.default.build-dependencies
 [build-dependencies]
+python = "3.12"
+
+[feature.build.build-dependencies]
 python = "3.12"
 cmake = "3.29.1"
 ninja = "1.11.1"
 #cxx-compiler = "*"
 re2c = "3.1"
 
-[target.unix.build-dependencies]
+[feature.test.build-dependencies]
+python = "3.12"
+toml = "0.10.2"
+cmake = "3.29.1"
+ninja = "1.11.1"
+
+[feature.build.target.unix.build-dependencies]
 bison = "3.4"
 
-[target.win.build-dependencies]
+[feature.build.target.win.build-dependencies]
 m2-bison = "3.0.4"
 
 [feature.build.tasks]
-build = { cmd = "bash ./build1.sh", env = { CMAKE_PREFIX_PATH_LFORTRAN = "$PIXI_PROJECT_ROOT/.pixi/envs/host/" }, depends-on = ["setup"]}
+build = "shell ./build1.sh"
 
 [environments]
-build = ["build"]
-host = ["host"]
+llvm10 = {features = ["llvm10", "build"]}
+llvm11 = {features = ["llvm11", "build"]}
+llvm12 = {features = ["llvm12", "build"]}
+llvm13 = {features = ["llvm13", "build"]}
+llvm14 = {features = ["llvm14", "build"]}
+llvm15 = {features = ["llvm15", "build"]}
+llvm16 = {features = ["llvm16", "build"]}
+llvm17 = {features = ["llvm17", "build"]}
+llvm18 = {features = ["llvm18", "build"]}
+llvm19 = {features = ["llvm19", "build"]}
+test = {features = ["test"]}
