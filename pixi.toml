@@ -77,7 +77,7 @@ bison = "3.4"
 m2-bison = "3.0.4"
 
 [feature.build.tasks]
-build = { cmd = "bash ./build1.sh", env = { CMAKE_PREFIX_PATH_LFORTRAN = "$PIXI_PROJECT_ROOT/.pixi/envs/build/" }}
+build = "bash ./build1.sh"
 
 [environments]
 llvm10 = {features = ["llvm10", "build"]}
