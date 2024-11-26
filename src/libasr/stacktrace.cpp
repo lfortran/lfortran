@@ -628,6 +628,11 @@ void address_to_line_number(const std::vector<std::string> &filenames,
           uintptr_t address,
           std::string &filename,
           int &line_number) {
+    if (addresses.size() == 0) {
+      line_number = -1;
+      filename = "";
+      return;
+    }
     uintptr_t actual_address = address-16;
     int n = addresses.size() / 3;
     // Bisection-Search
