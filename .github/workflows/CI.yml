@@ -320,7 +320,6 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          path: src
 
       - uses: mamba-org/setup-micromamba@v2
         with:
@@ -336,7 +335,7 @@ jobs:
       - name: Build Linux
         shell: bash -e -l {0}
         run: |
-            ( cd src && ./build0.sh )
+            ./build0.sh
             export CXXFLAGS="-Werror"
             cmake -S src -B builddir -GNinja \
               -DCMAKE_BUILD_TYPE=RelWithDebInfo \
