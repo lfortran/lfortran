@@ -612,7 +612,6 @@ int python_wrapper(const std::string &infile, std::string array_order,
 }
 
 [[maybe_unused]] int run_parser_and_semantics(const std::string &infile,
-    LCompilers::PassManager& pass_manager,
     CompilerOptions &compiler_options)
 {
     std::string input = read_file(infile);
@@ -634,13 +633,6 @@ int python_wrapper(const std::string &infile, std::string array_order,
         LCOMPILERS_ASSERT(diagnostics.has_error())
         return 2;
     }
-    LCompilers::ASR::TranslationUnit_t* asr = r.result;
-
-    Allocator al(64*1024*1024);
-    compiler_options.po.always_run = true;
-    compiler_options.po.run_fun = "f";
-
-    pass_manager.apply_passes(al, asr, compiler_options.po, diagnostics);
     return has_error_w_cc;
 }
 
@@ -2535,8 +2527,7 @@ int main_app(int argc, char *argv[]) {
         return get_definitions(arg_file, compiler_options);
     }
     if ( compiler_options.semantics_only ) {
-        return run_parser_and_semantics(arg_file, lfortran_pass_manager,
-                compiler_options);
+        return run_parser_and_semantics(arg_file, compiler_options);
     }
     if (show_asr) {
         return emit_asr(arg_file, lfortran_pass_manager,
