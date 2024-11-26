@@ -1,8 +1,5 @@
 #!/usr/bin/env bash
 
-set -e
-set -x
-
 cmake \
     -DCMAKE_BUILD_TYPE=Debug \
     -DWITH_LLVM=yes \

@@ -83,7 +83,7 @@ bison = "3.4"
 m2-bison = "3.0.4"
 
 [feature.build.tasks]
-build = "bash ./build1.sh"
+build = "shell ./build1.sh"
 
 [environments]
 llvm10 = {features = ["llvm10", "build"]}
