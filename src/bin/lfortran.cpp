@@ -611,6 +611,31 @@ int python_wrapper(const std::string &infile, std::string array_order,
     return 0;
 }
 
+[[maybe_unused]] int run_parser_and_semantics(const std::string &infile,
+    CompilerOptions &compiler_options)
+{
+    std::string input = read_file(infile);
+
+    LCompilers::FortranEvaluator fe(compiler_options);
+    LCompilers::LocationManager lm;
+    {
+        LCompilers::LocationManager::FileLocations fl;
+        fl.in_filename = infile;
+        lm.files.push_back(fl);
+        lm.file_ends.push_back(input.size());
+    }
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
+        r = fe.get_asr2(input, lm, diagnostics);
+    bool has_error_w_cc = compiler_options.continue_compilation && diagnostics.has_error();
+    std::cerr << diagnostics.render(lm, compiler_options);
+    if (!r.ok) {
+        LCOMPILERS_ASSERT(diagnostics.has_error())
+        return 2;
+    }
+    return has_error_w_cc;
+}
+
 [[maybe_unused]] int emit_asr(const std::string &infile,
     LCompilers::PassManager& pass_manager,
     CompilerOptions &compiler_options)
@@ -2208,6 +2233,7 @@ int main_app(int argc, char *argv[]) {
     app.add_option("--line", compiler_options.line, "Line number for --lookup-name")->capture_default_str();
     app.add_option("--column", compiler_options.column, "Column number for --lookup-name")->capture_default_str();
     app.add_flag("--continue-compilation", compiler_options.continue_compilation, "collect error message and continue compilation");
+    app.add_flag("--semantics-only", compiler_options.semantics_only, "do parsing and semantics, and report all the errors");
     app.add_flag("--generate-object-code", compiler_options.generate_object_code, "Generate object code into .o files");
     app.add_flag("--rtlib", compiler_options.rtlib, "Include the full runtime library in the LLVM output");
     app.add_flag("--use-loop-variable-after-loop", compiler_options.po.use_loop_variable_after_loop, "Allow using loop variable after the loop");
@@ -2504,7 +2530,10 @@ int main_app(int argc, char *argv[]) {
     if (compiler_options.lookup_name) {
         return get_definitions(arg_file, compiler_options);
     }
-    if (show_asr || compiler_options.continue_compilation) {
+    if ( compiler_options.semantics_only ) {
+        return run_parser_and_semantics(arg_file, compiler_options);
+    }
+    if (show_asr) {
         return emit_asr(arg_file, lfortran_pass_manager,
                 compiler_options);
     }
