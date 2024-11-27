@@ -353,8 +353,12 @@ public:
                 type_encoding = llvm::dwarf::DW_ATE_float;
                 break;
             }
-            default : throw LCompilersException("Debug information for the type: `"
-                + ASRUtils::type_to_str_python(t) + "` is not yet implemented");
+            default:
+                diag.add(diag::Diagnostic("Debug information for the type: `"
+                    + ASRUtils::type_to_str_python(t) +
+                    "` is not yet implemented",
+                    diag::Level::Warning, diag::Stage::CodeGen, {}
+                ));
         }
     }
 
