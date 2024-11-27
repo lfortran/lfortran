@@ -226,6 +226,9 @@ if (WITH_LLVM)
         message(STATUS "ZLIB LIBRARY PATH: ${mypath}")
     endif()
     set(HAVE_LFORTRAN_LLVM yes)
+    if(CMAKE_SYSTEM_NAME MATCHES "Linux" AND LLVM_VERSION_MAJOR GREATER_EQUAL 12)
+        set(WITH_LIBUNWIND_FORCE yes)
+    endif()
 endif()
 
 # XEUS (Fortran kernel)
@@ -294,6 +297,9 @@ set(WITH_STACKTRACE no
     CACHE BOOL "Build with stacktrace support (requires binutils-dev)")
 set(WITH_LIBUNWIND no
     CACHE BOOL "Build with libunwind (required libunwind-dev)")
+if (WITH_LIBUNWIND_FORCE)
+    set(WITH_LIBUNWIND yes)
+endif()
 set(WITH_LLVM_STACKTRACE no
     CACHE BOOL "Build with LLVM stacktrace support")
 if (WITH_STACKTRACE)
