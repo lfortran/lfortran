@@ -76,6 +76,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     fast = is_included("fast")
     print_leading_space = is_included("print_leading_space")
     interactive = is_included("interactive")
+    options = test.get("options", "")
     pass_ = test.get("pass", None)
     extrafiles = test.get("extrafiles", "").split(",")
     run = test.get("run")
@@ -94,7 +95,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                         "array_op", "select_case",
                         "class_constructor", "implied_do_loops",
                         "pass_array_by_data", "init_expr", "where",
-                        "nested_vars", "insert_deallocate"] and
+                        "nested_vars", "insert_deallocate", "openmp"] and
                 _pass not in optimization_passes):
                 raise Exception(f"Unknown pass: {_pass}")
     if update_reference:
@@ -115,6 +116,8 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
         extra_args += " --line=" + line
     if column:
         extra_args += " --column=" + column
+    if options:
+        extra_args += " " + options
 
     if tokens:
         run_test(
@@ -341,14 +344,14 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                 update_reference,
                 verify_hash,
                 extra_args)
-            
+
     if semantics_only_cc:
         run_test(filename, "asr", "lfortran --semantics-only --continue-compilation --no-color {infile}",
             filename,
             update_reference,
             verify_hash,
             extra_args)
-    
+
     if continue_compilation:
         if no_llvm:
             log.info(f"{filename} * obj    SKIPPED as requested")
@@ -439,7 +442,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             update_reference,
             verify_hash,
             extra_args)
-        
+
     if mod_to_asr:
         run_test(
             filename,
