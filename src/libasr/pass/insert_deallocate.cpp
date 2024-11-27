@@ -29,24 +29,76 @@ class InsertDeallocate: public ASR::CallReplacerOnExpressionsVisitor<InsertDeall
 
         inline bool is_deallocatable(ASR::symbol_t* s){
             if( ASR::is_a<ASR::Variable_t>(*s) && 
-                ASR::is_a<ASR::Allocatable_t>(*ASRUtils::symbol_type(s)) && 
-                (ASR::is_a<ASR::String_t>(*ASRUtils::type_get_past_allocatable(ASRUtils::symbol_type(s))) ||
-                ASRUtils::is_array(ASRUtils::symbol_type(s))) &&
-                ASRUtils::symbol_intent(s) == ASRUtils::intent_local){
+                ASR::is_a<ASR::Allocatable_t>(*ASRUtils::symbol_type(s)) &&
+                ASRUtils::symbol_intent(s) == ASRUtils::intent_local) {
                 return true;
             }
             return false;
         }
 
         // Returns vector of default-storage `Var` expressions that're deallocatable.
-        Vec<ASR::expr_t*> get_allocatable_default_storage_variables(SymbolTable* symtab){ 
+        Vec<ASR::expr_t*> get_allocatable_default_storage_variables(SymbolTable* symtab, ASR::symbol_t* struct_sym=nullptr){ 
             Vec<ASR::expr_t*> allocatable_local_variables;
             allocatable_local_variables.reserve(al, 1);
             for(auto& itr: symtab->get_scope()) {
+                if (ASR::is_a<ASR::Variable_t>(*itr.second)
+                    && ASR::is_a<ASR::StructType_t>(*ASRUtils::symbol_type(itr.second))) {
+                    /*
+                        When a variable of ttype StructType_t is found, we collect allocatable
+                       variables from the parent Struct and add deallocate nodes for them.
+
+                        For example:
+
+                            type my_type
+                                integer, allocatable :: int(:)
+                            end type
+
+                            type(my_type) :: x
+
+                        when we find declaration `type(my_type) :: x`, we visit `my_type`, collect
+                        allocatable variables and add deallocate nodes as:
+
+                            (ImplicitDeallocate
+                                [(StructInstanceMember
+                                    (Var 2 x)
+                                    3 1_my_type_int
+                                    (Allocatable
+                                        (Array
+                                            (Integer 4)
+                                            [(()
+                                            ())]
+                                            DescriptorArray
+                                        )
+                                    )
+                                    ()
+                                )]
+                            )
+                    */
+                    Vec<ASR::expr_t*> vec = get_allocatable_default_storage_variables(
+                        ASRUtils::symbol_symtab(
+                            ASRUtils::symbol_get_past_external(
+                                ASR::down_cast<ASR::StructType_t>(ASRUtils::symbol_type(itr.second))->m_derived_type)),
+                    itr.second);
+                    // Append to allocatable_local_variables only if any allocatable variables were found
+                    if (!vec.empty()) allocatable_local_variables.push_back(al, *vec.p);
+                }
                 if( is_deallocatable(itr.second) && 
                     ASRUtils::symbol_StorageType(itr.second) == ASR::storage_typeType::Default) {
-                    allocatable_local_variables.push_back(al, ASRUtils::EXPR(
-                        ASR::make_Var_t(al, itr.second->base.loc, itr.second)));
+                        if (ASR::is_a<ASR::Struct_t>(*ASR::down_cast<ASR::symbol_t>(symtab->asr_owner))) {
+                            allocatable_local_variables.push_back(
+                                al,
+                                ASRUtils::EXPR(
+                                    ASRUtils::getStructInstanceMember_t(
+                                        al,
+                                        itr.second->base.loc,
+                                        ASR::make_Var_t(al, struct_sym->base.loc, struct_sym),
+                                        struct_sym,
+                                        itr.second,
+                                        symtab)));
+                        } else {
+                            allocatable_local_variables.push_back(al, ASRUtils::EXPR(
+                                ASR::make_Var_t(al, itr.second->base.loc, itr.second)));
+                        }
                 }
             }
             return allocatable_local_variables;
