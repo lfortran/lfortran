@@ -81,6 +81,10 @@ namespace LCompilers {
             } else if (ASR::is_a<ASR::ComplexRe_t>(*x)) {
                 ASR::ComplexRe_t* cc = ASR::down_cast<ASR::ComplexRe_t>(x);
                 return get_rank(cc->m_arg);
+            } else if ( ASR::is_a<ASR::IntrinsicArrayFunction_t>(*x) ) {
+                ASR::IntrinsicArrayFunction_t* iaf = ASR::down_cast<ASR::IntrinsicArrayFunction_t>(x);
+                ASR::dimension_t* m_dims;
+                get_dim_rank(iaf->m_type, m_dims, n_dims);
             }
             return n_dims;
         }
