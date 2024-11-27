@@ -60,6 +60,7 @@ struct PassOptions {
     bool c_mangling = false;
     bool openmp = false;
     bool experimental_simplifier = false;
+    bool enable_gpu_offloading = false;
 };
 
 struct CompilerOptions {

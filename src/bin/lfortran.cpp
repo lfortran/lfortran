@@ -2264,6 +2264,7 @@ int main_app(int argc, char *argv[]) {
     app.add_flag("--wasm-html", compiler_options.wasm_html, "Generate HTML file using emscripten for LLVM->WASM");
     app.add_flag("--experimental-simplifier", compiler_options.po.experimental_simplifier, "Use experimental simplifier pass");
     app.add_option("--emcc-embed", compiler_options.emcc_embed, "Embed a given file/directory using emscripten for LLVM->WASM");
+    app.add_flag("--mlir-gpu-offloading", compiler_options.po.enable_gpu_offloading, "Enables gpu offloading using MLIR backend");
 
     // LSP specific options
     app.add_flag("--show-errors", show_errors, "Show errors when LSP is running in the background");
@@ -2475,6 +2476,12 @@ int main_app(int argc, char *argv[]) {
         compiler_options.c_preprocessor = true;
     } else {
         compiler_options.c_preprocessor = false;
+    }
+
+    if(compiler_options.po.enable_gpu_offloading && !compiler_options.openmp) {
+        std::cerr << "The option `--mlir-gpu-offloading` requires openmp pass "
+            "to be applied. Rerun with `--openmp` option\n";
+        return 1;
     }
 
     std::string outfile;
