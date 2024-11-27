@@ -383,6 +383,37 @@ class InvolvedSymbolsCollector:
         }
 };
 
+// Replaces all the symbols used inside the DoConcurrentLoop region with the
+// same symbols passed as argument to the function
+class ReplaceSymbols: public ASR::BaseExprReplacer<ReplaceSymbols> {
+private:
+    SymbolTable &fn_scope;
+
+public:
+    ReplaceSymbols(SymbolTable &fn_scope) : fn_scope(fn_scope) {}
+
+    void replace_Var(ASR::Var_t *x) {
+        x->m_v = fn_scope.get_symbol(ASRUtils::symbol_name(x->m_v));
+    }
+};
+
+// Expression visitor to call the replacer
+class DoConcurrentBodyVisitor:
+    public ASR::CallReplacerOnExpressionsVisitor<DoConcurrentBodyVisitor> {
+
+private:
+    ReplaceSymbols replacer;
+
+public:
+    DoConcurrentBodyVisitor(SymbolTable &fn_scope): replacer(fn_scope) { }
+
+    void call_replacer() {
+        replacer.current_expr = current_expr;
+        replacer.replace_expr(*current_expr);
+    }
+
+};
+
 class DoConcurrentVisitor :
     public ASR::BaseWalkVisitor<DoConcurrentVisitor>
 {
@@ -1154,6 +1185,105 @@ class DoConcurrentVisitor :
 
             InvolvedSymbolsCollector c(involved_symbols);
             c.visit_DoConcurrentLoop(x);
+            if (pass_options.enable_gpu_offloading) {
+                //
+                // Implementation details:
+                //
+                // 1. Creates a module: `_lcompilers_mlir_gpu_offloading` and
+                //    adds a new function: `_lcompilers_doconcurrent_replacer_func`
+                //    for each `do concurrent` node in the body.
+                // 2. Move the `do concurrent` into the function body, pass
+                //    all the used variables as an argument to the function.
+                // 3. Place the subroutine call pointing to the new function.
+                // 4. The replacer class modifies the variables used in the do
+                //    concurrent body with the same arguments passed to the
+                //    function
+                //
+                // The following
+                //
+                // do concurrent (i = 1: 10)
+                //   x(i) = i
+                // end do
+                //
+                // becomes:
+                //
+                // call _lcompilers_doconcurrent_replacer_func(i, x)
+                //
+                // [...]
+                //
+                // module _lcompilers_mlir_gpu_offloading
+                //   subroutine _lcompilers_doconcurrent_replacer_func (i, x)
+                //     [...]
+                //   end subroutine
+                // end module
+                //
+                Location loc{x.base.base.loc};
+                SymbolTable *scope_copy{current_scope};
+                SymbolTable *mod_scope{nullptr};
+                std::string mod_name{"_lcompilers_mlir_gpu_offloading"};
+                if (ASR::symbol_t *mod = current_scope->resolve_symbol(mod_name)) {
+                    mod_scope = ASR::down_cast<ASR::Module_t>(mod)->m_symtab;
+                } else {
+                    while(current_scope->parent) {
+                        current_scope = current_scope->parent;
+                    }
+                    mod_scope = al.make_new<SymbolTable>(current_scope);
+                    mod = ASR::down_cast<ASR::symbol_t>(
+                        ASR::make_Module_t(al, loc, mod_scope, s2c(al, mod_name),
+                        nullptr, 0, false, false));
+                    current_scope->add_symbol(mod_name, mod);
+                }
+                SymbolTable *fn_scope{al.make_new<SymbolTable>(mod_scope)};
+                Vec<ASR::expr_t *> fn_args;
+                fn_args.reserve(al, involved_symbols.size());
+                Vec<ASR::call_arg_t> call_args;
+                call_args.reserve(al, involved_symbols.size());
+                for (auto &[sym_name, sym_type]: involved_symbols) {
+                    ASR::symbol_t *sym{scope_copy->resolve_symbol(sym_name)};
+                    ASR::call_arg_t arg; arg.loc = loc;
+                    arg.m_value = ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym));
+                    call_args.push_back(al, arg);
+
+                    sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(al,
+                        loc, fn_scope, s2c(al, sym_name), nullptr, 0,
+                        ASR::intentType::InOut, nullptr, nullptr,
+                        ASR::storage_typeType::Default,
+                        ASRUtils::duplicate_type_with_empty_dims(al, sym_type),
+                        nullptr, ASR::abiType::Source, ASR::accessType::Private,
+                        ASR::presenceType::Required, false));
+                    fn_scope->add_symbol(sym_name, sym);
+                    fn_args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym)));
+                }
+
+                DoConcurrentBodyVisitor v(*fn_scope);
+                v.visit_DoConcurrentLoop(x);
+
+                Vec<ASR::stmt_t *> fn_body; fn_body.reserve(al, 1);
+                fn_body.push_back(al, (ASR::stmt_t *)&x);
+
+                std::string fn_name{mod_scope->get_unique_name(
+                    "_lcompilers_doconcurrent_replacer_func")};
+                ASR::symbol_t* function = ASR::down_cast<ASR::symbol_t>(
+                    ASRUtils::make_Function_t_util(al, loc, fn_scope,
+                    s2c(al, fn_name), nullptr, 0, fn_args.p, fn_args.n,
+                    fn_body.p, fn_body.n, nullptr, ASR::abiType::Source,
+                    ASR::accessType::Public, ASR::deftypeType::Implementation,
+                    nullptr, false, false, false, false, false, nullptr, 0,
+                    false, false, false, nullptr));
+                mod_scope->add_symbol(fn_name, function);
+
+                current_scope = scope_copy;
+
+                ASR::symbol_t *es = ASR::down_cast<ASR::symbol_t>(
+                    ASR::make_ExternalSymbol_t(al, loc, current_scope,
+                    s2c(al, fn_name), function, s2c(al, mod_name),
+                    nullptr, 0, s2c(al, fn_name), ASR::accessType::Public));
+                current_scope->add_symbol(fn_name, es);
+                pass_result.push_back(al, ASRUtils::STMT(ASR::make_SubroutineCall_t(
+                    al, loc, es, es, call_args.p, call_args.n, nullptr)));
+                remove_original_statement = true;
+                return;
+            }
 
             // create thread data module
             std::pair<std::string, ASR::symbol_t*> thread_data_module = create_thread_data_module(involved_symbols, x.base.base.loc);
