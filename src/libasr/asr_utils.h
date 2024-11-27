@@ -117,6 +117,16 @@ static inline ASR::symbol_t *symbol_get_past_external(ASR::symbol_t *f)
     }
 }
 
+static inline ASR::symbol_t* symbol_get_past_ClassProcedure(ASR::symbol_t* f){
+    LCOMPILERS_ASSERT(f != nullptr);
+    if(ASR::is_a<ASR::ClassProcedure_t>(*f)){
+        ASR::symbol_t* func = ASR::down_cast<ASR::ClassProcedure_t>(f)->m_proc;
+        LCOMPILERS_ASSERT(func != nullptr);
+        return func;
+    }
+    return f;
+}
+
 template <typename T>
 Location get_vec_loc(const Vec<T>& args) {
     LCOMPILERS_ASSERT(args.size() > 0);
