@@ -36,6 +36,16 @@ llvmdev = "17.0.6"
 llvmdev = "18.1.8"
 [feature.llvm19.host-dependencies]
 llvmdev = "19.1.4"
+[feature.llvm12.target.linux.host-dependencies]
+libunwind = "1.7.2"
+[feature.llvm13.target.linux.host-dependencies]
+libunwind = "1.7.2"
+[feature.llvm14.target.linux.host-dependencies]
+libunwind = "1.7.2"
+[feature.llvm15.target.linux.host-dependencies]
+libunwind = "1.7.2"
+[feature.llvm16.target.linux.host-dependencies]
+libunwind = "1.7.2"
 [feature.llvm17.target.linux.host-dependencies]
 libunwind = "1.7.2"
 [feature.llvm18.target.linux.host-dependencies]
