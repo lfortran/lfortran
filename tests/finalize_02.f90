@@ -19,11 +19,6 @@ program finalize_02
    type(my_int) :: x_int
    type(Circle) :: c
 
-   allocate(c%radius(2))
-
-   allocate(x_int%int(2))
-   allocate(int(2))
-
    call sub
    call sub
 
@@ -36,7 +31,6 @@ contains
 
       type(my_int) :: x_sub
 
-      allocate(x_sub%int(2))
    end subroutine sub
 end program
 
