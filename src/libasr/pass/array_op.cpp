@@ -492,6 +492,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                                 x->m_args[j].m_step = nullptr;
                             }
                         }
+                        x->m_type = ASRUtils::extract_type(ASRUtils::expr_type(x->m_v));
 
                         ASR::stmt_t* assign = ASRUtils::STMT(
                                                 ASR::make_Assignment_t(al, x->base.base.loc, res,
