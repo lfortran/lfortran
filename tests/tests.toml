@@ -1186,7 +1186,6 @@ asr = true
 [[test]]
 filename = "../integration_tests/arrays_25.f90"
 llvm = true
-pass = "insert_deallocate"
 
 [[test]]
 filename = "../integration_tests/types_01.f90"
