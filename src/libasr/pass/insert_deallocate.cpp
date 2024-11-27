@@ -29,10 +29,8 @@ class InsertDeallocate: public ASR::CallReplacerOnExpressionsVisitor<InsertDeall
 
         inline bool is_deallocatable(ASR::symbol_t* s){
             if( ASR::is_a<ASR::Variable_t>(*s) && 
-                ASR::is_a<ASR::Allocatable_t>(*ASRUtils::symbol_type(s)) && 
-                (ASR::is_a<ASR::String_t>(*ASRUtils::type_get_past_allocatable(ASRUtils::symbol_type(s))) ||
-                ASRUtils::is_array(ASRUtils::symbol_type(s))) &&
-                ASRUtils::symbol_intent(s) == ASRUtils::intent_local){
+                ASR::is_a<ASR::Allocatable_t>(*ASRUtils::symbol_type(s)) &&
+                ASRUtils::symbol_intent(s) == ASRUtils::intent_local) {
                 return true;
             }
             return false;
@@ -78,9 +76,9 @@ class InsertDeallocate: public ASR::CallReplacerOnExpressionsVisitor<InsertDeall
                     */
                     Vec<ASR::expr_t*> vec = get_allocatable_default_storage_variables(
                         ASRUtils::symbol_symtab(
-                            ASR::down_cast<ASR::StructType_t>(ASRUtils::symbol_type(itr.second))
-                                ->m_derived_type),
-                        itr.second);
+                            ASRUtils::symbol_get_past_external(
+                                ASR::down_cast<ASR::StructType_t>(ASRUtils::symbol_type(itr.second))->m_derived_type)),
+                    itr.second);
                     // Append to allocatable_local_variables only if any allocatable variables were found
                     if (!vec.empty()) allocatable_local_variables.push_back(al, *vec.p);
                 }
