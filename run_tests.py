@@ -343,14 +343,11 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                 extra_args)
             
     if semantics_only_cc:
-        if no_llvm:
-            log.info(f"{filename} * obj    SKIPPED as requested")
-        else:
-            run_test(filename, "asr", "lfortran --semantics-only --continue-compilation --no-color {infile}",
-                filename,
-                update_reference,
-                verify_hash,
-                extra_args)
+        run_test(filename, "asr", "lfortran --semantics-only --continue-compilation --no-color {infile}",
+            filename,
+            update_reference,
+            verify_hash,
+            extra_args)
     
     if continue_compilation:
         if no_llvm:
